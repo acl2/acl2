@@ -1,7 +1,7 @@
 ; BV Library: bvxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -232,8 +232,7 @@
   :hints (("Goal"
            :in-theory (e/d (getbit slice bvxor
                                    bvchop-of-logtail)
-                           (slice-becomes-getbit
-                            bvchop-1-becomes-getbit
+                           (bvchop-1-becomes-getbit
                             bvchop-of-logtail-becomes-slice)))))
 
 ;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient
@@ -512,3 +511,52 @@
 (defthm bvxor-cancel-2-of-more-and-1-of-more
   (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
          (equal (bvxor size y z) (bvchop size w))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;newly disabled
+(defthmd logxor-bvchop-bvchop
+  (implies (and (integerp x)
+                (<= 0 size)
+                (integerp size)
+                (integerp y))
+           (equal (LOGXOR (BVCHOP size x)
+                          (BVCHOP size y))
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-bvchop-bvchop)))
+
+(defthmd logxor-of-bvchop-and-bvchop
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size1)
+                (natp size2))
+           (equal (LOGXOR (BVCHOP size1 x)
+                          (BVCHOP size2 y))
+                  (if (<= size1 size2)
+                      (bvxor size2 (bvchop size1 x) y)
+                    (bvxor size1 x (bvchop size2 y)))))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-and-bvchop)))
+
+(defthmd logxor-of-bvchop-becomes-bvxor-arg1
+  (implies (and (unsigned-byte-p size y)
+                (integerp x)
+                (natp size))
+           (equal (logxor (bvchop size x) y)
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-becomes-bvxor-arg1)))
+
+(defthmd logxor-of-bvchop-becomes-bvxor-arg2
+  (implies (and (unsigned-byte-p size x)
+                (integerp y)
+                (natp size))
+           (equal (logxor x (bvchop size y))
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-becomes-bvxor-arg2)))

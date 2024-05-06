@@ -53,7 +53,7 @@
                     (bvminus (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low)))) (slice high low x)))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases
                                             bvchop-of-sum-cases
-                                            ) (;bvchop-of-*
+                                            ) (
 ;BVMULT-OF-2-GEN ;why?
 ;EQUAL-OF-BVMULT-AND-*-ALT
 ;EQUAL-OF-BVMULT-AND-*

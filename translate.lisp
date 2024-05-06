@@ -1510,18 +1510,33 @@
 ; *1* :logic-mode function that calls mbe is itself called under a *1*
 ; :program-mode function, then the :exec code of that mbe call is evaluated,
 ; not the :logic code.  Our approach is basically as follows.  Globally,
-; **1*-as-raw* is nil.  But we arrange the following, and explain below.
+; **1*-as-raw* is nil.  But we arrange the following, and explain further
+; below.  (Consider ignoring the bracket comments here on a first read.)
 ;
 ; (a) The *1* code for an invariant-risk :program mode function binds
 ;     **1*-as-raw* to t.
+;     [This arranges that when a :program mode function is forced to evaluate
+;      using *1* functions, at least we still get the desired program-mode
+;      behavior where mbe evaluation uses the :exec code, by (b) below.]
 ;
 ; (b) The *1* code for an mbe call reduces to its *1* :exec code when
 ;     **1*-as-raw* is true.
+;     [See (a) above.]
 ;
 ; (c) Raw-ev-fncall binds **1*-as-raw* to nil for :logic mode functions.
+;     [We want :logic mode functions to evaluate in the logic, which suggests
+;      that evaluation of an mbe call provably returns the result from its
+;      :logic code.  Of course, for guard-verified code evaluating in raw Lisp
+;      we can expect the :exec code to be executed; but guard verification
+;      guarnatees that this gives the same result as evaluation of the :logic
+;      code.]
 ;
 ; (d) Oneify binds **1*-as-raw* to nil when ec-call is applied to a :logic
 ;     mode function.
+;     [The presumed intention of ec-call is to evaluate *1* code logically,
+;      which suggests using the :logic branch.  So this is just a way to do
+;      what (c) does when we see ec-call.  See the handling of ec-call in
+;      oneify for relevant examples.]
 
 ; Without invariant-risk, none of this would be necessary: a :program mode
 ; function call would lead to raw Lisp evaluation, where each mbe call
@@ -3402,8 +3417,9 @@
 ; in the logic.  Note that we don't restrict this special treatment to
 ; :common-lisp-compliant functions, because such a function might call an
 ; :ideal mode function wrapped in ec-call.  But we do restrict to :logic mode
-; functions, since they cannot call :program mode functions and hence there
-; cannot be a subsidiary rebinding of **1*-as-raw* to t.
+; functions, since they cannot call :program mode functions (enforced by
+; chk-logic-subfunctions) and hence there cannot be a subsidiary rebinding of
+; **1*-as-raw* to t.
 
                (if (logicp fn w)
                    nil
@@ -6891,12 +6907,8 @@
              (rassoc-eq (car uterm) *initial-return-last-table*))
          (append (butlast uterm 1)
                  (list (maybe-convert-to-mv (car (last uterm))))))
-        ((and (eq (car uterm) 'ec-call)
-              (= (length uterm) 2)) ; always true?
-         (list 'ec-call
-               (maybe-convert-to-mv (cadr uterm))))
-        ((eq (car uterm) 'time$) ; (time$ x ...)
-         (list* 'time$
+        ((member-eq (car uterm) '(ec-call time$))
+         (list* (car uterm)
                 (maybe-convert-to-mv (cadr uterm))
                 (cddr uterm)))
         (t uterm)))
@@ -15785,7 +15797,7 @@
         ((or (null (car stobjs-in))
              (eq (car stobjs-in) :df))
          (stobjs-in-out1 (cdr stobjs-in) (cdr args) stobjs-out wrld alist
-                         (cons nil new-stobjs-in-rev)))
+                         (cons (car stobjs-in) new-stobjs-in-rev)))
         (t
          (let ((s ; Since (car stobjs-in) is a stobj, s is also a stobj.
                 (if (or (eq (car stobjs-in) (car args)) ; optimization
@@ -16548,7 +16560,8 @@
 
 (defun stobj-let-fn (x)
 
-; Warning: Keep this in sync with stobj-let-fn-raw and stobj-let-fn-oneify.
+; Warning: Keep this in sync with stobj-let-fn-raw, stobj-let-fn-oneify, and
+; the treatment of stobj-let in translate11.
 
 ; Warning: This function does not do all necessary checks.  Among the checks
 ; missing here but performed by translate11 (via chk-stobj-let) are duplicate
@@ -16574,7 +16587,9 @@
     (cond
      (msg (er hard 'stobj-let "~@0" msg))
      (t (let* ((guarded-producer
-                `(check-vars-not-free (,stobj) ,producer))
+                (if (intersectp-eq bound-vars producer-vars)
+                    `(check-vars-not-free (,stobj) ,producer)
+                  producer))
                (guarded-consumer
                 `(check-vars-not-free ,bound-vars ,consumer))
                (updated-guarded-consumer
@@ -16826,17 +16841,13 @@
                ((not (eq (car stobjs-out) *stobj-table-stobj*))
                 (mv (msg "~@0However, the function symbol of that access, ~
                           ~x1, is not a stobj-table accessor.~@2"
-                         (msg prelude
-                              (car bound-vars)
-                              actual)
+                         (msg prelude var actual)
                          st-get postlude)
                     nil nil nil))
                ((not (stobjp s2 t wrld))
                 (mv (msg "~@0However, that alleged stobj-table access is ~
                           illegal because ~x1 is not the name of a stobj.~@2"
-                         (msg prelude
-                              (car bound-vars)
-                              actual)
+                         (msg prelude var actual)
                          s2 postlude)
                     nil nil nil))
                ((not (eq (access stobj-property
@@ -16845,9 +16856,7 @@
                          s2-creator))
                 (mv (msg "~@0However, the stobj creator for ~x1 is ~x2, not ~
                           ~x3.~@4"
-                         (msg prelude
-                              (car bound-vars)
-                              actual)
+                         (msg prelude var actual)
                          s2
                          (access stobj-property
                                  (getpropc s2 'stobj nil wrld)
@@ -17375,43 +17384,216 @@
             (and (not (eq temp-touchable-fns t))
                  (not (member-eq sym temp-touchable-fns)))))))
 
+; The following is a complete list of the macros that are considered
+; "primitive event macros".  This list includes every macro that calls
+; install-event except for defpkg, which is omitted as
+; explained below.  In addition, the list includes defun (which is
+; just a special call of defuns).  Every name on this list has the
+; property that while it takes state as an argument and possibly
+; changes it, the world it produces is a function only of the world in
+; the incoming state and the other arguments.  The function does not
+; change the world as a function of, say, some global variable in the
+; state.
+
+; The claim above, about changing the world, is inaccurate for include-book!
+; It changes the world as a function of the contents of some arbitrarily
+; named input object file.  How this can be explained, I'm not sure.
+
+; All event functions have the property that they install into state
+; the world they produce, when they return non-erroneously.  More
+; subtly they have the property that when the cause an error, they do
+; not change the installed world.  For simple events, such as DEFUN
+; and DEFTHM, this is ensured by not installing any world until the
+; final STOP-EVENT.  But for compound events, such as ENCAPSULATE and
+; INCLUDE-BOOK, it is ensured by the more expensive use of
+; REVERT-WORLD-ON-ERROR.
+
+(defun primitive-event-macros ()
+  (declare (xargs :guard t :mode :logic))
+
+; Warning: If you add to this list, consider adding to
+; find-first-non-local-name and to the list in translate11 associated with a
+; comment about primitive-event-macros.
+
+; Warning: Keep this in sync with oneify-cltl-code (see comment there about
+; primitive-event-macros).
+
+; Note: This zero-ary function used to be a constant, *primitive-event-macros*.
+; But Peter Dillinger wanted to be able to change this value with ttags, so
+; this function has replaced that constant.  We keep the lines sorted below,
+; but only for convenience.
+
+; Warning: If a symbol is on this list then it is allowed into books.
+; If it is allowed into books, it will be compiled.  Thus, if you add a
+; symbol to this list you must consider how compile will behave on it
+; and what will happen when the .o file is loaded.  Most of the symbols
+; on this list have #-acl2-loop-only definitions that make them
+; no-ops.  At least one, defstub, expands into a perfectly suitable
+; form involving the others and hence inherits its expansion's
+; semantics for the compiler.
+
+; Warning: If this list is changed, inspect the following definitions,
+; down through CHK-EMBEDDED-EVENT-FORM.  Also consider modifying the
+; list *fmt-ctx-spacers* as well.
+
+; We define later the notion of an embedded event.  Only such events
+; can be included in the body of an ENCAPSULATE or a file named by
+; INCLUDE-BOOK.
+
+; We do not allow defpkg as an embedded event.  In fact, we do not allow
+; defpkg anywhere in a blessed set of files except in files that contain
+; nothing but top-level defpkg forms (and those files must not be compiled).
+; The reason is explained in deflabel embedded-event-form below.
+
+; Once upon a time we allowed in-package expressions inside of
+; encapsulates, in a "second class" way.  That is, they were not
+; allowed to be hidden in LOCAL forms.  But the whole idea of putting
+; in-package expressions in encapsulated event lists is silly:
+; In-package is meant to change the package into which subsequent
+; forms are read.  But no reading is being done by encapsulate and the
+; entire encapsulate event list is read into whatever was the current
+; package when the encapsulate was read.
+
+; Here is an example of why in-package should never be hidden (i.e.,
+; in LOCAL), even in a top-level list of events in a file.
+
+; Consider the following list of events:
+
+; (DEFPKG ACL2-MY-PACKAGE '(DEFTHM SYMBOL-PACKAGE-NAME EQUAL))
+
+; (LOCAL (IN-PACKAGE "ACL2-MY-PACKAGE"))
+
+; (DEFTHM GOTCHA (EQUAL (SYMBOL-PACKAGE-NAME 'IF) "ACL2-MY-PACKAGE"))
+
+; When processed in pass 1, the IN-PACKAGE is executed and thus
+; the subsequent form (and hence the symbol 'IF) is read into package
+; ACL2-MY-PACKAGE.  Thus, the equality evaluates to T and GOTCHA is a
+; theorem.  But when processed in pass 2, the IN-PACKAGE is not
+; executed and the subsequent form is read into the "ACL2" package.  The
+; equality evaluates to NIL and GOTCHA is not a theorem.
+
+; One can imagine adding new event forms.  The requirement is that
+; either they not take state as an argument or else they not be
+; sensitive to any part of state except the current ACL2 world.
+
+  '(
+     #+:non-standard-analysis defthm-std
+     #+:non-standard-analysis defun-std
+     add-custom-keyword-hint
+     add-include-book-dir add-include-book-dir!
+     add-match-free-override
+     comp
+     defabsstobj
+     defattach
+     defaxiom
+     defchoose
+     defconst
+     deflabel
+     defmacro
+;    defpkg ; We prohibit defpkgs except in very special places.  See below.
+     defstobj
+     deftheory
+     defthm
+     defun
+     defuns
+     delete-include-book-dir delete-include-book-dir!
+     encapsulate
+     in-arithmetic-theory
+     in-theory
+     include-book
+     logic
+     mutual-recursion
+     progn
+     progn!
+     program
+     push-untouchable
+     regenerate-tau-database
+     remove-untouchable
+     reset-prehistory
+     set-body
+     set-override-hints-macro
+     set-prover-step-limit
+     set-ruler-extenders
+     table
+     theory-invariant
+     value-triple
+     verify-guards
+     verify-termination-boot-strap
+     ))
+
+(defconst *syms-not-callable-in-code-fal*
+
+; At one time, the check in translate11 that uses hons-get on this fast-alist
+; was implemented using member-eq, which probably explains why we excluded logic,
+; program, set-prover-step-limit, and set-ruler-extenders from this check:
+; doing so shortened the list without compromising the check, since expanding
+; these macros generates a call of table, which is in (primitive-event-macros).
+; We no longer have a need to make such a restriction.
+
+  (make-fast-alist
+   (pairlis$ (union-eq '(certify-book
+                         defpkg
+                         in-package
+                         local
+                         make-event
+                         with-guard-checking-event
+                         with-output
+                         with-prover-step-limit)
+                       (primitive-event-macros))
+             nil)))
+
 (defun macroexpand1*-cmp (x ctx wrld state-vars)
 
-; We expand x repeatedly as long as it is a macro call, though we may stop
-; whenever we like.  We rely on a version of translate to finish the job;
-; indeed, it should be the case that when translate11 is called on x with the
-; following arguments, it returns the same result regardless of whether
-; macroexpand1*-cmp is first called to do some expansion.
+; We expand x repeatedly while it is a macro call, except that we may stop
+; whenever we like.  When translate11 is called on x with the following
+; arguments, it returns the same result regardless of whether macroexpand1*-cmp
+; is first called to do some expansion.
 
 ; stobjs-out   - :stobjs-out
 ; bindings     - ((:stobjs-out . :stobjs-out))
 ; known-stobjs - t
 ; flet-alist   - nil
 
+; Thus, we must stop when  translate11 with those arguments could cause an
+; error.  This leads to....
+
 ; Warning: Keep this in sync with translate11 -- especially the first cond
 ; branch's test below.
+
+; Warning: Use this for expansion only at the top level.  In particular, do not
+; use this function to expand macros in the scope of macrolet or DO loop$
+; expressions.
 
   (cond ((or (atom x)
              (eq (car x) 'quote)
              (not (true-listp (cdr x)))
              (not (symbolp (car x)))
-             (member-eq (car x) '(mv
-                                  mv-let
-                                  pargs
-                                  translate-and-test
-                                  with-local-stobj
-                                  with-global-stobj
-                                  stobj-let
-                                  swap-stobjs
-
-; It's not clear that progn! needs to be included here.  But before we excluded
-; macros from *ttag-fns* (when that constant was named *ttag-fns-and-macros*),
-; progn! was the unique macro in that list and was checked here by virtue of
-; being in that list; hence we continue to check it here.
-
-                                  progn!))
              (not (getpropc (car x) 'macro-body nil wrld))
-             (and (member-eq (car x) '(pand por pargs plet))
+             (member-eq (car x)
+
+; The following list should include every macro name on which translate11
+; imposes requirements before expanding that macro.
+
+                        '(ld
+                          loop$
+                          mv
+                          mv-let
+                          pargs
+                          read-user-stobj-alist
+                          stobj-let
+                          swap-stobjs
+                          translate-and-test
+                          with-global-stobj
+                          with-local-stobj))
+             (and (eq (car x) 'progn!)
+                  (not (ttag wrld)))
+             (and (eq (car x) 'the)
+                  (consp (cdr x))
+                  (consp (cddr x))
+                  (null (cdddr x))
+                  (eq (cadr x) 'double-float))
+             (hons-get (car x) *syms-not-callable-in-code-fal*)
+             (and (member-eq (car x) '(pand por plet))
                   (eq (access state-vars state-vars
                               :parallel-execution-enabled)
                       t)))
@@ -17426,7 +17608,11 @@
 
 (defun find-stobj-out-and-call (lst known-stobjs ctx wrld state-vars)
 
-; Lst is a list of possibly UNTRANSLATED terms!
+; Lst is a list of possibly UNTRANSLATED terms!  This function is used only
+; heuristically.  It returns either nil or a pair (s . call), where s is a
+; stobj with respect to known-stobjs and call is a member of lst that returns
+; s.  Note that it could return nil even when such a pair exists, though that
+; is presumably rare.
 
   (cond
    ((endp lst) nil)
@@ -18419,164 +18605,6 @@
           (quote-normal-form1 form)
           (declare (ignore changedp))
           val))
-
-; The following is a complete list of the macros that are considered
-; "primitive event macros".  This list includes every macro that calls
-; install-event except for defpkg, which is omitted as
-; explained below.  In addition, the list includes defun (which is
-; just a special call of defuns).  Every name on this list has the
-; property that while it takes state as an argument and possibly
-; changes it, the world it produces is a function only of the world in
-; the incoming state and the other arguments.  The function does not
-; change the world as a function of, say, some global variable in the
-; state.
-
-; The claim above, about changing the world, is inaccurate for include-book!
-; It changes the world as a function of the contents of some arbitrarily
-; named input object file.  How this can be explained, I'm not sure.
-
-; All event functions have the property that they install into state
-; the world they produce, when they return non-erroneously.  More
-; subtly they have the property that when the cause an error, they do
-; not change the installed world.  For simple events, such as DEFUN
-; and DEFTHM, this is ensured by not installing any world until the
-; final STOP-EVENT.  But for compound events, such as ENCAPSULATE and
-; INCLUDE-BOOK, it is ensured by the more expensive use of
-; REVERT-WORLD-ON-ERROR.
-
-(defun primitive-event-macros ()
-  (declare (xargs :guard t :mode :logic))
-
-; Warning: If you add to this list, consider adding to
-; find-first-non-local-name and to the list in translate11 associated with a
-; comment about primitive-event-macros.
-
-; Warning: Keep this in sync with oneify-cltl-code (see comment there about
-; primitive-event-macros).
-
-; Note: This zero-ary function used to be a constant, *primitive-event-macros*.
-; But Peter Dillinger wanted to be able to change this value with ttags, so
-; this function has replaced that constant.  We keep the lines sorted below,
-; but only for convenience.
-
-; Warning: If a symbol is on this list then it is allowed into books.
-; If it is allowed into books, it will be compiled.  Thus, if you add a
-; symbol to this list you must consider how compile will behave on it
-; and what will happen when the .o file is loaded.  Most of the symbols
-; on this list have #-acl2-loop-only definitions that make them
-; no-ops.  At least one, defstub, expands into a perfectly suitable
-; form involving the others and hence inherits its expansion's
-; semantics for the compiler.
-
-; Warning: If this list is changed, inspect the following definitions,
-; down through CHK-EMBEDDED-EVENT-FORM.  Also consider modifying the
-; list *fmt-ctx-spacers* as well.
-
-; We define later the notion of an embedded event.  Only such events
-; can be included in the body of an ENCAPSULATE or a file named by
-; INCLUDE-BOOK.
-
-; We do not allow defpkg as an embedded event.  In fact, we do not allow
-; defpkg anywhere in a blessed set of files except in files that contain
-; nothing but top-level defpkg forms (and those files must not be compiled).
-; The reason is explained in deflabel embedded-event-form below.
-
-; Once upon a time we allowed in-package expressions inside of
-; encapsulates, in a "second class" way.  That is, they were not
-; allowed to be hidden in LOCAL forms.  But the whole idea of putting
-; in-package expressions in encapsulated event lists is silly:
-; In-package is meant to change the package into which subsequent
-; forms are read.  But no reading is being done by encapsulate and the
-; entire encapsulate event list is read into whatever was the current
-; package when the encapsulate was read.
-
-; Here is an example of why in-package should never be hidden (i.e.,
-; in LOCAL), even in a top-level list of events in a file.
-
-; Consider the following list of events:
-
-; (DEFPKG ACL2-MY-PACKAGE '(DEFTHM SYMBOL-PACKAGE-NAME EQUAL))
-
-; (LOCAL (IN-PACKAGE "ACL2-MY-PACKAGE"))
-
-; (DEFTHM GOTCHA (EQUAL (SYMBOL-PACKAGE-NAME 'IF) "ACL2-MY-PACKAGE"))
-
-; When processed in pass 1, the IN-PACKAGE is executed and thus
-; the subsequent form (and hence the symbol 'IF) is read into package
-; ACL2-MY-PACKAGE.  Thus, the equality evaluates to T and GOTCHA is a
-; theorem.  But when processed in pass 2, the IN-PACKAGE is not
-; executed and the subsequent form is read into the "ACL2" package.  The
-; equality evaluates to NIL and GOTCHA is not a theorem.
-
-; One can imagine adding new event forms.  The requirement is that
-; either they not take state as an argument or else they not be
-; sensitive to any part of state except the current ACL2 world.
-
-  '(
-     #+:non-standard-analysis defthm-std
-     #+:non-standard-analysis defun-std
-     add-custom-keyword-hint
-     add-include-book-dir add-include-book-dir!
-     add-match-free-override
-     comp
-     defabsstobj
-     defattach
-     defaxiom
-     defchoose
-     defconst
-     deflabel
-     defmacro
-;    defpkg ; We prohibit defpkgs except in very special places.  See below.
-     defstobj
-     deftheory
-     defthm
-     defun
-     defuns
-     delete-include-book-dir delete-include-book-dir!
-     encapsulate
-     in-arithmetic-theory
-     in-theory
-     include-book
-     logic
-     mutual-recursion
-     progn
-     progn!
-     program
-     push-untouchable
-     regenerate-tau-database
-     remove-untouchable
-     reset-prehistory
-     set-body
-     set-override-hints-macro
-     set-prover-step-limit
-     set-ruler-extenders
-     table
-     theory-invariant
-     value-triple
-     verify-guards
-     verify-termination-boot-strap
-     ))
-
-(defconst *syms-not-callable-in-code-fal*
-
-; At one time, the check in translate11 that uses hons-get on this fast-alist
-; was implemented using member-eq, which probably explains why we excluded logic,
-; program, set-prover-step-limit, and set-ruler-extenders from this check:
-; doing so shortened the list without compromising the check, since expanding
-; these macros generates a call of table, which is in (primitive-event-macros).
-; We no longer have a need to make such a restriction.
-
-  (make-fast-alist
-   (pairlis$ (union-eq '(certify-book
-                         defpkg
-                         in-package
-                         local
-                         make-event
-                         with-guard-checking-event
-                         with-output
-                         with-prover-step-limit)
-                       (primitive-event-macros))
-             nil)))
 
 (defun loop$-default (values)
 
@@ -20270,9 +20298,9 @@
 
 (defmacro fn-count-evg-max-val ()
 
-; Warning: (* 2 (fn-count-evg-max-val)) must be a (signed-byte 30); see
-; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
-; pick a large natural number rather arbitrarily.
+; Warning: (* 2 (fn-count-evg-max-val)) must be a fixnat; see fn-count-evg-rec
+; and max-form-count-lst.  Modulo that requirement, we just pick a large
+; natural number rather arbitrarily.
 
   200000)
 
@@ -20307,15 +20335,15 @@
 ;
 ;   (verify-guards cons-count-bounded-ac)
 
-  (declare (type (signed-byte 30) i max)
+  (declare (type #.*fixnat-type* i max)
            (xargs :guard (<= i max)
                   :measure (acl2-count x)
                   :ruler-extenders :lambdas))
-  (the (signed-byte 30)
+  (the #.*fixnat-type*
     (cond ((or (atom x) (>= i max))
            i)
           (t (let ((i (cons-count-bounded-ac (car x) (1+f i) max)))
-               (declare (type (signed-byte 30) i))
+               (declare (type #.*fixnat-type* i))
                (cons-count-bounded-ac (cdr x) i max))))))
 
 (defun cons-count-bounded (x)
@@ -20324,12 +20352,12 @@
 ; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
 ; because that bound is used in the similar computation of fn-count-evg.
 
-  (the (signed-byte 30)
+  (the #.*fixnat-type*
     (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
 
 (defmacro lambda-object-count-max-val ()
 
-; Warning: (* 2 (lambda-object-count-max-val)) must be a (signed-byte 30); see
+; Warning: (* 2 (lambda-object-count-max-val)) must be a fixnat; see
 ; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
 ; pick a large natural number rather arbitrarily.
 
@@ -20359,7 +20387,7 @@
 ; the wormhole-data field of the wormhole named
 ; hons-copy-lambda-object-wormhole.  See read-hons-copy-lambda-object-culprit.
 
-  (let ((i (the (signed-byte 30)
+  (let ((i (the #.*fixnat-type*
                 (cons-count-bounded-ac obj 0 (lambda-object-count-max-val)))))
     (cond
      ((>= i (lambda-object-count-max-val))
@@ -20772,15 +20800,19 @@
          (set-difference-assoc-eq (cdr lst) alist))
         (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
 
-(defun ec-call-boolean-listp-check (stobjs-out lst)
-  (declare (xargs :guard (true-listp stobjs-out)))
-  (cond ((endp stobjs-out)
+(defun ec-call-boolean-listp-check (stobjs lst)
+
+; Stobjs is a stobjs-in or stobjs-out list that is being checked against lst, a
+; list of Booleans as supplied to the :dfs-in or :dfs-out argument of ec-call.
+
+  (declare (xargs :guard (true-listp stobjs)))
+  (cond ((endp stobjs)
          (null lst))
         ((atom lst)
          nil)
-        (t (and (eq (eq :df (car stobjs-out))
+        (t (and (eq (eq :df (car stobjs))
                     (car lst))
-                (ec-call-boolean-listp-check (cdr stobjs-out) (cdr lst))))))
+                (ec-call-boolean-listp-check (cdr stobjs) (cdr lst))))))
 
 (defun plausible-actual-stobjs-out-p (stobjs-out lst known-stobjs wrld)
   (declare (xargs :guard (and (symbol-listp stobjs-out)
@@ -21008,6 +21040,82 @@
                      (remove1-eq var known-dfs))
                     (t known-dfs)))))))
 
+(defun bad-dfs-in-out (arg2 arg3 wrld)
+
+; This function supports translation of a form (return-last 'ec-call1-raw arg2
+; arg3), which was presumably generated from ec-call.  It returns nil to
+; indicate the absence of a problem with the :dfs-in or :dfs-out argument of
+; that ec-call.  Otherwise it returns (cons bad-in bad-out), where bad-in is t
+; if the :dfs-in argument from that ec-call is incorrect or inappropriately
+; missing and otherwise bad-in is nil, and similarly for bad-out and :dfs-out.
+
+; We make a couple of assumptions justified by checks made in translate11
+; before bad-dfs-in-out is called.  First, fn below is bound to a non-nil
+; value.  Second, arg2 is either nil or of the form (cons qdfs-in qdfs-out)
+; where qdfs-in and qdfs-out pass qdfs-check, i.e., each is either nil or a
+; quoted true list of Booleans.
+
+  (let* ((fn (if (function-symbolp (car arg3) wrld)
+                 (car arg3)
+               (corresponding-inline-fn (car arg3)
+                                        wrld)))
+         (dfs-in (cadr (cadr arg2))) ; nil or (unquote (cadr arg2))
+         (dfs-out (cadr (caddr arg2))) ; nil or (unquote (caddr arg2))
+         (stobjs-in (stobjs-in fn wrld))
+         (stobjs-out (stobjs-out fn wrld))
+         (bad-in
+          (if (null dfs-in)
+              (member-eq :df stobjs-in)
+            (not (ec-call-boolean-listp-check stobjs-in
+                                              dfs-in))))
+         (bad-out
+          (if (null dfs-out)
+              (member-eq :df stobjs-out)
+            (not (ec-call-boolean-listp-check stobjs-out
+                                              dfs-out)))))
+    (and (or bad-in bad-out)
+         (cons bad-in bad-out))))
+
+(defun remove-double-float-types-1 (edcls)
+
+; All type declarations that specify double-float are removed from edcls,
+; including e.g. (type (and double-float (satisfies ...)) ...), as well as
+; (type (or double-float ...) ...) if that's even possible.
+
+; The use of cons-with-hint below not only improves efficiency of this
+; computation, but it allows for an eq test in a common case; see the comment
+; in double-float-types-p.
+
+  (declare (xargs :guard (true-list-listp edcls)))
+  (cond ((endp edcls) nil)
+        (t (let ((rest (remove-double-float-types-1 (cdr edcls))))
+             (cond ((eq (car (car edcls)) 'type)
+                    (let ((tmp (df-type-p (cadr (car edcls)))))
+                      (cond ((eq tmp nil)
+                             (cons-with-hint (car edcls)
+                                             rest
+                                             edcls))
+                            (t ; tmp is t (or perhaps :unknown)
+                             rest))))
+                   (t (cons-with-hint (car edcls)
+                                      rest
+                                      edcls)))))))
+
+(defun remove-double-float-types (edcls)
+  (declare (xargs :guard (true-list-listp edcls)))
+  (remove-double-float-types-1 edcls))
+
+(defun double-float-types-p (dcl)
+
+; Return t if dcl may have double-float types, else nil.
+
+; This is not as inefficient as it may seem, since in the normal case that
+; there are no double-float type declarations, remove-double-float-types will
+; return its input unchanged, so the equal test will reduce to eq.
+
+  (not (equal (remove-double-float-types (cdr dcl))
+              (cdr dcl))))
+
 (mutual-recursion
 
 (defun translate11-local-def (form name bound-vars args edcls body
@@ -21232,8 +21340,11 @@
                            (remove-assoc-eq new-stobjs-out
                                             bindings)))))))))))))))))))))
 
-(defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
-                                    flet-alist ctx wrld state-vars)
+(defun translate11-flet-alist-rec (form fives stobjs-out bindings known-stobjs
+                                        flet-alist ctx wrld state-vars)
+
+; Warning: Keep this in sync with translate11-macrolet-alist.
+
   (cond ((endp fives)
          (trans-value flet-alist))
         (t
@@ -21243,10 +21354,60 @@
                                      known-stobjs flet-alist ctx wrld
                                      state-vars))
            (flet-entries
-            (translate11-flet-alist  form (cdr fives) stobjs-out bindings
-                                     known-stobjs flet-alist ctx wrld
-                                     state-vars)))
+            (translate11-flet-alist-rec form (cdr fives) stobjs-out bindings
+                                        known-stobjs flet-alist ctx wrld
+                                        state-vars)))
           (trans-value (cons flet-entry flet-entries))))))
+
+(defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
+                                    flet-alist ctx wrld state-vars)
+  (mv-let (altp state-vars1)
+    (if (access state-vars state-vars :do-expressionp)
+        (mv t
+            (change state-vars state-vars
+                    :do-expressionp nil))
+      (mv nil state-vars))
+    (let ((bindings0 bindings))
+      (mv-let (erp1 flet-alist bindings)
+        (translate11-flet-alist-rec form fives stobjs-out bindings known-stobjs
+                                    flet-alist ctx wrld state-vars1)
+        (cond
+         ((and erp1 altp)
+          (mv-let (erp2 flet-alist2 bindings2)
+            (translate11-flet-alist-rec form fives
+
+; We will be causing an error.  Since do-expressionp is true in state-vars,
+; stobjs-out must be t or (nil).  But if stobjs-out is (nil), translate11 may
+; eventually be called with a value of stobjs-out that is neither t nor (nil).
+; So we stick to stobjs-out = t here.
+
+                                        t
+                                        bindings0
+                                        known-stobjs flet-alist ctx wrld
+                                        state-vars)
+            (declare (ignore bindings2 flet-alist2))
+            (cond
+             ((null erp2)
+
+; Translation failed in an ordinary context but succeeded in a do-expression
+; context.  Presumably that's because the body of a local definition used a DO
+; loop$ construct such as progn, setq, or return.
+
+              (trans-er ctx
+                        "ACL2 has encountered the body of a definition bound ~
+                         by ~x0 that is illegal, even though it would be ~
+                         legal in a DO loop$ body rather than in a local ~
+                         definition.  Here is the resulting error message:~|  ~
+                         ~@1"
+                        'flet
+                        flet-alist))
+             (t
+
+; It seems safest just to use the original error, rather than to trust that the
+; new error is meaninful.
+
+              (mv erp1 flet-alist bindings)))))
+         (t (mv erp1 flet-alist bindings)))))))
 
 (defun translate11-flet-alist1 (form five stobjs-out bindings known-stobjs
                                      flet-alist ctx wrld state-vars)
@@ -21324,8 +21485,8 @@
                             nil ; known-dfs
                             flet-alist x ctx wrld state-vars)))))))))))
 
-(defun translate11-macrolet-alist (defs stobjs-out bindings known-stobjs
-                                    flet-alist form ctx wrld state-vars)
+(defun translate11-macrolet-alist-rec (defs stobjs-out bindings known-stobjs
+                                        flet-alist form ctx wrld state-vars)
   (cond
    ((endp defs) (trans-value flet-alist))
    (t (trans-er-let*
@@ -21334,10 +21495,63 @@
           (car defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars))
         (entries
-         (translate11-macrolet-alist
+         (translate11-macrolet-alist-rec
           (cdr defs) stobjs-out bindings known-stobjs flet-alist form ctx
           wrld state-vars)))
        (trans-value (cons entry entries))))))
+
+(defun translate11-macrolet-alist (defs stobjs-out bindings known-stobjs
+                                    flet-alist form ctx wrld state-vars)
+
+; Warning: Keep this in sync with translate11-flet-alist.
+
+  (mv-let (altp state-vars1)
+    (if (access state-vars state-vars :do-expressionp)
+        (mv t
+            (change state-vars state-vars
+                    :do-expressionp nil))
+      (mv nil state-vars))
+    (let ((bindings0 bindings))
+      (mv-let (erp1 flet-alist bindings)
+        (translate11-macrolet-alist-rec defs stobjs-out bindings known-stobjs
+                                        flet-alist form ctx wrld state-vars1)
+        (cond
+         ((and erp1 altp)
+          (mv-let (erp2 flet-alist2 bindings2)
+            (translate11-macrolet-alist-rec defs
+
+; We will be causing an error.  Since do-expressionp is true in state-vars,
+; stobjs-out must be t or (nil).  But if stobjs-out is (nil), translate11 may
+; eventually be called with a value of stobjs-out that is neither t nor (nil).
+; So we stick to stobjs-out = t here.
+
+                                            t
+                                            bindings0
+                                            known-stobjs flet-alist form ctx
+                                            wrld state-vars)
+            (declare (ignore bindings2 flet-alist2))
+            (cond
+             ((null erp2)
+
+; Translation failed in an ordinary context but succeeded in a do-expression
+; context.  Presumably that's because the body of a local definition used a DO
+; loop$ construct such as progn, setq, or return.
+
+              (trans-er ctx
+                        "ACL2 has encountered the body of a definition bound ~
+                         by ~x0 that is illegal, even though it would be ~
+                         legal in a DO loop$ body rather than in a local ~
+                         definition.  Here is the resulting error message:~|  ~
+                         ~@1"
+                        'macrolet
+                        flet-alist))
+             (t
+
+; It seems safest just to use the original error, rather than to trust that the
+; new error is meaninful.
+
+              (mv erp1 flet-alist bindings)))))
+         (t (mv erp1 flet-alist bindings)))))))
 
 (defun translate11-macrolet-alist1 (def stobjs-out bindings known-stobjs
                                         flet-alist form ctx wrld state-vars)
@@ -23004,7 +23218,9 @@
                                guard1)
                            guard2))
                 (ignores (ignore-vars edcls))
-                (ignorables (ignorable-vars edcls)))
+                (ignorables (ignorable-vars edcls))
+                (known-dfs (extend-known-dfs-with-declared-df-types
+                            edcls nil)))
            (trans-er-let*
             ((tguard (if lambda-casep
                          (if (termp guard wrld)
@@ -23021,12 +23237,7 @@
                                       stobjs-out-simple
                                       nil    ; bindings
                                       nil    ; known-stobjs
-
-; For lambda$ we translate without any known df values.  We can tolerate that
-; because it's not generally great to use apply$ on lambdas that involve dfs,
-; as discussed in books/demos/floating-point-input.lsp.
-
-                                      nil    ; known-dfs
+                                      known-dfs
                                       nil    ; flet-alist
                                       cform ctx wrld state-vars))))
             (let* ((bindings bindings0) ; Restore original bindings
@@ -23127,10 +23338,7 @@
                                     stobjs-out-simple
                                     bindings
                                     nil ; known-stobjs
-
-; See comment above about translating without any known df values.
-
-                                    nil ; known-dfs
+                                    known-dfs
 
 ; It is perhaps a bit subtle why we use flet-list = nil here.  The function
 ; apply$-lambda can reduce a call of apply$ on a lambda object to a
@@ -25236,7 +25444,9 @@
                                          t
                                        (union-eq bound-vars known-stobjs)))
                    (guarded-producer
-                    `(check-vars-not-free (,stobj) ,producer))
+                    (if (intersectp-eq bound-vars producer-vars)
+                        `(check-vars-not-free (,stobj) ,producer)
+                      producer))
                    (guarded-consumer
                     `(check-vars-not-free ,bound-vars ,consumer))
                    (letp (null (cdr producer-vars)))
@@ -25278,7 +25488,18 @@
                      (translate11
                       guarded-consumer
                       nil ; ilk
-                      stobjs-out bindings known-stobjs producer-known-dfs
+                      stobjs-out bindings
+
+; Since guarded-consumer disallows bound-vars from occurring in consumer, it is
+; harmless to use new-known-stobjs just below in place of known-stobjs.  The
+; advantage of using new-known-stobjs is that if a variable (stobj) in
+; bound-vars is used, we will get a more helpful error message, saying that it
+; is forbidden to use that variable in the consumer.  Otherwise it could say
+; that the variable is not a known stobj, which would be confusing, since it
+; really is a known stobj in that context, just not one that we can reference.
+
+                      new-known-stobjs
+                      producer-known-dfs
                       flet-alist x ctx wrld state-vars))
                     (tbody1
                      (translate11-let*
@@ -25767,7 +25988,7 @@
                            with defun-inline) to a call of FN$INLINE (i.e., ~
                            the result of adding suffix \"$INLINE\" to the ~
                            symbol-name of FN).  See :DOC ec-call."
-                          (car (last x))
+                          arg3
                           (let* ((fn0 (and (consp arg3)
                                            (car arg3)))
                                  (fn (and fn0
@@ -25815,32 +26036,34 @@
                           'ec-call '*ec-call-bad-ops*))
                ((and
                  (eq key 'ec-call1-raw)
-                 (not (and (consp arg2)
-                           (eq (car arg2) 'quote)
-                           (consp (cdr arg2))
-                           (null (cddr arg2)))))
+                 (not (or (null arg2)
+                          (equal arg2 *nil*)
+                          (and (true-listp arg2)
+                               (= (length arg2) 3)
+                               (eq (car arg2) 'cons)
+                               (and (qdfs-check (cadr arg2))
+                                    (qdfs-check (caddr arg2)))))))
                 (trans-er ctx
-                          "A use of ~x0 on the term ~x1 has a :DFS argument ~
-                           that is not of the form (QUOTE lst), hence is ~
-                           illegal.  See :DOC ec-call."
-                          'ec-call
-                          arg3))
-               ((and
-                 (eq key 'ec-call1-raw)
-                 (let* ((fn (if (function-symbolp (car arg3) wrld)
-                                (car arg3)
-                              (corresponding-inline-fn (car arg3)
-                                                       wrld)))
-                        (u (cadr arg2))
-                        (stobjs-out (stobjs-out fn wrld)))
-                   (if (null u)
-                       (member-eq :df stobjs-out)
-                     (not (ec-call-boolean-listp-check stobjs-out u)))))
+                          "The call ~x0 is illegal.  It appears to have ~
+                           arisen from an attempt to macroexpand an illegal ~
+                           call of ~x1 or ~x2."
+                          x 'ec-call 'ec-call1))
+               ((and (eq key 'ec-call1-raw)
+                     (bad-dfs-in-out arg2 arg3 wrld))
                 (trans-er ctx
-                          "A use of ~x0 on the term ~x1 requires a suitable ~
-                           :DFS keyword argument.  See :DOC ec-call."
+                          "A use of ~x0 on the term ~x1 requires ~#2~[a ~
+                           suitable :DFS-IN keyword argument~/a suitable ~
+                           :DFS-OUT keyword argument~/suitable :DFS-IN and ~
+                           :DFS-OUT keyword arguments~].  See :DOC ec-call."
                           'ec-call
-                          arg3))
+                          arg3
+                          (let* ((bad-in/bad-out
+                                  (bad-dfs-in-out arg2 arg3 wrld))
+                                 (bad-in (car bad-in/bad-out))
+                                 (bad-out (cdr bad-in/bad-out)))
+                            (cond ((not bad-out) 0)
+                                  ((not bad-in) 1)
+                                  (t 2)))))
                ((and
                  (eq key 'with-guard-checking1-raw)
                  (or (not (case-match arg2
@@ -27753,7 +27976,7 @@
 (set-guard-msg add-invisible-fns
                (msg "The call ~x0 is illegal, because the arguments are not ~
                      all symbols.  See :DOC add-invisible-fns."
-                      (cons 'add-invisible-fns args)))
+                    (cons 'add-invisible-fns args)))
 
 (set-guard-msg remove-invisible-fns
                (msg "The call ~x0 is illegal, because the arguments are not ~

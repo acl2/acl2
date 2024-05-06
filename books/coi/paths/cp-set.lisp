@@ -44,7 +44,7 @@
 
 (defun cp-set (set st1 st2)
   "Set the value in ST2 of each path P in SET to the value of P in ST1"
-  (if (set::empty set) st2
+  (if (set::emptyp set) st2
     (let ((p (set::head set)))
       (sp p (gp p st1)
 	  (cp-set (set::tail set) st1 st2)))))
@@ -159,7 +159,7 @@
 
 (defthmd open-cp-set
   (implies
-   (not (set::empty set))
+   (not (set::emptyp set))
    (equal (cp-set set st1 st2)
 	  (LET ((P (SET::HEAD SET)))
 	       (SP P (GP P ST1)
@@ -180,7 +180,7 @@
  )
 
 (defun cp-set-equal (set st1 st2)
-  (if (set::empty set) t
+  (if (set::emptyp set) t
     (and (equal (gp (set::head set) st1)
 		(gp (set::head set) st2))
 	 (cp-set-equal (set::tail set) st1 st2))))
@@ -317,20 +317,20 @@
 
 
 (defun clrp-set (set st)
-  (if (set::empty set) st
+  (if (set::emptyp set) st
     (clrp-set (set::tail set) (clrp (set::head set) st))))
 
 (defthm open-clrp-set-on-constants
   (implies (syntaxp (quotep set))
            (equal (clrp-set set st)
-                  (if (set::empty set)
+                  (if (set::emptyp set)
                       st
                     (clrp-set (set::tail set)
                               (clrp (set::head set) st)))))
   :hints (("Goal" :in-theory (enable clrp-set))))
 
 (defun clrp-set-induction (set r1 r2)
-  (if (set::empty set) (cons r1 r2)
+  (if (set::emptyp set) (cons r1 r2)
     (clrp-set-induction (set::tail set)
 			(clrp (set::head set) r1)
 			(clrp (set::head set) r2))))
@@ -365,7 +365,7 @@
 
 (defthmd open-cp-set-equal
   (implies
-   (not (set::empty set))
+   (not (set::emptyp set))
    (equal (cp-set-equal set st1 st2)
 	  (AND (EQUAL (GP (SET::HEAD SET) ST1)
 		      (GP (SET::HEAD SET) ST2))
@@ -373,7 +373,7 @@
 			     ST1 ST2)))))
 
 (defun keep-exposed-elements (a x)
-  (if (set::empty x) (set::emptyset)
+  (if (set::emptyp x) (set::emptyset)
     (let ((head (set::head x)))
       (if (dominates a head)
 	  (set::insert (list::fix (nthcdr (len a) head))
@@ -401,13 +401,13 @@
 
 (defthm multicons-empty
   (implies
-   (set::empty x)
+   (set::emptyp x)
    (equal (set::multicons a x) nil))
   :hints (("goal" :expand (set::multicons a x))))
 
 (defthm multiappend-empty
   (implies
-   (set::empty x)
+   (set::emptyp x)
    (equal (set::multiappend a x) nil))
   :hints (("goal" :in-theory (enable set::multiappend))))
 
@@ -485,7 +485,7 @@
 ;;
 
 (defun clrp-set-equal (set x y)
-  (if (set::empty set) (equal x y)
+  (if (set::emptyp set) (equal x y)
     (clrp-set-equal (set::tail set)
 		    (cpath::clrp (set::head set) x)
 		    (cpath::clrp (set::head set) y))))

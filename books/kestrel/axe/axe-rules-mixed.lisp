@@ -59,12 +59,9 @@
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
                             ;anti-bvplus
-                            ;getbit-of-+
                             ;plus-becomes-bvplus
                             bvlt-of-plus-arg1
                             bvlt-of-plus-arg2
-                            ;slice-of-+
-                            ;getbit-of-+ ;looped
                             )))))
 
 ;shouldn't this just go to bvuminus?
@@ -133,7 +130,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvplus
 ;;                                    UNSIGNED-BYTE-P-FORCED)
 ;;                                   (anti-bvplus
-;;                                    ;GETBIT-OF-+
 ;;                                    BVLT-OF-PLUS-ARG1
 ;;                                    BVLT-OF-PLUS-ARG2
 ;;                                    PLUS-BECOMES-BVPLUS

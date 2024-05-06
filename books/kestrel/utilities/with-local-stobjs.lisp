@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; See tests in with-local-stojs-tests.lisp
+;; See tests in with-local-stobjs-tests.lisp
 
 (defund with-local-stobjs-fn-aux (stobjs vars term)
   (declare (xargs :guard (and (symbol-listp stobjs)

@@ -22,7 +22,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag1)
                               (pseudo-dagp dag2)
                               (<= (+ (len dag1) (len dag2))
-                                  2147483645))
+                                  *max-1d-array-length*))
                   :guard-hints (("Goal" :use (:instance true-listp-of-car-of-mv-nth-1-of-make-equality-dag)
                                  :in-theory (disable true-listp-of-car-of-mv-nth-1-of-make-equality-dag quotep)))))
   (if (equal dag1 dag2) ;slow? how often is this the case?
@@ -51,7 +51,7 @@
                               (or (myquotep dag2)
                                   (pseudo-dagp dag2))
                               (<= (+ (LEN DAG1) (LEN DAG2))
-                                  2147483645))))
+                                  *max-1d-array-length*))))
   (if (or (quotep dag1)
           (quotep dag2))
       (equal dag1 dag2)

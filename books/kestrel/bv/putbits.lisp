@@ -103,6 +103,11 @@
                     (bvchop 8 x))))
   :hints (("Goal" :in-theory (enable putbyte))))
 
+(defthm putbyte-of-0-arg1
+  (equal (putbyte 0 index byte x)
+         0)
+  :hints (("Goal" :in-theory (enable putbyte))))
+
 (defthmd putbyte-unroll
   (implies (and (natp numbytes)
                 (natp index)

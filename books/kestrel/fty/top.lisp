@@ -1,16 +1,17 @@
 ; FTY Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "FTY")
 
 (include-book "bag")
+(include-book "bin-digit-char-list")
 (include-book "bit-list")
 (include-book "byte")
 (include-book "byte-list")
@@ -20,6 +21,7 @@
 (include-book "character-list")
 (include-book "character-list-result")
 (include-book "character-result")
+(include-book "dec-digit-char-list")
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")
 (include-book "defbyte-standard-instances")
@@ -40,6 +42,7 @@
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")
+(include-book "hex-digit-char-list")
 (include-book "integer-result")
 (include-book "map")
 (include-book "maybe-string")
@@ -58,8 +61,10 @@
 (include-book "nati")
 (include-book "nibble")
 (include-book "nibble-list")
+(include-book "oct-digit-char-list")
 (include-book "pos-list")
 (include-book "pos-option")
+(include-book "pos-set")
 (include-book "pseudo-event-form")
 (include-book "pseudo-event-form-list")
 (include-book "set")

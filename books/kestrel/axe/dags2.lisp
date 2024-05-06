@@ -1,7 +1,7 @@
 ; More material on DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -83,8 +83,7 @@
                                                             )))))
 
 (defun renumber-dag-expr-args (args renumbering)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args)
+  (declare (xargs :guard (and (darg-listp args)
                               (renumberingp renumbering))))
   (if (endp args)
       nil
@@ -126,7 +125,7 @@
                   (and (natp key)
                        (dargp val)
                        )))
-  :hints (("Goal" :in-theory (enable renumberingp acons))))
+  :hints (("Goal" :in-theory (enable renumberingp acons dargp))))
 
 (in-theory (disable mv-nth))
 
@@ -349,16 +348,16 @@
   :hints (("Goal" :induct (renumber-dag-expr-args args renumbering)
            :in-theory (enable renumber-dag-expr renumber-dag-expr-arg bounded-dag-exprp dargp-less-than))))
 
-(defthm all-dargp-of-renumber-dag-expr-args
+(defthm darg-listp-of-renumber-dag-expr-args
   (implies (and (bounded-darg-listp args nodenum2)
                 (natp nodenum2)
                 (natp nodenum)
                 (maps-everything-to-quote-or-nodenum-less-than renumbering nodenum)
                 (binds-all-nats-up-to (+ -1 nodenum2) renumbering)
                 (renumberingp renumbering))
-           (all-dargp (renumber-dag-expr-args args renumbering)))
+           (darg-listp (renumber-dag-expr-args args renumbering)))
   :hints (("Goal" :induct (renumber-dag-expr-args args renumbering)
-           :in-theory (enable renumber-dag-expr renumber-dag-expr-arg bounded-dag-exprp))))
+           :in-theory (enable renumber-dag-expr renumber-dag-expr-arg bounded-dag-exprp dargp))))
 
 (defthm bounded-dag-exprp-of-renumber-dag-expr
   (implies (and (binds-all-nats-up-to nodenum3 renumbering)
@@ -423,7 +422,7 @@
                   :guard-hints (("Goal" :do-not-induct t
                                  :do-not '(generalize eliminate-destructors)
                                  :expand (WEAK-DAGP-AUX REV-DAG-TO-MERGE)
-                                 :in-theory (e/d (WEAK-DAGP-AUX add-to-dag cars-increasing-by-1)
+                                 :in-theory (e/d (weak-dagp-aux add-to-dag cars-increasing-by-1 dargp-when-natp)
                                                  (weak-dagp-aux-when-pseudo-dagp-aux ;why?
                                                   ))))))
   (if (endp rev-dag-to-merge)

@@ -176,16 +176,17 @@
            (list 'equal x guts))
           (t (list 'equal x const)))))
 
-(defun match-tests-and-bindings (x pat tests bindings)
+(defun match-tests-and-bindings (x pat tests bindings dups)
 
-; We return two results.  The first is a list of tests, in reverse
-; order, that determine whether x matches the structure pat.  We
-; describe the language of pat below.  The tests are accumulated onto
-; tests, which should be nil initially.  The second result is an alist
-; containing entries of the form (sym expr), suitable for use as the
-; bindings in the let we generate if the tests are satisfied.  The
-; bindings required by pat are accumulated onto bindings and thus are
-; reverse order, although their order is actually irrelevant.
+; We return three results.  The first is a list of tests, in reverse order,
+; that determine whether x matches the structure pat.  We describe the language
+; of pat below.  The tests are accumulated onto tests, which should be nil
+; initially.  The second result is an alist, accumulated into bindings in
+; reverse order (though the order is irrelevant), containing entries of the
+; form (sym expr), suitable for use as the bindings in the let we generate if
+; the tests are satisfied.  The third is a list of variables, accumulated into
+; dups, that are bound more than once in the constructed alist; these will be
+; used for generating ignore declarations.
 
 ; For example, the pattern
 ;   ('equal ('car ('cons u v)) u)
@@ -196,11 +197,11 @@
 ; matches only second order instances of (EQUAL (ev (simp x) a) (ev x a)),
 ; i.e., ev, simp, x, and a are all bound in the match.
 
-; In general, the match requires that the cons structure of x be isomorphic
-; to that of pat, down to the atoms in pat.  Symbols in the pat denote
-; variables that match anything and get bound to the structure matched.
-; Occurrences of a symbol after the first match only structures equal to
-; the binding.  Non-symbolp atoms match themselves.
+; In general, the match requires that the cons structure of x be isomorphic to
+; that of pat, down to the atoms in pat.  Symbols in the pat denote variables
+; that match anything and get bound to the structure matched.  Occurrences of a
+; symbol after the first match only structures equal to the binding.
+; Non-symbolp atoms match themselves.
 
 ; There are some exceptions to the general scheme described above.  A cons
 ; structure starting with QUOTE matches only itself.  A cons structure of the
@@ -210,22 +211,24 @@
 ; to their values.  (These symbols cannot be legally bound in ACL2 anyway, so
 ; this exceptional treatment does not restrict us further.)  Any symbol
 ; starting with #\! matches only the value of the symbol whose name is obtained
-; by dropping the #\!.  This is a way of referring to already bound variables
-; in the pattern. Finally, the symbol & matches anything and causes no binding.
+; by dropping the #\!.  This is a way of referring in the pattern to already
+; bound variables.  Finally, the symbol & matches anything and causes no
+; binding.
 
-  (declare (xargs :guard (symbol-doublet-listp bindings)))
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (true-listp dups))))
   (cond
    ((symbolp pat)
     (cond
      ((or (eq pat t)
           (eq pat nil)
           (keywordp pat))
-      (mv (cons (list 'eq x pat) tests) bindings))
+      (mv (cons (list 'eq x pat) tests) bindings dups))
      ((let ((len (length (symbol-name pat))))
         (and (> len 0)
              (eql #\* (char (symbol-name pat) 0))
              (eql #\* (char (symbol-name pat) (1- len)))))
-      (mv (cons (list 'equal x pat) tests) bindings))
+      (mv (cons (list 'equal x pat) tests) bindings dups))
      ((and (> (length (symbol-name pat)) 0)
            (eql #\! (char (symbol-name pat) 0)))
       (mv (cons (list 'equal x
@@ -235,41 +238,49 @@
                                (length (symbol-name pat)))
                        pat))
                 tests)
-          bindings))
-     ((eq pat '&) (mv tests bindings))
+          bindings
+          dups))
+     ((eq pat '&) (mv tests bindings dups))
      (t (let ((binding (assoc-eq pat bindings)))
           (cond ((null binding)
-                 (mv tests (cons (list pat x) bindings)))
+                 (mv tests (cons (list pat x) bindings) dups))
                 (t (mv (cons (list 'equal x (cadr binding)) tests)
-                       bindings)))))))
+                       bindings
+                       (add-to-set-eq pat dups))))))))
    ((atom pat)
     (mv (cons (equal-x-constant x (list 'quote pat)) tests)
-        bindings))
+        bindings
+        dups))
    ((and (eq (car pat) 'quote)
          (consp (cdr pat))
          (null (cddr pat)))
     (mv (cons (equal-x-constant x pat) tests)
-        bindings))
+        bindings
+        dups))
    ((and (eq (car pat) 'quote~)
          (consp (cdr pat))
          (symbolp (cadr pat))
          (null (cddr pat)))
     (mv (cons (list 'symbol-name-equal x (symbol-name (cadr pat))) tests)
-        bindings))
-   (t (mv-let (tests1 bindings1)
+        bindings
+        dups))
+   (t (mv-let (tests1 bindings1 dups1)
         (match-tests-and-bindings (list 'car x) (car pat)
                                   (cons (list 'consp x) tests)
-                                  bindings)
+                                  bindings dups)
         (match-tests-and-bindings (list 'cdr x) (cdr pat)
-                                  tests1 bindings1)))))
+                                  tests1 bindings1 dups1)))))
+
 (defun match-clause (x pat forms)
   (declare (xargs :guard t))
-  (mv-let (tests bindings)
-    (match-tests-and-bindings x pat nil nil)
+  (mv-let (tests bindings dups)
+    (match-tests-and-bindings x pat nil nil nil)
     (list (if (null tests)
               t
             (cons 'and (reverse tests)))
-          (cons 'let (cons (reverse bindings) forms)))))
+          `(let ,(reverse bindings)
+             ,@(and dups `((declare (ignorable ,@dups))))
+             ,@forms))))
 
 (defun match-clause-list (x clauses)
   (declare (xargs :guard (alistp clauses)))
@@ -1733,7 +1744,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*))))
+                           (array-maximum-length-bound)))))
   (let* ((old-iprint-ar (f-get-global 'iprint-ar state))
          (new-dim
 
@@ -1774,13 +1785,13 @@
 
           (* 4 new-dim)))
     (cond
-     ((< *maximum-positive-32-bit-integer* new-max-len)
+     ((< (array-maximum-length-bound) new-max-len)
       (prog2$
        (er hard? 'rollover-iprint-ar
            "Attempted to expand iprint-ar to a maximum-length of ~x0, ~
-            exceeding *maximum-positive-32-bit-integer*, which is ~x1."
+            exceeding (array-maximum-length-bound), which is ~x1."
            new-max-len
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        state))
      (t
       (let* ((new-header
@@ -1849,7 +1860,7 @@
                        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-                           *maximum-positive-32-bit-integer*)
+                           (array-maximum-length-bound))
                        (iprint-falp iprint-fal-new))))
   (let ((last-index (caar iprint-alist)))
     (cond ((> last-index (iprint-hard-bound state))
@@ -1922,7 +1933,7 @@
        (<= (* 4 (1+ (f-get-global 'iprint-hard-bound
                                   state)))
 ; See init-iprint-ar; this is necessary for array1p to hold of the new array.
-           *maximum-positive-32-bit-integer*)
+           (array-maximum-length-bound))
        (< (f-get-global 'iprint-hard-bound state)
 
 ; Quoting the Essay on Iprinting:
@@ -2228,7 +2239,7 @@
 
 ; Now we lay down some macros that help with the efficiency of the FMT
 ; functions, by making it easy to declare various formals and function values
-; to be fixnums.  See the Essay on Fixnum Declarations.
+; to be nonnegative fixnums.  See the Essay on Fixnum Declarations.
 
 (defmacro mv-letc (vars form body)
   `(mv-let ,vars ,form
@@ -2263,6 +2274,17 @@
                      "The object ~x0 is not a fixnum (precisely:  not a ~
                       ~x1)."
                      n *fixnum-type*)))))
+
+(defmacro the-fixnat! (n ctx)
+  `(the-fixnum
+    (let ((n ,n))
+      (if (and (<= n ,(fixnum-bound))
+               (>= n 0))
+          n
+        (er-hard-val 0 ,ctx
+                     "The object ~x0 is not a nonnagative fixnum (precisely:  ~
+                      not a ~x1)."
+                     n *fixnat-type*)))))
 
 (defmacro the-unsigned-byte! (bits n ctx)
   `(the (unsigned-byte ,bits)
@@ -2757,7 +2779,7 @@
 ; For symbols we add together the length of the "package part" and the symbol
 ; name part.  We include the colons in the package part.
 
-          (the-fixnum
+          (the-fixnat
            (let* ((s (symbol-name x))
                   (len (min (fixnum-bound) (length s)))
                   (s-sz (cond ((needs-slashes s state)
@@ -2766,7 +2788,7 @@
                   (acc (+f! acc s-sz)))
              (declare (type string s)
                       (type #.*fixnat-type* len s-sz acc))
-             (the-fixnum
+             (the-fixnat
               (cond
                ((keywordp x) (+f! 1 acc))
                ((symbol-in-current-package-p x state)
@@ -2949,7 +2971,7 @@
            (xargs :guard ; for (print-base)
                   (fmt-state-p state)))
   (flsz1 x
-         (the-fixnum (print-base))
+         (the-fixnat (print-base))
          (print-radix)
          (round-to-small t j)
          (round-to-small t maximum)
@@ -3681,7 +3703,7 @@
            (xargs :guard (<= maximum (length s))
                   :measure (nfix (- maximum i))
                   :ruler-extenders :all))
-  (the-fixnum
+  (the-fixnat
    (cond ((not (mbt (and (integerp i) (integerp maximum))))
           maximum)
          ((< i maximum)
@@ -3766,7 +3788,7 @@
                               (<= i maximum))
                   :measure (nfix (- maximum i))
                   :ruler-extenders :lambdas))
-  (the-fixnum
+  (the-fixnat
    (cond ((= x 0) i)
          ((and (mbt (and (natp x)
                          (integerp i)
@@ -3889,7 +3911,7 @@
   (declare (type #.*fixnat-type* i maximum)
            (type string s)
            (xargs :guard (<= maximum (length s))))
-  (the-fixnum
+  (the-fixnat
    (cond
     ((not (< i (-f maximum 4)))
      (er-hard?-val?
@@ -3899,7 +3921,7 @@
        tilde-arg-points-past-string
        i 4 maximum s)))
     (t
-     (let ((x (cond ((natp x) (the-fixnum! x 'find-alternative-start))
+     (let ((x (cond ((natp x) (the-fixnat! x 'find-alternative-start))
                     ((and (consp x)
                           (atom (cdr x)))
                      0)
@@ -3961,6 +3983,9 @@
              (illegal-fmt-msg find-alternative-stop s))))))
 
 (defun punctp (c)
+
+; Warning: Keep this in sync with fmt0&v.
+
   (if (member c '(#\. #\, #\: #\; #\? #\! #\) #\]))
       c
     nil))
@@ -4515,7 +4540,7 @@
                   :verify-guards nil
                   :guard (and (<= maximum (length s)) ; typically, =
                               (character-alistp alist))))
-  (the-fixnum
+  (the-fixnat
    (cond
     ((or (not (mbt (and (natp i)
                         (natp maximum)
@@ -4637,10 +4662,10 @@
   (declare (type #.*fixnat-type* col clk)
            (type string str0 str1 str2 str3)
            (type symbol channel)
-           (xargs :guard (and (fixnum-guard (length str0))
-                              (fixnum-guard (length str1))
-                              (fixnum-guard (length str2))
-                              (fixnum-guard (length str3))
+           (xargs :guard (and (fixnat-guard (length str0))
+                              (fixnat-guard (length str1))
+                              (fixnat-guard (length str2))
+                              (fixnat-guard (length str3))
                               (true-listp lst)
                               (character-alistp alist)
                               (fmt-state-p state)
@@ -4708,15 +4733,22 @@
                       state evisc-tuple (1-f clk)))
           (#\; (fmt0* "" "~x*;" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
+          (#\? (fmt0* "" "~x*?" "~x* and " "~x*, " lst nil col channel
+                      state evisc-tuple (1-f clk)))
           (#\! (fmt0* "" "~x*!" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
           (#\) (fmt0* "" "~x*)" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (#\? (fmt0* "" "~x*?" "~x* and " "~x*, " lst nil col channel
+          (#\] (fmt0* "" "~x*]" "~x* and " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (otherwise
+          ((nil)
            (fmt0* "" "~x*" "~x* and " "~x*, " lst nil col channel
-                  state evisc-tuple (1-f clk)))))
+                  state evisc-tuple (1-f clk)))
+          (otherwise
+           (prog2$ (er hard? 'fmt0&v
+                       "Implementation error: Missing punctp case, ~x0"
+                       punct)
+                   (mv 0 state)))))
        (otherwise
         (case
           punct
@@ -4728,15 +4760,22 @@
                       state evisc-tuple (1-f clk)))
           (#\; (fmt0* "" "~x*;" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
+          (#\? (fmt0* "" "~x*?" "~x* or " "~x*, " lst nil col channel
+                      state evisc-tuple (1-f clk)))
           (#\! (fmt0* "" "~x*!" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
           (#\) (fmt0* "" "~x*)" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (#\? (fmt0* "" "~x*?" "~x* or " "~x*, " lst nil col channel
+          (#\] (fmt0* "" "~x*]" "~x* or " "~x*, " lst nil col channel
                       state evisc-tuple (1-f clk)))
-          (otherwise
+          ((nil)
            (fmt0* "" "~x*" "~x* or " "~x*, " lst nil col channel
-                  state evisc-tuple (1-f clk))))))))))
+                  state evisc-tuple (1-f clk)))
+          (otherwise
+           (prog2$ (er hard? 'fmt0&v
+                       "Implementation error: Missing punctp case, ~x0"
+                       punct)
+                   (mv 0 state))))))))))
 
 (defun spell-number (n cap col channel state evisc-tuple clk)
 
@@ -4820,7 +4859,7 @@
                           (t (list (cons #\0 n)))))
                    (t (cond ((and (<= 0 (car n)) (<= (car n) 13)) nil)
                             (t (list (cons #\0 (car n)))))))
-             0 (the-fixnum! (length str) 'spell-number)
+             0 (the-fixnat! (length str) 'spell-number)
              col nil channel state evisc-tuple (1-f clk)))))))
 
 (defun fmt-tilde-s (s col channel state clk)
@@ -4850,7 +4889,7 @@
      (pprogn (prin1$ s channel state)
              (mv (flsz-atom s (print-base) (print-radix) col state) state)))
     ((stringp s)
-     (fmt-tilde-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+     (fmt-tilde-s1 s 0 (the-fixnat! (length s) 'fmt-tilde-s) col
                    channel state))
     (t
      (let ((str (symbol-name s)))
@@ -4866,7 +4905,7 @@
           ((needs-slashes str state)
            (splat-atom s (print-base) (print-radix) 0 col channel state))
           (t (fmt-tilde-s1 str 0
-                           (the-fixnum! (length str) 'fmt-tilde-s)
+                           (the-fixnat! (length str) 'fmt-tilde-s)
                            col channel state))))
         (t
          (let ((p (symbol-package-name s)))
@@ -4903,7 +4942,7 @@
     ((acl2-numberp s)
      (splat-atom! s (print-base) (print-radix) col channel state))
     ((stringp s)
-     (fmt-tilde-cap-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
+     (fmt-tilde-cap-s1 s 0 (the-fixnat! (length s) 'fmt-tilde-s) col
                        channel state))
     (t
      (let ((str (symbol-name s)))
@@ -4919,7 +4958,7 @@
           ((needs-slashes str state)
            (splat-atom! s (print-base) (print-radix) col channel state))
           (t (fmt-tilde-cap-s1 str 0
-                               (the-fixnum! (length str) 'fmt-tilde-s)
+                               (the-fixnat! (length str) 'fmt-tilde-s)
                                col channel state))))
         (t
          (let ((p (symbol-package-name s)))
@@ -5048,7 +5087,7 @@
 
                    (let* ((fmt-hard-right-margin (fmt-hard-right-margin state))
                           (sz (flsz x col fmt-hard-right-margin state eviscp))
-                          (incr (the-fixnum (if caps 4 3)))
+                          (incr (the-fixnat (if caps 4 3)))
                           (c ; either (< (+ i incr) maximum) or error
                            (fmt-char s i incr maximum nil))
                           (punctp (punctp c))
@@ -5065,18 +5104,18 @@
                             (> (+f! p+ sz) fmt-hard-right-margin)
                             (not (> (+f! p+
                                          (flsz x
-                                               (the-fixnum
+                                               (the-fixnat
                                                 *fmt-ppr-indentation*)
                                                fmt-hard-right-margin
                                                state eviscp))
                                     fmt-hard-right-margin)))
                        (pprogn
                         (newline channel state)
-                        (spaces1 (the-fixnum *fmt-ppr-indentation*) 0
+                        (spaces1 (the-fixnat *fmt-ppr-indentation*) 0
                                  fmt-hard-right-margin
                                  channel state)
                         (fmt0 s alist i maximum
-                              (the-fixnum *fmt-ppr-indentation*)
+                              (the-fixnat *fmt-ppr-indentation*)
                               pn channel state evisc-tuple (1-f clk))))
                       ((or qy
                            (> (+f! p+ sz)
@@ -5087,9 +5126,9 @@
                               (t (newline channel state)))
                         (if qy
                             state
-                          (spaces1 (the-fixnum *fmt-ppr-indentation*)
+                          (spaces1 (the-fixnat *fmt-ppr-indentation*)
                                    0 fmt-hard-right-margin channel state))
-                        (let* ((i1 (the-fixnum
+                        (let* ((i1 (the-fixnat
                                     (if punctp
 
 ; As noted above, if we get to here then (< (+ i incr) maximum).  We are OK
@@ -5141,14 +5180,14 @@
                       (mv-letc (col state)
                                (cond ((stringp s1)
                                       (fmt0 s1 alist 0
-                                            (the-fixnum! (length s1) 'fmt0)
+                                            (the-fixnat! (length s1) 'fmt0)
                                             col pn@ channel state evisc-tuple
                                             (1-f clk)))
                                      ((msgp s1)
                                       (fmt0 (car s1)
                                             (append (cdr s1) alist)
                                             0
-                                            (the-fixnum! (length (car s1))
+                                            (the-fixnat! (length (car s1))
                                                          'fmt0)
                                             col pn@ channel state evisc-tuple
                                             (1-f clk)))
@@ -5234,7 +5273,7 @@
                                                 (char s i+3)))
                                    col channel state evisc-tuple (1-f clk))
                            (fmt0 s alist
-                                 (the-fixnum
+                                 (the-fixnat
                                   (cond
                                    ((punctp (and (< i+3 maximum)
                                                  (char s i+3)))
@@ -5295,16 +5334,16 @@
 ; So, goal-col <= fmt-hard-right-margin < (fixnum-bound).
                             (pprogn
                              (cond
-                              ((>= col (the-fixnum goal-col))
+                              ((>= col (the-fixnat goal-col))
                                (pprogn (newline channel state)
-                                       (spaces1 (the-fixnum goal-col) 0
+                                       (spaces1 (the-fixnat goal-col) 0
                                                 fmt-hard-right-margin
                                                 channel state)))
                               (t (spaces1 (-f goal-col col) col
                                           fmt-hard-right-margin
                                           channel state)))
                              (fmt0 s alist (+f! i 3) maximum
-                                   (the-fixnum goal-col)
+                                   (the-fixnat goal-col)
                                    pn channel state evisc-tuple (1-f clk))))))))
              (#\c (maybe-newline
                    (let ((pair (fmt-var s alist i maximum)))
@@ -5412,7 +5451,7 @@
                             (newline channel state))
                            (t state))
                           (fmt0 s alist (+f! i 3) maximum
-                                (the-fixnum
+                                (the-fixnat
                                  (cond
                                   ((> new-col fmt-hard-right-margin)
                                    0)
@@ -5690,7 +5729,7 @@
            (i+1 (1+f i))
            (clk-1 (1-f clk)))
        (declare (type character c0)
-                (type (unsigned-byte 29) i+1 clk-1))
+                (type #.*fixnat-type* i+1 clk-1))
        (cond
         ((eql c0 #\~)
          (cond
@@ -5707,7 +5746,7 @@
                 nil)
                (otherwise
                 (let ((i+2 (+f i 2)))
-                  (declare (type (unsigned-byte 29) i+2))
+                  (declare (type #.*fixnat-type* i+2))
                   (cond
                    ((not (< i+2 maximum))
                     (illegal-fmt-msg
@@ -5719,7 +5758,7 @@
                            (val2 (cdr pair2))
                            (i+3 (+f i 3)))
                       (declare (type character c2)
-                               (type (unsigned-byte 29) i+3))
+                               (type #.*fixnat-type* i+3))
                       (cond
                        ((not pair2)
                         (illegal-fmt-msg
@@ -5785,7 +5824,7 @@
                               i 3 maximum s))
                             (t
                              (let ((i+4 (+f i 4)))
-                               (declare (type (unsigned-byte 29) i+4))
+                               (declare (type #.*fixnat-type* i+4))
                                (cond
                                 ((not (< i+4 maximum))
                                  (illegal-fmt-msg
@@ -5795,7 +5834,7 @@
                                  (let ((n (find-alternative-start
                                            c2 s i maximum t))
                                        (max+1 (1+f maximum)))
-                                   (declare (type (signed-byte 30) n max+1))
+                                   (declare (type #.*fixnum-type* n max+1))
                                    (cond
                                     ((= n max+1)
                                      (illegal-fmt-msg
@@ -5817,8 +5856,7 @@
                                     (t
                                      (let ((m (find-alternative-stop
                                                s n maximum t)))
-                                       (declare (type (unsigned-byte 29)
-                                                      m))
+                                       (declare (type #.*fixnat-type* m))
                                        (cond
                                         ((eql m max+1)
                                          (illegal-fmt-msg
@@ -5828,7 +5866,7 @@
                                          (let ((o (find-alternative-skip
                                                    s m maximum t)))
                                            (declare
-                                            (type (unsigned-byte 29) o))
+                                            (type #.*fixnat-type* o))
                                            (cond
                                             ((= o 0)
                                              (illegal-fmt-msg
@@ -5944,7 +5982,7 @@
         (t (fmx-cw-msg-1 s alist i+1 maximum clk-1)))))))
 
 (defun fmx-cw-msg-1 (s alist i maximum clk)
-  (declare (type (unsigned-byte 29) i maximum clk)
+  (declare (type #.*fixnat-type* i maximum clk)
            (type string s)
            (xargs :guard (and (character-alistp alist)
                               (< (length s) (fixnum-bound))
@@ -7079,7 +7117,7 @@
 ; to supply a non-nil return value for other than state when io is suppressed.
 ; For example, fmt returns col and state, as suggested by the third (shape)
 ; argument below.  Without the :default-bindings, this form would evaluate to
-; (mv nil state) if event IO is inhibited.  But there are fixnum declarations
+; (mv nil state) if event IO is inhibited.  But there are fixnat declarations
 ; that require the first return value of fmt to be an integer, and we can
 ; specify the result in the inhibited case to be (mv 0 state) with the
 ; following :default-bindings:
@@ -7341,6 +7379,19 @@
        (or (eq (f-get-global 'saved-output-token-lst state)
                :all)
            (true-listp (f-get-global 'saved-output-token-lst state)))))
+
+(defun state-p+ (state)
+
+; This predicate is intended to hold of every ACL2 state and to contain all the
+; properties of the ACL2 state that might be needed.  It is not in use as of
+; its introduction in April 2024, but we include it so that the name is
+; reserved.  For now, error1-state-p suffices for purposes we can think of.
+
+; Maybe some day we will convince ourselves that this predicate always holds
+; and add an #-acl2-loop-code body of t.
+
+  (declare (xargs :stobjs state))
+  (error1-state-p state))
 
 (defun error1 (ctx summary str alist state)
 
@@ -10152,14 +10203,14 @@
 
 ; We assume that i points to the start of a line of s.
 
-  (declare (type (unsigned-byte 29) end)
+  (declare (type #.*fixnat-type* end)
            (xargs :measure (nfix (- end i))
                   :guard (and (natp i)
                               (stringp s)
                               (= end (length s))
                               (<= i end))))
   (cond
-   ((not (mbt (and (unsigned-byte-p 29 end)
+   ((not (mbt (and (unsigned-byte-p *fixnat-bits* end)
                    (natp i)
                    (stringp s)
                    (= end (length s))
@@ -10179,7 +10230,7 @@
   (declare (xargs :guard t))
   (and (stringp s)
        (let ((len (length s)))
-         (and (unsigned-byte-p 29 len)
+         (and (unsigned-byte-p *fixnat-bits* len)
               (comment-string-p1 s 0 len)))))
 
 (defrec print-control
@@ -10584,12 +10635,12 @@
 
 (defun string-prefixp-1 (str1 i str2)
   (declare (type string str1 str2)
-           (type (unsigned-byte 29) i)
+           (type #.*fixnat-type* i)
            (xargs :guard (and (<= i (length str1))
                               (<= i (length str2)))))
   (cond ((zpf i) t)
         (t (let ((i (1-f i)))
-             (declare (type (unsigned-byte 29) i))
+             (declare (type #.*fixnat-type* i))
              (cond ((eql (the character (char str1 i))
                          (the character (char str2 i)))
                     (string-prefixp-1 str1 i str2))

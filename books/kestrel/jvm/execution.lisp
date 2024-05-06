@@ -188,7 +188,7 @@
                      (jvm::do-inst (car instr) instr (th) s)))))
   :hints (("Goal"
            :use (:instance run-until-return-from-stack-height-opener)
-           :in-theory (e/d (stack-height jvm::step jvm::op-code th) ()))))
+           :in-theory (enable stack-height jvm::step jvm::op-code th))))
 
 ;this really splits the simulation
 (defthmd run-until-return-from-stack-height-of-myif-split

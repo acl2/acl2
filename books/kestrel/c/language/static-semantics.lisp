@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,7 +163,7 @@
      i.e. from innermost to outermost block."))
   (b* (((unless (mbt (consp vartab))) nil)
        (varscope (var-table-scope-fix (car vartab)))
-       (pair (omap::in (ident-fix var) varscope))
+       (pair (omap::assoc (ident-fix var) varscope))
        ((when (consp pair)) (cdr pair))
        (vartab (cdr vartab))
        ((when (endp vartab)) nil))
@@ -255,7 +255,7 @@
   (b* ((var (ident-fix var))
        (vartab (var-table-fix vartab))
        (varscope (car vartab))
-       (var-info (omap::in var varscope))
+       (var-info (omap::assoc var varscope))
        ((when (not (consp var-info)))
         (b* ((info (make-var-sinfo :type type
                                    :defstatus defstatus))
@@ -309,7 +309,7 @@
      So we go through the variables in the (file) scope,
      ensuring that they are defined or tentatively defined."))
   (b* ((varscope (var-table-scope-fix varscope))
-       ((when (omap::empty varscope)) t)
+       ((when (omap::emptyp varscope)) t)
        ((mv & info) (omap::head varscope))
        (defstatus (var-sinfo->defstatus info))
        ((unless (or (var-defstatus-case defstatus :defined)
@@ -411,7 +411,7 @@
    (xdoc::p
     "We return the type of the function, if the function is present.
      Otherwise, we return @('nil')."))
-  (cdr (omap::in (ident-fix fun) (fun-table-fix funtab)))
+  (cdr (omap::assoc (ident-fix fun) (fun-table-fix funtab)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -493,7 +493,7 @@
   :returns (yes/no booleanp)
   :short "Check if all the functions in a table are defined."
   (b* ((funtab (fun-table-fix funtab))
-       ((when (omap::empty funtab)) t)
+       ((when (omap::emptyp funtab)) t)
        ((mv & info) (omap::head funtab))
        ((unless (fun-sinfo->definedp info)) nil))
     (fun-table-all-definedp (omap::tail funtab)))
@@ -620,11 +620,11 @@
       could just return a set of types (see above).
       However, for uniformity we have all three functions
       return also a possibly updated variable table.")))
-  ((return-types type-set :reqfix (if (set::empty return-types)
+  ((return-types type-set :reqfix (if (set::emptyp return-types)
                                       (set::insert (type-void) nil)
                                     return-types))
    (variables var-table))
-  :require (not (set::empty return-types))
+  :require (not (set::emptyp return-types))
   :pred types+vartab-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2672,7 +2672,7 @@
        (vartab (funtab+vartab+tagenv->vars funtab+vartab+tagenv))
        (overlap (set::intersect (omap::keys funtab)
                                 (omap::keys (car vartab))))
-       ((unless (set::empty overlap))
+       ((unless (set::emptyp overlap))
         (reserrf (list :transunit-fun-obj-overlap overlap)))
        ((unless (var-table-add-block vartab))
         (reserrf (list :transunit-has-undef-var vartab)))

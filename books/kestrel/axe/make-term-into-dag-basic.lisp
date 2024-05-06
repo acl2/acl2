@@ -76,8 +76,8 @@
                 ;; no error:
                 (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist)))
                 (not (myquotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))))
-           (< (len (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
-              2147483647))
+           (<= (len (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
+               *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable make-term-into-dag-basic))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

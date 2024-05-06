@@ -75,13 +75,13 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable match-hyp-with-nodenum-to-assume-false))))
 
-(defthm all-dargp-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false
+(defthm darg-listp-of-strip-cdrs-of-match-hyp-with-nodenum-to-assume-false
   (implies (and (axe-treep hyp)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (natp nodenum-to-assume-false)
                 (< nodenum-to-assume-false dag-len)
                 (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
-           (all-dargp (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
+           (darg-listp (strip-cdrs (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false car-becomes-nth-of-0 NATP-OF-+-OF-1)
                                   (natp)))))

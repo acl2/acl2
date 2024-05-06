@@ -463,8 +463,8 @@
 
 (defun output-type-for-declare-form-rec (form flet-alist)
 
-; We return either nil or *, or else a type for form that ideally is as small
-; as possible.
+; Form has been successfully processed by ACL2.  We return either nil or *, or
+; else a type for form that ideally is as small as possible.
 
 ; Note that this isn't complete.  In particular, ACL2's proclaiming mechanism
 ; for GCL produces a return type of * for RETRACT-WORLD, because it can return
@@ -620,7 +620,9 @@
           (t t)))
    ((eq (car form) 'unwind-protect)
     (output-type-for-declare-form-rec (cadr form) flet-alist))
-   ((member (car form) '(time progn ec-call) :test 'eq)
+   ((eq (car form) 'ec-call)
+    (output-type-for-declare-form-rec (cadr form) flet-alist))
+   ((member (car form) '(time progn) :test 'eq)
     (output-type-for-declare-form-rec (car (last form)) flet-alist))
    ((member (car form)
             '(tagbody ; e.g., ld-fn
@@ -1480,16 +1482,51 @@ notation causes an error and (b) the use of ,. is not permitted."
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
 
+#+gcl
+(progn
+(setq si::*print-nans* t)
+; We use read-from-string below to avoid getting an error when loading
+; acl2-fns.o.
+(defvar *fp-infinity* (read-from-string "1E310"))
+(defvar *fp-negative-infinity* (read-from-string "-1E310"))
+)
+
 (defun sharp-d-read (stream char n)
   (declare (ignore char n))
-  (let* ((num (read stream t nil t))
-         (val (and (typep num 'double-float)
-                   (rational num))))
-    (or val
-        (acl2-reader-error
-         "The value, ~s0, was read from a token following #d that did not ~
-          have the syntax of a double-float.  See :DOC df."
-         (format nil "~s" num)))))
+  (let ((num (read stream t nil t)))
+    (when (not (typep num 'double-float))
+      (acl2-reader-error
+       "The value, ~s0, was read from a token following #d that did not have ~
+        the syntax of a double-float.  See :DOC df."
+       (format nil "~s" num)))
+
+; We test for infinities and nans as a courtesy to the user.  In principle this
+; perhaps shouldn't be necessary; you get what you get when you read a weird
+; float.  But it seems courteous to cause an error when we can.  In GCL it
+; appears that a Nan is not equal to itself, not even with equalp, so we don't
+; test against Nans in GCL.
+
+    (when #+allegro (excl:exceptional-floating-point-number-p num)
+          #+ccl (or (= num 1D++0)
+                    (= num -1D++0)
+                    (equal num 1D+-0))
+          #+cmucl (or (= num #.ext:double-float-positive-infinity)
+                      (= num #.ext:double-float-negative-infinity)
+                      (ext:float-nan-p *))
+          #+gcl (or (= num *fp-infinity*)
+                    (= num *fp-negative-infinity*))
+          #+lispworks (or (= num +1D++0)
+                          (= num -1D++0)
+                          (equal num 1D+-0))
+          #+sbcl (or (= num #.sb-ext:double-float-positive-infinity)
+                     (= num #.sb-ext:double-float-negative-infinity)
+                     (sb-ext:float-nan-p num))
+          #-(or allegro ccl cmucl gcl lispworks sbcl)
+          (error "Missing case: This Lisp cannot host ACL2.")
+          (error "The exceptional floating-point value ~s cannot be converted ~
+                  to a rational number."
+                 num))
+    (rational num)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
@@ -1608,6 +1645,12 @@ notation causes an error and (b) the use of ,. is not permitted."
 (defconstant *sharp-reader-max-array-size*
 
 ; Warning: Look at how this constant is used before increasing it.
+
+; This limit could certainly be increased for 64-bit Lisps, all the way to
+; most-positive-fixnum, provided uses of (unsigned-byte 29) in the definition
+; of update-sharp-reader-max-index are changed accordingly.  However, this
+; bound seems sufficient, and it is nice for it to be the same for all Lisp
+; implementations.
 
   (1- (expt 2 29)))
 

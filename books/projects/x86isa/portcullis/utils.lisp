@@ -38,11 +38,11 @@
 
 (in-package "X86ISA")
 
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
 ;; ----------------------------------------------------------------------
 
 ; Some misc. functions used throughout the formal model:
-
-(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 ; On powers of 2, this function is a base 2 logarithm:
 ; it maps 2^n to n+count -- count is the accumulator.

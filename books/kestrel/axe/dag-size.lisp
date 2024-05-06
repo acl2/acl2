@@ -1,7 +1,7 @@
 ; Computing the size of a DAG (if it was a term)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -115,7 +115,7 @@
 
 (defthm array1p-of-make-size-array-for-dag-array-with-name
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp size-array-name))
            (array1p size-array-name (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array size-array-name)))
   :hints (("Goal" :in-theory (enable make-size-array-for-dag-array-with-name))))
@@ -123,7 +123,7 @@
 (defthm size-arrayp-of-make-size-array-for-dag-array-with-name
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp size-array-name)
                 (<= bound dag-len)
                 (natp bound))
@@ -134,7 +134,7 @@
 
 (defthm alen1-of-make-size-array-for-dag-array-with-name
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646)
+                (<= dag-len *max-1d-array-length*)
                 (symbolp size-array-name))
            (equal (alen1 size-array-name (make-size-array-for-dag-array-with-name dag-len dag-array-name dag-array size-array-name))
                   dag-len))
@@ -142,30 +142,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns the size of the tree represented by the DAG (may be a very large number).
-;; Smashes the array named 'size-array.
-(defund dag-size (dag)
-  (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (len dag) 2147483647) ;weaken?
-                              )
-                  :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
+;; Returns a natp.
+(defund dag-array-size (dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (posp dag-len))))
   (let* ((size-array-name 'size-array)
-         (dag-array-name 'dag-array-for-size-computation)
-         (dag-array (make-into-array dag-array-name dag)) ;todo: avoid making this array?
-         (size-array (make-size-array-for-dag-array-with-name (len dag)
+         (size-array (make-size-array-for-dag-array-with-name dag-len
                                                               dag-array-name
                                                               dag-array
                                                               size-array-name)))
     ;; The size of the DAG is the size of its top node in the populated size-array:
-    (aref1 size-array-name size-array (top-nodenum-of-dag dag))))
+    (aref1 size-array-name size-array (+ -1 dag-len))))
+
+(defthm natp-of-dag-array-size
+  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (posp dag-len))
+           (natp (dag-array-size dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable dag-array-size
+                                     car-of-car-when-pseudo-dagp-cheap))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns the size of the tree represented by the DAG (may be a very large number).
+;; Smashes the array named 'size-array.
+(defund dag-size (dag)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (<= (len dag) *max-1d-array-length*) ;weaken?
+                              )
+                  :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
+  (let* ((dag-array-name 'dag-array-for-size-computation)
+         (dag-array (make-into-array dag-array-name dag)) ;todo: avoid making this array?
+         )
+    (dag-array-size dag-array-name dag-array (len dag))))
 
 (defthm natp-of-dag-size
   (implies (and (pseudo-dagp dag)
-                (< (len dag) 2147483647) ;weaken?
+                (<= (len dag) *max-1d-array-length*) ;weaken?
                 )
            (natp (dag-size dag)))
-  :hints (("Goal" :in-theory (enable dag-size
-                                     car-of-car-when-pseudo-dagp-cheap))))
+  :hints (("Goal" :in-theory (enable dag-size))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,7 +188,7 @@
 (defund dag-size-unguarded (dag)
   (declare (xargs :guard t))
   (if (and (pseudo-dagp dag)
-           (< (len dag) 2147483647) ;weaken?
+           (<= (len dag) *max-1d-array-length*) ;weaken?
            )
       (dag-size dag)
     (prog2$ (er hard? 'dag-size-unguarded "Bad DAG: ~x0." dag)
@@ -187,7 +202,7 @@
 
 (defund dag-or-quotep-size (x)
   (declare (xargs :guard (or (and (pseudo-dagp x)
-                                  (< (len x) 2147483647))
+                                  (<= (len x) *max-1d-array-length*))
                              (myquotep x))))
   (if (quotep x)
       1 ; we say a quoted constant has size 1
@@ -195,7 +210,7 @@
 
 (defthm natp-of-dag-or-quotep-size
   (implies (or (and (pseudo-dagp x)
-                    (< (len x) 2147483647))
+                    (<= (len x) *max-1d-array-length*))
                (myquotep x))
            (natp (dag-or-quotep-size x)))
   :hints (("Goal" :in-theory (enable dag-or-quotep-size))))

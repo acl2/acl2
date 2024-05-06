@@ -214,6 +214,7 @@
     GET-DWP
     SET-DWP
     SET-DWP!
+    STATE-P+
     TRANS*
     TRANS*-
 

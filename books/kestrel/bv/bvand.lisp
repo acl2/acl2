@@ -14,7 +14,7 @@
 (include-book "logand2")
 (include-book "bvchop")
 (include-book "getbit")
-(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
+;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -29,7 +29,7 @@
          (logand (slice low high x)
                  (slice low high y)))
   :hints (("Goal" :cases ((equal low high) (< low high))
-           :in-theory (e/d (slice) (slice-becomes-bvchop slice-becomes-getbit BVCHOP-1-BECOMES-GETBIT
+           :in-theory (e/d (slice) (slice-becomes-bvchop  BVCHOP-1-BECOMES-GETBIT
                                                           BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthmd getbit-of-logand
@@ -37,7 +37,7 @@
          (logand (getbit bit x)
                  (getbit bit y)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (slice-becomes-getbit bvchop-1-becomes-getbit)))))
+                                  ( bvchop-1-becomes-getbit)))))
 
 (defund bvand (size x y)
   (declare (type integer x y)
@@ -240,54 +240,83 @@
                   (bvchop (min n size) x)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-;requires the number of 1's in k to be size
-(defthm bvand-with-mask
-  (implies (and (syntaxp (quotep k)) ;new
-                (equal k (+ -1 (expt 2 size)))
+;; ;; Here the mask is a constant.
+;; ;requires the number of 1's in k to be size
+;; (defthm bvand-with-mask
+;;   (implies (and (syntaxp (quotep k)) ;new
+;;                 (equal k (+ -1 (expt 2 size)))
+;;                 (natp size))
+;;            (equal (bvand size k x)
+;;                   (bvchop size x))))
+
+(local
+ (defthmd +-of--1-and-expt2-of-integer-length-when-mask
+   (implies (and (power-of-2p (+ 1 x))
+                 (integerp x))
+            (equal (+ -1 (expt 2 (integer-length x)))
+                   x))
+   :hints (("Goal" :use (:instance integer-length-of-+-of-1 (i x))
+            :in-theory (enable power-of-2p)))))
+
+;; Here the mask is a constant.
+(defthm bvand-with-constant-mask-arg2
+  (implies (and (syntaxp (quotep x))
+                (power-of-2p (+ 1 x)) ; tests for a mask of all ones
+                (integerp x)
                 (natp size))
-           (equal (bvand size k x)
-                  (bvchop size x))))
+           (equal (bvand size x y)
+                  (bvchop (min size (integer-length x)) y)))
+  :hints (("Goal" :use (:instance bvand-with-mask-arg2-gen (x y) (n (integer-length x)))
+           :in-theory (e/d (+-of--1-and-expt2-of-integer-length-when-mask)
+                           (bvand-with-mask-arg2-gen
+                            bvand-with-mask-arg3-gen)))))
 
-(defthm bvand-with-mask-better
-  (implies (and (logmaskp mask)
-                (equal size (integer-length mask)) ;acl2 can bind size here...
-                (<= size size2)
-                ;(natp size)
-                (integerp size2))
-           (equal (bvand size2 mask i)
-                  (bvchop size i))))
+;; In case we are not commuting constants forward
+(defthmd bvand-with-constant-mask-arg3
+  (implies (and (syntaxp (quotep y))
+                (power-of-2p (+ 1 y)) ; tests for a mask of all ones
+                (integerp y)
+                (natp size))
+           (equal (bvand size x y)
+                  (bvchop (min size (integer-length y)) x)))
+  :hints (("Goal" :use (:instance bvand-with-constant-mask-arg2 (x y) (y x))
+           :in-theory (disable bvand-with-constant-mask-arg2))))
 
+;; This one lets us completely remove the masking/chopping.  Can be useful when
+;; we prefer masking to chopping but still want to eliminate masking that does
+;; nothing (e.g., when generating imperative code).
 (defthm bvand-with-mask-drop
-  (implies (and (syntaxp (quotep mask))
-                (logmaskp mask)
-                (<= (integer-length mask) size)
-                (natp size)
-                (unsigned-byte-p (integer-length mask) y)
-                )
-           (equal (bvand size mask y)
-                  y)))
-
-;doesn't bind any free vars
-;add syntaxp hyp - does compute integer-length several times..
-(defthm bvand-with-mask-better-eric
-  (implies (and (syntaxp (quotep mask)) ;new
-                (logmaskp mask)
-                (<= (integer-length mask) size)
+  (implies (and (syntaxp (quotep x))
+                (power-of-2p (+ 1 x)) ; tests for a mask of all ones
+                (unsigned-byte-p (integer-length x) y) ; the masking does nothing
+                (<= (integer-length x) size)
                 (natp size))
-           (equal (bvand size mask i)
-                  (bvchop (integer-length mask) i))))
+           (equal (bvand size x y)
+                  y))
+  :hints (("Goal" :use (:instance bvand-with-constant-mask-arg2)
+           :in-theory (disable bvand-with-constant-mask-arg2))))
 
-;don't need if we are commuting constants
-(defthmd bvand-with-mask-better-eric-alt
-  (implies (and (syntaxp (quotep mask)) ;new
-                (logmaskp mask)
-                (<= (integer-length mask) size)
-                (natp size))
-           (equal (bvand size i mask)
-                  (bvchop (integer-length mask) i)))
-  :hints (("Goal" :use bvand-with-mask-better-eric
-           :in-theory (disable bvand-with-mask-better-eric
-                               bvand-with-mask-better))))
+;; ;doesn't bind any free vars
+;; ;add syntaxp hyp - does compute integer-length several times..
+;; (defthm bvand-with-mask-better-eric
+;;   (implies (and (syntaxp (quotep mask)) ;new
+;;                 (logmaskp mask)
+;;                 (<= (integer-length mask) size)
+;;                 (natp size))
+;;            (equal (bvand size mask i)
+;;                   (bvchop (integer-length mask) i))))
+
+;; ;don't need if we are commuting constants
+;; (defthmd bvand-with-mask-better-eric-alt
+;;   (implies (and (syntaxp (quotep mask)) ;new
+;;                 (logmaskp mask)
+;;                 (<= (integer-length mask) size)
+;;                 (natp size))
+;;            (equal (bvand size i mask)
+;;                   (bvchop (integer-length mask) i)))
+;;   :hints (("Goal" :use bvand-with-mask-better-eric
+;;            :in-theory (disable bvand-with-mask-better-eric
+;;                                bvand-with-mask-better))))
 
 (defthm bvand-when-size-is-not-integerp
   (implies (not (integerp size))

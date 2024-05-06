@@ -58,4 +58,7 @@
 
 (include-book "limit-expt")
 
+(include-book "unguarded-primitives")
+(include-book "unguarded-built-ins")
+
 (include-book "doc")

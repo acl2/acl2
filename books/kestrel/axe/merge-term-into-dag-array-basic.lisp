@@ -107,12 +107,12 @@
 ;;  :hints (("Goal" :in-theory (e/d (pseudo-termp nth) (NTH-OF-CDR)))))
 
 ;dup, needed?
-(defthm dargp-of-lookup-equal-when-all-dargp-of-strip-cdrs
-  (implies (all-dargp (strip-cdrs alist))
+(defthm dargp-of-lookup-equal-when-darg-listp-of-strip-cdrs
+  (implies (darg-listp (strip-cdrs alist))
            (iff (dargp (lookup-equal var alist))
                 (assoc-equal var alist)))
   :hints (("Goal" :induct t
-           :in-theory (e/d (all-dargp lookup-equal strip-cdrs)
+           :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
 
 ;dup
@@ -355,7 +355,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                interpreted-function-alist))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
 
                   ))
     :flag merge-term-into-dag-array-basic)
@@ -377,7 +377,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                          interpreted-function-alist)))
                          (len terms))
-                  (all-dargp (mv-nth 1 (merge-terms-into-dag-array-basic
+                  (darg-listp (mv-nth 1 (merge-terms-into-dag-array-basic
                                                    terms
                                                    var-replacement-alist
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -430,7 +430,7 @@
                   ;;                var-replacement-alist
                   ;;                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                   ;;                interpreted-function-alist))
-                  ;;     2147483646)
+                  ;;     *max-1d-array-length*)
                   ))
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -483,7 +483,7 @@
                           var-replacement-alist
                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                           interpreted-function-alist))
-               2147483646))
+               *max-1d-array-length*))
   :rule-classes (:linear :rewrite)
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type)
            :in-theory (e/d (wf-dagp) (merge-term-into-dag-array-basic-return-type)))))
@@ -591,9 +591,9 @@
                          var-replacement-alist
                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                          interpreted-function-alist))
-              2147483646))
+              *max-1d-array-length*))
   :hints (("Goal" :use (:instance merge-term-into-dag-array-basic-return-type-corollary3-gen
-                                  (bound 2147483646)
+                                  (bound *max-1d-array-length*)
                                   )
            :in-theory (disable merge-term-into-dag-array-basic-return-type
                                dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-basic
@@ -651,7 +651,7 @@
                                                       not-equal-of-len-and-1-when-dargp
                                                       <-of-nth-when-bounded-darg-listp
                                                       true-listp-of-nth-1-of-nth-0-when-pseudo-termp
-                                                      ALL-MYQUOTEP-WHEN-ALL-DARGP)
+                                                      ALL-MYQUOTEP-WHEN-DARG-LISTP)
                            (natp dargp pseudo-term-listp pseudo-termp)))))
 
 (defthm wf-dagp-of-merge-term-into-dag-array-basic

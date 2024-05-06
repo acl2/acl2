@@ -165,9 +165,9 @@
   (implies (and (equal (bvchop 4 opcode) 0)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jo-condition (x::get-flag :of x86))))
+                  (jo-condition (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jo-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -177,9 +177,9 @@
   (implies (and (equal (bvchop 4 opcode) 1)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jno-condition (x::get-flag :of x86))))
+                  (jno-condition (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jno-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -189,9 +189,9 @@
   (implies (and (equal (bvchop 4 opcode) 2)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jb-condition (x::get-flag :cf x86))))
+                  (jb-condition (get-flag :cf x86))))
   :hints (("Goal" :in-theory (e/d (jb-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -201,9 +201,9 @@
   (implies (and (equal (bvchop 4 opcode) 3)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnb-condition (x::get-flag :cf x86))))
+                  (jnb-condition (get-flag :cf x86))))
   :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -213,9 +213,9 @@
   (implies (and (equal (bvchop 4 opcode) 4)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jz-condition (x::get-flag :zf x86))))
+                  (jz-condition (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jz-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -225,9 +225,9 @@
   (implies (and (equal (bvchop 4 opcode) 5)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnz-condition (x::get-flag :zf x86))))
+                  (jnz-condition (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jnz-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -237,10 +237,10 @@
   (implies (and (equal (bvchop 4 opcode) 6)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jbe-condition (x::get-flag :cf x86)
-                                 (x::get-flag :zf x86))))
+                  (jbe-condition (get-flag :cf x86)
+                                 (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jbe-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -250,10 +250,10 @@
   (implies (and (equal (bvchop 4 opcode) 7)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnbe-condition (x::get-flag :cf x86)
-                                 (x::get-flag :zf x86))))
+                  (jnbe-condition (get-flag :cf x86)
+                                 (get-flag :zf x86))))
   :hints (("Goal" :in-theory (e/d (jnbe-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -263,9 +263,9 @@
   (implies (and (equal (bvchop 4 opcode) 8)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (js-condition (x::get-flag :sf x86))))
+                  (js-condition (get-flag :sf x86))))
   :hints (("Goal" :in-theory (e/d (js-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -275,9 +275,9 @@
   (implies (and (equal (bvchop 4 opcode) 9)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jns-condition (x::get-flag :sf x86))))
+                  (jns-condition (get-flag :sf x86))))
   :hints (("Goal" :in-theory (e/d (jns-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -287,9 +287,9 @@
   (implies (and (equal (bvchop 4 opcode) 10)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jp-condition (x::get-flag :pf x86))))
+                  (jp-condition (get-flag :pf x86))))
   :hints (("Goal" :in-theory (e/d (jp-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -299,9 +299,9 @@
   (implies (and (equal (bvchop 4 opcode) 11)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnp-condition (x::get-flag :pf x86))))
+                  (jnp-condition (get-flag :pf x86))))
   :hints (("Goal" :in-theory (e/d (jnp-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;n01p-flgi-except-iopl
@@ -311,10 +311,10 @@
   (implies (and (equal (bvchop 4 opcode) 12)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jl-condition (x::get-flag :sf x86)
-                                (x::get-flag :of x86))))
+                  (jl-condition (get-flag :sf x86)
+                                (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jl-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -324,10 +324,10 @@
   (implies (and (equal (bvchop 4 opcode) 13)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnl-condition (x::get-flag :sf x86)
-                                 (x::get-flag :of x86))))
+                  (jnl-condition (get-flag :sf x86)
+                                 (get-flag :of x86))))
   :hints (("Goal" :in-theory (e/d (jnl-condition
-                                   x::get-flag
+                                   get-flag
                                    x86isa::jcc/cmovcc/setcc-spec
                                    bvchop)
                                   (;N01P-FLGI-EXCEPT-IOPL
@@ -336,11 +336,11 @@
 (defthm jcc/cmovcc/setcc-spec-rewrite-jle
   (implies (equal (bvchop 4 opcode) 14)
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jle-condition (x::get-flag :zf x86)
-                                 (x::get-flag :sf x86)
-                                 (x::get-flag :of x86))))
+                  (jle-condition (get-flag :zf x86)
+                                 (get-flag :sf x86)
+                                 (get-flag :of x86))))
   :hints (("Goal" :in-theory (enable jle-condition
-                                     x::get-flag
+                                     get-flag
                                      x86isa::jcc/cmovcc/setcc-spec
                                      bvchop))))
 
@@ -348,11 +348,11 @@
   (implies (and (equal (bvchop 4 opcode) 15)
                 (integerp opcode))
            (equal (x86isa::jcc/cmovcc/setcc-spec opcode x86)
-                  (jnle-condition (x::get-flag :zf x86)
-                                 (x::get-flag :sf x86)
-                                 (x::get-flag :of x86))))
+                  (jnle-condition (get-flag :zf x86)
+                                 (get-flag :sf x86)
+                                 (get-flag :of x86))))
   :hints (("Goal" :in-theory (enable jnle-condition
-                                     x::get-flag
+                                     get-flag
                                      x86isa::jcc/cmovcc/setcc-spec
                                      bvchop))))
 
@@ -531,7 +531,7 @@
                             acl2::bvminus-becomes-bvplus-of-bvuminus
 ;acl2::plus-bvcat-with-0 ;looped
 ;acl2::plus-bvcat-with-0-alt ;looped
-                            acl2::slice-of-+)))))
+                            )))))
 
 (defthmd jnl-condition-rewrite-1-32-helper
   (implies (and (signed-byte-p 32 x)
@@ -578,7 +578,7 @@
                             acl2::bvminus-becomes-bvplus-of-bvuminus
                             ;;acl2::plus-bvcat-with-0 ;looped
                             ;;acl2::plus-bvcat-with-0-alt ;looped
-                            acl2::slice-of-+)))))
+                            )))))
 
 (defthm jnl-condition-rewrite-1-32
   (implies (and (unsigned-byte-p 32 x)
@@ -756,7 +756,7 @@
       BVMINUS SBVLT ACL2::GETBIT-OF-PLUS
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT)
-     (ACL2::GETBIT-OF-* ;looped
+     (
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
 
@@ -786,7 +786,7 @@
       BVMINUS SBVLT ACL2::GETBIT-OF-PLUS
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT)
-     (ACL2::GETBIT-OF-* ;looped
+     (
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
 
@@ -815,9 +815,8 @@
                          (bvchop 8 x)))
              (not (equal (bvchop 8 -23)
                          (bvchop 8 x)))))
- :hints (("Goal" :in-theory (e/d (jnbe-condition
-                                  bvlt bvplus acl2::bvchop-of-sum-cases)
-                                 ()))))
+ :hints (("Goal" :in-theory (enable jnbe-condition
+                                    bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -829,7 +828,7 @@
                                  (x86isa::sub-sf-spec8 dst src)
                                  (x86isa::sub-of-spec8 dst src))
                   (acl2::sbvle 8 dst src)))
-  :hints (("Goal" :in-theory (e/d (jle-condition
+  :hints (("Goal" :in-theory (enable jle-condition
                                      ;zf-spec
                                      x86isa::OF-SPEC8 ;import
                                      x86isa::sF-SPEC8 ; import
@@ -842,8 +841,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  ()))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
@@ -853,10 +851,10 @@
                                  (x86isa::sub-sf-spec16 dst src)
                                  (x86isa::sub-of-spec16 dst src))
                   (acl2::sbvle 16 dst src)))
-  :hints (("Goal" :in-theory (e/d (jle-condition
+  :hints (("Goal" :in-theory (enable jle-condition
                                      ;zf-spec
-                                   x86isa::OF-SPEC16 ; import
-                                   x86isa::sF-SPEC16 ; import
+                                     x86isa::OF-SPEC16 ; import
+                                     x86isa::sF-SPEC16 ; import
                                      acl2::bvlt
                                      x86isa::sub-zf-spec16
                                      x86isa::sub-sf-spec16
@@ -866,8 +864,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  ()))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
@@ -877,7 +874,7 @@
                                  (x86isa::sub-sf-spec32 dst src)
                                  (x86isa::sub-of-spec32 dst src))
                   (acl2::sbvle 32 dst src)))
-  :hints (("Goal" :in-theory (e/d (jle-condition
+  :hints (("Goal" :in-theory (enable jle-condition
                                      ;zf-spec
                                      OF-SPEC32
                                      sF-SPEC32
@@ -890,8 +887,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  ()))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
@@ -924,10 +920,9 @@
                 (unsigned-byte-p 8 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC8 dst src))
                   (bvle 8 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC8
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC8
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC16
@@ -935,10 +930,9 @@
                 (unsigned-byte-p 16 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC16 dst src))
                   (bvle 16 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC16
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC16
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC32
@@ -946,10 +940,9 @@
                 (unsigned-byte-p 32 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC32 dst src))
                   (bvle 32 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC32
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC32
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;nice
 (defthm jnb-condition-of-SUB-CF-SPEC64
@@ -957,10 +950,9 @@
                 (unsigned-byte-p 64 src))
            (equal (jnb-condition (X86ISA::SUB-CF-SPEC64 dst src))
                   (bvle 64 src dst)))
-  :hints (("Goal" :in-theory (e/d (jnb-condition
-                                   X86ISA::SUB-CF-SPEC64
-                                   bvlt bvplus acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable jnb-condition
+                                     X86ISA::SUB-CF-SPEC64
+                                     bvlt bvplus acl2::bvchop-of-sum-cases))))
 
 ;; fixme; add the rest of these condition rules from tester-rules.
 

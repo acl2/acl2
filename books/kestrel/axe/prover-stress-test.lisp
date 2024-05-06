@@ -53,6 +53,7 @@
          nil ; no-splitp
          nil ; don't print as clauses
          nil ; don't elide any functions
+         t ; count hits
          nil ; no monitored rules
          nil ; print
          nil ; :use hint

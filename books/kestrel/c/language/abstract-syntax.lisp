@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,7 +136,8 @@
      it could be argued that one should always use the uppercase variants,
      as recommended in the Java language specification for Java).")
    (xdoc::p
-    "Since the grammar in [C] refers to these as <i>long-suffix</i>,
+    "Since the grammar in [C] refers to these as
+     <i>long-suffix</i> and <i>long-long-suffix</i>,
      it seems appropriate to call these the `length' of an integer constant,
      which justifies the name of this fixtype."))
   (:none ())
@@ -1163,7 +1164,7 @@
      which, according to [C], is a complete executable application:
      a library would not qualify as a program in this sense.")
    (xdoc::p
-    "For now, a file set consists of one or two files (see @(tsee file),
+    "For now, a file set consists of one or two files (see @(tsee file)),
      namely an optional header and a source file,
      which have the same name except for the extension.
      (The preceding sentence uses the terminology in [C:5.1.1/1],

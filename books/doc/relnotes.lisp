@@ -123,6 +123,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Gaussian Elimination Library")
+
+   (xdoc::p
+    "This is a work in progress for solving Ax = b, for sparse matrices A.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Group Theory Library")
 
    (xdoc::p
@@ -287,6 +294,10 @@
     (xdoc::seetopic "fty::defresult" "result types")
     ", some names have been improved.")
 
+   (xdoc::p
+    "A fixtype @(tsee pos-set) for sets of positive integers has been added,
+     along with some operations on these sets.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "kestrel-utilities" "Kestrel Utilities Library"))
@@ -312,6 +323,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "obag::obags" "Ordered Bags (Obags) Library"))
+
+   (xdoc::p
+    "Renamed @('obag::empty') to @(tsee obag::emptyp).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
@@ -323,10 +341,21 @@
    (xdoc::p
     "Improved documentation and organization.")
 
+   (xdoc::p
+    "Renamed @('omap::empty') to @(tsee omap::emptyp).")
+
+   (xdoc::p
+    "Renamed @('omap::in') to @(tsee omap::assoc).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "pfcs::pfcs"
                              "PFCS (Prime Field Constraint System) Library"))
+
+   (xdoc::p
+    "The library has been moved
+     from @('[books]/kestrel/crypto/pfcs')
+     to @('[books]/projects/pfcs').")
 
    (xdoc::p
     "A concrete syntax for PFCSes, in the form of an ABNF grammar,
@@ -436,6 +465,13 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "set::std/osets" "Standard Osets Library"))
+
+   (xdoc::p
+    "The @('set::empty') function has been renamed to @(tsee set::emptyp).")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
                              "Standard Typed Alists Library"))
 
@@ -491,6 +527,41 @@
     "Tools @(tsee functions-after) and @(tsee macros-after) return names of
      functions and macros, respectively, that were introduced after a given
      name.")
+
+   (xdoc::p
+    "@(tsee Make-flag) now causes a user-friendly error when the formal
+     parameters list is changed by an alternative definition specified by the
+     @(':BODY') argument.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "Support has been added for the following VEX instructions:")
+   (xdoc::ul
+    (xdoc::li
+     "SHL, SHRX, SARX")
+    (xdoc::li
+     "VMOVUPS")
+    (xdoc::li
+     "VZEROUPPER")
+    (xdoc::li
+     "VANDPD, VANDPS,
+      VANDNPD, VANDNPS,
+      VORPD, VORPS,
+      VXORPD, VXORPS,
+      VPAND,
+      VPANDN,
+      VPOR,
+      VPXOR")
+    (xdoc::li
+     "VPADDB, VPADDW, VPADDD, VPADDQ (VEX versions)")
+    (xdoc::li
+     "VPSUBB, VPSUBW, VPSUBD, VPSUBQ (VEX versions)"))
+
+   (xdoc::p
+    "Some memory accessing functions for larger sizes have been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

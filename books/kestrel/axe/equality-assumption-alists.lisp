@@ -135,8 +135,7 @@
 ;; DARGS wrt DAG-ARRAY.  Return the cdr (the RHS) of the first such pair, or nil.
 (defund replace-fun-call-using-equality-assumption-alist-aux (args-to-rhs-alist dargs dag-array)
   (declare (xargs :guard (and (term-list-to-term-alistp args-to-rhs-alist)
-                              (true-listp dargs)
-                              (all-dargp dargs)
+                              (darg-listp dargs)
                               (implies (not (all-myquotep dargs))
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep dargs)))))
                   :guard-hints (("Goal" :in-theory (enable term-list-to-term-alistp)))))
@@ -169,8 +168,7 @@
                               (symbolp fn)
                               (not (eq 'quote fn))
                               ;; (not (eq :var fn)) ;todo: may be hard to guarantee
-                              (true-listp dargs)
-                              (all-dargp dargs)
+                              (darg-listp dargs)
                               (implies (not (all-myquotep dargs))
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep dargs)))))))
   ;; If FN is not present in the alist, the lookup-eq will give nil

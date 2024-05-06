@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nat-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -94,6 +94,12 @@
            (natp (car x)))
   :rule-classes :type-prescription)
 
+;; Avoids name clash with books/centaur/fty/baselists.
+(defthmd natp-of-car-when-nat-listp-better
+  (implies (nat-listp x)
+           (equal (natp (car x))
+                  (consp x))))
+
 ;; Seems better than the one in STD (except perhaps for the double-rewrite).
 (defthm nat-listp-of-update-nth-better
   (implies (nat-listp l)
@@ -144,3 +150,8 @@
   (implies (nat-listp l)
            (integer-listp l))
   :hints (("Goal" :in-theory (enable integer-listp nat-listp))))
+
+(defthm nat-listp-of-remove1-equal
+  (implies (nat-listp nats)
+           (nat-listp (remove1-equal a nats)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))

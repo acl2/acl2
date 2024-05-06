@@ -43,13 +43,13 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-ALL-DARGP)
+                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-DARG-LISTP)
                                                         (DARGP
                                                          DARGP-LESS-THAN
                                                          natp
                                                          CAR-BECOMES-NTH-OF-0
                                                          PSEUDO-DAG-ARRAYP)))))
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (if (endp rev-leaves)
       (mv (erp-nil) core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (mv-let (erp core-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
@@ -99,13 +99,13 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-ALL-DARGP)
+                  :guard-hints (("Goal" :in-theory (e/d (NOT-CDDR-OF-NTH-WHEN-DARG-LISTP)
                                                         (DARGP
                                                          DARGP-LESS-THAN
                                                          natp
                                                          CAR-BECOMES-NTH-OF-0
                                                          PSEUDO-DAG-ARRAYP)))))
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (if (endp rev-leaves)
       ;; no leaves:
       (mv (erp-nil)

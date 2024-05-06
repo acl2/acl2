@@ -1535,16 +1535,16 @@
 ;   (f-prog2 st) ; should return (MV LOGIC <updated-state>)
 
 ; If we use the oneify call above (from the case that (not (eq program-p
-; 'invariant-risk))), then EXEC would returned as a first value by the call of
-; f-prog2 just above, which we consider to be incorrect.  The EXEC return value
-; would be OK if f-prog2 were defined with the ec-call wrapper removed, because
-; f-log has no invariant-risk and hence we want it to execute fast using the
-; :exec form from its mbe.  But the ec-call means that we really want to call
-; *1*f-log -- we are no longer slipping into raw Lisp and hence we no longer
-; want the special **1*-as-raw* handling, which is inappropriate here since it
-; is intended to give the illusion that we are in raw Lisp.  Thus, we call
-; *1*f-log and what's more, we bind **1*-as-raw* to nil, to signify that we
-; intend to execute the function call in the logic.
+; 'invariant-risk))), then EXEC would be returned as a first value by the call
+; of f-prog2 just above, which we consider to be incorrect.  The EXEC return
+; value would be OK if f-prog2 were defined with the ec-call wrapper removed,
+; because f-log has no invariant-risk and hence we want it to execute fast
+; using the :exec form from its mbe.  But the ec-call means that we really want
+; to call *1*f-log -- we are no longer slipping into raw Lisp and hence we no
+; longer want the special **1*-as-raw* handling, which is inappropriate here
+; since it is intended to give the illusion that we are in raw Lisp.  Thus, we
+; call *1*f-log and what's more, we bind **1*-as-raw* to nil, to signify that
+; we intend to execute the function call in the logic.
 
                (let ((form (car (last x))))
                  `(let* ((args (list ,@(oneify-lst (cdr form) fns w program-p)))
@@ -2693,11 +2693,11 @@
                                            ignore-vars ignorable-vars
                                            super-stobjs-in super-stobjs-chk
                                            guard wrld)))
-                                     (if cont-p
-                                         `(state-free-global-let*
+                                     `(if ,cont-p
+                                          (state-free-global-let*
                                            ((check-invariant-risk t))
                                            ,labels-form)
-                                       labels-form))))
+                                        ,labels-form))))
                                 (t ,(df-call fn formals)))))))
                         (t `(,(df-call fn formals))))))
                      (trace-rec-for-none
@@ -8317,7 +8317,7 @@
                        They probably should be added to ~s.~%~%"
                       bad-logic
                       '*initial-logic-fns-with-raw-code*))
-            (error "Check failed!")))))
+            (exit-with-build-error "Check failed!")))))
     (let* ((wrld (w state))
            (fns (loop for fn in (append (strip-cars *ttag-fns*)
                                         *initial-untouchable-fns*)
@@ -8384,7 +8384,7 @@
   (cond
    ((null trips)
     (cond ((null acc) nil)
-          (t (error
+          (t (exit-with-build-error
               "The following are :ideal mode functions that are not ~%~
                non-executable.  We rely in oneify-cltl-code on the absence ~%~
                of such functions in the boot-strap world (see the comment ~%~
@@ -8420,7 +8420,7 @@
            (push (cons acl2-sym (symbol-value sym))
                  bad)))))
     (when bad
-      (error
+      (exit-with-build-error
        "The following symbols, perhaps with the values shown, need to~%~
         be added to *initial-global-table*:~%~s~%"
        bad))))
@@ -8519,8 +8519,8 @@
   (check-none-ideal (w *the-live-state*) nil)
   (check-state-globals-initialized)
   (or (plist-worldp-with-formals (w *the-live-state*))
-      (error "The initial ACL2 world does not satisfy ~
-              plist-worldp-with-formals!"))
+      (exit-with-build-error
+       "The initial ACL2 world does not satisfy plist-worldp-with-formals!"))
   (check-slashable)
   (check-some-builtins-for-executability)
   nil)
@@ -8714,28 +8714,6 @@
           (state *the-live-state*)
           pass-2-alist)
      (enter-boot-strap-mode system-books-dir (get-os))
-     (setq pass-2-alist
-           (let ((ans nil))
-             (dolist
-               (fl acl2-pass-2-files)
-               (mv-let (erp val state)
-
-; Warning.  Because of the read-file here, we have to be careful not to define
-; any packages in the pass-2 files that contain symbols mentioned in those
-; files.  The read-file will break in any such case; the DEFPKG in such a file
-; must be processed first.
-
-                 (read-file (coerce
-                             (append (coerce fl 'list)
-                                     (cons #\. (coerce *lisp-extension*
-                                                       'list)))
-                             'string)
-                            *the-live-state*)
-                 (declare (ignore state))
-                 (cond (erp (interface-er "Unable to read file ~x0!"
-                                          fl))
-                       (t (push (cons fl val) ans)))))
-             ans))
      (dolist
        (fl *acl2-files*)
        (when (not (or (equal fl "boot-strap-pass-2-a")
@@ -8766,6 +8744,28 @@
 ; else so we are in the same state.
 
                         (return-from initialize-acl2 nil))))))
+     (setq pass-2-alist
+           (let ((ans nil))
+             (dolist
+               (fl acl2-pass-2-files)
+               (mv-let (erp val state)
+
+; Warning.  Because of the read-file here, we have to be careful not to define
+; any packages in the pass-2 files that contain symbols mentioned in those
+; files.  The read-file will break in any such case; the DEFPKG in such a file
+; must be processed first.
+
+                 (read-file (coerce
+                             (append (coerce fl 'list)
+                                     (cons #\. (coerce *lisp-extension*
+                                                       'list)))
+                             'string)
+                            *the-live-state*)
+                 (declare (ignore state))
+                 (cond (erp (interface-er "Unable to read file ~x0!"
+                                          fl))
+                       (t (push (cons fl val) ans)))))
+             ans))
      (enter-boot-strap-pass-2)
      (dolist
        (fl acl2-pass-2-files)
@@ -9655,6 +9655,11 @@
 
            #-(and gcl (not cltl2))
            (setq *debugger-hook* 'our-abort)
+
+; See the comment about the following call in acl2.lisp for why we make this
+; call both there and here.
+
+           (break-on-overflow-and-nan)
 
 ; We have found it necessary to extend the LispWorks stack size, in particular
 ; for community books books/concurrent-programs/bakery/stutter2 and

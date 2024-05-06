@@ -52,7 +52,7 @@
   (implies (and (perm y z) ;y is a free var
                 (perm x y))
            (perm x z))
-  :hints (("Goal" :use (:instance perm-transitive-1)
+  :hints (("Goal" :use perm-transitive-1
            :in-theory (disable perm-transitive-1))))
 
 (defthm perm-symmetric

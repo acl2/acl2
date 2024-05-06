@@ -1,6 +1,6 @@
 ; A lightweight book about intern-in-package-of-symbol
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,7 +55,8 @@
    (iff (member-symbol-name str l)
         (member-equal str (map-symbol-name l)))
    :hints (("Goal" :in-theory (enable member-symbol-name
-                                      member-equal)))))
+                                      member-equal
+                                      map-symbol-name)))))
 
 (local
  (defthm car-of-member-symbol-name-iff
@@ -63,7 +64,8 @@
             (iff (car (member-symbol-name str l))
                  (member-equal str (map-symbol-name l))))
    :hints (("GOAL" :in-theory (enable member-symbol-name
-                                      member-equal)))))
+                                      member-equal
+                                      map-symbol-name)))))
 
 ;; If a string is in the pkg-imports of the ACL2 package, then importing in
 ;; into the ACL2 package gives a symbol not in the acl2 package.

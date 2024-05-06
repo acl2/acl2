@@ -376,14 +376,14 @@
                        (:REWRITE APPLY$-PRIM-META-FN-EV-CONSTRAINT-8)
                        (:REWRITE ; df0
                         #-non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-966
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-968
                         #+non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-970)
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-972)
                        (:REWRITE ; df1
                         #-non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-967
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-969
                         #+non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-971)
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-973)
                        (:REWRITE ; from-df
                         #-non-standard-analysis
                         APPLY$-PRIM-META-FN-EV-CONSTRAINT-186

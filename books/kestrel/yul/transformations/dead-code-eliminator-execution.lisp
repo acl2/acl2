@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,7 +184,7 @@
    (xdoc::p
     "We transform all the function information values of the map."))
   (b* ((funscope (funscope-fix funscope))
-       ((when (omap::empty funscope)) nil)
+       ((when (omap::emptyp funscope)) nil)
        ((mv name info) (omap::head funscope)))
     (omap::update name
                   (funinfo-dead info)
@@ -200,14 +200,14 @@
 
   (defrule consp-of-in-of-funscope-dead
     (implies (funscopep funscope)
-             (equal (consp (omap::in fun (funscope-dead funscope)))
-                    (consp (omap::in fun funscope)))))
+             (equal (consp (omap::assoc fun (funscope-dead funscope)))
+                    (consp (omap::assoc fun funscope)))))
 
   (defrule cdr-of-in-of-funscope-dead
     (implies (and (funscopep funscope)
-                  (omap::in fun funscope))
-             (equal (cdr (omap::in fun (funscope-dead funscope)))
-                    (funinfo-dead (cdr (omap::in fun funscope))))))
+                  (omap::assoc fun funscope))
+             (equal (cdr (omap::assoc fun (funscope-dead funscope)))
+                    (funinfo-dead (cdr (omap::assoc fun funscope))))))
 
   (defrule funscope-dead-of-update
     (implies (and (identifierp name)

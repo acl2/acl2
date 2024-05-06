@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,7 +101,7 @@
 
 (define ascii-basic-source-charp (x)
   :returns (yes/no booleanp)
-  :short "Fixtype of the ACL2 ASCII characters that correspond to
+  :short "Recognize the ACL2 ASCII characters that correspond to
           the members of the basic source character set in C."
   :long
   (xdoc::topstring
@@ -114,7 +114,7 @@
      horizontal tab,
      vertical tab, and
      form feed
-     [ISO:5.2.1/3].")
+     [C:5.2.1/3].")
    (xdoc::p
     "Note that the double quote character and the backslash character
      must be escaped (i.e. preceded by a backslash) in ACL2 strings.
@@ -378,7 +378,7 @@
 
 (define ascii-basic-exec-charp (x)
   :returns (yes/no booleanp)
-  :short "Fixtype of the ACL2 ASCII characters that correspond to
+  :short "Recognize the ACL2 ASCII characters that correspond to
           the members of the basic execution character set in C."
   :long
   (xdoc::topstring

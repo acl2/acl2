@@ -3,7 +3,7 @@
 ; Note: The license below is based on the template at:
 ; http://opensource.org/licenses/BSD-3-Clause
 
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2024, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@
 ; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ; Original Author(s):
-; Alessandro Coglio <coglio@kestrel.edu>
+; Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author(s):
 ; Dmitry Nadezhin
 ; Shilpi Goel
@@ -497,17 +497,25 @@
                         :mem-ptr?-var nil)
     ;; rme128
     ;; Note: A #GP exception should be thrown here instead of an #AC fault when
-    ;; the address is not aligned.  See Intel Manuals, Volume 3, Section 6.15,
+    ;; the address is not aligned. See Intel Manuals, Volume 3, Section 6.15,
     ;; Exception and Interrupt Reference, Interrupt 17 Alignment Check
     ;; Exception (#AC).
     ,(gen-read-function :size 128
+                        :signed? nil
+                        :check-alignment?-var t
+                        :mem-ptr?-var nil)
+    ;; rme256
+    ;; Note: A #GP exception should be thrown here instead of an #AC fault when
+    ;; the address is not aligned. See Intel Manuals, Volume 2, Tables 2-18 and
+    ;; 2-44.
+    ,(gen-read-function :size 256
                         :signed? nil
                         :check-alignment?-var t
                         :mem-ptr?-var nil)))
 
 (define rme-size
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (nbytes :type (member 1 2 4 6 8 10 16))
+   (nbytes :type (member 1 2 4 6 8 10 16 32))
    (eff-addr :type (signed-byte 64))
    (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
    (r-x :type (member :r :x))
@@ -611,7 +619,6 @@
                     (list (list :non-canonical-address eff-addr) 0 x86)))
     :hints (("Goal" :in-theory (e/d (rme-size) ()))))
 
-
   (defruled rme-size-of-1-to-rme08
     (equal
      (rme-size proc-mode 1 eff-addr seg-reg r-x check-alignment? x86
@@ -660,7 +667,14 @@
      (rme-size proc-mode 16 eff-addr seg-reg r-x check-alignment? x86
                :mem-ptr? mem-ptr?)
      (rme128 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme128)))
+    :enable (rme-size rme128))
+
+  (defruled rme-size-of-32-to-rme256
+    (equal
+     (rme-size proc-mode 32 eff-addr seg-reg r-x check-alignment? x86
+               :mem-ptr? mem-ptr?)
+     (rme256 proc-mode eff-addr seg-reg r-x check-alignment? x86))
+    :enable (rme-size rme256)))
 
 (define rime-size
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
@@ -1001,11 +1015,19 @@
     ,(gen-write-function :size 128
                          :signed? nil
                          :check-alignment?-var t
+                         :mem-ptr?-var nil)
+    ;; wme256
+    ;; Note: A #GP exception should be thrown here instead of an #AC fault when
+    ;; the address is not aligned. See Intel Manuals, Volume 2, Tables 2-18 and
+    ;; 2-44.
+    ,(gen-write-function :size 256
+                         :signed? nil
+                         :check-alignment?-var t
                          :mem-ptr?-var nil)))
 
 (define wme-size
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
-   (nbytes :type (member 1 2 4 6 8 10 16))
+   (nbytes :type (member 1 2 4 6 8 10 16 32))
    (eff-addr :type (signed-byte 64))
    (seg-reg :type (integer 0 #.*segment-register-names-len-1*))
    (val :type (integer 0 *))
@@ -1022,7 +1044,8 @@
            (6  (n48p val))
            (8  (n64p val))
            (10 (n80p val))
-           (16 (n128p val)))
+           (16 (n128p val))
+           (32 (n256p val)))
   :returns (mv flg
                (x86-new x86p :hyp (x86p x86)))
   :parents (top-level-memory)

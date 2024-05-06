@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function coerce
 ;
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -79,7 +79,47 @@
                  (:instance coerce-inverse-2 (x y))))))
 
 ;drop?
-(DEFthmd COERCE-INVERSE-1-forced
-  (IMPLIES (force (CHARACTER-LISTP X))
-           (EQUAL (COERCE (COERCE X 'STRING) 'LIST)
-                  X)))
+;; or call this coerce-of-coerce-...
+(defthmd coerce-inverse-1-forced
+  (implies (force (character-listp x))
+           (equal (coerce (coerce x 'string) 'list)
+                  x)))
+
+(local
+  (defthm length-of-coerce-string-helper
+    (implies (character-listp x)
+             (equal (length (coerce x 'string))
+                    (len x)))
+    :hints (("Goal" :use (completion-of-coerce)))))
+
+;move
+(local
+  (defthm character-listp-of-make-character-list
+    (character-listp (make-character-list x))))
+
+;move
+(local
+  (defthm len-of-make-character-list
+    (equal (len (make-character-list x))
+           (len x))
+    :hints (("Goal" :in-theory (enable make-character-list)))))
+
+;move
+(local (in-theory (disable make-character-list)))
+
+(defthm length-of-coerce-string
+  (equal (length (coerce x 'string))
+         (len x))
+  :hints (("Goal" :use ((:instance completion-of-coerce (y 'string))
+                        length-of-coerce-string-helper
+                        (:instance length-of-coerce-string-helper (x (MAKE-CHARACTER-LIST X)))
+                        ))))
+
+;; Reverse of the definition of length
+(defthmd len-of-coerce-list
+  (equal (len (coerce x 'list))
+         (if (stringp x)
+             (length x)
+           0)))
+
+(theory-invariant (incompatible (:rewrite len-of-coerce-list) (:definition length)))

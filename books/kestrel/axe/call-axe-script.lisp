@@ -1,6 +1,6 @@
 ; A tool to call Axe-related scripts
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/include-book-dir-dollar" :dir :system)
-(include-book "centaur/misc/tshell" :dir :system)
+(include-book "centaur/misc/tshell" :dir :system) ; has ttags
 
 (local (in-theory (disable state-p get-global)))
 
@@ -36,6 +36,7 @@
 
 ; Returns (mv status state) where status is the numeric exits status of calling
 ; SCRIPT-NAME on SCRIPT-ARGS.  A status of 0 indicates no error.
+;; Example: (call-axe-script "ls.sh" (list "call-axe-script.lisp") state)
 (defund call-axe-script (script-name ; wrt the axe/ dir
                          script-args
                          state)
@@ -72,4 +73,7 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable call-axe-script))))
 
-;; Example: (call-axe-script "ls.sh" (list "call-axe-script.lisp") state)
+(defthm w-of-mv-nth-1-of-call-axe-script
+  (equal (w (mv-nth 1 (call-axe-script script-name script-args state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable call-axe-script))))

@@ -1,7 +1,7 @@
 ; An alist that stores assumptions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,11 +12,11 @@
 
 (in-package "ACL2")
 
-;(include-book "all-dargp")
 ;(include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "renaming-array")
 (include-book "axe-trees")
 (include-book "refine-assumptions")
+(include-book "darg-listp")
 ;(include-book "kestrel/utilities/forms" :dir :system)
 ;(include-book "kestrel/utilities/erp" :dir :system)
 ;(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -38,31 +38,37 @@
 (local (in-theory (disable symbol-listp ; prevent inductions
                            wf-dagp wf-dagp-expander)))
 
+;; (defthm darg-listp-when-all-dargp ; eventually remove this
+;;   (implies (all-dargp items)
+;;            (equal (darg-listp items)
+;;                   (true-listp items)))
+;;   :hints (("Goal" :in-theory (enable darg-listp))))
 
-;;;
-;;; refined-assumption-alists
-;;;
+;; (defthmd all-dargp-when-darg-listp ; eventually remove
+;;   (implies (darg-listp x)
+;;            (all-dargp x))
+;;   :hints (("Goal" :in-theory (enable darg-listp))))
 
-;; todo: optimize?  use more?
-(defun darg-listp (items)
-  (declare (xargs :guard t))
-  (and (true-listp items)
-       (all-dargp items)))
-
-(defforall all-darg-listp (items) (darg-listp items)
-  :declares ((type t items)))
+;move
+(defthm darg-listp-of-dargs-when-dag-exprp
+  (implies (and (dag-exprp expr)
+                (not (eq 'quote (car expr))))
+           (darg-listp (dargs expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
 
 (defun darg-list-listp (items)
   (declare (xargs :guard t))
-  (and (true-listp items)
-       (all-darg-listp items)))
+  (if (atom items)
+      (null items)
+    (and (darg-listp (first items))
+         (darg-list-listp (rest items)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A "refined-assumption-alist" is an efficient way to store a list of
-;; axe-trees, all of which are function calls applied to args that are nodenums
-;; / quoteps.  We use "term indexing": the alist maps each topmost function to
-;; a list of arg-lists (one for each call of fn in the list).
+;; axe-trees, all of which are function calls applied to dargs (args that are nodenums
+;; / quoteps).  We use "term indexing": the alist maps each topmost function to
+;; a list of darg-lists (one for each call of fn in the list).
 ;; TODO: Consider using a propery list world instead of an alist.
 
 ;could add more checks to this
@@ -88,22 +94,22 @@
            (true-listp (lookup-equal sym alist)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm all-darg-listp-of-lookup-equal-when-refined-assumption-alistp
+(defthm darg-list-listp-of-lookup-equal-when-refined-assumption-alistp
   (implies (refined-assumption-alistp alist)
-           (all-darg-listp (lookup-equal fn alist))))
+           (darg-list-listp (lookup-equal fn alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Just lookup-eq (currently) but kept separate to make a nice abstraction for refined-assumption-alists.
-;; Returns a
+;; Returns a list of dargs
 (defund-inline lookup-in-refined-assumption-alist (fn refined-assumption-alist)
   (declare (xargs :guard (and (symbolp fn)
                               (refined-assumption-alistp refined-assumption-alist))))
   (lookup-eq fn refined-assumption-alist))
 
-(defthm all-darg-listp-of-lookup-in-refined-assumption-alist
+(defthm darg-list-listp-of-lookup-in-refined-assumption-alist
   (implies (refined-assumption-alistp refined-assumption-alist)
-           (all-darg-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)))
+           (darg-list-listp (lookup-in-refined-assumption-alist fn refined-assumption-alist)))
   :hints (("Goal" :in-theory (enable lookup-in-refined-assumption-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -112,11 +118,6 @@
 ;;;
 ;;; bounded refined-assumption-alists
 ;;;
-
-;move up
-(defthm darg-listp-when-bounded-darg-listp
-  (implies (bounded-darg-listp items dag-len)
-           (darg-listp items)))
 
 ;; Recognizes a true-list of bounded darg lists.
 (defund bounded-darg-list-listp (items dag-len)
@@ -168,10 +169,10 @@
                 (consp assumption-arg-lists))
            (true-listp (car assumption-arg-lists))))
 
-(defthmd all-dargp-of-car-when-bounded-darg-list-listp
+(defthmd darg-listp-of-car-when-bounded-darg-list-listp
   (implies (and (bounded-darg-list-listp assumption-arg-lists dag-len)
                 (consp assumption-arg-lists))
-           (all-dargp (car assumption-arg-lists))))
+           (darg-listp (car assumption-arg-lists))))
 
 ;;;
 ;;; bounded-refined-assumption-alistp
@@ -268,7 +269,7 @@
       (uniquify-alist-eq refined-assumption-alist)
     (b* ((expr (first exprs))
          (fn (ffn-symb expr))
-         (args (fargs expr)) ; call dargs instead?
+         (args (dargs expr))
          (arg-lists-for-fn (lookup-eq fn refined-assumption-alist))
          (new-arg-lists-for-fn (cons args arg-lists-for-fn)))
         (extend-refined-assumption-alist (rest exprs)

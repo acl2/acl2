@@ -19,6 +19,7 @@
 (include-book "bvcat-def")
 (include-book "defs-bitwise")
 (include-book "unsigned-byte-p-forced")
+(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -52,8 +53,7 @@
                                    getbit
                                    SLICE-OF-SUM-CASES
                                    ifix)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    ;BITXOR-OF-SLICE-ARG2
                                    )))))
 
@@ -124,6 +124,24 @@
          (bvand width y x))
   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
            :in-theory (disable logand-becomes-bvand))))
+
+;; We only need to get the size of one argument for logand
+(defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1
+  (implies (and (unsigned-byte-p size x) ;free var
+                (unsigned-byte-p size y)
+                (integerp y))
+           (equal (logand x y)
+                  (bvand size x y)))
+  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
+
+;; We only need to get the size of one argument for logand
+(defthmd logand-becomes-bvand-when-unsigned-byte-p-arg2
+  (implies (and (unsigned-byte-p size y) ;free var
+                (unsigned-byte-p size x)
+                (integerp y))
+           (equal (logand x y)
+                  (bvand size x y)))
+  :hints (("Goal" :in-theory (enable bvand logand-of-bvchop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

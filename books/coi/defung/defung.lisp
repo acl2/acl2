@@ -131,7 +131,15 @@
 
 (make-event
  `(defmacro big-depth-value ()
-    ,(acl2::fixnum-bound)))
+
+; Matt K. mod: Accommodate the increase of *fixnat-bits* in 4/2025.  At first,
+; I left this definition unchanged, as shown in the comment below, but used
+; acl2::*fixnat-bits* (or #.acl2::*fixnat-bits* when necessary) in place of 29
+; below.  But then the event (defthm test-inc-dec ...) in defung-test.lisp
+; stalled out (I let it run more than 6000 seconds before killing the job).
+
+;   ,(acl2::fixnum-bound)
+    ,(1- (expt 2 29))))
 
 (defun big-depth-fn ()
   (declare (xargs :guard t))

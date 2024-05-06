@@ -29,6 +29,7 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
+(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "bvcat")) ;for BVCHOP-OF-LOGAPP-BIGGER
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-type-4
 
@@ -138,7 +139,7 @@
            (equal (getbit size (* x (logapp size2 y z)))
                   (getbit size (* x y))))
   :hints (("Goal" :in-theory (e/d (logapp getbit slice-alt-def)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit)))))
 
 (defthm getbit-of-*-of-bvchop
@@ -150,7 +151,7 @@
            (equal (getbit size (* x (bvchop size2 y)))
                   (getbit size (* x y))))
   :hints (("Goal" :in-theory (e/d (getbit slice-alt-def)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit)))))
 
 (defthm logext-of-*-of-logext-arg1
@@ -217,7 +218,7 @@
                   (logext m x)))
   :hints (("Goal" :in-theory (e/d (logext getbit slice)
                                   (bvchop-of-logtail-becomes-slice
-                                   bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                                   bvchop-1-becomes-getbit )))))
 
 (defthm logext-of-0
   (equal (logext size 0)
@@ -240,14 +241,10 @@
                   x))
   :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
 
-(defthm acl2-numberp-of-logext
-  (acl2-numberp (logext size i)))
-
 ;hope the new hyps are okay
 (defthm bvchop-of-logext
-  (implies (and (integerp ext-size)
-                (<= final-size ext-size)
-                )
+  (implies (and (<= final-size ext-size)
+                (integerp ext-size))
            (equal (bvchop final-size (logext ext-size i))
                   (bvchop final-size i)))
   :hints (("Goal" :cases (;messy
@@ -270,8 +267,13 @@
                                    ) (BVCHOP-OF-LOGAPP-BIGGER
                                       BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                    MOD-EXPT-SPLIT ;bad?
-                                   SLICE-BECOMES-GETBIT
+
                                    BVCHOP-1-BECOMES-GETBIT)))))
+
+(defthm bvchop-of-logext-same
+  (equal (bvchop size (logext size x))
+         (bvchop size x))
+  :hints (("Goal" :cases ((integerp size)))))
 
 (defthm logext-of-bvchop-smaller
   (implies (and (<= size n)
@@ -304,13 +306,10 @@
                   (logext 1 x)))
   :hints (("Goal" :in-theory (e/d (logext getbit slice)
                                   (bvchop-1-becomes-getbit
-                                   slice-becomes-getbit
+
                                    bvchop-of-logtail-becomes-slice)))))
 
-(defthm bvchop-of-logext-same
-  (equal (bvchop size (logext size x))
-         (bvchop size x))
-  :hints (("Goal" :cases ((integerp size)))))
+
 
 ;todo: prove without opening up so much stuff
 (defthm equal-of-0-and-bvchop
@@ -320,7 +319,7 @@
   :hints (("Goal" :in-theory (e/d (logext bvchop getbit slice logtail
                                           expt-of-+
                                           mod-=-0)
-                                  (slice-becomes-getbit
+                                  (
                                    bvchop-1-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    )))))
@@ -695,7 +694,7 @@
                     (- (logext size x)))))
   :hints (("Goal" :in-theory (e/d (logext logapp getbit slice logtail-of-bvchop bvchop-32-split-hack)
                                   (;anti-slice
-                                   bvchop-1-becomes-getbit slice-becomes-getbit
+                                   bvchop-1-becomes-getbit
                                                            bvchop-of-logtail)))))
 
 (defthm bvchop-subst-constant-from-logext
@@ -724,7 +723,7 @@
                   (getbit n x)))
   :hints (("Goal" :cases ((integerp x))
            :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL)
-                           (SLICE-BECOMES-GETBIT ;LOGTAIL-BVCHOP
+                           ( ;LOGTAIL-BVCHOP
                                                BVCHOP-1-BECOMES-GETBIT
                                                BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                                ;;BVCHOP-OF-LOGTAIL
@@ -792,3 +791,32 @@
                 )
            (equal (bvchop size (+ (logext size2 y) x))
                   (bvchop size (+ x y)))))
+
+;rename
+(defthm slice-of-logext
+  (implies (and (< highbit n)
+                (posp n)
+                (natp lowbit)
+                (integerp highbit))
+           (equal (slice highbit lowbit (logext n x))
+                  (slice highbit lowbit x)))
+  :hints (("Goal" :expand (slice highbit lowbit x)
+           :cases ((and (integerp x) (<= lowbit highbit))
+                   (and (integerp x) (> lowbit highbit)))
+           :in-theory (e/d (slice logtail-of-bvchop logext) (bvchop-of-logtail-becomes-slice
+                                    logtail-of-bvchop-becomes-slice)))))
+
+(defthm logext-of-truncate
+  (implies (and (signed-byte-p size i)
+                (posp size)
+                (integerp j))
+           (equal (logext size (truncate i j))
+                  (if (and (equal (- (expt 2 (+ -1 size)))
+                                  i)
+                           (equal -1 j))
+                      (- (expt 2 (+ -1 size)))
+                    (truncate i j)))))
+
+(defthm logext-of-fix
+  (equal (logext size (fix x))
+         (logext size x)))

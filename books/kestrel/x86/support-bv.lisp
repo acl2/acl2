@@ -61,7 +61,7 @@
 ;;   :hints (("Goal" :in-theory (e/d (;bvcat logapp
 ;;                                          ;acl2::slice-of-sum-cases
 ;;                                          )
-;;                                   (acl2::slice-of-*)))))
+;;                                   ()))))
 
 ;move
 (defthm slice-of-logapp-case-1
@@ -206,7 +206,6 @@
   :hints (("Goal"
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
                            ( acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::slice-of-+ ;looped
                                                     ;; acl2::bvcat-of-+-high
    ;                                                    ACL2::NTH-OF-CDR
                                                     )) )))

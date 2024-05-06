@@ -46,6 +46,7 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "support-axe")
+(include-book "../bitops-rules")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
@@ -56,6 +57,7 @@
 (include-book "kestrel/x86/write-over-write-rules32" :dir :system)
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "kestrel/x86/separate" :dir :system)
 (include-book "kestrel/x86/tools/lifter-support" :dir :system)
 (include-book "rule-lists")
 (include-book "kestrel/x86/run-until-return" :dir :system)
@@ -76,10 +78,12 @@
 ;(include-book "axe/basic-rules" :dir :kestrel-acl2)
 (include-book "kestrel/bv/arith" :dir :system) ;todo
 (include-book "kestrel/bv/intro" :dir :system)
+(include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
 ;(include-book "kestrel/arithmetic-light/mod" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
+(include-book "../arithmetic-rules-axe")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -350,22 +354,12 @@
      acl2::bvchop-numeric-bound
      x86isa::xw-of-rip-and-if
      acl2::if-x-x-y-when-booleanp
-     x86p-of-write ;move
-     read-of-write-same ;move
-     get-flag-of-write
-     xr-of-write-when-not-mem
      read-of-xw-irrel
-     64-bit-modep-of-write
-     program-at-of-write
-     alignment-checking-enabled-p-of-write
      mod-of-plus-reduce-constants
      mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
-     write-of-xw-irrel
      read-of-xw-irrel
      read-of-set-flag
-     x86p-of-write
-     set-flag-of-write
      read-of-write-disjoint2
      write-of-write-same
      read-in-terms-of-nth-and-pos-eric ; this is for resolving reads of the program.
@@ -379,6 +373,7 @@
      acl2::mod-of-+-of-constant
      xr-of-if
      )
+   (write-rules)
 ;(x86isa::lifter-rules)
    ))
 
@@ -2033,6 +2028,7 @@
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
          (make-rule-alist (append '(x86isa::rip) ;why was this not needed before?
+                                  (reader-and-writer-opener-rules) ; don't use the new normal forms
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
@@ -2113,7 +2109,7 @@
                            user-assumptions ;;These should be over the variable x86_0 and perhaps additional vars (but not x86_1, etc.) -- todo, why not over just 'x86'?
                            non-executable
                            ;;restrict-theory
-                           rules-to-monitor
+                           monitor
                            print
                            measures
                            whole-form
@@ -2124,7 +2120,8 @@
                               (stringp subroutine-name)
 ;                              (output-indicatorp output)
                               (booleanp non-executable)
-                              (symbol-listp rules-to-monitor))
+                              (or (symbol-listp monitor)
+                                  (eq :debug monitor)))
                   :mode :program)
            (ignore produce-theorem non-executable))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -2196,19 +2193,17 @@
                             !fault-becomes-set-fault))
                        (set-difference-eq
                         (append (lifter-rules64)
-                                '(x86isa::rip x86isa::rip$a ; todo?
-                                  x86isa::undef x86isa::undef$a ; exposes xr
-                                  x86isa::!undef x86isa::!undef$a ; exposes xw
-                                  x86isa::ms x86isa::ms$a ; exposes xr
-                                  x86isa::!ms x86isa::!ms$a ; exposes xw
-                                  x86isa::fault x86isa::fault$a ; exposes xr
-                                  x86isa::!fault x86isa::!fault$a ; exposes xw
-                                  )
-                               ;(lifter-rules64-new); todo
+                                (append '(x86isa::rip x86isa::rip$a ; todo?
+
+                                          )
+                                        (reader-and-writer-opener-rules))
+                                ;;(lifter-rules64-new); todo
                                 )
-                        '(xr-becomes-undef
-                          x86isa::!undef-becomes-set-undef
-                          xw-becomes-set-undef))))
+                        ;; we don't use these usual normal forms:
+                        (reader-and-writer-intro-rules))))
+       (32-bitp (member-eq executable-type *executable-types32*))
+       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ((mv erp dag events
             ;; & ;;rules
             & ;;next-loop-num

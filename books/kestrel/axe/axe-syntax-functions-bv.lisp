@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,11 +25,12 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable car-becomes-nth-of-0
-                          integerp-of-nth-when-all-dargp
-                          not-cddr-of-nth-when-all-dargp
-                          consp-of-cdr-of-nth-when-all-dargp
-                          equal-of-quote-and-nth-0-of-nth-when-all-dargp
-                          symbolp-of-nth-0-when-dag-exprp)))
+                          integerp-of-nth-when-darg-listp
+                          not-cddr-of-nth-when-darg-listp
+                          consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp
+                          symbolp-of-nth-0-when-dag-exprp
+                          dargp-of-nth-when-darg-listp)))
 
 (defund unquote-if-possible (x)
   (declare (xargs :guard t))
@@ -43,8 +44,7 @@
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
 (defund maybe-get-type-of-bv-function-call (fn dargs)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs))))
+  (declare (xargs :guard (darg-listp dargs)))
   ;; todo: use case here:
   (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
    ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))
@@ -59,7 +59,9 @@
                     bvdiv bvmod
                     sbvdiv sbvrem
                     leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
-                    bvif))
+                    bvif
+                    bvshl
+                    bvshr))
     (and (consp dargs)
          (let ((width (first dargs)))
            (and (darg-quoted-natp width)
@@ -586,3 +588,34 @@
                            (and (true-listp exclude-fns) ; for guards
                                 (not (member-eq fn exclude-fns)))
                          t))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This can be used to decide which functions to open.
+;; But to decide whether we can translate an expression, more checking is needed.
+;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
+;instead of using this, check the args, etc.?
+;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
+;; todo: add bve and sbvle?
+(defconst *bv-and-array-fns-we-can-translate*
+  '(not
+    booland boolor ;boolxor
+    boolif
+    bitnot
+    bitand bitor bitxor
+    bvchop bvnot bvuminus
+    getbit
+    slice
+    bvand bvor bvxor
+    bvplus bvminus bvmult
+    bvdiv bvmod
+    sbvdiv sbvrem
+    bvlt bvle
+    sbvlt sbvle
+    bvcat
+    bvsx
+    bvif
+    leftrotate32
+    bv-array-read
+    bv-array-write
+    equal))

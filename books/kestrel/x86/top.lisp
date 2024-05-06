@@ -1,6 +1,6 @@
 ; Top-level book for Kestrel x86 library
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,4 +39,5 @@
 (include-book "assumptions64")
 
 (include-book "run-until-return")
+(include-book "separate")
 (include-book "support")

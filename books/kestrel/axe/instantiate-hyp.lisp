@@ -33,7 +33,7 @@
     (declare (xargs :verify-guards nil ;done below
                     :guard (and (pseudo-termp form)
                                 (symbol-alistp alist)
-                                (all-dargp (strip-cdrs alist))
+                                (darg-listp (strip-cdrs alist))
                                 (interpreted-function-alistp interpreted-function-alist))))
     (if (variablep form)
         (let ((match (assoc-eq form alist)))
@@ -64,7 +64,7 @@
   ;;returns (mv ground-termp args free-vars-flg)
   (defund instantiate-hyp-lst (l alist free-vars-flg interpreted-function-alist)
     (declare (xargs :guard (and (symbol-alistp alist)
-                                (all-dargp (strip-cdrs alist))
+                                (darg-listp (strip-cdrs alist))
                                 (pseudo-term-listp l)
                                 (interpreted-function-alistp interpreted-function-alist))))
     (if (endp l)
@@ -97,12 +97,12 @@
 (defthm-flag-instantiate-hyp
   (defthm axe-treep-of-mv-nth-0-of-instantiate-hyp2
     (implies (and (pseudo-termp form)
-                  (all-dargp (strip-cdrs alist)))
+                  (darg-listp (strip-cdrs alist)))
              (axe-treep (mv-nth 0 (instantiate-hyp form alist free-vars-flg interpreted-function-alist))))
     :flag instantiate-hyp)
   (defthm axe-tree-listp-of-mv-nth-1-of-instantiate-hyp2
     (implies (and (pseudo-term-listp l)
-                  (all-dargp (strip-cdrs alist)))
+                  (darg-listp (strip-cdrs alist)))
              (axe-tree-listp (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg
                                                                    interpreted-function-alist))))
     :flag instantiate-hyp-lst)
@@ -112,7 +112,7 @@
   (defthm all-myquotep-of-mv-nth-1-of-instantiate-hyp-lst
     (implies (and (mv-nth 0 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist))
                   (pseudo-term-listp l)
-                  (all-dargp (strip-cdrs alist)))
+                  (darg-listp (strip-cdrs alist)))
              (all-myquotep (mv-nth 1 (instantiate-hyp-lst l alist free-vars-flg interpreted-function-alist))))
     :flag instantiate-hyp-lst)
   :skip-others t

@@ -18,17 +18,15 @@
 
 ;; TODO: Make sure there are non-axe versions of all of these.
 
-(include-book "kestrel/bv/bitops" :dir :system) ; needed for part-install-width-low-becomes-bvcat-axe
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/axe/axe-syntax" :dir :system)
 (include-book "kestrel/axe/known-booleans" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system)
+(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for term-should-be-trimmed-axe
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
-(local (include-book "kestrel/bv/intro" :dir :system))
 
 ;; Register a bunch of x86-related functions as known booleans:
 
@@ -61,32 +59,12 @@
 
 (add-known-boolean return-address-okp)
 
+(add-known-boolean x86isa::cr0bits-p$inline)
+(add-known-boolean x86isa::cr3bits-p$inline)
+(add-known-boolean x86isa::cr4bits-p$inline)
+(add-known-boolean x86isa::cr8bits-p$inline)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthmd acl2::part-install-width-low-becomes-bvcat-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize)) ;todo better message if we forget the package on dag-array (or make it a keyword?)
-                (unsigned-byte-p xsize x)
-                (natp xsize)              ;drop?
-;                (< (+ width low) xsize)   ;allow = ?
-                (natp low)
-                (natp width))
-           (equal (bitops::part-install-width-low val x width low)
-                  (bvcat (max xsize (+ width low))
-                               (slice (+ -1 xsize) (+ low width) x)
-                               (+ width low)
-                               (bvcat width val low x)))))
-
-;todo: we could use unsigned-byte-p-forced in these rules...:
-
-(defthmd ash-negative-becomes-slice-axe
-  (implies (and (< n 0)
-                (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (unsigned-byte-p xsize x)
-         ;       (<= (- n) xsize)
-                (integerp n))
-           (equal (ash x n)
-                  (slice (+ -1 xsize) (- n) x)))
-  :hints (("Goal" :use (:instance acl2::ash-negative-becomes-slice (acl2::x x) (acl2::n n) (acl2::xsize xsize)))))
 
 ;todo: move
 ;; (defthm not-member-p-canonical-address-listp-when-disjoint-p-alt
@@ -314,6 +292,10 @@
 (def-constant-opener x86isa::vex3-byte2->vvvv$inline)
 (def-constant-opener x86isa::vex3-byte2->w$inline)
 
+(def-constant-opener x86isa::rex-byte-from-vex-prefixes)
+
+(def-constant-opener x86isa::vex-vvvv-reg-index)
+
 (def-constant-opener acl2::bool->bit$inline)
 
 (def-constant-opener canonical-address-p$inline)
@@ -333,6 +315,9 @@
 
 (defopeners acl2::get-pe-section-aux)
 (defopeners acl2::lookup-pe-symbol)
+
+(defopeners x86isa::simd-add-spec)
+(defopeners x86isa::simd-sub-spec)
 
 ;; ;todo
 ;; (thm
@@ -429,11 +414,11 @@
 (def-constant-opener x86isa::mxcsrbits->um$inline)
 (def-constant-opener x86isa::mxcsrbits->pm$inline)
 (def-constant-opener x86isa::mxcsrbits->rc$inline)
-(def-constant-opener x86isa::mxcsrbits->fz$inline)
+(def-constant-opener x86isa::mxcsrbits->ftz$inline)
 (def-constant-opener x86isa::mxcsrbits->reserved$inline)
 
 (def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
-(def-constant-opener x86isa::feature-flag)
+;(def-constant-opener x86isa::feature-flag) ; keep feature-flag disabled, for clarity
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 

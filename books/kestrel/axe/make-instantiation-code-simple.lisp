@@ -39,7 +39,7 @@
           (declare (xargs :verify-guards nil ;done below
                           :guard (and (pseudo-termp term)
                                       (symbol-alistp alist)
-                                      (all-dargp (strip-cdrs alist))
+                                      (darg-listp (strip-cdrs alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
           (if (variablep term)
               (let ((match (assoc-eq term alist)))
@@ -77,7 +77,7 @@
         (defund ,instantiate-hyp-lst-name (terms alist interpreted-function-alist)
           (declare (xargs :guard (and (pseudo-term-listp terms)
                                       (symbol-alistp alist)
-                                      (all-dargp (strip-cdrs alist))
+                                      (darg-listp (strip-cdrs alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
           (if (endp terms)
               (mv t nil nil)
@@ -118,12 +118,12 @@
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
          (defthm ,(pack$ 'axe-treep-of-mv-nth-0-of- instantiate-hyp-name)
            (implies (and (pseudo-termp term)
-                         (all-dargp (strip-cdrs alist)))
+                         (darg-listp (strip-cdrs alist)))
                     (axe-treep (mv-nth 0 (,instantiate-hyp-name term alist interpreted-function-alist))))
            :flag ,instantiate-hyp-name)
          (defthm ,(pack$ 'axe-tree-listp-of-mv-nth-1-of- instantiate-hyp-lst-name)
            (implies (and (pseudo-term-listp terms)
-                         (all-dargp (strip-cdrs alist)))
+                         (darg-listp (strip-cdrs alist)))
                     (axe-tree-listp (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
            :flag ,instantiate-hyp-lst-name)
          :hints (("Goal" :in-theory (enable ,instantiate-hyp-name ,instantiate-hyp-lst-name))))
@@ -147,7 +147,7 @@
          (defthm ,(pack$ 'all-myquotep-of-mv-nth-1-of- instantiate-hyp-lst-name)
            (implies (and (mv-nth 0 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))
                          (pseudo-term-listp terms)
-                         (all-dargp (strip-cdrs alist)))
+                         (darg-listp (strip-cdrs alist)))
                     (all-myquotep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
            :flag ,instantiate-hyp-lst-name)
          :skip-others t
@@ -180,7 +180,7 @@
 
        (defthm ,(pack$ 'axe-tree-listp-of-cdr-of-mv-nth-0-of- instantiate-hyp-name)
          (implies (and (pseudo-termp term)
-                       (all-dargp (strip-cdrs alist))
+                       (darg-listp (strip-cdrs alist))
                        (consp term) ;guarantees that the result is a consp
                        (not (equal 'quote (car (mv-nth 0 (,instantiate-hyp-name term alist interpreted-function-alist)))))
                        ;; ;; free vars remain in the term:

@@ -1,6 +1,6 @@
 ; A formal specification of the TEA block cipher
 ;
-; Copyright (C) 2016-2023 Kestrel Institute
+; Copyright (C) 2016-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,6 +64,7 @@
       (tea-encrypt-loop n y z sum k))))
 
 ;; encrypt value V with key K
+;; Returns an array of two bv32s.
 (defun tea-encrypt (v k)
   (declare (xargs :guard (and (bv-arrayp 32 2 v)
                               (bv-arrayp 32 4 k))))

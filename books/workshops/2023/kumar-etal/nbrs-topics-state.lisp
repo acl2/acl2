@@ -667,7 +667,6 @@
        s :nat)
   :res1
   :skip-tests t
-  :timeout 600
   :ic (is-valid-twp twpm)
   :body-contracts-hints (("goal" :do-not-induct t
                           :in-theory (enable nbr-topic-statep evntp twpp wpp)))
@@ -934,7 +933,6 @@
                                        s :nat)
   :res1
   :skip-tests t
-  :timeout 60
   :ic (is-valid-twp twpm)
   :body-contracts-hints (("Goal" :DO-NOT-INDUCT T
                           :in-theory (enable nbr-topic-statep evntp twpp wpp)))

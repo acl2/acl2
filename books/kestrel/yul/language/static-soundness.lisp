@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +202,7 @@
     "See @(tsee funenv-to-funtable) for more explanation on
      the purpose of this computation."))
   (b* ((funscope (funscope-fix funscope))
-       ((when (omap::empty funscope)) nil)
+       ((when (omap::emptyp funscope)) nil)
        ((mv name funinfo) (omap::head funscope))
        (funtab (funscope-to-funtable (omap::tail funscope))))
     (omap::update name (funinfo-to-funtype funinfo) funtab))
@@ -211,12 +211,12 @@
   ///
 
   (defrule in-of-funscope-to-funtable
-    (iff (omap::in fun (funscope-to-funtable funscope))
-         (omap::in fun (funscope-fix funscope))))
+    (iff (omap::assoc fun (funscope-to-funtable funscope))
+         (omap::assoc fun (funscope-fix funscope))))
 
-  (defrule consp-of-in-of-funscope-to-funtable
-    (equal (consp (omap::in fun (funscope-to-funtable funscope)))
-           (consp (omap::in fun (funscope-fix funscope)))))
+  (defrule consp-of-assoc-of-funscope-to-funtable
+    (equal (consp (omap::assoc fun (funscope-to-funtable funscope)))
+           (consp (omap::assoc fun (funscope-fix funscope)))))
 
   (defrule keys-of-funscope-to-funtable
     (equal (omap::keys (funscope-to-funtable funscope))
@@ -315,7 +315,7 @@
     "See @(tsee funinfo-safep) for motivation (i.e. the invariant).
      This predicate checks the safety of all the values of the omap."))
   (b* (((when (or (not (mbt (funscopep funscope)))
-                  (omap::empty funscope)))
+                  (omap::emptyp funscope)))
         t)
        ((mv & info) (omap::head funscope)))
     (and (funinfo-safep info funtab)
@@ -387,8 +387,8 @@
     (implies (and (identifierp fun)
                   (funscopep funscope)
                   (funscope-safep funscope funtab)
-                  (consp (omap::in fun funscope)))
-             (b* ((funinfo (cdr (omap::in fun funscope)))
+                  (consp (omap::assoc fun funscope)))
+             (b* ((funinfo (cdr (omap::assoc fun funscope)))
                   (varset0 (add-vars (funinfo->inputs funinfo) nil))
                   (varset (add-vars (funinfo->outputs funinfo) varset0))
                   (modes (check-safe-block (funinfo->body funinfo)
@@ -428,9 +428,9 @@
 
   (defruled funinfo-to-funtype-of-cdr-of-in
     (implies (and (funscopep funscope)
-                  (consp (omap::in fun funscope)))
-             (equal (funinfo-to-funtype (cdr (omap::in fun funscope)))
-                    (cdr (omap::in fun (funscope-to-funtable funscope)))))
+                  (consp (omap::assoc fun funscope)))
+             (equal (funinfo-to-funtype (cdr (omap::assoc fun funscope)))
+                    (cdr (omap::assoc fun (funscope-to-funtable funscope)))))
     :enable funscope-to-funtable)
 
   (defrule funinfo-to-funtype-of-find-fun-info
@@ -451,8 +451,8 @@
     :prep-lemmas
     ((defrule lemma
        (implies (and (funtablep funtab)
-                     (consp (omap::in fun funtab)))
-                (funtypep (cdr (omap::in fun funtab)))))))
+                     (consp (omap::assoc fun funtab)))
+                (funtypep (cdr (omap::assoc fun funtab)))))))
 
   (defruled reserrp-of-find-fun
     (equal (reserrp (find-fun fun funenv))
@@ -497,8 +497,8 @@
   (defruled in-funscope-for-fundefs-iff-in-funtable-for-fundefs
     (implies (and (not (reserrp (funscope-for-fundefs fundefs)))
                   (not (reserrp (funtable-for-fundefs fundefs))))
-             (equal (consp (omap::in fun (funscope-for-fundefs fundefs)))
-                    (consp (omap::in fun (funtable-for-fundefs fundefs)))))
+             (equal (consp (omap::assoc fun (funscope-for-fundefs fundefs)))
+                    (consp (omap::assoc fun (funtable-for-fundefs fundefs)))))
     :enable (funscope-for-fundefs
              funtable-for-fundefs))
 
@@ -673,7 +673,7 @@
                       (cstate-to-vars cstate))))
     :enable (write-var-value
              cstate-to-vars
-             omap::consp-of-in-to-in-of-keys))
+             omap::consp-of-assoc-to-in-of-keys))
 
   (defrule cstate-to-vars-of-write-vars-values
     (b* ((cstate1 (write-vars-values vars vals cstate)))
@@ -818,7 +818,7 @@
              read-var-value
              not-reserrp-when-valuep
              cstate-to-vars
-             omap::consp-of-in-to-in-of-keys))
+             omap::consp-of-assoc-to-in-of-keys))
 
   (defruled read-vars-values-when-check-var-list
     (implies (check-var-list vars (cstate-to-vars cstate))
@@ -851,7 +851,7 @@
     :enable (add-var
              add-var-value
              cstate-to-vars
-             omap::consp-of-in-to-in-of-keys))
+             omap::consp-of-assoc-to-in-of-keys))
 
   (defrule add-vars-values-when-add-vars
     (b* ((varset1 (add-vars vars (cstate-to-vars cstate)))
@@ -916,7 +916,7 @@
     :enable (write-var-value
              check-var
              cstate-to-vars
-             omap::consp-of-in-to-in-of-keys))
+             omap::consp-of-assoc-to-in-of-keys))
 
   (defrule write-var-value-when-check-safe-path
     (implies (not (reserrp
@@ -978,7 +978,7 @@
     :enable (add-var
              add-var-value
              cstate-to-vars
-             omap::consp-of-in-to-in-of-keys
+             omap::consp-of-assoc-to-in-of-keys
              not-reserrp-when-cstatep
              not-reserrp-when-identifier-setp))
 

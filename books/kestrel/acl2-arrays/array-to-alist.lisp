@@ -1,7 +1,7 @@
 ; Turning an array into an alist
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,8 +12,8 @@
 
 (in-package "ACL2")
 
-;(include-book "kestrel/utilities/acons-fast" :dir :system)
-(include-book "acl2-arrays") ; for alen1 -- reduce?
+(include-book "kestrel/utilities/acons-fast" :dir :system)
+(include-book "alen1")
 
 (defund array-to-alist-aux (n len array-name array acc)
   (declare (xargs :measure (nfix (+ 1 (- len n)))
@@ -27,7 +27,7 @@
           (not (natp n))
           (not (natp len)))
       acc
-    (let* ((val (aref1 array-name array n)))
+    (let ((val (aref1 array-name array n)))
       (array-to-alist-aux (+ 1 n) len array-name array (acons-fast n val acc)))))
 
 (defthm alistp-of-array-to-alist-aux

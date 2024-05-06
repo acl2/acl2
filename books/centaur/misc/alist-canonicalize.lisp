@@ -168,7 +168,7 @@
                      :in-theory (disable member-of-hons-assoc-equal))))
                `(:use ((:instance duplicates-p-by-member
                         (k ,(hq pair1))
-                        (x (set::mergesort x)))                     
+                        (x (set::mergesort x)))
                        (:instance mark-clause-is-true (x 'pairs-equal)))))))
     :otf-flg t))
 
@@ -227,7 +227,7 @@
   (local (defthm member-atom-when-maybe-improper-alistp
            (implies (and (maybe-improper-alistp x) (atom k))
                     (not (member k x)))))
-                    
+
 
 
 
@@ -363,22 +363,22 @@
 (define set-diff-witness ((x set::setp) (y set::setp))
   :guard (not (equal x y))
   :returns (memb)
-  
+
   :prepwork ((local (in-theory (enable set::double-containment)))
              (local (defthm member-equal-when-setp
                       (implies (set::setp x)
                                (iff (member-equal k x)
                                     (set::in k x)))
-                      :hints(("Goal" :in-theory (enable set::in set::tail Set::head set::setp set::empty)))))
+                      :hints(("Goal" :in-theory (enable set::in set::tail Set::head set::setp set::emptyp)))))
              (local (defthm head-of-difference-in-y
-                      (implies (not (set::empty (set::difference x y)))
+                      (implies (not (set::emptyp (set::difference x y)))
                                (not (set::in (set::head (set::difference x y)) y)))
                       :hints(("Goal" :use ((:instance set::difference-in
                                             (a (set::head (set::difference x y)))
                                             (x x) (y y)))
                               :in-theory (disable set::difference-in)))))
              (local (defthm head-of-difference-in-x
-                      (implies (not (set::empty (set::difference x y)))
+                      (implies (not (set::emptyp (set::difference x y)))
                                (set::in (set::head (set::difference x y)) x))
                       :hints(("Goal" :use ((:instance set::difference-in
                                             (a (set::head (set::difference x y)))
@@ -486,5 +486,3 @@
               (set::setp x)
               (no-duplicatesp-equal (alist-keys x))))
   :hints(("Goal" :cases ((canonical-alist-p x)))))
-
-

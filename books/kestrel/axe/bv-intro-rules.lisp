@@ -229,39 +229,53 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd logand-becomes-bvand-arg1-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x)
                 (natp y))
            (equal (logand x y)
                   (bvand xsize x y)))
-  :hints (("Goal" :use (:instance acl2::logand-becomes-bvand (size xsize) (acl2::y y))
-           :in-theory (disable acl2::logand-becomes-bvand))))
+  :hints (("Goal" :use (:instance logand-becomes-bvand (size xsize) (y y))
+           :in-theory (disable logand-becomes-bvand))))
 
 (defthmd logand-becomes-bvand-arg2-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x)
                 (natp y))
            (equal (logand y x)
                   (bvand xsize y x)))
-  :hints (("Goal":use (:instance acl2::logand-becomes-bvand (size xsize) (acl2::y y))
-           :in-theory (disable acl2::logand-becomes-bvand))))
+  :hints (("Goal":use (:instance logand-becomes-bvand (size xsize) (y y))
+           :in-theory (disable logand-becomes-bvand))))
 
-(defthmd logior-becomes-bvor-axe
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize acl2::dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
+(defthmd logior-becomes-bvor-arg1-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
            (equal (logior x y)
-                  (bvor (max xsize ysize) x y)))
+                  (bvor xsize x y)))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(defthmd logxor-becomes-bvxor-axe
+(defthmd logior-becomes-bvor-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p ysize x)
+                (unsigned-byte-p-forced ysize y))
+           (equal (logior x y)
+                  (bvor ysize x y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthmd logxor-becomes-bvxor-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p xsize y)
+                (unsigned-byte-p-forced xsize x))
+           (equal (logxor x y)
+                  (bvxor xsize x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthmd logxor-becomes-bvxor-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p ysize x)
                 (unsigned-byte-p-forced ysize y))
            (equal (logxor x y)
-                  (bvxor (max xsize ysize) x y)))
+                  (bvxor ysize x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;rename?
@@ -276,3 +290,10 @@
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :use (:instance logtail-becomes-slice-bind-free)
            :in-theory (e/d (unsigned-byte-p-forced) (logtail-becomes-slice-bind-free)))))
+
+(defthmd logapp-becomes-bvcat-bind-free-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe j 'jsize dag-array) '(jsize))
+                (unsigned-byte-p-forced jsize j))
+           (equal (logapp size i j)
+                  (bvcat jsize j size i)))
+  :hints (("Goal" :in-theory (enable bvcat))))

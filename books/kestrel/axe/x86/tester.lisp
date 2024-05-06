@@ -24,6 +24,7 @@
 (include-book "kestrel/strings-light/add-prefix-to-strings" :dir :system)
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
+(include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
 (include-book "unroll-x86-code")
 (include-book "tester-rules")
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system) ; todo: combine with bv/intro?
@@ -320,17 +321,8 @@
             (mv nil nil)
           (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
        (assumptions `(,@user-assumptions
-                      ;; these help with floating point code:
-                      (equal (x86isa::cr0bits->ts (x86isa::ctri 0 x86)) 0)
-                      (equal (x86isa::cr0bits->em (x86isa::ctri 0 x86)) 0)
-                      (equal (x86isa::cr4bits->osfxsr (x86isa::ctri 4 x86)) 1)
-                      (equal (x86isa::feature-flag ':sse) 1)
-                      (equal (x86isa::feature-flag ':sse2) 1)
-                      (equal (x86isa::mxcsrbits->daz$inline (xr ':mxcsr 'nil x86)) 0) ; denormals are not 0 (true at reset)
-                      (equal (x86isa::mxcsrbits->de$inline (xr ':mxcsr 'nil x86)) 0) ; no denormal result created yet
-                      (equal (x86isa::mxcsrbits->im$inline (xr ':mxcsr 'nil x86)) 1) ; invalid operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->dm$inline (xr ':mxcsr 'nil x86)) 1) ; denormal operations are being masked (true at reset)
-                      (equal (x86isa::mxcsrbits->ie$inline (xr ':mxcsr 'nil x86)) 0) ; invalid operation
+                      ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
+                      ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
                       ;; todo: build this stuff into def-unrolled:
                       ,@register-replacement-assumptions
                       ,@register-type-assumptions
@@ -343,7 +335,7 @@
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
-       ((mv erp result-dag-or-quotep & & state)
+       ((mv erp result-dag-or-quotep & & & state)
         (unroll-x86-code-core
           target
           parsed-executable
@@ -351,6 +343,7 @@
           nil ;suppress-assumptions
           stack-slots
           position-independentp
+          :skip ; no input assumptions -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
           t                   ; use-internal-contextsp
           prune

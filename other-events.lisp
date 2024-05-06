@@ -238,10 +238,8 @@
    (value (cdr pair))))
 
 (defun large-consp (x)
-  (eql (the (signed-byte 30)
-            (cons-count-bounded x))
-       (the (signed-byte 30)
-            (fn-count-evg-max-val))))
+  (eql (the #.*fixnat-type* (cons-count-bounded x))
+       (the #.*fixnat-type* (fn-count-evg-max-val))))
 
 (defun defconst-fn (name form state event-form)
 
@@ -31588,7 +31586,7 @@
                        (alistp fmt-control-alist)
                        (alist-keys-subsetp fmt-control-alist
                                            *fmt-control-defaults-keys*)))
-           (type (signed-byte 30) col))
+           (type #.*fixnat-type* col))
   (channel-to-string
    (fmt1 str alist col chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -31604,7 +31602,7 @@
                        (alistp fmt-control-alist)
                        (alist-keys-subsetp fmt-control-alist
                                            *fmt-control-defaults-keys*)))
-           (type (signed-byte 30) col))
+           (type #.*fixnat-type* col))
   (channel-to-string
    (fmt1! str alist col chan-do-not-use-elsewhere state evisc-tuple)
    chan-do-not-use-elsewhere col fmt-control-alist))
@@ -35240,6 +35238,11 @@
               ,@(memoize-partial-calls tuples)))))))
 
 (defun read-event-data-fal (alist fal)
+
+; Extend the given fast-alist, fal, with the key-value pairs (key . val) in
+; alist, by including val in the list of values associated with key in the
+; resulting extension.
+
   (cond ((endp alist) fal)
         (t
          (let* ((key (caar alist))
@@ -35255,6 +35258,21 @@
         (t (car fal))))
 
 (defun old-and-new-event-data-fal (book-string dir ctx state)
+
+; An event-data-fal, as stored in the state global of that name, is an alist
+; whose entries are of two types.  If the key is an event name, then the value
+; is a list of event-data values (see :DOC get-event-data), often a singleton
+; list -- one for each event whose name is the key -- except that for a THM
+; event, the key is nil.  Otherwise the key is a full-book-string (a string
+; that is the canonical pathname for a book) and the value is the
+; event-data-fal based on the events in that book.
+
+; This function returns a pair (file-event-data-fal . new-event-data-fal),
+; where new-event-data-fal is the updated (by this function) value of state
+; global 'event-data-fal and file-event-data-fal is the event-data-fal
+; associated with book-string and with respect to directory dir, if non-nil,
+; else with respect to the current cbd.
+
   (let ((current-event-data-fal (f-get-global 'event-data-fal state)))
     (cond
      ((null current-event-data-fal)
@@ -35302,6 +35320,13 @@
                          event-data-filename))))))))))))))
 
 (defun old-and-new-event-data-fn (book-string name namep dir ctx state)
+
+; This function returns (old-event-data . new-event-date), where the car and
+; cdr are event-data values (see :DOC get-event-data) that are intended to
+; correspond, where new-event-data is the most recent event-data -- associated
+; with name, if namep is true -- and old-event-data is intended to be the
+; corresponding event-data from the current session.
+
   (er-let* ((old/new (old-and-new-event-data-fal book-string dir ctx state)))
     (let* ((old (car old/new))
            (new (cdr old/new))
@@ -35325,8 +35350,9 @@
               (value nil)))
             ((= new-len 0)
              (er soft ctx
-                 "No events named ~x0 were saved in the current session.  ~
-                  Thus no result is available."
+                 "No event-data ~#0~[was~/ for events named ~x1 were~] saved ~
+                  in the current session.  Thus no result is available."
+                 (if namep 1 0)
                  name))
             (t ; e.g., old = (e0 e1 e2 e3 ...), new = (f2 f3 ...)
              (value (cons (nth (- old-len new-len) old-event-data-lst)

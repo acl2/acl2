@@ -1,7 +1,17 @@
+; Fast alists for looking up what nodes rewrote to
+;
+; Copyright (C) 2023-2024 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "dargp-less-than")
-(include-book "all-dargp")
+(include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 
@@ -125,12 +135,10 @@
 ;; Either returns nil (no args are unmapped) or extends acc with the unmapped args
 ;; See also get-args-not-done.
 (defund get-unmapped-dargs (dargs alist acc unmapped-foundp)
-  (declare (xargs :guard (and (all-dargp dargs)
-                              (true-listp dargs) ; todo: it would be nice to have a darg-listp function
+  (declare (xargs :guard (and (darg-listp dargs)
                               (node-result-alistp alist)
                               ;;(bounded-darg-listp dargs (alen1  alist))
-                              (all-dargp acc)
-                              (true-listp acc)
+                              (darg-listp acc)
                               (booleanp unmapped-foundp))))
   (if (endp dargs)
       (if unmapped-foundp
@@ -158,7 +166,7 @@
 
 (defthm nat-listp-of-get-unmapped-dargs
   (implies (and (nat-listp acc)
-                (all-dargp dargs))
+                (darg-listp dargs))
            (nat-listp (get-unmapped-dargs dargs alist acc unmapped-foundp)))
   :hints (("Goal" :in-theory (enable get-unmapped-dargs bounded-node-result-alistp))))
 
@@ -232,7 +240,7 @@
                 (dargp darg)
                 (node-result-alistp alist))
            (lookup-darg-in-node-result-alist darg alist))
-  :hints (("Goal" :in-theory (enable lookup-darg-in-node-result-alist))))
+  :hints (("Goal" :in-theory (enable lookup-darg-in-node-result-alist dargp))))
 
 ;maybe disable?
 (defthm true-listp-of-lookup-darg-in-node-result-alist
@@ -257,8 +265,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund lookup-dargs-in-node-result-alist (dargs alist)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (node-result-alistp alist))))
   (if (endp dargs)
       nil
@@ -271,11 +278,11 @@
          (len dargs))
   :hints (("Goal" :in-theory (enable lookup-dargs-in-node-result-alist))))
 
-(defthm all-dargp-of-lookup-dargs-in-node-result-alist-when-not-get-unmapped-dargs
+(defthm darg-listp-of-lookup-dargs-in-node-result-alist-when-not-get-unmapped-dargs
   (implies (and (not (get-unmapped-dargs dargs alist acc unmapped-foundp))
-                (all-dargp dargs)
+                (darg-listp dargs)
                 (node-result-alistp alist))
-           (all-dargp (lookup-dargs-in-node-result-alist dargs alist)))
+           (darg-listp (lookup-dargs-in-node-result-alist dargs alist)))
   :hints (("Goal" :in-theory (e/d (get-unmapped-dargs
                                    node-result-alistp
                                    lookup-dargs-in-node-result-alist
@@ -283,12 +290,12 @@
 
 (defthm bounded-darg-listp-of-lookup-dargs-in-node-result-alist-when-not-get-unmapped-dargs
   (implies (and (not (get-unmapped-dargs dargs alist acc unmapped-foundp))
-                (all-dargp dargs)
+                (darg-listp dargs)
                 (bounded-node-result-alistp alist bound))
            (bounded-darg-listp (lookup-dargs-in-node-result-alist dargs alist) bound))
   :hints (("Goal" :in-theory (enable get-unmapped-dargs
                                      node-result-alistp
-                                     all-dargp
+                                     darg-listp
                                      lookup-dargs-in-node-result-alist
                                      lookup-darg-in-node-result-alist
                                      dargp-less-than-of-lookup-node-in-node-result-alist))))
@@ -303,7 +310,7 @@
 (defthm bounded-darg-listp-of-lookup-dargs-in-node-result-alist-when-not-get-unmapped-dargs-gen
   (implies (and (not (get-unmapped-dargs dargs2 alist acc unmapped-foundp))
                 (subsetp-equal dargs dargs2)
-                (all-dargp dargs)
+                (darg-listp dargs)
                 (bounded-node-result-alistp alist bound))
            (bounded-darg-listp (lookup-dargs-in-node-result-alist dargs alist) bound))
   :hints (("Goal" :use (:instance bounded-darg-listp-of-lookup-dargs-in-node-result-alist-when-not-get-unmapped-dargs)
@@ -318,8 +325,8 @@
     (subsetp-equal (cdr x) x)))
 
 ;disable?
-(defthm all-dargp-when-nat-listp-cheap
+(defthm darg-listp-when-nat-listp-cheap
   (implies (nat-listp x)
-           (all-dargp x))
+           (darg-listp x))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable all-dargp nat-listp))))
+  :hints (("Goal" :in-theory (enable darg-listp nat-listp))))

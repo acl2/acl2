@@ -91,7 +91,7 @@
   (implies (setp X)
            (equal (in-list a X)
                   (in a X)))
-  :hints(("Goal" :in-theory (enable sfix head tail empty setp))))
+  :hints(("Goal" :in-theory (enable sfix head tail emptyp setp))))
 
 ; We now introduce a naive function to split a list into two.
 
@@ -103,4 +103,3 @@
                    (split-list (cddr x))
                    (mv (cons (car x) part1)
                        (cons (cadr x) part2))))))
-

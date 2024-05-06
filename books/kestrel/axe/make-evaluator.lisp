@@ -37,10 +37,64 @@
 (include-book "kestrel/bv/bvif" :dir :system) ;built in to the evaluator
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "make-evaluator-common")
+(local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
+
+(local (in-theory (e/d (rational-listp-when-nat-listp
+                        integer-listp-when-nat-listp
+                        integerp-when-natp)
+                       ;; prevent inductions:
+                       (alistp strip-cdrs strip-cars))))
+
+(defund arity-fn-call-alist-alistp (alist)
+  (declare (xargs :guard t))
+  (and (alistp alist)
+       (nat-listp (strip-cars alist))
+       (symbol-alist-listp (strip-cdrs alist))))
+
+(local
+  (defthm arity-fn-call-alist-alistp-forward-to-alistp
+    (implies (arity-fn-call-alist-alistp alist)
+             (alistp alist))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp)))))
+
+(local
+  (defthm symbol-alistp-of-lookup-equal-when-arity-fn-call-alist-alistp
+    (implies (arity-fn-call-alist-alistp alist)
+             (symbol-alistp (lookup-equal arity alist)))
+    :hints (("Goal" :in-theory (enable lookup-equal arity-fn-call-alist-alistp assoc-equal strip-cdrs strip-cars)))))
+
+(local
+  (defthm integer-listp-of-strip-cars-when-arity-fn-call-alist-alistp
+    (implies (arity-fn-call-alist-alistp alist)
+             (integer-listp (strip-cars alist)))
+    :hints (("Goal" :in-theory (enable lookup-equal arity-fn-call-alist-alistp assoc-equal strip-cdrs strip-cars)))))
+
+(local
+  (defthm nat-listp-of-strip-cars-when-arity-fn-call-alist-alistp
+    (implies (arity-fn-call-alist-alistp alist)
+             (nat-listp (strip-cars alist)))
+    :hints (("Goal" :in-theory (enable lookup-equal arity-fn-call-alist-alistp assoc-equal strip-cdrs strip-cars)))))
+
+(local
+  (defthm rational-listp-of-strip-cars-when-arity-fn-call-alist-alistp
+    (implies (arity-fn-call-alist-alistp alist)
+             (rational-listp (strip-cars alist)))
+    :hints (("Goal" :in-theory (enable lookup-equal arity-fn-call-alist-alistp assoc-equal strip-cdrs strip-cars)))))
 
 ;the generated term returns (mv hitp val) or (mv hitp val trace) depending on tracingp
 (defun make-apply-cases-for-arities (current-arity arity-fn-call-alist-alist quoted-argsp innermost-callp tracingp acc)
-  (declare (xargs :measure (nfix (+ 1 current-arity))))
+  (declare (xargs :guard (and (integerp current-arity)
+                              (<= -1 current-arity)
+                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist))
+                  :guard-hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp
+                                                           strip-cdrs ;todo
+                                                           )))
+                  :measure (nfix (+ 1 current-arity))))
   (if (not (natp current-arity))
       acc
     (let* ((calls-for-this-arity (lookup current-arity arity-fn-call-alist-alist)))
@@ -109,8 +163,7 @@
 ;extends the worklist with any args not done
 ;returns (mv nodenum-worklist worklist-extendedp)
 (defun get-args-not-done-array (args eval-array-name eval-array worklist worklist-extendedp)
-  (declare (xargs :guard (and (true-listp args)
-                              (all-dargp args)
+  (declare (xargs :guard (and (darg-listp args)
                               (implies (not (all-consp args))
                                        (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep args))))
                               (all-natp worklist)
@@ -131,14 +184,13 @@
                                  t)))))
 
 (defthm all-natp-of-mv-nth-0-of-get-args-not-done-array
-  (implies (and (all-dargp args)
+  (implies (and (darg-listp args)
                 (all-natp worklist))
            (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp)))))
 
 ;assumes all dargs are done (and thus wrapped in a cons)
 (defun get-vals-of-args-array (dargs eval-array-name eval-array)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs)
+  (declare (xargs :guard (and (darg-listp dargs)
                               (implies (not (all-consp dargs))
                                        (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep dargs)))))))
   (if (endp dargs)
@@ -197,25 +249,74 @@
     (cons (enquote (car items))
           (enquote-list (cdr items)))))
 
+(local
+  (defthm alistp-of-lookup-equal
+    (implies (alist-listp (strip-cdrs alist))
+             (alistp (lookup-equal key alist)))
+    :hints (("Goal" :in-theory (enable lookup-equal alist-listp strip-cdrs)))))
+
 ;adds an entry to arity-fn-call-alist-alist
 (defun add-call-to-calls (fn arity expr arity-fn-call-alist-alist)
+  (declare (xargs :guard (arity-fn-call-alist-alistp arity-fn-call-alist-alist)
+                  :guard-hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp strip-cdrs strip-cars alistp)))))
   (let* ((calls-for-arity (lookup arity arity-fn-call-alist-alist))
          (calls-for-arity (acons fn expr calls-for-arity))
          (arity-fn-call-alist-alist (acons-unique arity calls-for-arity arity-fn-call-alist-alist)))
     arity-fn-call-alist-alist))
+
+(local
+  (defthm rational-listp-of-strip-cars-of-acons-unique
+    (implies (and (rational-listp (strip-cars alist))
+                  (rationalp key))
+             (rational-listp (strip-cars (acons-unique key val alist))))
+    :hints (("Goal" :in-theory (enable acons-unique strip-cars)))))
+
+(local
+  (defthm nat-listp-of-strip-cars-of-acons-unique
+    (implies (and (nat-listp (strip-cars alist))
+                  (natp key))
+             (nat-listp (strip-cars (acons-unique key val alist))))
+    :hints (("Goal" :in-theory (enable acons-unique strip-cars)))))
+
+(local
+  (defthm integer-listp-of-strip-cars-of-acons-unique
+    (implies (and (integer-listp (strip-cars alist))
+                  (integerp key))
+             (integer-listp (strip-cars (acons-unique key val alist))))
+    :hints (("Goal" :in-theory (enable acons-unique strip-cars)))))
+
+(local
+  (defthm symbol-alist-listp-of-strip-cdrs-of-acons-unique
+    (implies (and (symbol-alist-listp (strip-cdrs alist))
+                  (symbol-alistp val))
+             (symbol-alist-listp (strip-cdrs (acons-unique key val alist))))
+    :hints (("Goal" :in-theory (enable acons-unique strip-cdrs)))))
+
+(local
+  (defthm arity-fn-call-alist-alistp-of-acons-unique
+    (implies (and (arity-fn-call-alist-alistp alist)
+                  (natp arity)
+                  (symbol-alistp val))
+             (arity-fn-call-alist-alistp (acons-unique arity val alist)))
+    :hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp)))))
+
+(local
+  (defthm not-<-of-maxelem-and--1-when-nat-listp
+    (implies (and (nat-listp vals)
+                  (consp vals))
+             (not (< (maxelem vals) -1)))
+    :hints (("Goal" :in-theory (enable nat-listp)))))
+
 
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags
 ;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?
 ;;we use that expression when we call the corresponding function
 ;i guess if we pass an interpreted fn we must also pass in any supporting fns - perhaps always include all the primitives - since we can't interpret them!
 ;ffixme since this no longer takes state we could use a macro instead of make-event
-(defun make-evaluator-fn (base-name ;a symbol
-                          arity-fn-call-alist-alist ;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them
+(defun make-evaluator-fn (base-name arity-fn-call-alist-alist ;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them
                           )
   (declare (xargs :guard (and (symbolp base-name)
-                              (alistp arity-fn-call-alist-alist))
-                  :verify-guards nil ; todo
-                  ))
+                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist))))
   (let* ((apply-function-name (pack$ 'apply- base-name))
          (apply-function-to-quoted-args-name (pack$ 'apply- base-name '-to-quoted-args))
          (eval-function-name (pack$ 'eval- base-name))
@@ -254,6 +355,7 @@
                  (,eval-function-name alist body interpreted-function-alist array-depth))
              (let ((args-to-walk-down args)) ;why??
                (mv-let (hit val)
+                 ;; this will include calls of apply-function-name, eval-dag-name, and dag-val-name:
                  ,(make-apply-cases-for-arities max-arity
                                                 arity-fn-call-alist-alist
                                                 nil      ;quoted-argsp
@@ -334,7 +436,8 @@
            (declare (xargs :measure 0 ;ffixme
                            :guard (and (or (quotep dag)
                                            (and (pseudo-dagp dag)
-                                                (< (len dag) 2147483646)) ;can't guarantee this, so perhaps we should check it (same for all args?)
+                                                ;; todo: why not <= ?
+                                                (< (len dag) *max-1d-array-length*)) ;can't guarantee this, so perhaps we should check it (same for all args?)
                                            )
                                        (symbol-alistp alist)
                                        (interpreted-function-alistp interpreted-function-alist)

@@ -274,3 +274,34 @@
                       (+ -1 (integer-length i))
                     (integer-length i))))
   :hints (("Goal" :cases ((not (equal i (expt 2 (+ -1 (integer-length i)))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm integer-length-of-+-of-1-when-power-of-2
+   (implies (and (natp i)
+                 (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i))))) ; i+1 is a power of 2
+                 )
+            (equal (integer-length (+ 1 i))
+                   (+ 1 (integer-length i))))
+   :hints (("Goal" :use (:instance integer-length-of-+-of--1-when-power-of-2 (i (+ 1 i)))
+            :in-theory (disable integer-length-of-+-of--1-when-power-of-2)))))
+
+(local
+ (defthm integer-length-of-+-of-1-when-not-power-of-2
+   (implies (and (natp i)
+                 (not (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i)))))) ; i+1 is not a power of 2
+                 )
+            (equal (integer-length (+ 1 i))
+                   (integer-length i)))
+   :hints (("Goal" :use (:instance integer-length-of-+-of--1-when-not-power-of-2 (i (+ 1 i)))
+            :in-theory (disable integer-length-of-+-of--1-when-not-power-of-2)))))
+
+;loops if made a rewrite rule
+(defthm integer-length-of-+-of-1
+  (implies (natp i)
+           (equal (integer-length (+ 1 i))
+                  (if (equal (+ 1 i) (expt 2 (+ -1 (integer-length (+ 1 i))))) ; i+1 is a power of 2
+                      (+ 1 (integer-length i))
+                    (integer-length i))))
+  :rule-classes nil)

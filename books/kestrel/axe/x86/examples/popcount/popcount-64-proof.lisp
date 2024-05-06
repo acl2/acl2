@@ -1,6 +1,6 @@
 ; An Axe proof of popcount_64
 ;
-; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2016-2024 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,12 +31,11 @@
   :stack-slots 8
   :output :rax
   :produce-function nil ; just make the DAG
-  ;; Introduce x as the input var:
-  :assumptions '((equal (xr :rgf *rdi* x86) x)))
+  :inputs ((v u64)))
 
 ;; Unroll the spec:
 (acl2::unroll-spec-basic *popcount-64-spec*
-                         '(acl2::bvcount '64 x)
+                         '(acl2::bvcount '64 v)
                          ;; Extra rules to use for unrolling:
                          :extra-rules (append '(acl2::bvcount-unroll
                                                 acl2::bvcount-of-0-arg1)))
@@ -45,6 +44,6 @@
 (prove-equivalence *popcount_64* ; lifted code
                    *popcount-64-spec*
                    :max-conflicts 4000000
-                   :types '((x . 64))
+                   :types '((v . 64))
                    ;; avoid bit-blasting:
                    :initial-rule-sets nil)

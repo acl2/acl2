@@ -31,7 +31,7 @@
 ;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
 ;; TODO: This must already exist (keep-atoms?).
 (defund filter-nodenums (items acc)
-  (declare (xargs :guard (all-dargp items)))
+  (declare (xargs :guard (darg-listp items)))
   (if (atom items)
       acc
     (if (consp (car items)) ;tests for quotep

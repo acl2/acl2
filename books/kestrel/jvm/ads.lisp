@@ -210,7 +210,7 @@
   (equal (NTH-NEW-AD 1 ads)
          (new-ad ads))
   :hints (("Goal"
-           :in-theory (e/d (NTH-NEW-AD) ()))))
+           :in-theory (enable nth-new-ad))))
 
 (defthm in-of-new-ad-and-n-new-ads
   (implies (and (integerp n)
@@ -514,7 +514,7 @@
                 (< 0 n))
            (equal (car (n-new-ads n ads))
                   (new-ad ads)))
-  :hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) ()))))
+  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
 
 (defthmd cons-new-ad-and-2nd-ad
    (equal (cons (new-ad ads) (cons (nth-new-ad '2 ads) lst))

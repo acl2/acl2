@@ -115,8 +115,8 @@
                   :guard-hints (("Goal" :expand (;;(possibly-negated-nodenumsp possibly-negated-nodenums)
                                                  (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
                                                  ;;(strip-nots-from-possibly-negated-nodenums possibly-negated-nodenums)
-                                                 (ALL-DARGP (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))
-                                                 (ALL-DARGP (CDR (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))))
+                                                 (DARG-LISTP (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))
+                                                 (DARG-LISTP (CDR (DARGS (CAR POSSIBLY-NEGATED-NODENUMS)))))
                                  :in-theory (enable (:d strip-nots-from-possibly-negated-nodenums)
                                                     bounded-undo-pairsp
                                                     strip-not-from-possibly-negated-nodenum

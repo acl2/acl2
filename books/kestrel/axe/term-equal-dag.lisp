@@ -1,7 +1,7 @@
 ; Checking whether a term is equal to part of a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,8 @@
 (in-package "ACL2")
 
 (include-book "dag-arrays")
+
+(local (in-theory (enable integerp-when-dargp)))
 
 (mutual-recursion
  ;; Test whether TERM is equal to ITEM wrt DAG-ARRAY.
@@ -42,8 +44,7 @@
  ;; Test whether the TERMS are equal to the ITEMS wrt DAG-ARRAY.
  (defun terms-equal-dag-itemsp (terms items dag-array)
    (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (true-listp items)
-                               (all-dargp items)
+                               (darg-listp items)
                                (implies (not (all-myquotep items))
                                         (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep items)))))))
    (if (endp terms)
@@ -60,8 +61,7 @@
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp fn)
                               (not (eq 'quote fn))
-                              (true-listp args)
-                              (all-dargp args)
+                              (darg-listp args)
                               (implies (not (all-myquotep args))
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 (largest-non-quotep args)))))))
   (and (consp term) ; ensure TERM is not a var

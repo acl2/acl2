@@ -120,6 +120,13 @@
                (equal (car (assoc-equal-cdr r x)) nil)))
   :rule-classes :type-prescription)
 
+(defthm enabled-runep-guard-helper-2
+  (implies (and (car (assoc-equal-cdr r x))
+                (fixnat-alistp x))
+           (<= (car (assoc-equal-cdr r x))
+               (fixnum-bound)))
+  :rule-classes :linear)
+
 (verify-termination enabled-runep) ; and guards
 
 (verify-termination disabledp-fn-lst) ; and guards

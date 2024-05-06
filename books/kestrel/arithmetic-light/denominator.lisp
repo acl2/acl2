@@ -30,7 +30,7 @@
                       1 ; the denominator of 0 is 1
                     (abs x))))
   :hints (("Goal" :use ((:instance rational-implies2 (x (/ x)))
-                        (:instance numerator-/x))
+                        numerator-/x)
            :in-theory (disable numerator-/x
                                rational-implies2
                                *-r-denominator-r

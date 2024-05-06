@@ -1,6 +1,6 @@
 ; A drop-in replacement for defstobj that proves many helpful theorems
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -327,7 +327,7 @@
                                 :hints (("Goal" :in-theory (enable ,updater-fn ,inner-resize-fn)))))))
                     (interaction-theorems-for-array-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming inner-field-num inner-updater-fn inner-resize-fn)))))))))
 
-;; Returns (mv theorems names).
+;; Returns (mv theorems function-names helper-theorem-names).
 (defun theorems-for-defstobj-field (field-info field-num stobj-name top-recognizer renaming all-field-infos state)
   (declare (xargs :mode :program ;because of translate-declaration-to-guard-gen
                   :stobjs state))
@@ -381,9 +381,24 @@
                               ,type-claim-for-val)
                          (,recognizer (update-nth key val l)))
                 :hints (("Goal" :induct (update-nth key val l)
-                         :in-theory (e/d (len update-nth ,recognizer)
-                                         (;len-of-cdr
-                                          )))))
+                         :in-theory '(,recognizer
+                                      (:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+                                      (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+                                      (:DEFINITION LEN)
+                                      (:DEFINITION NATP)
+                                      (:DEFINITION NOT)
+                                      (:DEFINITION UPDATE-NTH)
+                                      (:EXECUTABLE-COUNTERPART <)
+                                      (:EXECUTABLE-COUNTERPART CDR)
+                                      (:EXECUTABLE-COUNTERPART CONSP)
+                                      (:EXECUTABLE-COUNTERPART INTEGERP)
+                                      (:EXECUTABLE-COUNTERPART LEN)
+                                      (:EXECUTABLE-COUNTERPART NOT)
+                                      ;(:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+                                      (:EXECUTABLE-COUNTERPART ZP)
+                                      (:INDUCTION UPDATE-NTH)
+                                      (:REWRITE CAR-CONS)
+                                      (:REWRITE CDR-CONS)))))
 
               ;; Updating the array field preserves well-formedness:
               (defthm ,(pack$ top-recognizer '-of- updater-fn)
@@ -539,16 +554,22 @@
               ,@(interaction-theorems-for-array-field all-field-infos 0 stobj-name renaming field-num updater-fn resize-fn)
               )
             ;; names:
-            (list recognizer accessor-fn updater-fn length-fn resize-fn))))
+            (list recognizer accessor-fn updater-fn length-fn resize-fn)
+            ;; helpers:
+            `(,(pack$ recognizer '-of-make-list-ac)
+              (:e ,recognizer))
+            )))
      ((eq 'hash-table type-kind)
       (prog2$ (cw "NOTE: Hash table fields are not yet supported by defstobj+.")
               (mv nil
                   nil ;; (list recognizer)
+                  nil
                   )))
      ((eq 'stobj-table type-kind)
       (prog2$ (cw "NOTE: Stobj table fields are not yet supported by defstobj+.")
               (mv nil
                   nil ;; (list recognizer)
+                  nil
                   )))
      (t ;must be a scalar type (possibly TYPE is t)
       (let* (;; (initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
@@ -589,15 +610,16 @@
 
               ,@(interaction-theorems-for-scalar-field all-field-infos 0 stobj-name renaming field-num updater-fn)
               )
-            (list recognizer accessor-fn updater-fn)))))))
+            (list recognizer accessor-fn updater-fn)
+            `((:e ,recognizer))))))))
 
-;; Returns (mv theorems names).
-(defun theorems-and-names-for-defstobj-fields (field-infos field-num stobj-name top-recognizer renaming all-field-infos theorems-acc names-acc state)
+;; Returns (mv theorems function-names helper-theorem-names).
+(defun theorems-and-names-for-defstobj-fields (field-infos field-num stobj-name top-recognizer renaming all-field-infos theorems-acc names-acc helper-theorem-names-acc state)
   (declare (xargs :mode :program
                   :stobjs state))
   (if (endp field-infos)
-      (mv (reverse theorems-acc) (reverse names-acc))
-    (mv-let (theorems names)
+      (mv (reverse theorems-acc) (reverse names-acc) (reverse helper-theorem-names-acc))
+    (mv-let (theorems names helper-theorem-names)
       (theorems-for-defstobj-field (first field-infos) field-num stobj-name top-recognizer renaming all-field-infos state)
       (theorems-and-names-for-defstobj-fields (rest field-infos)
                                               (+ 1 field-num)
@@ -606,6 +628,8 @@
                                                       theorems-acc)
                                               (append (reverse names) ; since the acc will get reversed at the very end
                                                       names-acc)
+                                              (append (reverse helper-theorem-names) ; since the acc will get reversed at the very end
+                                                      helper-theorem-names-acc)
                                               state))))
 
 ;; Returns an event
@@ -619,8 +643,8 @@
            ;; (renaming (pairlis$ (strip-cars renaming) (strip-cadrs renaming)))
            (top-recognizer (defstobj-fnname stobj-name :recognizer :top renaming))
            (creator (defstobj-fnname stobj-name :creator :top renaming)))
-      (mv-let (theorems-for-fields names-for-fields) ; the names-for-fields include recognizers, accessors, updaters, etc.
-        (theorems-and-names-for-defstobj-fields field-infos 0 stobj-name top-recognizer renaming field-infos nil nil state)
+      (mv-let (theorems-for-fields names-for-fields helper-theorem-names) ; the names-for-fields include recognizers, accessors, updaters, etc.
+        (theorems-and-names-for-defstobj-fields field-infos 0 stobj-name top-recognizer renaming field-infos nil nil nil state)
         `(encapsulate ()
            (local (include-book "kestrel/lists-light/resize-list" :dir :system))
            (local (include-book "kestrel/lists-light/make-list-ac" :dir :system))
@@ -646,11 +670,22 @@
            ;; The stobj creation function returns a well-formed stobj:
            (defthm ,(pack$ top-recognizer '-of- creator)
              (,top-recognizer (,creator))
-             :hints (("Goal" :in-theory (enable ,top-recognizer
-                                                ,creator
-                                                LENGTH
-                                                len
-                                                (:i nth))))))))))
+             :hints (("Goal" :in-theory '(,top-recognizer
+                                          ,creator
+                                          ,@helper-theorem-names
+                                          (:DEFINITION LEN)
+                                          (:DEFINITION LENGTH)
+                                          (:e make-list-ac)
+                                          (:e nth)
+                                          (:EXECUTABLE-COUNTERPART BINARY-+)
+                                          (:EXECUTABLE-COUNTERPART EQUAL)
+                                          (:EXECUTABLE-COUNTERPART LEN)
+                                          (:EXECUTABLE-COUNTERPART NFIX)
+                                          ;(:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+                                          (:REWRITE CDR-CONS)
+                                          (:REWRITE LEN-OF-MAKE-LIST-AC)
+                                          (:REWRITE NTH-0-CONS)
+                                          )))))))))
 
 ;; A replacement for defstobj (except for certain unhandled features -- see
 ;; todos above) that disables most stobj-related functions and proves various

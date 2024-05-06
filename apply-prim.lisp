@@ -546,7 +546,7 @@
     (FLSZ-INTEGER IF
                   (NOT (IF (INTEGERP X)
                            (IF (NATP ACC)
-                               (IF (< ACC '536870911)
+                               (IF (< ACC '1152921504606846975)
                                    (PRINT-BASE-P PRINT-BASE)
                                    'NIL)
                                'NIL)
@@ -710,7 +710,6 @@
     (META-EXTRACT-CONTEXTUAL-FACT)
     (META-EXTRACT-GLOBAL-FACT+)
     (META-EXTRACT-RW+-TERM)
-    (MIN-FIXNAT$INLINE)
     (NEW-NAMEP)
     (NEWLINE)
     (NUMBER-OF-DIGITS IF
@@ -789,6 +788,7 @@
     (SPLAT-STRING)
     (SPLAT1 BINARY-* '2 (ACL2-COUNT X))
     (STANDARD-CO)
+    (STATE-P+)
     (STOBJP)
     (STRIP-CADDRS ACL2-COUNT X)
     (STRIP-NON-HIDDEN-PACKAGE-NAMES ACL2-COUNT KNOWN-PACKAGE-ALIST)

@@ -1646,6 +1646,20 @@
            :in-theory (e/d (make-range-check-pi-constraints pi INDICES-FOR-0S INDICES-FOR-1S)
                            (MAKE-RANGE-CHECK-PI-CONSTRAINTS-AUX-CORRECT-1-FORWARD)))))
 
+
+(local
+ (defthmd helper3
+   (iff (member-equal (cdr (assoc-equal key alist)) (strip-cdrs alist))
+        (if (assoc-equal key alist)
+            t
+          (member-equal nil (strip-cdrs alist))))
+   :hints (("Goal" :cases ((assoc-equal key alist))))))
+
+(local
+ (defthmd helper4
+   (implies (equal b (cons a c))
+            (member-equal a b))))
+
 (defthm make-range-check-pi-constraints-aux-correct-1-backward
   (implies (and (pivars-correctp (indices-for-1s (+ -2 n) tvar c) valuation avars pivars c n p)
                 (r1cs-valuationp valuation p)
@@ -1704,7 +1718,9 @@
                             <=-of-0-and-lookup-equal
                             indices-for-0s-of-when-low-bit-is-1
                             CONSTRAINTS-IMPLIED-BY-PIVARS-CORRECTP
-                            natp)
+                            natp
+                            helper3
+                            helper4)
                            (bitp
                             indices-for-0s-of-+-of-1 ;looped
                             ;acl2::equal-of-+-when-negative-constant ; why?

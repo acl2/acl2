@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function dimensions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -71,3 +71,16 @@
   (implies (array1p dag-array-name dag-array)
            (consp (dimensions dag-array-name dag-array)))
   :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
+
+(defthmd normalize-dimensions-name
+  (implies (syntaxp (not (equal name '':fake-name)))
+           (equal (dimensions name l)
+                  (dimensions :fake-name l)))
+  :hints (("Goal" :in-theory (e/d (dimensions) (dimensions-intro)))))
+
+(defthm dimensions-when-not-consp-of-header-cheap
+  (implies (not (consp (header name l)))
+           (equal (dimensions name l)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (e/d (dimensions) (dimensions-intro)))))

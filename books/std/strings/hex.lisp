@@ -233,14 +233,14 @@ FX-8350.</p>
     :hints(("Goal" :in-theory (enable digit-to-char)))))
 
 
-(std::deflist hex-digit-char-listp (x)
+(std::deflist hex-digit-char-list*p (x)
   :short "Recognizes lists of @(see hex-digit-char-p) characters."
   (hex-digit-char-p x)
   ///
-  (defcong icharlisteqv equal (hex-digit-char-listp x) 1
+  (defcong icharlisteqv equal (hex-digit-char-list*p x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm character-listp-when-hex-digit-char-listp
-    (implies (hex-digit-char-listp x)
+  (defthm character-listp-when-hex-digit-char-list*p
+    (implies (hex-digit-char-list*p x)
              (equal (character-listp x)
                     (true-listp x)))
     :rule-classes ((:rewrite :backchain-limit-lst 1))))
@@ -248,7 +248,7 @@ FX-8350.</p>
 
 (define hex-digit-chars-value1
   :parents (hex-digit-chars-value)
-  ((x hex-digit-char-listp)
+  ((x hex-digit-char-list*p)
    (val :type unsigned-byte))
   :guard-debug t
   (if (consp x)
@@ -262,8 +262,8 @@ FX-8350.</p>
     (lnfix val)))
 
 (define hex-digit-chars-value
-  :short "Coerces a @(see hex-digit-char-listp) into a natural number."
-  ((x hex-digit-char-listp))
+  :short "Coerces a @(see hex-digit-char-list*p) into a natural number."
+  ((x hex-digit-char-list*p))
   :returns (value natp :rule-classes :type-prescription)
   :long "<p>For instance, @('(hex-digit-chars-value '(#\1 #\F))') is 31.  See
          also @(see parse-hex-from-charlist) for a more flexible function that
@@ -345,16 +345,16 @@ FX-8350.</p>
             :in-theory (enable charlisteqv))))
   (defcong icharlisteqv icharlisteqv (take-leading-hex-digit-chars x) 1
     :hints(("Goal" :in-theory (enable icharlisteqv))))
-  (defthm hex-digit-char-listp-of-take-leading-hex-digit-chars
-    (hex-digit-char-listp (take-leading-hex-digit-chars x)))
+  (defthm hex-digit-char-list*p-of-take-leading-hex-digit-chars
+    (hex-digit-char-list*p (take-leading-hex-digit-chars x)))
   (defthm bound-of-len-of-take-leading-hex-digit-chars
     (<= (len (take-leading-hex-digit-chars x)) (len x))
     :rule-classes :linear)
   (defthm equal-of-take-leading-hex-digit-chars-and-length
     (equal (equal (len (take-leading-hex-digit-chars x)) (len x))
-           (hex-digit-char-listp x)))
-  (defthm take-leading-hex-digit-chars-when-hex-digit-char-listp
-    (implies (hex-digit-char-listp x)
+           (hex-digit-char-list*p x)))
+  (defthm take-leading-hex-digit-chars-when-hex-digit-char-list*p
+    (implies (hex-digit-char-list*p x)
              (equal (take-leading-hex-digit-chars x)
                     (list-fix x))))
   (defthm consp-of-take-leading-hex-digit-chars
@@ -374,7 +374,7 @@ FX-8350.</p>
   :verify-guards nil
   :enabled t
   (mbe :logic
-       (hex-digit-char-listp (nthcdr n (explode x)))
+       (hex-digit-char-list*p (nthcdr n (explode x)))
        :exec
        (if (eql n xl)
            t
@@ -384,7 +384,7 @@ FX-8350.</p>
                                       xl))))
   ///
   (verify-guards hex-digit-string-p-aux
-    :hints(("Goal" :in-theory (enable hex-digit-char-listp)))))
+    :hints(("Goal" :in-theory (enable hex-digit-char-list*p)))))
 
 (define hex-digit-string-p
   :short "Recognizer for strings whose characters are hexadecimal digits."
@@ -393,7 +393,7 @@ FX-8350.</p>
   :long "<p>Corner case: this accepts the empty string since all of its
 characters are hex digits.</p>
 
-<p>Logically this is defined in terms of @(see hex-digit-char-listp).  But in the
+<p>Logically this is defined in terms of @(see hex-digit-char-list*p).  But in the
 execution, we use a @(see char)-based function that avoids exploding the
 string.  This provides much better performance, e.g., on an AMD FX-8350 with
 CCL:</p>
@@ -407,11 +407,11 @@ CCL:</p>
     ;; 1.74 seconds, 1.28 GB allocated
     (let ((x \"deadbeef\"))
       (time$ (loop for i fixnum from 1 to 10000000 do
-                   (str::hex-digit-char-listp (explode x)))))
+                   (str::hex-digit-char-list*p (explode x)))))
 })"
   :inline t
   :enabled t
-  (mbe :logic (hex-digit-char-listp (explode x))
+  (mbe :logic (hex-digit-char-list*p (explode x))
        :exec (hex-digit-string-p-aux x 0 (length x)))
   ///
   (defcong istreqv equal (hex-digit-string-p x) 1))
@@ -452,7 +452,7 @@ but @('hex-digit-to-char') is faster:</p>
   :parents (nat-to-hex-chars)
   :short "Logically simple definition that is similar to @(see nat-to-hex-chars)."
   ((n natp))
-  :returns (chars hex-digit-char-listp)
+  :returns (chars hex-digit-char-list*p)
   :long "<p>This <i>almost</i> computes @('(nat-to-hex-chars n)'), but when @('n') is
 zero it returns @('nil') instead of @('(#\\0)').  You would normally never call
 this function directly, but it is convenient for reasoning about @(see
@@ -545,7 +545,7 @@ nat-to-hex-chars).</p>"
 (define nat-to-hex-chars
   :short "Convert a natural number into a list of hexadecimal bits."
   ((n natp))
-  :returns (chars hex-digit-char-listp)
+  :returns (chars hex-digit-char-list*p)
   :long "<p>For instance, @('(nat-to-hex-chars 31)') is @('(#\\1 #\\F)').</p>
 
 <p>This is like ACL2's built-in function @(see explode-nonnegative-integer),
@@ -677,8 +677,8 @@ hex-digit-chars-value), and somewhat better performance:</p>
   :inline t
   (implode (nat-to-hex-chars n))
   ///
-  (defthm hex-digit-char-listp-of-nat-to-dec-string
-    (hex-digit-char-listp (explode (nat-to-hex-string n))))
+  (defthm hex-digit-char-list*p-of-nat-to-dec-string
+    (hex-digit-char-list*p (explode (nat-to-hex-string n))))
   (defthm nat-to-hex-string-one-to-one
     (equal (equal (nat-to-hex-string n) (nat-to-hex-string m))
            (equal (nfix n) (nfix m))))
@@ -876,7 +876,7 @@ of our logical definition.</p>"
   ;; Minor speed hint
   (local (in-theory (disable BOUND-OF-LEN-OF-TAKE-LEADING-HEX-DIGIT-CHARS
                              ACL2::RIGHT-SHIFT-TO-LOGTAIL
-                             HEX-DIGIT-CHAR-LISTP-OF-CDR-WHEN-HEX-DIGIT-CHAR-LISTP)))
+                             HEX-DIGIT-CHAR-LIST*P-OF-CDR-WHEN-HEX-DIGIT-CHAR-LIST*P)))
 
   (verify-guards parse-hex-from-string
     :hints(("Goal" :in-theory (enable parse-hex-from-charlist
@@ -899,7 +899,7 @@ or has any non hexadecimal digit characters (0-9, A-F, a-f), we return
   (mbe :logic
        (let ((chars (explode x)))
          (and (consp chars)
-              (hex-digit-char-listp chars)
+              (hex-digit-char-list*p chars)
               (hex-digit-chars-value chars)))
        :exec
        (b* (((the unsigned-byte xl) (length x))

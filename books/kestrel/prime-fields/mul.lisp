@@ -1,6 +1,6 @@
 ; Prime fields library: Multiplication
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
 (local (include-book "../arithmetic-light/expt"))
+(local (include-book "../number-theory/divides")) ; reduce? for dm::euclid
 
 ;; Compute the product of x and y modulo the prime.
 (defund mul (x y p)
@@ -193,3 +194,80 @@
            (equal (mul x (expt y i) p)
                   (mul x (expt k i) p)))
   :hints (("Goal" :in-theory (enable mul acl2::pos-fix))))
+
+(defthm equal-of-0-and-mul
+  (implies (and (fep x p)
+                (fep y p)
+                (primep p))
+           (equal (equal 0 (mul x y p))
+                  (or (equal x 0)
+                      (equal y 0))))
+  :hints (("Goal"
+           :use ((:instance dm::euclid
+                            (p p)
+                            (a x)
+                            (b y)))
+           :in-theory (enable mul divides acl2::equal-of-0-and-mod))))
+
+(defthm equal-of-0-and-mul-gen
+  (implies (primep p)
+           (equal (equal 0 (mul x y p))
+                  (or (equal (mod (ifix x) p) 0)
+                      (equal (mod (ifix y) p) 0))))
+  :hints (("Goal" :use (:instance equal-of-0-and-mul
+                                  (x (mod (ifix x) p))
+                                  (y (mod (ifix y) p)))
+           :in-theory (disable equal-of-0-and-mul))))
+
+;; If the resulting constant (* x y) is too large, a rule below will
+;; reduce it.
+(defthm mul-of-mul-combine-constants
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep y)))
+                (integerp x) ;(fep x p)
+                (integerp y) ;(fep y p)
+                (integerp z) ;(fep z p)
+                (integerp p))
+           (equal (mul x (mul y z p) p)
+                  (mul
+                   (* x y) ;we don't call mul here in case the p argument is not known (todo: do something similar for the add rule)
+                   z p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthmd mul-of-mul-combine-constants-alt
+  (implies (syntaxp (and (quotep x)
+                         (quotep y)
+                         (quotep p)))
+           (equal (mul x (mul y z p) p)
+                  (mul (mul x y p) z p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-when-constant-reduce-arg1
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep p)))
+                (<= p x) ;x is too big (prevents loops)
+                ;; (integerp x)
+                ;; (integerp y)
+                ;; (natp p)
+                )
+           (equal (mul x y p)
+                  (mul (mod x p) y p)))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mul-same-arg1
+  (implies (and (integerp y)
+                (posp p))
+           (equal (mul p y p)
+                  0))
+  :hints (("Goal" :in-theory (enable mul))))
+
+(defthm mod-of-mul
+  (equal (mod (mul x y p) p)
+         (mul x y p))
+  :hints (("Goal" :in-theory (enable mul))))
+
+;rename
+(defthm mul-bound
+  (implies (posp p)
+           (< (mul x y p) p))
+  :hints (("Goal" :in-theory (enable mul))))

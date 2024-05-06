@@ -1,10 +1,10 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,11 +242,11 @@
        (val-pred-of-cdr-of-in-pred (acl2::packn-pos
                                     (list val-pred '-of-cdr-of-in- pred)
                                     pkg-witness))
-       (empty-of-fix (acl2::packn-pos (list 'empty-of-
-                                            fix
-                                            '-to-not-
-                                            pred
-                                            '-or-empty)
+       (emptyp-of-fix (acl2::packn-pos (list 'emptyp-of-
+                                             fix
+                                             '-to-not-
+                                             pred
+                                             '-or-emptyp)
                                       pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
        (type-ref (concatenate 'string
@@ -285,12 +285,12 @@
              :enable omap::tail)
            (defrule ,key-pred-of-head-key-when-pred
              (implies (and (,pred ,x)
-                           (not (omap::empty ,x)))
+                           (not (omap::emptyp ,x)))
                       (,key-pred (mv-nth 0 (omap::head ,x))))
              :enable omap::head)
            (defrule ,val-pred-of-head-val-when-pred
              (implies (and (,pred ,x)
-                           (not (omap::empty ,x)))
+                           (not (omap::emptyp ,x)))
                       (,val-pred (mv-nth 1 (omap::head ,x))))
              :enable omap::head)
            (defrule ,pred-of-update
@@ -340,11 +340,11 @@
            (defrule ,fix-when-pred
              (implies (,pred ,x)
                       (equal (,fix ,x) ,x)))
-           (defrule ,empty-of-fix
-             (equal (omap::empty (,fix ,x))
+           (defrule ,emptyp-of-fix
+             (equal (omap::emptyp (,fix ,x))
                     (or (not (,pred ,x))
-                        (omap::empty ,x)))
-             :enable omap::empty)))
+                        (omap::emptyp ,x)))
+             :enable omap::emptyp)))
        (type-event
         `(defsection ,type
            ,@(and parents (list :parents parents))

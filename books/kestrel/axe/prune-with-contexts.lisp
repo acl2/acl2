@@ -35,7 +35,7 @@
 
 ;; (defthm wf-dagp-of-make-empty-array-and-make-dag-parent-array-with-name2-of-make-empty-array
 ;;   (implies (and (posp size)
-;;                 (<= size *maximum-1-d-array-length*))
+;;                 (<= size *max-1d-array-length*))
 ;;            (wf-dagp 'dag-array
 ;;                     (make-empty-array 'dag-array size)
 ;;                     '0
@@ -294,8 +294,8 @@
 ;; Returns (mv erp dag-or-quotep).
 (defund prune-with-contexts (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (< (top-nodenum-of-dag dag)
-                                 *maximum-1-d-array-length*))
+                              (<= (top-nodenum-of-dag dag)
+                                  *max-1d-array-index*))
                   :guard-hints (("Goal" :in-theory (enable ;wf-dagp len-when-pseudo-dagp top-nodenum-of-dag
                                                     )))))
   (b* ((old-dag-len (+ 1 (top-nodenum-of-dag dag)))
@@ -342,8 +342,8 @@
 (defthm pseudo-dagp-of-prune-with-contexts
   (implies (and (not (mv-nth 0 (prune-with-contexts dag)))
                 (pseudo-dagp dag)
-                (< (top-nodenum-of-dag dag)
-                   *maximum-1-d-array-length*))
+                (<= (top-nodenum-of-dag dag)
+                    *max-1d-array-index*))
            (equal (pseudo-dagp (mv-nth 1 (prune-with-contexts dag)))
                   (not (myquotep (mv-nth 1 (prune-with-contexts dag))))))
   :hints (("Goal" :in-theory (enable prune-with-contexts
@@ -353,7 +353,7 @@
 ;; (defthm wf-dagp-after-prune-with-contexts2
 ;;   (implies (and (pseudo-dagp dag)
 ;;                 (< (top-nodenum-of-dag dag)
-;;                    *maximum-1-d-array-length*)
+;;                    *max-1d-array-length*)
 ;;                 (not (mv-nth 0 (prune-with-contexts2 dag))) ;no error
 ;;                 )
 ;;            (wf-dagp 'dag-array
@@ -372,7 +372,7 @@
 ;;   (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;   :hyps ((pseudo-dagp dag)
 ;;          (< (top-nodenum-of-dag dag)
-;;             *maximum-1-d-array-length*))
+;;             *max-1d-array-length*))
 ;;   :hyps-everywhere t
 ;;   :recursivep nil
 ;;   :hints (("Goal" :in-theory (enable prune-with-contexts2 wf-dagp top-nodenum-of-dag LEN-WHEN-PSEUDO-DAGP))))

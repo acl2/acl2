@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-;(include-book "all-dargp")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 ;(include-book "renaming-array")
 ;(include-book "axe-trees")

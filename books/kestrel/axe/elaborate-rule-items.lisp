@@ -29,7 +29,9 @@
 ;; (symbols).
 (defun rule-itemp (item)
   (declare (xargs :guard t))
-  (or (symbolp item)
+  (or (and (symbolp item)
+           ;; catch this common mistake:
+           (not (equal item 'quote)))
       (and (true-listp item)
            (= 1 (len item))
            (symbolp (first item)))))

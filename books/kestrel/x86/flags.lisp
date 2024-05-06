@@ -731,3 +731,87 @@
   (equal (get-flag flag (!rflags (xr ':rflags 'nil x86_1) x86_2))
          (get-flag flag x86_1))
   :hints (("Goal" :in-theory (enable !rflags get-flag))))
+
+(defthm get-flag-of-xw-rflags-of-xr-rflags
+  (equal (get-flag flag (xw :rflags nil (xr ':rflags 'nil x86_1) x86_2))
+         (get-flag flag x86_1))
+  :hints (("Goal" :in-theory (enable !rflags get-flag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm x86isa::rflagsbits->af-of-bvif
+  (implies (and (<= 5 size)
+                (integerp size))
+           (equal (x86isa::rflagsbits->af (bvif size test tp ep))
+                  (if test (x86isa::rflagsbits->af tp) (x86isa::rflagsbits->af ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->af x86isa::rflagsbits-fix))))
+
+(defthm x86isa::rflagsbits->cf-of-bvif
+  (implies (and (<= 1 size)
+                (integerp size))
+           (equal (x86isa::rflagsbits->cf (bvif size test tp ep))
+                  (if test (x86isa::rflagsbits->cf tp) (x86isa::rflagsbits->cf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->cf x86isa::rflagsbits-fix))))
+
+(defthm x86isa::rflagsbits->of-of-bvif
+  (implies (and (<= 12 size)
+                (integerp size))
+           (equal (x86isa::rflagsbits->of (bvif size test tp ep))
+                  (if test (x86isa::rflagsbits->of tp) (x86isa::rflagsbits->of ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->of x86isa::rflagsbits-fix))))
+
+(defthm x86isa::rflagsbits->pf-of-bvif
+  (implies (and (<= 3 size)
+                (integerp size))
+           (equal (x86isa::rflagsbits->pf (bvif size test tp ep))
+                  (if test (x86isa::rflagsbits->pf tp) (x86isa::rflagsbits->pf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->pf x86isa::rflagsbits-fix))))
+
+(defthm x86isa::rflagsbits->sf-of-bvif
+  (implies (and (<= 8 size)
+                (integerp size))
+           (equal (x86isa::rflagsbits->sf (bvif size test tp ep))
+                  (if test (x86isa::rflagsbits->sf tp) (x86isa::rflagsbits->sf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->sf x86isa::rflagsbits-fix))))
+
+(defthm x86isa::rflagsbits->zf-of-bvif
+  (implies (and (<= 7 size)
+                (integerp size))
+           (equal (x86isa::rflagsbits->zf (bvif size test tp ep))
+                  (if test (x86isa::rflagsbits->zf tp) (x86isa::rflagsbits->zf ep))))
+  :hints (("Goal" :in-theory (enable rflagsbits->zf x86isa::rflagsbits-fix))))
+
+(defthmd !rflags-becomes-xw
+  (equal (!rflags rflags x86)
+         (xw :rflags nil rflags x86)))
+
+(defthmd rflags-becomes-xr
+  (equal (rflags x86)
+         (xr :rflags nil x86)))
+
+;needed?
+(defthm xr-of-rflags-and-xw-of-rflags
+  (equal (xr :rflags nil (xw :rflags nil rflags x86))
+         (bvchop 32 rflags)))
+
+(defthm xw-of-rflags-and-set-flag
+  (equal (xw :rflags nil rflags (set-flag flag val x86))
+         (xw :rflags nil rflags x86))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
+;gen?
+(defthm xw-of-rflags-does-nothing
+  (implies (equal rflags (xr :rflags nil x86))
+           (equal (xw :rflags nil rflags x86)
+                  x86)))
+
+(defthm xw-of-rflags-of-xw
+  (implies (not (equal fld :rflags))
+           (equal (xw :rflags nil rflags (xw fld index val x86))
+                  (xw fld index val (xw :rflags nil rflags x86))))
+  :hints (("Goal" :in-theory (enable set-flag))))
+
+(defthm xw-rflags-of-set-flag
+  (equal (xw :rflags nil rflags (set-flag flag val x86))
+         (xw :rflags nil rflags x86))
+  :hints (("Goal" :in-theory (enable !rflags set-flag))))

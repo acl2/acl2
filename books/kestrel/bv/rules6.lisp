@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -174,31 +174,6 @@
 
 ;(in-theory (disable bvxor-trim-arg2 bvxor-trim-arg1)) ;bozo
 
-;do we trim logexts?
-(defthm bvxor-of-logext
-  (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
-                (natp size2)
-                ;(integerp x)
-                ;(integerp y)
-                )
-           (equal (bvxor size1 (logext size2 x) y)
-                  (bvxor size1 x y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
-(defthm bvxor-of-logext-alt
-  (implies (and (<= size1 size2)
-                (< 0 size2)
-                (natp size1)
-                (natp size2)
-;                (integerp x)
-;                (integerp y)
-                )
-           (equal (bvxor size1 y (logext size2 x))
-                  (bvxor size1 x y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) (logxor-bvchop-bvchop)))))
-
 (in-theory (disable integer-length)) ; todo
 
 ;todo: just use a trim rule?
@@ -212,7 +187,7 @@
                 )
            (equal (GETBIT size1 (BVMULT size2 x y))
                   (GETBIT size1 (BVMULT (+ 1 size1) x y))))
-  :hints (("Goal" :in-theory (e/d (getbit) (SLICE-BECOMES-GETBIT BVCHOP-1-BECOMES-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (getbit) ( BVCHOP-1-BECOMES-GETBIT)))))
 
 ;; (defthm mod-by-1
 ;;  (implies (integerp x)

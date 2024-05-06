@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,6 +28,7 @@
 (include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "renaming-array")
 (include-book "translation-array")
 (include-book "unify-tree-and-dag")
@@ -226,9 +227,9 @@
                                 from-dag-array-name from-dag-array from-dag-array-len
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                 renaming-array)
-  (declare ;(type (integer 0 2147483646) dag-len)
-;(type (integer 0 2147483645) nodenum)
-;(type (integer -1 2147483645) max-nodenum)
+  (declare ;(type (integer 0 1152921504606846974) dag-len)
+;(type (integer 0 1152921504606846973) nodenum)
+;(type (integer -1 1152921504606846973) max-nodenum)
    (xargs :measure (nfix (+ 1 (- max-nodenum nodenum)))
           :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                       (integerp max-nodenum)
@@ -1035,8 +1036,8 @@
 
 ;; ;; Keep the args that are nodenums and that correspond to nil in merge-dag-array.
 ;; (defun get-args-to-merge (args array)
-;;   (declare (xargs :guard (and (true-listp args)
-;;                               (all-dargp args)
+;;   (declare (xargs :guard (and
+;;                               (darg-listp args)
 ;;                               (array1p 'merge-dag-array array)
 ;;                               (< (largest-non-quotep args) (alen1 'merge-dag-array array)))))
 ;;   (if (endp args)
@@ -1049,8 +1050,8 @@
 ;;           (cons arg (get-args-to-merge (cdr args) array)))))))
 
 ;; (defun lookup-args-in-merge-dag-array (args array)
-;;   (declare (xargs :guard (and (true-listp args)
-;;                               (all-dargp args)
+;;   (declare (xargs :guard (and
+;;                               (darg-listp args)
 ;;                               (array1p 'merge-dag-array array)
 ;;                               (< (largest-non-quotep args) (alen1 'merge-dag-array array)))))
 ;;   (if (endp args)
@@ -1448,27 +1449,32 @@
 
 ;recall that the case is the negation of all the literals
 ;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective print-as-clausesp
-                                                no-print-fns ; we don't print literals that are calls of these (after stripping nots)
-                                                )
+(defund print-axe-prover-case (literal-nodenums
+                               dag-array-name dag-array dag-len case-adjective print-as-clausesp
+                               no-print-fns ; we don't print literals that are calls of these (after stripping nots)
+                               )
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
+                              (stringp case-adjective)
                               (booleanp print-as-clausesp)
                               (symbol-listp no-print-fns))))
-  (if print-as-clausesp
-      (progn$ (cw "~s0 clause:~%(OR " case-adjective)
+  (if (not (consp literal-nodenums))
+      (cw "(NOTE: No literals in clause.")
+    (prog2$ (print-dag-array-info dag-array-name dag-array dag-len case-adjective t)
+            (if print-as-clausesp
+                (progn$ (cw "~s0 clause:~%(OR " case-adjective)
               ;; warning: can blow up:
               ;; todo: should this respect the no-print-fns?  maybe not, if this is for debugging
-              (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
-              (cw ")~%"))
-    (progn$
-      (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
-      (and no-print-fns (cw " (NOTE: Not printing calls to ~x0)" no-print-fns))
-      (cw ":~%")
-      (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len no-print-fns)
-      (cw ")~%"))))
+                        (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
+                        (cw ")~%"))
+              (progn$
+                (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
+                (and no-print-fns (cw " (NOTE: Not printing calls to ~x0)" no-print-fns))
+                (cw ":~%")
+                (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len no-print-fns)
+                (cw ")~%"))))))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)
@@ -1492,7 +1498,7 @@
 ;;   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                               (symbolp equiv)
 ;;                               (symbolp var)
-;;                               ;(<= dag-len 2147483645)
+;;                               ;(<= dag-len 1152921504606846973) ; why not one more?
 ;;                               (all-natp nodenums-to-assume-false)
 ;;                               (true-listp nodenums-to-assume-false)
 ;;                               (all-< nodenums-to-assume-false dag-len)))
@@ -1602,14 +1608,18 @@
   `(mbe :logic (zp ,x)
         :exec (= 0 ,x)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund simple-prover-optionsp (options)
   (declare (xargs :guard t))
   (and (symbol-alistp options)
        (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
                                           :print-as-clausesp ;whether to print cases as clauses
                                           :no-print-fns
+                                          :count-hits
                                           ))
        (booleanp (lookup-equal :print-as-clausesp options))
+       (member-equal (lookup-equal :count-hits options) '(t nil :brief))
        (symbol-listp (lookup-equal :no-print-fns options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
@@ -1635,6 +1645,14 @@
            (equal (simple-prover-optionsp (acons :no-print-fns no-print-fns options))
                   (symbol-listp no-print-fns)))
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-of-acons-of-count-hits
+  (implies (simple-prover-optionsp options)
+           (iff (simple-prover-optionsp (acons :count-hits count-hits options))
+                (member-equal count-hits '(t nil :brief))))
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm axe-tree-listp-of-wrap-all
   (equal (axe-tree-listp (wrap-all 'not atoms))

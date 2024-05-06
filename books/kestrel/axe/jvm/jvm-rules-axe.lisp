@@ -1,7 +1,7 @@
 ; Axe rules about the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -225,7 +225,7 @@
 (def-constant-opener set::delete)
 (def-constant-opener set::tail)
 (def-constant-opener set::head)
-(def-constant-opener set::empty)
+(def-constant-opener set::emptyp)
 (def-constant-opener set::sfix)
 (def-constant-opener set::setp)
 (def-constant-opener FAST-<<)
@@ -252,3 +252,7 @@
                 (integerp x))
            (equal (posp (+ k x))
                   (< (- k) x))))
+
+(defopeners jvm::make-array-type)
+(defopeners jvm::resolve-class)
+(defopeners jvm::reference-typep)

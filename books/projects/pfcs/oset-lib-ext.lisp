@@ -26,4 +26,4 @@
            (not (set::difference a b)))
   :use (:instance set::subset-difference (x a) (y b))
   :disable set::subset-difference
-  :enable set::empty)
+  :enable set::emptyp)

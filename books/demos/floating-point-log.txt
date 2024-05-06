@@ -1235,7 +1235,89 @@ ACL2 !>>(DEFUN F6 (X)
 
 
 ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
-term (UNARY-DF- (TO-DF X)) requires a suitable :DFS keyword argument.
+term (UNARY-DF- (TO-DF X)) requires suitable :DFS-IN and :DFS-OUT keyword
+arguments.  See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS-OUT '(NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) requires suitable :DFS-IN and :DFS-OUT keyword
+arguments.  See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS-OUT (T)))
+
+
+HARD ACL2 ERROR in EC-CALL:  The call
+(EC-CALL (UNARY-DF- (TO-DF X)) :DFS-OUT (T))
+is illegal because the :dfs-out argument fails to be either nil or
+a quoted true list of Booleans.  See :DOC ec-call.
+
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  In the attempt to macroexpand
+the form (EC-CALL (UNARY-DF- (TO-DF X)) :DFS-OUT (T)), evaluation of
+the macro body caused the error below.
+
+Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
+see :DOC wet.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS-OUT '(T NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) requires suitable :DFS-IN and :DFS-OUT keyword
+arguments.  See :DOC ec-call.
+
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F6 (X)
+          (DECLARE (XARGS :GUARD (RATIONALP X)))
+          (EC-CALL (UNARY-DF- (TO-DF X))
+                   :DFS-OUT '(T)))
+
+
+ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
+term (UNARY-DF- (TO-DF X)) requires a suitable :DFS-IN keyword argument.
 See :DOC ec-call.
 
 
@@ -1249,61 +1331,8 @@ ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
 ACL2 !>>(DEFUN F6 (X)
           (DECLARE (XARGS :GUARD (RATIONALP X)))
           (EC-CALL (UNARY-DF- (TO-DF X))
-                   :DFS '(NIL)))
-
-
-ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
-term (UNARY-DF- (TO-DF X)) requires a suitable :DFS keyword argument.
-See :DOC ec-call.
-
-
-Summary
-Form:  ( DEFUN F6 ...)
-Rules: NIL
-
-ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
-
-******** FAILED ********
-ACL2 !>>(DEFUN F6 (X)
-          (DECLARE (XARGS :GUARD (RATIONALP X)))
-          (EC-CALL (UNARY-DF- (TO-DF X))
-                   :DFS (T)))
-
-
-ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
-term (UNARY-DF- (TO-DF X)) has a :DFS argument that is not of the form
-(QUOTE lst), hence is illegal.  See :DOC ec-call.
-
-
-Summary
-Form:  ( DEFUN F6 ...)
-Rules: NIL
-
-ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
-
-******** FAILED ********
-ACL2 !>>(DEFUN F6 (X)
-          (DECLARE (XARGS :GUARD (RATIONALP X)))
-          (EC-CALL (UNARY-DF- (TO-DF X))
-                   :DFS '(T NIL)))
-
-
-ACL2 Error [Translate] in ( DEFUN F6 ...):  A use of EC-CALL on the
-term (UNARY-DF- (TO-DF X)) requires a suitable :DFS keyword argument.
-See :DOC ec-call.
-
-
-Summary
-Form:  ( DEFUN F6 ...)
-Rules: NIL
-
-ACL2 Error [Failure] in ( DEFUN F6 ...):  See :DOC failure.
-
-******** FAILED ********
-ACL2 !>>(DEFUN F6 (X)
-          (DECLARE (XARGS :GUARD (RATIONALP X)))
-          (EC-CALL (UNARY-DF- (TO-DF X))
-                   :DFS '(T)))
+                   :DFS-IN '(T)
+                   :DFS-OUT '(T)))
 
 Since F6 is non-recursive, its admission is trivial.  We observe that
 the type of F6 is described by the theorem (RATIONALP (F6 X)).  We
@@ -1333,7 +1362,8 @@ ACL2 !>>(DEFUN F6-IDEAL (X)
           (DECLARE (XARGS :GUARD (RATIONALP X)
                           :VERIFY-GUARDS NIL))
           (EC-CALL (UNARY-DF- (TO-DF X))
-                   :DFS '(T)))
+                   :DFS-IN '(T)
+                   :DFS-OUT '(T)))
 
 Since F6-IDEAL is non-recursive, its admission is trivial.  We observe
 that the type of F6-IDEAL is described by the theorem 
@@ -1351,7 +1381,8 @@ ACL2 !>>(DEFUN F6-PROG (X)
           (DECLARE (XARGS :GUARD (RATIONALP X)
                           :MODE :PROGRAM))
           (EC-CALL (UNARY-DF- (TO-DF X))
-                   :DFS '(T)))
+                   :DFS-IN '(T)
+                   :DFS-OUT '(T)))
 
 Summary
 Form:  ( DEFUN F6-PROG ...)
@@ -1371,7 +1402,7 @@ ACL2 !>>(F7 7/2)
 (#d-3.5 #d-3.5 #d-3.5)
 ACL2 !>>(DEFUN F8 (X)
           (DECLARE (XARGS :MODE :PROGRAM))
-          (EC-CALL (F7 X) :DFS '(T T T)))
+          (EC-CALL (F7 X) :DFS-OUT '(T T T)))
 
 Summary
 Form:  ( DEFUN F8 ...)
@@ -1473,12 +1504,22 @@ ACL2 !>>(F9 7/2)
 #d-10.5
 ACL2 !>>(DEFUN F8-LOGIC (X)
           (DECLARE (XARGS :GUARD (RATIONALP X)))
-          (EC-CALL (F7 X) :DFS (T T T)))
+          (EC-CALL (F7 X) :DFS-OUT (T T T)))
 
 
-ACL2 Error [Translate] in ( DEFUN F8-LOGIC ...):  A use of EC-CALL
-on the term (F7 X) has a :DFS argument that is not of the form (QUOTE
-lst), hence is illegal.  See :DOC ec-call.
+HARD ACL2 ERROR in EC-CALL:  The call
+(EC-CALL (F7 X) :DFS-OUT (T T T))
+is illegal because the :dfs-out argument fails to be either nil or
+a quoted true list of Booleans.  See :DOC ec-call.
+
+
+
+ACL2 Error [Translate] in ( DEFUN F8-LOGIC ...):  In the attempt to
+macroexpand the form (EC-CALL (F7 X) :DFS-OUT (T T T)), evaluation
+of the macro body caused the error below.
+
+Evaluation aborted.  To debug see :DOC print-gv, see :DOC trace, and
+see :DOC wet.
 
 
 Summary
@@ -1490,7 +1531,7 @@ ACL2 Error [Failure] in ( DEFUN F8-LOGIC ...):  See :DOC failure.
 ******** FAILED ********
 ACL2 !>>(DEFUN F8-LOGIC (X)
           (DECLARE (XARGS :GUARD (RATIONALP X)))
-          (EC-CALL (F7 X) :DFS '(T T T)))
+          (EC-CALL (F7 X) :DFS-OUT '(T T T)))
 
 Since F8-LOGIC is non-recursive, its admission is trivial.  We observe
 that the type of F8-LOGIC is described by the theorem 
@@ -1583,6 +1624,57 @@ ACL2 >>(SET-GUARD-CHECKING T)
 
 Turning guard checking on, value T.
 
+ACL2 !>>(DEFSTOBJ ST0 FLD0)
+
+Summary
+Form:  ( DEFSTOBJ ST0 ...)
+Rules: NIL
+ ST0
+ACL2 !>>(DEFUN H1 (X Y ST0)
+          (DECLARE (XARGS :STOBJS ST0 :DFS Y))
+          (LET ((ST0 (UPDATE-FLD0 X ST0)))
+            (MV 3 Y ST0)))
+
+Since H1 is non-recursive, its admission is trivial.  We observe that
+the type of H1 is described by the theorem 
+(AND (CONSP (H1 X Y ST0)) (TRUE-LISTP (H1 X Y ST0))).  We used primitive
+type reasoning.
+
+(H1 * :DF ST0) => (MV * :DF ST0).
+
+Computing the guard conjecture for H1....
+
+The guard conjecture for H1 is trivial to prove.  H1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN H1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ H1
+ACL2 !>>(DEFUN H2 (X Y ST0)
+          (DECLARE (XARGS :STOBJS ST0 :DFS Y))
+          (EC-CALL (H1 X Y ST0)
+                   :DFS-IN '(NIL T NIL)
+                   :DFS-OUT '(NIL T NIL)))
+
+Since H2 is non-recursive, its admission is trivial.  We observe that
+the type of H2 is described by the theorem 
+(AND (CONSP (H2 X Y ST0)) (TRUE-LISTP (H2 X Y ST0))).  We used the
+:type-prescription rule H1.
+
+(H2 * :DF ST0) => (MV * :DF ST0).
+
+Computing the guard conjecture for H2....
+
+The guard conjecture for H2 is trivial to prove.  H2 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN H2 ...)
+Rules: ((:TYPE-PRESCRIPTION H1))
+ H2
+ACL2 !>>(H2 3 (TO-DF 4) ST0)
+(3 #d4.0 <st0>)
 ACL2 !>>(THM (DFP (TO-DF X)))
 
 Q.E.D.
@@ -4027,6 +4119,155 @@ ACL2 !>>(APPLY$-F0-IN-LAMBDA)
   <2 (F0 -3.0)
 <1 (ACL2_*1*_ACL2::F0 -3)
 -3
+ACL2 !>>(DEFUN$ APPLY$-F0-IN-LAMBDA-ALT
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ (LAMBDA$ (Y)
+                          (DECLARE (TYPE DOUBLE-FLOAT Y))
+                          (FROM-DF (F0 Y)))
+                        (LIST 3)))
+
+
+ACL2 !>>>(DEFUN APPLY$-F0-IN-LAMBDA-ALT NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ (LAMBDA$ (Y)
+                     (DECLARE (TYPE DOUBLE-FLOAT Y))
+                     (FROM-DF (F0 Y)))
+                   (LIST 3)))
+
+Since APPLY$-F0-IN-LAMBDA-ALT is non-recursive, its admission is trivial.
+We could deduce no constraints on the type of APPLY$-F0-IN-LAMBDA-ALT.
+
+Computing the guard conjecture for APPLY$-F0-IN-LAMBDA-ALT....
+
+The non-trivial part of the guard conjecture for APPLY$-F0-IN-LAMBDA-ALT,
+given the :executable-counterpart of APPLY$-GUARD, is
+
+Goal
+(IMPLIES (DFP Y) (DFP (F0 Y))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for APPLY$-F0-IN-LAMBDA-ALT.
+APPLY$-F0-IN-LAMBDA-ALT is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN APPLY$-F0-IN-LAMBDA-ALT ...)
+Rules: ((:DEFINITION F0)
+        (:DEFINITION UNARY-DF-)
+        (:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:REWRITE DFP-DF-ROUND))
+APPLY$-F0-IN-LAMBDA-ALT
+
+
+ACL2 !>>>(DEFWARRANT APPLY$-F0-IN-LAMBDA-ALT)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+
+
+APPLY$-F0-IN-LAMBDA-ALT is now warranted by 
+APPLY$-WARRANT-APPLY$-F0-IN-LAMBDA-ALT, with badge (APPLY$-BADGE 0 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN APPLY$-F0-IN-LAMBDA-ALT ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(APPLY$-F0-IN-LAMBDA-ALT)
+1> (ACL2_*1*_ACL2::F0 3)
+  2> (F0 3.0)
+  <2 (F0 -3.0)
+<1 (ACL2_*1*_ACL2::F0 -3)
+-3
+ACL2 !>>(DEFUN$ DF1-AS-LAMBDA
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ (LAMBDA$ NIL
+                          (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                          (DF1))
+                        NIL))
+
+
+ACL2 !>>>(DEFUN DF1-AS-LAMBDA NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ (LAMBDA$ NIL
+                     (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                     (DF1))
+                   NIL))
+
+
+ACL2 Error [Translate] in ( DEFUN DF1-AS-LAMBDA ...):  It is illegal
+to invoke DF1 here because of a signature mismatch.  This function
+call returns a result of shape :DF where a result of shape * is required.
+Note:  this error occurred in the context (DF1).
+
+
+Summary
+Form:  ( DEFUN DF1-AS-LAMBDA ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN DF1-AS-LAMBDA ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (DEFUN DF1-AS-LAMBDA ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( PROGN (DEFUN DF1-AS-LAMBDA ...) ...):  See
+:DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN$ DF1-AS-LAMBDA
+                NIL (DECLARE (XARGS :GUARD T))
+                (APPLY$ (LAMBDA$ NIL
+                          (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                          (FROM-DF (DF1)))
+                        NIL))
+
+
+ACL2 !>>>(DEFUN DF1-AS-LAMBDA NIL
+           (DECLARE (XARGS :GUARD T))
+           (APPLY$ (LAMBDA$ NIL
+                     (DECLARE (XARGS :GUARD 'T :SPLIT-TYPES T))
+                     (FROM-DF (DF1)))
+                   NIL))
+
+Since DF1-AS-LAMBDA is non-recursive, its admission is trivial.  We
+could deduce no constraints on the type of DF1-AS-LAMBDA.
+
+Computing the guard conjecture for DF1-AS-LAMBDA....
+
+The guard conjecture for DF1-AS-LAMBDA is trivial to prove, given the
+:executable-counterparts of APPLY$-GUARD and DFP.  DF1-AS-LAMBDA is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN DF1-AS-LAMBDA ...)
+Rules: ((:EXECUTABLE-COUNTERPART APPLY$-GUARD)
+        (:EXECUTABLE-COUNTERPART DFP))
+DF1-AS-LAMBDA
+
+
+ACL2 !>>>(DEFWARRANT DF1-AS-LAMBDA)
+
+
+DF1-AS-LAMBDA is now warranted by APPLY$-WARRANT-DF1-AS-LAMBDA, with
+badge (APPLY$-BADGE 0 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN DF1-AS-LAMBDA ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(DF1-AS-LAMBDA)
+1
 ACL2 !>>(ENCAPSULATE (((F13 :DF) => *))
           (LOCAL (DEFUN F13 (X)
                    (DECLARE (TYPE DOUBLE-FLOAT X))

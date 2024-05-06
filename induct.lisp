@@ -133,7 +133,7 @@
      (wonp
       (with-accumulated-persistence
        (access rewrite-rule lemma :rune)
-       ((the (signed-byte 30) step-limit) term ttree)
+       ((the #.*fixnum-type* step-limit) term ttree)
        t
        (expand-abbreviations
         (access rewrite-rule lemma :rhs)
@@ -395,7 +395,7 @@
 
               (with-accumulated-persistence
                (fn-rune-nume fn nil nil wrld)
-               ((the (signed-byte 30) step-limit) term ttree)
+               ((the #.*fixnum-type* step-limit) term ttree)
                t
                (expand-abbreviations (bbody fn)
                                      (pairlis$ (formals fn wrld) expanded-args)
@@ -608,7 +608,7 @@
               (term ttree)
               (with-accumulated-persistence
                (access def-body def-body :rune)
-               ((the (signed-byte 30) step-limit) term ttree)
+               ((the #.*fixnum-type* step-limit) term ttree)
                t
                (expand-abbreviations
                 (subcor-var (access def-body def-body
@@ -636,7 +636,7 @@
                    (term ttree)
                    (with-accumulated-persistence
                     (access rewrite-rule lemma :rune)
-                    ((the (signed-byte 30) step-limit) term ttree)
+                    ((the #.*fixnum-type* step-limit) term ttree)
                     t
                     (expand-abbreviations
                      (sublis-var unify-subst

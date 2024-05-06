@@ -1,7 +1,7 @@
 ; A tool to normalize XOR nests in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -62,7 +62,7 @@
                            ;;LIST::LEN-WHEN-AT-MOST-1
                            all-natp-when-not-consp
                            all-<-when-not-consp
-                           all-dargp-when-not-consp
+                           darg-listp-when-not-consp
                            ;; for speed:
                            all-<=-when-not-consp
                            ALL-<-TRANSITIVE-FREE
@@ -76,7 +76,7 @@
 
 (local (in-theory (enable consp-of-cdr
                           nth-of-cdr
-                          myquotep-of-nth-when-all-dargp
+                          myquotep-of-nth-when-darg-listp
                           <=-of-nth-when-all-<= ;todo
                           <-of-+-of-1-when-integers
                           natp-of-+-of-1
@@ -311,8 +311,6 @@
   :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;(def-typed-acl2-array translation-arrayp (natp val) :DEFAULT-SATISFIES-PREDP nil)
 
 ;; Returns (mv nodenums combined-constant).  Translates the nodenums according
 ;; to translation-array and xors all the constants.  The nodenums returned are
@@ -779,7 +777,7 @@
 ;; ;; Returns (mv leaf-nodenums accumulated-constant)
 ;; (defund bitxor-nest-leaves-for-node (nodenum dag-array-name dag-array)
 ;;   (declare (xargs :guard (and (natp nodenum)
-;;                               (<= nodenum 2147483645)
+;;                               (<= nodenum *max-1d-array-index*)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
 ;;   (let* ((tag-array-name 'bitxor-nest-leaves-for-node-tag-array)
 ;;          (tag-array (make-empty-array tag-array-name (+ 1 nodenum))) ;all tags are initially nil
@@ -1142,7 +1140,7 @@
                   :measure (+ 1 (nfix (- old-dag-len n)))
                   :split-types t
                   :guard-hints (("Goal" :in-theory (disable dargp dargp-less-than natp))))
-            (type (integer 0 2147483646) old-dag-len))
+            (type (integer 0 1152921504606846974) old-dag-len))
   (if (or (not (mbt (natp n)))
           (not (mbt (natp old-dag-len)))
           (>= n old-dag-len))
@@ -1390,7 +1388,7 @@
 ;Returns (mv erp dag-or-quotep changep) where the result is either a new dag whose top node is equal to the top node of DAG, or a quotep equal to the top node of DAG
 (defund normalize-xors (dag print)
   (declare (xargs :guard (and (pseudo-dagp dag) ; not empty, not a quotep
-                              (<= (* 2 (len dag)) 2147483646) ;todo
+                              (<= (* 2 (len dag)) *max-1d-array-length*) ;todo
                               )
                   :guard-hints (("Goal" :in-theory (e/d (top-nodenum-of-dag) (pseudo-dag-arrayp natp quotep))))))
   (if (not (intersection-eq '(bitxor bvxor) (dag-fns dag))) ;; TODO: Optimize this check
@@ -1433,7 +1431,7 @@
                                        (cw ")~%"))
                                   (mv (erp-nil) result t))
                         (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
-                             ((when (<= 2147483646 (+ (len dag) ;;todo: this is for equivalent-dagsp below but that should be made more flexible (returning an erp)
+                             ((when (<= *max-1d-array-length* (+ (len dag) ;;todo: this is for equivalent-dagsp below but that should be made more flexible (returning an erp)
                                                       (len new-dag))))
                               (er hard? 'normalize-xors "DAGs too large.")
                               (mv :dag-too-large nil nil))

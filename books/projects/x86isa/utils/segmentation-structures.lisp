@@ -40,6 +40,8 @@
 
 (include-book "basic-structs")
 
+;; ----------------------------------------------------------------------
+
 (defsection segmentation-bitstructs
   :parents (structures)
   :short "<b>Bitstructs related to segmentation, protection, etc.</b>"
@@ -48,6 +50,8 @@
   )
 
 (local (xdoc::set-default-parents segmentation-bitstructs))
+
+;; ----------------------------------------------------------------------
 
 (defbitstruct hidden-segment-registerBits
   :long "<p>Source: Intel manual, Mar'17, Vol. 3A, Figure 3-7</p>"

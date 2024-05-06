@@ -16,6 +16,6 @@
 
 (in-package "ACL2S")
 (acl2s-defaults :set testing-enabled nil)
-(set-acl2s-property-table-proof-timeout 12000)
+(set-acl2s-property-table-proof-timeout 50000)
 
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t

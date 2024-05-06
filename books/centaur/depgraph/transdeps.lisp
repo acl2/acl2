@@ -95,7 +95,7 @@ an overapproximation because of shadowed pairs in the graph.</p>"
   :parents (transdeps)
   :short "Get the set of direct dependencies for a set of nodes."
   :verify-guards nil
-  (if (empty nodes)
+  (if (emptyp nodes)
       nil
     (union (transdeps-direct-for-node (head nodes) graph)
            (transdeps-direct-for-nodes (tail nodes) graph)))

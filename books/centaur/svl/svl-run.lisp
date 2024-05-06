@@ -554,8 +554,8 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
                       (get-substr signame
                                   (nfix (1+ pos-of-colon))
                                   (nfix (+ pos-of-] (- pos-of-colon) -1)))))
-               ((unless (and (str::dec-digit-char-listp pos1)
-                             (str::dec-digit-char-listp pos2)))
+               ((unless (and (str::dec-digit-char-list*p pos1)
+                             (str::dec-digit-char-list*p pos2)))
                 (progn$
                  (hard-error 'svl-run-simplify-signame
                              "~p0 has an unexpected structure. It should be ~
@@ -884,7 +884,7 @@ For example:
                       "Something went wrong while parsing inputs... ~p0 ~%"
                       (list (cons #\0 inputs-unbound))))
          ;; everything up to here uses only constants (only executable
-         ;; counterparts) 
+         ;; counterparts)
          (inputs (svexlist-list-eval-wog inputs-unbound inputs-env)))
       (svl-run-aux modname inputs output-wires out-bind-alist (make-svl-env) modules))))
 

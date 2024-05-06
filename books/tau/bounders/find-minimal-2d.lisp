@@ -175,7 +175,12 @@
                                             HIX
                                             LOY HIY
                                             (FIND-MINIMAL2 LOX LOY HIY XXX)))
-                       (min2 (FIND-MINIMAL2 LOX LOY HIY XXX)))))))
+                       (min2 (FIND-MINIMAL2 LOX LOY HIY XXX))))
+
+; Matt K. mod to accommodate change to strong-recognizer-expr-p in ACL2 near
+; the end of March 2024:
+
+           :do-not '(generalize))))
 
 (defthm below-all2-is-a-universal-quantifier
   (implies (and (below-all2 min x loy hiy)

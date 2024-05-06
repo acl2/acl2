@@ -15,15 +15,16 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 
+;; why "normal"?  maybe "component" ?
 (mutual-recursion
  (defun normal-output-indicatorp (x)
    (declare (xargs :guard t))
-   (or ;; TODO: Deprecate this case:
-    (member-equal x '(:rax
-                      :eax
-                      ;; todo: more
-                      :zmm0 :ymm0 :xmm0
-                      ))
+   (or (member-equal x '(:rax
+                         :eax
+                         ;; todo: more
+                         :zmm0 :ymm0 :xmm0
+                         ))
+       ;; TODO: Deprecate this case but the tester used :register-bool
        (and (true-listp x) ;; (:register <N>) or (:register-bool <N>)
             (member-eq (first x) '(:register :register-bool))
             (eql 2 (len x))
@@ -33,9 +34,9 @@
        (and (true-listp x) ;; (:mem32 <ADDR-TERM>)
             (eq (first x) :mem32)
             (eql 2 (len x))
-            (pseudo-termp (second x)); argument should be a term (should we translate it)
+            (pseudo-termp (second x)) ; argument should be a term (should we translate it)
             )
-       (and (true-listp x)
+       (and (true-listp x) ;; (:tuple ... output-indicators ...)
             (eq (first x) :tuple)
             (normal-output-indicatorsp (rest x)))))
  (defun normal-output-indicatorsp (x)
@@ -113,3 +114,29 @@
             (prog2$ (cw "NOTE: The call to the lifter ~x0 is redundant.~%" whole-form)
                     previous-result)
           nil)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *executable-types32* '(:pe-32 :mach-o-32 :elf-32))
+(defconst *executable-types64* '(:pe-64 :mach-o-64 :elf-64))
+(defconst *executable-types* (append *executable-types32* *executable-types64*))
+
+;; The type of an x86 executable
+(defun executable-typep (type)
+  (declare (xargs :guard t))
+  (member-eq type *executable-types*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a symbol-list.
+(defund maybe-add-debug-rules (debug-rules monitor)
+  (declare (xargs :guard (and (or (eq :debug monitor)
+                                  (symbol-listp monitor))
+                              (symbol-listp debug-rules))))
+  (if (eq :debug monitor)
+      debug-rules
+    (if (member-eq :debug monitor)
+        ;; replace :debug in the list with all the debug-rules:
+        (union-eq debug-rules (remove-eq :debug monitor))
+      ;; no special treatment:
+      monitor)))

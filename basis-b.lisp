@@ -1580,8 +1580,9 @@
 ; any inappropriate type declarations in the code below, and there were no
 ; checksumming problems exhibited with CCL, GCL, or SBCL.  Moreover, Allegro CL
 ; showed significant slow down with the fancy times-mod-m31, not surprisingly
-; since Allegro CL supports fixnums of less than 32 bits.  Therefore, we
-; decided to use a much simpler times-mod-m31 for all Lisps except GCL.
+; since Allegro CL supports fixnums of less than 32 bits (at the time this
+; comment was written; many more bits now).  Therefore, we decided to use a
+; much simpler times-mod-m31 for all Lisps except GCL.
 
 (defun plus-mod-m31 (u v)
 
@@ -4102,7 +4103,7 @@
   (declare (xargs :guard (and (integerp fixnum-lo)
                               (integerp fixnum-hi)
                               (>= fixnum-hi fixnum-lo)))
-           (type (signed-byte 30) fixnum-lo fixnum-hi))
+           (type #.*fixnum-type* fixnum-lo fixnum-hi))
 
 ; This function is simply NIL in the logic but allocates a range of fixnums
 ; (from fixnum-lo to fixnum-hi) in GCL as a side effect (a side effect which

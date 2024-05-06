@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,10 +71,10 @@
 
   (defruled cdr-of-in-when-scopep
     (implies (scopep scope)
-             (iff (cdr (omap::in id scope))
-                  (omap::in id scope)))
+             (iff (cdr (omap::assoc id scope))
+                  (omap::assoc id scope)))
     :induct t
-    :enable omap::in))
+    :enable omap::assoc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -551,7 +551,7 @@
   (b* ((var (ident-fix var))
        ((when (equal (compustate-frames-number compst) 0))
         (b* ((static (compustate->static compst))
-             (pair (omap::in var static))
+             (pair (omap::assoc var static))
              ((when (consp pair)) (error (list :var-redefinition var)))
              (new-static (omap::update var
                                        (remove-flexible-array-member val)
@@ -561,7 +561,7 @@
        (frame (top-frame compst))
        (scopes (frame->scopes frame))
        (scope (car scopes))
-       (pair (omap::in var scope))
+       (pair (omap::assoc var scope))
        ((when (consp pair)) (error (list :var-redefinition var)))
        (new-scope (omap::update var
                                 (remove-flexible-array-member val)
@@ -627,7 +627,7 @@
                                    (1- (compustate-frames-number compst))
                                    (frame->scopes (top-frame compst)))))
        ((when objdes?) objdes?)
-       (var+val? (omap::in (ident-fix var) (compustate->static compst))))
+       (var+val? (omap::assoc (ident-fix var) (compustate->static compst))))
     (and (consp var+val?)
          (objdesign-static var)))
   :guard-hints (("Goal" :in-theory (enable natp compustate-frames-number)))
@@ -639,7 +639,7 @@
      :parents nil
      (b* (((when (endp scopes)) nil)
           (scope (car scopes))
-          (var+val? (omap::in (ident-fix var) (scope-fix scope)))
+          (var+val? (omap::assoc (ident-fix var) (scope-fix scope)))
           ((when (consp var+val?))
            (make-objdesign-auto :name var
                                 :frame frame
@@ -668,11 +668,11 @@
 
      (defruled objdesign-of-var-aux-lemma
        (b* ((objdes (objdesign-of-var-aux var frame scopes))
-            (pair (omap::in (objdesign-auto->name objdes)
-                            (scope-fix
-                             (nth (- (1- (len scopes))
-                                     (objdesign-auto->scope objdes))
-                                  scopes)))))
+            (pair (omap::assoc (objdesign-auto->name objdes)
+                               (scope-fix
+                                (nth (- (1- (len scopes))
+                                        (objdesign-auto->scope objdes))
+                                     scopes)))))
          (implies objdes
                   (and (objdesign-case objdes :auto)
                        (equal (objdesign-auto->name objdes)
@@ -726,7 +726,7 @@
   (objdesign-case
    objdes
    :static
-   (b* ((var+val (omap::in objdes.name (compustate->static compst)))
+   (b* ((var+val (omap::assoc objdes.name (compustate->static compst)))
         ((when (not var+val))
          (error (list :static-var-not-found objdes.name))))
      (cdr var+val))
@@ -739,7 +739,7 @@
         ((unless (< objdes.scope (len rev-scopes)))
          (error (list :scope-index-out-of-range objdes.scope)))
         (scope (nth objdes.scope rev-scopes))
-        (var+val (omap::in objdes.name scope))
+        (var+val (omap::assoc objdes.name scope))
         ((unless (consp var+val))
          (error (list :name-not-found objdes.name)))
         (val (cdr var+val)))
@@ -747,7 +747,7 @@
    :alloc
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
-        (addr+obj (omap::in addr heap))
+        (addr+obj (omap::assoc addr heap))
         ((unless (consp addr+obj))
          (error (list :address-not-found addr)))
         (obj (cdr addr+obj)))
@@ -827,7 +827,7 @@
    objdes
    :static
    (b* ((static (compustate->static compst))
-        (var+val (omap::in objdes.name static))
+        (var+val (omap::assoc objdes.name static))
         ((when (not var+val))
          (error (list :static-var-not-found objdes.name)))
         ((unless (equal (type-of-value (cdr var+val))
@@ -849,7 +849,7 @@
         ((unless (< objdes.scope (len rev-scopes)))
          (error (list :scope-index-out-of-range objdes.scope)))
         (scope (nth objdes.scope rev-scopes))
-        (var+val (omap::in objdes.name scope))
+        (var+val (omap::assoc objdes.name scope))
         ((unless (consp var+val))
          (error (list :name-not-found objdes.name)))
         (oldval (cdr var+val))
@@ -870,7 +870,7 @@
    :alloc
    (b* ((addr objdes.get)
         (heap (compustate->heap compst))
-        (addr+obj (omap::in addr heap))
+        (addr+obj (omap::assoc addr heap))
         ((unless (consp addr+obj))
          (error (list :address-not-found addr)))
         (obj (cdr addr+obj))

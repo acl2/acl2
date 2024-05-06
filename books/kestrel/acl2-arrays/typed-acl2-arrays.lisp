@@ -16,6 +16,9 @@
 
 ;; TODO: Consider what to do when the array's default value does / doesn't satisfy the pred (for all indices, if the index is mentioned?). Would like a theorem about make-empty-array.
 
+;; TODO: Consider allowing the supplied pred to be a symbol that names a unary
+;; predicate to be applied to the value.
+
 (include-book "acl2-arrays")
 (include-book "expandable-arrays")
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -25,7 +28,8 @@
 
 (defun def-array-checker-fn (checker-fn pred extra-vars extra-guards)
   (declare (xargs :guard (and (symbolp checker-fn)
-                              (symbol-listp extra-vars))))
+                              (symbol-listp extra-vars)
+                              (true-listp extra-guards))))
   `(encapsulate ()
 
      (local (in-theory (disable assoc-keyword))) ;prevent inductions
@@ -33,7 +37,11 @@
      ;; Checks that the values at indices from index down to 0 are
      ;; correct.
      (defund ,checker-fn (array-name array index ,@extra-vars)
-       (declare (xargs :measure (nfix (+ 1 index))
+       (declare (xargs :guard (and (array1p array-name array)
+                                   (integerp index)
+                                   (< index (alen1 array-name array))
+                                   ,@extra-guards)
+                       :measure (nfix (+ 1 index))
                        :hints (("Goal" :in-theory '(natp
                                                     nfix
                                                     fix
@@ -43,15 +51,11 @@
                                                     o-finp
                                                     o<
                                                     fold-consts-in-+
-                                                    unicity-of-0)))
-                       :guard (and (array1p array-name array)
-                                   (integerp index)
-                                   (< index (alen1 array-name array))
-                                   ,@extra-guards)))
+                                                    unicity-of-0)))))
        (if (not (natp index))
            t
          (let ((val (aref1 array-name array index)))
-           (and ,pred ;some check on val (may also mention index)
+           (and ,pred ;some check on val (may also mention index and the extra-vars)
                 (,checker-fn array-name array (+ -1 index) ,@extra-vars)))))
 
      ;; No values to check
@@ -76,7 +80,6 @@
        :hints (("Goal" :in-theory (enable ,checker-fn))))
 
      ;; todo: improve the name here:
-     ;; todo: can hyps on the index be dropped if the default value satisfies the pred?
      (defthm ,(pack$ 'type-of-aref1-when- checker-fn)
        (implies (and (,checker-fn array-name array top-index ,@extra-vars)
                      (<= index top-index)
@@ -116,7 +119,7 @@
      ;; Special case for extending the range of checked elements by 1
      (defthm ,(pack$ checker-fn '-of-aset1-at-end)
        (implies (and (,checker-fn array-name array (+ -1 index) ,@extra-vars) ;the item at index is being written
-                     ,pred ;over index and val
+                     ,pred ;over val and perhaps index and the extra-vars
                      (< index (alen1 array-name array))
                      (array1p array-name array)
                      (natp index))
@@ -128,8 +131,7 @@
                      (< index (alen1 array-name array)))
                 (equal (,checker-fn array-name (compress1 array-name array) index ,@extra-vars)
                        (,checker-fn array-name array index ,@extra-vars)))
-       :hints (("Goal"; :do-not '(generalize eliminate-destructors)
-                :induct (,checker-fn array-name array index ,@extra-vars)
+       :hints (("Goal" :induct (,checker-fn array-name array index ,@extra-vars)
                 :in-theory (enable ,checker-fn))))
 
      (defthm ,(pack$ checker-fn '-of-cons-of-cons-of-header)
@@ -155,11 +157,13 @@
                 :in-theory (e/d (,checker-fn)
                                 (aref1-of-cons-of-cons-of-header)))))))
 
-;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
+;; pred should be an expression over at most the vars VAL and INDEX and the EXTRA-VARS
 (defmacro def-array-checker (checker-fn pred &key
                                         (extra-vars 'nil)
                                         (extra-guards 'nil))
   (def-array-checker-fn checker-fn pred extra-vars extra-guards))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; def-typed-acl2-array (this version takes an argument that specifies how many values to check, starting at index 0)
@@ -168,8 +172,12 @@
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
 (defun def-typed-acl2-array-fn (fn pred default default-satisfies-predp extra-vars extra-guards)
   (declare (xargs :guard (and (symbolp fn)
+                              ;; pred can be untranslated
+                              ;; default is any value
                               (booleanp default-satisfies-predp)
-                              (symbol-listp extra-vars))))
+                              (symbol-listp extra-vars)
+                              (true-listp extra-guards) ;; can be untranslated
+                              )))
   (let ((aux-fn (pack$ fn '-aux)))
     `(encapsulate ()
 
@@ -179,7 +187,7 @@
        ,@(and default-satisfies-predp
               `((local
                  (defthm ensure-default-satisfies-pred
-                   (implies (natp index) ;strengthen?
+                   (implies (natp index) ;strengthen? ; assume the extra-guards?
                             (let ((val ,default))
                               ,pred))
                    :rule-classes nil))
@@ -189,7 +197,7 @@
                   (implies (and (< index len)
                                 (natp index)
                                 (posp len)
-                                (< len 2147483647)
+                                (<= len *max-1d-array-length*)
                                 (symbolp array-name))
                            (,aux-fn array-name (make-empty-array-with-default array-name len ,default) index ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,aux-fn))))))
@@ -224,13 +232,13 @@
          :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 
-       (defthm ,(pack$ fn '-forward-to-len-bound fn)
+       (defthm ,(pack$ fn '-forward-to-len-bound)
          (implies (,fn array-name array num-valid-indices ,@extra-vars)
                   (<= num-valid-indices (alen1 array-name array)))
          :rule-classes :forward-chaining
          :hints (("Goal" :in-theory (enable ,fn))))
 
-       (defthm ,(pack$ fn '-forward-to-len-bound-2 fn)
+       (defthm ,(pack$ fn '-forward-to-len-bound-2)
          (implies (,fn array-name array num-valid-indices ,@extra-vars)
                   (<= 0 (alen1 array-name array)))
          :rule-classes :forward-chaining
@@ -262,8 +270,7 @@
          (implies (and (,fn array-name array n ,@extra-vars)
                        (<= m n)
                        (natp m)
-                       (integerp n) ;(natp n)
-                       )
+                       (integerp n))
                   (,fn array-name array m ,@extra-vars))
          :hints (("Goal" :in-theory (enable ,fn))))
 
@@ -303,7 +310,7 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array-with-default array-name len ,default) len ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable ,fn))))))
 
        ,@(and default-satisfies-predp
@@ -312,24 +319,30 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array array-name len) len ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable make-empty-array))))))
 
-       ,@(and (equal default nil) ;since make-empty-array puts in nil
+       ;; true even if the default does not satisfy the pred, because the 0
+       ;; means no elements are checked
+       (defthm ,(pack$ fn '-of-make-empty-array-with-default-and-0)
+         (implies (and (posp len)
+                       (symbolp array-name)
+                       (<= len 2147483646))
+                  (,fn array-name (make-empty-array-with-default array-name len ,default) 0 ,@extra-vars))
+         :hints (("Goal" :in-theory (enable ,fn make-empty-array))))
+
+       ,@(and (equal default nil) ;since make-empty-array puts uses 0 for the default and fn checks the default
               ;; true even if the default does not satisfy the pred, because the 0
               ;; means no elements are checked
               `((defthm ,(pack$ fn '-of-make-empty-array-and-0)
                   (implies (and (posp len)
                                 (symbolp array-name)
-                                (<= len 2147483646))
-                           (,fn array-name
-                                (make-empty-array array-name len)
-                                0
-                                ,@extra-vars))
+                                (<= len *max-1d-array-length*))
+                           (,fn array-name (make-empty-array array-name len) 0 ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,fn make-empty-array)))))))))
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
-;; default-satisfies-predp indicates whether a value of NIL satisfies default-satisfies-predp.
+;; default-satisfies-predp indicates whether the value DEFAULT satisfies PRED.
 (defmacro def-typed-acl2-array (fn pred &key
                                    (default 'nil)
                                    (default-satisfies-predp 't)
@@ -337,11 +350,14 @@
                                    (extra-guards 'nil))
   (def-typed-acl2-array-fn fn pred default default-satisfies-predp extra-vars extra-guards))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; def-typed-acl2-array2 (this version checks every value up to index length-1)
 ;;;
 
 ;; pred should be an expression over at most the vars INDEX and VAL and the EXTRA-VARS
+;; TODO: Combine this with the other version?
 (defun def-typed-acl2-array2-fn (fn pred default default-satisfies-predp extra-vars extra-guards)
   (declare (xargs :guard (and (symbolp fn)
                               (booleanp default-satisfies-predp)
@@ -373,12 +389,12 @@
                   (implies (and (< index len)
                                 (natp index)
                                 (posp len)
-                                (< len 2147483647)
+                                (<= len *max-1d-array-length*)
                                 (symbolp array-name))
                            (,aux-fn array-name (make-empty-array-with-default array-name len ,default) index ,@extra-vars))
                   :hints (("Goal" :in-theory (enable ,aux-fn))))
 
-                (defthm ,(pack$ aux-fn '-beyond-length)
+                (defthm ,(pack$ aux-fn '-beyond-length) ; rename?
                   (implies (and (,aux-fn array-name array (+ -1 (alen1 array-name array)) ,@extra-vars)
                                 (array1p array-name array)
                                 (natp index)
@@ -398,9 +414,9 @@
                                 (,aux-fn array-name array index ,@extra-vars)
                                 (array1p array-name array)
                                 (natp index)
-                                (< index 2147483646)
+                                (< index *max-1d-array-length*)
                                 (natp index2)
-                                (< index2 2147483646)
+                                (< index2 *max-1d-array-length*)
                                 (equal header-args (cdr (header array-name array)))
                                 (equal current-length (alen1 array-name array))
                                 (equal ,default (default array-name array)))
@@ -423,7 +439,7 @@
                                 (,aux-fn array-name array (+ -1 (alen1 array-name array)) ,@extra-vars)
                                 (array1p array-name array)
                                 (natp index2)
-                                (< index2 2147483646)
+                                (< index2 *max-1d-array-length*)
                                 (equal header-args (cdr (header array-name array)))
                                 (equal current-length (alen1 array-name array))
                                 (equal ,default (default array-name array)))
@@ -511,14 +527,14 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array-with-default array-name len ,default) ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable ,fn))))
 
                 (defthm ,(pack$ fn '-of-expand-array)
                   (implies (and (<= (alen1 array-name array) index) ;or we wouldn't be calling expand-array
                                 (,fn array-name array ,@extra-vars)
                                 (natp index)
-                                (< index 2147483646)
+                                (< index *max-1d-array-length*)
                                 (equal header-args (cdr (header array-name array)))
                                 (equal current-length (alen1 array-name array)))
                            (,fn array-name (expand-array array-name array header-args index current-length) ,@extra-vars))
@@ -527,7 +543,7 @@
                 (defthm ,(pack$ fn '-of-maybe-expand-array)
                   (implies (and (,fn array-name array ,@extra-vars)
                                 (natp index)
-                                (< index 2147483646))
+                                (< index *max-1d-array-length*))
                            (,fn array-name (maybe-expand-array array-name array index) ,@extra-vars))
                   :hints (("Goal" :in-theory (enable maybe-expand-array))))))
 
@@ -537,7 +553,7 @@
                   (implies (symbolp array-name)
                            (equal (,fn array-name (make-empty-array array-name len) ,@extra-vars)
                                   (and (posp len)
-                                       (<= len 2147483646))))
+                                       (<= len *max-1d-array-length*))))
                   :hints (("Goal" :in-theory (enable make-empty-array))))))
 
        ;; ;; true even if the default does not satisfy the pred, because the 0
@@ -545,7 +561,7 @@
        ;; (defthm ,(pack$ fn '-of-make-empty-array-and-0)
        ;;   (implies (and (posp len)
        ;;                 (symbolp array-name)
-       ;;                 (<= len 2147483646))
+       ;;                 (<= len *max-1d-array-length*))
        ;;            (,fn array-name
        ;;                 (make-empty-array array-name len)
        ;;                 0

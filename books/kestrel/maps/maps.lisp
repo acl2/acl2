@@ -164,7 +164,7 @@
                 A
                 (G A R))
            (EQUAL (CAAR R) A))
-  :hints (("Goal" :in-theory (e/d (g wfr WFKEYED) ()))))
+  :hints (("Goal" :in-theory (enable g wfr wfkeyed))))
 
 (defthm g-of-caar
   (IMPLIES (AND (not (ifrp r))
@@ -235,7 +235,7 @@
 ;move to sets
 ;expensive?
 (defthm head-when-empty
-  (implies (set::empty ads)
+  (implies (set::emptyp ads)
            (equal (set::head ads)
                   nil))
   :hints (("Goal" :in-theory (enable set::head set::sfix))))

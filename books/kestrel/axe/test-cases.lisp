@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "axe-types")
+(include-book "axe-types") ; for stuff like list-type-len-type
 (include-book "evaluator-basic") ; for the :eval type
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
@@ -20,27 +20,37 @@
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+;(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (local (in-theory (disable randp symbol-alistp)))
 
+(in-theory (disable mv-nth))
+
 ;move
-(defthm integerp-of-mv-nth-0-of-genrandom
-  (implies (integerp max) ; gen?
-           (integerp (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
+(local
+ (defthm integerp-of-mv-nth-0-of-genrandom
+   (implies (integerp max) ; gen?
+            (integerp (mv-nth 0 (genrandom max rand))))
+   :hints (("Goal" :in-theory (enable genrandom)))))
 
-(defthm <=-of-0-and-mv-nth-0-of-genrandom
-  (implies (natp max) ; gen?
-           (<= 0 (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
+(local
+ (defthm <=-of-0-and-mv-nth-0-of-genrandom
+   (implies (natp max) ; gen?
+            (<= 0 (mv-nth 0 (genrandom max rand))))
+   :hints (("Goal" :in-theory (enable genrandom)))))
 
-(defthm natp-of-mv-nth-0-of-genrandom
-  (implies (natp max) ; gen?
-           (natp (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
+(local
+ (defthm natp-of-mv-nth-0-of-genrandom
+   (implies (natp max) ; gen?
+            (natp (mv-nth 0 (genrandom max rand))))
+   :hints (("Goal" :in-theory (enable genrandom)))))
+
+(local
+ (defthm integerp-of-mv-nth-0-of-genrandom-of-expt2
+   (integerp (mv-nth 0 (genrandom (expt 2 size) rand)))
+   :hints (("Goal" :in-theory (enable genrandom)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,9 +77,7 @@
 
 (defthm integerp-of-mv-nth-0-of-gen-random-bv
   (integerp (mv-nth 0 (gen-random-bv size rand)))
-  :hints (("Goal" :in-theory (enable gen-random-bv
-                                     genrandom ;todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable gen-random-bv))))
 
 (verify-guards gen-random-bv)
 
@@ -116,7 +124,7 @@
                                                      list-type-element-type
                                                      list-typep)))))
   (or (myquotep type)
-      (symbolp type) ; look up a previous val
+      (symbolp type) ; look up a previous val -- todo: tag this?
       (bv-typep type)
       (and (list-typep type)
            (test-case-typep (list-type-element-type type))
@@ -140,6 +148,16 @@
            (consp (cdr type)) ; must be at least one element
            )))
 
+(defthm test-case-typep-of-make-bv-type
+  (implies (natp width)
+           (test-case-typep (make-bv-type width)))
+  :hints (("Goal" :in-theory (enable test-case-typep make-bv-type))))
+
+(defthm test-case-typep-of-make-bv-array-type
+  (implies (natp element-width)
+           (test-case-typep (make-bv-array-type element-width len)))
+  :hints (("Goal" :in-theory (enable test-case-typep make-bv-array-type))))
+
 ;; Recognize an alist from vars to their "test types"
 (defund test-case-type-alistp (alist)
   (declare (xargs :guard t))
@@ -152,6 +170,13 @@
              (and (symbolp var)
                   (test-case-typep type)
                   (test-case-type-alistp (rest alist))))))))
+
+(defthm test-case-type-alistp-of-cons-of-cons
+  (equal (test-case-type-alistp (cons (cons var type) alist))
+         (and (symbolp var)
+              (test-case-typep type)
+              (test-case-type-alistp alist)))
+  :hints (("Goal" :in-theory (enable test-case-type-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,9 +291,15 @@
               (test-casep test-case)))
   :hints (("Goal" :in-theory (enable test-casep))))
 
+(defthm test-casesp-forward-to-symbol-alistp
+  (implies (test-casep case)
+           (symbol-alistp case))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable test-casep))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a true list of test cases.
+;; Recognize a true-list of test cases.
 (defund test-casesp (test-cases)
   (declare (xargs :guard t))
   (if (atom test-cases)
@@ -301,6 +332,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp test-case rand).
+;; Pairs each variable with a random value, according to test-case-type-alist.
 (defund make-test-case (test-case-type-alist acc rand)
   (declare (xargs :guard (and (test-case-type-alistp test-case-type-alist)
                               (test-casep acc))
@@ -341,8 +373,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv erp test-cases rand), where each test case is an alist from vars to values
-;should we give them numbers?
+;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
 (defund make-test-cases-aux (test-cases-left test-case-number test-case-type-alist assumptions print acc rand)
   (declare (xargs :guard (and (natp test-cases-left)
                               (natp test-case-number)
@@ -387,7 +418,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
+;; We drop any test cases that fail to satisfy the assumptions.
 ;; TODO: Consider passing in interpreted-functions?
+;; TODO: Add print arg and pass to make-test-cases-aux.
 (defund make-test-cases (test-case-count test-case-type-alist assumptions rand)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
@@ -400,7 +433,6 @@
                           (mv erp test-cases rand)))))
 
 (defthm test-casesp-of-mv-nth-1-of-make-test-cases
-  (implies (and (test-case-type-alistp test-case-type-alist)
-                (test-casesp acc))
+  (implies (test-case-type-alistp test-case-type-alist)
            (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
   :hints (("Goal" :in-theory (enable make-test-cases))))

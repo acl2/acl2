@@ -343,9 +343,9 @@
                                 (cdr proof-tree))))))
 
 (defun print-string-repeat (increment level col channel state)
-  (declare (type (signed-byte 30) col level))
+  (declare (type #.*fixnat-type* col level))
   (the2s
-   (signed-byte 30)
+   #.*fixnat-type*
    (if (= level 0)
        (mv col state)
      (mv-letc (col state)
@@ -460,7 +460,7 @@
             (pprogn (princ$ "     " channel state)
                     (print-string-repeat
                      increment
-                     (the-fixnum! level 'format-goal-tree-lst)
+                     (the-fixnat! level 'format-goal-tree-lst)
                      5 channel state))
             (mv-let (col state)
                     (fmt1 "<~x0 ~#1~[~/more ~]subgoal~#2~[~/s~]>~%"
@@ -505,7 +505,7 @@
                           (cons #\1 (cons fanout 3)))
                     0 channel state nil)
               (print-string-repeat increment
-                                   (the-fixnum! level 'format-goal-tree)
+                                   (the-fixnat! level 'format-goal-tree)
                                    col channel state)))
      (mv-letc
       (col state)
@@ -4849,18 +4849,18 @@
 ; result and traffics in fixnums -- more efficient if you want the reversed
 ; result.
 
-  (declare (type (unsigned-byte 29) i)
+  (declare (type #.*fixnat-type* i)
            (xargs :guard (and (true-listp l)
                               (true-listp ac))))
   (cond ((zpf i)
          ac)
-        (t (first-n-ac-rev (the (unsigned-byte 29)
-                                (1- (the (unsigned-byte 29) i)))
+        (t (first-n-ac-rev (the #.*fixnat-type*
+                                (1- (the #.*fixnat-type* i)))
                            (cdr l)
                            (cons (car l) ac)))))
 
 (defun longest-common-tail-length-rec (old new len-old acc)
-  (declare (type (signed-byte 30) acc len-old))
+  (declare (type #.*fixnat-type* acc len-old))
   #-acl2-loop-only
   (when (eq old new)
     (return-from longest-common-tail-length-rec (+ len-old acc)))
@@ -6480,7 +6480,7 @@
              (+ (print-ldd-formula-column skip-ldd-n)
                 (access-ldd-n ldd))))
           (status (access-ldd-status ldd)))
-     (declare (type (signed-byte 30) formula-col))
+     (declare (type #.*fixnum-type* formula-col))
      (pprogn
       (princ$ (if (access-ldd-markp ldd)
                   (access-ldd-markp ldd)

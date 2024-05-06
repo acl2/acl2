@@ -1,7 +1,7 @@
 ; Utilities to make variable names
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -48,49 +48,54 @@
 
 (defthm len-of-make-var-names-aux
   (implies (and (natp startnum)
-                (integerp endnum)
-                (<= startnum (+ 1 endnum)))
+                (integerp endnum))
            (equal (len (make-var-names-aux base-symbol startnum endnum))
-                  (+ 1 (- endnum startnum))))
+                  (nfix (+ 1 (- endnum startnum)))))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 (defthm consp-of-make-var-names-aux
-  (implies (and (natp startnum)
-                (integerp endnum)
-                (<= startnum (+ 1 endnum)))
-           (equal (consp (make-var-names-aux base-symbol startnum endnum))
-                  (<= startnum endnum)))
+  (equal (consp (make-var-names-aux base-symbol startnum endnum))
+         (and (natp startnum)
+              (natp endnum)
+              (<= startnum endnum)))
   :hints (("Goal" :in-theory (enable make-var-names-aux))))
+
+;; (defthm consp-of-make-var-names-aux
+;;   (implies (and (natp startnum)
+;;                 (integerp endnum)
+;;                 (<= startnum (+ 1 endnum)))
+;;            (equal (consp (make-var-names-aux base-symbol startnum endnum))
+;;                   (<= startnum endnum)))
+;;   :hints (("Goal" :in-theory (enable make-var-names-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added.  The first numeric suffix is START, and subsequent ones are
-;; consecutve, with a total of COUNT symbols generated.
-;rename?
-(defund make-var-name-range (base-symbol start count)
+;; consecutive, with a total of COUNT symbols generated.
+(defund make-var-names-from (base-symbol start count)
   (declare (xargs :guard (and (symbolp base-symbol)
                               (natp start)
                               (natp count))))
     (make-var-names-aux base-symbol start (+ -1 start count)))
 
-(defthm symbol-listp-of-make-var-name-range
-  (symbol-listp (make-var-name-range base-symbol start count))
-  :hints (("Goal" :in-theory (enable make-var-name-range))))
+(defthm symbol-listp-of-make-var-names-from
+  (symbol-listp (make-var-names-from base-symbol start count))
+  :hints (("Goal" :in-theory (enable make-var-names-from))))
 
-(defthm len-of-make-var-name-range
+(defthm len-of-make-var-names-from
   (implies (and (natp start)
                 (natp count))
-           (equal (len (make-var-name-range base-symbol start count))
+           (equal (len (make-var-names-from base-symbol start count))
                   count))
-  :hints (("Goal" :in-theory (enable make-var-name-range))))
+  :hints (("Goal" :in-theory (enable make-var-names-from))))
 
-(defthm consp-of-make-var-name-range
+(defthm consp-of-make-var-names-from
   (implies (and (natp start)
                 (natp count))
-           (equal (consp (make-var-name-range base-symbol start count))
+           (equal (consp (make-var-names-from base-symbol start count))
                   (posp count)))
-  :hints (("Goal" :in-theory (enable make-var-name-range))))
+  :hints (("Goal" :in-theory (enable make-var-names-from))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,10 +107,15 @@
 (defund make-var-names (base-symbol count)
   (declare (xargs :guard (and (natp count)
                               (symbolp base-symbol))))
-  (make-var-name-range base-symbol 0 count))
+  (make-var-names-aux base-symbol 0 (+ -1 count)))
 
 (defthm symbol-listp-of-make-var-names
   (symbol-listp (make-var-names base-symbol count))
+  :hints (("Goal" :in-theory (enable make-var-names))))
+
+;; because they are symbols
+(defthm pseudo-term-listp-of-make-var-names
+  (pseudo-term-listp (make-var-names base-symbol count))
   :hints (("Goal" :in-theory (enable make-var-names))))
 
 (defthm true-listp-of-make-var-names

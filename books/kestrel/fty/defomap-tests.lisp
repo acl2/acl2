@@ -1,10 +1,10 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,7 +32,7 @@
    :cheap t))
 
 (must-fail
- (fty::defomap nat-set 
+ (fty::defomap nat-set
    :elt-type nat))
 
 (must-fail
@@ -146,7 +146,7 @@
    (define eval-int-term-m-map ((map int-term-m-map-p))
      :measure (int-term-m-map-count map)
      :returns (i integerp)
-     (if (or (omap::empty map)
+     (if (or (omap::emptyp map)
              (not (int-term-m-map-p map)))
          0
        (+ (eval-int-term-m (omap::head-val map))
@@ -165,12 +165,12 @@
        (:plus (sum-i-values-m-map i (int-term-m-plus->args tm)))))
    (define sum-i-values-m-map ((i natp) (map int-term-m-map-p))
      :measure (int-term-m-map-count map)
-     :hints (("Goal" :in-theory (e/d () (int-term-m-map-count-when-not-empty))))
+     :hints (("Goal" :in-theory (e/d () (int-term-m-map-count-when-not-emptyp))))
      :returns (j integerp)
-     (if (or (omap::empty map)
+     (if (or (omap::emptyp map)
              (not (int-term-m-map-p map)))
          0
-       (let ((i-pr (omap::in i map)))
+       (let ((i-pr (omap::assoc i map)))
          (if i-pr
              (sum-i-values-m i (omap::lookup i map))
            0))))
@@ -262,4 +262,3 @@
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-

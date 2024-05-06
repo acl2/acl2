@@ -14,7 +14,7 @@
 
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "dargp-less-than")
-(include-book "all-dargp")
+(include-book "darg-listp")
 
 (defund bounded-darg-listp (dargs bound)
   (declare (xargs :guard (natp bound)
@@ -79,10 +79,10 @@
   :hints (("Goal" :in-theory (enable bounded-darg-listp
                                      reverse-list))))
 
-(defthm all-dargp-when-bounded-darg-listp
+(defthm darg-listp-when-bounded-darg-listp
   (implies (bounded-darg-listp items free)
-           (all-dargp items))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp dargp-less-than))))
+           (darg-listp items))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp dargp-less-than))))
 
 (defthm <-of-0-when-bounded-darg-listp
   (implies (and (bounded-darg-listp args bound)
@@ -165,7 +165,7 @@
                   (if (consp args)
                       (not (consp (car args)))
                       nil)))
-  :hints (("Goal" :in-theory (enable all-dargp dargp-less-than bounded-darg-listp))))
+  :hints (("Goal" :in-theory (enable darg-listp dargp-less-than bounded-darg-listp))))
 
 ;todo: gen some of these rules about nth 0
 
@@ -252,7 +252,7 @@
                 (< n (len args))
                 (natp n))
            (dargp (nth n args)))
-  :hints (("Goal" :in-theory (enable all-dargp))))
+  :hints (("Goal" :in-theory (enable darg-listp))))
 
 (defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
   (implies (bounded-darg-listp (cdr items) bound)

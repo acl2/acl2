@@ -223,6 +223,16 @@
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums-aux))))
 
+(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums-aux
+  (implies (and (possibly-negated-nodenumsp items)
+                (integerp acc)
+                )
+           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums-aux items acc))))
+  :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+                                     strip-not-from-possibly-negated-nodenum
+                                     possibly-negated-nodenumsp
+                                     possibly-negated-nodenump))))
+
 ;;;
 ;;; max-nodenum-in-possibly-negated-nodenums
 ;;;
@@ -258,20 +268,10 @@
            (< (max-nodenum-in-possibly-negated-nodenums context) bound))
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums))))
 
-(defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums-aux
-  (implies (and (possibly-negated-nodenumsp items)
-                (integerp acc)
-                )
-           (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums-aux items acc))))
-  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
-                                     strip-not-from-possibly-negated-nodenum
-                                     possibly-negated-nodenumsp
-                                     possibly-negated-nodenump))))
-
 (defthm all-<-of-strip-nots-from-possibly-negated-nodenums-and-+1-of-max-nodenum-in-possibly-negated-nodenums
   (implies (possibly-negated-nodenumsp items)
            (all-< (strip-nots-from-possibly-negated-nodenums items) (+ 1 (max-nodenum-in-possibly-negated-nodenums items))))
-  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums max-nodenum-in-possibly-negated-nodenums-aux
+  :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums strip-nots-from-possibly-negated-nodenums
                                      strip-not-from-possibly-negated-nodenum))))
 
 ;;;
@@ -544,8 +544,8 @@
 
 ;todo: always go from car/cadr of dargs to nth?
 
-;; (defthmd not-complex-rationalp-of-nth-when-all-dargp
-;;   (implies (and (all-dargp args)
+;; (defthmd not-complex-rationalp-of-nth-when-darg-listp
+;;   (implies (and (darg-listp args)
 ;;                 ;(natp n)
 ;;                 ;(< n (len args))
 ;;                 )
@@ -559,8 +559,8 @@
 ;;                 (natp n)
 ;;                 (not (equal 'quote (nth 0 expr))))
 ;;            (not (complex-rationalp (nth n (dargs expr)))))
-;;   :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
-;;                                      not-<-of-0-and-nth-when-all-dargp
+;;   :hints (("Goal" :in-theory (enable integerp-of-nth-when-darg-listp
+;;                                      not-<-of-0-and-nth-when-darg-listp
 ;;                                      dag-exprp))))
 
 ;; while true, this seems bad, because a contextp is a conjunction, not a disjunction
@@ -655,10 +655,10 @@
 
 ;; A context-array maps nodenums to their contexts.
 ;todo: this failed when contextp was enabled
-(def-typed-acl2-array context-arrayp (contextp val))
+(def-typed-acl2-array context-arrayp (contextp val) :default (true-context))
 
-;; Recognizes and array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
-(def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :extra-vars (bound) :extra-guards ((natp bound)))
+;; Recognizes an array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
+(def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :default (true-context) :extra-vars (bound) :extra-guards ((natp bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -875,7 +875,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 DAG-PARENT-ARRAYP) (PSEUDO-DAG-ARRAYP))))
                   :measure (nfix (+ 1 nodenum))
                   :split-types t)
-           (type (integer -1 2147483645) nodenum))
+           (type (integer -1 1152921504606846973) nodenum))
   (if (mbe :logic (not (natp nodenum))
            :exec (equal -1 nodenum))
       context-array
@@ -935,15 +935,16 @@
 (defun make-full-context-array-with-parents (dag-array-name dag-array dag-len dag-parent-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len)
-                              (<= dag-len 2147483646)
+                              (<= dag-len *max-1d-array-length*)
                               (dag-parent-arrayp 'dag-parent-array dag-parent-array)
                               ;; not necesarly equal:
                               (<= dag-len (alen1 'dag-parent-array dag-parent-array))
                               (bounded-dag-parent-entriesp (+ -1 dag-len) 'dag-parent-array dag-parent-array dag-len))
                   :guard-hints (("Goal" :in-theory (enable dag-parent-arrayp)))))
-  (let* ((context-array (make-empty-array 'context-array dag-len))
+  (let* (;; All nodes initially have a context of "true" but all contexts except that of the top node get overwritten as we go:
+         (context-array (make-empty-array-with-default 'context-array dag-len (true-context)))
          (top-nodenum (+ -1 dag-len))
-         (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
+         ;; (context-array (aset1 'context-array context-array top-nodenum (true-context))) ;top node has no context
          (context-array (make-full-context-array-aux (+ -1 top-nodenum) ; skip the top node
                                                      dag-array-name
                                                      dag-array
@@ -992,7 +993,7 @@
 ;; help with debugging.
 (defund make-full-context-array-for-dag (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) 2147483646))
+                              (<= (len dag) *max-1d-array-length*))
                   :guard-hints (("Goal" :in-theory (enable len-when-pseudo-dagp)))))
   (let* ((dag-array-name 'temp-dag-array)
          (dag-array (make-into-array 'temp-dag-array dag)))
@@ -1001,13 +1002,13 @@
 ;; TODO: Improve to match better
 (defthm context-arrayp-of-make-full-context-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646))
+                (<= (len dag) *max-1d-array-length*))
            (context-arrayp 'context-array (make-full-context-array-for-dag dag) (+ 1 (top-nodenum-of-dag dag))))
   :hints (("Goal" :in-theory (enable make-full-context-array-for-dag))))
 
 (defthm bounded-context-arrayp-of-make-full-context-array-for-dag
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (<= (len dag) bound)
                 (natp bound))
            (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) (len dag) bound))
@@ -1015,7 +1016,7 @@
 
 (defthm bounded-context-arrayp-of-make-full-context-array-for-dag-gen
   (implies (and (pseudo-dagp dag)
-                (<= (len dag) 2147483646)
+                (<= (len dag) *max-1d-array-length*)
                 (<= (len dag) bound)
                 (natp bound)
                 (<= len (len dag))
@@ -1114,7 +1115,7 @@
 ;; ;; Returns nil but prints.
 ;; (defun print-contexts (dag-lst)
 ;;   (declare (xargs :guard (and (pseudo-dagp dag-lst)
-;;                               (< (len dag-lst) 2147483645))
+;;                               (< (len dag-lst) 1152921504606846973))
 ;;                   :guard-hints (("Goal" :in-theory (e/d (pseudo-dagp) (pseudo-dag-arrayp))))))
 ;;   (prog2$ (cw "(Computing contexts:~%")
 ;;           (let* ((dag-len (len dag-lst))

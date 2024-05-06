@@ -64,7 +64,7 @@
     (implies (4vec-no-1s-p x)
              (equal (4vec-1mask x) 0))
     :hints(("Goal" :in-theory (enable 4vec-1mask))))
-  
+
   (defthm bit?!-when-4vec-no-1s-p
     (implies (4vec-no-1s-p test)
              (equal (4vec-bit?! test override-val real-val)
@@ -74,8 +74,8 @@
 
 
 
-     
-      
+
+
 
 (local
  (defthm bit?!-when-branches-same
@@ -83,7 +83,7 @@
           (4vec-fix real-val))
    :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-bitmux))
           (bitops::logbitp-reasoning))))
- 
+
 (local (defthm equal-of-4vec-bit?!-by-example
          (implies (equal (4vec-bit?! test then1 else1) (4vec-bit?! test then2 else1))
                   (equal (equal (4vec-bit?! test then1 else2) (4vec-bit?! test then2 else2))
@@ -101,7 +101,7 @@
          :hints (("goal" :use ((:instance equal-of-4vec-bit?!-by-example
                                 (else2 then2)))
                   :in-theory (disable equal-of-4vec-bit?!-by-example)))))
-       
+
 
 (local (defthm svex-env-lookup-of-cons
          (equal (svex-env-lookup key (cons pair rest))
@@ -130,7 +130,7 @@
              (4vec-no-1s-p (svex-env-lookup var env)))))
 
 
-                               
+
 
 (define svex-env-removekey ((key svar-p) (env svex-env-p))
   :returns (new-env svex-env-p)
@@ -269,7 +269,7 @@
 
   (defthm svex-override-triplelist-env-ok-of-nil
     (equal (svex-override-triplelist-env-ok nil env prev-env) t)))
-                              
+
 (define svex-override-triple-check ((test svex-p)
                                     (then svex-p)
                                     (else svex-p)
@@ -308,7 +308,7 @@
     t)
 
   ///
-  
+
   (defthm svex-override-triple-check-cdr-when-nil
     (implies (and (equal (svex-override-triple-check test then else x) nil)
                   (no-duplicatesp-equal (svex-override-triplelist-vars x)))
@@ -338,7 +338,7 @@
                     (or (svex-override-triple-check test then else trips1)
                         (svex-override-triple-check test then else trips2))))
     :hints (("goal" :do-not-induct t))))
-             
+
 
 
 
@@ -378,7 +378,7 @@
 ;;   2. The test variable's binding in the rest of the env is "false" (in this case, not 1)
 ;;      on all bits
 ;;   3. The override value's current binding in the env matches
-;;      (on the bits where test's binding is 1) the evaluation of the triple's value 
+;;      (on the bits where test's binding is 1) the evaluation of the triple's value
 ;;      expression on the rest of the env.
 
 ;; This test is probably efficient enough, and could be changed to use fast
@@ -387,9 +387,9 @@
 ;;   1 -- Syntactically, the theorem just says we can take two pairs out of the env.
 ;;        Of course, the envs here occur under a svex-envs-similar context so this is
 ;;        relatively easy to expand.
-;;   2 -- In practice we're going to have an evaluation involving an environment where 
+;;   2 -- In practice we're going to have an evaluation involving an environment where
 ;;        several overrides are added to a previous environment, and each of the override
-;;        values is an evaluation of the corresponding variable's expression 
+;;        values is an evaluation of the corresponding variable's expression
 ;;        using the previous environment.  This doesn't quite
 ;;        correspond to an iterative application of this theorem -- we need to whow that
 ;;        these expressions are independent of the other overrides, or at least can be
@@ -442,7 +442,7 @@
         (if first
             (cons (lnfix n) first)
           (svex-args-check-overridetriples (1+ (lnfix n)) (cdr x) triples)))))
-  
+
   (define svexlist-check-overridetriples ((x svexlist-p)
                                           (triples svex-override-triplelist-p))
     :measure (two-nats-measure (svexlist-count x) 0)
@@ -459,7 +459,7 @@
            (if (atom x)
                n
              (count-up-cdr-down (1+ (nfix n)) (cdr x)))))
-  
+
   (defthm svex-args-check-overridetriples-under-iff
     (iff (svex-args-check-overridetriples n x triples)
          (svexlist-check-overridetriples x triples))
@@ -519,7 +519,7 @@
                 (equal (4vec-bit?! testval valval exprval)
                        exprval)))))
 
-  
+
   (std::defret-mutual remove-override-vars-when-check-overridetriples
     (defret remove-override-vars-when-<fn>
       (b* ((vars  (svex-override-triplelist-vars triples))
@@ -569,7 +569,7 @@
                         (svexlist-eval x env))))
       :hints ('(:expand <call>))
       :fn svex-args-check-overridetriples))
-  
+
 
 
   ;; )
@@ -742,8 +742,8 @@
       :fn svex-args-check-overridetriples))
 
 
-  
-  
+
+
   (local (defthm svexlist-check-overridetriples-when-svex-override-triple-check-is-t
            (implies (and (equal (svex-override-triple-check (car args)
                                                             (cadr args)
@@ -855,7 +855,7 @@
            (implies (and (equal (svex-override-triple-check test then else triples)
                                 t)
                          ;; (svex-override-triple-check test then else trips2)
-                         (not (intersectp-equal 
+                         (not (intersectp-equal
                                (svex-override-triplelist-vars triples)
                                (svex-override-triplelist-vars trips2))))
                     (not (svex-override-triple-check test then else trips2)))
@@ -868,7 +868,7 @@
                                                             (caddr args)
                                                             triples)
                                 t)
-                         (not (intersectp-equal 
+                         (not (intersectp-equal
                                (svex-override-triplelist-vars triples)
                                (svex-override-triplelist-vars trips2)))
                          (equal (len args) 3))
@@ -899,11 +899,11 @@
                 x
               (list (svex-check-overridetriples-ind (car x))
                     (svexlist-check-overridetriples-ind (cdr x)))))))
-  
+
   (flag::make-flag svex-check-overridetriples-ind-flag
                    svex-check-overridetriples-ind
                    :local t)
-                      
+
 
   (defthm-svex-check-overridetriples-ind-flag
     (defthm svex-check-overridetriples-of-append
@@ -969,7 +969,7 @@
      :hints (("goal" :use ((:instance svex-override-triplelist-env-ok-implies-lookup
                             (override-env override-env1)))
               :in-theory (disable svex-override-triplelist-env-ok-implies-lookup)))))
-  
+
 
   (std::defret-mutual un-append-override-vars-when-check-overridetriples
     (defret un-append-override-vars-when-<fn>
@@ -1035,7 +1035,7 @@
                               (svexlist-eval (svex-alist-vals x) env)))
              :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-keys svex-alist-eval
                                                svexlist-eval)))))
-    
+
     (defthm un-append-override-vars-from-svex-alist-eval-when-svexlist-check-overridetriples
       (b* ((vars  (svex-override-triplelist-vars triples))
            (env (append (svex-env-extract vars override-env) prev-env)))
@@ -1046,13 +1046,13 @@
                       (svex-override-triplelist-env-ok triples env prev-env))
                  (equal (svex-alist-eval x env)
                         (svex-alist-eval x prev-env))))))
-  
-  
+
+
   (fty::deffixequiv-mutual svex-check-overridetriples))
 
 
 (defsection overridekey-transparent-p-when-check-overridetriples
-  
+
 
   (local (defthm open-nth
            (implies (syntaxp (quotep n))
@@ -1060,7 +1060,7 @@
                            (if (zp n)
                                (car x)
                              (nth (1- n) (cdr x)))))))
-  
+
   (local (defthm svex-override-triplelist-lookup-of-svar->svex
            (equal (svex-override-triplelist-lookup test (svar->svex-override-triplelist (svarlist-to-override-triples overridekeys) values))
                   (and (svar-override-p test :test)
@@ -1099,7 +1099,7 @@
                            (svex-env-lookup (svex-var->name x) env)))
            :hints(("Goal" :in-theory (enable svex-eval)))))
 
-  
+
   (local (defthm overridekeys-transparent-p-when-svex-override-triple-check
            (implies (and (svex-overridekey-transparent-p else overridekeys values)
                          (equal (svex-override-triple-check
@@ -1123,8 +1123,8 @@
 
   (local (defthm sfix-of-singleton
            (equal (sfix (list x)) (list x))
-           :hints(("Goal" :in-theory (enable sfix empty setp)))))
-  
+           :hints(("Goal" :in-theory (enable sfix emptyp setp)))))
+
   (local (defthm overridekeys-transparent-p-when-svex-override-triple-check-special
            ;; ugh
            (implies (and (svex-case x :call)
@@ -1155,7 +1155,7 @@
                     ))
            :otf-flg t))
 
-  
+
   (std::defret-mutual overridekeys-transparent-p-when-check-overridetriples
     (defret overridekeys-transparent-p-when-<fn>
       :pre-bind ((svar-triples (svarlist-to-override-triples overridekeys))
@@ -1176,7 +1176,7 @@
       :hints ('(:expand ((:free (triples) <call>)))
               (and stable-under-simplificationp
                    '(:expand ((:free (env) (svex-eval x env)))
-                     :in-theory (enable svexlist-vars 
+                     :in-theory (enable svexlist-vars
                                         svex-overridekey-transparent-p-when-args-transparent
                                         ;; svex-override-triple-check
                                         ))))
@@ -1246,7 +1246,7 @@
                             (svexlist-eval (svex-alist-vals x) env)))
            :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-keys svex-alist-eval
                                              svexlist-eval)))))
-    
+
   (defthmd svex-alist-eval-when-svexlist-check-overridetriples-and-svex-envs-agree-except-overrides
     (b* ((vars  (svex-override-triplelist-vars triples)))
       (implies (and (svex-override-triplelist-env-ok triples env prev-env)
@@ -1300,7 +1300,7 @@
                              (svexlist-check-overridetriples x b)
                              (svexlist-check-overridetriples x c))))
            :hints(("Goal" :in-theory (enable svex-override-triplelist-vars-of-append)))))
-  
+
   (defthmd svexlist-check-overridetriples-of-singleton
     (implies (and (not (svexlist-check-overridetriples x triples))
                   (no-duplicatesp-equal (svex-override-triplelist-vars triples))
@@ -1363,7 +1363,7 @@
              (svexlist-check-overridetriples x triples))
     :hints(("Goal" :in-theory (enable svexlist-check-overridetriples-expand-consp)
             :expand ((svex-override-triplelist-vars triples))))))
-             
+
 
 (defthmd svexlist-check-overridetriples-when-subset
   (implies (and (not (svexlist-check-overridetriples x triples))
@@ -1406,7 +1406,7 @@
              (local (Defthm intersect-single
                       (equal (intersect (list k) x)
                              (and (set::in k x) (list k)))
-                      :hints(("Goal" :in-theory (enable intersect empty head tail setp insert)
+                      :hints(("Goal" :in-theory (enable intersect emptyp head tail setp insert)
                               :expand ((intersect (list k) x))))))
 
              (local (defthm hons-assoc-equal-under-iff
@@ -1477,7 +1477,7 @@
            (equal (4vec-bit?! testval valval 0)
                   (4vec-bit?! testval refval 0)))
          (svar-override-triplelist-env-ok (cdr x) override-env ref-env)))
-      
+
   ///
   (defthm svar-override-triplelist-env-ok-in-terms-of-svex-override-triplelist-env-ok
     (equal (svar-override-triplelist-env-ok x override-env (svex-alist-eval values prev-env))
@@ -1489,7 +1489,7 @@
                                       svar->svex-override-triplelist))))
 
   (local (in-theory (enable svex-env-boundp-iff-member-alist-keys)))
-  
+
   (defthm svar-override-triplelist-env-ok-of-append-ref-envs-when-subsetp-first
     (implies (subsetp-equal (svar-override-triplelist->refvars x)
                             (alist-keys (svex-env-fix ref-env)))
@@ -1674,11 +1674,11 @@
            (4vec-<<= (4vec-bit?! testval valval 0)
                      (4vec-bit?! testval refval 0)))
          (svar-override-triplelist-env-ok-<<= (cdr x) override-env ref-env)))
-      
+
   ///
 
   (local (in-theory (enable svex-env-boundp-iff-member-alist-keys)))
-  
+
   (defthm svar-override-triplelist-env-ok-<<=-of-append-ref-envs-when-subsetp-first
     (implies (subsetp-equal (svar-override-triplelist->refvars x)
                             (alist-keys (svex-env-fix ref-env)))
@@ -1725,7 +1725,7 @@
                              bitops::logior-<-0-linear-1
                              bitops::logand->=-0-linear-2
                              bitops::logior->=-0-linear)))
-  
+
   (local (defthm 4vec-<<=-of-bit?!
            (implies (4vec-<<= then1 then2)
                     (4vec-<<= (4vec-bit?! test then1 else) (4vec-bit?! test then2 else)))
@@ -1743,7 +1743,7 @@
                     (not (member-equal v (svar-override-triplelist->valvars x))))
            :hints(("Goal" :in-theory (enable svar-override-triplelist-override-vars
                                              svar-override-triplelist->valvars)))))
-  
+
   (defthm svar-override-triplelist-env-ok-<<=-when-valvars-<<=-map
     (implies (and (no-duplicatesp-equal (svar-override-triplelist-override-vars x))
                   (svex-env-<<=
@@ -1816,7 +1816,7 @@
                                   (svar-override-triplelist->valvars triples)))
            :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
                                              svar-override-triplelist-fix)))))
-  
+
   (local (defthm lookup-valvar-of-valvar-when-member
            (implies (and (member-equal (svar-override-triple-fix trip)
                                        (svar-override-triplelist-fix triples))
@@ -1838,7 +1838,7 @@
            :hints(("Goal" :in-theory (enable svar-override-triplelist->testvars
                                              svar-override-triplelist-fix)))))
 
-  
+
   (defret svar-override-triplelist-env-ok-of-<fn>
     (implies (and (subsetp-equal (svar-override-triplelist->refvars triples)
                                  (alist-keys (svex-env-fix spec-run)))
@@ -1855,7 +1855,7 @@
                                       svar-override-triplelist-fix)
             :induct (len trips))))
 
-  
+
   (defret intermediate-override-env-=>>-lemma-env
     (implies (and (svex-env-<<= (svex-env-removekeys
                                  (svar-override-triplelist-override-vars triples)
@@ -1961,7 +1961,7 @@
                                   (svar-override-triplelist->valvars triples)))
            :hints(("Goal" :in-theory (enable svar-override-triplelist->valvars
                                              svar-override-triplelist-fix)))))
-  
+
   (local (defthm lookup-valvar-of-valvar-when-member
            (implies (and (member-equal (svar-override-triple-fix trip)
                                        (svar-override-triplelist-fix triples))
@@ -2013,13 +2013,13 @@
                              bitops::logior-<-0-linear-1
                              bitops::logand->=-0-linear-2
                              bitops::logior->=-0-linear)))
-  
+
   (local (defthm 4vec-<<=-of-bit?!-lemma
            (implies (4vec-<<= (4vec-bit?! test then1 else) (4vec-bit?! test then2 else))
                     (4vec-<<= then1 (4vec-bit?! test then2 then1)))
            :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-<<= 4vec-bitmux))
                   (bitops::logbitp-reasoning))))
-  
+
   (defret svar-override-triplelist-env-ok-of-<fn>
     (implies (and (subsetp-equal (svar-override-triplelist->refvars triples)
                                  (alist-keys (svex-env-fix spec-run)))
@@ -2043,7 +2043,7 @@
            :hints(("Goal" :in-theory (enable svar-override-triplelist-fix
                                              svar-override-triplelist-lookup-valvar
                                              svar-override-triplelist->valvars)))))
-  
+
   (defret intermediate-override-env2-=>>-lemma-env
     (implies (and (svex-env-<<= (svex-env-removekeys
                                  (svar-override-triplelist-override-vars triples)
@@ -2120,4 +2120,3 @@
              (equal (svex-env-extract vars override-env)
                     (svex-env-extract vars lemma-env)))
     :hints(("Goal" :in-theory (enable svex-env-extract svarlist-fix)))))
-

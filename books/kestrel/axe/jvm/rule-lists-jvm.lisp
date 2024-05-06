@@ -693,7 +693,7 @@
           '(set::delete-constant-opener ;needed for address calcs
             set::tail-constant-opener   ;needed for address calcs
             set::head-constant-opener   ;needed for address calcs
-            set::empty-constant-opener  ;needed for address calcs
+            set::emptyp-constant-opener ;needed for address calcs
             set::sfix-constant-opener   ;needed for address calcs
             set::setp-constant-opener   ;needed for address calcs
             fast-<<-constant-opener     ;needed for address calcs
@@ -716,7 +716,7 @@
             ;; get-class-when-array-refp ; enable this if we disable get-class
             get-field-class-when-array-refp
             get-field-class-when-array-ref-listp-one-dim
-            jvm::make-array-type      ;dangerous?
+            jvm::make-array-type-base jvm::make-array-type-unroll      ;dangerous??
             acl2::array-contents ;; we enable this to expose get-field
 
             ;; rules about initialize-one-dim-array:
@@ -739,7 +739,7 @@
 ;acl2::string-contains-charp
             jvm::field-accessiblep
             jvm::field-is-staticp
-            jvm::resolve-class
+            jvm::resolve-class-base-1 jvm::resolve-class-base-2 jvm::resolve-class-unroll
             jvm::resolve-non-array-class
             jvm::get-class-object
             equal-of-minus-1-and-null-ref
@@ -944,8 +944,8 @@
             default-value
 ;    strip-cars-opener
             strip-cars-of-non-consp
-            bvand-of-logext
-            bvand-of-logext-alt
+            ;bvand-of-logext
+            ;bvand-of-logext-alt
 
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
@@ -1197,7 +1197,7 @@
             dom
 
             jvm::class-or-interface-namep
-            jvm::reference-typep
+            jvm::reference-typep-base jvm::reference-typep-unroll
             null
 
             jvm::intern-table-okp-of-set-field-irrel-pair

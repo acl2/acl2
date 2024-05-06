@@ -1,7 +1,7 @@
 ; A function to get the minimum of a list of numbers
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -99,3 +99,15 @@
                 (<= k (minelem (nthcdr (+ 1 n) lst))))
            (<= k (minelem (nthcdr n lst))))
   :hints (("Goal" :in-theory (enable minelem nthcdr))))
+
+(defthm integerp-of-minelem
+  (implies (and (integer-listp lst)
+                (consp lst))
+           (integerp (minelem lst)))
+  :hints (("Goal" :in-theory (enable minelem integer-listp))))
+
+(defthm natp-of-minelem
+  (implies (and (nat-listp lst)
+                (consp lst))
+           (natp (minelem lst)))
+  :hints (("Goal" :in-theory (enable minelem nat-listp))))

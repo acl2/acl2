@@ -1,6 +1,6 @@
 ; Partial spec of IEEE 754 floating point values and operations
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Maximum exponent
+;; Maximum exponent.  See Table 3.5.
 (defund emax (k p)
   (declare (xargs :guard (formatp k p)))
   (- (expt 2 (+ k (- p) -1))
@@ -111,8 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Minimum exponent
-;; See 3.3
+;; Minimum exponent.  See Section 3.3.
 (defund emin (k p)
   (declare (xargs :guard (formatp k p)))
   (- 1 (emax k p)))
@@ -124,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Exponent bias
+;; Exponent bias.  See Table 3.5.
 (defund bias (k p)
   (declare (xargs :guard (formatp k p)))
   (emax k p))
@@ -190,6 +189,15 @@
   (not (representable-positive-normalp k p 0))
   :hints (("Goal" :in-theory (enable representable-positive-normalp))))
 
+(defthm representable-positive-normalp-forward
+  (implies (representable-positive-normalp k p rat)
+           (and (rationalp rat)
+                (< 0 rat)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable representable-positive-normalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Checks whether the rational RAT is representable as a normal (i.e., not
 ;; subnormal) number in the floating-point format (K,P).  Note that 0 is not a
 ;; "normal" number (see Definitions in the standard).
@@ -235,6 +243,13 @@
 
 (defthm not-representable-positive-subnormalp-of-0
   (not (representable-positive-subnormalp k p 0))
+  :hints (("Goal" :in-theory (enable representable-positive-subnormalp))))
+
+(defthm representable-positive-subnormalp-forward
+  (implies (representable-positive-subnormalp k p rat)
+           (and (rationalp rat)
+                (< 0 rat)))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable representable-positive-subnormalp))))
 
 (defthmd subnormals-are-smaller
@@ -308,6 +323,18 @@
                                      representable-subnormalp
                                      representable-positive-subnormalp))))
 
+(defthm not-representable-nonzero-rationalp-of-0
+  (not (representable-nonzero-rationalp k p 0))
+  :hints (("Goal" :in-theory (enable representable-nonzero-rationalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund representable-positive-rationalp (k p rat)
+  (declare (xargs :guard (and (rationalp rat) ;drop? implied?
+                              (formatp k p))))
+  (or (representable-positive-normalp k p rat)
+      (representable-positive-subnormalp k p rat)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A floating-point datum is a representable nonzero rational, or one of the 5
@@ -320,6 +347,49 @@
                              *float-positive-infinity*
                              *float-negative-infinity*
                              *float-nan*))))
+
+(defthm floating-point-datump-of-float-positive-zero
+  (floating-point-datump k p :float-positive-zero)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-negative-zero
+  (floating-point-datump k p :float-negative-zero)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-positive-infinity
+  (floating-point-datump k p :float-positive-infinity)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-negative-infinity
+  (floating-point-datump k p :float-negative-infinity)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of-float-nan
+  (floating-point-datump k p :float-nan)
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+(defthm floating-point-datump-of--
+  (implies (floating-point-datump k p rat)
+           (equal (floating-point-datump k p (- rat))
+                  (rationalp rat)))
+  :hints (("Goal" :in-theory (enable floating-point-datump))))
+
+;; This doesn't check that rationals are representable, but we dont have to pass it k and p.
+(defund weak-floating-point-datump (datum)
+  (declare (xargs :guard t))
+  (or (and (rationalp datum)
+           (not (equal 0 datum)))
+      (member-eq datum (list *float-positive-zero*
+                             *float-negative-zero*
+                             *float-positive-infinity*
+                             *float-negative-infinity*
+                             *float-nan*))))
+
+(defthm weak-floating-point-datump-when-floating-point-datump
+  (implies (floating-point-datump k p datum) ;free vars
+           (weak-floating-point-datump datum))
+  :hints (("Goal" :in-theory (enable weak-floating-point-datump
+                                     floating-point-datump))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -728,6 +798,12 @@
            (representable-positive-normalp k p (smallest-positive-normal k p)))
   :hints (("Goal" :in-theory (enable smallest-positive-normal representable-positive-normalp decode-normal-number bias emin emax))))
 
+(defthm smallest-positive-normal-positive-linear
+  (implies (formatp k p)
+           (< 0 (smallest-positive-normal k p)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable smallest-positive-normal decode-normal-number bias emax emin))))
+
 (defthm smallest-positive-normal-correct
   (implies (and (representable-positive-normalp k p rat)
                 (rationalp rat)
@@ -735,6 +811,13 @@
            (<= (smallest-positive-normal k p) rat))
   :hints (("Goal" :in-theory (enable representable-positive-normalp smallest-positive-normal decode-normal-number bias emax emin
                                      <=-of-expt-of-2-when-<=-of-log2))))
+
+(defthm smallest-positive-normal-correct-forward
+  (implies (and (representable-positive-normalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= (smallest-positive-normal k p) rat))
+  :rule-classes :forward-chaining)
 
 (defthm <-of-smallest-positive-normal-when-representable-positive-subnormalp
   (implies (and (representable-positive-subnormalp k p rat)
@@ -1167,6 +1250,13 @@
                             bitp
                             unsigned-byte-p)))))
 
+(defthm largest-subnormal-correct-forward
+  (implies (and (representable-subnormalp k p rat)
+                (rationalp rat)
+                (formatp k p))
+           (<= rat (largest-subnormal k p)))
+  :rule-classes :forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund smallest-positive-subnormal (k p)
@@ -1350,3 +1440,25 @@
  (equal (floating-point-datum-= k p x *float-negative-infinity*)
         (equal x *float-negative-infinity*))
  :hints (("Goal" :in-theory (enable floating-point-datum-=))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; or define a nanp function
+(defthm equal-of-decode-and-float-nan
+  (equal (equal ':float-nan (decode k p sign biased-exponent trailing-significand))
+         (and (equal biased-exponent (+ (expt 2 (- k p)) -1))
+              (not (equal 0 trailing-significand))))
+  :hints (("Goal" :in-theory (enable decode wfn))))
+
+;; Tests whether X, which should be a floating-point datum, is either kind of infinity.
+;; Could add a guard but then this would have to take k and p.
+(defund infinityp (x)
+  (declare (xargs :guard t))
+  (or (equal x *float-positive-infinity*)
+      (equal x *float-negative-infinity*)))
+
+(defthm infinityp-of-decode
+  (equal (infinityp (decode k p sign biased-exponent trailing-significand))
+         (and (equal biased-exponent (+ (expt 2 (- k p)) -1))
+              (equal 0 trailing-significand)))
+  :hints (("Goal" :in-theory (enable decode wfn infinityp))))

@@ -1,7 +1,7 @@
 ; New tools for substituting equated vars in DAGS
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -63,55 +63,68 @@
         (t (merge-<-and-remove-dups-aux l1 (cdr l2)
                                         (cons (car l2) acc)))))
 
-(defthm nat-listp-of-merge-<-and-remove-dups-aux
-  (implies (and (nat-listp l1)
-                (nat-listp l2)
-                (nat-listp acc))
-           (nat-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+(local
+  (defthm nat-listp-of-merge-<-and-remove-dups-aux
+    (implies (and (nat-listp l1)
+                  (nat-listp l2)
+                  (nat-listp acc))
+             (nat-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+    :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
 
-(defthm true-listp-of-merge-<-and-remove-dups-aux
-  (implies (and (true-listp l1)
-                (true-listp l2))
-           (true-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+(local
+  (defthm true-listp-of-merge-<-and-remove-dups-aux
+    (implies (and (true-listp l1)
+                  (true-listp l2))
+             (true-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+    :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
 
-(defthm rational-listp-of-merge-<-and-remove-dups-aux
-  (implies (and (rational-listp l1)
-                (rational-listp l2)
-                (rational-listp acc))
-           (rational-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux))))
+(local
+  (defthm rational-listp-of-merge-<-and-remove-dups-aux
+    (implies (and (rational-listp l1)
+                  (rational-listp l2)
+                  (rational-listp acc))
+             (rational-listp (merge-<-and-remove-dups-aux l1 l2 acc)))
+    :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
 
-(defthm sortedp-<=-of-merge-<-and-remove-dups-aux
-  (implies (and (sortedp-<= l1)
-                (sortedp-<= l2)
-                (sortedp-<= (reverse-list acc))
-                (all-<=-all acc l1)
-                (all-<=-all acc l2))
-           (sortedp-<= (merge-<-and-remove-dups-aux l1 l2 acc)))
-  :hints (("Goal" :expand ((merge-<-and-remove-dups-aux l1 l2 acc))
-           :induct (merge-<-and-remove-dups-aux l1 l2 acc)
-           :in-theory (enable merge-<-and-remove-dups-aux
-                              revappend-becomes-append-of-reverse-list
-                              all-<=-all))))
+(local
+  (defthm sortedp-<=-of-merge-<-and-remove-dups-aux
+    (implies (and (sortedp-<= l1)
+                  (sortedp-<= l2)
+                  (sortedp-<= (reverse-list acc))
+                  (all-<=-all acc l1)
+                  (all-<=-all acc l2))
+             (sortedp-<= (merge-<-and-remove-dups-aux l1 l2 acc)))
+    :hints (("Goal" :expand ((merge-<-and-remove-dups-aux l1 l2 acc))
+             :induct (merge-<-and-remove-dups-aux l1 l2 acc)
+             :in-theory (enable merge-<-and-remove-dups-aux
+                                revappend-becomes-append-of-reverse-list
+                                all-<=-all)))))
 
-(defthm no-duplicatesp-equal-of-merge-<-and-remove-dups-aux
-  (implies (and (sortedp-<= l1)
-                (sortedp-<= l2)
-                (sortedp-<= (reverse-list acc))
-                (implies (consp l1) (all-< acc (first l1)))
-                (implies (consp l2) (all-< acc (first l2)))
-                (no-duplicatesp-equal l1)
-                (no-duplicatesp-equal l2)
-                (no-duplicatesp-equal acc)
-                (all-rationalp l1)
-                (all-rationalp l2))
-           (no-duplicatesp-equal (merge-<-and-remove-dups-aux l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
-                                     revappend-becomes-append-of-reverse-list
-                                     not-intersection-equal-when-all-<-of-car-and-sortedp-<=
-                                     <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal))))
+(local
+  (defthm no-duplicatesp-equal-of-merge-<-and-remove-dups-aux
+    (implies (and (sortedp-<= l1)
+                  (sortedp-<= l2)
+                  (sortedp-<= (reverse-list acc))
+                  (implies (consp l1) (all-< acc (first l1)))
+                  (implies (consp l2) (all-< acc (first l2)))
+                  (no-duplicatesp-equal l1)
+                  (no-duplicatesp-equal l2)
+                  (no-duplicatesp-equal acc)
+                  (all-rationalp l1)
+                  (all-rationalp l2))
+             (no-duplicatesp-equal (merge-<-and-remove-dups-aux l1 l2 acc)))
+    :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
+                                       revappend-becomes-append-of-reverse-list
+                                       not-intersection-equal-when-all-<-of-car-and-sortedp-<=
+                                       <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal)))))
+
+(local
+ (defthm all-<-of-merge-<-and-remove-dups-aux
+   (implies (and (all-< l1 bound)
+                 (all-< l2 bound)
+                 (all-< acc bound))
+            (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound))
+   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,4 +173,10 @@
                 (all-rationalp l1)
                 (all-rationalp l2))
            (no-duplicatesp-equal (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+(defthm all-<-of-merge-<-and-remove-dups
+  (implies (and (all-< l1 bound)
+                (all-< l2 bound))
+           (all-< (merge-<-and-remove-dups l1 l2) bound))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))

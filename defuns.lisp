@@ -4124,10 +4124,10 @@
 ; functions.
 
   (let ((next-nume (get-next-nume wrld)))
-    (prog2$ (or (<= (the-fixnum next-nume)
-                    (- (the-fixnum (fixnum-bound))
-                       (the-fixnum (* (the-fixnum 4)
-                                      (the-fixnum (length names))))))
+    (prog2$ (or (<= (the-fixnat next-nume)
+                    (- (the-fixnat (fixnum-bound))
+                       (the-fixnat (* (the-fixnat 4)
+                                      (the-fixnat (length names))))))
                 (max-nume-exceeded-error 'putprop-defun-runic-mapping-pairs))
             (putprop-defun-runic-mapping-pairs1
              names
@@ -8176,7 +8176,9 @@
 ; conceivable that without the guarantee, a :logic mode function could lead to
 ; a call of a :program mode function that violates stobj invariants or writes
 ; past the end of an array.  So be careful when considering a relaxation of
-; this guarantee!
+; this guarantee!  For more reasons why :logic mode functions must not call
+; :program mode functions, see comments in raw-ev-fncall and
+; raw-ev-fncall-simple and see :DOC program-only.
 
   (cond
    ((null names) (value nil))
@@ -9093,10 +9095,50 @@
 ; LAMBDA objects we encounter.
 
   (cond
+   ((let ((dcl (lambda-object-dcl x)))
+      (and dcl
+           (double-float-types-p dcl)))
+
+; Authenticate-tagged-lambda$ is called by
+; make-compileable-guard-and-body-lambdas to evaluate using the original
+; untranslated code when the lambda$ has already been translated (using
+; translate11-lambda-object, with stobjs-out set to (nil) to insist on
+; returning a single ordinary value).  The actuals for a call of apply$ are in
+; a list, so those are not dfs; therefore we have a problem when there is a
+; formal parameter is a df.  Consider for example the following (untranslated)
+; term.
+
+;   (lambda$ (y)
+;            (declare (type double-float y))
+;            (from-df (df- y)))
+
+; If the translation of that lambda$ is successfully authenticated by
+; authenticate-tagged-lambda$, then the following will be produced by
+; make-compileable-guard-and-body-lambdas (eliding the declare form, since it's
+; not relevant to the point here).
+
+;   (LAMBDA (Y)
+;           (DECLARE ...)
+;           (FROM-DF (DF- Y)))
+
+; The reason we can get a raw Lisp error when applying this lambda to a list of
+; ordinary ACL2 objects is that the definition of (unary-df- x) includes the
+; term (- (the double-float x)), and Lisp can complain when the wrong type is
+; supplied (i.e., integer instead of double-float).  This error may not be
+; signaled with all Lisps since ACL2 is built with safety 0, but we have seen a
+; similar such error in GCL with safety 0.
+
+; By returning nil here, we arrange that
+; make-compileable-guard-and-body-lambdas does what is necessary to get past
+; this issue.
+
+    nil)
    ((lambda$-bodyp (lambda-object-body x))
+
 ; X is tagged as having been a lambda$.  If we find it among the cdrs of
 ; lambda$-alist, we know it is authentic.  Otherwise, we translate the lambda$
 ; and check.
+
     (cond
      ((assoc-equal-cdr x (global-val 'lambda$-alist (w state)))
       t)
@@ -9182,7 +9224,8 @@
 ; anyway because quoted LAMBDA objects are not translated.
 
       (mv `(LAMBDA ,formals
-                   (DECLARE (IGNORABLE ,@formals))
+                   (DECLARE (IGNORABLE ,@formals)
+                            ,@(remove-double-float-types (cdr dcl)))
                    ,(logic-code-to-runnable-code
                      nil
                      (remove-guard-holders
@@ -9193,7 +9236,8 @@
                       wrld)
                      wrld))
           `(LAMBDA ,formals
-                   ,dcl
+                   ,@(let ((d (remove-double-float-types (cdr dcl))))
+                       (and d `((declare ,@d))))
                    ,(logic-code-to-runnable-code
                      nil
                      (remove-guard-holders body wrld)
@@ -12323,13 +12367,86 @@
                defs
                lst wrld))))))
 
+(defun verify-termination-boot-strap-chk1 (lst n wrld state)
+
+; Lst is a list of cdrs of defun forms; thus, the car of each element of lst is
+; a symbol.  Moreover, each such symbol is a known function symbol of wrld.
+
+  (cond ((endp lst) (value nil))
+        ((<= (getpropc (caar lst) 'absolute-event-number
+                       '(:error "Implementation error: Missing absolute event ~
+                                 number.  Please contact the ACL2 ~
+                                 implementors.")
+                       wrld)
+             n)
+         (verify-termination-boot-strap-chk1 (cdr lst) n wrld state))
+        (t
+
+; To see why we cause the following error, consider the following example from
+; :DOC verify-termination, modified to use verify-termination-boot-strap.
+
+;   (encapsulate
+;    ()
+;    (defun foo (x y)
+;      (declare (xargs :mode :program
+;                      :guard (and (natp x) (natp y))))
+;      (if (or (zp x) (zp y))
+;          (list x y)
+;        (foo (1+ x) (1- y))))
+;    (local (defun foo (x y)
+;             (declare (xargs :measure (acl2-count y)
+;                             :guard (and (natp x) (natp y))))
+;             (if (or (zp x) (zp y))
+;                 (list x y)
+;               (foo (1+ x) (1- y)))))
+;    (verify-termination-boot-strap foo))
+
+; If that were permitted in axioms.lisp, then one could start ACL2 and
+; immediately prove the following.
+
+;   (defthm bad-lemma
+;     (zp x)
+;     :hints (("Goal" :induct (foo x 1)))
+;     :rule-classes nil)
+
+         (er soft 'verify-termination-boot-strap-chk1
+             "Implementation error: Attempted verify-termination-boot-strap ~
+              for function symbol ~x0 in the same encapsulate where ~x0 is ~
+              introduced.  Please contact the ACL2 implementors, who should ~
+              read the comment in the defun of ~
+              verify-termination-boot-strap-chk1."
+             (caar lst)))))
+
+(defun pre-encapsulate-absolute-event-number (wrld)
+  (cond ((endp wrld)
+         (er hard 'pre-encapsulate-absolute-event-number
+             "Implementation error: Empty world.  Please contact the ACL2 ~
+              implementors."))
+         ((and (eq (caar wrld) 'embedded-event-lst)
+               (eq (cadar wrld) 'global-value)
+               (eq (cdr (cddar wrld)) nil))
+          (max-absolute-event-number wrld))
+         (t (pre-encapsulate-absolute-event-number (cdr wrld)))))
+
+(defun verify-termination-boot-strap-chk (lst state)
+  (let ((wrld (w state)))
+    (cond ((in-encapsulatep (global-val 'embedded-event-lst wrld)
+                            nil)
+           (verify-termination-boot-strap-chk1
+            lst
+            (pre-encapsulate-absolute-event-number wrld)
+            wrld
+            state))
+          (t (value nil)))))
+
 (defun verify-termination-boot-strap-fn1 (lst state event-form)
   (let ((event-form (or event-form
                         (cons 'VERIFY-TERMINATION lst))))
     (er-let*
-        ((verify-termination-defs-lst (verify-termination1 lst state)))
+        ((defs-lst (verify-termination1 lst state))
+         (ignore (verify-termination-boot-strap-chk defs-lst state)))
       (defuns-fn
-        verify-termination-defs-lst
+        defs-lst
         state
         event-form
         #+:non-standard-analysis

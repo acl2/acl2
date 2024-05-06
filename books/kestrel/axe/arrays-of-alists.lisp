@@ -1,7 +1,7 @@
 ; ACL2 arrays containing alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/alen1" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; TODO: Use def-typed-acl2-array for this?
 (defund array-of-alistsp (max-nodenum array-name array)

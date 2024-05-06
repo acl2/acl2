@@ -1,0 +1,1 @@
+(BOOL-FIX$INLINE)

@@ -87,7 +87,7 @@
 
   `(the-fixnum
     (let ((x ,x))
-      (declare (type (signed-byte 30) x))
+      (declare (type #.*fixnum-type* x))
 
 ; Should we really include the declaration above?  The main reason seems to be
 ; in order for the incrementing operation below to run fast, but in fact we
@@ -101,7 +101,7 @@
 ; A typical use of this macro is of the form
 
 ;  (let ((new-mx-id (1+mx-id mx-id)))
-;    (declare (type (signed-byte 30) new-mx-id))
+;    (declare (type #.*fixnum-type* new-mx-id))
 ;    (let ((new-cst (make-leaf-cst
 ;                    new-mx-id
 ;                    term
@@ -744,7 +744,7 @@
 ; If we want to increase the (mx-id-bound), we believe that we could start the
 ; "turnaround" here earlier.  But we have not yet checked this claim carefully.
 
-  (declare (type (signed-byte 30) i acc)
+  (declare (type #.*fixnum-type* i acc)
            (xargs :measure (acl2-count args)))
   (the-fixnum
    (cond
@@ -862,12 +862,12 @@
 ; return the hash index as the first value so that we can avoid boxing up a
 ; fixnum for it in GCL.
 
-  (declare (type (signed-byte 30) op-code))
+  (declare (type #.*fixnum-type* op-code))
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((n (op-hash-index op-code args)))
-     (declare (type (signed-byte 30) n))
+     (declare (type #.*fixnum-type* n))
      (let ((ans (op-search-bucket op args (aref1 'op-ht op-ht n))))
        (cond (ans (mvf 0 ans))
              (t (mvf n nil)))))))
@@ -878,12 +878,12 @@
 ; binary, in particularly for commutative operators; see the comment in
 ; op-search-bucket-2.
 
-  (declare (type (signed-byte 30) op-code))
+  (declare (type #.*fixnum-type* op-code))
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((n (op-hash-index-2 op-code arg1 arg2)))
-     (declare (type (signed-byte 30) n))
+     (declare (type #.*fixnum-type* n))
      (let ((ans (op-search-bucket-2 op arg1 arg2 (aref1 'op-ht op-ht n))))
        (cond (ans (mvf 0 ans))
              (t (mvf n nil)))))))
@@ -897,9 +897,9 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((n (op-hash-index-if arg1 arg2 arg3)))
-     (declare (type (signed-byte 30) n))
+     (declare (type #.*fixnum-type* n))
      (let ((ans (op-search-bucket-if arg1 arg2 arg3 (aref1 'op-ht op-ht n))))
        (cond (ans (mvf 0 ans))
              (t (mvf n nil)))))))
@@ -915,12 +915,12 @@
   (floor (hash-size) 4))
 
 (defun op-hash-index-string (index acc string)
-  (declare (type (signed-byte 30) index acc))
+  (declare (type #.*fixnum-type* index acc))
   (the-fixnum
    (cond
     ((= index 0) acc)
     (t (let ((index (1- (the-fixnum index))))
-         (declare (type (signed-byte 30) index))
+         (declare (type #.*fixnum-type* index))
          (op-hash-index-string
           index
           (logandf (hash-size)
@@ -971,9 +971,9 @@
 (defun chk-memo-quotep (term op-ht)
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((n (op-hash-index-evg (cadr term))))
-     (declare (type (signed-byte 30) n))
+     (declare (type #.*fixnum-type* n))
      (let ((ans (op-search-bucket-quote
                  (cadr term)
                  (aref1 'op-ht op-ht n))))
@@ -985,10 +985,10 @@
              (t (mvf n nil)))))))
 
 (defun bdd-quotep (term op-ht mx-id)
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((equal term *t*)
      (mvf mx-id *cst-t* op-ht))
@@ -997,11 +997,11 @@
     (t
      (mv-let (hash-index ans)
              (chk-memo-quotep term op-ht)
-             (declare (type (signed-byte 30) hash-index))
+             (declare (type #.*fixnum-type* hash-index))
              (cond
               (ans (mvf mx-id ans op-ht))
               (t (let ((new-mx-id (1+mx-id mx-id)))
-                   (declare (type (signed-byte 30) new-mx-id))
+                   (declare (type #.*fixnum-type* new-mx-id))
                    (let ((new-cst (make-leaf-cst
                                    new-mx-id
                                    term
@@ -1021,7 +1021,7 @@
 (defmacro bdd-quotep+ (term op-ht if-ht mx-id ttree)
   `(mv-let (mx-id cst op-ht)
            (bdd-quotep ,term ,op-ht ,mx-id)
-           (declare (type (signed-byte 30) mx-id))
+           (declare (type #.*fixnum-type* mx-id))
            (mvf mx-id cst op-ht ,if-ht ,ttree)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1267,12 +1267,12 @@
 (defmacro one-way-unify1-cst-2 (mx-id p1 p2 cst1 cst2 alist op-ht)
   `(mv-let (mx-id ans alist1 op-ht)
            (one-way-unify1-cst ,mx-id ,p1 ,cst1 ,alist ,op-ht)
-           (declare (type (signed-byte 30) mx-id))
+           (declare (type #.*fixnum-type* mx-id))
            (cond
             (ans
              (mv-let (mx-id ans alist2 op-ht)
                      (one-way-unify1-cst mx-id ,p2 ,cst2 alist1 op-ht)
-                     (declare (type (signed-byte 30) mx-id))
+                     (declare (type #.*fixnum-type* mx-id))
                      (cond
                       (ans (mvf mx-id t alist2 op-ht))
                       (t (mvf mx-id nil ,alist op-ht)))))
@@ -1281,12 +1281,12 @@
 (defmacro one-way-unify1-cst-3 (mx-id p1 p2 p3 cst1 cst2 cst3 alist op-ht)
   `(mv-let (mx-id ans alist2 op-ht)
            (one-way-unify1-cst-2 ,mx-id ,p1 ,p2 ,cst1 ,cst2 ,alist ,op-ht)
-           (declare (type (signed-byte 30) mx-id))
+           (declare (type #.*fixnum-type* mx-id))
            (cond
             (ans
              (mv-let (mx-id ans alist3 op-ht)
                      (one-way-unify1-cst mx-id ,p3 ,cst3 alist2 op-ht)
-                     (declare (type (signed-byte 30) mx-id))
+                     (declare (type #.*fixnum-type* mx-id))
                      (cond
                       (ans (mvf mx-id t alist3 op-ht))
                       (t (mvf mx-id nil ,alist op-ht)))))
@@ -1297,10 +1297,10 @@
 ; The following functions are adapted from one-way-unify1 and the like.
 
 (defun one-way-unify1-cst (mx-id pat cst alist op-ht)
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((variablep pat)
           (let ((pair (assoc-eq pat alist)))
             (cond (pair (cond ((cst= (cdr pair) cst)
@@ -1336,7 +1336,7 @@
                                                           (fix (cadr (fargn pat
                                                                             1)))))
                                                 op-ht mx-id)
-                                               (declare (type (signed-byte 30)
+                                               (declare (type #.*fixnum-type*
                                                               mx-id))
                                                (one-way-unify1-cst
                                                 mx-id (fargn pat 2)
@@ -1348,7 +1348,7 @@
                                                           (fix (cadr (fargn pat
                                                                             2)))))
                                                 op-ht mx-id)
-                                               (declare (type (signed-byte 30)
+                                               (declare (type #.*fixnum-type*
                                                               mx-id))
                                                (one-way-unify1-cst
                                                 mx-id (fargn pat 1)
@@ -1363,7 +1363,7 @@
                                                 (kwote (/ (cadr term)
                                                           (cadr (fargn pat 1))))
                                                 op-ht mx-id)
-                                               (declare (type (signed-byte 30)
+                                               (declare (type #.*fixnum-type*
                                                               mx-id))
                                                (one-way-unify1-cst
                                                 mx-id (fargn pat 2)
@@ -1376,7 +1376,7 @@
                                                 (kwote (/ (cadr term)
                                                           (cadr (fargn pat 2))))
                                                 op-ht mx-id)
-                                               (declare (type (signed-byte 30)
+                                               (declare (type #.*fixnum-type*
                                                               mx-id))
                                                (one-way-unify1-cst
                                                 mx-id (fargn pat 1)
@@ -1430,12 +1430,12 @@
                                (bdd-quotep
                                 (kwote (car (cadr term)))
                                 op-ht mx-id)
-                               (declare (type (signed-byte 30) mx-id))
+                               (declare (type #.*fixnum-type* mx-id))
                                (mv-let
                                 (mx-id ans alist1 op-ht)
                                 (one-way-unify1-cst
                                  mx-id (fargn pat 1) cst1 alist op-ht)
-                                (declare (type (signed-byte 30) mx-id))
+                                (declare (type #.*fixnum-type* mx-id))
                                 (cond
                                  (ans
                                   (mv-let
@@ -1443,12 +1443,12 @@
                                    (bdd-quotep
                                     (kwote (cdr (cadr term)))
                                     op-ht mx-id)
-                                   (declare (type (signed-byte 30) mx-id))
+                                   (declare (type #.*fixnum-type* mx-id))
                                    (mv-let (mx-id ans alist2 op-ht)
                                            (one-way-unify1-cst
                                             mx-id (fargn pat 2) cst2 alist1
                                             op-ht)
-                                           (declare (type (signed-byte 30)
+                                           (declare (type #.*fixnum-type*
                                                           mx-id))
                                            (cond (ans (mvf mx-id t alist2
                                                            op-ht))
@@ -1472,7 +1472,7 @@
                                                          (fargs pat)
                                                          (fargs term)
                                                          alist op-ht)
-                                 (declare (type (signed-byte 30) mx-id))
+                                 (declare (type #.*fixnum-type* mx-id))
                                  (cond (ans (mvf mx-id t alist1 op-ht))
                                        (t (mvf mx-id nil alist op-ht)))))))
                (t (mvf mx-id nil alist op-ht))))))))
@@ -1481,14 +1481,14 @@
 
 ; This function is NOT a No Change Loser.
 
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((null pl) (mvf mx-id t alist op-ht))
          (t (mv-let (mx-id ans alist op-ht)
                     (one-way-unify1-cst mx-id (car pl) (car cstl) alist op-ht)
-                    (declare (type (signed-byte 30) mx-id))
+                    (declare (type #.*fixnum-type* mx-id))
                     (cond
                      (ans
                       (one-way-unify1-cst-lst mx-id (cdr pl) (cdr cstl) alist
@@ -1496,13 +1496,13 @@
                      (t (mvf mx-id nil alist op-ht))))))))
 
 (defun one-way-unify1-cst-equal (mx-id pat1 pat2 cst1 cst2 alist op-ht)
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let (mx-id ans alist op-ht)
            (one-way-unify1-cst-2 mx-id pat1 pat2 cst1 cst2 alist op-ht)
-           (declare (type (signed-byte 30) mx-id))
+           (declare (type #.*fixnum-type* mx-id))
            (cond
             (ans (mvf mx-id t alist op-ht))
             (t (one-way-unify1-cst-2 mx-id pat2 pat1 cst1 cst2 alist
@@ -1510,10 +1510,10 @@
 )
 
 (defun some-one-way-unify-cst-lst (cst-lst rules op-ht mx-id ttree)
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    6
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((endp rules)
      (mvf mx-id nil nil nil op-ht ttree))
@@ -1521,7 +1521,7 @@
                (one-way-unify1-cst-lst
                 mx-id (fargs (access bdd-rule (car rules) :lhs))
                 cst-lst nil op-ht)
-               (declare (type (signed-byte 30) mx-id))
+               (declare (type #.*fixnum-type* mx-id))
                (cond
                 (ans (mvf mx-id t
                           (access bdd-rule (car rules) :rhs)
@@ -1705,10 +1705,10 @@
 ; thus have to return four results: the new mx-id, the cst, and the
 ; two hash arrays.
 
-  (declare (type (signed-byte 30) n mx-id))
+  (declare (type #.*fixnum-type* n mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((cst= y z) (mvf mx-id
                           y
 
@@ -1725,7 +1725,7 @@
                                                (aref1 'op-ht op-ht n)))
                           if-ht))
          (t (let ((m (if-hash-index x y z)))
-              (declare (type (signed-byte 30) m))
+              (declare (type #.*fixnum-type* m))
               (let* ((bucket (aref1 'if-ht if-ht m))
                      (old-if (if-search-bucket x y z bucket)))
                 (cond (old-if (mvf mx-id
@@ -1745,7 +1745,7 @@
                                                  (aref1 'op-ht op-ht n)))
                             if-ht))
                       (t (let ((mx-id (1+mx-id mx-id)))
-                           (declare (type (signed-byte 30) mx-id))
+                           (declare (type #.*fixnum-type* mx-id))
                            (mv-let
                             (erp new-if)
                             (make-if-cst mx-id x y z bdd-constructors)
@@ -1771,12 +1771,12 @@
 ; Same as make-if, except that we do not change op-ht, and we assume that y and
 ; z are already known to be distinct.
 
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((m (if-hash-index x y z)))
-     (declare (type (signed-byte 30) m))
+     (declare (type #.*fixnum-type* m))
      (let* ((bucket (aref1 'if-ht if-ht m))
             (old-if (if-search-bucket x y z bucket)))
        (cond (old-if (mvf mx-id old-if op-ht if-ht))
@@ -1785,7 +1785,7 @@
                    (cst-boolp x))
               (mvf mx-id x op-ht if-ht))
              (t (let ((mx-id (1+mx-id mx-id)))
-                  (declare (type (signed-byte 30) mx-id))
+                  (declare (type #.*fixnum-type* mx-id))
                   (mv-let
                    (erp new-if)
                    (make-if-cst mx-id x y z bdd-constructors)
@@ -1843,7 +1843,7 @@
 ; id of a term that (semantically) equals nil, args represents the same list of
 ; terms as false-branch-args.
 
-  (declare (type (signed-byte 30) var-id))
+  (declare (type #.*fixnum-type* var-id))
   (if (endp args)
       (mv nil nil)
     (mv-let (x y)
@@ -1904,10 +1904,10 @@
 ; bdd-constructors = nil if no such attempt is possible; otherwise, we know
 ; that op is not a member of bdd-constructors.
 
-  (declare (type (signed-byte 30) hash-index mx-id))
+  (declare (type #.*fixnum-type* hash-index mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((new-mx-id (1+mx-id mx-id))
          (rune (and mask
 
@@ -1915,7 +1915,7 @@
 ; is Boolean modulo that mask (for its type prescription).
 
                     (bool-flg args mask))))
-     (declare (type (signed-byte 30) new-mx-id))
+     (declare (type #.*fixnum-type* new-mx-id))
      (let ((new-cst (make-leaf-cst
                      new-mx-id
                      (cons op args)
@@ -1978,7 +1978,7 @@
                           bdd bdd-alist bdd-list)))))
   `(mv-let ,vars
            ,form
-           (declare (type (signed-byte 30) mx-id))
+           (declare (type #.*fixnum-type* mx-id))
            (if (stringp ,(cadr vars))
                ,(cond
                  ((eq (car form) 'bdd)
@@ -2024,7 +2024,7 @@
 ; This function is identical to combine-op-csts1, except that the op is
 ; assumed to be IF.
 
-  (declare (type (signed-byte 30) var-id))
+  (declare (type #.*fixnum-type* var-id))
   (mv-let (x y)
           (combine-op-csts1 var-id (cdr args))
           (cond
@@ -2053,10 +2053,10 @@
 ; We assume here that test-cst is not the cst of a quotep, and that the input
 ; csts are really all csts (not error strings).
 
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((cst= true-cst false-cst)
      (mvf mx-id true-cst op-ht if-ht))
@@ -2094,7 +2094,7 @@
            (mv-let
             (hash-index ans)
             (chk-memo-if test-cst true-cst false-cst op-ht)
-            (declare (type (signed-byte 30) hash-index))
+            (declare (type #.*fixnum-type* hash-index))
             (cond
              (ans (mvf mx-id ans op-ht if-ht))
              (t (let* ((args (list test-cst true-cst false-cst))
@@ -2144,10 +2144,10 @@
 
 (defun bdd-ev-fncall
   (mx-id hash-index op mask args op-ht if-ht bdd-constructors rune ttree state)
-  (declare (type (signed-byte 30) hash-index mx-id))
+  (declare (type #.*fixnum-type* hash-index mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let (erp val latches)
            (ev-fncall op (cst-list-to-evg-list args)
                       nil ; irrelevant arg-exprs (as latches is nil)
@@ -2195,10 +2195,10 @@
 (defun make-if-for-op
   (mx-id hash-index op args test-cst true-cst false-cst
          op-ht if-ht bdd-constructors)
-  (declare (type (signed-byte 30) hash-index mx-id))
+  (declare (type #.*fixnum-type* hash-index mx-id))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((cst= true-cst false-cst)
 
@@ -2212,7 +2212,7 @@
     ((let ((true-split-var (split-var true-cst))
            (false-split-var (split-var false-cst))
            (test-id (unique-id test-cst)))
-       (declare (type (signed-byte 30) test-id))
+       (declare (type #.*fixnum-type* test-id))
        (and (or (null true-split-var)
                 (< test-id (unique-id true-split-var)))
             (or (null false-split-var)
@@ -2249,14 +2249,14 @@
 ; operator is commutative, in order to avoid some consing, use
 ; combine-op-csts-comm.
 
-  (declare (type (signed-byte 30) op-code mx-id))
+  (declare (type #.*fixnum-type* op-code mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let
     (hash-index ans)
     (chk-memo op-code op args op-ht)
-    (declare (type (signed-byte 30) hash-index))
+    (declare (type #.*fixnum-type* hash-index))
     (cond
      (ans (mvf mx-id ans op-ht if-ht ttree))
      ((and enabled-exec-p
@@ -2282,10 +2282,10 @@
 ; When args is non-nil, it is (list arg1 arg2).  The idea is to avoid making a
 ; cons when possible.
 
-  (declare (type (signed-byte 30) op-code mx-id))
+  (declare (type #.*fixnum-type* op-code mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((and (eq op 'equal)
           (cst= arg1 arg2))
@@ -2317,7 +2317,7 @@
       (mv-let
        (hash-index ans)
        (chk-memo-2 op-code op arg1 arg2 op-ht)
-       (declare (type (signed-byte 30) hash-index))
+       (declare (type #.*fixnum-type* hash-index))
        (cond
         (ans (mvf mx-id ans op-ht if-ht ttree))
         ((and (eq op 'equal)
@@ -2356,15 +2356,15 @@
 ; Note that op-bdd-rules is a pair of the form (bdd-lemmas . bdd-defs).  These
 ; are all the bdd rules that rewrite calls of the function symbol op.
 
-  (declare (type (signed-byte 30) op-code mx-id hash-index))
+  (declare (type #.*fixnum-type* op-code mx-id hash-index))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let
     (mx-id ans rhs alist op-ht ttree)
     (some-one-way-unify-cst-lst args (car op-bdd-rules)
                                 op-ht mx-id ttree)
-    (declare (type (signed-byte 30) mx-id))
+    (declare (type #.*fixnum-type* mx-id))
     (cond
      (ans
       (bdd-mv-let
@@ -2393,7 +2393,7 @@
                (mx-id ans rhs alist op-ht ttree)
                (some-one-way-unify-cst-lst args (cdr op-bdd-rules)
                                            op-ht mx-id ttree)
-               (declare (type (signed-byte 30) mx-id))
+               (declare (type #.*fixnum-type* mx-id))
                (cond
                 (ans
                  (bdd-mv-let
@@ -2463,7 +2463,7 @@
                            (make-if-for-op
                             mx-id hash-index op args min-var cst1 cst2
                             op-ht if-ht bdd-constructors)
-                           (declare (type (signed-byte 30) mx-id))
+                           (declare (type #.*fixnum-type* mx-id))
                            (cond ((stringp ans)
                                   (bdd-error mx-id ans op-ht if-ht ttree))
                                  (t
@@ -2473,10 +2473,10 @@
 (defun bdd (term alist op-ht if-ht mx-id ttree bddspv state)
   (declare (xargs :measure (acl2-count term)
                   :guard (pseudo-termp term))
-           (type (signed-byte 30) mx-id))
+           (type #.*fixnum-type* mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((variablep term)
      (mvf mx-id
@@ -2540,7 +2540,7 @@
            (mx-id cst op-ht if-ht)
            (combine-if-csts test-cst true-cst false-cst op-ht if-ht mx-id
                             (access bddspv bddspv :bdd-constructors))
-           (declare (type (signed-byte 30) mx-id))
+           (declare (type #.*fixnum-type* mx-id))
            (cond
             ((stringp cst)
              (bdd-error mx-id cst op-ht if-ht ttree))
@@ -2559,7 +2559,7 @@
         (opcode comm-p enabled-exec-p mask)
         (op-alist-info (ffn-symb term)
                        (access bddspv bddspv :op-alist))
-        (declare (type (signed-byte 30) opcode))
+        (declare (type #.*fixnum-type* opcode))
         (cond
          (comm-p
           (bdd-mv-let
@@ -2592,10 +2592,10 @@
                                     ttree bddspv state)))))))))
 
 (defun bdd-alist (formals actuals alist op-ht if-ht mx-id ttree bddspv state)
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((endp formals)
      (mvf mx-id nil op-ht if-ht ttree))
@@ -2611,10 +2611,10 @@
                          op-ht if-ht ttree)))))))
 
 (defun bdd-list (lst alist op-ht if-ht mx-id ttree bddspv state)
-  (declare (type (signed-byte 30) mx-id))
+  (declare (type #.*fixnum-type* mx-id))
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((endp lst)
      (mvf mx-id nil op-ht if-ht ttree))

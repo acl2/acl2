@@ -50,9 +50,9 @@
 
 ;seems expensive
 (defthmd consp-set-hack
-  (implies (not (set::empty s))
+  (implies (not (set::emptyp s))
            (consp s))
-  :hints (("Goal" :in-theory (enable setp-hack set::empty))))
+  :hints (("Goal" :in-theory (enable setp-hack set::emptyp))))
 
 ;bad to mix sets and lists?
 (defthm consp-of-insert

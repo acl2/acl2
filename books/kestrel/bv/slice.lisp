@@ -63,6 +63,12 @@
   :hints (("Goal" :use slice-when-val-is-not-an-integer
            :in-theory (disable slice-when-val-is-not-an-integer))))
 
+(defthmd slice-when-low-is-not-an-integer
+  (implies (not (integerp low))
+           (equal (slice high low val)
+                  (slice high 0 val)))
+  :hints (("Goal" :in-theory (enable slice))))
+
 (defthm slice-too-high-is-0
   (implies (unsigned-byte-p low x)
            (equal (slice high low x)
@@ -257,10 +263,9 @@
 (theory-invariant (incompatible (:rewrite logtail-of-bvchop) (:rewrite bvchop-of-logtail)))
 
 (defthmd bvchop-of-logtail-becomes-slice
-  (implies (and (natp size1)
-                (natp size2))
+  (implies (natp size1)
            (equal (bvchop size1 (logtail size2 x))
-                  (slice (+ -1 size1 size2) size2 x)))
+                  (slice (+ -1 size1 (nfix size2)) (nfix size2) x)))
   :hints(("Goal" :in-theory (e/d (slice) (slice-becomes-bvchop)))))
 
 (theory-invariant (incompatible (:definition slice) (:rewrite bvchop-of-logtail-becomes-slice)))

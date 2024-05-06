@@ -1,6 +1,6 @@
 ; Lightweight utilities for parsing decimal digits from strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -125,7 +125,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv maybe-val chars).
+;; Returns (mv maybe-val remaining-chars) where MAYBE-VAL is either the integer
+;; value of the leading decimal digits in CHARS, or nil if there are no leading
+;; decimal digits.
 (defund parse-decimal-number-from-chars (chars)
   (declare (xargs :guard (character-listp chars)))
   (mv-let (res chars)
@@ -133,7 +135,7 @@
     (if res
         ;; At least one decimal digit is present:
         (parse-decimal-digits-from-chars chars res)
-      ;; No decimal digts preseent:
+      ;; No decimal digts present:
       (mv nil chars))))
 
 (defthm parse-decimal-number-from-chars-len-bound
@@ -169,3 +171,45 @@
 ;; (parse-decimal-number-from-chars '(#\7))
 ;; (parse-decimal-number-from-chars '(#\0))
 ;; (parse-decimal-number-from-chars '(#\Z))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv maybe-val remaining-string) where MAYBE-VAL is either the integer
+;; value of the leading decimal digits in STR, or nil if there are no leading
+;; decimal digits.
+(defund parse-decimal-number-from-string (str)
+  (declare (xargs :guard (stringp str)))
+  (mv-let (maybe-val remaining-chars)
+    (parse-decimal-number-from-chars (coerce str 'list))
+    (if (not maybe-val)
+        (mv nil str)
+      (mv maybe-val (coerce remaining-chars 'string)))))
+
+(defthm natp-of-mv-nth-0-of-parse-decimal-number-from-string
+  (implies (mv-nth 0 (parse-decimal-number-from-string str))
+           (natp (mv-nth 0 (parse-decimal-number-from-string str))))
+  :hints (("Goal" :in-theory (enable parse-decimal-number-from-string))))
+
+;; (PARSE-DECIMAL-NUMBER-FROM-STRING "123ABC")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Parses STR as a string of decimal digits and returns tha natural number represented.
+;; Throws an error if STR is not a sequence of decimal digits.
+(defund parse-string-as-decimal-number (str)
+  (declare (xargs :guard (stringp str)))
+  (mv-let (maybe-val remaining-string)
+    (parse-decimal-number-from-string str)
+    (if (not maybe-val)
+        (prog2$ (er hard? 'parse-string-as-decimal-number "No leading decimal chars: ~x0." str)
+                0)
+      (if (not (equal "" remaining-string))
+          (prog2$ (er hard? 'parse-string-as-decimal-number "Extra chars after decimal number in ~x0." str)
+                  maybe-val)
+        maybe-val))))
+
+(defthm natp-of-parse-string-as-decimal-number
+  (natp (parse-string-as-decimal-number str))
+  :hints (("Goal" :in-theory (enable parse-string-as-decimal-number))))
+
+;; (PARSE-STRING-AS-DECIMAL-NUMBER "123")

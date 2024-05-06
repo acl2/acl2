@@ -541,9 +541,9 @@
 
 ;;; (defthm-occur-cnt-bounded signed-byte-p-30-occur-cnt-bounded-flg
 ;;;   (term
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
+;;;    (implies (and (force (signed-byte-p *fixnum-bits* a))
+;;;                  (signed-byte-p *fixnum-bits* m)
+;;;                  (signed-byte-p *fixnum-bits* (+ bound-m m))
 ;;;                  (force (<= 0 a))
 ;;;                  (<= 0 m)
 ;;;                  (<= 0 bound-m)
@@ -552,9 +552,9 @@
 ;;;                  (<= (occur-cnt-bounded term1 term2 a m bound-m) (+ bound-m m))))
 ;;;    :rule-classes :linear)
 ;;;   (list
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
+;;;    (implies (and (force (signed-byte-p *fixnum-bits* a))
+;;;                  (signed-byte-p *fixnum-bits* m)
+;;;                  (signed-byte-p *fixnum-bits* (+ bound-m m))
 ;;;                  (force (<= 0 a))
 ;;;                  (<= 0 m)
 ;;;                  (<= 0 bound-m)
@@ -566,11 +566,11 @@
 ;;;                                                  bound-m))))
 
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
     (case flg
-      (term (implies (and (force (signed-byte-p 30 a))
-                          (signed-byte-p 30 m)
-                          (signed-byte-p 30 (+ bound-m m))
+      (term (implies (and (force (signed-byte-p *fixnum-bits* a))
+                          (signed-byte-p *fixnum-bits* m)
+                          (signed-byte-p *fixnum-bits* (+ bound-m m))
                           (force (<= 0 a))
                           (<= 0 m)
                           (<= 0 bound-m)
@@ -580,9 +580,9 @@
                           (<= (occur-cnt-bounded term1 term2 a m bound-m)
                               (+ bound-m m)))))
       (otherwise
-       (implies (and (force (signed-byte-p 30 a))
-                     (signed-byte-p 30 m)
-                     (signed-byte-p 30 (+ bound-m m))
+       (implies (and (force (signed-byte-p *fixnum-bits* a))
+                     (signed-byte-p *fixnum-bits* m)
+                     (signed-byte-p *fixnum-bits* (+ bound-m m))
                      (force (<= 0 a))
                      (<= 0 m)
                      (<= 0 bound-m)
@@ -595,10 +595,10 @@
     :hints
     (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg-term
-    (implies (and (force (signed-byte-p 30 a))
-                  (signed-byte-p 30 m)
-                  (signed-byte-p 30 (+ bound-m m))
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg-term
+    (implies (and (force (signed-byte-p *fixnum-bits* a))
+                  (signed-byte-p *fixnum-bits* m)
+                  (signed-byte-p *fixnum-bits* (+ bound-m m))
                   (force (<= 0 a))
                   (<= 0 m)
                   (<= 0 bound-m)
@@ -609,13 +609,13 @@
                       (+ bound-m m))))
     :rule-classes :linear
     :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-             :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
+             :use ((:instance signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
                               (flg 'term)))))))
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg-list
-    (implies (and (force (signed-byte-p 30 a))
-                  (signed-byte-p 30 m)
-                  (signed-byte-p 30 (+ bound-m m))
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg-list
+    (implies (and (force (signed-byte-p *fixnum-bits* a))
+                  (signed-byte-p *fixnum-bits* m)
+                  (signed-byte-p *fixnum-bits* (+ bound-m m))
                   (force (<= 0 a))
                   (<= 0 m)
                   (<= 0 bound-m)
@@ -626,7 +626,7 @@
                       (+ bound-m m))))
     :rule-classes :linear
     :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-             :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
+             :use ((:instance signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
                               (flg 'list)))))))
 
  (verify-guards occur-cnt-bounded)
@@ -669,7 +669,7 @@
 
 (verify-termination-boot-strap evg-occur)
 
-(verify-termination-boot-strap min-fixnum$inline)
+(verify-termination-boot-strap min-fixnat$inline)
 
 (verify-termination-boot-strap fn-count-evg-rec ; but not guards
                                (declare (xargs :verify-guards nil)))

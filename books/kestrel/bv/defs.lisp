@@ -26,8 +26,8 @@
 (include-book "bvshr-def")
 (include-book "bvshl-def")
 (include-book "defs-arith")
-(include-book "leftrotate")
-(include-book "rightrotate")
+(include-book "leftrotate") ; todo: split out defs
+(include-book "rightrotate") ; todo: split out defs
 (include-book "ihs/basic-definitions" :dir :system) ;for logext
 ;(include-book "to-signed")
 (include-book "bvcat2")

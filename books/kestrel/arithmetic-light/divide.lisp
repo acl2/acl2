@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation /.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,8 @@
 (local (include-book "times"))
 (local (include-book "complex"))
 (local (include-book "minus"))
-(local (include-book "../library-wrappers/arithmetic-inequalities")) ; todo: drop
+(local (include-book "plus"))
+(local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; Exported in times-and-divides.lisp
@@ -23,6 +24,17 @@
           (if (equal 0 (fix x))
               0
             1))))
+
+;; todo: export in times-and-divides instead?
+(defthm *-of-/-same-more
+  (equal (* x (/ x) y)
+         (if (equal 0 (fix x))
+             0
+           (fix y)))
+  :hints (("Goal" :use (:instance associativity-of-*
+                                  (y (/ x))
+                                  (z y))
+           :in-theory (disable associativity-of-*))))
 
 (defthm /-of-/
   (equal (/ (/ x))
@@ -48,9 +60,7 @@
            (equal (< k (/ y))
                   (and (not (<= y 0))
                        (< y (/ k)))))
-  :hints (("Goal" :cases ((< y 0)
-                          (equal y 0)
-                          (< k (/ y)))
+  :hints (("Goal"
            :in-theory (disable <-of-*-and-*-cancel)
            :use (:instance <-of-*-and-*-cancel
                            (x1 k)
@@ -65,9 +75,11 @@
            (equal (< (/ y) k)
                   (or (<= y 0)
                       (< (/ k) y))))
-  :hints (("Goal" :cases ((< y 0)
-                          (equal y 0)
-                          (< (/ y) k)))))
+  :hints (("Goal" :in-theory (disable <-of-*-and-*-cancel)
+           :use (:instance <-of-*-and-*-cancel
+                           (x1 (/ y))
+                           (x2 k)
+                           (y y)))))
 
 (defthm <-of-0-and-/
   (implies (rationalp x)
@@ -98,7 +110,8 @@
                                   (x1 (/ y))
                                   (x2 (/ X))
                                   (y (* x y)))
-           :in-theory (disable <-of-*-and-*-cancel))))
+           :in-theory (disable <-of-*-and-*-cancel
+                               *-of-/-same-more))))
 
 (defthm <=-of-/-linear
   (implies (and (<= x0 x)
@@ -239,16 +252,28 @@
    (equal (* (+ y z) x)
           (+ (* y x) (* z x)))))
 
+(defthm /-of-*
+  (equal (/ (* x y))
+         (* (/ x) (/ y)))
+  :hints (("Goal" :use ((:instance equal-of-*-and-*-cancel
+                                   (y (/ (* x y)))
+                                   (z (* (/ x) (/ y)))
+                                   (x (* x y)))
+                        (:instance *-of-/-same
+                                   (x (* x y))))
+           :in-theory (disable equal-of-*-and-*-cancel
+                               *-of-/-same))))
+
 (local
  (defthm conjugate-helper
    (implies (and (rationalp c)
                  (rationalp d))
             (equal (* (/ (+ c (* #c(0 1) d))) (/ (+ c (- (* #c(0 1) d)))))
                    (/ (+ (* c c) (* d d)))))
-   :hints (("Goal" :use (:instance distributivity-of-/-over-*
+   :hints (("Goal" :use (:instance /-of-*
                                    (x (+ c (* #c(0 1) d)))
                                    (y (+ c (- (* #c(0 1) d)))))
-            :in-theory (disable distributivity-of-/-over-*)))))
+            :in-theory (disable /-of-*)))))
 
 (defthm /-of-complex-and-complex
   (implies (and (rationalp a)
@@ -261,7 +286,7 @@
                               (+ (* c c) (* d d)))
                            (/ (- (* b c) (* a d))
                               (+ (* c c) (* d d))))))
-  :hints (("Goal" :use (:instance /-of-complex-and-complex-step1)
+  :hints (("Goal" :use /-of-complex-and-complex-step1
            :in-theory (enable complex-opener))))
 
 (defthm <-of-*-of-/-arg1
@@ -289,7 +314,7 @@
                     (if (equal 0 y)
                         (< 0 z)
                       (< (* y z) x)))))
-  :hints (("Goal" :use (:instance <-of-*-of-/-arg1))))
+  :hints (("Goal" :use <-of-*-of-/-arg1)))
 
 (defthm <-of-*-of-/-arg2
   (implies (and (rationalp x)
@@ -305,7 +330,7 @@
                                   (x1 z)
                                   (x2 (* x (/ y))))
            :in-theory (disable <-of-*-and-*-cancel-gen
-                               <-*-/-RIGHT
+                               ;<-*-/-RIGHT
                                <-OF-*-OF-/-arg1))))
 
 ;; commutes the * in the lhs
@@ -319,8 +344,25 @@
                     (if (equal 0 y)
                         (< z 0)
                       (< x (* y z))))))
-  :hints (("Goal" :use (:instance <-of-*-of-/-arg2)
+  :hints (("Goal" :use <-of-*-of-/-arg2
            :in-theory (disable <-of-*-of-/-arg2))))
+
+(defthm /-of--
+  (equal (/ (- x))
+         (- (/ x)))
+  :hints (("Goal"
+           :use (:instance equal-of-*-and-*-cancel
+                           (x (- x))
+                           (y (/ (- x)))
+                           (z (- (/ x))))
+           :in-theory (disable equal-of-*-and-*-cancel))))
+
+(defthmd --of-/
+  (equal (- (/ x))
+         (/ (- x))))
+
+(theory-invariant (incompatible (:rewrite --of-/)
+                                (:rewrite /-of--)))
 
 ;combine with rules above?
 (defthm integerp-of-*-of-/-when-<-and-mixed-1
@@ -349,21 +391,6 @@
                                   (low 0)
                                   (x (* (/ (- y)) x))))))
 
-(defthm /-of--
-  (equal (/ (- x))
-         (- (/ x))))
-
-(defthmd --of-/
-  (equal (- (/ x))
-         (/ (- x))))
-
-(theory-invariant (incompatible (:rewrite --of-/)
-                                (:rewrite /-of--)))
-
-(defthm /-of-*
-  (equal (/ (* x y))
-         (* (/ x) (/ y))))
-
 ;gen?
 (defthm <-of-/-and-constant
   (implies (and (syntaxp (quotep k))
@@ -376,9 +403,7 @@
            (equal (< k (/ x))
                   (< x (/ k))))
   :rule-classes ((:rewrite :loop-stopper nil)) ;otherwise, this rule doesn't apply because it "permutes a big term forward"
-  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
-                                  (z (/ x k))
-                                  (x k) (y (/ x))))))
+  :hints (("Goal" )))
 
 ;gen?
 (defthm /-equal-constant-alt
@@ -390,10 +415,7 @@
                 )
            (equal (< (/ x) k)
                   (< (/ k) x)))
-  :rule-classes ((:rewrite :loop-stopper nil))
-  :hints (("Goal" :use (:instance <-*-LEFT-CANCEL
-                                  (z (/ x k))
-                                  (y k) (x (/ x))))))
+  :rule-classes ((:rewrite :loop-stopper nil)))
 
 (defthm <=-of-*-of-/-when-both-negative-linear
   (implies (and (< i 0)

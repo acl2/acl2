@@ -71,6 +71,11 @@
   :hints (("Goal" :cases ((natp n))
            :in-theory (enable bvminus bvchop-of-sum-cases))))
 
+(defthmd bvminus-of-0-arg1
+  (equal (bvminus 0 x y)
+         0)
+  :hints (("Goal" :in-theory (enable bvminus bvuminus))))
+
 (defthmd bvminus-of-0-arg2
   (equal (bvminus size 0 y)
          (bvuminus size y))
@@ -159,7 +164,7 @@
          (getbit 0 x))
   :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
            :in-theory (e/d (bvminus getbit bvchop-when-i-is-not-an-integer)
-                           (bvchop-1-becomes-getbit slice-becomes-getbit)))))
+                           (bvchop-1-becomes-getbit )))))
 
 (defthm bvchop-of-bvminus
   (implies (and (<= size1 size2)

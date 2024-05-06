@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,6 @@
 (include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "add-to-dag")
 (include-book "alist-suitable-for-hypsp")
-(include-book "all-dargp")
 (include-book "arrays-of-alists")
 (include-book "assumption-array")
 (include-book "axe-bind-free-evaluator-basic")
@@ -62,6 +61,7 @@
 (include-book "dag-array-builders2")
 (include-book "dag-array-builders3")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "dag-array-printing2")
 (include-book "dag-array-printing")
 (include-book "dag-arrays")
@@ -97,7 +97,11 @@
 (include-book "equivs")
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
+(include-book "evaluate-test-case")
+(include-book "evaluate-test-case-simple")
+(include-book "find-probable-facts-common")
 (include-book "find-probable-facts")
+(include-book "find-probable-facts-simple")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
@@ -209,6 +213,7 @@
 (include-book "substitute-vars")
 (include-book "supporting-nodes")
 (include-book "supporting-vars")
+(include-book "sweep-and-merge-support")
 (include-book "tailtohead")
 (include-book "term-equal-dag")
 (include-book "test-cases")
@@ -243,6 +248,7 @@
 (include-book "stp-counterexamples")
 (include-book "translate-dag-to-stp")
 (include-book "prove-with-stp")
+(include-book "prove-with-stp-tester")
 (include-book "stp-clause-processor")
 (include-book "defthm-stp")
 

@@ -887,10 +887,10 @@
                         :theory-array))
        (symbolp (access enabled-structure ens
                         :array-name))
-       (signed-byte-p 30 (access enabled-structure ens
-                                 :array-length))
-       (signed-byte-p 30 (access enabled-structure ens
-                                 :index-of-last-enabling))
+       (signed-byte-p *fixnum-bits* (access enabled-structure ens
+                                            :array-length))
+       (signed-byte-p *fixnum-bits* (access enabled-structure ens
+                                            :index-of-last-enabling))
 
 ; The following must be true in order for the array access in enabled-numep to
 ; be in bounds.
@@ -991,7 +991,7 @@
 ; in the enabled structure ens.  We treat nil as though it were
 ; enabled.
 
-  (declare (type (or null (integer 0 *))
+  (declare (type (or null #.*fixnat-type*)
                  nume)
            (xargs :guard (enabled-structure-p ens)))
   (cond ((null nume) t)
@@ -1001,7 +1001,7 @@
          t)
         (t (aref1 (access enabled-structure ens :array-name)
                   (access enabled-structure ens :theory-array)
-                  (the-fixnum nume)))))
+                  (the-fixnat nume)))))
 
 (defun enabled-arith-numep (nume ens)
 
@@ -1011,17 +1011,17 @@
 ; the most recent in-arithmetic-theory is considered disabled.  The normal
 ; enabled-numep would treat these more recent numes as enabled.
 
-; Our calls of the-fixnum assume that nume is less than about 2 billion.  That
+; Our calls of the-fixnat assume that nume is less than about 2 billion.  That
 ; seems like a safe assumption!
 
   (cond ((null nume) t)
-        ((> (the-fixnum nume)
+        ((> (the-fixnat nume)
             (the-fixnum
              (access enabled-structure ens :index-of-last-enabling)))
          nil)
         (t (aref1 (access enabled-structure ens :array-name)
                   (access enabled-structure ens :theory-array)
-                  (the-fixnum nume)))))
+                  (the-fixnat nume)))))
 
 (defun enabled-runep (rune ens wrld)
 
@@ -1035,9 +1035,10 @@
                        (consp (cdr rune))
                        (symbolp (base-symbol rune))
                        (enabled-structure-p ens)
-                       (nat-alistp (getpropc (base-symbol rune)
-                                             'runic-mapping-pairs nil
-                                             wrld)))
+                       (fixnat-alistp (getpropc (base-symbol rune)
+                                                'runic-mapping-pairs
+                                                nil
+                                                wrld)))
                   :guard-hints (("Goal" :do-not-induct t))))
   (enabled-numep (fnume rune wrld) ens))
 
@@ -1235,7 +1236,7 @@
 ; order to return function symbols in the order in which they were defined (a
 ; minor aesthetic preference).
 
-  (declare (type (signed-byte 30) nume))
+  (declare (type #.*fixnat-type* nume))
   (cond
    ((eql nume max-nume)
     (reverse acc))
@@ -2045,7 +2046,9 @@
 ; See load-theory-into-enabled-structure, which is a wrapper for this function
 ; that may perform an extra check.
 
-  (let* ((n (or index-of-last-enabling (1- (get-next-nume wrld))))
+  (let* ((n (or index-of-last-enabling
+                (max 0 ; guarantee non-negative value, e.g. when wrld is nil
+                     (1- (get-next-nume wrld)))))
          (d (access enabled-structure ens :array-length))
          (new-d (cond ((< n d) d)
                       (t (max (* 2 d)
@@ -4469,7 +4472,7 @@
 (defmacro with-decrement-worse-than-clk (clk form)
   (declare (xargs :guard (symbolp clk)))
   `(let ((,clk (decrement-worse-than-clk ,clk)))
-     (declare (type (unsigned-byte 29) ,clk))
+     (declare (type #.*fixnat-type* ,clk))
      ,form))
 
 (defmacro worse-than-builtin-clocked-body (clk)
@@ -4534,7 +4537,7 @@
 ; more predictable implementation.  Comments below explore these options.
 
   (declare
-   (type (unsigned-byte 29) clk)
+   (type #.*fixnat-type* clk)
    (xargs :guard (and (pseudo-termp term1)
                       (pseudo-termp term2))
           :measure (make-ord 1
@@ -4663,7 +4666,7 @@
 ;             ans)))
 
    (t (let ((clk (1-f clk)))
-        (declare (type (unsigned-byte 29) clk))
+        (declare (type #.*fixnat-type* clk))
         (worse-than-builtin-clocked-body clk)))))
 
 (defun worse-than-or-equal-builtin-clocked (term1 term2 clk)
@@ -4686,7 +4689,7 @@
 ; if pseudo-variantp is nil, then the equal returns nil.  So we can simplify
 ; the if above to:
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4705,7 +4708,7 @@
 ; Technically, a2 is uglier than a1 if a1 is atomic (a variable or constant)
 ; and a2 is not or a2 is worse-than-builtin a1.
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
                   :measure
@@ -4728,7 +4731,7 @@
 
 ; Is some element of arg1 worse-than-builtin the corresponding element of args2?
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-term-listp args1)
                               (pseudo-term-listp args2))
                   :measure (make-ord 1
@@ -4764,7 +4767,7 @@
 ; Yes, because even though one argument (the second) got worse (it went from 17
 ; to B) another argument (the first) got better (it went from A to 17).
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4803,7 +4806,7 @@
 
 ; Returns t if some subterm of term1 is worse-than-builtin or equal to term2.
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-termp term1)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4827,7 +4830,7 @@
                                                  clk)))))))
 
 (defun some-subterm-worse-than-or-equal-lst (args term2 clk)
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -4846,7 +4849,7 @@
 ; element of args itself.  That is, we use ``subterm'' in the ``not necessarily
 ; proper subterm'' sense.
 
-  (declare (type (unsigned-byte 29) clk)
+  (declare (type #.*fixnat-type* clk)
            (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp term2))
                   :measure (make-ord 1
@@ -7599,6 +7602,9 @@
       (push-lemma rune ttree)
     ttree))
 
+(defstub use-enhanced-recognizer () t)
+(defattach use-enhanced-recognizer constant-t-function-arity-0)
+
 (defun strong-recognizer-expr-p (var x ens w)
 
 ; At the top level var is nil and x is a call of IF (which is why we test for
@@ -7658,6 +7664,14 @@
    ((eq (ffn-symb x) 'not)
     (mv-let (var not-true-ts not-false-ts runes)
       (strong-recognizer-expr-p var (fargn x 1) ens w)
+
+; We considered using here the approach below for (equal TERM nil) when the
+; call of strong-recognizer-expr-p fails (i.e., var is nil).  However, we got
+; nearly 30 regression failures in that case, and presumably there could have
+; been many more once those were fixed.  It seems reasonable anyhow not to
+; treat NOT as a recognizer -- one might naturally instead use NULL, which is a
+; compound recognizer, or (equal TERM nil).
+
       (mv var not-false-ts not-true-ts
           (if (and var (not (eq var :empty)))
               (add-to-set-equal '(:definition not) runes)
@@ -7674,6 +7688,33 @@
                  (access recognizer-tuple r :false-ts)
                  (list (access recognizer-tuple r :rune))))
             (t (mv nil nil nil nil)))))
+   ((and (eq (ffn-symb x) 'equal)
+         (use-enhanced-recognizer))
+    (mv-let (arg evg)
+      (cond ((quotep (fargn x 1))
+             (mv (fargn x 2) (unquote (fargn x 1))))
+            ((quotep (fargn x 2))
+             (mv (fargn x 1) (unquote (fargn x 2))))
+            (t (mv nil nil)))
+      (cond ((or (null arg)
+                 (not (or (eq var nil)
+                          (eq var :empty)
+                          (equal var arg))))
+             (mv nil nil nil nil))
+            (t (let ((ts (case evg ; see *singleton-type-sets*
+                           ((t) *ts-t*)
+                           ((nil) *ts-nil*)
+                           (0 *ts-zero*)
+                           (1 *ts-one*)
+                           (otherwise nil))))
+                 (cond
+                  ((null ts)
+                   (mv nil nil nil nil))
+                  (t
+                   (mv arg
+                       ts                 ; :true-ts
+                       (ts-complement ts) ; :false-ts
+                       (list *fake-rune-for-anonymous-enabled-rule*)))))))))
    (t (mv nil nil nil nil))))
 
 (defun recognizer-expr-p (x ens w)

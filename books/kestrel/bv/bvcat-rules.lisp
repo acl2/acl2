@@ -452,7 +452,6 @@
                   (bvcat (+ -1 n) x 1 0)))
   :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
                                   (bvchop-1-becomes-getbit
-                                   slice-becomes-getbit
                                    bvchop-of-logtail-becomes-slice
                                    logtail-of-bvchop-becomes-slice)))))
 
@@ -524,8 +523,7 @@
   :hints (("Goal" :cases ((and (integerp z) (integerp y))
                           (and (integerp z) (not (integerp y)))
                           (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) (;bvchop-of-* ;fixme
-                                    logtail-of-bvchop-becomes-slice)))))
+           :in-theory (e/d (bvcat) (logtail-of-bvchop-becomes-slice)))))
 
 ;move
 (DEFTHM BVCAT-SLICE-SLICE-SAME-2

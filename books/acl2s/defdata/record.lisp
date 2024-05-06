@@ -279,8 +279,8 @@ data last modified: [2014-08-06]
   `(s+ ,@args :separator "-" :pkg curr-pkg))
 
 (defun record-local-theory-events (pred conx fnames disabled-runes curr-pkg)
-  (b* ((dex-calls (apply-mget-to-x-lst fnames '())))
-    
+  (b* ((dex-calls (apply-mget-to-xvar-lst 'x fnames '())))
+
     `((defthm ,(curr-pkg-s+ pred 'tag-bridge-lemma1)
         (implies (,pred x)
                  (equal (EQUAL x (,conx  ,@dex-calls))
@@ -289,7 +289,7 @@ data last modified: [2014-08-06]
         :rule-classes nil)
       
       (defthm ,(curr-pkg-s+ pred 'tag-bridge-lemma2)
-        (implies (EQUAL x (,conx ,@fnames));AA-KEY  AA-LEVEL AA-LEFT AA-RIGHT))
+        (implies (EQUAL x (,conx ,@fnames)) ;AA-KEY  AA-LEVEL AA-LEFT AA-RIGHT))
                  (mget ,*tag* x))
         :hints (("Goal" :in-theory (e/d (,pred) (,@disabled-runes))))
         :rule-classes nil)
@@ -297,39 +297,50 @@ data last modified: [2014-08-06]
       (defthm ,(curr-pkg-s+ pred 'tag-is-non-empty)
         (implies (,pred x)
                  (mget ,*tag* x))
-        :hints (("goal" :in-theory (e/d (,pred) (,@disabled-runes))
-                 :use ((:instance ,(curr-pkg-s+ pred 'tag-bridge-lemma1))
-                       (:instance ,(curr-pkg-s+ pred 'tag-bridge-lemma2)))))
+        :hints
+        (("goal" :in-theory (e/d ()
+                                 ,(append (list pred conx)
+                                          disabled-runes))
+          :use ((:instance ,(curr-pkg-s+ pred 'tag-bridge-lemma1))
+                (:instance ,(curr-pkg-s+ pred 'tag-bridge-lemma2)
+                           ,@(pairlis$ fnames (acl2::pairlis-x2
+                                               dex-calls nil))))))
         :rule-classes (:forward-chaining))
-      
-       (defthm ,(curr-pkg-s+ pred 'def-crux)
-         (implies (,pred x)
-                  (equal x  (,conx  ,@dex-calls)))
-         :hints (("Goal" :in-theory (e/d (,pred) (,@disabled-runes))))
-         :rule-classes nil)
-      )))
-    
 
-(defun record-predicate-theory-events (pred conx disabled-runes curr-pkg)
-  `((defthm ,(curr-pkg-s+ pred 'unique-tag)
-      (implies (,pred x)
-               (equal (mget ,*tag* x) ',conx))
+      (defthm ,(curr-pkg-s+ pred 'def-crux)
+        (implies (,pred x)
+                 (equal x  (,conx  ,@dex-calls)))
+        :hints (("Goal" :in-theory (e/d (,pred) (,@disabled-runes))))
+        :rule-classes nil)
+      )))
+
+(defun record-predicate-theory-events (pred conx fnames disabled-runes curr-pkg)
+  (b* ((dex-calls (apply-mget-to-xvar-lst 'x fnames '()))
+       (dey-calls (apply-mget-to-xvar-lst 'y fnames '()))
+       (dexy-calls-equal
+        (acl2::pairlis-x1 'equal
+                          (pairlis$ dex-calls
+                                    (acl2::pairlis-x2 dey-calls nil)))))
+
+    `((defthm ,(curr-pkg-s+ pred 'unique-tag)
+        (implies (,pred x)
+                 (equal (mget ,*tag* x) ',conx))
         :hints (("goal" :expand ((,pred x))
-                        :in-theory (e/d () (,@disabled-runes))))
-        :rule-classes (;(:rewrite :backchain-limit-lst 1)
+                 :in-theory (e/d () (,@disabled-runes))))
+        :rule-classes ( ;(:rewrite :backchain-limit-lst 1)
                        :forward-chaining :type-prescription))
 
       (defthm ,(curr-pkg-s+ pred 'implies-consp)
         (implies (,pred x)
                  (consp x))
-        :rule-classes (;(:rewrite :backchain-limit-lst 1)
+        :rule-classes ( ;(:rewrite :backchain-limit-lst 1)
                        :forward-chaining :compound-recognizer))
 
       (defthm ,(curr-pkg-s+ pred 'implies-good-map)
         (implies (,pred x)
                  (acl2::recordp x))
         :hints (("goal" :in-theory (e/d (,pred))))
-        :rule-classes (;(:rewrite :backchain-limit-lst 1) 
+        :rule-classes ( ;(:rewrite :backchain-limit-lst 1) 
                        (:forward-chaining)))
       
       (defthm ,(curr-pkg-s+ pred 'excludes-atom-list)
@@ -337,7 +348,20 @@ data last modified: [2014-08-06]
                  (not (atom-listp x)))
         :hints (("goal" :in-theory (e/d (,pred acl2::recordp) (,@disabled-runes))))
         :rule-classes (:tau-system))
-      ))
+
+      (defthm ,(curr-pkg-s+ pred 'fc-equality)
+        (implies (and (,pred x)
+                      (,pred y)
+                      ,@dexy-calls-equal)
+                 (equal x y))
+        :hints
+        (("goal" :in-theory (e/d (,conx) ())))
+        :rule-classes ((:forward-chaining
+                        :trigger-terms ((equal ,(car dex-calls)
+                                               ,(car dey-calls))))))
+    
+
+      )))
 
 (defun record-per-field-selector-theory-events (fname dpred pred disabled-runes curr-pkg)
   (b* ((kname (keywordify fname)))
@@ -484,7 +508,7 @@ data last modified: [2014-08-06]
       
        
 ;       (constructor-defthms (record-constructor-events (s+ pred "CONSTRUCTOR") conx pred dprex fnames disabled-runes))
-       (record-pred-defthms (record-predicate-theory-events pred conx disabled-runes curr-pkg))
+       (record-pred-defthms (record-predicate-theory-events pred conx fnames disabled-runes curr-pkg))
        (sel-defthms (collect-per-field-record-events fnames dprex pred disabled-runes curr-pkg :sel))
        (mod-defthms (collect-per-field-record-events fnames dprex pred disabled-runes curr-pkg :mod))
        (const-defthms (record-constructor-rules name pred fnames dprex))

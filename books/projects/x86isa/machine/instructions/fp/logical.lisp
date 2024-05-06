@@ -37,7 +37,7 @@
 ; Original Author(s):
 ; Cuong Chau          <ckcuong@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 
@@ -655,5 +655,162 @@
 
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+; =============================================================================
+; INSTRUCTION: AVX Logical Instructions
+; =============================================================================
+
+(def-inst x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "VEX-encoded logical instructions."
+
+  :long
+  "<code>
+   VANDPD  xmm1, xmm2, xmm3/m128
+   VANDPD  ymm1, ymm2, ymm3/m256
+
+   VANDPS  xmm1, xmm2, xmm3/m128
+   VANDPS  ymm1, ymm2, ymm3/m256
+
+   VANDNPD xmm1, xmm2, xmm3/m128
+   VANDNPD ymm1, ymm2, ymm3/m256
+
+   VANDNPS xmm1, xmm2, xmm3/m128
+   VANDNPS ymm1, ymm2, ymm3/m256
+
+   VORPD   xmm1, xmm2, xmm3/m128
+   VORPD   ymm1, ymm2, ymm3/m256
+
+   VORPS   xmm1, xmm2, xmm3/m128
+   VORPS   ymm1, ymm2, ymm3/m256
+
+   VXORPD  xmm1, xmm2, xmm3/m128
+   VXORPD  ymm1, ymm2, ymm3/m256
+
+   VXORPS  xmm1, xmm2, xmm3/m128
+   VXORPS  ymm1, ymm2, ymm3/m256
+
+   VPAND   xmm1, xmm2, xmm3/m128
+   VPAND   ymm1, ymm2, ymm3/m256
+
+   VPANDN  xmm1, xmm2, xmm3/m128
+   VPANDN  ymm1, ymm2, ymm3/m256
+
+   VPOR    xmm1, xmm2, xmm3/m128
+   VPOR    ymm1, ymm2, ymm3/m256
+
+   VPXOR   xmm1, xmm2, xmm3/m128
+   VPXOR   ymm1, ymm2, ymm3/m256
+   </code>"
+
+  :modr/m t
+
+  :operation t
+
+  :vex t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+
+       ;; The operand size is determined by VEX.L,
+       ;; based on the VEX.128 and VEX.256 notation
+       ;; (see Intel Manual Volume 2 Section 3.1.1.2 (Dec 2023)).
+       ((the (integer 16 32) operand-size)
+        (if (equal (vex->l vex-prefixes) 1)
+            32
+          16))
+
+       ;; The first source operand (Operand 2 in the Intel Manual)
+       ;; is the XMM or YMM register specified in VEX.vvvv.
+       ((the (unsigned-byte 4) src1-index)
+        (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+       ((the (unsigned-byte 256) src1) (zmmi-size operand-size src1-index x86))
+
+       ;; The second source operand (Operand 3 in the Intel Manual)
+       ;; is the XMM or YMM register, or memory operand,
+       ;; specified in the ModR/M byte.
+       ;; There is no alignment checking
+       ;; (see Intel Manual Volume 2 Table 2-21 (Dec 2023)).
+       (inst-ac? nil) ; Exceptions Type 4
+       ((mv flg
+            src2
+            (the (integer 0 4) increment-rip-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               (if (= operand-size 16)
+                                                   #.*VEX-XMM-ACCESS*
+                                                 #.*YMM-ACCESS*)
+                                               operand-size
+                                               inst-ac?
+                                               nil ; not a memory operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; no immediate operand
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ;; The destination operand (Operand 1 in the Intel Manual)
+       ;; is the XMM or YMM register specified in the reg bits of ModR/M.
+       ((the (unsigned-byte 4) dst-index) (reg-index reg rex-byte #.*r*))
+
+       ;; Increment the instruction pointer in the temp-rip variable.
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Apply the logical operation to the source operands,
+       ;; and only keep the appropriate number of bits.
+       (result (case operation
+                 (#.*OP-AND*  (logand src1 src2))
+                 (#.*OP-ANDN* (logand (lognot src1) src2))
+                 (#.*OP-OR*   (logior src1 src2))
+                 (#.*OP-XOR*  (logxor src1 src2))
+                 (otherwise 0))) ; unreachable
+       (result (if (= operand-size 16)
+                   (n128 result)
+                 (n256 result)))
+
+       ;; Store the result into the destination register.
+       (x86 (!zmmi-size operand-size
+                        dst-index
+                        result
+                        x86
+                        :regtype (if (= operand-size 16)
+                                     #.*vex-xmm-access*
+                                   #.*ymm-access*)))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86)
+
+  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
+
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (unsigned-byte-p 4 x)
+              (unsigned-byte-p 5 x)))))
 
 ;; ======================================================================

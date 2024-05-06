@@ -12,7 +12,7 @@
 
 (defmacro tree-size (x)
   `(cons-size ,x))
-  
+
 (defthm cons-size-type
   (natp (cons-size x))
   :rule-classes
@@ -34,17 +34,17 @@
   :rule-classes :linear)
 
 (defthm head-cons-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (cons-size (set::head x))
               (cons-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::head)))
+  :hints (("Goal" :in-theory (enable set::emptyp set::head)))
   :rule-classes :linear)
 
 (defthm tail-cons-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (cons-size (set::tail x))
               (cons-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::tail)))
+  :hints (("Goal" :in-theory (enable set::emptyp set::tail)))
   :rule-classes :linear)
 
 (defthm cons-size-append
@@ -140,7 +140,7 @@
   (implies (mget k r)
            (< (cons-size (mget k r))
               (cons-size r)))
-  :hints (("goal" :in-theory 
+  :hints (("goal" :in-theory
            (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 

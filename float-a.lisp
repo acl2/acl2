@@ -34,8 +34,8 @@
 
 ; A key to evaluation with dfs is that *1* functions never take or return
 ; Common Lisp floats.  This complicates ec-call a bit for raw Lisp calls when
-; dfs are involved, but that is solved by requiring a :dfs argument in any such
-; ec-call expression.
+; dfs are involved, but that is solved by requiring a :dfs-in or :dfs-out
+; argument in any such ec-call expression.
 
 ; Section: On translation for execution
 

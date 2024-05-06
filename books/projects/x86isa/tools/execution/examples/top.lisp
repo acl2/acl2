@@ -41,8 +41,7 @@
 ;; ----------------------------------------------------------------------
 
 (defsection concrete-simulation-examples
-  :parents (program-execution x86isa)
-  )
+  :parents (program-execution x86isa))
 
 (local (xdoc::set-default-parents concrete-simulation-examples))
 

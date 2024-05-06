@@ -2,10 +2,8 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Forcing recertification 2/27/2024 for commit f05d08b989, "Added a way
-to specify that a stobj array field has element type t."  A fresh
-regression-everything completed without error before commiting that
-change and pushing it to master.  I'm forcing all books to recertify
-because the defstobj-field-template record has changed and I can
-imagine that causing certification failures for some books unless
-a fresh regression is performed.
+Forcing recertification 4/19/2024 for commit, "Increased ACL2 analogue
+of maximum fixnum from 2^29-1 to 2^60-1."  The value of *fixnum-bits*
+has changed (and thus so have at least *fixnat-bits*, the-fixnum,
+fixnum-bound, and *default-step-limit*), making it potentially unsound
+to books certified with an earlier ACL2 version.

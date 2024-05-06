@@ -220,16 +220,3 @@ can't be a macro."
     (if (acl2s-query-error? res)
         (error (format nil "Internal acl2s query error for query ~a" query))
       (second res))))
-
-(xdoc::defxdoc-raw acl2s-interface-utils
-  :parents (acl2s-interface)
-  :short "Some utilities built into the ACL2s interface."
-  :long "
-<ul>
-<li>@('(flatten-and l)'): Given a list of terms representing the conjunction of those terms, recursively flatten any conjunctions inside those terms.</li>
-<li>@('(conjunction-terms x y)'): Given two terms, produce the conjunction of them, simplifying if either of the terms has a top-level conjunction.</li>
-<li>@('(cnf-disjunct-to-or expr)'): Given a CNF disjunct, convert to an equivalent ACL2s expression by adding 'or.</li>
-<li>@('(get-hyps expr)'): Get the hypotheses of an implication, returning nil if the given expression is not an implication.</li>
-<li>@('(get-conc expr)'): Get the conclusion of an implication, returning nil if the given expression is not an implication.</li>
-</ul>
-")

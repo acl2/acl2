@@ -129,10 +129,6 @@
   (implies (BVLT '32 x '4)
            (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))
 
-(defthmd rationalp-when-integerp
-  (implies (integerp x)
-           (rationalp x)))
-
 ;gen!
 (defthm acl2::bvsx-when-bvlt
   (implies (BVLT '32 x '4)
@@ -226,16 +222,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;can loop with bvxor's def
-(DEFTHM ACL2::LOGXOR-of-BVCHOP-becomes-bvxor-arg1
-  (IMPLIES (AND (INTEGERP X)
-                (natp ACL2::SIZE)
-                (unsigned-byte-p ACL2::SIZE y))
-           (EQUAL (LOGXOR (BVCHOP ACL2::SIZE X) y)
-                  (BVXOR ACL2::SIZE X Y)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BVXOR))))
-
 ; probably only needed for Axe
 (defthmd integerp-of-logxor
   (integerp (logxor x y)))
@@ -293,20 +279,12 @@
                          (quotep k2)))
            (equal (bvuminus '32 (bvif '1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
-  :hints (("Goal" :in-theory (enable boolif))))
+  :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm of-spec-of-logext-32
   (equal (of-spec32$inline (logext '32 x))
          0)
   :hints (("Goal" :in-theory (enable of-spec32))))
-
-(defthm bvchop-of-logext-becomes-bvsx
-  (implies (and (< size2 size)
-                (natp size)
-                (posp size2))
-           (equal (bvchop size (logext size2 x))
-                  (bvsx size size2 x)))
-  :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvchop-of-zf-spec
   (implies (posp size)
@@ -509,20 +487,7 @@
 
 ;(in-theory (disable X86ISA::<-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE X86ISA::<-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
 
-(defthm acl2::logext-of-truncate
-  (implies (and (signed-byte-p acl2::size acl2::i)
-                (posp acl2::size)
-                (integerp acl2::j))
-           (equal (logext acl2::size (truncate acl2::i acl2::j))
-                  (if (and (equal (- (expt 2 (+ -1 acl2::size)))
-                                  acl2::i)
-                           (equal -1 acl2::j))
-                      (- (expt 2 (+ -1 acl2::size)))
-                    (truncate acl2::i acl2::j)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 (DEFthm x86isa::X86-CWD/CDQ/CQO-alt-def
   (equal (x86isa::X86-CWD/CDQ/CQO PROC-MODE START-RIP TEMP-RIP PREFIXES REX-BYTE OPCODE MODR/M SIB x86)
@@ -737,13 +702,6 @@
 
 ;todo: why is !rflags remaining in some examples like test_popcount_32_one_bit?
 
-;move
-(defthm boolif-same-arg1-arg2
-  (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
-           (equal (boolif x x y)
-                  (boolif x t y)))
-  :hints (("Goal" :in-theory (enable boolif))))
-
 ;; (thm
 ;;  (implies (and (PROGRAM-AT (BINARY-+ '304 TEXT-OFFSET) '(0 0 0 0 1 0 0 0 2 0 0 0 3 0 0 0) X86)
 ;;                (CANONICAL-ADDRESS-P$INLINE (BINARY-+ '319 TEXT-OFFSET))
@@ -786,9 +744,7 @@
            (equal (logext '64 (+ k (+ (bvmult 64 val index) text-offset)))
                   (logext '64 (+ k (+ (* val index) text-offset)))))
   :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
-                                  (ACL2::SLICE-OF-* ;looped
-                                   acl2::getbit-of-* ; looped
-                                   ;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
+                                  (;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
                                    ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
                                    ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    )))))
@@ -1086,18 +1042,3 @@
                 (integerp n))
            (equal (logext n (bool-to-bit bool))
                   (bool-to-bit bool))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm equal-of-bvif-safe2 ; todo: replace the other
-  (implies (syntaxp (and (quotep x)
-                         ;; ;;could drop this one?:
-                         ;; (or (quotep a)
-                         ;;     (quotep b))
-                         (quotep size)))
-           (equal (equal x (bvif size test a b))
-                  ;one of the branches here will be computed
-                  (boolif test
-                          (equal x (bvchop size a))
-                          (equal x (bvchop size b)))))
-    :hints (("Goal" :in-theory (enable bvif))))

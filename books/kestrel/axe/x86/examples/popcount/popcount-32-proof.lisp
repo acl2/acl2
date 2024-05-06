@@ -1,6 +1,6 @@
 ; A proof of popcount_32
 ;
-; Copyright (C) 2016-2022 Kestrel Technology, LLC
+; Copyright (C) 2016-2024 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,17 +32,17 @@
   :target "_popcount_32"
   :stack-slots 2
   :output :rax
-  ;; Introduce x as the input var:
-  :assumptions '((equal (rdi x86) x)))
+  :inputs ((v u32)))
 
 ;; Prove equivalence of the lifted code and the spec (3 seconds):
-(prove-equivalence '(popcount_32 x) ; lifted code
-                   '(acl2::bvcount '32 x) ; spec
+;; This combines the spec unrolling with the equivalence proof.
+(prove-equivalence '(popcount_32 v) ; lifted code
+                   '(acl2::bvcount '32 v) ; spec
                     ;; Rules to open and unroll the spec:
                    :extra-rules (append '(popcount_32
                                           acl2::bvcount-unroll
                                           acl2::bvcount-of-0-arg1)
                                   (acl2::core-rules-bv))
-                   :types '((x . 32))
+                   :types '((v . 32))
                    ;; avoid bit-blasting:
                    :initial-rule-sets nil)

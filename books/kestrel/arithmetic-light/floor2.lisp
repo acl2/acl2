@@ -251,8 +251,7 @@
                                           FLOOR-MINUS-ERIC-BETTER ;bozo looped!
                                           )))))
 
-(encapsulate
- ()
+(encapsulate ()
  (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
  (local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
  (defthm mod-of-floor-equal-rewrite

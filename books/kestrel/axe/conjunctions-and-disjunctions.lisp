@@ -25,7 +25,7 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 
-(local (in-theory (enable ;NOT-CDDR-OF-NTH-WHEN-ALL-DARGP
+(local (in-theory (enable ;NOT-CDDR-OF-NTH-WHEN-DARG-LISTP
 ;                   not-cddr-when-dag-exprp-and-quotep
                    )))
 

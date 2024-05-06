@@ -46,7 +46,6 @@
 ;;emit gossip to d random nbrs
 (definecd gossip-emission (p :peer ps :peer-state d :nat params :params s :nat) :loev
   :skip-tests t
-  :timeout 600
   (b* (((mv k &) (defdata::genrandom-seed
                    (1- (expt 2 31))
                    (mod s (expt 2 31))))
@@ -184,7 +183,6 @@
  ;; TODO : add all other decays as well, including global decays
  (definecd decay-ctrs (pts :lopt hbmint :pos-rational twpm :twp ptc :pt-tctrs-map ) :pt-tctrs-map
    :skip-tests t
-   :timeout 600
    :function-contract-hints (("Goal" :in-theory (enable pt-tctrs-mapp)))
    :body-contracts-hints (("Goal" :in-theory (enable pt-tctrs-mapp)))
    (match pts
@@ -319,7 +317,6 @@
 (definecd transition
   (self :peer pstate :peer-state evnt :evnt twpm :twp s :nat) :res4
   :skip-tests t
-  :timeout 2000
   :function-contract-hints (("Goal" :in-theory (enable evntp forward-emission
                                                     update-nbr-topic-state
                                                     update-nbr-topic-state1

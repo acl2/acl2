@@ -69,6 +69,7 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -138,7 +139,7 @@
                             interpreted-function-alist ;todo, check that this includes definitions for all non-built-in functions (and all functions they call, etc.)
                             )
   (declare (xargs :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (or (null max-term-size)
                                   (natp max-term-size))
@@ -434,14 +435,11 @@
 ;;; The :excluded-locals option:
 ;;;
 
-(defforall-simple nat-listp)
-(verify-guards all-nat-listp)
-
 (defun excluded-localsp (x)
   (declare (xargs :guard t))
   (and (doublet-listp x)
        (all-loop-function-idp (strip-cars x))
-       (all-nat-listp (strip-cadrs x))))
+       (nat-list-listp (strip-cadrs x))))
 
 ;;;
 ;;; The :postludes option:
@@ -5165,7 +5163,7 @@
                                                     (boolean-rules)
                                                     '(IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
-                                                      UBP-LONGER-BETTER
+                                                      UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
                                                       sbvlt-of-bvminus-of-1-and-minus-1
                                                       sbvlt-of-bvplus-of-minus-1-and-1

@@ -104,27 +104,6 @@
   :hints (("Goal" :in-theory (e/d (bitops::part-select-width-low slice)
                                   (bvchop-of-logtail-becomes-slice)))))
 
-(defthmd getbit-of-part-install-width-low-helper
-  (implies (and (natp m)
-                (natp low)
-                (natp width)
-;                (integerp x)   ;drop
-                )
-           (equal (getbit m (bitops::part-install-width-low val x width low))
-                  ;; not simplified; i just want to get rid of the part-install:
-                  (getbit m (bvcat (- (+ m 1) (+ low width))
-                                   (slice m
-                                          (+ low width)
-                                          x)
-                                   (+ width low)
-                                   (bvcat width
-                                          val
-                                          low
-                                          x)))))
-  :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
-           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
-                           (ash logmask)))))
-
 (defthm getbit-of-part-install-width-low
   (implies (and (natp m)
                 (natp low)
@@ -140,39 +119,26 @@
                                           val
                                           low
                                           x)))))
-  :hints (("Goal" :use (:instance getbit-of-part-install-width-low-helper (x (ifix x)))
-           :in-theory (disable BITOPS::PART-INSTALL-WIDTH-LOW$INLINE))))
+  :hints (("Goal" :cases ((NATP (+ 1 (- LOW) M)))
+           :in-theory (e/d (bitops::part-install-width-low ifix getbit-of-logand)
+                           (ash logmask)))))
 
-;; Unfortunately, PART-INSTALL-WIDTH-LOW does not indicate any size for X.
-(defthm part-install-width-low-becomes-bvcat
-  (implies (and (unsigned-byte-p xsize x) ; xsize is a free var
-                (natp xsize) ;(posp xsize)              ;drop?
-                ;(< (+ width low) xsize)   ;allow = ?
-                (natp low)
+;move
+(local
+  (defthm bvnot-of-*-of-expt-same-arg2
+    (implies (and (natp i)
+                  (natp low))
+             (equal (BVNOT LOW (* i (EXPT 2 LOW)))
+                    (+ -1 (expt 2 low))))
+    :hints (("Goal" :in-theory (enable bvnot LOGNOT BVCHOP-OF-SUM-CASES)))))
+
+(defthm bvchop-of-part-install-width-low-same
+  (implies (and (natp low)
                 (natp width))
-           (equal (BITOPS::PART-INSTALL-WIDTH-LOW val x width low)
-                  (bvcat (max xsize (+ width low)) ;(- xsize (+ width low))
-                         (slice (+ -1 xsize) (+ low width) x)
-                         (+ width low)
-                         (bvcat width val low x))))
-  :hints (("Goal" :in-theory (e/d (BITOPS::PART-INSTALL-WIDTH-LOW
-                                   BVCAT-EQUAL-REWRITE
-                                   SLICE-TOO-HIGH-IS-0-NEW
-                                   bvnot-of-0
-                                   bvuminus-of-1-arg2
-;BVNOT-TRIM-ALL
-                                   SLICE-TOO-HIGH-IS-0-NEW
-                                   expt-of-+
-                                   BVCHOP-OF-LOGNOT-BECOMES-BVNOT
-                                   LOGAND-BECOMES-BVAND
-                                   LOGAND-BECOMES-BVAND-alt
-                                   ash)
-                                  (;EXPONENTS-ADD
-                                   ;SLICE-OF-+
-                                   ;BVCAT-OF-+-HIGH   ;looped
-                                   ;BVAND-OF-+-ARG3 ;looped (we should treat a mask of 2^n-1 differently from a generic +
-                                   ;BVCAT-OF-+-LOW
-                                   )))))
+           (equal (bvchop low (bitops::part-install-width-low val x width low))
+                  (bvchop low x)))
+  :hints (("Goal" :in-theory (e/d (bitops::part-install-width-low bvchop-of-lognot-becomes-bvnot ash)
+                                  (logmask$inline)))))
 
 (defthm bvchop-of-part-install-width-low-becomes-bvcat
   (implies (and (<= (+ low width) size)
@@ -195,7 +161,6 @@
                                                         ;;BVCAT-OF-+-HIGH
                             ;;EXPONENTS-ADD
                             ;;BVCAT-OF-+-LOW         ;looped
-                            ;;SLICE-OF-+             ;looped
                             ;;BVAND-OF-+-ARG3        ;looped
                             )))))
 
@@ -226,13 +191,55 @@
                                    BVCAT-EQUAL-REWRITE
                                    )))))
 
+(defthm slice-of-part-install-width-low-high
+  (implies (and (<= (+ width low2) low)
+                (natp low)
+                (integerp high)
+                (natp low2)
+                (natp width))
+           (equal (slice high low (bitops::part-install-width-low val x width low2))
+                  ;;could further simplify this...:
+                  (slice high low x)))
+  :hints (("Goal" :in-theory (e/d (slice
+                                   BVCHOP-OF-LOGTAIL)
+                                  (SLICE-OF-BVAND
+                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                   ;;for speed:
+                                   UNSIGNED-BYTE-P-FROM-BOUNDS
+                                   ;;UNSIGNED-BYTE-P-PLUS
+                                   ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
+                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
+                                   BVCAT-EQUAL-REWRITE-ALT
+                                   BVCAT-EQUAL-REWRITE
+                                   )))))
+
+(defthm part-install-width-low-of-0-arg3
+  (equal (bitops::part-install-width-low val x 0 low)
+         (ifix x))
+  :hints (("Goal" :in-theory (enable bitops::part-install-width-low))))
+
+;; Unfortunately, PART-INSTALL-WIDTH-LOW does not indicate any size for X.
+(defthm part-install-width-low-becomes-bvcat
+  (implies (and (unsigned-byte-p xsize x) ; xsize is a free var
+                (natp xsize) ;(posp xsize)              ;drop?
+                ;(< (+ width low) xsize)   ;allow = ?
+                (natp low)
+                (natp width))
+           (equal (BITOPS::PART-INSTALL-WIDTH-LOW val x width low)
+                  (bvcat (- xsize (+ width low)) ;(max xsize (+ width low)) ;(- xsize (+ width low))
+                         (slice (+ -1 xsize) (+ low width) x)
+                         (+ width low)
+                         (bvcat width val low x))))
+  :hints (("Goal" :cases ((NATP (+ (- LOW) (- WIDTH) XSIZE)))))
+)
+
 ;this guesses that X fits in 32 bits, which is common when X is (XR :RFLAGS I X86)
 (defthm part-install-width-low-becomes-bvcat-32
   (implies (and (unsigned-byte-p 32 x) ;e.g., the flags
                 (natp low)
                 (natp width))
            (equal (bitops::part-install-width-low val x width low)
-                  (bvcat (max 32 (+ width low))
+                  (bvcat (- 32 (+ width low))
                          (slice (+ -1 32) (+ low width) x)
                          (+ width low)
                          (bvcat width val low x)))))
@@ -244,16 +251,16 @@
   (implies (and (natp width)
                 (natp x)
                 (natp places))
-           (equal (acl2::rotate-right x width places)
-                  (acl2::rightrotate width places x)))
+           (equal (rotate-right x width places)
+                  (rightrotate width places x)))
   :hints (("Goal"
-           :in-theory (enable acl2::rotate-right
-                              acl2::rightrotate
-                              acl2::bvchop-of-logior-becomes-bvor
+           :in-theory (enable rotate-right
+                              rightrotate
+                              bvchop-of-logior-becomes-bvor
                               ash-of-negative-becomes-logtail
                               logtail-of-bvchop-becomes-slice
-                              acl2::logtail-becomes-0
-                              acl2::bvchop-of-logior-becomes-bvor
+                              logtail-becomes-0
+                              bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))
 
@@ -262,15 +269,15 @@
   (implies (and (natp width)
                 (natp x)
                 (natp places))
-           (equal (acl2::rotate-left x width places)
-                  (acl2::leftrotate width places x)))
+           (equal (rotate-left x width places)
+                  (leftrotate width places x)))
   :hints (("Goal"
-           :in-theory (enable acl2::rotate-left
-                              acl2::leftrotate
-                              acl2::bvchop-of-logior-becomes-bvor
+           :in-theory (enable rotate-left
+                              leftrotate
+                              bvchop-of-logior-becomes-bvor
                               ash-of-negative-becomes-logtail
                               logtail-of-bvchop-becomes-slice
-                              acl2::logtail-becomes-0
-                              acl2::bvchop-of-logior-becomes-bvor
+                              logtail-becomes-0
+                              bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))

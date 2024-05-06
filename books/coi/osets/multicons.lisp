@@ -63,7 +63,7 @@
 (defund multicons (a X)
   (declare (xargs :guard (setp X)
                   :verify-guards nil))
-  (mbe :logic (if (empty X)
+  (mbe :logic (if (emptyp X)
                   (emptyset)
                 (insert (cons a (head X))
                         (multicons a (tail X))))
@@ -137,7 +137,7 @@
                  :in-theory (enable setp
                                     tail
                                     sfix
-                                    empty
+                                    emptyp
                                     head
                                     <<
                                     lexorder)))))
@@ -158,10 +158,10 @@
 
 (local (defthm lemma
          (implies (and (setp X)
-                       (empty X))
+                       (emptyp X))
                   (equal X nil))
          :rule-classes nil
-         :hints(("Goal" :in-theory (enable setp empty)))))
+         :hints(("Goal" :in-theory (enable setp emptyp)))))
 
 (local (defthm main-lemma
          (implies (setp X)

@@ -1,11 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Authors: Stephen Westfold (westfold@kestrel.edu)
-;          Alessandro Coglio (coglio@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,12 +366,12 @@
              )
            (defrule ,key-pred-of-head-key-when-pred
              (implies (and (,omap.pred ,omap.xvar)
-                           (not (omap::empty ,omap.xvar)))
+                           (not (omap::emptyp ,omap.xvar)))
                       (,omap.key-type (mv-nth 0 (omap::head ,omap.xvar))))
              :enable omap::head)
            (defrule ,val-pred-of-head-val-when-pred
              (implies (and (,omap.pred ,omap.xvar)
-                           (not (omap::empty ,omap.xvar)))
+                           (not (omap::emptyp ,omap.xvar)))
                       (,omap.val-type (mv-nth 1 (omap::head ,omap.xvar))))
              :enable omap::head)
            (defrule ,pred-of-update
@@ -396,23 +396,23 @@
                       (,omap.pred (omap::delete* ,k ,omap.xvar)))
              :enable omap::delete*)
            (defrule ,key-pred-when-in-pred
-             (implies (and (omap::in ,k ,omap.xvar) ; binds free X
+             (implies (and (omap::assoc ,k ,omap.xvar) ; binds free X
                            (,omap.pred ,omap.xvar))
                       (,omap.key-type ,k))
-             :enable omap::in)
+             :enable omap::assoc)
            (defrule ,key-pred-of-car-of-in-pred
              (implies (and (,omap.pred ,omap.xvar)
-                           (omap::in ,k ,omap.xvar))
-                      (,omap.key-type (car (omap::in ,k ,omap.xvar))))
-             :enable omap::in)
+                           (omap::assoc ,k ,omap.xvar))
+                      (,omap.key-type (car (omap::assoc ,k ,omap.xvar))))
+             :enable omap::assoc)
            (defrule ,val-pred-of-cdr-of-in-pred
              (implies (and (,omap.pred ,omap.xvar)
-                           (omap::in ,k ,omap.xvar))
-                      (,omap.val-type (cdr (omap::in ,k ,omap.xvar))))
-             :enable omap::in)
+                           (omap::assoc ,k ,omap.xvar))
+                      (,omap.val-type (cdr (omap::assoc ,k ,omap.xvar))))
+             :enable omap::assoc)
            (defrule ,val-pred-of-lookup-when-pred
              (implies (and (,omap.pred ,omap.xvar)
-                           (omap::in ,k ,omap.xvar))
+                           (omap::assoc ,k ,omap.xvar))
                       (,omap.val-type (omap::lookup ,k ,omap.xvar)))
              :enable omap::lookup)))))
 
@@ -420,8 +420,8 @@
   (b* (((flexomap omap))
        (pred-of-fix (acl2::packn-pos (list omap.pred '-of- omap.fix) omap.name))
        (fix-when-pred (acl2::packn-pos (list omap.fix '-when- omap.pred) omap.name))
-       (empty-fix (acl2::packn-pos (list 'empty- omap.fix) omap.name))
-       (empty-of-fix (acl2::packn-pos (list 'empty-of- omap.fix '-to-not- omap.name '-or-empty)
+       (emptyp-fix (acl2::packn-pos (list 'emptyp- omap.fix) omap.name))
+       (emptyp-of-fix (acl2::packn-pos (list 'emptyp-of- omap.fix '-to-not- omap.name '-or-emptyp)
                                       omap.name)))
     (if omap.fix-already-definedp
         '(progn)
@@ -443,15 +443,15 @@
          (defrule ,fix-when-pred
            (implies (,omap.pred ,omap.xvar)
                     (equal (,omap.fix ,omap.xvar) ,omap.xvar)))
-         (defrule ,empty-fix
-           (implies (or (omap::empty ,omap.xvar)
+         (defrule ,emptyp-fix
+           (implies (or (omap::emptyp ,omap.xvar)
                         (not (,omap.pred ,omap.xvar)))
-                    (omap::empty (,omap.fix ,omap.xvar))))
-         (defrule ,empty-of-fix
-           (equal (omap::empty (,omap.fix ,omap.xvar))
+                    (omap::emptyp (,omap.fix ,omap.xvar))))
+         (defrule ,emptyp-of-fix
+           (equal (omap::emptyp (,omap.fix ,omap.xvar))
                   (or (not (,omap.pred ,omap.xvar))
-                      (omap::empty ,omap.xvar)))
-           :enable omap::empty)))))
+                      (omap::emptyp ,omap.xvar)))
+           :enable omap::emptyp)))))
 
 (define flexomap-fix-postevents (omap)
   :ignore-ok t
@@ -493,7 +493,7 @@
         :verify-guards nil
         :no-function t
         :progn t
-        (if (or (omap::empty ,omap.xvar)
+        (if (or (omap::emptyp ,omap.xvar)
                 (not (,omap.pred ,omap.xvar)))
             1
           (mv-let (key val)
@@ -518,19 +518,19 @@
        (omap-count-of-tail (intern-in-package-of-symbol (cat (symbol-name omap.count) "-OF-TAIL") omap.count))
        (omap-count-of-tail-fix (intern-in-package-of-symbol (cat (symbol-name omap.count) "-OF-TAIL-FIX") omap.count))
        (omap-count-of-lookup  (intern-in-package-of-symbol (cat (symbol-name omap.count) "-OF-LOOKUP") omap.count))
-       (omap-count-when-empty  (intern-in-package-of-symbol (cat (symbol-name omap.count) "-WHEN-EMPTY") omap.count))
-       (omap-count-when-not-empty  (intern-in-package-of-symbol (cat (symbol-name omap.count) "-WHEN-NOT-EMPTY") omap.count)))
+       (omap-count-when-emptyp  (intern-in-package-of-symbol (cat (symbol-name omap.count) "-WHEN-EMPTYP") omap.count))
+       (omap-count-when-not-emptyp  (intern-in-package-of-symbol (cat (symbol-name omap.count) "-WHEN-NOT-EMPTYP") omap.count)))
 
     `((acl2::evmac-prepare-proofs)      ; Proofs should not need default-hints
 
-      (defthm ,omap-count-when-empty
-        (implies (omap::empty ,omap.xvar)
+      (defthm ,omap-count-when-emptyp
+        (implies (omap::emptyp ,omap.xvar)
                  (equal (,omap.count ,omap.xvar)
                         1))
         :hints (("Goal" :in-theory (enable ,omap.count))))
 
-      (defthm ,omap-count-when-not-empty
-        (implies (and (not (omap::empty ,omap.xvar))
+      (defthm ,omap-count-when-not-emptyp
+        (implies (and (not (omap::emptyp ,omap.xvar))
                       (,omap.pred ,omap.xvar))
                  (equal (,omap.count ,omap.xvar)
                         (+ 1
@@ -541,7 +541,7 @@
 
       ,@(and keycount valcount
              `((defthm ,omap-count-of-head
-                 (implies (and (not (omap::empty ,omap.xvar))
+                 (implies (and (not (omap::emptyp ,omap.xvar))
                                (,omap.pred ,omap.xvar))
                           (< (+ (,keycount (mv-nth 0 (omap::head ,omap.xvar)))
                                 (,valcount (mv-nth 1 (omap::head ,omap.xvar))))
@@ -553,11 +553,11 @@
                           (< (+ (,keycount (mv-nth 0 (omap::head (,omap.fix ,omap.xvar))))
                                 (,valcount (mv-nth 1 (omap::head (,omap.fix ,omap.xvar)))))
                              (,omap.count ,omap.xvar)))
-                 :hints (("Goal" :in-theory (enable ,omap.fix omap::mapp-non-nil-implies-non-empty)))
+                 :hints (("Goal" :in-theory (enable ,omap.fix omap::mapp-non-nil-implies-not-emptyp)))
                  :rule-classes :linear)))
 
       (defthm ,omap-count-of-tail
-        (implies (and (not (omap::empty ,omap.xvar))
+        (implies (and (not (omap::emptyp ,omap.xvar))
                       (,omap.pred ,omap.xvar))
                  (< (,omap.count (omap::tail ,omap.xvar))
                     (,omap.count ,omap.xvar)))
@@ -568,21 +568,21 @@
                  (< (,omap.count (omap::tail (,omap.fix ,omap.xvar)))
                     (,omap.count ,omap.xvar)))
         :rule-classes :linear
-        :hints (("Goal" :in-theory (enable ,omap.count ,omap.fix omap::mapp-non-nil-implies-non-empty))))
+        :hints (("Goal" :in-theory (enable ,omap.count ,omap.fix omap::mapp-non-nil-implies-not-emptyp))))
 
       (defthm ,omap-count-of-lookup
-        (implies (and (not (omap::empty map))
+        (implies (and (not (omap::emptyp map))
                       (,omap.pred map))
                  (< (,valcount (omap::lookup key map))
                     (,omap.count map)))
-        :hints (("Goal" :in-theory (enable omap::lookup omap::in omap::in-when-empty ,valcount))
-                ("Goal''" :induct (omap::in key map))))
+        :hints (("Goal" :in-theory (enable omap::lookup omap::assoc omap::assoc-when-emptyp ,valcount))
+                ("Goal''" :induct (omap::assoc key map))))
 
       (defthm ,omap-count-of-update
         (implies (and (,omap.pred ,omap.xvar)
                       (,omap.key-type key)
                       (,omap.val-type val)
-                      (not (omap::in key ,omap.xvar)))
+                      (not (omap::assoc key ,omap.xvar)))
                  ,(if (or keycount valcount)
                       `(equal (,omap.count (omap::update key val ,omap.xvar))
                               (+ 1
@@ -592,15 +592,15 @@
                     `(> (,omap.count (omap::update key val ,omap.xvar))
                         (,omap.count ,omap.xvar))))
         :hints (("Goal" :in-theory (enable omap::head-key
-                                           omap::empty
+                                           omap::emptyp
                                            omap::head-key-of-update-of-nil
                                            omap::head-value-of-update-when-head-key-equal
-                                           omap::in-when-empty
-                                           omap::in-when-in-tail
+                                           omap::assoc-when-emptyp
+                                           omap::assoc-when-assoc-tail
                                            omap::mfix-when-mapp
-                                           omap::tail-of-update-empty
-                                           omap::update-not-empty
-                                           omap::update-when-empty
+                                           omap::tail-of-update-emptyp
+                                           omap::update-not-emptyp
+                                           omap::update-when-emptyp
                                            (:induction omap::use-weak-update-induction)
                                            (:induction omap::weak-update-induction)
                                            omap::weak-update-induction-helper-1

@@ -13,6 +13,7 @@
 (include-book "character-listp")
 (include-book "rational-listp")
 (include-book "nat-listp")
+(include-book "nat-list-listp")
 (include-book "integer-listp")
 (include-book "pseudo-term-listp")
 (include-book "pseudo-term-list-listp")

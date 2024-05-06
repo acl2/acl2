@@ -21,6 +21,9 @@
 (include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system)
 (include-book "projects/x86isa/machine/state" :dir :system) ; for xr
 (include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvif" :dir :system)
+(include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
@@ -32,13 +35,15 @@
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
+(local (include-book "kestrel/bv/rtl" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 
-(in-theory (disable acl2::loghead))
+(in-theory (disable loghead))
 
 (local (in-theory (enable ACL2::LOGTAIL-OF-BVCHOP)))
 
@@ -87,45 +92,121 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable mxcsrbits-fix)))
+
+(defthm unsigned-byte-p-of-mxcsrbits->ie (implies (posp size) (unsigned-byte-p size (mxcsrbits->ie m))))
+(defthm unsigned-byte-p-of-mxcsrbits->de (implies (posp size) (unsigned-byte-p size (mxcsrbits->de m))))
+(defthm unsigned-byte-p-of-mxcsrbits->ze (implies (posp size) (unsigned-byte-p size (mxcsrbits->ze m))))
+(defthm unsigned-byte-p-of-mxcsrbits->oe (implies (posp size) (unsigned-byte-p size (mxcsrbits->oe m))))
+(defthm unsigned-byte-p-of-mxcsrbits->ue (implies (posp size) (unsigned-byte-p size (mxcsrbits->ue m))))
+(defthm unsigned-byte-p-of-mxcsrbits->pe (implies (posp size) (unsigned-byte-p size (mxcsrbits->pe m))))
+(defthm unsigned-byte-p-of-mxcsrbits->daz (implies (posp size) (unsigned-byte-p size (mxcsrbits->daz m))))
+(defthm unsigned-byte-p-of-mxcsrbits->im (implies (posp size) (unsigned-byte-p size (mxcsrbits->im m))))
+(defthm unsigned-byte-p-of-mxcsrbits->dm (implies (posp size) (unsigned-byte-p size (mxcsrbits->dm m))))
+(defthm unsigned-byte-p-of-mxcsrbits->zm (implies (posp size) (unsigned-byte-p size (mxcsrbits->zm m))))
+(defthm unsigned-byte-p-of-mxcsrbits->om (implies (posp size) (unsigned-byte-p size (mxcsrbits->om m))))
+(defthm unsigned-byte-p-of-mxcsrbits->um (implies (posp size) (unsigned-byte-p size (mxcsrbits->um m))))
+(defthm unsigned-byte-p-of-mxcsrbits->pm (implies (posp size) (unsigned-byte-p size (mxcsrbits->pm m))))
+(defthm unsigned-byte-p-of-mxcsrbits->rc (implies (and (<= 2 n) (integerp n)) (unsigned-byte-p n (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+(defthm unsigned-byte-p-of-mxcsrbits->ftz (implies (posp size) (unsigned-byte-p size (mxcsrbits->ftz m))))
+(defthm unsigned-byte-p-of-mxcsrbits->reserved (implies (and (<= 16 size) (integerp size)) (unsigned-byte-p size (mxcsrbits->reserved m))) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
+
 ;todo: more
-(defthm mxcsrbits->im-of-loghead-32
-  (equal (mxcsrbits->im (loghead 32 mxcsr))
-         (mxcsrbits->im mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->im mxcsrbits-fix))))
+(defthm mxcsrbits->ie-of-loghead-32 (equal (mxcsrbits->ie (loghead 32 mxcsr)) (mxcsrbits->ie mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+(defthm mxcsrbits->de-of-loghead-32 (equal (mxcsrbits->de (loghead 32 mxcsr)) (mxcsrbits->de mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+(defthm mxcsrbits->ze-of-loghead-32 (equal (mxcsrbits->ze (loghead 32 mxcsr)) (mxcsrbits->ze mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+(defthm mxcsrbits->oe-of-loghead-32 (equal (mxcsrbits->oe (loghead 32 mxcsr)) (mxcsrbits->oe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+(defthm mxcsrbits->ue-of-loghead-32 (equal (mxcsrbits->ue (loghead 32 mxcsr)) (mxcsrbits->ue mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+(defthm mxcsrbits->pe-of-loghead-32 (equal (mxcsrbits->pe (loghead 32 mxcsr)) (mxcsrbits->pe mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+(defthm mxcsrbits->daz-of-loghead-32 (equal (mxcsrbits->daz (loghead 32 mxcsr)) (mxcsrbits->daz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+(defthm mxcsrbits->im-of-loghead-32 (equal (mxcsrbits->im (loghead 32 mxcsr)) (mxcsrbits->im mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+(defthm mxcsrbits->dm-of-loghead-32 (equal (mxcsrbits->dm (loghead 32 mxcsr)) (mxcsrbits->dm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+(defthm mxcsrbits->zm-of-loghead-32 (equal (mxcsrbits->zm (loghead 32 mxcsr)) (mxcsrbits->zm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+(defthm mxcsrbits->om-of-loghead-32 (equal (mxcsrbits->om (loghead 32 mxcsr)) (mxcsrbits->om mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+(defthm mxcsrbits->um-of-loghead-32 (equal (mxcsrbits->um (loghead 32 mxcsr)) (mxcsrbits->um mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+(defthm mxcsrbits->pm-of-loghead-32 (equal (mxcsrbits->pm (loghead 32 mxcsr)) (mxcsrbits->pm mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+(defthm mxcsrbits->rc-of-loghead-32 (equal (mxcsrbits->rc (loghead 32 mxcsr)) (mxcsrbits->rc mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+(defthm mxcsrbits->ftz-of-loghead-32 (equal (mxcsrbits->ftz (loghead 32 mxcsr)) (mxcsrbits->ftz mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->ftz))))
+(defthm mxcsrbits->reserved-of-loghead-32 (equal (mxcsrbits->reserved (loghead 32 mxcsr)) (mxcsrbits->reserved mxcsr)) :hints (("Goal" :in-theory (enable mxcsrbits->reserved))))
 
-(defthm mxcsrbits->dm-of-loghead-32
-  (equal (mxcsrbits->dm (loghead 32 mxcsr))
-         (mxcsrbits->dm mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->dm mxcsrbits-fix))))
+(encapsulate ()
+  (local (in-theory (enable mxcsrbits-fix)))
+  (defthm mxcsrbits->ie-of-bvchop (implies (and (<= 1 size) (natp size)) (equal (mxcsrbits->ie (bvchop size mxcsr)) (mxcsrbits->ie mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+  (defthm mxcsrbits->de-of-bvchop (implies (and (<= 2 size) (natp size)) (equal (mxcsrbits->de (bvchop size mxcsr)) (mxcsrbits->de mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+  (defthm mxcsrbits->ze-of-bvchop (implies (and (<= 3 size) (natp size)) (equal (mxcsrbits->ze (bvchop size mxcsr)) (mxcsrbits->ze mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+  (defthm mxcsrbits->oe-of-bvchop (implies (and (<= 4 size) (natp size)) (equal (mxcsrbits->oe (bvchop size mxcsr)) (mxcsrbits->oe mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+  (defthm mxcsrbits->ue-of-bvchop (implies (and (<= 5 size) (natp size)) (equal (mxcsrbits->ue (bvchop size mxcsr)) (mxcsrbits->ue mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+  (defthm mxcsrbits->pe-of-bvchop (implies (and (<= 6 size) (natp size)) (equal (mxcsrbits->pe (bvchop size mxcsr)) (mxcsrbits->pe mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+  (defthm mxcsrbits->daz-of-bvchop (implies (and (<= 7 size) (natp size)) (equal (mxcsrbits->daz (bvchop size mxcsr)) (mxcsrbits->daz mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+  (defthm mxcsrbits->im-of-bvchop (implies (and (<= 8 size) (natp size)) (equal (mxcsrbits->im (bvchop size mxcsr)) (mxcsrbits->im mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+  (defthm mxcsrbits->dm-of-bvchop (implies (and (<= 9 size) (natp size)) (equal (mxcsrbits->dm (bvchop size mxcsr)) (mxcsrbits->dm mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+  (defthm mxcsrbits->zm-of-bvchop (implies (and (<= 10 size) (natp size)) (equal (mxcsrbits->zm (bvchop size mxcsr)) (mxcsrbits->zm mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+  (defthm mxcsrbits->om-of-bvchop (implies (and (<= 11 size) (natp size)) (equal (mxcsrbits->om (bvchop size mxcsr)) (mxcsrbits->om mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+  (defthm mxcsrbits->um-of-bvchop (implies (and (<= 12 size) (natp size)) (equal (mxcsrbits->um (bvchop size mxcsr)) (mxcsrbits->um mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+  (defthm mxcsrbits->pm-of-bvchop (implies (and (<= 13 size) (natp size)) (equal (mxcsrbits->pm (bvchop size mxcsr)) (mxcsrbits->pm mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+  (defthm mxcsrbits->rc-of-bvchop (implies (and (<= 15 size) (natp size)) (equal (mxcsrbits->rc (bvchop size mxcsr)) (mxcsrbits->rc mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+  (defthm mxcsrbits->ftz-of-bvchop (implies (and (<= 16 size) (natp size)) (equal (mxcsrbits->ftz (bvchop size mxcsr)) (mxcsrbits->ftz mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->ftz))))
+  (defthm mxcsrbits->reserved-of-bvchop (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvchop size mxcsr)) (mxcsrbits->reserved mxcsr))) :hints (("Goal" :in-theory (enable mxcsrbits->reserved)))))
 
-(defthm mxcsrbits->daz-of-loghead-32
-  (equal (mxcsrbits->daz (loghead 32 mxcsr))
-         (mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->daz mxcsrbits-fix))))
+(encapsulate ()
+  (local (in-theory (enable bvif)))
+  (defthm mxcsrbits->ie-of-bvif (implies (and (<= 1 size) (natp size)) (equal (mxcsrbits->ie (bvif size test x y)) (bvif 1 test (mxcsrbits->ie x) (mxcsrbits->ie y)))))
+  (defthm mxcsrbits->de-of-bvif (implies (and (<= 2 size) (natp size)) (equal (mxcsrbits->de (bvif size test x y)) (bvif 1 test (mxcsrbits->de x) (mxcsrbits->de y)))))
+  (defthm mxcsrbits->ze-of-bvif (implies (and (<= 3 size) (natp size)) (equal (mxcsrbits->ze (bvif size test x y)) (bvif 1 test (mxcsrbits->ze x) (mxcsrbits->ze y)))))
+  (defthm mxcsrbits->oe-of-bvif (implies (and (<= 4 size) (natp size)) (equal (mxcsrbits->oe (bvif size test x y)) (bvif 1 test (mxcsrbits->oe x) (mxcsrbits->oe y)))))
+  (defthm mxcsrbits->ue-of-bvif (implies (and (<= 5 size) (natp size)) (equal (mxcsrbits->ue (bvif size test x y)) (bvif 1 test (mxcsrbits->ue x) (mxcsrbits->ue y)))))
+  (defthm mxcsrbits->pe-of-bvif (implies (and (<= 6 size) (natp size)) (equal (mxcsrbits->pe (bvif size test x y)) (bvif 1 test (mxcsrbits->pe x) (mxcsrbits->pe y)))))
+  (defthm mxcsrbits->daz-of-bvif (implies (and (<= 7 size) (natp size)) (equal (mxcsrbits->daz (bvif size test x y)) (bvif 1 test (mxcsrbits->daz x) (mxcsrbits->daz y)))))
+  (defthm mxcsrbits->im-of-bvif (implies (and (<= 8 size) (natp size)) (equal (mxcsrbits->im (bvif size test x y)) (bvif 1 test (mxcsrbits->im x) (mxcsrbits->im y)))))
+  (defthm mxcsrbits->dm-of-bvif (implies (and (<= 9 size) (natp size)) (equal (mxcsrbits->dm (bvif size test x y)) (bvif 1 test (mxcsrbits->dm x) (mxcsrbits->dm y)))))
+  (defthm mxcsrbits->zm-of-bvif (implies (and (<= 10 size) (natp size)) (equal (mxcsrbits->zm (bvif size test x y)) (bvif 1 test (mxcsrbits->zm x) (mxcsrbits->zm y)))))
+  (defthm mxcsrbits->om-of-bvif (implies (and (<= 11 size) (natp size)) (equal (mxcsrbits->om (bvif size test x y)) (bvif 1 test (mxcsrbits->om x) (mxcsrbits->om y)))))
+  (defthm mxcsrbits->um-of-bvif (implies (and (<= 12 size) (natp size)) (equal (mxcsrbits->um (bvif size test x y)) (bvif 1 test (mxcsrbits->um x) (mxcsrbits->um y)))))
+  (defthm mxcsrbits->pm-of-bvif (implies (and (<= 13 size) (natp size)) (equal (mxcsrbits->pm (bvif size test x y)) (bvif 1 test (mxcsrbits->pm x) (mxcsrbits->pm y)))))
+  (defthm mxcsrbits->rc-of-bvif (implies (and (<= 15 size) (natp size)) (equal (mxcsrbits->rc (bvif size test x y)) (bvif 2 test (mxcsrbits->rc x) (mxcsrbits->rc y)))))
+  (defthm mxcsrbits->ftz-of-bvif (implies (and (<= 16 size) (natp size)) (equal (mxcsrbits->ftz (bvif size test x y)) (bvif 1 test (mxcsrbits->ftz x) (mxcsrbits->ftz y)))))
+  (defthm mxcsrbits->reserved-of-bvif (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvif size test x y)) (bvif 16 test (mxcsrbits->reserved x) (mxcsrbits->reserved y))))))
+
+(encapsulate ()
+  (local (in-theory (e/d (mxcsrbits-fix acl2::b-ior) (acl2::loghead-becomes-bvchop acl2::logbitp-iff-getbit))))
+  (defthm mxcsrbits->ie-of-logior (equal (mxcsrbits->ie (logior x y)) (logior (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
+  (defthm mxcsrbits->de-of-logior (equal (mxcsrbits->de (logior x y)) (logior (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
+  (defthm mxcsrbits->ze-of-logior (equal (mxcsrbits->ze (logior x y)) (logior (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
+  (defthm mxcsrbits->oe-of-logior (equal (mxcsrbits->oe (logior x y)) (logior (mxcsrbits->oe x) (mxcsrbits->oe y))) :hints (("Goal" :in-theory (enable mxcsrbits->oe))))
+  (defthm mxcsrbits->ue-of-logior (equal (mxcsrbits->ue (logior x y)) (logior (mxcsrbits->ue x) (mxcsrbits->ue y))) :hints (("Goal" :in-theory (enable mxcsrbits->ue))))
+  (defthm mxcsrbits->pe-of-logior (equal (mxcsrbits->pe (logior x y)) (logior (mxcsrbits->pe x) (mxcsrbits->pe y))) :hints (("Goal" :in-theory (enable mxcsrbits->pe))))
+  (defthm mxcsrbits->daz-of-logior (equal (mxcsrbits->daz (logior x y)) (logior (mxcsrbits->daz x) (mxcsrbits->daz y))) :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+  (defthm mxcsrbits->im-of-logior (equal (mxcsrbits->im (logior x y)) (logior (mxcsrbits->im x) (mxcsrbits->im y))) :hints (("Goal" :in-theory (enable mxcsrbits->im))))
+  (defthm mxcsrbits->dm-of-logior (equal (mxcsrbits->dm (logior x y)) (logior (mxcsrbits->dm x) (mxcsrbits->dm y))) :hints (("Goal" :in-theory (enable mxcsrbits->dm))))
+  (defthm mxcsrbits->zm-of-logior (equal (mxcsrbits->zm (logior x y)) (logior (mxcsrbits->zm x) (mxcsrbits->zm y))) :hints (("Goal" :in-theory (enable mxcsrbits->zm))))
+  (defthm mxcsrbits->om-of-logior (equal (mxcsrbits->om (logior x y)) (logior (mxcsrbits->om x) (mxcsrbits->om y))) :hints (("Goal" :in-theory (enable mxcsrbits->om))))
+  (defthm mxcsrbits->um-of-logior (equal (mxcsrbits->um (logior x y)) (logior (mxcsrbits->um x) (mxcsrbits->um y))) :hints (("Goal" :in-theory (enable mxcsrbits->um))))
+  (defthm mxcsrbits->pm-of-logior (equal (mxcsrbits->pm (logior x y)) (logior (mxcsrbits->pm x) (mxcsrbits->pm y))) :hints (("Goal" :in-theory (enable mxcsrbits->pm))))
+  (defthm mxcsrbits->rc-of-logior (equal (mxcsrbits->rc (logior x y)) (logior (mxcsrbits->rc x) (mxcsrbits->rc y))) :hints (("Goal" :in-theory (enable mxcsrbits->rc))))
+  (defthm mxcsrbits->ftz-of-logior (equal (mxcsrbits->ftz (logior x y)) (logior (mxcsrbits->ftz x) (mxcsrbits->ftz y))) :hints (("Goal" :in-theory (enable mxcsrbits->ftz))))
+  (defthm mxcsrbits->reserved-of-logior (equal (mxcsrbits->reserved (logior x y)) (logior (mxcsrbits->reserved x) (mxcsrbits->reserved y))) :hints (("Goal" :in-theory (enable bvif mxcsrbits->reserved))))
+  )
+
+(defthm mxcsrbits->ie-of-bvor (implies (and (<= 1 size) (natp size)) (equal (mxcsrbits->ie (bvor size x y)) (bvor 1 (mxcsrbits->ie x) (mxcsrbits->ie y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->de-of-bvor (implies (and (<= 2 size) (natp size)) (equal (mxcsrbits->de (bvor size x y)) (bvor 1 (mxcsrbits->de x) (mxcsrbits->de y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ze-of-bvor (implies (and (<= 3 size) (natp size)) (equal (mxcsrbits->ze (bvor size x y)) (bvor 1 (mxcsrbits->ze x) (mxcsrbits->ze y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->oe-of-bvor (implies (and (<= 4 size) (natp size)) (equal (mxcsrbits->oe (bvor size x y)) (bvor 1 (mxcsrbits->oe x) (mxcsrbits->oe y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ue-of-bvor (implies (and (<= 5 size) (natp size)) (equal (mxcsrbits->ue (bvor size x y)) (bvor 1 (mxcsrbits->ue x) (mxcsrbits->ue y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->pe-of-bvor (implies (and (<= 6 size) (natp size)) (equal (mxcsrbits->pe (bvor size x y)) (bvor 1 (mxcsrbits->pe x) (mxcsrbits->pe y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->daz-of-bvor (implies (and (<= 7 size) (natp size)) (equal (mxcsrbits->daz (bvor size x y)) (bvor 1 (mxcsrbits->daz x) (mxcsrbits->daz y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->im-of-bvor (implies (and (<= 8 size) (natp size)) (equal (mxcsrbits->im (bvor size x y)) (bvor 1 (mxcsrbits->im x) (mxcsrbits->im y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->dm-of-bvor (implies (and (<= 9 size) (natp size)) (equal (mxcsrbits->dm (bvor size x y)) (bvor 1 (mxcsrbits->dm x) (mxcsrbits->dm y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->zm-of-bvor (implies (and (<= 10 size) (natp size)) (equal (mxcsrbits->zm (bvor size x y)) (bvor 1 (mxcsrbits->zm x) (mxcsrbits->zm y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->om-of-bvor (implies (and (<= 11 size) (natp size)) (equal (mxcsrbits->om (bvor size x y)) (bvor 1 (mxcsrbits->om x) (mxcsrbits->om y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->um-of-bvor (implies (and (<= 12 size) (natp size)) (equal (mxcsrbits->um (bvor size x y)) (bvor 1 (mxcsrbits->um x) (mxcsrbits->um y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->pm-of-bvor (implies (and (<= 13 size) (natp size)) (equal (mxcsrbits->pm (bvor size x y)) (bvor 1 (mxcsrbits->pm x) (mxcsrbits->pm y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->rc-of-bvor (implies (and (<= 15 size) (natp size)) (equal (mxcsrbits->rc (bvor size x y)) (bvor 2 (mxcsrbits->rc x) (mxcsrbits->rc y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->ftz-of-bvor (implies (and (<= 16 size) (natp size)) (equal (mxcsrbits->ftz (bvor size x y)) (bvor 1 (mxcsrbits->ftz x) (mxcsrbits->ftz y)))) :hints (("Goal" :in-theory (enable bvor))))
+(defthm mxcsrbits->reserved-of-bvor (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvor size x y)) (bvor 16 (mxcsrbits->reserved x) (mxcsrbits->reserved y)))) :hints (("Goal" :in-theory (enable bvif bvor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm mxcsrbits->daz-of-bvchop-32
-  (equal (mxcsrbits->daz (bvchop 32 mxcsr))
-         (mxcsrbits->daz mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->daz mxcsrbits-fix))))
-
-(defthm mxcsrbits->dm-of-bvchop-32
-  (equal (mxcsrbits->dm (bvchop 32 mxcsr))
-         (mxcsrbits->dm mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->dm mxcsrbits-fix))))
-
-(defthm mxcsrbits->im-of-bvchop-32
-  (equal (mxcsrbits->im (bvchop 32 mxcsr))
-         (mxcsrbits->im mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->im mxcsrbits-fix))))
-
-(defthm mxcsrbits->ie-of-bvchop-32
-  (equal (mxcsrbits->ie (bvchop 32 mxcsr))
-         (mxcsrbits->ie mxcsr))
-  :hints (("Goal" :in-theory (enable mxcsrbits->ie mxcsrbits-fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; do we still need these?
 
 (defthm mxcsrbits->daz-of-ifix
   (equal (mxcsrbits->daz (ifix mxcsr))
@@ -444,10 +525,36 @@
 (defthm integerp-of-!MXCSRBITS->DE
   (integerp (!MXCSRBITS->DE$INLINE bit mxcsr)))
 
-(acl2::def-constant-opener FP-DECODE)
-(acl2::def-constant-opener fp-to-rat)
-(acl2::def-constant-opener rtl::bias)
-(acl2::def-constant-opener rtl::expw)
+(def-constant-opener fp-decode)
+(def-constant-opener fp-to-rat)
+(def-constant-opener rtl::bias)
+(def-constant-opener rtl::expw)
+(def-constant-opener snanp)
+(def-constant-opener qnanp)
+(def-constant-opener infp)
+(def-constant-opener nanp)
+(def-constant-opener bitn)
+(def-constant-opener prec)
+(def-constant-opener encodingp)
+(def-constant-opener expf)
+(def-constant-opener sgnf)
+(def-constant-opener manf)
+(def-constant-opener unsupp)
+(def-constant-opener explicitp)
+(def-constant-opener sigw)
+(def-constant-opener formatp)
+(def-constant-opener bits)
+(def-constant-opener bvecp)
+(def-constant-opener denormp)
+(def-constant-opener sigf)
+(def-constant-opener fl)
+(def-constant-opener mxcsr-masks)
+(def-constant-opener rtl::set-flag)
+(def-constant-opener mxcsr-rc)
+(def-constant-opener decode)
+(def-constant-opener ddecode)
+(def-constant-opener zencode)
+(def-constant-opener binary-cat)
 
 ;rename
 (defthm <-of-fp-to-rat
@@ -465,10 +572,10 @@
   :hints (("Goal" :in-theory (enable fp-to-rat))))
 
 (defthm integerp-of-xr-mxcsr
-  (INTEGERP (XR :MXCSR NIL X86)))
+  (integerp (xr :mxcsr nil x86)))
 
 (defthm dazify-of-0-arg2
-  (equal (rtl::dazify x 0 acl2::f)
+  (equal (rtl::dazify x 0 f)
          x)
   :hints (("Goal" :in-theory (enable rtl::dazify))))
 
@@ -499,3 +606,137 @@
                   (x86isa::cr4bits->OSFXSR x)))
   :hints (("Goal" :in-theory (enable x86isa::cr4bits->OSFXSR
                                      x86isa::cr4bits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd integerp-of-zencode
+  (integerp (rtl::zencode sgn f)))
+
+(defthmd integerp-of-iencode
+  (integerp (rtl::iencode sgn f)))
+
+(defthmd integerp-of-dencode
+  (integerp (rtl::dencode x f)))
+
+(defthmd integerp-of-nencode
+  (integerp (rtl::nencode x f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd acl2-numberp-of-ddecode
+  (acl2-numberp (rtl::ddecode x f)))
+
+(defthmd acl2-numberp-of-ndecode
+  (acl2-numberp (rtl::ndecode x f)))
+
+(defthmd acl2-numberp-of-decode
+  (acl2-numberp (rtl::decode x f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm unmasked-excp-p-of-63-arg2
+  (equal (rtl::unmasked-excp-p flags 63)
+         nil)
+  :hints (("Goal" :in-theory (enable rtl::unmasked-excp-p
+                                     rtl::zbit
+                                     rtl::obit
+                                     rtl::pbit
+                                     rtl::ubit))))
+
+(defthm unmasked-excp-p-of-0-arg1
+  (equal (rtl::unmasked-excp-p 0 masks)
+         nil)
+  :hints (("Goal" :in-theory (enable rtl::unmasked-excp-p
+                                     rtl::zbit
+                                     rtl::obit
+                                     rtl::pbit
+                                     rtl::ubit
+                                     ))))
+
+;; since MXCSR-RC breaks the abstraction and accesses bits of the mxcsr directly
+(defthm mxcsr-rc-redef
+  (implies (integerp mxcsr) ;drop?
+           (equal (rtl::mxcsr-rc mxcsr)
+                  (case (mxcsrbits->rc mxcsr)
+                   (0 'rtl::rne)
+                   (1 'rtl::rdn)
+                   (2 'rtl::rup)
+                   (3 'rtl::rtz))))
+  :hints (("Goal" :in-theory (enable rtl::mxcsr-rc
+                                     ;acl2::bits-becomes-slice
+                                     mxcsrbits->rc
+                                     mxcsrbits-fix))))
+
+;; since RTL::MXCSR-MASKS breaks the abstraction and accesses bits of the mxcsr directly
+(defthm mxcsr-masks-redef
+  (implies (integerp mxcsr)
+           (equal (rtl::mxcsr-masks mxcsr)
+                  (acl2::bvcat2 1 (mxcsrbits->pm mxcsr)
+                                1 (mxcsrbits->um mxcsr)
+                                1 (mxcsrbits->om mxcsr)
+                                1 (mxcsrbits->zm mxcsr)
+                                1 (mxcsrbits->dm mxcsr)
+                                1 (mxcsrbits->im mxcsr))))
+  :hints (("Goal" :in-theory (enable rtl::mxcsr-masks
+                                     acl2::bits-becomes-slice
+                                     mxcsrbits->im
+                                     mxcsrbits->dm
+                                     mxcsrbits->zm
+                                     mxcsrbits->om
+                                     mxcsrbits->um
+                                     mxcsrbits->pm
+                                     mxcsrbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; we've already turned the bitn into getbit
+(defthm getbit-of-daz-becomes-mxcsrbits->daz (equal (getbit (rtl::daz) mxcsr) (mxcsrbits->daz mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->daz rtl::daz))))
+;; (defthm getbit-of-ie-becomes-mxcsrbits->-ie (equal (getbit (rtl::ie) mxcsr) (mxcsrbits->ie mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ie rtl::ie))))
+;; (defthm getbit-of-de-becomes-mxcsrbits->-de (equal (getbit (rtl::de) mxcsr) (mxcsrbits->de mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->de rtl::de))))
+;; (defthm getbit-of-ze-becomes-mxcsrbits->-ze (equal (getbit (rtl::ze) mxcsr) (mxcsrbits->ze mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ze rtl::ze))))
+;; (defthm getbit-of-oe-becomes-mxcsrbits->-oe (equal (getbit (rtl::oe) mxcsr) (mxcsrbits->oe mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->oe rtl::oe))))
+;; (defthm getbit-of-ue-becomes-mxcsrbits->-ue (equal (getbit (rtl::ue) mxcsr) (mxcsrbits->ue mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ue rtl::ue))))
+;; (defthm getbit-of-pe-becomes-mxcsrbits->-pe (equal (getbit (rtl::pe) mxcsr) (mxcsrbits->pe mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->pe rtl::pe))))
+;; (defthm getbit-of-da-becomes-mxcsrbits->-da (equal (getbit (rtl::da) mxcsr) (mxcsrbits->da mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->da rtl::da))))
+;; (defthm getbit-of-im-becomes-mxcsrbits->-im (equal (getbit (rtl::im) mxcsr) (mxcsrbits->im mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->im rtl::im))))
+;; (defthm getbit-of-dm-becomes-mxcsrbits->-dm (equal (getbit (rtl::dm) mxcsr) (mxcsrbits->dm mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->dm rtl::dm))))
+;; (defthm getbit-of-zm-becomes-mxcsrbits->-zm (equal (getbit (rtl::zm) mxcsr) (mxcsrbits->zm mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->zm rtl::zm))))
+(defthm getbit-of-omsk-becomes-mxcsrbits->-om (equal (getbit (rtl::omsk) mxcsr) (mxcsrbits->om mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->om rtl::omsk mxcsrbits-fix))))
+(defthm getbit-of-umsk-becomes-mxcsrbits->-um (equal (getbit (rtl::umsk) mxcsr) (mxcsrbits->um mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->um rtl::umsk mxcsrbits-fix))))
+;; (defthm getbit-of-pm-becomes-mxcsrbits->-pm (equal (getbit (rtl::pm) mxcsr) (mxcsrbits->pm mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->pm rtl::pm))))
+
+;; (rc 2bits)        ;; Rounding Control
+(defthm getbit-of-ftz-becomes-mxcsrbits->-ftz (equal (getbit (rtl::ftz) mxcsr) (mxcsrbits->ftz mxcsr)) :hints (("Goal" :in-theory (enable x86isa::mxcsrbits->ftz rtl::ftz mxcsrbits-fix))))
+
+(defthm natp-of-daz (natp (rtl::daz)))
+(defthm natp-of-omsk (natp (rtl::omsk)))
+(defthm natp-of-umsk (natp (rtl::umsk)))
+(defthm natp-of-ftz (natp (rtl::ftz)))
+
+;; helps when a bvif gets tightened
+;more like this?
+(defthm mxcsrbits->daz-when-unsigned-byte-p-too-small
+  (implies (unsigned-byte-p 6 mxcsr)
+           (equal (mxcsrbits->daz$inline mxcsr)
+                  0))
+  :hints (("Goal" :in-theory (enable mxcsrbits->daz))))
+
+
+;daz remains 0
+(defthm mxcsrbits->daz-of-mv-nth-1-of-sse-post-comp
+  (implies (equal 0 (mxcsrbits->daz mxcsr))
+           (equal (mxcsrbits->daz (mv-nth '1 (rtl::sse-post-comp u mxcsr f)))
+                  0))
+  :hints (("Goal" :in-theory (enable rtl::sse-post-comp rtl::obit rtl::pbit rtl::ubit ))))
+
+;daz remains 0
+(defthm mxcsrbits->daz-of-mv-nth-1-of-sse-binary-comp
+  (implies (equal 0 (mxcsrbits->daz mxcsr))
+           (equal (mxcsrbits->daz (mv-nth '1 (rtl::sse-binary-comp op a b mxcsr f)))
+                  0))
+  :hints (("Goal" :in-theory (enable rtl::sse-binary-comp
+;                                     rtl::sse-post-comp ; todo
+                                     rtl::obit rtl::pbit rtl::ubit ))))
+
+(defthm integerp-of-qnanize
+  (integerp (rtl::qnanize x f)))

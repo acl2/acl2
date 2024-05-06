@@ -735,8 +735,7 @@
 (defthm lane-listp-of-theta-d
   (implies (w-valp w)
            (lane-listp (theta-d c w) w))
-  :hints (("Goal" :in-theory (e/d (lanep theta-d)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable lanep theta-d))))
 
 (defthm len-of-theta-d
   (implies (w-valp w)
@@ -1004,7 +1003,7 @@
                 (< n w)
                 (lanep lane w))
            (lanep (update-nth-bit n bit lane w) w))
-  :hints (("Goal" :in-theory (e/d (lanep update-nth-bit) ()))))
+  :hints (("Goal" :in-theory (enable lanep update-nth-bit))))
 
 ;; Set bit (x,y,z) in the state-array to the given bit.
 (defund update-bit (x y z bit a w)
@@ -1494,16 +1493,13 @@
            (state-arrayp (keccak-p-aux i_r max a w) w)))
 
 ;; Algorithm 7
-;; Passing in b is not strictly needed, since we pass in w.  But we include it
-;; as a parameter to match the spec document.
-(defund keccak-p (b n_r s w)
-  (declare (xargs :guard (and (w-valp w)
-                              (equal b (* 25 w))
+(defund keccak-p (b n_r s)
+  (declare (xargs :guard (and (memberp b *b-vals*)
                               (bit-stringp s)
                               (equal (len s) b)
-                              (natp n_r)))
-           (ignore b))
-  (let* ((a (bits-to-state-array s w))
+                              (natp n_r))))
+  (let* ((w (/ b 25))
+         (a (bits-to-state-array s w))
          (l (lg w))
          (a (keccak-p-aux (+ 12 (* 2 l) (- n_r))
                           (+ 12 (* 2 l) -1)
@@ -1513,32 +1509,46 @@
     s-prime))
 
 (defthm all-unsigned-byte-p-of-keccak-p
-  (implies (and (w-valp w)
+  (implies (and (member b *b-vals*)
                 (bit-stringp s)
-                (equal (len s) (* 25 w)))
-           (all-unsigned-byte-p 1 (keccak-p b n_r s w)))
+                (equal (len s) b)
+                ;; (natp n_r)
+                )
+           (all-unsigned-byte-p 1 (keccak-p b n_r s)))
   :hints (("Goal" :in-theory (enable keccak-p))))
 
 (defthm len-of-keccak-p
-  (implies (and (w-valp w)
+  (implies (and (memberp b *b-vals*)
                 (bit-stringp s)
                 (equal (len s) b)
-                (equal b (* 25 w)))
-           (equal (len (keccak-p b n_r s w))
+                ;; (natp n_r)
+                )
+           (equal (len (keccak-p b n_r s))
                   b))
   :hints (("Goal" :in-theory (enable keccak-p))))
 
-;; ;omit?
-;; ;; Passing in b is not strictly needed, since we pass in w.  But we include it
-;; ;; as a parameter to match the spec document.
-;; (defun keccak-f (b s w)
-;;   (declare (xargs :guard (and (w-valp w)
-;;                               (equal b (* 25 w))
-;;                               (bit-stringp s)
-;;                               (equal (len s) b))
-;;                   :guard-hints (("Goal" :in-theory (enable W-VALP)))))
-;;   (let ((l (lg w)))
-;;     (keccak-p b (+ 12 (* 2 l)) s w)))
+(defun keccak-f (b s)
+  (declare (xargs :guard (and (memberp b *b-vals*)
+                              (bit-stringp s)
+                              (equal (len s) b))))
+  (let* ((w (/ b 25))
+         (l (lg w)))
+    (keccak-p b (+ 12 (* 2 l)) s)))
+
+(defthm all-unsigned-byte-p-of-keccak-f
+  (implies (and (memberp b *b-vals*)
+                (bit-stringp s)
+                (equal (len s) b))
+           (all-unsigned-byte-p 1 (keccak-f b s)))
+  :hints (("Goal" :in-theory (enable keccak-f))))
+
+(defthm len-of-keccak-f
+  (implies (and (memberp b *b-vals*)
+                (bit-stringp s)
+                (equal (len s) b))
+           (equal (len (keccak-f b s))
+                  b))
+  :hints (("Goal" :in-theory (enable keccak-f))))
 
 ;;;
 ;;; pad10*1
@@ -1585,9 +1595,8 @@
   :hints (("Goal" :in-theory (enable pad10*1))))
 
 ;; Step 6 of Algorithm 8 except we fix f to be keccak-p.
-(defun keccak-sponge-aux (b n_r r i n-1 s p-strings c w)
-  (declare (xargs :guard (and (w-valp w)
-                              (equal b (* 25 w))
+(defun keccak-sponge-aux (b n_r r i n-1 s p-strings c)
+  (declare (xargs :guard (and (memberp b *b-vals*)
                               (natp n_r)
                               (natp i)
                               (natp n-1)
@@ -1610,16 +1619,15 @@
                        n_r
                        (bvxor-list 1 s
                                    (append (nth i p-strings)
-                                           (repeat c 0)))
-                       w)))
-      (keccak-sponge-aux b n_r r (+ 1 i) n-1 s p-strings c w))))
+                                           (repeat c 0))))))
+      (keccak-sponge-aux b n_r r (+ 1 i) n-1 s p-strings c))))
 
 (defthm len-of-keccak-sponge-aux
   (implies (and (equal (len s) b)
-                (equal b (* 25 w))
-                (w-valp w))
-           (equal (len (keccak-sponge-aux b n_r r i n-1 s p-strings c w))
-                  b)))
+                (memberp b *b-vals*))
+           (equal (len (keccak-sponge-aux b n_r r i n-1 s p-strings c))
+                  b))
+  :hints (("Goal" :in-theory (enable w-valp))))
 
 (defthm bit-stringp-of-bvxor-list
   (bit-stringp (bvxor-list 1 x y))
@@ -1627,22 +1635,20 @@
 
 (defthm all-unsigned-byte-p-of-keccak-sponge-aux
   (implies (and (all-unsigned-byte-p 1 s)
-                (equal b (* 25 w))
-                (equal (len s) b)
-                (w-valp w))
-           (all-unsigned-byte-p 1 (keccak-sponge-aux b n_r r i n-1 s p-strings c w))))
+                (memberp b *b-vals*)
+                (equal (len s) b))
+           (all-unsigned-byte-p 1 (keccak-sponge-aux b n_r r i n-1 s p-strings c)))
+  :hints (("Goal" :in-theory (enable w-valp))))
 
 (defthm bit-stringp-of-keccak-sponge-aux
   (implies (and (bit-stringp s)
-                (equal b (* 25 w))
-                (equal (len s) b)
-                (w-valp w))
-           (bit-stringp (keccak-sponge-aux b n_r r i n-1 s p-strings c w))))
+                (memberp b *b-vals*)
+                (equal (len s) b))
+           (bit-stringp (keccak-sponge-aux b n_r r i n-1 s p-strings c))))
 
 ;; Steps 8-10 of Algorithm 8 except we fix f to be keccak-p.
-(defund keccak-sponge-aux2 (b n_r r z s d w)
-  (declare (xargs :guard (and (w-valp w)
-                              (equal b (* 25 w))
+(defund keccak-sponge-aux2 (b n_r r z s d)
+  (declare (xargs :guard (and (memberp b *b-vals*)
                               (natp n_r)
                               (bit-stringp z)
                               (posp r) ;must be positive for termination
@@ -1659,14 +1665,13 @@
             (take d z)
           (let ((s (keccak-p b
                              n_r
-                             s
-                             w)))
-            (keccak-sponge-aux2 b n_r r z s d w))))))
+                             s)))
+            (keccak-sponge-aux2 b n_r r z s d))))))
 
 (defthm len-of-keccak-sponge-aux2
   (implies (and (natp d)
                 (posp r))
-           (equal (len (keccak-sponge-aux2 b n_r r z s d w))
+           (equal (len (keccak-sponge-aux2 b n_r r z s d))
                   d))
   :hints (("Goal" :in-theory (enable keccak-sponge-aux2))))
 
@@ -1674,7 +1679,7 @@
   (implies (and (natp d)
                 (posp r)
                 (true-listp z))
-           (true-listp (keccak-sponge-aux2 b n_r r z s d w)))
+           (true-listp (keccak-sponge-aux2 b n_r r z s d)))
   :hints (("Goal" :in-theory (enable keccak-sponge-aux2))))
 
 (defthm all-unsigned-byte-p-of-keccak-sponge-aux2
@@ -1684,9 +1689,8 @@
                 (bit-stringp s)
                 (< r (len s))
                 (equal (len s) b)
-                (equal b (* 25 w))
-                (w-valp w))
-           (all-unsigned-byte-p 1 (keccak-sponge-aux2 b n_r r z s d w)))
+                (memberp b *b-vals*))
+           (all-unsigned-byte-p 1 (keccak-sponge-aux2 b n_r r z s d)))
   :hints (("Goal" :in-theory (enable keccak-sponge-aux2))))
 
 ;; (defthm padding-hack
@@ -1730,9 +1734,8 @@
 ;; keccak-p and pad to be pad10*1.
 (defund keccak-sponge (b ; a param of keccak-p since we fixed f to be keccak-p
                       n_r ; a param of keccak-p since we fixed f to be keccak-p
-                      r n d w)
-  (declare (xargs :guard (and (w-valp w)
-                              (equal b (* 25 w))
+                      r n d)
+  (declare (xargs :guard (and (memberp b *b-vals*)
                               (natp n_r)
                               (bit-stringp n)
                               (natp d)
@@ -1750,24 +1753,23 @@
          (c (- b r))
          (p-strings (group r p))
          (s (repeat b 0))
-         (s (keccak-sponge-aux b n_r r 0 (- n 1) s p-strings c w))
+         (s (keccak-sponge-aux b n_r r 0 (- n 1) s p-strings c))
          (z '()))
-    (keccak-sponge-aux2 b n_r r z s d w)))
+    (keccak-sponge-aux2 b n_r r z s d)))
 
 (defthm len-of-keccak-sponge
   (implies (and (natp d)
                 (posp r))
-           (equal (len (keccak-sponge b n_r r n d w))
+           (equal (len (keccak-sponge b n_r r n d))
                   d))
   :hints (("Goal" :in-theory (enable keccak-sponge))))
 
 (defthm bit-stringp-of-keccak-sponge
   (implies (and (natp d)
                 (posp r)
-                (equal b (* 25 w))
-                (< r b)
-                (w-valp w))
-           (bit-stringp (keccak-sponge b n_r r n d w)))
+                (memberp b *b-vals*)
+                (< r b))
+           (bit-stringp (keccak-sponge b n_r r n d)))
   :hints (("Goal" :in-theory (enable keccak-sponge))))
 
 ;; Sec 5.2.  Defines Keccak[c].
@@ -1776,9 +1778,8 @@
                               (< c 1600)
                               (bit-stringp n)
                               (natp d))))
-  (let ((r (- 1600 c))
-        (w 64))
-    (keccak-sponge 1600 24 r n d w)))
+  (let ((r (- 1600 c)))
+    (keccak-sponge 1600 24 r n d)))
 
 (defthm len-of-keccak
   (implies (and (natp d)

@@ -811,7 +811,7 @@
                      node-replacement-array node-replacement-count refined-assumption-alist
                      rewrite-stobj
                      (+ -1 count)))
-                   (tries (and tries (increment-tries tries)))
+                   (tries (increment-tries tries))
                    ;; Try to match the args-to-match with the args of the LHS of the rule:
                    (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match dag-array dag-len)))
                 (if (eq :fail alist-or-fail)
@@ -2442,7 +2442,7 @@
                         (bounded-darg-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag)
                                              (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
                         ;; implied by the above
-                        (all-dargp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
+                        (darg-listp (mv-nth 1 ,call-of-simplify-trees-and-add-to-dag))
                         (<= dag-len
                             (mv-nth 3 ,call-of-simplify-trees-and-add-to-dag))
                         (maybe-bounded-memoizationp (mv-nth 7 ,call-of-simplify-trees-and-add-to-dag)
@@ -2996,7 +2996,7 @@
                        (<= x dag-len))
                   (and
                    (<= x (mv-nth 4 ,call-of-relieve-rule-hyps))
-                   (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
+                   (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
@@ -3012,7 +3012,7 @@
                        (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                        (symbol-alistp alist)
                        (bounded-darg-listp (strip-cdrs alist) dag-len))
-                  (all-dargp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))))
+                  (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
@@ -4230,8 +4230,8 @@
                         (myquotep tree)
                         (quotep tree))
                :in-theory (e/d (true-list-of-car-when-bounded-darg-list-listp
-                                all-dargp-of-car-when-bounded-darg-list-listp
-                                all-myquotep-when-all-dargp
+                                darg-listp-of-car-when-bounded-darg-list-listp
+                                all-myquotep-when-darg-listp
                                 axe-bind-free-result-okayp-rewrite
                                 axe-rule-hypp
                                 integerp-when-dargp
@@ -4306,7 +4306,7 @@
                                                              symbolp-of-car-when-dag-exprp
                                                              axe-treep-when-dag-exprp
                                                              car-of-cadr-when-cars-increasing-by-1
-                                                             all-myquotep-when-all-dargp
+                                                             all-myquotep-when-darg-listp
                                                              consp-of-cdr-when-dargp
                                                              consp-of-cdr-when-dag-exprp-and-quote
                                                              not-cddr-when-dag-exprp-and-quotep
@@ -4549,7 +4549,7 @@
                                        symbolp-of-car-when-dag-exprp
                                        axe-treep-when-dag-exprp
                                        car-of-cadr-when-cars-increasing-by-1
-                                       all-myquotep-when-all-dargp
+                                       all-myquotep-when-darg-listp
                                        consp-of-cdr-when-dargp
                                        consp-of-cdr-when-dag-exprp-and-quote
                                        not-cddr-when-dag-exprp-and-quotep
@@ -4612,7 +4612,7 @@
       (declare (xargs :guard (and (weak-dagp-aux rev-dag)
                                   (cars-increasing-by-1 rev-dag)
                                   (if (consp rev-dag)
-                                      (<= (car (car (last rev-dag))) 2147483646)
+                                      (<= (car (car (last rev-dag))) *max-1d-array-length*) ; todo: why can they be equal?
                                     t)
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                   (if (consp rev-dag)
@@ -4646,7 +4646,7 @@
                                                       ;tree-to-memoizep
                                                       axe-treep-when-dag-exprp
                                                       car-of-cadr-when-cars-increasing-by-1
-                                                      all-myquotep-when-all-dargp
+                                                      all-myquotep-when-darg-listp
                                                       consp-of-cdr-when-dargp
                                                       consp-of-cdr-when-dag-exprp-and-quote
                                                       not-cddr-when-dag-exprp-and-quotep
@@ -4660,7 +4660,7 @@
           ;; Done rewriting nodes.  The caller can use the renumbering-stobj to lookup what the old top node rewrote to:
           (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
         (b* ((entry (first rev-dag))
-             (nodenum (the (integer 0 2147483646) (car entry))) ; or, since they are consecutive, we could track this numerically.
+             (nodenum (the (integer 0 1152921504606846974) (car entry))) ; or, since they are consecutive, we could track this numerically.
              (print (get-print rewrite-stobj))
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
              (context-for-this-node (if maybe-internal-context-array (aref1 'context-array maybe-internal-context-array nodenum) (true-context)))
@@ -4707,7 +4707,7 @@
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
                     (if (consp rev-dag)
-                        (<= (car (car (last rev-dag))) 2147483646)
+                        (<= (car (car (last rev-dag))) *max-1d-array-length*)
                       t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
@@ -4767,7 +4767,7 @@
                                   tree-to-memoizep
                                   axe-treep-when-dag-exprp
                                   car-of-cadr-when-cars-increasing-by-1
-                                  all-myquotep-when-all-dargp
+                                  all-myquotep-when-darg-listp
                                   consp-of-cdr-when-dargp
                                   consp-of-cdr-when-dag-exprp-and-quote
                                   not-cddr-when-dag-exprp-and-quotep
@@ -4781,7 +4781,7 @@
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
                     (if (consp rev-dag)
-                        (<= (car (car (last rev-dag))) 2147483646)
+                        (<= (car (car (last rev-dag))) *max-1d-array-length*)
                       t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
@@ -4817,7 +4817,7 @@
                  (implies (not erp)
                           (and (natp new-dag-len)
                                (integerp new-dag-len)
-                               ;; (not (< 2147483646 new-dag-len)) ; todo
+                               ;; (not (< *max-1d-array-length* new-dag-len)) ; todo
                                ))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
@@ -4827,7 +4827,7 @@
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
                     (if (consp rev-dag)
-                        (<= (car (car (last rev-dag))) 2147483646)
+                        (<= (car (car (last rev-dag))) *max-1d-array-length*)
                       t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
@@ -4873,7 +4873,7 @@
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
                     (if (consp rev-dag)
-                        (<= (car (car (last rev-dag))) 2147483646)
+                        (<= (car (car (last rev-dag))) *max-1d-array-length*)
                       t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
@@ -4921,7 +4921,7 @@
       (implies (and (weak-dagp-aux rev-dag)
                     (cars-increasing-by-1 rev-dag)
                     (if (consp rev-dag)
-                        (<= (car (car (last rev-dag))) 2147483646)
+                        (<= (car (car (last rev-dag))) *max-1d-array-length*)
                       t)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
@@ -4983,7 +4983,7 @@
                                 normalize-xors
                                 memoize)
       (declare (xargs :guard (and (pseudo-dagp dag)
-                                  (< (top-nodenum dag) 2147483646)
+                                  (< (top-nodenum dag) *max-1d-array-length*)
                                   (pseudo-term-listp assumptions)
                                   (rule-limitsp limits)
                                   (rule-alistp rule-alist)
@@ -5011,7 +5011,7 @@
            (- (and print (cw "(Simplifying DAG (~x0 nodes, ~x1 assumptions):~%" old-len (len assumptions))))
            (use-internal-contextsp (and (not memoize) ; unsound to use contexts if memoizing
                                         (dag-has-internal-contextsp dag)))
-           (initial-array-size (if use-internal-contextsp (min 2147483646 (* 2 old-len)) old-len)) ; could make this adjustable
+           (initial-array-size (if use-internal-contextsp (min *max-1d-array-length* (* 2 old-len)) old-len)) ; could make this adjustable
            ;; Start with either an empty dag-array, or an array with all the nodes (if using contexts):
            ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (if use-internal-contextsp
@@ -5084,7 +5084,7 @@
       (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))))
                     (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
-                    (< (top-nodenum dag) 2147483646)
+                    (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
@@ -5096,8 +5096,8 @@
                     (booleanp normalize-xors)
                     (booleanp memoize))
                (and (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
-                    ;; (< (len (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
-                    ;;    2147483647) ;; todo
+                    (<= (len (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+                        *max-1d-array-length*) ;; todo
                     ))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
                :in-theory (e/d (,simplify-dag-name
@@ -5114,7 +5114,7 @@
     ;; (defthm ,(pack$ simplify-dag-name '-return-type-corollary-1)
     ;;   (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
     ;;                 (pseudo-dagp dag)
-    ;;                 (< (top-nodenum dag) 2147483646)
+    ;;                 (< (top-nodenum dag) *max-1d-array-length*)
     ;;                 (pseudo-term-listp assumptions)
     ;;                 (rule-limitsp limits)
     ;;                 (rule-alistp rule-alist)
@@ -5134,7 +5134,7 @@
     (defthm ,(pack$ simplify-dag-name '-return-type-corollary-2)
       (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
-                    (< (top-nodenum dag) 2147483646)
+                    (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
@@ -5154,7 +5154,7 @@
     (defthm ,(pack$ simplify-dag-name '-return-type-corollary-3)
       (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
-                    (< (top-nodenum dag) 2147483646)
+                    (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
@@ -5508,7 +5508,7 @@
                                          state)
       (declare (xargs :guard (and (symbolp name)
                                   (pseudo-dagp dag)
-                                  (< (top-nodenum dag) 2147483646)
+                                  (< (top-nodenum dag) *max-1d-array-length*)
                                   (pseudo-term-listp assumptions)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (rule-limitsp limits)

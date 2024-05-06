@@ -15,7 +15,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ;for myquotep
 (include-book "kestrel/utilities/polarity" :dir :system)
-;(include-book "all-dargp")
+;(include-book "darg-listp")
 ;(include-book "dargp-less-than")
 (include-book "bounded-darg-listp")
 (include-book "axe-trees")

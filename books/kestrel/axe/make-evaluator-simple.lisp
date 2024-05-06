@@ -27,8 +27,44 @@
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
 (include-book "kestrel/typed-lists-light/all-alistp" :dir :system)
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 
 ;; TODO: Consider adding special handling for BOOLIF and BVIF.
+
+(local
+ (defthm symbol-alistp-of-lookup-equal
+   (implies (symbol-alist-listp (strip-cdrs alist))
+            (symbol-alistp (lookup-equal key alist)))
+   :hints (("Goal" :in-theory (enable lookup-equal)))))
+
+(local
+ (defthm symbol-alist-listp-of-strip-cdrs-of-acons-unique
+   (implies (and (symbol-alistp val)
+                 (symbol-alist-listp (strip-cdrs alist)))
+            (symbol-alist-listp (strip-cdrs (acons-unique key val alist))))
+   :hints (("Goal" :in-theory (enable acons-unique)))))
+
+(local
+ (defthm nat-listp-of-strip-cdars-of-acons-unique
+   (implies (and (natp key)
+                 (nat-listp (strip-cars alist)))
+            (nat-listp (strip-cars (acons-unique key val alist))))
+   :hints (("Goal" :in-theory (enable acons-unique)))))
+
+;move?
+;dup
+;; (defthm alistp-of-lookup-equal
+;;   (implies (all-alistp (strip-cdrs alist))
+;;            (alistp (lookup-equal key alist)))
+;;   :hints (("Goal" :in-theory (enable lookup-equal))))
+
+;; (defthm all-alistp-of-strip-cdrs-of-acons-unique
+;;   (implies (and (alistp val)
+;;                 (all-alistp (strip-cdrs alist)))
+;;            (all-alistp (strip-cdrs (acons-unique key val alist))))
+;;   :hints (("Goal" :in-theory (enable acons-unique))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a list where each element is either a symbol (representing a
 ;; function) or a pair of symbols (representing a function and an "unguarded"
@@ -44,9 +80,12 @@
                     (= 2 (len entry))))
            (fns-and-aliasesp (rest x))))))
 
-(defthm fns-and-aliasesp-of-reverse-list
-  (implies (fns-and-aliasesp x)
-           (fns-and-aliasesp (reverse-list x))))
+(local
+  (defthm fns-and-aliasesp-of-reverse-list
+    (implies (fns-and-aliasesp x)
+             (fns-and-aliasesp (reverse-list x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun get-fns-from-fns-and-aliases (fns-and-aliases)
   (declare (xargs :guard (fns-and-aliasesp fns-and-aliases)))
@@ -58,6 +97,8 @@
               entry)
             (get-fns-from-fns-and-aliases (rest fns-and-aliases))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; return a list of the symbols arg1, arg2, ..., argn.
 (defun numbered-args (n acc)
   (declare (xargs :measure (nfix (+ 1 n))
@@ -68,24 +109,13 @@
                    (cons (pack$ 'arg (nat-to-string n))
                          acc))))
 
-;move?
-;dup
-(defthm alistp-of-lookup-equal
-  (implies (all-alistp (strip-cdrs alist))
-           (alistp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-(defthm all-alistp-of-strip-cdrs-of-acons-unique
-  (implies (and (alistp val)
-                (all-alistp (strip-cdrs alist)))
-           (all-alistp (strip-cdrs (acons-unique key val alist))))
-  :hints (("Goal" :in-theory (enable acons-unique))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-arity-fn-call-alist-alist-aux (fns-and-aliases wrld acc)
   (declare (xargs :guard (and (fns-and-aliasesp fns-and-aliases)
                               (plist-worldp wrld)
                               (alistp acc)
-                              (all-alistp (strip-cdrs acc)))))
+                              (symbol-alist-listp (strip-cdrs acc)))))
   (if (endp fns-and-aliases)
       acc
     (let* ((entry (first fns-and-aliases))
@@ -103,10 +133,38 @@
                                           wrld
                                           (acons-unique arity new-entry-for-arity acc)))))
 
+(local
+ (defthm symbol-alist-listp-of-strip-cdrs-of-make-arity-fn-call-alist-alist-aux
+   (implies (and (fns-and-aliasesp fns-and-aliases)
+                 (plist-worldp wrld)
+                 (alistp acc)
+                 (symbol-alist-listp (strip-cdrs acc)))
+            (symbol-alist-listp (strip-cdrs (make-arity-fn-call-alist-alist-aux fns-and-aliases wrld acc))))))
+
+(local
+ (defthm nat-listp-of-strip-cars-of-make-arity-fn-call-alist-alist-aux
+   (implies (and (fns-and-aliasesp fns-and-aliases)
+                 (plist-worldp wrld)
+                 (alistp acc)
+                 (nat-listp (strip-cars acc)))
+            (nat-listp (strip-cars (make-arity-fn-call-alist-alist-aux fns-and-aliases wrld acc))))))
+
+(local
+ (defthm alist-of-strip-cdrs-of-make-arity-fn-call-alist-alist-aux
+   (implies (and (fns-and-aliasesp fns-and-aliases)
+                 (plist-worldp wrld)
+                 (alistp acc)
+                 (symbol-alist-listp (strip-cdrs acc)))
+            (alistp (make-arity-fn-call-alist-alist-aux fns-and-aliases wrld acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun make-arity-fn-call-alist-alist (fns-and-aliases wrld)
   (declare (xargs :guard (and (fns-and-aliasesp fns-and-aliases)
                               (plist-worldp wrld))))
   (make-arity-fn-call-alist-alist-aux (reverse-list fns-and-aliases) wrld nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-alias-checking-theorems (fns-and-aliases wrld)
   (declare (xargs :guard (and (fns-and-aliasesp fns-and-aliases)
@@ -124,12 +182,12 @@
                   (make-alias-checking-theorems (rest fns-and-aliases) wrld)))
         (make-alias-checking-theorems (rest fns-and-aliases) wrld)))))
 
-;; Returns an event.
-;;this generates a mutually recursive set of defuns that evaluates functions and dags
-;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?
-;;we use that expression when we call the corresponding function
-;i guess if we pass an interpreted fn we must also pass in any supporting fns - perhaps always include all the primitives - since we can't interpret them!
-;ffixme since this no longer takes state we could use a macro instead of make-event
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an encapsulate event.
+;; TODO: Add a function to eval a dag.  See evaluate-test-case-aux.
+;; TODO: Strengthen guards to require the interpreted-function-alist to always be complete wrt the built-in functions of the evaluator.
+;; perhaps always include all the primitives - since we can't interpret them!
 (defun make-evaluator-simple-fn (suffix
                                  fns-and-aliases
                                  extra-guards-apply
@@ -138,9 +196,9 @@
                                  verify-guards
                                  wrld)
   (declare (xargs :guard (and (symbolp suffix)
-                              (fns-and-aliasesp fns-and-aliases))
-                  :verify-guards nil ;todo
-                  ))
+                              (fns-and-aliasesp fns-and-aliases)
+                              (plist-worldp wrld))
+                  :guard-hints (("Goal" :in-theory (enable rational-listp-when-nat-listp)))))
   (let* ((base-name (pack$ 'axe-evaluator- suffix))
          ;;maps arities to fn-call-alists.  a fn-call-alist maps fns to the expressions by which to evaluate them:
          (arity-fn-call-alist-alist (make-arity-fn-call-alist-alist fns-and-aliases wrld))
@@ -168,7 +226,7 @@
         (defund ,apply-function-name (fn args interpreted-function-alist count)
           (declare (type (unsigned-byte 60) count)
                    (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
-                          :verify-guards nil
+                          :verify-guards nil ; maybe done below
                           :guard (and (or (symbolp fn)
                                           (pseudo-lambdap fn))
                                       (true-listp args)
@@ -276,6 +334,23 @@
                   (cons car-res cdr-res)))))
         ) ;end mutual-recursion
 
+
+       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- eval-list-function-name)
+         (true-listp (mv-nth 1 (,eval-list-function-name alist forms interpreted-function-alist count)))
+         :hints (("Goal" :induct (true-listp forms) :in-theory (enable true-listp ,eval-list-function-name))))
+
+       ,@(and verify-guards
+              `((verify-guards ,apply-function-name
+                  :hints (("Goal" :in-theory (enable pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
+                                                     symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
+                                                     cddr-of-assoc-equal-when-interpreted-function-alistp
+                                                     true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
+                                                     consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
+                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
+                                                     unsigned-byte-p ;todo
+                                                     ))))))
+
+
        ;; Returns (mv erp result).
        ;; The ARGS passed in to this version must all be quoted.
        ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
@@ -287,7 +362,8 @@
                                      (all-myquotep args)
                                      (interpreted-function-alistp interpreted-function-alist)
                                      ,@extra-guards-apply)
-                         :verify-guards nil))
+                         :verify-guards nil ; maybe done below
+                         ))
          (if (consp fn) ;test for lambda
              (let* ((formals (second fn))
                     (body (third fn))
@@ -320,23 +396,8 @@
                             )
                        (,eval-function-name alist body interpreted-function-alist *max-fixnum*)))))))))
 
-       (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- eval-list-function-name)
-         (true-listp (mv-nth 1 (,eval-list-function-name alist forms interpreted-function-alist count)))
-         :hints (("Goal" :induct (true-listp forms) :in-theory (enable true-listp ,eval-list-function-name))))
-
        ,@(and verify-guards
-              `((verify-guards ,apply-function-name
-                  :hints (("Goal" :in-theory (enable pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-                                                     cddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
-                                                     consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
-                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     unsigned-byte-p ;todo
-                                                     ))))
-
-
-                (verify-guards ,apply-function-to-quoted-args-name
+              `((verify-guards ,apply-function-to-quoted-args-name
                   :hints (("Goal" :in-theory (enable pseudo-termp-of-caddr-of-assoc-equal-when-interpreted-function-alistp
                                                      symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
                                                      cddr-of-assoc-equal-when-interpreted-function-alistp

@@ -112,6 +112,7 @@
     bool-fix-when-booleanp
     ;; Rules about boolif:
     boolif-same-branches
+    boolif-same-arg1-arg2
     boolif-of-t-and-nil
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
@@ -377,6 +378,7 @@
     unsigned-byte-p-of-bvshl-gen
     unsigned-byte-p-of-bvshr-gen
     unsigned-byte-p-of-bvashr-gen
+    unsigned-byte-p-of-0-arg1
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
@@ -410,14 +412,15 @@
     unsigned-byte-p-forced-of-rightrotate32
     unsigned-byte-p-forced-of-repeatbit
     unsigned-byte-p-forced-of-bool-to-bit
-    ;;todo bvshl
-    ;;todo bvshr
+    unsigned-byte-p-forced-of-bvshl
+    unsigned-byte-p-forced-of-bvshr
     ;;todo bvashr
     unsigned-byte-p-forced-of-bv-array-read
     ))
 
 (defun if-becomes-bvif-rules ()
-  '(bvchop-of-if-becomes-bvchop-of-bvif
+  (declare (xargs :guard t))
+  '(bvchop-of-if-becomes-bvif
     slice-of-if-becomes-slice-of-bvif
     bvcat-of-if-becomes-bvcat-of-bvif-arg2
     bvcat-of-if-becomes-bvcat-of-bvif-arg4
@@ -534,10 +537,28 @@
     ;; todo: sbvmoddown?
     ))
 
+(defun bvchop-of-bv-rules ()
+  (declare (xargs :guard t))
+  '(bvchop-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
+    bvchop-of-bvminus
+    bvchop-of-bvuminus
+    bvchop-of-bvmult
+    bvchop-of-bvif
+    bvchop-of-bvnot
+    bvchop-of-bvand
+    bvchop-of-bvor
+    bvchop-of-bvxor                 ;dup in core rules
+    ;;    bvchop-of-bv-array-read ;;we are no longer trimming array reads
+    bvchop-of-bvsx
+    bvchop-of-slice-both
+    bvchop-of-bvchop
+    bvchop-of-bvcat-cases))
+
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
+   (bvchop-of-bv-rules)
    (unsigned-byte-p-rules)
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
@@ -603,9 +624,13 @@
      bvif-of-equal-0-1                       ;Mon Apr 25 14:56:14 2016
      equal-of-constant-and-bitxor-of-constant ;Sun Apr 24 19:42:42 2016
 
+     ;; or should we always open bvminus to bvplus of bvuminus?
      bvminus-same                             ;tue dec 15 12:03:12 2015
      bvplus-bvminus-same
      bvplus-bvminus-same-arg2
+     bvminus-of-0-arg1
+     bvminus-of-0-arg2
+     bvminus-of-0-arg3
 
      bvplus-of-0-arg2
 
@@ -683,6 +708,9 @@
      bvshl-of-0-arg1
      bvshl-of-0-arg2
      bvshl-of-0-arg3
+     ;; bvchop-of-bvshl ; this can change the size of the bvshl, so refrain until we improve the pre-stp translation to handle arbitrary sizes
+     bvchop-of-bvshl-same
+     bvchop-of-bvshl-does-nothing
 
      equal-of-bvplus-and-bvplus-cancel-arg2-arg2 ;sat feb 19 17:28:05 2011
      equal-of-bvplus-and-bvplus-cancel-arg1-arg2
@@ -749,8 +777,7 @@
      not-equal-constant-when-unsigned-byte-p ;Fri Dec 17 01:47:42 2010
      ;;not-equal-constant-when-unsigned-byte-p-alt ;not needed since we commute constants forward?
 
-     equal-of-slice-and-slice    ;Tue Dec 14 22:39:31 2010
-     equal-of-slice-and-slice-alt ;Tue Dec 14 22:39:31 2010
+     equal-of-slice-and-slice-same-low
 
      getbit-of-bvcat-all ;newly moved here
 
@@ -916,7 +943,7 @@
      bvxor-1-becomes-bitxor
      bvor-1-becomes-bitor
 
-     bvand-with-mask-better-eric
+     bvand-with-constant-mask-arg2
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt
@@ -999,7 +1026,13 @@
      sbvdiv-of-0-arg1
      sbvdiv-of-0-arg2 ; unusual casae
      sbvdiv-of-1-arg3
-     sbvdiv-same)))
+     sbvdiv-same
+
+     bvchop-of-ifix ; more like this?
+     acl2::slice-tighten-top-dag
+
+     unsigned-byte-p-when-unsigned-byte-p-smaller
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1376,7 +1409,10 @@
   '(bvif-same-branches
     bvif-equal-1-usb1
     bvif-when-true
-    bvif-when-false))
+    bvif-when-false
+    bvif-of-bool-fix
+    equal-of-bvif-same-1
+    equal-of-bvif-same-2))
 
 (defun bvchop-list-rules ()
   (declare (xargs :guard t))
@@ -1391,28 +1427,38 @@
     true-listp-of-bvchop-list
     bvchop-list-of-bvchop-list))
 
-(defun logext-rules ()
+(defun bv-of-logext-rules ()
   (declare (xargs :guard t))
-  '(logext-of-0
-
-    bv-array-read-of-logext-arg3
-
-    bvmult-of-logext-alt ;new
-    bvmult-of-logext     ;new
-
-    bvplus-of-logext-arg2
+  '(bvplus-of-logext-arg2
     bvplus-of-logext-arg3
 
-    bvif-of-logext-gen-arg1
-    bvif-of-logext-gen-arg2
+    bvminus-of-logext-arg2
+    bvminus-of-logext-arg3
+
+    bvmult-of-logext-arg2
+    bvmult-of-logext-arg3
+
+    bvuminus-of-logext
+
+    bvand-of-logext-arg2
+    bvand-of-logext-arg3
+    bvor-of-logext-arg2
+    bvor-of-logext-arg3
+    bvxor-of-logext-arg2
+    bvxor-of-logext-arg3
+
+    bitand-of-logext-arg1
+    bitand-of-logext-arg2
+    bitor-of-logext-arg1
+    bitor-of-logext-arg2
+    bitxor-of-logext-arg1
+    bitxor-of-logext-arg2
+
+    bvif-of-logext-arg3
+    bvif-of-logext-arg4
 
 ;    bvcat-of-logext-high-eric ;trying without this one
     slice-of-logext
-    bvxor-of-logext
-    bvxor-of-logext-alt
-
-    bvor-of-logext ;clean these up.  add more?
-    bvor-of-logext-2-gen
 
     bvcat-of-logext-high
     bvchop-of-logext
@@ -1420,18 +1466,25 @@
     getbit-of-logext
     getbit-of-logext-high
 
-    bvuminus-of-logext
+    bvshr-of-logext-arg2
+    bvshl-of-logext-arg2
+    bvshr-of-logext-arg2
+    bvshl-of-logext-arg2
+    bvchop-of-logext-becomes-bvsx
+
+    high-slice-of-logext ;introduces bvsx
+
+    bv-array-read-of-logext-arg3))
+
+(defun logext-rules ()
+  (declare (xargs :guard t))
+  (append
+   (bv-of-logext-rules)
+  '(logext-of-0
+
     logext-equal-0-rewrite-32 ;bozo gen
 
-    bvshr-of-logext-arg2
-    bvshl-of-logext-arg2
-    bvshr-of-logext-arg2
-    bvshl-of-logext-arg2
-    bitand-of-logext-arg2
-    bitand-of-logext-arg1
-    bitxor-of-logext-arg2
-    bitxor-of-logext-arg1
-    bvchop-32-logext-8 ;bozo
+    ;;bvchop-32-logext-8 ;bozo
     logext-64-bound-hack-8 ;bozo
     logext-64-bound-hack ;bozo
     logext-bound-when-unsigned-byte-p
@@ -1439,15 +1492,12 @@
     <-of-0-and-logext
     <-of-logext-when-signed-byte-p
     <-of-logext-when-signed-byte-p-alt
-    high-slice-of-logext ;introduces bvsx
     ;;replace these with a trim rule:
-    bvminus-of-logext-gen-arg1
-    bvminus-of-logext-gen-arg2
     equal-of-logext-and-logext
     logext-of-logext
 
     logext-not-nil1
-    logext-not-nil2))
+    logext-not-nil2)))
 
 ;; ;these are now all/mostly related to 2d arrays?
 ;; (defconst *misc-rules*
@@ -1709,22 +1759,8 @@
 
 (defun trim-helper-rules ()
   (declare (xargs :guard t))
-  '(bvchop-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
-    bvchop-of-bvminus
-    bvchop-of-bvuminus
-    bvchop-of-bvmult
-    bvchop-of-bvif
-    bvchop-of-bvnot
-    bvchop-of-bvand
-    bvchop-of-bvor
-    bvchop-of-bvxor                 ;dup in core rules
-;;    bvchop-of-bv-array-read ;;we are no longer trimming array reads
-    bvchop-of-bvsx
-    bvchop-of-slice-both
-    bvchop-of-bvchop
-    bvchop-of-bvcat-cases
-
-    ;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+  (append ;(bvchop-of-bv-rules) ; why?
+  '(;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
     trim-of-repeatbit ;improve?
     trim-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
     trim-of-bvmult
@@ -1742,7 +1778,7 @@
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
     trim-does-nothing-axe ; should not be needed?
-    ))
+    )))
 
 (defun all-trim-rules ()
   (declare (xargs :guard t))
@@ -1904,6 +1940,7 @@
 ;; ;currently there seem to be lots of crashes when doing this, due to guard violations in eval-fn
 ;; ;rules that support eval-dag (may crash without these - unresolved ifs lead to bad calls)
 ;; (defun dag-val-rules ()
+;;   (declare (xargs :guard t))
 ;;   (append (lookup-rules)
 ;;           '(DAG-VAL-WITH-AXE-EVALUATOR
 ;;             dag-val2-no-array
@@ -2062,11 +2099,11 @@
     nfix-does-nothing
     natp-of-len ;add to some rule list
     integerp-of-len
-    bvchop-of-*
+    bvchop-of-*-becomes-bvmult
     unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
 ;    sha1-loop-10-theorem-1
     equal-of-constant-and-bitxor-1
-    ubp-longer-better
+    unsigned-byte-p-when-unsigned-byte-p-smaller
     car-becomes-nth-of-0
     nth-of-cdr
     bvchop-does-nothing-rewrite))
@@ -2118,8 +2155,8 @@
 ;                        SBVLT-REWRITE ;trying without this..
 
 ;                        GETBIT-OF-BVPLUS-SPLIT ;bad?
-     equal-of-bvif-hack
-     equal-of-bvif-hack2
+     ;equal-of-bvif-hack
+     ;equal-of-bvif-hack2
      bvchop-equal-when-bvlt-hack
      bvchop-equal-when-bvlt-hack-32
 ;     bvplus-trim-constant-arg1
@@ -2315,7 +2352,7 @@
      bvplus-minus-3-tighten-4
 ;sbvdiv-rewrite ;trying
      slice-31-2-minus-4
-     getbit-of-+
+     getbit-of-+-becomes-getbit-of-bvplus
      bvplus-minus-7-tighten-30
      unsigned-byte-p-of-plus-minus-4-gen-dag
      equal-1-slice-4-2-5
@@ -2642,7 +2679,7 @@
      sbvlt-of-0-and-bvplus-of-bvuminus-one-bigger-alt
      bvminus-becomes-bvplus-of-bvuminus
      sbvlt-becomes-bvlt-better
-     ubp-longer-better ;what else?  all predicates should be safe to include?
+     unsigned-byte-p-when-unsigned-byte-p-smaller ;what else?  all predicates should be safe to include?
      bvlt-tighten-free-alt
      bvlt-tighten-free
      nth-of-cons-constant-version
@@ -2922,7 +2959,6 @@
 
              bvcat-when-top-bit-0-2
              bvcat-when-top-bit-0
-             unsigned-byte-p-of-0-arg1
              nth-of-nil
              equal-of-nil-when-equal-of-len
              move-minus-hack
@@ -3341,7 +3377,7 @@
              bvif-of-myif-arg4
              bvplus-of-plus-arg3
              bvplus-of-plus-arg2
-             slice-of-+ ;ffixme complete set..
+             slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
              <-of-+-of-minus-and-bv
              equal-of-+-of-minus-and-bv
@@ -3819,6 +3855,7 @@
      )))
 
 (defun unroll-spec-rules ()
+  (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops

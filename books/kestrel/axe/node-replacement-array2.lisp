@@ -60,7 +60,7 @@
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -75,7 +75,7 @@
 
 (defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
@@ -101,7 +101,7 @@
 ;; The array doesn't get shorter.
 (defthm bound-on-alen1-of-mv-nth-0-of-assume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -114,7 +114,7 @@
 
 (defthm bound-on-mv-nth-1-of-assume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -130,7 +130,7 @@
 ;; The node-replacement-count does not decrease.
 (defthm bound2-on-mv-nth-1-of-assume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -178,7 +178,7 @@
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -193,7 +193,7 @@
 
 (defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
@@ -220,7 +220,7 @@
 ;; The array doesn't get shorter.
 (defthm bound-on-alen1-of-mv-nth-0-of-assume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -233,7 +233,7 @@
 
 (defthm bound-on-mv-nth-1-of-assume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -250,7 +250,7 @@
 ;; The node-replacement-count does not decrease.
 (defthm bound2-on-mv-nth-1-of-assume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -297,7 +297,7 @@
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -312,7 +312,7 @@
 
 (defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
@@ -339,7 +339,7 @@
 ;; The array doesn't get shorter.
 (defthm bound-on-alen1-of-mv-nth-0-of-unassume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -352,7 +352,7 @@
 
 (defthm bound-on-mv-nth-1-of-unassume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -369,7 +369,7 @@
 ;; The node-replacement-count does not decrease.
 (defthm bound2-on-mv-nth-1-of-unassume-nodenum-true-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -419,7 +419,7 @@
 
 (defthm node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -434,7 +434,7 @@
 
 (defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
@@ -461,7 +461,7 @@
 ;; The array doesn't get shorter.
 (defthm bound-on-alen1-of-mv-nth-0-of-unassume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))
@@ -474,7 +474,7 @@
 
 (defthm bound-on-mv-nth-1-of-unassume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array)
@@ -491,7 +491,7 @@
 ;; The node-replacement-count does not decrease.
 (defthm bound2-on-mv-nth-1-of-unassume-nodenum-false-in-node-replacement-array
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                ;(< nodenum *max-1d-array-length*)
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (< nodenum dag-len)
                 (node-replacement-arrayp 'node-replacement-array node-replacement-array))

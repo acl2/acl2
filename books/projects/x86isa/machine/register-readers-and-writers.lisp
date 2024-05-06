@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2024, Kestrel Technology LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author:
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 (include-book "rflags-spec")
@@ -130,6 +133,30 @@ prefix.</p>"
       (implies (reg-indexp reg rex-byte)
                (unsigned-byte-p 4 reg))
       :rule-classes :forward-chaining)))
+
+;; ----------------------------------------------------------------------
+
+(define vex-vvvv-reg-index ((vvvv :type (unsigned-byte 4)))
+  :returns (index natp)
+  :parents (register-readers-and-writers)
+  :short "Register index specified by the VEX.vvvv bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The VEX.vvvv bits specify a register index
+     in inverted (i.e. ones' complement) form:
+     see Intel Manual Volume 2 Section 2.3.6 (Dec 2023).
+     We introduce this function to perform the ones' complement,
+     for greater abstraction."))
+  (loghead 4 (lognot vvvv))
+  ///
+
+  (defthm-unsigned-byte-p n04p-of-vex-vvvv-reg-index
+    :hyp t
+    :bound 4
+    :concl (vex-vvvv-reg-index vvvv)
+    :gen-linear t
+    :gen-type t))
 
 ;; ----------------------------------------------------------------------
 
@@ -1157,7 +1184,7 @@ pointer, or opcode registers\).</em></p>"
                              (force (force))))))
 
   (define zmmi-size
-    ((nbytes :type (unsigned-byte 5))
+    ((nbytes :type (unsigned-byte 7))
      (index  :type (unsigned-byte 5))
      x86)
     :enabled t
@@ -1175,7 +1202,7 @@ pointer, or opcode registers\).</em></p>"
        0)))
 
   (define !zmmi-size
-    ((nbytes :type (unsigned-byte 5))
+    ((nbytes :type (unsigned-byte 7))
      (index  :type (unsigned-byte 5))
      (val    :type integer)
      x86

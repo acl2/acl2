@@ -26,12 +26,14 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)
+(include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "known-booleans")
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
@@ -52,7 +54,16 @@
 (add-known-boolean sbvlt)
 (add-known-boolean bvle)
 (add-known-boolean sbvle)
+(add-known-boolean bvgt)
+(add-known-boolean sbvgt)
+(add-known-boolean bvge)
+(add-known-boolean sbvge)
+(add-known-boolean bvequal)
 (add-known-boolean unsigned-byte-p-forced)
+
+;justifies adding unsigned-byte-p-forced to the list of known predicates
+(defthmd booleanp-of-unsigned-byte-p-forced
+  (booleanp (unsigned-byte-p-forced size x)))
 
 (defthmd <-of-constant-when-unsigned-byte-p
   (implies (and (syntaxp (quotep k))
@@ -926,6 +937,9 @@
            (equal (acl2-numberp x)
                   t))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
+(defthmd acl2-numberp-of-logext
+  (acl2-numberp (logext size i)))
 
 ;fixme more like this for other ops?!
 (defthmd bvxor-tighten-axe-bind-and-bind
@@ -2140,7 +2154,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; not really a bv rule
+;; not really bv rules...
 ;; Only needed by Axe
-(defthmd integerp-of-logior
-  (integerp (logior x y)))
+
+(defthmd integerp-of-logand (integerp (logand x y)))
+(defthmd integerp-of-logior (integerp (logior x y)))
+(defthmd integerp-of-logxor (integerp (logxor x y)))
+
+(def-constant-opener acl2::logmask$inline)
+(def-constant-opener acl2::binary-logand)
