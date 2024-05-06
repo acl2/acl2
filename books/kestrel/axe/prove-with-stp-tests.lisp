@@ -371,3 +371,6 @@
 (must-not-prove-with-stp type-issue1 '(equal (bvxor size y z) (bvxor size z y)))
 
 (must-prove-with-stp overlap '(if (equal (bitxor x y) 0) t (if (equal (bitxor x y) 1) t nil)))
+
+(must-prove-with-stp bvequal1 '(bvequal 32 x x))
+(must-prove-with-stp bvequal2 '(equal (bvequal 32 x y) (bvequal 32 y x)))

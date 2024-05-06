@@ -847,6 +847,7 @@
 (thm (equal (bvnot size (bvchop size x)) (bvnot size x)))
 
 ;; First of the 2 args:
+(thm (equal (bvequal size (bvchop size x) y) (bvequal size x y)))
 (thm (equal (bvplus size (bvchop size x) y) (bvplus size x y)))
 (thm (equal (bvminus size (bvchop size x) y) (bvminus size x y)))
 (thm (equal (bvmult size (bvchop size x) y) (bvmult size x y)))
@@ -863,6 +864,7 @@
 (thm (implies (posp size) (equal (sbvle size (bvchop size x) y) (sbvle size x y))))
 
 ;; Second of the 2 args:
+(thm (equal (bvequal size x (bvchop size y)) (bvequal size x y)))
 (thm (equal (bvplus size x (bvchop size y)) (bvplus size x y)))
 (thm (equal (bvminus size x (bvchop size y)) (bvminus size x y)))
 (thm (equal (bvmult size x (bvchop size y)) (bvmult size x y)))
@@ -965,7 +967,7 @@
                (make-bv-type (unquote (first dargs)))
              nil))
           ;; todo: add bvequal (once we can translate it):
-          ((member-eq fn '(bvplus bvminus bvmult bvand bvor bvxor bvdiv bvmod sbvdiv sbvrem bvlt bvle sbvlt sbvle)) ; (<fn> <size> <arg1> <arg2>)
+          ((member-eq fn '(bvequal bvplus bvminus bvmult bvand bvor bvxor bvdiv bvmod sbvdiv sbvrem bvlt bvle sbvlt sbvle)) ; (<fn> <size> <arg1> <arg2>)
            (if (and (eql 3 (len dargs))
                     (darg-quoted-posp (first dargs)) ; posp may be needed for sbvlt/sbvle
                     ;; ok if NODENUM is both BV args:
@@ -1039,7 +1041,7 @@
           ((eq fn 'bv-array-read) ; (bv-array-read <element-size> <len> <index> <data>)
            (if (and (eql 4 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs))
+                    (darg-quoted-integerp (second dargs))
                     (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                (union-types (if (eql nodenum (third dargs))
@@ -1055,7 +1057,7 @@
           ((eq fn 'bv-array-write) ; (bv-array-write <element-size> <len> <index> <val> <data>)
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs)) ; todo: what about len =1 (disallowed elsewhere)?
+                    (darg-quoted-integerp (second dargs)) ; todo: what about len =1 (disallowed elsewhere)?
                     (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                ;; if nodenum appears as an array and a BV, we'll get
@@ -1076,7 +1078,7 @@
           ((eq 'bv-array-if fn) ; (bv-array-if <element-width> <len> <test> <then> <else>)
            (if (and (eql 5 (len dargs))
                     (darg-quoted-posp (first dargs))
-                    (darg-quoted-posp (second dargs))
+                    (darg-quoted-integerp (second dargs))
                     (<= 2 (unquote (second dargs))) ;new, since an array of length 1 would have a 0-bit index
                     )
                (union-types (if (eql nodenum (third dargs))
@@ -1280,12 +1282,13 @@
                 (<= (unquote (second args))
                     (unquote (first args)))
                 (bv-arg-okp (third args))))
-    ((bvand bvor bvxor
-            bvplus bvminus bvmult
-            bvdiv bvmod
-            sbvdiv sbvrem
-            bvlt bvle
-            sbvlt sbvle)
+    ((bvequal
+       bvand bvor bvxor
+       bvplus bvminus bvmult
+       bvdiv bvmod
+       sbvdiv sbvrem
+       bvlt bvle
+       sbvlt sbvle)
      (and (= 3 (len args))
           (darg-quoted-posp (first args))
           (bv-arg-okp (second args))
@@ -1317,7 +1320,7 @@
     ((bv-array-read) ; (bv-array-read element-width len index data)  ;new (ffixme make sure these get translated right: consider constant array issues):
      (if (and (= 4 (len args))                ;todo: speed up checks like this?
               (darg-quoted-posp (first args)) ; disallows 0 width
-              (darg-quoted-natp (second args))
+              (darg-quoted-integerp (second args))
               (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits
               )
          (let* ((data-arg (fourth args))
@@ -1339,7 +1342,7 @@
     ((bv-array-write) ; (bv-array-write element-size len index val data) ;new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
-              (darg-quoted-natp (second args))
+              (darg-quoted-integerp (second args))
               (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          t
@@ -1349,7 +1352,7 @@
     ((bv-array-if) ;very new (ffixme make sure these get translated right - consider constant array issues):
      (if (and (= 5 (len args))
               (darg-quoted-posp (first args))
-              (darg-quoted-natp (second args))
+              (darg-quoted-integerp (second args))
               (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
               )
          (let ((type (make-bv-array-type (unquote (first args)) (unquote (second args)))))
@@ -2619,6 +2622,11 @@
   ;; we prove (or (not <hyp1>) (not <hyp2>) ... (not <hypn>) conc):
   (prove-node-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
                                    dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
+
+(defthm w-of-mv-nth-1-of-prove-node-implication-with-stp
+  (equal (w (mv-nth 1 (prove-node-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prove-node-implication-with-stp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

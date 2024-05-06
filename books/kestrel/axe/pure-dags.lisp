@@ -108,12 +108,13 @@
                   (<= (unquote (second dargs))
                       (unquote (first dargs)))
                   (bv-arg-okp (third dargs))))
-      ((bvand bvor bvxor
-              bvplus bvminus bvmult
-              bvdiv bvmod
-              sbvdiv sbvrem
-              bvlt bvle
-              sbvlt sbvle)
+      ((bvequal
+         bvand bvor bvxor
+         bvplus bvminus bvmult
+         bvdiv bvmod
+         sbvdiv sbvrem
+         bvlt bvle
+         sbvlt sbvle)
        (and (= 3 (len dargs))
             (darg-quoted-posp (first dargs))
             (bv-arg-okp (second dargs))

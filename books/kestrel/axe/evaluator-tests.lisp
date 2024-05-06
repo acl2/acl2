@@ -1,7 +1,7 @@
 ; Tests of the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1032,6 +1032,9 @@
                                               T
                                               (BVLT-UNGUARDED
                                                ARG1 ARG2 ARG3))
+                                            (IF
+                                             (EQ 'BVequal FN)
+                                             (MV T (BVequal-UNGUARDED ARG1 ARG2 ARG3))
                                              (IF
                                               (EQ 'BVPLUS-LST FN)
                                               (MV
@@ -1103,7 +1106,7 @@
                                                         ARG3))
                                                       (MV
                                                        NIL
-                                                       NIL)))))))))))))))))))))))))))) ;)
+                                                       NIL))))))))))))))))))))))))))))) ;)
                            )))))))))))
                (LET
                 ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
@@ -2466,6 +2469,9 @@
                                                          T
                                                          (BVLT-UNGUARDED
                                                              ARG1 ARG2 ARG3))
+                                                       (IF
+                                                        (EQ 'BVequal FN)
+                                                        (MV T (BVequal-UNGUARDED ARG1 ARG2 ARG3))
                                                         (IF
                                                          (EQ 'BVPLUS-LST FN)
                                                          (MV
@@ -2536,7 +2542,7 @@
                                                                     ARG3))
                                                                  (MV
                                                                   NIL
-                                                                  NIL))))))))))))))))))))))))))))
+                                                                  NIL)))))))))))))))))))))))))))))
 ;)
                                       )))))))))))
                           (LET

@@ -59,6 +59,8 @@
 (include-book "axe-syntax-functions-bv") ;for maybe-get-type-of-bv-function-call, todo reduce
 (include-book "conjunctions-and-disjunctions") ;for possibly-negated-nodenumsp
 (include-book "kestrel/bv/defs" :dir :system) ;todo: make sure this book includes the definitions of all functions it translates.
+(include-book "kestrel/bv/leftrotate32" :dir :system) ; todo: split out the def
+(include-book "kestrel/bv/bvequal" :dir :system)
 ;(include-book "kestrel/bv/getbit-def" :dir :system)
 ;(include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
@@ -76,6 +78,8 @@
 (include-book "kestrel/file-io-light/write-strings-to-file-bang" :dir :system) ;; todo reduce, just used to clear a file
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 ;(in-theory (disable revappend-removal)) ;caused problems (though this may be a better approach to adopt someday)
+(local (include-book "kestrel/bv/bvdiv" :dir :system))
+(local (include-book "kestrel/bv/bvmod" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system)) ;for character-listp-of-take
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -543,7 +547,7 @@
 (defund pad-with-zeros (numzeros bv-string-tree)
   (declare (xargs :guard (and (natp numzeros)
                               (string-treep bv-string-tree))))
-  (if (zp numzeros)
+  (if (zp numzeros) ; todo: make a version that skips this check, when we know if fails
       bv-string-tree
     (list* "("
            (translate-bv-constant 0 numzeros) ;bozo don't need to recompute each time...
@@ -639,6 +643,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Translates the arg, with padding (but not chopping) as needed to make it have size DESIRED-SIZE.
 ;; Returns a string-tree.
 ;Looks up the size of the arg and pads as appropriate
 ;ffffixme change this to chop and skip all the chops in the callers!
@@ -669,10 +674,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Translates DARG, with padding or chopping as needed to make it have size DESIRED-SIZE.
 ;; Returns a string-tree.
-;Looks up the size of the arg and pads or chops as appropriate
 ;; TODO: Justify the chopping for all operators whose translation uses this.
-;; todo: use this much more
+;; todo: use this more
 (defund translate-bv-arg2 (darg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dargp-less-than darg dag-len)
@@ -1108,6 +1113,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Theorems justifying the translation:
+(thm (equal (bvdiv size x 0) 0))
+(thm (equal (bvmod size x 0) (bvchop size x)))
+(thm (implies (natp amt) (equal (leftrotate32 amt x) (leftrotate32 (mod amt 32) x))))
+(thm (equal (leftrotate32 0 x) (bvchop 32 x)))
+
 ;; Returns (mv translated-expr-string constant-array-info).
 ;; (defun translate-dag-expr-bvplus (args dag-array-name dag-array constant-array-info cut-nodenum-type-alist)
 ;;   (declare (xargs :guard (and (array1p dag-array-name dag-array) ;;TODO: Instead, use pseudo-dag-arrayp.
@@ -1134,7 +1145,7 @@
 
 ;; Returns (mv translated-expr constant-array-info) where translated-expr is a string-tree.
 ;FFIXME think hard about sizes and chops..
-;add support for leftrotate (not just leftrotate32? width may need to be a power of 2?), etc.?
+;todo: add support for leftrotate (not just leftrotate32). width may need to be a power of 2
 ;fixme the calls to safe-unquote below can cause crashes??
 ;thread through an accumulator?
 ;should this take a desired size (or type?) for the expr?
@@ -1332,6 +1343,20 @@
                            "])")
                     constant-array-info))
             (mv (erp-t) nil constant-array-info)))
+        (bvequal ; (bvequal size x y)
+          (if (and (= 3 (len (dargs expr)))
+                   (darg-quoted-posp (darg1 expr))
+                   (bv-arg-okp (darg2 expr))
+                   (bv-arg-okp (darg3 expr)))
+              (let* ((width (unquote (darg1 expr))))
+                (mv (erp-nil)
+                    (list* "("
+                           (translate-bv-arg2 (darg2 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                           " = "
+                           (translate-bv-arg2 (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                           ")")
+                    constant-array-info))
+            (mv (erp-t) nil constant-array-info)))
         (bvand ;; (bvand size x y)
           (if (and (= 3 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
@@ -1431,7 +1456,7 @@
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr))))
                 (mv (erp-nil)
-                    (list* "(IF (" ;if the third arg is 0, then the bvdiv is 0 (todo: add THM above to justify this)
+                    (list* "(IF (" ;if the third arg is 0, then the bvdiv is 0 (see thm above)
                            (translate-bv-arg2 (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "="
                            (translate-bv-constant 0 width)
@@ -1455,7 +1480,7 @@
                    (bv-arg-okp (darg3 expr)))
               (let* ((width (unquote (darg1 expr))))
                 (mv (erp-nil)
-                    (list* "(IF (" ;if the third arg is 0, then the bvmod is bvchop of its second argument (todo: add THM above to justify this)
+                    (list* "(IF (" ;if the third arg is 0, then the bvmod is bvchop of its second argument (see thm above)
                            (translate-bv-arg2 (darg3 expr) width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                            "="
                            (translate-bv-constant 0 width)
@@ -1533,7 +1558,7 @@
             (mv (erp-t) nil constant-array-info)))
         (bvle ;; (bvle size x y)
           ;; TODO: Consider omitting this and instead introducing bvlt through rewriting
-          ;;fixme either drop this or add support for the other operators: bvge, etc. (same for the signed comparisons)
+          ;; Or add support for the other operators: (bvgt, bvge).
           (if (and (= 3 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
                    (bv-arg-okp (darg2 expr))
@@ -1564,6 +1589,7 @@
             (mv (erp-t) nil constant-array-info)))
         (sbvle ;; (sbvle size x y)
           ;; TODO: Consider omitting this and instead introducing sbvlt through rewriting
+          ;; Or add support for the other operators: (sbvgt, sbvge).
           (if (and (= 3 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
                    (bv-arg-okp (darg2 expr))
@@ -1593,7 +1619,7 @@
             (mv (erp-t) nil constant-array-info)))
         (bvsx ;; (bvsx new-size old-size val)
           (if (and (= 3 (len (dargs expr)))
-                   (darg-quoted-natp (darg1 expr)) ;can this be 0?
+                   (darg-quoted-integerp (darg1 expr))
                    (darg-quoted-posp (darg2 expr))
                    (<= (unquote (darg2 expr)) (unquote (darg1 expr)))
                    (bv-arg-okp (darg3 expr)))
@@ -1629,22 +1655,21 @@
                          )
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        (leftrotate32 ;; (leftrotate32 amt val) where amt is a constant
-          ;; todo: handle leftrotate with any power of 2 size?
+        (leftrotate32 ; (leftrotate32 rotate-amount val) where amt is a constant
           (if (and (= 2 (len (dargs expr)))
-                   (darg-quoted-natp (darg1 expr)) ;todo: think about 0
+                   (darg-quoted-natp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
-              (let* ((shift-amt (unquote (darg1 expr))) ;fixme what if it's not a natp?
-                     (shift-amt (mod shift-amt 32)))
-                (if (= 0 shift-amt) ;in this case, it's just like bvchop (handling 0 separately avoids an error in the main case, a slice of [31:32])
+              (let* ((rotate-amount (unquote (darg1 expr)))
+                     (rotate-amount (mod rotate-amount 32)))
+                (if (= 0 rotate-amount) ;in this case, it's just like bvchop (handling 0 separately avoids an error in the main case, a slice of [31:32])
                     (mv (erp-nil)
-                        (list* "("
-                               (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)
-                               "[31:0])")
+                        (list* "(" ; todo: drop these parens?
+                               (translate-bv-arg2 (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)
+                               ")")
                         constant-array-info)
                   ;;main case:
-                  (let ((low-slice-size (- 32 shift-amt))
-                        ;;high-slice-size is shift-amt
+                  (let ((low-slice-size (- 32 rotate-amount))
+                        ;;high-slice-size is rotate-amount
                         (translated-arg (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)))
                     (mv (erp-nil)
                         (list* "("
@@ -1718,7 +1743,7 @@
           ;;fixme handle arrays with non-constant lengths? will have to think about array lengths that are not powers of 2.  may need to translate ceiling-of-lg...
           (if (and (= 5 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
-                   (darg-quoted-natp (darg2 expr))
+                   (darg-quoted-integerp (darg2 expr))
                    (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                    (bv-arg-okp (darg3 expr))
                    (bv-arg-okp (darg4 expr))
@@ -1761,7 +1786,7 @@
         (bv-array-if ; (bv-array-if element-width length test thenpart elsepart)
           (if (and (= 5 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
-                   (darg-quoted-natp (darg2 expr))
+                   (darg-quoted-integerp (darg2 expr))
                    (<= 2 (unquote (darg2 expr))) ;arrays of length 1 would have 0 index bits
                    (boolean-arg-okp (darg3 expr))
                    (bv-array-arg-okp (unquote (darg2 expr)) (darg4 expr))
