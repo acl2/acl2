@@ -167,12 +167,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Represents the type of a value for testing purposes (see also axe-typep).
 (defund test-case-typep (type)
   (declare (xargs :guard t
                   :hints (("Goal" :in-theory (enable list-type-len-type
                                                      list-type-element-type
                                                      list-typep)))))
-  (or (myquotep type)
+  (or (myquotep type) ; a quoted constant (type is a singleton set containing that value)
       (symbolp type) ; look up a previous val -- todo: tag this?
       ;; todo: (boolean-typep type)
       (bv-typep type)
