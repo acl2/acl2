@@ -37,6 +37,8 @@
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "std/strings/cat-base" :dir :system)
 (include-book "clause-processors/meta-extract-user" :dir :system)
+(include-book "clause-processors/just-expand" :dir :system)
+(include-book "centaur/misc/evaluator-metatheorems" :dir :system)
 
 (defun function-deps (fn wrld)
   (b* ((body (getpropc fn 'acl2::unnormalized-body nil wrld)))
@@ -128,6 +130,7 @@
           (formals-subsubsts (cdr formals)))))
 
 (defun def-formula-check-definition-thm-fn-aux (name-lst evl flags
+                                                         equivs-thm
                                                          formula-check switch-hyps wrld)
   (declare (xargs :mode :program))
   (cond
@@ -138,7 +141,7 @@
          (formals (acl2::formals name wrld))
          ((mv rest-lemma rest-hint rest-defthm)
           (def-formula-check-definition-thm-fn-aux
-            (cdr name-lst) evl flags formula-check switch-hyps wrld))
+            (cdr name-lst) evl flags equivs-thm formula-check switch-hyps wrld))
          (flag (if flags `(:flag ,(cdr (assoc-equal name flags))) nil))
 
          ((list lemma hint defthm)
@@ -152,6 +155,22 @@
                         (equal (<evl> '(<name> . <formals>)
                                       (list (:@proj <formals> (cons '<formal> <formal>))))
                                (<name> . <formals>)))
+               :hints ('(:use ((:instance <evl>-meta-extract-formula
+                                (acl2::name '<name>)
+                                (acl2::a
+                                 (list (:@proj <formals> (cons '<formal> <formal>))))
+                                (acl2::st state))))
+                       (and stable-under-simplificationp
+                            (let* ((hints (acl2::just-expand-cp-parse-hints
+                                           '((:free <formals>
+                                              (<name> . <formals>)))
+                                           (w state))))
+                              `(:computed-hint-replacement
+                                ('(:in-theory (enable <evl>-of-fncall-args
+                                                      acl2::expand-marked-meta
+                                                      <equiv-thm>)))
+                                :clause-processor (acl2::mark-expands-cp
+                                                   clause '(t nil ,hints))))))
                ,@flag)
 
              (:instance <evl>-meta-extract-formula
@@ -175,7 +194,8 @@
            :atom-alist `((<name> . ,name)
                          (<evl> . ,evl)
                          (<formula-check> . ,formula-check)
-                         (<formals> . ,formals))
+                         (<formals> . ,formals)
+                         (<equiv-thm> . ,equivs-thm))
            :subsubsts `((<formals> . ,(formals-subsubsts formals)))
            :pkg-sym formula-check)))
       (mv (cons lemma rest-lemma)
@@ -199,12 +219,23 @@
                    (equal (<evl> (list '<name> . <formals>) env)
                           (<name> (:@proj <formals>
                                           (<evl> <formal> env)))))
-          :hints(("Goal" :in-theory (enable <evl>-of-fncall-args <name>)
+          :hints(("Goal" :in-theory '(acl2::assoc-equal-of-cons-when-keys-known
+                                      formula-checker-lemmas)
                   :use ((:instance <evl>-meta-extract-formula
                                    (acl2::name '<name>)
                                    (acl2::a (list (:@proj <formals>
                                                           (CONS '<formal> (<evl> <formal> env)))))
-                                   (acl2::st state)))))))
+                         (acl2::st state))))
+                 (and stable-under-simplificationp
+                      (let* ((hints (acl2::just-expand-cp-parse-hints
+                                     '((:free <formals>
+                                        (<name> . <formals>)))
+                                     (w state))))
+                        `(:computed-hint-replacement
+                          ('(:in-theory (enable <evl>-of-fncall-args
+                                                acl2::expand-marked-meta)))
+                          :clause-processor (acl2::mark-expands-cp
+                                             clause '(t nil ,hints))))))))
       ((equal (len recursivep) 1)
        '(encapsulate nil
           (local (defthmd <evl>-of-<name>-lemma
@@ -213,17 +244,23 @@
                             (equal (<evl> '(<name> . <formals>)
                                           (list (:@proj <formals> (cons '<formal> <formal>))))
                                    (<name> . <formals>)))
-                   :hints(("Goal" :in-theory (enable <name>)
+                   :hints(("Goal" :in-theory (enable (:i <name>))
                            :induct (<name> . <formals>)
                            :do-not-induct t)
+                          (let* ((hints (acl2::just-expand-cp-parse-hints
+                                         '((<name> . <formals>))
+                                         (w state))))
+                            `(:clause-processor (acl2::mark-expands-cp
+                                                 clause '(t nil ,hints))))
                           '(:use ((:instance <evl>-meta-extract-formula
                                              (acl2::name '<name>)
                                              (acl2::a
                                               (list (:@proj <formals> (cons '<formal> <formal>))))
-                                             (acl2::st state)))
-                                 :do-not-induct t
-                                 :in-theory (e/d (<evl>-of-fncall-args <name>)
-                                                 (<evl>-meta-extract-formula))))))
+                                   (acl2::st state))))
+                          
+                          (and stable-under-simplificationp
+                               '(:in-theory (e/d (<evl>-of-fncall-args
+                                                       acl2::expand-marked-meta)))))))
 
           (defthm <evl>-of-<name>-when-<formula-check>
             (implies (:@ :switch-hyps
@@ -247,11 +284,13 @@
                  (hard-error 'def-formula-checks
                              "You need to have make-flag for ~p0 ~%"
                              (list (cons #\0 recursivep)))))
+            (flag-fn (nth 1 entry))
             (flags (nth 2 entry))
             (macro-name (nth 3 entry))
-            ((mv lemmas lemma-hints defthms)
+            (equivs-thm (nth 4 entry))
+            ((mv lemmas ?lemma-hints defthms)
              (def-formula-check-definition-thm-fn-aux
-               recursivep evl flags formula-check switch-hyps wrld)))
+               recursivep evl flags equivs-thm formula-check switch-hyps wrld)))
          `(encapsulate
             nil
             (local
@@ -259,11 +298,14 @@
               ,@lemmas
               :hints (("Goal"
                        :do-not-induct t
-                       :in-theory (e/d ,recursivep ()))
-                      '(:use ,lemma-hints
-                             :in-theory (e/d (<evl>-of-fncall-args
-                                              . ,recursivep) ())
-                             :do-not-induct t))))
+                       :in-theory (e/d ((:i ,flag-fn)
+                                        acl2::assoc-equal-of-cons-when-keys-known
+                                      formula-checker-lemmas) ()))
+                      ;; '(:use ,lemma-hints
+                      ;;        :in-theory (e/d (<evl>-of-fncall-args
+                      ;;                         . ,recursivep) ())
+                      ;;        :do-not-induct t)
+                      )))
             ,@defthms))))
      :str-alist `(("<NAME>" . ,(symbol-name name))
                   ("<EVL>" . ,(symbol-name evl))
@@ -428,12 +470,31 @@
             (car warranted-fns))
            (formula-checks-get-warranted-fns-lemma-names (cdr warranted-fns)))))
 
+(defthmd assoc-equal-of-pairlis$-known-keys
+  (implies (and (syntaxp (quotep k))
+                (consp keys)
+                (equal key1 (car keys))
+                (syntaxp (quotep key1)))
+           (equal (cdr (assoc-equal k (pairlis$ keys vals)))
+                  (if (equal k key1)
+                      (car vals)
+                    (cdr (assoc-equal k (pairlis$ (cdr keys) (Cdr vals)))))))
+  :hints(("Goal" :in-theory (enable assoc-equal pairlis$))))
+
 (defun def-formula-checks-fn (name fns warranted-fns evl evl-base-fns switch-hyps skip wrld)
   (declare (xargs :mode :program))
   (b* ((evl-base-fns (if evl-base-fns evl-base-fns
                        (cdr (assoc-equal 'evl-base-fns
                                          (table-alist 'formula-checks-eval wrld)))))
        (evl (if evl evl (cdr (assoc-equal 'evl (table-alist 'formula-checks-eval wrld)))))
+       (evl-lst (b* ((sibs (fgetprop evl 'acl2::siblings nil wrld))
+                     (sib (remove-eq evl sibs)))
+                  (and (not (and (consp sib)
+                                 (symbolp (car sib))
+                                 (not (cdr sib))))
+                       (er hard? 'def-formula-checks-fn "Unexpected siblings for evaluator ~x0: ~x1~%" evl sibs))
+                  (car sib)))
+       (formula-alist (acl2::ev-collect-apply-lemmas evl evl-lst wrld))
        (skip (loop$ for s in skip ;; avoid skippping a fn if it is in evl-base-fns
                     when (not (member-equal s evl-base-fns))
                     collect s))
@@ -451,12 +512,31 @@
        (warranted-fns-lemmas (formula-checks-get-warranted-fns-lemma-names warranted-fns)))
     `(encapsulate
        nil
-       (local
-        (in-theory (disable ,@defined-deps)))
-       (local
-        (in-theory (enable assoc-equal)))
+       ;; (local
+       ;;  (in-theory (disable ,@defined-deps)))
+       ;; (local
+       ;;  (in-theory (enable assoc-equal)))
+       (local (in-theory '(,(cdr (assoc :lst-atom formula-alist))
+                           ,(cdr (assoc :lst-cons formula-alist))
+                           ,(cdr (assoc :quote formula-alist))
+                           ,(cdr (assoc :lookup-var formula-alist))
+                           ,(cdr (assoc :expand-fncall formula-alist))
+                           ,(cdr (assoc :lambda formula-alist))
+                           car-cons cdr-cons
+                           ;; functions treated specially by
+                           ;; remove-guard-holders -- may be more
+                           return-last mv-list cons-with-hint
+                           THE-CHECK 
+                           acl2::assoc-equal-of-cons-when-keys-known
+                           assoc-equal-of-pairlis$-known-keys
+                           (kwote-lst))))
+       (local (acl2::def-evaluator-expander ,evl))
        (def-formula-checker ,name ,(append warranted-fns-lemmas defined-deps))
+       (local (deflabel def-formula-checks-pre-checker-lemmas))
        (local (def-formula-checker-lemmas ,name ,(append warranted-fns-lemmas defined-deps)))
+       (local (deftheory formula-checker-lemmas
+                (acl2::set-difference-theories (current-theory :here)
+                                               (current-theory 'def-formula-checks-pre-checker-lemmas))))
        (def-formula-checks-definition-thm-list ',defined-deps ,evl ,name ,switch-hyps ,skip)
        (def-formula-check-warrant-thm-list ,warranted-fns ,evl ,name ,switch-hyps))))
 

@@ -1043,7 +1043,8 @@ one such form may affect what you might think of as the proof of another.</p>
                               nil))
                    (expands (if (and (consp rhs)
                                      (member (car rhs) fns))
-                                (cons rhs expands)
+                                (cons `(:with ,(car rhs) ,rhs)
+                                      expands)
                               expands)))
               (and expands
                    `(:expand (:lambdas . ,expands)))))
