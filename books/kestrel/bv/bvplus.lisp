@@ -474,3 +474,15 @@
   (equal (bvplus size x (expt 2 size))
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm equal-of-bvchop-and-bvplus-cancel-1
+  (equal (equal (bvchop size x) (bvplus size x y))
+         (equal 0 (bvchop size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
+
+(defthm equal-of-bvplus-and-bvchop-cancel-1
+  (equal (equal (bvplus size x y) (bvchop size x))
+         (equal 0 (bvchop size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
