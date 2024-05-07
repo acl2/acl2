@@ -127,7 +127,9 @@ more discussion below.</p>
                :flag-var flag
                :body :last                     ; use last body, not original
                :hints ((\"Goal\" ...))         ; for the measure theorem
-                                               ; usually not necessary
+                                               ; (usually not necessary)
+               :expand-with-original-defs t    ; for the equivalence thm
+                                               ; (usually not necessary)
                )
 })
 
@@ -174,6 +176,15 @@ list for @('fn1').  See the community book @('books/tools/flag-tests.lisp') for
 an example of using such a alist for @(':body'), in particular for the purpose
 of using definitions installed with @(tsee acl2::install-not-normalized).</li>
 
+<li>@(':expand-with-original-defs') slightly changes the hints given to the
+theorem proving that each invocation of the new flag function is equal to the
+appropriate call of one of the functions of the clique. After induction on the
+flag function, this theorem uses an expand hint on any call in the conclusion
+of one of the functions. Normally it doesn't specify what definition to expand
+with, but if the @(':expand-with-original-defs') keyword is given then it says
+to expand with the function symbol itself (i.e., the function's original
+definition) in each case. This helps in cases where the proof is disrupted by
+some other definition rule.</li>
 </ul>
 
 
@@ -1045,18 +1056,24 @@ one such form may affect what you might think of as the proof of another.</p>
 
 ; NEW HINT: this more limited hint seems to be better.
 
-(defun flag-expand-computed-hint (stable-under-simplificationp clause fns)
+(defun flag-expand-computed-hint (stable-under-simplificationp
+                                  clause fns
+                                  expand-with-original-defs)
   (and stable-under-simplificationp
        (let ((conclusion (car (last clause))))
          (case-match conclusion
            (('equal lhs rhs)
             (let* ((expands (if (and (consp lhs)
                                      (member (car lhs) fns))
-                                (list lhs)
+                                (list (if expand-with-original-defs
+                                          `(:with ,(car lhs) ,lhs)
+                                        lhs))
                               nil))
                    (expands (if (and (consp rhs)
                                      (member (car rhs) fns))
-                                (cons `(:with ,(car rhs) ,rhs)
+                                (cons (if expand-with-original-defs
+                                          `(:with ,(car rhs) ,rhs)
+                                        rhs)
                                       expands)
                               expands)))
               (and expands
@@ -1120,7 +1137,9 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name
                                   formals-subst
-                                  local ruler-extenders last-body world)
+                                  local ruler-extenders last-body
+                                  expand-with-original-defs
+                                  world)
   (let* ((flag-var (or flag-var
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
          (alist (if flag-mapping
@@ -1205,7 +1224,8 @@ one such form may affect what you might think of as the proof of another.</p>
                                                       ACL2::clause
                                                       ',(cons flag-fn-name
                                                               (strip-cars
-                                                               alist))))))
+                                                               alist))
+                                                      ',expand-with-original-defs))))
           (defthm ,equiv-thm-name
             (and . ,(equiv-theorem-cases flag-fn-name formals alist world))
             :hints(("Goal" :in-theory (union-theories
@@ -1227,6 +1247,7 @@ one such form may affect what you might think of as the proof of another.</p>
     :defthm-macro-name
     :local
     :ruler-extenders
+    :expand-with-original-defs
     :body))
 
 (defun make-flag-dwim (args world)
@@ -1265,6 +1286,7 @@ one such form may affect what you might think of as the proof of another.</p>
                   (cdr (assoc :local kwd-alist))
                   (cdr (assoc :ruler-extenders kwd-alist))
                   (cdr (assoc :body kwd-alist))
+                  (cdr (assoc :expand-with-original-defs kwd-alist))
                   world)))
 
 (defmacro make-flag (&rest args)

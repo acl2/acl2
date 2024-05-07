@@ -50,7 +50,8 @@
      (local (in-theory (disable sv::svex-fix-redef)))
      (flag::make-flag sv::svex-fix-flag sv::svex-fix$inline
                       :hints (("goal" :expand ((sv::svex-kind x))))
-                      :defthm-macro-name defthm-svex-fix-flag-local)))
+                      :defthm-macro-name defthm-svex-fix-flag-local
+                      :expand-with-original-defs t)))
 
   (def-formula-checks svex-formula-checks
     (sv::4vmask-to-a4vec-rec-env
