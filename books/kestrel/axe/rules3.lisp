@@ -447,8 +447,6 @@
   :hints (("Goal" :in-theory (e/d (sbvlt logext LOGAPP-0 bvplus BVCHOP-OF-SUM-CASES bvlt getbit-of-plus)
                                   (anti-bvplus TIMES-4-BECOMES-LOGAPP)))))
 
-
-
 (in-theory (disable PLUS-BVCAT-WITH-0-ALT))
 
 ;; (defthm <-of-plus-swap-minuses
@@ -12010,7 +12008,7 @@
                                                          )))))
 
 ;compare to bvplus-of-bvcat-constants
-(defthm bvplus-of-bvcat-constants-hack
+(defthmd bvplus-of-bvcat-constants-hack
   (implies (and (syntaxp (and (quotep k)
                               (quotep k2)
                               (quotep lowsize)))
@@ -13307,26 +13305,7 @@
            (equal (slice 30 2 x)
                   (bvcat 25 (slice 30 6 x) 4 (slice 5 2 free)))))
 
-;slow
-(defthm bvplus-of-bvcat-constants
-  (implies (and (syntaxp (and (quotep k1)
-                              (quotep k2)
-                              (quotep lowsize)))
-                (equal (+ lowsize 25) size)
-                (unsigned-byte-p lowsize k2)
-                (equal 6 lowsize) ;gen!
-                (unsigned-byte-p (+ lowsize 25) k1)
-                (unsigned-byte-p 25 x))
-           (equal (bvplus size k1 (bvcat 25 x lowsize k2))
-                  (bvcat 25 (bvplus 25 (slice (+ lowsize 25) lowsize (+ k1 k2)) x) lowsize (bvchop lowsize (+ k1 k2)))))
-  :hints (("Goal"
-           :use (:instance split-bv (x k1) (n (+ lowsize 25)) (m lowsize))
-           :in-theory (e/d (bvchop-of-sum-cases
-                              slice-of-sum-cases
-                              logapp
-                              bvplus bvcat)
-                           (;bvchop-identity
-                            )))))
+
 
 ;more versions?
 (defthm booland-of-not-of-equal-and-equal-constants
