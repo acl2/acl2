@@ -1,6 +1,6 @@
 ; Pruning irrelevant IF-branches in a DAG
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,7 +45,24 @@
                            use-all-rationalp-for-car
                            consp-from-len-cheap
                            default-+-2
-                           default-cdr)))
+                           default-cdr
+                           member-equal)))
+
+;move
+(local
+  (defthm symbolp-when-member-equal
+    (implies (and (member-equal x lst)
+                  (symbol-listp lst))
+             (symbolp x))
+    :hints (("Goal" :in-theory (enable member-equal)))))
+
+(local
+  (defthm member-equal-of-singleton
+    (implies (and (syntaxp (quotep lst))
+                  (= 1 (len lst)))
+             (iff (member-equal x lst)
+                  (equal x (first lst))))
+    :hints (("Goal" :in-theory (enable member-equal)))))
 
 (defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
   (implies (weak-dagp-aux dag)
@@ -221,10 +238,7 @@
 (defthm w-of-mv-nth-2-of-try-to-resolve-node-with-stp
   (equal (w (mv-nth 2 (try-to-resolve-node-with-stp dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
          (w state))
-  :hints (("Goal" :in-theory (enable try-to-resolve-node-with-stp
-                                     ;;todo:
-                                     prove-node-implication-with-stp
-                                     ))))
+  :hints (("Goal" :in-theory (enable try-to-resolve-node-with-stp))))
 
 (defthm true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
   (implies (and (pseudo-dagp dag)
@@ -265,9 +279,10 @@
                                 t))
                   :guard-hints (("Goal" ;:expand (bounded-weak-dagp-aux dag dag-len)
                                  :do-not '(generalize eliminate-destructors)
-                                 :in-theory (enable ;pseudo-dagp-aux
+                                 :in-theory (e/d (;pseudo-dagp-aux
                                              true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
-                                             car-of-car-when-pseudo-dagp)))
+                                             car-of-car-when-pseudo-dagp)
+                                                 (weak-dagp-aux myquotep))))
                   :stobjs state))
   (if (endp dag)
       (mv (erp-nil) (reverse-list dag-acc) state)
@@ -427,6 +442,7 @@
                              car-of-car-when-pseudo-dagp
                              integer-listp-of-strip-cars-when-weak-dagp-aux)
                             (nth
+                             len-of-cdr
                              member-equal
                              weak-dagp-aux
                              myquotep))))))

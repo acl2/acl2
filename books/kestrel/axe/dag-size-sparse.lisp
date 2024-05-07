@@ -186,9 +186,7 @@
                                      (len worklist))
                   :guard-hints (("Goal" :do-not-induct t
                                  :do-not '(generalize eliminate-destructors)
-                                 :in-theory (e/d ()
-                                                 (consp-from-len-cheap
-                                                  dag-exprp))))))
+                                 :in-theory (disable consp-from-len-cheap dag-exprp)))))
   (if (or (endp worklist)
           ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))

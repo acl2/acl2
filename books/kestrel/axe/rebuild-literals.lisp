@@ -1,7 +1,7 @@
-; Tools to rebuild DAGs while variable substitutions
+; Tools to rebuild DAGs while applying variable substitutions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -485,14 +485,12 @@
                 ;; (not (mv-nth 0 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep)))
                 )
            (nat-listp (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
+  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (natp)))))
 
 (defthm true-listp-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (true-listp literal-nodenums)
            (true-listp (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
+  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (natp)))))
 
 (defthm all-<-of-mv-nth-2-of-rebuild-literals-with-substitution
   (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
@@ -507,5 +505,4 @@
                 )
            (all-< (mv-nth 2 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))
                   (mv-nth 4 (rebuild-literals-with-substitution literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nodenum-to-replace new-nodenum-or-quotep))))
-  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (;REVERSE-REMOVAL
-                                                                                                     natp)))))
+  :hints (("Goal" :in-theory (e/d (rebuild-literals-with-substitution reverse-becomes-reverse-list) (natp)))))

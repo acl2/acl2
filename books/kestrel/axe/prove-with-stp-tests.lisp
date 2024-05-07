@@ -59,7 +59,7 @@
 
 (must-prove-with-stp test19 '(equal (bvmod 32 x 0) (bvchop 32 x)))
 (must-prove-with-stp test20 '(equal (bvmod 32 x 1) 0))
-;(must-prove-with-stp test '(equal (bvmod 32 x 'x) 0)) ;;this was an error - note the quote on the x... fixme should we catch that?
+;(must-prove-with-stp test '(equal (bvmod 32 x 'x) 0)) ;;this was an error - note the quote on the x.  Now we get a warning.
 (must-prove-with-stp test21 '(equal (bvmod 32 x x) 0))
 (must-prove-with-stp test22 '(equal (bvdiv 32 x 0) 0))
 (must-not-prove-with-stp test23 '(equal (bvdiv 32 x 1) 'x))
@@ -83,6 +83,16 @@
 (must-not-prove-with-stp array-out-of-bounds-test '(equal (bv-array-read 8 10 15 (bv-array-write 8 10 15 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
 (must-prove-with-stp array-padding-test '(equal (bv-array-read 8 10 0 (bv-array-write 5 10 0 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
 (must-not-prove-with-stp array-padding-test2 '(equal (bv-array-read 8 10 13 (bv-array-write 5 10 0 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
+
+;; the array elements are narrower than the declared size of 8.  here the array constant probably is a darg of the bv-array-read.
+(must-prove-with-stp array-width-test1 '(equal (bvchop 3 i) (bv-array-read 8 8 (bvchop 3 i) '(0 1 2 3 4 5 6 7))) :print t)
+
+;;variant of the above.  now the constant array is a separate node  the read returns 3 bits and is padded to 8 bits.
+;; this shows why we must translate the array arg of a bv-array-read using widths-must-matchp=nil (the array is 3 bits, but the read is 8 bits).
+(must-prove-with-stp array-width-test2 '(implies (equal v '(0 1 2 3 4 5 6 7)) (equal (bvchop 3 i) (bv-array-read 8 8 (bvchop 3 i) v))) :print t)
+
+;; TODO: Can we get this to pass (array width is "wrong" since it is based on the data in the constant)?
+;; (must-prove-with-stp array-width-test3 '(implies (equal v '(0 1 2 3 4 5 6 7)) (equal v (bv-array-write 8 8 (bvchop 3 i) i v))) :print t)
 
 ;test of extensional arrays:
 (must-prove-with-stp array-test-1 '(implies (and (true-listp x)
@@ -151,12 +161,15 @@
 (must-prove-with-stp leftrotate-example3 '(equal (leftrotate32 1 x) (leftrotate32 33 x)))
 (must-prove-with-stp leftrotate-example4 '(equal (leftrotate32 0 x) (leftrotate32 32 x)))
 (must-prove-with-stp leftrotate-example5 '(implies (unsigned-byte-p 32 x) (equal x (leftrotate32 32 x))))
+(must-prove-with-stp leftrotate-example5b '(equal (leftrotate32 32 x) (bvchop 32 x)))
 
 ;; (prove-clause-with-stp '((not (not (equal (bvplus 32 x y) (bvplus 32 y x))))))
 
 
+;; todo: the evaluation may happen here in these concrete tests before STP is even called:
 
-;; (equal (bvplus 32 0 0) 0)
+(must-prove-with-stp bvplus-concrete (equal (bvplus 32 0 0) 0))
+(must-prove-with-stp bvplus-concrete (equal (bvplus 32 1 -1) 0))
 
 (must-prove-with-stp test28 '(equal (sbvdiv 32 5 3) 1))
 ;; TODO: Add a rewriting pass to get tests like this working again?
@@ -358,3 +371,6 @@
 (must-not-prove-with-stp type-issue1 '(equal (bvxor size y z) (bvxor size z y)))
 
 (must-prove-with-stp overlap '(if (equal (bitxor x y) 0) t (if (equal (bitxor x y) 1) t nil)))
+
+(must-prove-with-stp bvequal1 '(bvequal 32 x x))
+(must-prove-with-stp bvequal2 '(equal (bvequal 32 x y) (bvequal 32 y x)))

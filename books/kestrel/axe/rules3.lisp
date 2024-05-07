@@ -1,7 +1,7 @@
 ; Mixed rules 3
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1241,7 +1241,7 @@
                 (unsigned-byte-p 32 x))
            (equal (bvlt 32 3 x)
                   nil))
-  :hints (("Goal" :in-theory (e/d (bvlt) ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvchop-tighten-when-slice-0
   (implies (and (equal (slice k free x) 0)
@@ -2607,7 +2607,7 @@
 (defthm *-of-bvuminus-hack
   (equal (* 4 (BVUMINUS 2 x))
          (bvmult 4 4 (BVUMINUS 2 x)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm <-of-bvmult-16
   (equal (< (BVMULT '4 x y) '16)
@@ -2617,23 +2617,23 @@
 (defthm bvlt-of-bvmult-hack
   (equal (bvlt 5 (bvmult 4 4 x) 16)
          (bvlt 3 (bvchop 2 x) 4))
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvmult bvlt unsigned-byte-p))))
 
 (defthm bvlt-when-usb-hack
   (implies (unsigned-byte-p 2 x)
            (BVLT '3 x '4))
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) ()))))
+  :hints (("Goal" :in-theory (enable bvmult bvlt unsigned-byte-p))))
 
 (defthmd <-of-bvmult-hack
   (implies (and (unsigned-byte-p 32 z)
                 (unsigned-byte-p 32 x))
            (equal (< (bvmult 4 x y) z)
                   (bvlt 32 (bvmult 4 x y) z)))
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) ( )))))
+  :hints (("Goal" :in-theory (enable bvmult bvlt unsigned-byte-p))))
 
 (defthm bvlt-of-bvmult-31-4-16
   (BVLT '31 (BVMULT '4 x y) '16)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) ( )))))
+  :hints (("Goal" :in-theory (enable bvmult bvlt unsigned-byte-p))))
 
 (defthm bvuminus-bound
   (<= (BVUMINUS 2 X) 3)
@@ -2642,25 +2642,18 @@
 
 (defthm bvlt-of-bvmult-of-bvminus-hack
   (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '14)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (
-                                                                                *-OF-BVUMINUS-HACK ;looped
-
-                                                                                )))))
+  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (*-OF-BVUMINUS-HACK ;looped
+                                                                 )))))
 
 (defthm bvlt-of-bvmult-of-bvminus-hack2
   (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '15)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (
-                                                                                *-OF-BVUMINUS-HACK ;looped
-
-                                                                                )))))
+  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (*-OF-BVUMINUS-HACK ;looped
+                                                                 )))))
 
 (defthm bvlt-of-bvmult-of-bvminus-hack3
-  (equal (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '13)
-         t)
-  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (
-                                                                                *-OF-BVUMINUS-HACK ;looped
-
-                                                                                )))))
+  (BVLT '31 (BVMULT '4 '4 (BVUMINUS '2 x)) '13)
+  :hints (("Goal" :in-theory (e/d (bvmult bvlt unsigned-byte-p) (*-OF-BVUMINUS-HACK ;looped
+                                                                 )))))
 
 ;gen the 1
 (defthm equal-of-plus-one-and-bvplus-one
@@ -3733,7 +3726,7 @@
  (implies (natp size)
           (equal (* 4 (BVPLUS size x y))
                  (bvmult (+ 2 size) 4 (BVPLUS size x y))))
- :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+ :hints (("Goal" :in-theory (enable bvmult))))
 
 ;apply this in a bvplus context - fixme
 (defthmd bvuminus-when-bvchop-gen-for-5
@@ -7982,7 +7975,7 @@
   (implies (UNSIGNED-BYTE-P '3 x)
            (equal (BVMULT '32 '5 x)
                   (BVMULT '6 '5 x)))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (defthm bvlt-of-bvmult-for-sha1-gen
   (implies (and (bvle 5 x 6)
@@ -8415,7 +8408,7 @@
                 (integerp z))
            (equal (bvlt size x (* y z))
                   (bvlt size x (bvmult size y z))))
-  :hints (("Goal" :in-theory (e/d (bvmult) ()))))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 (theory-invariant (incompatible (:definition bvmult) (:rewrite bvlt-of-*-arg3)))
 ;(theory-invariant (incompatible (:definition bvmult) (:rewrite *-of-2-becomes-bvmult)))

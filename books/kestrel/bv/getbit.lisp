@@ -282,8 +282,7 @@
                 (integerp high))
            (equal (getbit n (slice high low x))
                   0))
-  :hints (("Goal" :in-theory (e/d (getbit-too-high)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit-too-high))))
 
 (defthm getbit-when-n-is-negative
   (implies (< n 0)
@@ -291,16 +290,14 @@
                   (getbit 0 x)))
   :hints (("Goal" :in-theory (e/d (getbit)
                                   (bvchop-of-logtail-becomes-slice
-                                   bvchop-1-becomes-getbit
-                                   )))))
+                                   bvchop-1-becomes-getbit)))))
 
 ;todo: open less to prove this?
 (defthm getbit-of-expt-2-n
   (implies (natp n)
            (equal (getbit n (expt 2 n)) 1))
   :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    slice-becomes-bvchop
                                    bvchop-of-logtail-becomes-slice)))))
 
@@ -320,8 +317,7 @@
            (equal (getbit n (mod i (expt 2 j)))
                   (getbit n i)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (
-                                   bvchop-1-becomes-getbit
+                                  (bvchop-1-becomes-getbit
                                    slice-becomes-bvchop
                                    bvchop-of-logtail-becomes-slice)))))
 

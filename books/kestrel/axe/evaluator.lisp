@@ -1,7 +1,7 @@
 ; The main (old-style) Axe evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -516,7 +516,7 @@
 
                          ;many of these call bvchop, whose guard should be improved..
                          (bvplus-lst bvplus-lst arg1 arg2 arg3)
-
+                         (bvequal    bvequal-unguarded arg1 arg2 arg3)  ;see   bvequal-unguarded-correct
                          (bvlt      bvlt-unguarded arg1 arg2 arg3)  ;see    bvlt-unguarded-correct
                          (bvle      bvle-unguarded arg1 arg2 arg3)  ;see    bvle-unguarded-correct
                          (bvxor    bvxor-unguarded arg1 arg2 arg3)  ;see   bvxor-unguarded-correct

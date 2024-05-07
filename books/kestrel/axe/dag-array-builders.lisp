@@ -777,6 +777,7 @@
 ;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; We could rename this to just empty-dag.
 ;; TODO: Use this more?
+;; TODO: Generalize to take in the array names
 (defund empty-dag-array (slack-amount)
   (declare (xargs :guard (and (posp slack-amount)
                               (<= slack-amount *max-1d-array-length*))))
