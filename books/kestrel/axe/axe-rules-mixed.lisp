@@ -719,7 +719,7 @@
                        (sbvlt (+ 1 (max xsize ysize)) (+ (- x) y) (expt 2 n)))))
   :hints (("Goal"
 ;           :cases ((equal 1 (GETBIT 29 X)))
-           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus))))
+           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus sbvlt-rewrite))))
 
 ;move
 (defthm <-of-if-arg1-safe

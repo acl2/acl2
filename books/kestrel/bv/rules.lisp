@@ -5095,7 +5095,7 @@
                   (or (sbvle 32 (- (expt 2 31) k) x)
                       (sbvlt 32 x (- k)))))
   :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus logext-of-plus)
-                                  (sbvlt-rewrite <-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                  (<-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm getbit-of+-of-4294967296
  (implies (integerp x)
@@ -5135,8 +5135,7 @@
                             (x x)
                             (n 32)
                             (m 31)))
-           :in-theory (e/d ( ;; sbvlt-rewrite
-                            sbvlt logext logapp
+           :in-theory (e/d (sbvlt logext logapp
                             logtail
                             BVUMINUS BVMINUS bvlt getbit slice SBVLT-rewrite
                             ;;INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD ;looped
@@ -5227,7 +5226,7 @@
                   (and (sbvlt 32 (- k) x)
                        (sbvlt 32 x (- (expt 2 31) k)))))
   :hints (("Goal" :in-theory (e/d (sbvlt bvplus LOGEXT-CASES BVUMINUS bvminus logext-of-plus)
-                                  (sbvlt-rewrite <-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                  (<-of-logext-and-0-alt BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;trying enabled..
 (defthm <-of-bvplus-of-minus-1
