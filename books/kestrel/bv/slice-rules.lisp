@@ -74,7 +74,7 @@
                               (+ (slice high low x)
                                  (slice high low y)))))))
   :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop expt-of-+)
-                                  ( ;bvlt-of-plus-arg2 bvlt-of-plus-arg1
+                                  ( ;
                                    ;anti-slice
                                    bvchop-of-logtail
                                    ;;logtail-of-sum
@@ -103,5 +103,4 @@
                     (bvchop (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low))) (- (slice high low x)))))))
   :hints (("Goal" :in-theory (e/d (slice bvplus bvchop-of-sum-cases)
                                   (;anti-slice ;anti-bvplus
-;bvlt-of-plus-arg1 bvlt-of-plus-arg2
                                    )))))

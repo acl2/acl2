@@ -225,8 +225,7 @@
                               sbvmoddown-rewrite-case-3
                               sbvmoddown-rewrite-case-4
                               sbvmoddown-rewrite-case-5
-                              sbvlt-rewrite
-                              ))))
+                              sbvlt-rewrite))))
 
 ;todo: gen the 16
 (defthm sbvmoddown-of-16

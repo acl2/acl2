@@ -1044,7 +1044,7 @@
            (equal (bvlt size x k)
                   (not (bvlt size (+ -1 k) x))))
   :hints (("Goal" :cases ((Natp size))
-           :in-theory (e/d (bvlt bvchop-of-sum-cases) (BVLT-OF-PLUS-ARG1)))))
+           :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
 
 ;ex: strengthen 10<x to 11<=x
 (defthmd bvlt-of-constant-arg2
@@ -1054,7 +1054,7 @@
                 (integerp k))
            (equal (bvlt size k x)
                   (not (bvlt size x (+ 1 k)))))
-  :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) (BVLT-OF-PLUS-ARG2)))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
 
 (defthmd bvlt-of-max-arg3
   (implies (and (axe-rewrite-objective 't)

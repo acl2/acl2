@@ -3178,7 +3178,7 @@
 
 
              equal-of-bitxor-and-bitxor-same-6
-             bvplus-of-bvcat-constants
+             ;bvplus-of-bvcat-constants ; trying..
              slice-when-bvchop-known-2
 
              consp-of-group

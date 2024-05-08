@@ -841,7 +841,8 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
@@ -864,7 +865,8 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
@@ -887,7 +889,8 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
@@ -910,7 +913,7 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     ))))
+                                     acl2::sbvlt-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1048,7 +1051,7 @@
                                      acl2::getbit-of-plus
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
-                                     ))))
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jl-condition-of-sub-sf-spec16-and-sub-of-spec16
@@ -1066,7 +1069,7 @@
                                      acl2::getbit-of-plus
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
-                                     ))))
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jl-condition-of-sub-sf-spec32-and-sub-of-spec32
@@ -1084,7 +1087,7 @@
                                      acl2::getbit-of-plus
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
-                                     ))))
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jl-condition-of-sub-sf-spec64-and-sub-of-spec64
@@ -1102,7 +1105,7 @@
                                      acl2::getbit-of-plus
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
-                                     ))))
+                                     acl2::sbvlt-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1122,7 +1125,8 @@
                                      acl2::getbit-of-plus
                                      acl2::logext-cases
                                      bvplus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jnl-condition-of-sub-sf-spec16-and-sub-of-spec16-same
@@ -1140,7 +1144,8 @@
                                      acl2::getbit-of-plus
                                      acl2::logext-cases
                                      bvplus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jnl-condition-of-sub-sf-spec32-and-sub-of-spec32-same
@@ -1156,7 +1161,8 @@
                                      acl2::getbit-of-plus
                                      acl2::logext-cases
                                      bvplus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jnl-condition-of-sub-sf-spec64-and-sub-of-spec64-same
@@ -1173,7 +1179,8 @@
                                      acl2::getbit-of-plus
                                      acl2::logext-cases
                                      bvplus
-                                     bvlt))))
+                                     bvlt
+                                     acl2::sbvlt-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1370,10 +1377,9 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits)
-                                  (;acl2::sbvlt-rewrite
-                                   ;acl2::logext-cases
-                                   )))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits
+                                     acl2::sbvlt-rewrite)
+                                  ()))))
 
 ;nice
 (defthm jnle-condition-of-sub-zf-spec16-and-sub-sf-spec16-and-sub-of-spec16
@@ -1394,7 +1400,8 @@
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
+                                     acl2::equal-of-bvchop-extend
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jnle-condition-of-sub-zf-spec32-and-sub-sf-spec32-and-sub-of-spec32
@@ -1416,7 +1423,8 @@
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
                                      acl2::equal-of-bvchop-extend
-                                     acl2::equal-of-bvchops-when-equal-of-getbits))))
+                                     acl2::equal-of-bvchops-when-equal-of-getbits
+                                     acl2::sbvlt-rewrite))))
 
 ;nice
 (defthm jnle-condition-of-sub-zf-spec64-and-sub-sf-spec64-and-sub-of-spec64
@@ -1437,7 +1445,8 @@
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
-                                     acl2::equal-of-bvchop-extend))))
+                                     acl2::equal-of-bvchop-extend
+                                     acl2::sbvlt-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1699,7 +1708,8 @@
          (sbvle 16 0 x))
   :hints (("Goal" :in-theory (enable jnl-condition
                                      of-spec32
-                                     sf-spec32))))
+                                     sf-spec32
+                                     acl2::sbvlt-rewrite))))
 
 ;rename
 (defthm jnl-condition-rewrite-16b
@@ -1726,7 +1736,7 @@
 (defthm jnl-condition-of-sf-spec64-and-0
   (equal (jnl-condition (sf-spec64 x) 0)
          (sbvle 64 0 x))
-  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition))))
+  :hints (("Goal" :in-theory (enable sf-spec64 of-spec64 jnl-condition acl2::sbvlt-rewrite))))
 
 ;; ;todo: should not be needed if cf-spec is not being opened?
 ;; (defthm jnbe-condition-of-bool->bit-of-<-of-bvchop-and-zf-spec-of-bvplus-of-bvuminus
