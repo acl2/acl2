@@ -60,8 +60,8 @@
                             <-of-bvplus-becomes-bvlt-arg2
                             ;anti-bvplus
                             ;plus-becomes-bvplus
-                            bvlt-of-plus-arg1
-                            bvlt-of-plus-arg2
+
+
                             )))))
 
 ;shouldn't this just go to bvuminus?
@@ -130,8 +130,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (bvplus
 ;;                                    UNSIGNED-BYTE-P-FORCED)
 ;;                                   (anti-bvplus
-;;                                    BVLT-OF-PLUS-ARG1
-;;                                    BVLT-OF-PLUS-ARG2
 ;;                                    PLUS-BECOMES-BVPLUS
 ;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
 ;;                                    )))))
@@ -721,7 +719,7 @@
                        (sbvlt (+ 1 (max xsize ysize)) (+ (- x) y) (expt 2 n)))))
   :hints (("Goal"
 ;           :cases ((equal 1 (GETBIT 29 X)))
-           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus))))
+           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus sbvlt-rewrite))))
 
 ;move
 (defthm <-of-if-arg1-safe

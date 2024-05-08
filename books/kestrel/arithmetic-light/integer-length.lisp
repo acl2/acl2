@@ -232,20 +232,22 @@
 (defthm <-of-expt-2-and-constant
   (implies (and (syntaxp (quotep k))
                 (integerp k) ;gen?
-                (natp i))
+                ;(integerp i)
+                )
            (equal (< (expt 2 i) k)
                   (and (< 0 k)
                        (not (equal k (expt 2 i)))
-                       (< i (integer-length k))))))
+                       (< (ifix i) (integer-length k))))))
 
 ;; or move to expt2.lisp
 (defthm <-of-constant-and-expt-2
   (implies (and (syntaxp (quotep k))
                 (integerp k) ;gen?
-                (natp i))
+                ;(integerp i)
+                )
            (equal (< k (expt 2 i))
                   (or (<= k 0)
-                      (<= (integer-length k) i)))))
+                      (<= (integer-length k) (ifix i))))))
 
 (local
  (defthm integer-length-of-+-of--1-when-power-of-2

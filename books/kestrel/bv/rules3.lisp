@@ -1555,7 +1555,7 @@
   (implies (and (signed-byte-p 32 y))
            (equal (< (logext 32 x) y)
                   (sbvlt 32 x y)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) (SBVLT-REWRITE)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
 
 (theory-invariant (incompatible (:definition sbvlt) (:rewrite <-of-logext-when-signed-byte-p)))
 
@@ -1563,7 +1563,7 @@
   (implies (and (signed-byte-p 32 y))
            (equal (< y (logext 32 x))
                   (sbvlt 32 y x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) (SBVLT-REWRITE)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
 
 (theory-invariant (incompatible (:definition sbvlt) (:rewrite <-of-logext-when-signed-byte-p-alt)))
 
@@ -2056,7 +2056,7 @@
                       t
                     (sbvlt 32 x -1))))
   :hints (("Goal" :in-theory (e/d (sbvlt ;logext getbit slice
-                                   ) (anti-slice sbvlt-rewrite)))))
+                                   ) (anti-slice)))))
 
 ;version for <=?
 (defthmd equal-when-bound-dag
@@ -2082,7 +2082,7 @@
              (expt 2 32)
            (bvchop 32 x)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer)
-                                  (;anti-bvplus ;bvlt-of-plus-arg1 bvlt-of-plus-arg2 plus-becomes-bvplus
+                                  (;anti-bvplus ;  plus-becomes-bvplus
                                    )))))
 
 
@@ -2090,8 +2090,7 @@
   (implies (natp size)
            (equal  (< 0 (logext size x))
                    (sbvlt size 0 x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) (;sbvlt-rewrite
-                                           )))))
+  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
 
 ;rename
 (defthm myif-lemma-arg2
@@ -2118,8 +2117,7 @@
            (equal (BVPLUS 6 y (BVMULT 5 4 x))
                   (BVPLUS 5 y (BVMULT 5 4 x))))
   :hints (("Goal" :in-theory (e/d (bvmult bvplus) (;anti-bvplus
-;                                                   BVLT-OF-PLUS-ARG1
-;                                                  BVLT-OF-PLUS-ARG2
+;
 ;                                                PLUS-BECOMES-BVPLUS
                                                    BVPLUS-OF-BVCHOP-ARG3 ;fixme
                                                    )))))
