@@ -20176,6 +20176,7 @@
                              normalize-xors
                              interpreted-function-alist
                              check-vars
+                             prove-theorem
                              local
                              whole-form
                              state rand result-array-stobj)
@@ -20197,6 +20198,7 @@
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
                               (booleanp check-vars)
+                              (booleanp prove-theorem)
                               (booleanp local))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
@@ -20280,23 +20282,29 @@
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand result-array-stobj)))
        (- (cw "Proof of equivalence succeeded.~%"))
-       ;; make the theorem (TODO: Make this optional):
-       (term1 (dag-or-term-to-term dag-or-term1 state))
-       (term2 (dag-or-term-to-term dag-or-term2 state))
-       (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
-                 (defthmd ,miter-name
-                   (implies (and ,@assumptions)
-                            (equal ,term1
-                                   ,term2)))))
-       ;; The event may include a theorem:
-       (event (if types ;todo: remove this restriction
-                  (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
-                          `(progn))
-                defthm))
-       ;; The event includes a table event for redundancy checking:
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       (prove-theorem (and prove-theorem
+                           (if  types ;todo: remove this restriction
+                                (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
+                                        nil)
+                             t)))
+       ;; Maybe add the theorem to the progn:
+       (event (if prove-theorem
+                  (let* ((term1 (dag-or-term-to-term dag-or-term1 state))
+                         (term2 (dag-or-term-to-term dag-or-term2 state))
+                         (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
+                                    (defthmd ,miter-name
+                                      (implies (and ,@assumptions)
+                                               (equal ,term1
+                                                      ,term2))))))
+                    (extend-progn event defthm))
+                event))
+       ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
        (event (extend-progn event `(value-triple ',miter-name)))
+       ;; Make the whole thing local if instructed:
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand result-array-stobj)))
 
@@ -20324,6 +20332,7 @@
          [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
          [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
          [:check-vars] ;; whether to check that the two DAGs/terms have exactly the same vars
+         [:prove-theorem] ;; whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)
          [:local] ;; whether to make the generated events local
         )
 })
@@ -20351,6 +20360,7 @@
                                     (normalize-xors 't)
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
+                                    (prove-theorem 'nil)
                                     (local 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
@@ -20369,6 +20379,7 @@
                                            ',normalize-xors
                                            ,interpreted-function-alist
                                            ,check-vars
+                                           ,prove-theorem
                                            ,local
                                            ',whole-form
                                            state rand result-array-stobj)))
