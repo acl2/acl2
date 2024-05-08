@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -647,6 +647,13 @@
   (implies (not (acl2-numberp r))
            (equal (expt r i)
                   (if (zip i) 1 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable expt))))
+
+(defthm expt-when-not-integerp-arg1-cheap
+  (implies (not (integerp i))
+           (equal (expt r i)
+                  1))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable expt))))
 
