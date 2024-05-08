@@ -2082,7 +2082,7 @@
              (expt 2 32)
            (bvchop 32 x)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvchop-when-i-is-not-an-integer)
-                                  (;anti-bvplus ;bvlt-of-plus-arg1 bvlt-of-plus-arg2 plus-becomes-bvplus
+                                  (;anti-bvplus ;  plus-becomes-bvplus
                                    )))))
 
 
@@ -2118,8 +2118,7 @@
            (equal (BVPLUS 6 y (BVMULT 5 4 x))
                   (BVPLUS 5 y (BVMULT 5 4 x))))
   :hints (("Goal" :in-theory (e/d (bvmult bvplus) (;anti-bvplus
-;                                                   BVLT-OF-PLUS-ARG1
-;                                                  BVLT-OF-PLUS-ARG2
+;
 ;                                                PLUS-BECOMES-BVPLUS
                                                    BVPLUS-OF-BVCHOP-ARG3 ;fixme
                                                    )))))

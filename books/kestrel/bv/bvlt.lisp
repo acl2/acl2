@@ -437,8 +437,7 @@
            (bvlt size x (+ -1 (expt 2 size))))
   :hints (("Goal" :use (:instance bvlt-transitive-core-1 (free free) (y (+ -1 (expt 2 size))))
            :in-theory (e/d (zp)
-                           (;BVLT-OF-PLUS-ARG2
-                            bvlt-transitive-1-a
+                           (bvlt-transitive-1-a
                             bvlt-transitive-2-a
                             bvlt-transitive-1-b
                             bvlt-transitive-2-b
