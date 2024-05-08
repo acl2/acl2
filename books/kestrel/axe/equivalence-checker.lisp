@@ -20156,10 +20156,11 @@
                        ,@(clear-key-in-keyword-value-list :test-case-count
                                                           (clear-key-in-keyword-value-list :input-type-alist rest))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
 ;; Returns (mv erp event state rand result-array-stobj).
-;; TODO: Auto-generate the name
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
@@ -20271,7 +20272,7 @@
                           ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
-       ;; Remove the tempp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
+       ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
                            (mv erp nil state rand result-array-stobj)))
@@ -20306,37 +20307,40 @@
 
 @({
      (prove-equivalence
-        dag1                   ;; The first DAG or term to compare
-        dag2                   ;; The second DAG or term to compare
-        [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
-        [:assumptions]         ;; Assumptions to use when proving equivalence
-        [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
-        [:types]               ;; An alist from variables to their types, used to generate test cases
-        [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
-        [:name]                ;; A name to assign to the equivalence term, if desired
-        [:debug]               ;; Leave temp files around for debugging, Default: nil
-        [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
-        [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
-        [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
-        [:monitor]             ;; Rule names (symbols) to monitor when rewriting
-        [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
-        [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
-        [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
+         dag1                   ;; The first DAG or term to compare
+         dag2                   ;; The second DAG or term to compare
+         [:assumptions]         ;; Assumptions to use when proving equivalence
+         [:types]               ;; An alist from variables to their types, used to generate test cases
+         [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
+         [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
+         [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
+         [:name]                ;; A name to assign to the equivalence term, if desired
+         [:debug]               ;; Leave temp files around for debugging, Default: nil
+         [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
+         [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
+         [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
+         [:monitor]             ;; Rule names (symbols) to monitor when rewriting
+         [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
+         [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
+         [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
+         [:check-vars] ;; whether to check that the two DAGs/terms have exactly the same vars
+         [:local] ;; whether to make the generated events local
         )
 })
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
+;; TODO: Use defmacrodoc to define this (see xdoc above).
 (defmacro prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
                                     &key
-                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
-                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (assumptions 'nil) ;assumed when rewriting the miter
-                                    (print ':brief)
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
+                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
+                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (print ':brief)
                                     (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
