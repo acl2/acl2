@@ -2451,7 +2451,7 @@
                   (logapp 2 0 (logtail n x))))
   :hints (("Goal" :in-theory (enable logapp))))
 
-(defthm times-4-of-slice-becomes-logapp
+(defthmd times-4-of-slice-becomes-logapp
   (implies (and (natp x)
                 (<= low high) ;bozo
                 (natp high)
