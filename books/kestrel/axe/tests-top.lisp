@@ -1,6 +1,6 @@
 ; Tests for the Axe toolkit
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,6 +30,7 @@
 (include-book "make-term-into-dag-basic-tests")
 (include-book "prune-with-contexts-tests")
 (include-book "unroller-tests")
+(include-book "pure-dags-tests")
 
 (include-book "rewriter-tests")
 (include-book "rewriter-alt-tests")
