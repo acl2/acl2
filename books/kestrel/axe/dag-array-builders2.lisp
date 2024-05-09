@@ -16,6 +16,8 @@
 ;; dag-array-builders-maybe.lisp, the functions in this book do not assume that
 ;; the dag-array and dag-parent-array have particular names.
 
+;; See also dag-array-builders3.lisp.
+
 (include-book "wf-dagp")
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")
