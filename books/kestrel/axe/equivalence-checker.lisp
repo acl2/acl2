@@ -60,7 +60,7 @@
 (include-book "kestrel/bv/arith" :dir :system)
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
-(include-book "rules2") ;drop?
+;(include-book "rules2") ;drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "lists-axe")
 (include-book "group-axe")
@@ -69,8 +69,7 @@
 (include-book "replace-node")
 (include-book "prover2")
 (include-book "extract-dag-array")
-(include-book "kestrel/lists-light/append" :dir :system)
-(include-book "kestrel/lists-light/nthcdr" :dir :system)
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (include-book "kestrel/lists-light/last-elem" :dir :system)
 ;(include-book "kestrel/lists-light/update-nth" :dir :system) ;brings in consp-of-update-nth
 (include-book "kestrel/lists-light/cons" :dir :system) ;for equal-of-cons
@@ -86,6 +85,7 @@
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
