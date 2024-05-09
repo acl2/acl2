@@ -54,6 +54,7 @@
    no-lemmas
    no-integerp
    hints
+   extra-hints
    free-env-var-1
    free-env-var-2
    pkg-sym))
@@ -626,7 +627,11 @@
                                                      ((svassocs <input-var-svassocs-2>) env-2)
                                                      (run-2 (svtv-run (<svtv-2>) env-2))
                                                      ((svassocs <override-svassocs-2> <outputs-2>) run-2))
-                                                  <env-2>)))))))
+                                                  <env-2>))))))
+                         ,@(and x.extra-hints
+                                `((and stable-under-simplificationp
+                                       ',x.extra-hints)))
+                         )
                         ))))
     (acl2::template-subst
      template
@@ -880,6 +885,7 @@
          lemma-args
          no-lemmas
          hints
+         extra-hints
          (free-env-var-1 't)
          (free-env-var-2 't)
          (pkg-sym name))
@@ -987,6 +993,7 @@
       :triples-name-2 triples-2
       :triples-val-2 triples-val-2
       :hints hints
+      :extra-hints extra-hints
       :free-env-var-1 free-env-var-1
       :free-env-var-2 free-env-var-2
       :no-lemmas no-lemmas

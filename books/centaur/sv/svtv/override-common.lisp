@@ -812,7 +812,7 @@ signal is the key and time is the current phase."
                                                  test-alist
                                                  val-alist
                                                  probes
-                                                 (car triplemaps)))
+                                                 triplemap))
          (svtv-override-triplemaplist-syntax-check-aux (1+ (lnfix phase))
                                                    (cdr test-alists)
                                                    (cdr val-alists)

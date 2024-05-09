@@ -51,12 +51,12 @@
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
            (not (sbvlt '64 (sbvdiv '64 x y) '18446744071562067968)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
 
 (defthm not-sbvlt-of-constant-and-sbvdiv-32-64
   (implies (unsigned-byte-p 31 x)
            (not (SBVLT '64 '2147483647 (SBVDIV '64 x y))))
-  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-64-128
   (implies (unsigned-byte-p 64 x)
@@ -518,7 +518,7 @@
                                   acl2::getbit-of-plus
                                   bvplus
                                   acl2::bvchop-of-sum-cases)
-                           (acl2::sbvlt-rewrite ;disable
+                           ( ;disable
                             )))))
 
 ;todo: also prove for slice and logtail
@@ -616,25 +616,25 @@
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k -128))
            (not (sbvlt 64 (bvsx 64 8 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-16
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k (- (expt 2 (+ -1 16)))))
            (not (sbvlt 64 (bvsx 64 16 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-32
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k (- (expt 2 (+ -1 32)))))
            (not (sbvlt 64 (bvsx 64 32 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-128-64
   (implies (and (syntaxp (quotep k))
                 (sbvle 128 k (- (expt 2 (+ -1 64)))))
            (not (sbvlt 128 (bvsx 128 64 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 ;; (defthm not-sbvlt-of-bvsx-of-constant-arg2-64
 ;;   (implies (and (syntaxp (quotep k))
@@ -652,25 +652,25 @@
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 128) k))
            (not (sbvlt 64 k (bvsx 64 8 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-16
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 (expt 2 (+ -1 16))) k))
            (not (sbvlt 64 k (bvsx 64 16 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-32
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 (expt 2 (+ -1 32))) k))
            (not (sbvlt 64 k (bvsx 64 32 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-128-64
   (implies (and (syntaxp (quotep k))
                 (sbvle 128 (+ -1 (expt 2 (+ -1 64))) k))
            (not (sbvlt 128 k (bvsx 128 64 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm bvcat-of-repeatit-tighten-64-32 ;gen!
   (equal (bvcat 64 (repeatbit 32 bit) 32 lowval)
@@ -683,7 +683,7 @@
            (equal (sbvlt 32 k (bvsx 32 16 x))
                   (and (sbvlt 16 k x)
                        (not (sbvlt 16 x 0)))))
-  :hints (("Goal" :in-theory (enable bvlt ACL2::BVSX-ALT-DEF-2))))
+  :hints (("Goal" :in-theory (enable bvlt ACL2::BVSX-ALT-DEF-2 acl2::sbvlt-rewrite))))
 
 ;; todo: constant opener for X86ISA::!RFLAGSBITS->AF$INLINE
 

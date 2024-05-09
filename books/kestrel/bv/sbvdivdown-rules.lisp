@@ -102,7 +102,6 @@
                                           TRUNCATE-BECOMES-FLOOR-GEN
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   SBVLT-REWRITE
                                    ;anti-bvplus
                                    )))))
 

@@ -46,11 +46,9 @@
   :hints (("Goal" :in-theory (enable bvequal))))
 
 (defthm bvequal-same
-  (equal (bvequal size x x)
-         t)
+  (bvequal size x x)
   :hints (("Goal" :in-theory (enable bvequal))))
 
 (defthm bvequal-of-0-arg1
-  (equal (bvequal 0 x y)
-         t)
+  (bvequal 0 x y)
   :hints (("Goal" :in-theory (enable bvequal))))

@@ -238,6 +238,14 @@
                           above.~%" ans))
                 (t   (cw "Counterexample verified!~%"))))
        (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
+       (scratch (interp-st->user-scratch interp-st))
+       ;; Collect counterexamples in the user scratch for later extraction
+       (interp-st (update-interp-st->user-scratch
+                   (hons-acons ':counterexamples
+                               (cons ctrex-bindings
+                                     (cdr (hons-get ':counterexamples scratch)))
+                               scratch)
+                   interp-st))
        (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv nil interp-st))
   ///

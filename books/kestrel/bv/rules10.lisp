@@ -377,9 +377,7 @@
            (equal (+ (bvplus 32 k x)
                      (- x))
                   (bvchop 32 k)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvlt)
-                                  (;
-                                   )))))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases bvlt))))
 
 ;In case we don't want to commit to a normal form
 (defthm equal-of-bvchop-of-+-and-bvplus

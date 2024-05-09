@@ -443,7 +443,8 @@
                 (array1p renaming-array-name renaming-array)
                 (< index (alen1 renaming-array-name renaming-array))
                 (< n (alen1 renaming-array-name renaming-array))
-                (natp n))
+                ;(natp n)
+                )
            (bounded-renaming-entriesp n renaming-array-name (aset1 renaming-array-name renaming-array index val) limit))
   :hints (("Goal" :expand ((bounded-renaming-entriesp 0 renaming-array-name
                                                       (aset1 renaming-array-name
@@ -566,6 +567,13 @@
          (renaming-arrayp array-name array 0))
   :hints (("Goal" :in-theory (enable bounded-renaming-arrayp))))
 
+(defthm dargp-less-than-of-aref1-when-bounded-renaming-arrayp
+  (implies (and (bounded-renaming-arrayp renaming-array-name renaming-array (+ 1 nodenum) limit)
+                (natp nodenum))
+           (dargp-less-than (aref1 renaming-array-name renaming-array nodenum) limit))
+  :hints (("Goal" :in-theory (enable bounded-renaming-arrayp
+                                     renaming-arrayp))))
+
 (defthm bounded-darg-listp-of-rename-dargs-when-bounded-renaming-arrayp
   (implies (and (bounded-renaming-arrayp renaming-array-name renaming-array (+ 1 (largest-non-quotep dargs)) limit)
                 ;(bounded-darg-listp args (+ 1 n))
@@ -606,6 +614,16 @@
            (bounded-renaming-arrayp renaming-array-name renaming-array num-nodes-to-check bound))
   :hints (("Goal" :in-theory (enable bounded-renaming-arrayp))))
 
+(defthm bounded-renaming-arrayp-of-aset1
+  (implies (and (bounded-renaming-arrayp renaming-array-name renaming-array num-nodes-to-check bound)
+                (natp num-nodes-to-check)
+                (<= num-nodes-to-check (alen1 renaming-array-name renaming-array))
+                (natp n)
+                (< n (alen1 renaming-array-name renaming-array))
+                (dargp-less-than val bound)
+                )
+           (bounded-renaming-arrayp renaming-array-name (aset1 renaming-array-name renaming-array n val) num-nodes-to-check bound))
+  :hints (("Goal" :in-theory (e/d (bounded-renaming-arrayp) ()))))
 
 ;;;
 ;;; rename-var-or-fn-call-expr

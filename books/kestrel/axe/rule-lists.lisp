@@ -1032,6 +1032,28 @@
      acl2::slice-tighten-top-dag
 
      unsigned-byte-p-when-unsigned-byte-p-smaller
+
+     ;; rules to introduce bvequal:
+     ;; equal-becomes-bvequal-axe-1-strong
+     ;; equal-becomes-bvequal-axe-2-strong
+
+     ;; rules about bvequal, in case it is being introduced:
+     bvequal-same
+     bvequal-of-0-arg1
+     bvequal-of-bvchop-arg2
+     bvequal-of-bvchop-arg3
+     bvequal-convert-arg2-to-bv-axe
+     bvequal-convert-arg3-to-bv-axe
+     bvequal-of-bvplus-and-bvplus-cancel-1+-1+
+     bvequal-of-bvplus-arg2-cancel-1
+     bvequal-of-bvplus-arg1-cancel-1
+     bvequal-trim-arg2-axe-all
+     bvequal-trim-arg3-axe-all
+     bvequal-of-constant-and-bvplus-of-constant
+     bvequal-of-bvplus-of-constant-and-constant
+     bvequal-tighten-axe-bind-and-bind
+     bvequal-of-constant-and-bvuminus
+     bvequal-of-bvuminus-and-constant
      )))
 
 ;todo combine this with core-rules-bv
@@ -3156,7 +3178,7 @@
 
 
              equal-of-bitxor-and-bitxor-same-6
-             bvplus-of-bvcat-constants
+             ;bvplus-of-bvcat-constants ; trying..
              slice-when-bvchop-known-2
 
              consp-of-group

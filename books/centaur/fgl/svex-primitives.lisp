@@ -44,73 +44,19 @@
 
 
 (encapsulate nil
-  (local (defthm kwote-lst-of-cons
-           (equal (kwote-lst (cons a b))
-                  (cons (pseudo-term-quote a) (kwote-lst b)))))
-  (local (in-theory (disable BITOPS::SPARSEINT$-REAL-HEIGHT-EQUALS-SPARSEINT$-HEIGHT
-                             BITOPS::HEIGHT-IF-CORRECT-OF-SPARSEINT$-HEIGHT-CORRECT-EXEC
-                             BITOPS::SPARSEINT$-EQUAL-INT-WIDTH-CORRECT
-                             BITOPS::SPARSEINT$-VAL-OF-CONCAT
-                             ;; acl2::hons-assoc-equal-of-cons
-                             ;; assoc-equal-when-key
-                             BITOPS::RETURN-TYPE-OF-SPARSEINT$-TRUNCATE-HEIGHT.NEW-HEIGHT
-                             BITOPS::RETURN-TYPE-OF-SPARSEINT$-TRUNCATE-HEIGHT.NEW-X
-                             BITOPS::SPARSEINT$-CONCATENATE-REBALANCE-HEIGHT-LESS-THAN-BOUND
-                             BITOPS::SPARSEINT$-CONCATENATE-REBALANCE-HEIGHT-RESULT-CORRECT
-                             BITOPS::SPARSEINT$-HEIGHT-CORRECTP-IMPLIES
-                             BITOPS::SPARSEINT$-HEIGHT-CORRECTP-OF-SPARSEINT$-TRUNCATE
-                             BITOPS::SPARSEINT$-EQUAL-INT-CORRECT
-                             BITOPS::SPARSEINT$-CONCATENATE-REBALANCE
-                             BITOPS::SPARSEINT$-CONCATENATE-REBALANCE-MSBS
-                             BITOPS::SPARSEINT$-CONCATENATE-REBALANCE-LSBS
-                             BITOPS::WITHIN-1-COMMUTATIVE
-                             BITOPS::WITHIN-1-WHEN-Y-GREATER
-                             BITOPS::WITHIN-1-WHEN-X-GREATER
-                             BITOPS::WITHIN-1-WHEN->
-                             BITOPS::WITHIN-1-WHEN-<
-                             acl2::kwote-lst-redef
-                             ;; BITOPS::SPARSEINT$-HEIGHT-WHEN-LEAF
-                             ;; BITOPS::SPARSEINT$-HEIGHT-OF-LSBS-LOWER-BOUND
-                             BITOPS::SPARSEINT$-HEIGHT-OF-LSBS-UPPER-BOUND
-                             ;; BITOPS::SPARSEINT$-HEIGHT-OF-MSBS-LOWER-BOUND
-                             BITOPS::SPARSEINT$-HEIGHT-OF-MSBS-UPPER-BOUND
-                             SUB-ALISTP-HONS-ASSOC-EQUAL2
-                             fgl-ev-when-pseudo-term-fncall
-                             equal-of-booleans-rewrite
-                           
-                             ;; (:REWRITE BITOPS::RETURN-TYPE-OF-SPARSEINT$-CONCAT)
-                             ;; (:REWRITE BITOPS::SPARSEINT$-CONCAT->LSBS-OF-SPARSEINT$-CONCAT)
-                             ;; (:REWRITE
-                             ;;  BITOPS::SPARSEINT$-CONCAT->LSBS-TALLER-OF-SPARSEINT$-CONCAT)
-                             ;; (:REWRITE BITOPS::SPARSEINT$-CONCAT->MSBS-OF-SPARSEINT$-CONCAT)
-                             ;; (:REWRITE
-                             ;;  BITOPS::SPARSEINT$-CONCAT->MSBS-TALLER-OF-SPARSEINT$-CONCAT)
-                             ;; (:REWRITE BITOPS::SPARSEINT$-CONCAT->WIDTH-OF-SPARSEINT$-CONCAT)
-                             ;; (:REWRITE BITOPS::SPARSEINT$-HEIGHT-EQUAL-0)
-                             (:REWRITE BITOPS::LOGAPP-OF-J-0)
+  
+  (local
+   (encapsulate nil
+     (local (in-theory (disable sv::svex-fix-redef)))
+     (flag::make-flag sv::svex-fix-flag sv::svex-fix$inline
+                      :hints (("goal" :expand ((sv::svex-kind x))))
+                      :defthm-macro-name defthm-svex-fix-flag-local
+                      :expand-with-original-defs t)))
 
-                             ;; fgl-ev-meta-extract-formula
-
-                             BITOPS::SPARSEINT$-EQUAL-WIDTH-CORRECT
-                             BITOPS::SPARSEINT$-EQUAL-OFFSET-CORRECT
-                             BITOPS::SPARSEINT$-EQUAL-CORRECT
-                             BITOPS::SPARSEINT-EQUAL-CORRECT
-                             BITOPS::SPARSEINT$-BIT-CORRECT
-                             BITOPS::SPARSEINT-BIT-CORRECT
-                             BITOPS::SPARSEINT$-COMPARE-INT-WIDTH-CORRECT
-                             BITOPS::SPARSEINT$-COMPARE-INT-CORRECT
-                             BITOPS::SPARSEINT$-COMPARE-WIDTH-CORRECT
-                             BITOPS::SPARSEINT$-COMPARE-OFFSET-CORRECT
-                             BITOPS::SPARSEINT$-COMPARE-CORRECT
-                             BITOPS::SPARSEINT-COMPARE-CORRECT
-                             BITOPS::SPARSEINT-<-CORRECT
-                             SV::RETURN-TYPE-OF-V2I-FIRST-N
-                             
-                             default-car
-                             default-cdr)))
   (def-formula-checks svex-formula-checks
     (sv::4vmask-to-a4vec-rec-env
-     sv::4vec-from-bitlist)))
+     sv::4vec-from-bitlist
+     sv::svex-varmasks/env->aig-env-rec)))
 
 (define fgl-4vmask-to-a4vec-rec-env ((mask sv::4vmask-p)
                                      (boolmask integerp)
@@ -584,6 +530,142 @@
                  mask boolmask upper lower nextvar)))))))
 
 
+(define fgl-4vmask-to-a4vec-rec-env-top ((mask bitops::sparseint-p)
+                                         (boolmask integerp)
+                                         (upper fgl-object-p)
+                                         (lower fgl-object-p)
+                                         (nextvar natp)
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
+  :guard (and (not (bitops::sparseint-< mask 0))
+              (interp-st-bfr-listp (fgl-object-bfrlist upper))
+              (interp-st-bfr-listp (fgl-object-bfrlist lower)))
+  :returns (mv ok
+               (ans fgl-object-alist-p)
+               new-interp-st)
+  :hooks nil
+  (b* ((masklen (bitops::sparseint-length (sv::4vmask-fix mask)))
+       ((mv ok upper-fix interp-st) (gobj-n-bit-unsigned-integer-fix masklen upper interp-st state))
+       ((unless ok) (mv nil nil interp-st))
+       ((mv ok lower-fix interp-st) (gobj-n-bit-unsigned-integer-fix masklen lower interp-st state))
+       ((unless ok) (mv nil nil interp-st))
+       (map
+        (fgl-4vmask-to-a4vec-rec-env mask boolmask
+                                     (gobj-syntactic-integer->bits upper-fix)
+                                     (gobj-syntactic-integer->bits lower-fix)
+                                     nextvar)))
+    (mv t map interp-st))
+  ///
+  
+  
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (Equal (interp-st-field-fix key) :logicman))
+                  (not (Equal (interp-st-field-fix key) :bvar-db)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret logicman-extension-p-of-<fn>
+    (implies (equal old-logicman (interp-st->logicman interp-st))
+             (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
+
+  (defret nvars-ok-of-<fn>
+    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+                    (bfr-nvars (interp-st->logicman interp-st)))
+             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+                    (bfr-nvars (interp-st->logicman new-interp-st)))))
+
+  (defret bfr-nvars-of-<fn>
+    (>= (bfr-nvars (interp-st->logicman new-interp-st))
+        (bfr-nvars (interp-st->logicman interp-st)))
+    :rule-classes :linear)
+  
+  (defret base-bvar-of-<fn>
+    (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
+           (base-bvar$a (interp-st->bvar-db interp-st))))
+
+  (defret next-bvar-of-<fn>
+    (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
+        (next-bvar$a (interp-st->bvar-db interp-st)))
+    :rule-classes :linear)
+
+  (defret get-bvar->term-old-of-<fn>
+    (b* ((bvar-db (interp-st->bvar-db interp-st)))
+      (implies (< (nfix k) (next-bvar$a bvar-db))
+               (equal (get-bvar->term$A k (interp-st->bvar-db new-interp-st))
+                      (get-bvar->term$A k (interp-st->bvar-db interp-st))))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-bfrlist upper)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-bfrlist lower)
+                              (interp-st->logicman interp-st)))
+             (interp-st-bfrs-ok new-interp-st)))
+
+  (defret interp-st-bvar-db-ok-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-bfrlist upper)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-bfrlist lower)
+                              (interp-st->logicman interp-st)))
+             (implies (not (interp-st-bvar-db-ok interp-st env))
+                      (not (interp-st-bvar-db-ok new-interp-st env)))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-bfrlist upper)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-bfrlist lower)
+                              (interp-st->logicman interp-st)))
+             (lbfr-listp (fgl-object-alist-bfrlist ans)
+                         (interp-st->logicman new-interp-st)))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness))))
+  
+  (defret eval-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (interp-st-bvar-db-ok new-interp-st env)
+                  (lbfr-listp (fgl-object-bfrlist upper)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-bfrlist lower)
+                              (interp-st->logicman interp-st))
+                  (<= 0 (bitops::sparseint-val (sv::4vmask-fix mask)))
+                  ;; (svex-formula-checks state)
+                  ok)
+             (equal (fgl-object-alist-eval ans env (interp-st->logicman new-interp-st))
+                    (sv::4vmask-to-a4vec-rec-env
+                     mask boolmask
+                     (fgl-object-eval upper env (interp-st->logicman interp-st))
+                     (fgl-object-eval lower env (interp-st->logicman interp-st))
+                     nextvar))))
+
+  (local (defretd interp-st-bvar-db-ok-of-<fn>-lemma
+           (implies (and (interp-st-bfrs-ok interp-st)
+                         (lbfr-listp (fgl-object-bfrlist upper)
+                                     (interp-st->logicman interp-st))
+                         (lbfr-listp (fgl-object-bfrlist lower)
+                                     (interp-st->logicman interp-st)))
+                    (iff (interp-st-bvar-db-ok new-interp-st env)
+                         (and (interp-st-bvar-db-ok new-interp-st env)
+                              (interp-st-bvar-db-ok interp-st env))))))
+
+  
+  (defretd interp-st-bvar-db-ok-of-<fn>-rw
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-bfrlist upper)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-bfrlist lower)
+                              (interp-st->logicman interp-st)))
+             (iff (interp-st-bvar-db-ok new-interp-st env)
+                  (and (hide (interp-st-bvar-db-ok new-interp-st env))
+                       (interp-st-bvar-db-ok interp-st env))))
+    :hints (("goal" :in-theory nil
+             :expand ((:free (x) (hide x)))
+             :use interp-st-bvar-db-ok-of-<fn>-lemma)))
+
+  (defret true-listp-of-<fn>
+    (true-listp ans)))
+  
+
 (def-fgl-primitive sv::4vmask-to-a4vec-rec-env (mask boolmask upper lower nextvar)
   (b* (((unless (and (fgl-object-case mask :g-concrete)
                      (fgl-object-case boolmask :g-concrete)
@@ -592,17 +674,355 @@
        (mask (ec-call (sv::sparseint-nfix (ec-call (sv::4vmask-fix (g-concrete->val mask))))))
        (boolmask (ifix (g-concrete->val boolmask)))
        (nextvar (nfix (g-concrete->val nextvar)))
-       (masklen (bitops::sparseint-length mask))
-       ((mv ok upper-fix interp-st) (gobj-n-bit-unsigned-integer-fix masklen upper interp-st state))
-       ((unless ok) (mv nil nil interp-st))
-       ((mv ok lower-fix interp-st) (gobj-n-bit-unsigned-integer-fix masklen lower interp-st state))
-       ((unless ok) (mv nil nil interp-st))
-       (map (fgl-4vmask-to-a4vec-rec-env mask boolmask
-                                         (gobj-syntactic-integer->bits upper-fix)
-                                         (gobj-syntactic-integer->bits lower-fix)
-                                         nextvar)))
-    (mv t (g-map '(:g-map) map) interp-st))
+       ((mv ok map interp-st)
+        (fgl-4vmask-to-a4vec-rec-env-top
+         mask boolmask upper lower nextvar interp-st state)))
+    (mv ok (g-map '(:g-map) map) interp-st))
   :formula-check svex-formula-checks)
+
+
+(define fgl-4vec->upper ((x fgl-object-p))
+  :returns (mv ok (upper fgl-object-p))
+  (fgl::fgl-object-case x
+    :g-concrete (mv t (g-concrete (ec-call (sv::4vec->upper x.val))))
+    :g-integer (mv t (fgl-object-fix x))
+    :g-boolean (mv t -1)
+    :g-cons (fgl::fgl-object-case x.car
+              :g-concrete (mv t (g-concrete (ifix x.car.val)))
+              :g-integer (mv t x.car)
+              :g-boolean (mv t 0)
+              :g-cons (mv t 0)
+              :otherwise (mv nil nil))
+    :g-apply (if (and (eq x.fn 'sv::4vec)
+                      (eql (len x.args) 2))
+                 (let ((arg1 (car x.args)))
+                   (fgl::fgl-object-case arg1
+                     :g-concrete (mv t (g-concrete (ifix arg1.val)))
+                     :g-integer (mv t arg1)
+                     :g-boolean (mv t 0)
+                     :g-cons (mv t 0)
+                     :otherwise (mv nil nil)))
+               (mv nil nil))
+    :otherwise (mv nil nil))
+  ///
+  (defret eval-of-<fn>
+    (implies (and ok
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS)
+                  (SVEX-FORMULA-CHECKS STATE))
+             (equal (fgl-object-eval upper env)
+                    (sv::4vec->upper (fgl-object-eval x env))))
+    :hints(("Goal" :in-theory (enable sv::4vec->upper))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (bfr-listp (fgl-object-bfrlist upper)))))
+
+(define fgl-4vec->lower ((x fgl-object-p))
+  :returns (mv ok (lower fgl-object-p))
+  (fgl::fgl-object-case x
+    :g-concrete (mv t (g-concrete (ec-call (sv::4vec->lower x.val))))
+    :g-integer (mv t (fgl-object-fix x))
+    :g-boolean (mv t 0)
+    :g-cons (fgl::fgl-object-case x.cdr
+              :g-concrete (mv t (g-concrete (ifix x.cdr.val)))
+              :g-integer (mv t x.cdr)
+              :g-boolean (mv t 0)
+              :g-cons (mv t 0)
+              :otherwise (mv nil nil))
+    :g-apply (if (and (eq x.fn 'sv::4vec)
+                      (eql (len x.args) 2))
+                 (let ((arg2 (cadr x.args)))
+                   (fgl::fgl-object-case arg2
+                     :g-concrete (mv t (g-concrete (ifix arg2.val)))
+                     :g-integer (mv t arg2)
+                     :g-boolean (mv t 0)
+                     :g-cons (mv t 0)
+                     :otherwise (mv nil nil)))
+               (mv nil nil))
+    :otherwise (mv nil nil))
+  ///
+  (defret eval-of-<fn>
+    (implies (and ok
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS)
+                  (SVEX-FORMULA-CHECKS STATE))
+             (equal (fgl-object-eval lower env)
+                    (sv::4vec->lower (fgl-object-eval x env))))
+    :hints(("Goal" :in-theory (enable sv::4vec->lower))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (bfr-listp (fgl-object-bfrlist x))
+             (bfr-listp (fgl-object-bfrlist lower)))))
+    
+
+(define fgl-svex-varmasks/env->aig-env-rec ((vars sv::svarlist-p)
+                                            (masks sv::svex-mask-alist-p)
+                                            (boolmasks sv::svar-boolmasks-p)
+                                            (env-obj fgl::fgl-object-alist-p "look up variables in env to get 4vecs to assign -- symbolic")
+                                            (nextvar natp)
+                                            (acc fgl::fgl-object-alist-p
+                                                 "aig environment accumulator")
+                                            (fgl::interp-st fgl::interp-st-bfrs-ok)
+                                            (state))
+  :guard (and (fgl::interp-st-bfr-listp (fgl::fgl-object-alist-bfrlist acc))
+              (fgl::interp-st-bfr-listp (fgl::fgl-object-alist-bfrlist env-obj)))
+  :verify-guards nil
+  :returns (mv (successp)
+               (err)
+               (aig-env fgl-object-alist-p)
+               (new-nextvar)
+               new-interp-st)
+  (b* ((acc (fgl::fgl-object-alist-fix acc))
+       ((when (atom vars))
+        (mv t nil acc (lnfix nextvar) fgl::interp-st))
+       (mask (sv::svex-mask-lookup (sv::svex-var (car vars)) masks))
+       ((when (sv::sparseint-< mask 0))
+        (mv t (msg "Negative mask: ~x0~%" (sv::svar-fix (car vars)))
+            acc (lnfix nextvar) fgl::interp-st))
+       (boolmask (sv::svar-boolmasks-lookup (car vars) boolmasks))
+       (4vec-obj (cdr (hons-get (sv::svar-fix (car vars))
+                                (fgl::fgl-object-alist-fix env-obj))))
+       ((mv ok upper) (fgl::fgl-4vec->upper 4vec-obj))
+       ((unless ok)
+        (mv nil nil acc (lnfix nextvar) fgl::interp-st))
+       ((mv ok lower) (fgl::fgl-4vec->lower 4vec-obj))
+       ((unless ok)
+        (mv nil nil acc (lnfix nextvar) fgl::interp-st))
+       ((mv ok env-part fgl::interp-st)
+        (fgl::fgl-4vmask-to-a4vec-rec-env-top mask boolmask upper lower (lnfix nextvar) fgl::interp-st state))
+       ((unless ok)
+        (mv nil nil acc (lnfix nextvar) fgl::interp-st))
+       (nextvar (+ (lnfix nextvar)
+                   (sv::4vmask-to-a4vec-varcount mask boolmask))))
+    (fgl-svex-varmasks/env->aig-env-rec
+     (cdr vars) masks boolmasks env-obj nextvar (append env-part acc)
+     fgl::interp-st state))
+  ///
+  
+  
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (Equal (interp-st-field-fix key) :logicman))
+                  (not (Equal (interp-st-field-fix key) :bvar-db)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret logicman-extension-p-of-<fn>
+    (implies (equal old-logicman (interp-st->logicman interp-st))
+             (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
+
+  (defret nvars-ok-of-<fn>
+    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+                    (bfr-nvars (interp-st->logicman interp-st)))
+             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+                    (bfr-nvars (interp-st->logicman new-interp-st)))))
+
+  (defret bfr-nvars-of-<fn>
+    (>= (bfr-nvars (interp-st->logicman new-interp-st))
+        (bfr-nvars (interp-st->logicman interp-st)))
+    :rule-classes :linear)
+  
+  (defret base-bvar-of-<fn>
+    (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
+           (base-bvar$a (interp-st->bvar-db interp-st))))
+
+  (defret next-bvar-of-<fn>
+    (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
+        (next-bvar$a (interp-st->bvar-db interp-st)))
+    :rule-classes :linear)
+
+  (defret get-bvar->term-old-of-<fn>
+    (b* ((bvar-db (interp-st->bvar-db interp-st)))
+      (implies (< (nfix k) (next-bvar$a bvar-db))
+               (equal (get-bvar->term$A k (interp-st->bvar-db new-interp-st))
+                      (get-bvar->term$A k (interp-st->bvar-db interp-st))))))
+
+  (local (defthm fgl-object-alist-bfrlist-of-append
+           (equal (fgl-object-alist-bfrlist (append x y))
+                  (append (fgl-object-alist-bfrlist x)
+                          (fgl-object-alist-bfrlist y)))
+           :hints (("goal" :induct (append x y)
+                    :expand ((:free (a b)
+                              (fgl-object-alist-bfrlist (cons a b)))
+                             (fgl-object-alist-bfrlist x))))))
+
+  (local (defthm bfr-listp-fgl-object-bfrlist-of-lookup
+           (implies (bfr-listp (fgl-object-alist-bfrlist x))
+                    (bfr-listp (fgl-object-bfrlist (cdr (hons-assoc-equal k x)))))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)
+                   :induct (hons-assoc-equal k x)
+                   :expand (fgl-object-alist-bfrlist x)))))
+  
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-alist-bfrlist env-obj)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-alist-bfrlist acc)
+                              (interp-st->logicman interp-st)))
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable BFR-LISTP-WHEN-NOT-MEMBER-WITNESS))))
+
+  (defret interp-st-bvar-db-ok-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-alist-bfrlist env-obj)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-alist-bfrlist acc)
+                              (interp-st->logicman interp-st)))
+             (implies (not (interp-st-bvar-db-ok interp-st env))
+                      (not (interp-st-bvar-db-ok new-interp-st env)))))
+
+  (defret bfr-listp-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-alist-bfrlist env-obj)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-alist-bfrlist acc)
+                              (interp-st->logicman interp-st)))
+             (lbfr-listp (fgl-object-alist-bfrlist aig-env)
+                         (interp-st->logicman new-interp-st)))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness))))
+
+  (local (defthm fgl-object-alist-eval-of-append
+           (Equal (fgl-object-alist-eval (append x y) env)
+                  (append (fgl-object-alist-eval x env)
+                          (fgl-object-alist-eval y env)))
+           :hints(("Goal" :in-theory (enable append)
+                   :expand ((fgl-object-alist-eval x env)
+                            (:free (a b) (fgl-object-alist-eval (cons a b) env)))))))
+
+
+  
+
+  (local (defretd interp-st-bvar-db-ok-of-<fn>-lemma
+           (implies (and (interp-st-bfrs-ok interp-st)
+                         (lbfr-listp (fgl-object-alist-bfrlist env-obj)
+                                     (interp-st->logicman interp-st))
+                         (lbfr-listp (fgl-object-alist-bfrlist acc)
+                                     (interp-st->logicman interp-st)))
+                    (iff (interp-st-bvar-db-ok new-interp-st env)
+                         (and (interp-st-bvar-db-ok new-interp-st env)
+                              (interp-st-bvar-db-ok interp-st env))))))
+
+  
+
+  
+  (defretd interp-st-bvar-db-ok-of-<fn>-rw
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (lbfr-listp (fgl-object-alist-bfrlist env-obj)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-alist-bfrlist acc)
+                              (interp-st->logicman interp-st)))
+             (iff (interp-st-bvar-db-ok new-interp-st env)
+                  (and (hide (interp-st-bvar-db-ok new-interp-st env))
+                       (interp-st-bvar-db-ok interp-st env))))
+    :hints (("goal" :in-theory nil
+             :expand ((:free (x) (hide x)))
+             :use interp-st-bvar-db-ok-of-<fn>-lemma)))
+
+  (local (defthm hons-assoc-equal-of-fgl-object-alist-eval
+           (Equal (cdr (hons-assoc-equal k (fgl-object-alist-eval x env)))
+                  (fgl-object-eval (cdr (hons-assoc-equal k x)) env))
+           :hints(("Goal" :in-theory (enable hons-assoc-equal)
+                   :expand ((fgl-object-alist-eval x env)
+                            (:free (a b) (fgl-object-alist-eval (cons a b) env)))))))
+  
+  
+  (defret eval-of-<fn>
+    (implies (and (interp-st-bfrs-ok interp-st)
+                  (interp-st-bvar-db-ok new-interp-st env)
+                  (lbfr-listp (fgl-object-alist-bfrlist env-obj)
+                              (interp-st->logicman interp-st))
+                  (lbfr-listp (fgl-object-alist-bfrlist acc)
+                              (interp-st->logicman interp-st))
+                  (FGL-EV-META-EXTRACT-GLOBAL-FACTS :state st)
+                  (equal (w st) (w state))
+                  (svex-formula-checks st)
+                  successp)
+             (b* (((mv err-spec aig-env-spec new-nextvar-spec)
+                   (sv::svex-varmasks/env->aig-env-rec
+                     vars masks boolmasks
+                     (fgl-object-alist-eval env-obj env (interp-st->logicman interp-st))
+                     nextvar
+                     (fgl-object-alist-eval acc env (interp-st->logicman interp-st)))))
+               (and (implies (interp-st-bvar-db-ok new-interp-st env)
+                             (interp-st-bvar-db-ok interp-st env))
+                    (equal err err-spec)
+                    (equal (fgl-object-alist-eval aig-env env (interp-st->logicman new-interp-st))
+                           aig-env-spec)
+                    (equal new-nextvar new-nextvar-spec))))
+    :hints(("Goal" :expand ((:free (env acc)
+                             (SV::SVEX-VARMASKS/ENV->AIG-ENV-REC vars masks boolmasks env nextvar acc)))
+            :in-theory (enable SV::4VMASK-TO-A4VEC-ENV
+                               interp-st-bvar-db-ok-of-<fn>-rw
+                               interp-st-bvar-db-ok-of-fgl-4vmask-to-a4vec-rec-env-top-rw
+                               sv::svex-env-lookup)
+            :induct <call>
+            :do-not-induct t)))
+
+  (Verify-guards fgl-svex-varmasks/env->aig-env-rec))
+                
+;; (def-fgl-primitive sv::4vmask-to-a4vec-rec-env (mask boolmask upper lower nextvar)
+;;   (b* (((unless (and (fgl-object-case mask :g-concrete)
+;;                      (fgl-object-case boolmask :g-concrete)
+;;                      (fgl-object-case nextvar :g-concrete)))
+;;         (mv nil nil interp-st))
+;;        (mask (ec-call (sv::sparseint-nfix (ec-call (sv::4vmask-fix (g-concrete->val mask))))))
+;;        (boolmask (ifix (g-concrete->val boolmask)))
+;;        (nextvar (nfix (g-concrete->val nextvar)))
+;;        ((mv ok map interp-st)
+;;         (fgl-4vmask-to-a4vec-rec-env-top
+;;          mask boolmask upper lower nextvar interp-st state)))
+;;     (mv ok (g-map '(:g-map) map) interp-st))
+;;   :formula-check svex-formula-checks)
+
+(local (defthm svex-varmasks/env->aig-env-rec
+         (b* ((ans (sv::svex-varmasks/env->aig-env-rec
+                    vars masks boolmasks env-obj nextvar acc))
+              ((mv a b c) ans))
+           (equal (mv a b c) ans))
+         :hints(("Goal" :in-theory (enable sv::svex-varmasks/env->aig-env-rec)))))
+
+
+(local (defthm cdr-of-fgl-objectlist-fix
+         (equal (cdr (fgl-objectlist-fix x))
+                (fgl-objectlist-fix (cdr x)))
+         :hints(("Goal" :expand ((fgl-objectlist-fix x))))))
+
+(local (defthm fgl-object-eval-when-not-fix
+         (implies (not (fgl-object-fix x))
+                  (Equal (fgl-object-eval x env) nil))
+         :hints(("Goal" :use ((:instance fgl-object-eval-of-fgl-object-fix))
+                 :in-theory (disable fgl-object-eval-of-fgl-object-fix
+                                     fgl-object-eval-of-fgl-object-fix-x
+                                     fgl-object-eval-fgl-object-equiv-congruence-on-x)))))
+
+(local (in-theory (disable sv::svex-varmasks/env->aig-env-accumulator-elim)))
+
+(fgl::def-fgl-primitive sv::svex-varmasks/env->aig-env-rec
+  (vars masks boolmasks env-obj nextvar acc)
+  (b* (((unless (and (fgl-object-case masks :g-concrete)
+                     (fgl-object-case vars :g-concrete)
+                     (fgl-object-case boolmasks :g-concrete)
+                     (fgl-object-case nextvar :g-concrete)
+                     (fgl-object-case env-obj :g-map)
+                     (or (eq (fgl-object-fix acc) nil)
+                         (fgl-object-case acc :g-map))))
+        (mv nil nil interp-st))
+       (env-obj (g-map->alist env-obj))
+       (acc (if (eq (fgl-object-fix acc) nil)
+                nil
+              (g-map->alist acc)))
+       (vars (ec-call (sv::svarlist-fix (g-concrete->val vars))))
+       (masks (ec-call (sv::svex-mask-alist-fix (g-concrete->val masks))))
+       (boolmasks (ec-call (sv::svar-boolmasks-fix (g-concrete->val boolmasks))))
+       (nextvar (ec-call (nfix (g-concrete->val nextvar))))
+       ((mv ok err aig-env nextvar interp-st)
+        (fgl-svex-varmasks/env->aig-env-rec
+         vars masks boolmasks env-obj nextvar acc interp-st state)))
+    (mv ok (g-cons (g-concrete err)
+                   (g-cons (g-map '(:g-map)
+                                  (make-fast-alist aig-env))
+                           (g-cons (g-concrete nextvar) nil)))
+        interp-st))
+  :formula-check svex-formula-checks)
+       
 
 
 
