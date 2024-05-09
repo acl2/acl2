@@ -1004,7 +1004,8 @@
                           dag-function-call-exprp-redef
                           ;axe-treep
                           axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
-                          state-p)))
+                          state-p
+                          alistp)))
 
        (local (in-theory (enable natp-of-+-of-1-alt
                                  natp-of-car-when-bounded-darg-listp-gen

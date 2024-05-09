@@ -33,28 +33,13 @@
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist 'make-term-into-dag-simple-array dag-array dag-len))))))
 
-;; (local
-;;  (defthm equal-of-quote-and-car-when-dargp
-;;    (implies (dargp x)
-;;             (equal (equal 'quote (car x))
-;;                    (consp x)))))
-
-(defthm make-term-into-dag-simple-return-type
-  (implies (and (pseudo-termp term)
-                ;; no error:
-                (not (mv-nth 0 (make-term-into-dag-simple term))))
-           (or (pseudo-dagp (mv-nth 1 (make-term-into-dag-simple term)))
-               (myquotep (mv-nth 1 (make-term-into-dag-simple term)))))
-  :hints (("Goal" :in-theory (e/d (make-term-into-dag-simple) (natp myquotep)))))
-
 (defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-simple
   (implies (and (pseudo-termp term)
                 ;; no error:
                 (not (mv-nth 0 (make-term-into-dag-simple term)))
                 (not (myquotep (mv-nth 1 (make-term-into-dag-simple term)))))
            (pseudo-dagp (mv-nth 1 (make-term-into-dag-simple term))))
-  :hints (("Goal" :use (:instance make-term-into-dag-simple-return-type)
-           :in-theory (disable make-term-into-dag-simple-return-type))))
+  :hints (("Goal" :in-theory (e/d (make-term-into-dag-simple) (natp myquotep)))))
 
 (defthm <-of-len-of-mv-nth-1-of-make-term-into-dag-simple
   (implies (and (pseudo-termp term)
@@ -65,6 +50,8 @@
                *max-1d-array-length*))
   :hints (("Goal" :in-theory (enable make-term-into-dag-simple))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp dag-or-quotep).  Returns the DAG as a list but uses arrays to do the work.
 ;; This wrapper has no invariant risk because it has a guard of t.
 (defund make-term-into-dag-simple-unguarded (term)
@@ -73,6 +60,8 @@
       (prog2$ (er hard? 'make-term-into-dag-simple-unguarded "Bad input.")
               (mv (erp-t) nil))
     (make-term-into-dag-simple term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the dag-or-quotep.  Does not return erp.
 (defund make-term-into-dag-simple! (term)
