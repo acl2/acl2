@@ -50,6 +50,8 @@
 
 (include-book "../meta-rule-macros")
 
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
 (local
  (include-book "../proofs/measure-lemmas"))
 
@@ -83,7 +85,7 @@
  :trig-fnc equal
  :valid-syntaxp t
  :returns (mv term dont-rw)
- :disabledp t
+ :disabled t
  :hints (("Goal"
           :in-theory (e/d (rp-equal-meta) ()))))
 

@@ -1,6 +1,6 @@
 ; Standard Strings Library
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -49,9 +49,7 @@
      when given the empty string @('\"\"') as argument.
      This seems to make sense because the beginning and end of the string
      are considered like delimiters,
-     and @('strtok!') considers and returns empty strings between delimiters.
-     However, it would be easy to change @('strtok!') to return @('nil')
-     when given the empty string as argument, if so desired and agreed upon."))
+     and @('strtok!') considers and returns empty strings between delimiters."))
   (b* ((rev-tokens (strtok!-aux string
                                 0
                                 (mbe :logic (len (explode string))

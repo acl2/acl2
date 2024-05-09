@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/sets/sets" :dir :system)
-(include-book "coi/records/records" :dir :system) ;fixme why? g is called below
+;(include-book "coi/records/records" :dir :system) ;fixme why? g is called below
 ;(include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
@@ -56,7 +56,7 @@
 
 (defthm consp-of-2list-gen
   (equal (CONSP (SET::2LIST set))
-         (not (set::empty set))))
+         (not (set::emptyp set))))
 
 (defthm 2list-of-singleton
   (equal (SET::2LIST (SET::INSERT ITEM NIL))
@@ -64,12 +64,12 @@
   :hints (("Goal" :expand ((SET::2LIST (LIST ITEM))
                            (SET::TAIL (LIST ITEM))
                            (SET::HEAD (LIST ITEM))
-                           (SET::EMPTY (LIST ITEM))
+                           (SET::EMPTYP (LIST ITEM))
                            (SET::SETP (LIST ITEM)))
            :in-theory (enable SET::INSERT SET::2LIST))))
 
 (defthm delete-of-head
-  (IMPLIES (NOT (SET::EMPTY X))
+  (IMPLIES (NOT (SET::EMPTYP X))
            (EQUAL (SET::DELETE (SET::HEAD X) X)
                   (SET::TAIL X))))
 
@@ -78,7 +78,7 @@
          (set::2list (set::tail x))))
 
 (defthm car-of-2-list
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (equal (car (set::2list x))
                   (set::head x))))
 
@@ -90,7 +90,7 @@
  (EQUAL (SET::HEAD (SET::INSERT (SET::HEAD X)
                                 (SET::TAIL (SET::TAIL X))))
         (SET::HEAD X))
- :hints (("Goal" :in-theory (enable SET::TAIL SET::INSERT SET::HEAD SET::SFIX SET::EMPTY SET::SETP))))
+ :hints (("Goal" :in-theory (enable SET::TAIL SET::INSERT SET::HEAD SET::SFIX SET::EMPTYP SET::SETP))))
 
 
 ;expensive?
@@ -100,7 +100,7 @@
            (equal (set::head (set::insert item set))
                   item))
   :hints (("Goal" ;:expand ((set::delete item (cdr x)))
-           :in-theory (enable set::tail set::insert set::head set::sfix set::empty set::setp))))
+           :in-theory (enable set::tail set::insert set::head set::sfix set::emptyp set::setp))))
 
 ;expensive?
 (defthm head-of-insert-when-not-smallest
@@ -109,37 +109,37 @@
            (equal (set::head (set::insert item set))
                   (set::head set)))
   :hints (("Goal" ;:expand ((set::delete item (cdr x)))
-           :in-theory (enable set::tail set::insert set::head set::sfix set::empty set::setp))))
+           :in-theory (enable set::tail set::insert set::head set::sfix set::emptyp set::setp))))
 
 (defthm in-of-car
   (equal (SET::IN (CAR SET) SET)
-         (not (set::empty set)))
+         (not (set::emptyp set)))
   :hints (("Goal" ;:expand ((set::delete item (cdr x)))
-           :in-theory (enable set::tail set::insert set::head set::sfix set::empty set::setp set::in))))
+           :in-theory (enable set::tail set::insert set::head set::sfix set::emptyp set::setp set::in))))
 
 (defthm tail-of-insert-when-smallest
   (IMPLIES (AND (EQUAL (SET::HEAD (SET::INSERT ITEM SET)) ;item is smaller than anything in the set
                        ITEM)
-;               (NOT (SET::EMPTY SET))
+;               (NOT (SET::EMPTYP SET))
                 (NOT (SET::IN ITEM SET))
                 (SET::SETP SET) ;drop?
                 )
            (equal (SET::TAIL (SET::INSERT ITEM SET))
                   set))
   :hints (("Goal" ;:expand ((set::delete item (cdr x)))
-           :in-theory (enable set::tail set::insert set::head set::sfix set::empty set::setp))))
+           :in-theory (enable set::tail set::insert set::head set::sfix set::emptyp set::setp))))
 
 (defthm tail-of-insert-when-not-smallest
   (implies (and (equal (set::head (set::insert item set)) ;item is not smaller than anything in the set
                        (set::head set))
                 (not (set::in item set))
-                (not (set::empty set)))
+                (not (set::emptyp set)))
            (equal (set::tail (set::insert item set))
                   (set::insert item (set::tail set))))
   :otf-flg t
   :hints (("Goal" ;:expand ((set::delete item (cdr x)))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable set::tail set::insert set::head set::sfix set::empty set::setp set::in)
+           :in-theory (enable set::tail set::insert set::head set::sfix set::emptyp set::setp set::in)
            )))
 
 
@@ -162,16 +162,16 @@
                 (SET::SETP y)
                 )
            (SET::SUBSET (CDR Y) X))
-  :hints (("Goal" :in-theory (e/d (set::subset SET::EMPTY SET::setp set::tail)
+  :hints (("Goal" :in-theory (e/d (set::subset SET::EMPTYP SET::setp set::tail)
                                   (SET::PICK-A-POINT-SUBSET-STRATEGY)))))
 
 (defthm <<-of-head-and-head-of-tail
   (implies (and (set::setp x)
-                (not (set::empty x))
-                (not (set::empty (set::tail x))))
+                (not (set::emptyp x))
+                (not (set::emptyp (set::tail x))))
            (<< (SET::HEAD X)
                (SET::HEAD (SET::TAIL X))))
-  :hints (("Goal" :in-theory (enable set::tail set::insert set::head set::sfix set::empty set::setp set::subset))))
+  :hints (("Goal" :in-theory (enable set::tail set::insert set::head set::sfix set::emptyp set::setp set::subset))))
 
 (defthm <<-of-head-when-not-equal-head
   (implies (and (set::in elem x)
@@ -181,31 +181,31 @@
   :hints (("subgoal *1/3" :use (:instance <<-of-head-and-head-of-tail))
           ("Goal" :expand (SET::SETP X)
            :in-theory (enable set::in ;set::head
-                              set::setp set::empty))))
+                              set::setp set::emptyp))))
 
 
 (defthm setp-of-singleton
   (SET::setp (LIST ITEM))
   :hints (("Goal" :in-theory (enable SET::setp))))
 
-(defthm empty-of-singleton
-  (equal (SET::EMPTY (LIST ITEM))
+(defthm emptyp-of-singleton
+  (equal (SET::EMPTYP (LIST ITEM))
          nil)
-  :hints (("Goal" :in-theory (enable SET::EMPTY))))
+  :hints (("Goal" :in-theory (enable SET::EMPTYP))))
 
 (defthm head-of-cons
   (equal (set::head (cons item lst))
          (if (set::setp (cons item lst))
              item
            nil))
-  :hints (("Goal" :in-theory (enable SET::SETP SET::HEAD SET::SFIX SET::EMPTY))))
+  :hints (("Goal" :in-theory (enable SET::SETP SET::HEAD SET::SFIX SET::EMPTYP))))
 
 (defthm head-of-insert-of-head-when-subset
   (implies (set::subset y x)
            (equal (set::head (set::insert (set::head x) y))
                   (set::head x)))
   :hints (("Goal" :in-theory (enable set::tail set::insert ;set::head
-                                     set::sfix set::empty set::setp set::subset))))
+                                     set::sfix set::emptyp set::setp set::subset))))
 
 (defthm subset-of-delete-when-subset
   (implies (set::subset set1 set2)

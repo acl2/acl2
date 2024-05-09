@@ -1,7 +1,7 @@
 ; Tracking parents of nodes in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,6 +41,18 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
+(include-book "kestrel/acl2-arrays/make-empty-array" :dir :system)
+(include-book "kestrel/acl2-arrays/alen1" :dir :system)
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; todo: reduce, but we need read of write rules
+;; (local (include-book "kestrel/acl2-arrays/maximum-length" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/header" :dir :system))
+;; ;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/array1p" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/default" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/aset1" :dir :system))
+;; (local (include-book "kestrel/acl2-arrays/aref1" :dir :system))
+
 ;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable symbolp-of-car-when-dag-exprp)))
@@ -49,10 +61,9 @@
 (defthmd bounded-darg-listp-when-<-of-largest-non-quotep
   (implies (and (< (largest-non-quotep items) bound)
 ;                (not (all-consp items))
-                (all-dargp items)
-                (true-listp items))
+                (darg-listp items))
            (bounded-darg-listp items bound))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp all-dargp
+  :hints (("Goal" :in-theory (enable bounded-darg-listp darg-listp
                                      ;;all-consp
                                      largest-non-quotep))))
 
@@ -180,7 +191,7 @@
             (< n size)
             (natp size)
             (symbolp dag-parent-array-name)
-            (< size 2147483647))
+            (<= size *max-1d-array-length*))
            (all-dag-parent-entriesp n
                                     dag-parent-array-name
                                     (make-empty-array dag-parent-array-name
@@ -189,13 +200,13 @@
                                                    (make-empty-array dag-parent-array-name size))
            :in-theory (enable all-dag-parent-entriesp))))
 
-(defthm all-dag-parent-entriesp-of-compress1
-  (implies (and (force (array1p dag-parent-array-name dag-parent-array))
-                (< n (alen1 dag-parent-array-name dag-parent-array)))
-           (equal (all-dag-parent-entriesp n dag-parent-array-name (compress1 dag-parent-array-name dag-parent-array))
-                  (all-dag-parent-entriesp n dag-parent-array-name dag-parent-array)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable all-dag-parent-entriesp ))))
+;; (defthm all-dag-parent-entriesp-of-compress1
+;;   (implies (and (force (array1p dag-parent-array-name dag-parent-array))
+;;                 (< n (alen1 dag-parent-array-name dag-parent-array)))
+;;            (equal (all-dag-parent-entriesp n dag-parent-array-name (compress1 dag-parent-array-name dag-parent-array))
+;;                   (all-dag-parent-entriesp n dag-parent-array-name dag-parent-array)))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (enable all-dag-parent-entriesp ))))
 
 (defthm all-dag-parent-entriesp-of-cons-of-cons-of-header
   (implies (and (force (array1p dag-parent-array-name dag-parent-array))
@@ -218,7 +229,7 @@
                 (all-dag-parent-entriesp (+ -1 (alen1 dag-parent-array-name dag-parent-array))
                                          dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645)
+                (<= index *max-1d-array-index*)
                 (equal (default dag-parent-array-name dag-parent-array) nil)
 ;                (<= (+ -1 (alen1 dag-parent-array-name dag-parent-array)) index)
                 ;; (integerp n)
@@ -242,7 +253,7 @@
 (defthm all-dag-parent-entriesp-of-maybe-expand-array-gen
   (implies (and (array1p dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (equal (all-dag-parent-entriesp n dag-parent-array-name (maybe-expand-array dag-parent-array-name dag-parent-array index))
                   (all-dag-parent-entriesp n dag-parent-array-name dag-parent-array)))
   :hints (("Goal" ;:cases ((natp n))
@@ -307,7 +318,7 @@
 
 (defthm dag-parent-arrayp-of-make-empty-array
   (implies (and (posp size)
-                (<= size 2147483646)
+                (<= size *max-1d-array-length*)
                 (symbolp dag-parent-array-name))
            (dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name size)))
   :hints (("Goal" :in-theory (enable dag-parent-arrayp))))
@@ -365,7 +376,7 @@
   (implies (and; (<= (+ -1 (alen1 dag-parent-array-name dag-parent-array)) index)
                 (dag-parent-arrayp dag-parent-array-name dag-parent-array)
                 (natp index)
-                (<= index 2147483645))
+                (<= index *max-1d-array-index*))
            (dag-parent-arrayp dag-parent-array-name (maybe-expand-array dag-parent-array-name dag-parent-array index)))
   :hints (("Goal" :in-theory (e/d (dag-parent-arrayp) (all-dag-parent-entriesp-of-maybe-expand-array-gen)))))
 

@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function unary--.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,11 @@
   (equal (integerp (- x))
          (integerp (fix x)))
   :hints (("Goal" :cases ((integerp x)))))
+
+;; Simple but kept disabled because we have the stronger rule integerp-of--.
+(defthmd integerp-of---when-integerp
+  (implies (integerp x)
+           (integerp (- x))))
 
 (in-theory (disable rationalp-unary--)) ;rationalp-of-- is stronger
 
@@ -78,5 +83,4 @@
                   (if (acl2-numberp x)
                       (and (equal (- k) x)
                            (acl2-numberp k))
-                    (equal k 0))))
-  :hints (("Goal" :cases ((acl2-numberp k)))))
+                    (equal k 0)))))

@@ -30,7 +30,8 @@
 
 (fty::deftypes
     svexl-node
-    :prepwork ((local
+    :prepwork ((local (in-theory (disable acl2::apply$-badgep-properties)))
+               (local
                 (defthm integerp-implies-4vecp
                     (implies (integerp x)
                              (4vec-p x))
@@ -38,10 +39,10 @@
                            :in-theory (e/d (4vec-p) ())))))
                (local (defthm car-of-svar-when-consp
                           (implies (and (sv::svar-p x)
-                                        (consp x)
-                                        (syntaxp (quotep v)))
-                                   (equal (equal (car x) v)
-                                          (equal v :var)))
+                                        (consp x))
+                                   (and (equal (equal (car x) v)
+                                               (equal v :var))
+                                        (not (integerp (car x)))))
                         :hints(("Goal" :in-theory (enable sv::svar-p)))))
                (local (defthm 4vec-not-svar-p
                           (implies (sv::svar-p x)
@@ -62,26 +63,24 @@
                         :rule-classes ((:type-prescription :typed-term (car (4vec-fix x)))))))
     (fty::defflexsum
         svexl-node
-        (:var
-         :short "A variable, which represents a @(see 4vec)."
-         :cond (if (atom x)
-                   (or (stringp x)
-                       (and x (symbolp x)))
-                   (eq (car x) :var))
-         :fields ((name :acc-body x :type sv::svar-p))
-         :ctor-body name)
-      (:quote
-       :short "A ``quoted constant'' @(see 4vec), which represents itself."
+        (:quote
+         :short "A ``quoted constant'' @(see 4vec), which represents itself."
+         :cond (if (consp x)
+                   (integerp (car x))
+                 (or (integerp x) (not x)))
+         :fields ((val :acc-body x
+                       :type 4vec))
+         :ctor-body val)
+      (:var
+       :short "A variable, which represents a @(see 4vec)."
        :cond (or (atom x)
-                 (integerp (car x)))
-       :fields ((val :acc-body x
-                     :type 4vec))
-       :ctor-body val)
+                 (eq (car x) :var))
+       :fields ((name :acc-body x :type sv::svar-p))
+       :ctor-body name)
       (:node
-       :cond (and (consp x)
-                  (consp (cdr x))
-                  (not (cddr x))
-                  (eq (car x) ':node))
+       :cond (and (consp (cdr x))
+                  (eq (car x) ':node)
+                  (not (cddr x)))
        :fields ((node-id :acc-body (cadr x) :type natp))
        :ctor-body  (hons ':node (hons node-id nil)))
       (:call
@@ -183,7 +182,9 @@
      svex
      :var acc
      :quote acc
-     :call (b* ((entry (hons-get svex acc)))
+     :call (b* (((unless (rp::cons-count-compare svex 15))
+                 acc)
+                (entry (hons-get svex acc)))
              (if entry
                  (hons-acons svex (1+ (cdr entry)) acc)
                  (svex-to-svexl-get-stats-lst (hons-acons svex 1 acc)
@@ -355,7 +356,7 @@
        (- (fast-alist-free reuse-stats))
        (svexl (make-svexl
                :top-node new-node
-               :node-array svexl-node-array)))
+               :node-array (rev svexl-node-array))))
     svexl))
 
 (define svexlist-to-svexllist ((svexlist svexlist-p))
@@ -370,7 +371,7 @@
        (- (fast-alist-free reuse-stats))
        (svexllist (make-svexllist
                    :top-nodelist new-node-lst
-                   :node-array svexl-node-array)))
+                   :node-array (rev svexl-node-array))))
     svexllist))
 
 (define svex-alist-to-svexl-alist ((svex-alist sv::svex-alist-p))
@@ -418,7 +419,7 @@
        (- (fast-alist-free reuse-stats))
        (svexl-alist (make-svexl-alist
                      :top-node-alist top-node-alist
-                     :node-array svexl-node-array)))
+                     :node-array (rev svexl-node-array))))
     svexl-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -503,21 +504,26 @@
 
     (verify-guards svexl-node-to-svex))
 
-(define svexl-to-svex-aux ((x svexl-node-array-p))
+
+
+(define svexl-to-svex-aux ((x svexl-node-array-p)
+                           (reverse-nodesdb reverse-nodesdb-p))
   :verify-guards nil
   :prepwork
   ((local
     (in-theory (e/d (svexl-node-array-p
                      node-env-p)
                     ()))))
-  :returns (reverse-nodesdb reverse-nodesdb-p :hyp (svexl-node-array-p x))
+  :returns (res-reverse-nodesdb reverse-nodesdb-p
+                                :hyp (and (svexl-node-array-p x)
+                                          (reverse-nodesdb-p reverse-nodesdb)))
   (if (atom x)
-      nil
-      (b* ((reverse-nodesdb (svexl-to-svex-aux (cdr x)))
-           (node-id (caar x))
+      reverse-nodesdb
+      (b* ((node-id (caar x))
            (node (cdar x))
            (res (svexl-node-to-svex node reverse-nodesdb)))
-        (hons-acons node-id res reverse-nodesdb)))
+        (svexl-to-svex-aux (cdr x)
+                           (hons-acons node-id res reverse-nodesdb))))
   ///
   (verify-guards svexl-to-svex-aux))
 
@@ -525,7 +531,7 @@
   :returns (svex svex-p :hyp (svexl-p svexl))
   (b* ((node (svexl->top-node svexl))
        (node-array (svexl->node-array svexl))
-       (reverse-nodesdb (svexl-to-svex-aux node-array))
+       (reverse-nodesdb (svexl-to-svex-aux node-array nil))
        (res (svexl-node-to-svex node reverse-nodesdb))
        (- (fast-alist-free reverse-nodesdb)))
     res))
@@ -534,7 +540,7 @@
   :returns (svexlist svexlist-p :hyp (svexllist-p svexllist))
   (b* ((top-nodelist (svexllist->top-nodelist svexllist))
        (node-array (svexllist->node-array svexllist))
-       (reverse-nodesdb (svexl-to-svex-aux node-array))
+       (reverse-nodesdb (svexl-to-svex-aux node-array nil))
        (res (svexl-nodelist-to-svexlist top-nodelist reverse-nodesdb))
        (- (fast-alist-free reverse-nodesdb)))
     res))
@@ -576,7 +582,7 @@
 
   (b* ((top-node-alist (svexl-alist->top-node-alist svexl-alist))
        (node-array (svexl-alist->node-array svexl-alist))
-       (reverse-nodesdb (svexl-to-svex-aux node-array))
+       (reverse-nodesdb (svexl-to-svex-aux node-array nil))
        (top-nodelist (strip-cdrs top-node-alist))
        (keys (strip-cars top-node-alist))
        (res (svexl-nodelist-to-svexlist top-nodelist reverse-nodesdb))
@@ -660,7 +666,10 @@
                                     node-env
                                     env))))
 
+
+
 (define svexl-eval-aux ((x svexl-node-array-p)
+                        (node-env node-env-p)
                         (env sv::svex-env-p))
   :verify-guards nil
   :prepwork
@@ -669,14 +678,16 @@
                      node-env-p)
                     ()))))
   :returns (res-node-env node-env-p :hyp (and (svexl-node-array-p x)
+                                              (node-env-p node-env)
                                               (sv::svex-env-p env)))
   (if (atom x)
-      nil
-      (b* ((node-env (svexl-eval-aux (cdr x) env))
-           (node-id (caar x))
+      node-env
+      (b* ((node-id (caar x))
            (node (cdar x))
            (eval-res (svexl-node-eval node node-env env)))
-        (hons-acons node-id eval-res node-env)))
+        (svexl-eval-aux (cdr x)
+                        (hons-acons node-id eval-res node-env)
+                        env)))
   ///
   (verify-guards svexl-eval-aux))
 
@@ -686,7 +697,7 @@
                                      (sv::svex-env-p env)))
   (b* ((node (svexl->top-node x))
        (node-array (svexl->node-array x))
-       (node-env (svexl-eval-aux node-array env))
+       (node-env (svexl-eval-aux node-array nil env))
        (res (svexl-node-eval node node-env env))
        (- (fast-alist-free node-env)))
     res))
@@ -697,7 +708,7 @@
                                          (sv::svex-env-p env)))
   (b* ((node-lst (svexllist->top-nodelist x))
        (node-array (svexllist->node-array x))
-       (node-env (svexl-eval-aux node-array env))
+       (node-env (svexl-eval-aux node-array nil env))
        (res (svexl-nodelist-eval node-lst node-env env))
        (- (fast-alist-free node-env)))
     res))
@@ -708,7 +719,7 @@
                                          (sv::svex-env-p env)))
   (b* ((top-node-alist (svexl-alist->top-node-alist x))
        (node-array (svexl-alist->node-array x))
-       (node-env (svexl-eval-aux node-array env))
+       (node-env (svexl-eval-aux node-array nil env))
        (res (svexl-node-alist-eval top-node-alist node-env env))
        (- (fast-alist-free node-env)))
     res))
@@ -737,16 +748,15 @@
    (and stable-under-simplificationp
         '(:expand ((svex-p x)))))
   :progn t
-  (cond ((if (atom x)
-             (or (stringp x) (and x (symbolp x)))
-             (eq (car x) :var))
-         :var)
-        ((or (atom x) (integerp (car x)))
+  (cond ((if (consp x)
+             (integerp (car x))
+           (or (integerp x) (not x)))
          :quote)
-        ((and (consp x)
-              (consp (cdr x))
-              (not (cddr x))
-              (eq (car x) ':node))
+        ((or (atom x) (eq (car x) :var))
+         :var)
+        ((and (consp (cdr x))
+              (eq (car x) ':node)
+              (not (cddr x)))
          :node)
         (t :call)))
 
@@ -951,6 +961,7 @@
                            ()))))
 
 (define svexl-eval-aux-wog ((x alistp)
+                            (node-env)
                             (env))
   :prepwork
   ((local
@@ -958,43 +969,44 @@
                      node-env-p)
                     ()))))
   (if (atom x)
-      nil
-      (b* ((node-env
-            (svexl-eval-aux-wog (cdr x) env))
-           (node-id (caar x))
-           (node (cdar x))
-           (eval-res (svexl-node-eval-wog node node-env env)))
-        (hons-acons node-id eval-res node-env)))
+      node-env
+    (b* ((node-id (caar x))
+         (node (cdar x))
+         (eval-res (svexl-node-eval-wog node node-env env)))
+      (svexl-eval-aux-wog (cdr x)
+                          (hons-acons node-id eval-res node-env)
+                          env)))
   ///
 
   (def-rp-rule :disabled-for-acl2 t
     svexl-eval-aux-is-svexl-eval-aux-wog
     (implies (and (svexl-node-array-p x)
                   (sv::svex-env-p env))
-             (equal (svexl-eval-aux x env)
-                    (svexl-eval-aux-wog x env)))
+             (equal (svexl-eval-aux x node-env env)
+                    (svexl-eval-aux-wog x node-env env)))
     :hints (("Goal"
              :in-theory (e/d (svexl-eval-aux
                               svexl-eval-aux-wog) ()))))
 
   (def-rp-rule
-      svexl-eval-aux-wog-cons
-      (equal (svexl-eval-aux-wog (cons (cons node-id node) rest) env)
-             (b* ((node-env (svexl-eval-aux-wog rest env))
-                  (eval-res (svexl-node-eval-wog node node-env env)))
-               (hons-acons node-id eval-res node-env))))
+    svexl-eval-aux-wog-cons
+    (equal (svexl-eval-aux-wog (cons (cons node-id node) rest) node-env env)
+           (b* ((eval-res (svexl-node-eval-wog node node-env env)))
+             (svexl-eval-aux-wog rest
+                                 (hons-acons node-id eval-res node-env)
+                                 env))))
 
   (def-rp-rule
-      svexl-eval-aux-wog-nil
-      (equal (svexl-eval-aux-wog nil env)
-             nil)))
+    svexl-eval-aux-wog-nil
+    (equal (svexl-eval-aux-wog nil node-env env)
+           node-env)))
 
 (define svexl-eval-wog ((x)
                         (env))
   :verify-guards nil
   (b* ((node (cdar x))
        (node-array (cdr (cadr x)))
-       (node-env (svexl-eval-aux-wog node-array env))
+       (node-env (svexl-eval-aux-wog node-array nil env))
        (res (svexl-node-eval-wog node node-env env))
        (- (fast-alist-free node-env)))
     res)
@@ -1025,14 +1037,14 @@
                              ()))))
 
   (set-ignore-ok t)
-  (add-rp-rule svexl-eval-wog :beta-reduce t))
+  (add-rp-rule svexl-eval-wog :lambda-opt t))
 
 (define svexllist-eval-wog ((x)
                             (env))
   :verify-guards nil
   (b* ((node-lst (cdr (car x)))
        (node-array (cdr (cadr x)))
-       (node-env (svexl-eval-aux-wog node-array env))
+       (node-env (svexl-eval-aux-wog node-array nil env))
        (res (svexl-nodelist-eval-wog node-lst node-env env))
        (- (fast-alist-free node-env)))
     res)
@@ -1052,14 +1064,15 @@
                               SVEXL-EVAL-AUX-IS-SVEXL-EVAL-AUX-WOG)
                              ()))))
   (set-ignore-ok t)
-  (add-rp-rule svexllist-eval-wog :beta-reduce t))
+  (add-rp-rule svexllist-eval-wog :lambda-opt t))
 
 (define svexl-alist-eval-wog ((x)
                               (env))
   :verify-guards nil
-  (b* ((top-node-alist (cdar x))
+  (b* ((- (cw "Now rewriting svexl-alist... ~%"))
+       (top-node-alist (cdar x))
        (node-array (cdr (cadr x)))
-       (node-env (svexl-eval-aux-wog node-array env))
+       (node-env (svexl-eval-aux-wog node-array nil env))
        (res (svexl-node-alist-eval-wog top-node-alist node-env env))
        (- (fast-alist-free node-env)))
     res)
@@ -1080,7 +1093,7 @@
                               SVEXL-EVAL-AUX-IS-SVEXL-EVAL-AUX-WOG)
                              ()))))
   (set-ignore-ok t)
-  (add-rp-rule svexl-alist-eval-wog :beta-reduce t))
+  (add-rp-rule svexl-alist-eval-wog :lambda-opt t))
 
 (memoize 'svexl-alist-p)
 (memoize 'svexllist-p)

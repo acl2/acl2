@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -56,14 +56,14 @@
                                 (c::sintp |hibyte|)
                                 (c::sintp |lobyte|)
                                 ;; 0 <= current <= 65635:
-                                (<= 0 (c::sint->get |current|))
-                                (<= (c::sint->get |current|) 65535)
+                                (<= 0 (c::integer-from-sint |current|))
+                                (<= (c::integer-from-sint |current|) 65535)
                                 ;; 0 <= hibyte <= 255:
-                                (<= 0 (c::sint->get |hibyte|))
-                                (<= (c::sint->get |hibyte|) 255)
+                                (<= 0 (c::integer-from-sint |hibyte|))
+                                (<= (c::integer-from-sint |hibyte|) 255)
                                 ;; 0 <= lobyte <= 255:
-                                (<= 0 (c::sint->get |lobyte|))
-                                (<= (c::sint->get |lobyte|) 255))
+                                (<= 0 (c::integer-from-sint |lobyte|))
+                                (<= (c::integer-from-sint |lobyte|) 255))
                     :guard-hints (("Goal"
                                    :in-theory (enable c::sint-integerp-alt-def
                                                       c::add-sint-sint-okp
@@ -95,11 +95,11 @@
                                 (c::ucharp |hibyte|)
                                 (c::ucharp |lobyte|)
                                 ;; current <= 65635:
-                                (<= (c::uint->get |current|) 65535)
+                                (<= (c::integer-from-uint |current|) 65535)
                                 ;; hibyte <= 255:
-                                (<= (c::uchar->get |hibyte|) 255)
+                                (<= (c::integer-from-uchar |hibyte|) 255)
                                 ;; lobyte <= 255:
-                                (<= (c::uchar->get |lobyte|) 255))
+                                (<= (c::integer-from-uchar |lobyte|) 255))
                     :guard-hints (("Goal"
                                    :in-theory (enable c::shl-uint-sint-okp
                                                       c::shl-uint-okp)))))
@@ -113,4 +113,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |legacy| |checksum| :output-file "checksum.c")
+(c::atc |legacy| |checksum| :file-name "checksum" :header t)

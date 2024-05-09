@@ -37,8 +37,8 @@
 (include-book "floor")
 (include-book "floor2")
 (include-book "truncate")
-(include-book "divides")
-(include-book "times-and-divides")
+(include-book "divide")
+(include-book "times-and-divide")
 (include-book "complex")
 (include-book "less-than")
 (include-book "less-than-or-equal")
@@ -57,5 +57,8 @@
 (include-book "ifix")
 
 (include-book "limit-expt")
+
+(include-book "unguarded-primitives")
+(include-book "unguarded-built-ins")
 
 (include-book "doc")

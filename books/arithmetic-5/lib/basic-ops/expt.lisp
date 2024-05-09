@@ -19,6 +19,8 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
@@ -804,12 +806,12 @@
 
 ;;; This should really be put in axioms.lisp.
 (defun mfc-pot-lst (mfc)
-  (car (cddddr (cddddr mfc))))
+  (access metafunction-context mfc :simplify-clause-pot-lst))
 
 ;;; This should really be put in axioms.lisp.
 (defun mfc-pt (mfc)
-  (let ((rcnst (cadr (cddddr (cddddr mfc)))))
-    (caaddr rcnst)))
+  (let ((rcnst (access metafunction-context mfc :rcnst)))
+    (access rewrite-constant rcnst :pt)))
 
 (defun bounds-for-expt-linear-fns-1 (n mfc state)
   ;; See extract-bounds in non-linear for details.

@@ -1,5 +1,9 @@
 (in-package "RTL")
 
+; Matt K. mod: Avoid ACL2(p) proof problem (a proof attempt seemed to go "out
+; to lunch").
+(set-waterfall-parallelism nil)
+
 (include-book "bits")
 (include-book "log")
 (include-book "float")

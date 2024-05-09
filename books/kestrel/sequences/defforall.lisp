@@ -1,7 +1,7 @@
 ; Generate a function to check if all items in a list satisfy a predicate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,9 +36,9 @@
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;needed for the congruence rules?  could split out the defequiv
-(include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)
+(include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "kestrel/utilities/make-and" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))

@@ -1307,7 +1307,7 @@ baz
                       " to parse @(`...`).  Input: " str)
             nil
             state))
-       ((mv err objects state) (acl2::read-string str))
+       ((mv err objects state) (acl2::read-string str nil))
        ((mv & & state) (acl2::in-package-fn curr-pkg state))
        ((when err)
         (mv (str::cat "Error: failed to parse @(`...`).  Input: " str)

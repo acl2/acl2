@@ -1,6 +1,6 @@
 ; Indicators for methods that can be elaborated into method-designator-strings
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,29 +11,13 @@
 (in-package "JVM")
 
 (include-book "method-designator-strings")
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
+(include-book "classes") ; for class-infop0
 
 (defun method-indicatorp (m)
   (declare (xargs :guard t))
   (stringp m) ;todo: add checks?
   )
-
-;; Makes a list of every method in the METHOD-INFO-ALIST whose name is METHOD-NAME (descriptors may differ).
-;; Returns a list of method-descriptor-strings.
-(defun methods-matching-name (class-name method-name method-info-alist)
-  (declare (xargs :guard (and (method-namep method-name)
-                              (class-namep class-name)
-                              (method-info-alistp method-info-alist))
-                  :guard-hints (("Goal" :in-theory (enable METHOD-INFO-ALISTP))) ;todo
-                  ))
-  (if (endp method-info-alist)
-      nil
-    (let* ((entry (first method-info-alist))
-           (this-method-id (car entry))
-           (this-method-name (method-id-name this-method-id)))
-      (if (equal method-name this-method-name)
-          (cons (concatenate 'string class-name "." this-method-name (method-id-descriptor this-method-id))
-                (methods-matching-name class-name method-name (rest method-info-alist)))
-        (methods-matching-name class-name method-name (rest method-info-alist))))))
 
 ;; M is at least of the form ClassName.methodName.  The method signature may be
 ;; omitted if unambiguous, if which case this tool adds it.

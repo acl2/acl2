@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,7 +63,7 @@
   :short "Check that a function scope
           has no function definitions in the functions' bodies."
   (or (not (mbt (funscopep funscope)))
-      (omap::empty funscope)
+      (omap::emptyp funscope)
       (and (b* (((mv & funinfo) (omap::head funscope)))
              (funinfo-nofunp funinfo))
            (funscope-nofunp (omap::tail funscope))))
@@ -73,8 +73,8 @@
   (defrule funinfo-nofunp-of-cdr-of-in-when-funscope-nofunp
     (implies (and (funscopep funscope)
                   (funscope-nofunp funscope)
-                  (consp (omap::in fun funscope)))
-             (funinfo-nofunp (cdr (omap::in fun funscope)))))
+                  (consp (omap::assoc fun funscope)))
+             (funinfo-nofunp (cdr (omap::assoc fun funscope)))))
 
   (defrule funscope-nofunp-of-update
     (implies (and (funscopep funscope)
@@ -91,12 +91,12 @@
 
 (defrule funscope-funp-of-funscope-for-fundefs
   (implies (and (fundef-list-nofunp fundefs)
-                (not (resulterrp (funscope-for-fundefs fundefs))))
+                (not (reserrp (funscope-for-fundefs fundefs))))
            (funscope-nofunp (funscope-for-fundefs fundefs)))
   :enable (funscope-for-fundefs
            funscope-nofunp
            fundef-list-nofunp
-           funscopep-when-funscope-resultp-and-not-resulterrp))
+           funscopep-when-funscope-resultp-and-not-reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,7 +150,7 @@
      on a function environment without function definitions in the bodies,
      the result has no function definitions in the bodies."))
   (implies (and (funenv-nofunp funenv)
-                (not (resulterrp (find-fun fun funenv))))
+                (not (reserrp (find-fun fun funenv))))
            (funinfo+funenv-nofunp (find-fun fun funenv)))
   :enable (find-fun
            funenv-nofunp
@@ -171,6 +171,6 @@
      That is, this property of the function environment is preserved."))
   (implies (and (fundef-list-nofunp fundefs)
                 (funenv-nofunp funenv)
-                (not (resulterrp (add-funs fundefs funenv))))
+                (not (reserrp (add-funs fundefs funenv))))
            (funenv-nofunp (add-funs fundefs funenv)))
   :enable add-funs)

@@ -59,7 +59,7 @@
      nil
      0))
 
-  ;; must fail beause we can't evaluate bar
+  ;; must fail because we can't evaluate bar
   (must-fail-with-hard-error (foo2 100 7)) ;todo: this is an abuse of must-fail-with-hard-error because the form does not return an error triple
 
 ;must fail because bar is not yet defined

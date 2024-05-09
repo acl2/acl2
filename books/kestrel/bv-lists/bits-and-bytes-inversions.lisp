@@ -1,7 +1,7 @@
 ; Inversion theorems about converting between bytes and bit lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,9 +29,8 @@
   :hints (("Goal" :in-theory (enable byte-to-bits bits-to-byte))))
 
 (defthm bits-to-byte-of-byte-to-bits
-  (implies (unsigned-byte-p 8 byte)
-           (equal (bits-to-byte (byte-to-bits byte))
-                  byte))
+  (equal (bits-to-byte (byte-to-bits byte))
+         (bvchop 8 byte))
   :hints (("Goal" :in-theory (enable byte-to-bits bits-to-byte))))
 
 (defthm bytes-to-bits-of-bits-to-bytes

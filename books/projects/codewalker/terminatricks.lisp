@@ -2046,7 +2046,7 @@
          (mv-let (erp val state)
                  (with-prover-step-limit!
                   step-limit
-                  (thm-fn conjecture state hints otf-flg))
+                  (thm-fn conjecture state nil hints otf-flg nil))
                  (declare (ignore val))
                  (value (if (eq memo-alist t)
                             (not erp)

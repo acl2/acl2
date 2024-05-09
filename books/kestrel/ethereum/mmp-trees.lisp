@@ -1,10 +1,10 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,7 +108,7 @@
   (xdoc::topstring-p
    "This corresponds to @($y$) [YP:(190), YP:(191)].")
   (b* (((unless (mbt (bytelist-bytelist-mapp map))) nil)
-       ((when (omap::empty map)) nil)
+       ((when (omap::emptyp map)) nil)
        ((mv key val) (omap::head map))
        (key (byte-list-fix key))
        (val (byte-list-fix val))
@@ -177,7 +177,7 @@
      This property is used to show the existence of the maximum
      defined by @(tsee mmp-encode-c-max)."))
   (forall (key)
-          (implies (omap::in key (nibblelist-bytelist-mfix map))
+          (implies (omap::assoc key (nibblelist-bytelist-mfix map))
                    (equal (take x key) (nibble-list-fix l))))
   :guard-hints (("Goal"
                  :in-theory
@@ -192,7 +192,7 @@
                   (nibblelist-bytelist-mapp map)
                   (natp x)
                   (nibble-listp l)
-                  (omap::in key map))
+                  (omap::assoc key map))
              (>= (len key) x))
     :rule-classes nil
     :use (mmp-encode-c-forall-necc lemma)
@@ -239,7 +239,7 @@
     (implies (and (mmp-encode-c-exists map x)
                   (nibblelist-bytelist-mapp map)
                   (natp x)
-                  (omap::in key map))
+                  (omap::assoc key map))
              (>= (len key) x))
     :rule-classes nil
     :use (:instance mmp-encode-c-forall-len-key-geq-x
@@ -250,7 +250,7 @@
 (define nibblelist-bytelist-map-sup-len-key ((map nibblelist-bytelist-mapp))
   :returns (sup natp)
   :parents (mmp-trees)
-  :short "Natural number supremum of the lenghts of the keys
+  :short "Natural number supremum of the lengths of the keys
           in a map from nibble arrays to byte arrays."
   :long
   (xdoc::topstring
@@ -272,7 +272,7 @@
     "When updating the map, the result of this function is the maximum of
      the length of the udpated key and the result prior to updating."))
   (b* (((unless (mbt (nibblelist-bytelist-mapp map))) 0)
-       ((when (omap::empty map)) 0)
+       ((when (omap::emptyp map)) 0)
        ((mv key &) (omap::head map)))
     (max (len key)
          (nibblelist-bytelist-map-sup-len-key (omap::tail map))))
@@ -281,12 +281,12 @@
   ///
 
   (defrule nibblelist-bytelist-map-sup-len-key-geq-len-key
-    (implies (and (omap::in key map) ; bind free KEY
+    (implies (and (omap::assoc key map) ; bind free KEY
                   (nibblelist-bytelist-mapp map))
              (>= (nibblelist-bytelist-map-sup-len-key map)
                  (len key)))
     :rule-classes :linear
-    :enable omap::in)
+    :enable omap::assoc)
 
   (defrule nibblelist-bytelist-map-sup-len-key-of-update
     (implies (and (nibble-listp key)
@@ -424,7 +424,7 @@
 
   (defrule mmp-encode-c-max-set-bounded
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map)))
+                  (not (omap::emptyp map)))
              (mmp-encode-c-max.uboundp
               map (nibblelist-bytelist-map-sup-len-key map)))
     :enable (mmp-encode-c-max.uboundp
@@ -438,7 +438,7 @@
 
   (defrule mmp-encode-c-max-exists
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map)))
+                  (not (omap::emptyp map)))
              (mmp-encode-c-max.existsp map))
     :use ((:instance mmp-encode-c-max.existsp-when-nonempty-and-bounded
            (x0 0)
@@ -446,14 +446,14 @@
 
   (defrule nibblelist-bytelist-map-sup-len-key-geq-mmp-encode-c-max
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map)))
+                  (not (omap::emptyp map)))
              (>= (nibblelist-bytelist-map-sup-len-key map)
                  (mmp-encode-c-max map)))
     :rule-classes :linear)
 
   (defrule nibblelist-bytelist-map-sup-len-key-geq-element
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map))
+                  (not (omap::emptyp map))
                   (mmp-encode-c-max.elementp map x)) ; bind free X
              (>= (nibblelist-bytelist-map-sup-len-key map)
                  (nfix x)))
@@ -464,7 +464,7 @@
 
   (defrule nibblelist-bytelist-map-sup-len-key-neq-element-when-2+-keys
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map))
+                  (not (omap::emptyp map))
                   (not (equal (omap::size map) 1))
                   (natp x)
                   (mmp-encode-c-max.elementp map x))
@@ -475,13 +475,13 @@
     :prep-lemmas
 
     ((defrule keys-differ
-       (implies (and (not (omap::empty map))
+       (implies (and (not (omap::emptyp map))
                      (not (equal (omap::size map) 1)))
                 (b* ((key1 (mv-nth 0 (omap::head map)))
                      (key2 (mv-nth 0 (omap::head (omap::tail map)))))
                   (not (equal key1 key2))))
        :enable (omap::size
-                omap::empty
+                omap::emptyp
                 omap::mfix
                 omap::mapp
                 omap::tail
@@ -489,7 +489,7 @@
 
      (defrule keys-same-prefix
        (implies (and (nibblelist-bytelist-mapp map)
-                     (not (omap::empty map))
+                     (not (omap::emptyp map))
                      (not (equal (omap::size map) 1))
                      (mmp-encode-c-max.elementp
                       map (nibblelist-bytelist-map-sup-len-key map)))
@@ -507,7 +507,7 @@
 
      (defrule keys-len-lower-bound
        (implies (and (nibblelist-bytelist-mapp map)
-                     (not (omap::empty map))
+                     (not (omap::emptyp map))
                      (not (equal (omap::size map) 1))
                      (mmp-encode-c-max.elementp
                       map (nibblelist-bytelist-map-sup-len-key map)))
@@ -528,7 +528,7 @@
 
      (defrule keys-len-upper-bound
        (implies (and (nibblelist-bytelist-mapp map)
-                     (not (omap::empty map))
+                     (not (omap::emptyp map))
                      (not (equal (omap::size map) 1)))
                 (b* ((key1 (mv-nth 0 (omap::head map)))
                      (key2 (mv-nth 0 (omap::head (omap::tail map)))))
@@ -544,17 +544,17 @@
        :enable omap::unfold-equal-size-const
        :disable nibblelist-bytelist-map-sup-len-key-geq-len-key)
 
-     (defrule not-empty-tail-when-not-empty-and-size-not-1
-       (implies (and (not (omap::empty map))
+     (defrule not-emptyp-tail-when-not-emptyp-and-size-not-1
+       (implies (and (not (omap::emptyp map))
                      (not (equal (omap::size map) 1)))
-                (not (omap::empty (omap::tail map))))
-       :enable (omap::empty omap::size))))
+                (not (omap::emptyp (omap::tail map))))
+       :enable (omap::emptyp omap::size))))
 
   (defruled mmp-encode-c-max-element-leq-len-key
     (implies (and (nibblelist-bytelist-mapp map)
                   (natp x)
                   (mmp-encode-c-max.elementp map x)
-                  (omap::in key map)) ; bind free KEY
+                  (omap::assoc key map)) ; bind free KEY
              (<= x (len key)))
     :rule-classes ((:linear
                     :trigger-terms ((mmp-encode-c-max.elementp map x))))
@@ -563,8 +563,8 @@
 
   (defruled mmp-encode-c-max-leq-len-key
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map))
-                  (omap::in key map)) ; bind free KEY
+                  (not (omap::emptyp map))
+                  (omap::assoc key map)) ; bind free KEY
              (<= (mmp-encode-c-max map)
                  (len key)))
     :rule-classes ((:linear :trigger-terms ((mmp-encode-c-max map))))
@@ -572,9 +572,9 @@
           (x (mmp-encode-c-max map)))
     :disable mmp-encode-c-max-element-leq-len-key)
 
-  (defrule mmp-encode-c-max.elementp-of-empty-map
+  (defrule mmp-encode-c-max.elementp-of-emptyp-map
     (implies (and (nibblelist-bytelist-mapp map)
-                  (omap::empty map))
+                  (omap::emptyp map))
              (mmp-encode-c-max.elementp map x))
     :enable (mmp-encode-c-max.elementp mmp-encode-c-forall)
     :use (:instance mmp-encode-c-exists-suff (l (repeat x 0)))))
@@ -616,7 +616,7 @@
     "If @('i') is an element of the set maximized by @(tsee mmp-encode-c-max),
      then @('(1+ i)') is an element of the set for the submap."))
   (b* (((unless (mbt (nibblelist-bytelist-mapp map))) nil)
-       ((when (omap::empty map)) nil)
+       ((when (omap::emptyp map)) nil)
        ((mv key val) (omap::head map))
        (nibble (nibble-fix nibble)))
     (if (eql (nth i key) nibble)
@@ -638,16 +638,16 @@
   (defruled nth-of-key-in-mmp-encode-u-map
     (implies (and (nibblelist-bytelist-mapp map) ; bind free MAP
                   (nibblep nibble) ; bind free NIBBLE
-                  (omap::in key (mmp-encode-u-map map i nibble)))
+                  (omap::assoc key (mmp-encode-u-map map i nibble)))
              (equal (nth i key) nibble))
-    :enable omap::in)
+    :enable omap::assoc)
 
   (defrule in-of-mmp-encode-u-map
     (implies (and (nibblelist-bytelist-mapp map)
                   (nibblep nibble))
-             (equal (omap::in key (mmp-encode-u-map map i nibble))
+             (equal (omap::assoc key (mmp-encode-u-map map i nibble))
                     (and (equal (nth i key) nibble)
-                         (omap::in key map)))))
+                         (omap::assoc key map)))))
 
   (defrule mmp-encode-c-forall-of-mmp-encode-u-map
     (implies (and (nibblelist-bytelist-mapp map)
@@ -677,11 +677,11 @@
              (mmp-encode-c-max.elementp
               (mmp-encode-u-map map i nibble)
               (1+ i)))
-    :cases ((omap::empty (mmp-encode-u-map map i nibble)))
+    :cases ((omap::emptyp (mmp-encode-u-map map i nibble)))
 
     :prep-lemmas
     ((defrule lemma
-       (implies (and (not (omap::empty (mmp-encode-u-map map i nibble)))
+       (implies (and (not (omap::emptyp (mmp-encode-u-map map i nibble)))
                      (nibblelist-bytelist-mapp map)
                      (natp i)
                      (nibblep nibble)
@@ -1016,13 +1016,13 @@
     (b* (((unless (mbt (mmp-encode-c-max.elementp map i)))
           (mv nil nil nil)) ; irrelevant
          ((when (or (not (mbt (nibblelist-bytelist-mapp map)))
-                    (omap::empty map)))
+                    (omap::emptyp map)))
           (mv nil nil nil))
          ((mv c-error? c-root c-database) (mmp-encode-c map i))
          ((when c-error?) (mv c-error? nil nil))
          ((when (< (len c-root) 32)) (mv nil c-root c-database))
          (hash (keccak-256-bytes c-root))
-         (pair? (omap::in hash c-database))
+         (pair? (omap::assoc hash c-database))
          (collisionp (and pair?
                           (not (equal (cdr pair?)
                                       c-root))))
@@ -1038,14 +1038,14 @@
 
   (define mmp-encode-c ((map nibblelist-bytelist-mapp) (i natp))
     :guard (and (mmp-encode-c-max.elementp map i)
-                (not (omap::empty map)))
+                (not (omap::emptyp map)))
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (root byte-listp)
                  (database databasep))
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (and (mmp-encode-c-max.elementp map i)
                             (nibblelist-bytelist-mapp map)
-                            (not (omap::empty map)))))
+                            (not (omap::emptyp map)))))
           (mv nil nil nil)) ; irrelevant
          ((mv error? rlp-tree database)
           (b* (((when (= (omap::size map) 1))
@@ -1071,7 +1071,7 @@
                ((when u-error?) (mv u-error? (rlp-tree-leaf nil) nil))
                ((mv any-key &) (omap::head map))
                (key-prefix (take i any-key))
-               (pair (omap::in key-prefix map))
+               (pair (omap::assoc key-prefix map))
                (v (and pair (cdr pair)))
                (v-tree (if v (rlp-tree-leaf v) (rlp-tree-branch nil))))
             (mv nil
@@ -1091,7 +1091,7 @@
   (define mmp-encode-u
     ((map nibblelist-bytelist-mapp) (i natp) (nibble-counter natp))
     :guard (and (mmp-encode-c-max.elementp map i)
-                (not (omap::empty map))
+                (not (omap::emptyp map))
                 (not (equal (omap::size map) 1)))
     :returns (mv (error? (member-eq error? '(nil :collision :rlp)))
                  (trees rlp-tree-listp)
@@ -1099,7 +1099,7 @@
     :parents (mmp-encode-n/c)
     (b* (((unless (mbt (and (mmp-encode-c-max.elementp map i)
                             (nibblelist-bytelist-mapp map)
-                            (not (omap::empty map))
+                            (not (omap::emptyp map))
                             (not (equal (omap::size map) 1)))))
           (mv nil nil nil)) ; irrelevant
          ((when (> (nfix nibble-counter) 15)) (mv nil nil nil))
@@ -1133,7 +1133,7 @@
 
   (defruledl verify-guards-lemma
     (implies (and (nibblelist-bytelist-mapp map)
-                  (not (omap::empty map)))
+                  (not (omap::emptyp map)))
              (nibble-listp (take (mmp-encode-c-max map)
                                  (mv-nth 0 (omap::head map)))))
     :use (:instance mmp-encode-c-max-leq-len-key
@@ -1356,8 +1356,8 @@
      and we return the byte array value associated to key
      (@('nil') if the key is absent."))
   (b* (((mv & map) (mmp-decode root database))
-       (pair? (omap::in (byte-list-fix key)
-                        (bytelist-bytelist-mfix map))))
+       (pair? (omap::assoc (byte-list-fix key)
+                           (bytelist-bytelist-mfix map))))
     (if (consp pair?)
         (mv t (cdr pair?))
       (mv nil nil)))

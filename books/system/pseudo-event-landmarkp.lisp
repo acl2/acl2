@@ -17,26 +17,34 @@
       and in the comment, labeled `Event Tuples',
       above @('make-event-tuple').</p>"
 
+  (defconst *event-tuple-from-primordial-world-globals*
+    (make-event-tuple -1 0 nil nil 0 nil nil nil))
+
   (defun pseudo-event-landmarkp (val)
     (declare (xargs :guard t))
-    (or (equal val '(-1 ((NIL) 0)))   ; bogus tuple by primordial-world-globals
+    (or (equal val *event-tuple-from-primordial-world-globals*)
         (and (consp val)
-             (or (natp (car val))       ; n = (car val), d = 0
-                 (and (consp (car val))
-                      (natp (car (car val)))  ; = n
-                      (natp (cdr (car val))))) ; = d
-             (consp (cdr val))
-             (if (symbolp (cadr val))    ; ev-type is recoverable from form
-                 (pseudo-event-formp (cdr val))  ; (cdr val) here is the event form
-               (and (consp (cadr val))
-                    (consp (car (cadr val))) ; (ev-type . skipped-proofs-p)
-                    (symbolp (car (car (cadr val)))) ; ev-type
-                    (booleanp (cdr (car (cadr val)))) ; skipped-proofs-p
-                    (consp (cdr (cadr val)))
-                    (or (symbolp (cadr (cadr val))) ; name introduced
-                        (stringp (cadr (cadr val))) ; name introduced
-                        (equal 0 (cadr (cadr val))) ; no names introduced
-                        (string-or-symbol-listp (cadr (cadr val)))) ; list of names introduced
-                    (member-eq (cddr (cadr val)) ; symbol-class
-                               '(nil :program :ideal :common-lisp-compliant))
-                    (pseudo-event-formp (cddr val)))))))) ; (cddr val) here is the event form
+             (let ((val (remove-local val)))
+               (and
+                (consp val)
+                (or (natp (car val)) ; n = (car val), d = 0
+                    (and (consp (car val))
+                         (natp (car (car val)))   ; = n
+                         (natp (cdr (car val))))) ; = d
+                (consp (cdr val))
+                (if (symbolp (cadr val)) ; ev-type is recoverable from form
+                    (pseudo-event-formp (cdr val)) ; (cdr val) here is the event form
+                  (and (consp (cadr val))
+                       (consp (car (cadr val))) ; (ev-type . skipped-proofs-p)
+                       (symbolp (car (car (cadr val))))  ; ev-type
+                       (booleanp (cdr (car (cadr val)))) ; skipped-proofs-p
+                       (consp (cdr (cadr val)))
+                       (or (symbolp (cadr (cadr val))) ; name introduced
+                           (if (eq (car (car (cadr val))) 'include-book)
+                               (book-name-p (cadr (cadr val)))
+                             (stringp (cadr (cadr val)))) ; name introduced
+                           (equal 0 (cadr (cadr val)))    ; no names introduced
+                           (string-or-symbol-listp (cadr (cadr val)))) ; list of names introduced
+                       (member-eq (cddr (cadr val)) ; symbol-class
+                                  '(nil :program :ideal :common-lisp-compliant))
+                       (pseudo-event-formp (cddr val)))))))))) ; (cddr val) here is the event form

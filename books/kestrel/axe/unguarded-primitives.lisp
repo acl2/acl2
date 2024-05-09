@@ -10,11 +10,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Added by Matt K. to avoid ACL2(r) failure in the proof of
-; complex-unguarded-correct:
-; cert_param: (non-acl2r)
-
 (in-package "ACL2")
+
+(include-book "kestrel/arithmetic-light/unguarded-primitives" :dir :system)
 
 ;; This book defines functions that are equivalent to ACL2 primitive functions
 ;; but have guards of t (for use in evaluators).
@@ -38,100 +36,6 @@
   (equal (cdr-unguarded x)
          (cdr x))
   :hints (("Goal" :in-theory (enable cdr-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund binary-+-unguarded (x y)
-  (declare (xargs :guard t))
-  (binary-+ (fix x) (fix y)))
-
-(defthm binary-+-unguarded-correct
-  (equal (binary-+-unguarded x y)
-         (binary-+ x y))
-  :hints (("Goal" :in-theory (enable binary-+-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund binary-*-unguarded (x y)
-  (declare (xargs :guard t))
-  (binary-* (fix x) (fix y)))
-
-(defthm binary-*-unguarded-correct
-  (equal (binary-*-unguarded x y)
-         (binary-* x y))
-  :hints (("Goal" :in-theory (enable binary-*-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; consider defun$inline, and making the rare case separate
-(defund <-unguarded (x y)
-  (declare (xargs :guard t))
-  (if (and (real/rationalp x)
-           (real/rationalp y))
-      (< x y)
-    (let ((x1 (if (acl2-numberp x) x 0))
-          (y1 (if (acl2-numberp y) y 0)))
-      (or (< (realpart x1) (realpart y1))
-          (and (equal (realpart x1) (realpart y1))
-               (< (imagpart x1) (imagpart y1)))))))
-
-(defthm <-unguarded-correct
-  (equal (<-unguarded x y)
-         (< x y))
-  :hints (("Goal" :in-theory (enable <-unguarded)
-           :use (:instance completion-of-<))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund unary---unguarded (x)
-  (declare (xargs :guard t))
-  ;; (unary-- (fix x))
-  (if (acl2-numberp x) (- x) 0)
-  )
-
-(defthm unary---unguarded-correct
-  (equal (unary---unguarded x)
-         (unary-- x))
-  :hints (("Goal" :in-theory (enable unary---unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund unary-/-unguarded (x)
-  (declare (xargs :guard t))
-  (if (equal 0 (fix x))
-      0
-    (unary-/ x)))
-
-(defthm unary-/-unguarded-correct
-  (equal (unary-/-unguarded x)
-         (unary-/ x))
-  :hints (("Goal" :in-theory (enable unary-/-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund numerator-unguarded (x)
-  (declare (xargs :guard t))
-  (if (rationalp x)
-      (numerator x)
-    0))
-
-(defthm numerator-unguarded-correct
-  (equal (numerator-unguarded x)
-         (numerator x))
-  :hints (("Goal" :in-theory (enable numerator-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund denominator-unguarded (x)
-  (declare (xargs :guard t))
-  (if (rationalp x)
-      (denominator x)
-    1))
-
-(defthm denominator-unguarded-correct
-  (equal (denominator-unguarded x)
-         (denominator x))
-  :hints (("Goal" :in-theory (enable denominator-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,43 +65,6 @@
          (code-char x))
   :hints (("Goal" :in-theory (enable code-char-unguarded)
            :use ((:instance completion-of-code-char)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund complex-unguarded (x y)
-  (declare (xargs :guard t))
-  (complex (rfix x) (rfix y)))
-
-(defthm complex-unguarded-correct
-  (equal (complex-unguarded x y)
-         (complex x y))
-  :hints (("Goal" :in-theory (enable complex-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund realpart-unguarded (x)
-  (declare (xargs :guard t))
-  (if (acl2-numberp x)
-      (realpart x)
-    0))
-
-(defthm realpart-unguarded-correct
-  (equal (realpart-unguarded x)
-         (realpart x))
-  :hints (("Goal" :in-theory (enable realpart-unguarded realpart))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund imagpart-unguarded (x)
-  (declare (xargs :guard t))
-  (if (acl2-numberp x)
-      (imagpart x)
-    0))
-
-(defthm imagpart-unguarded-correct
-  (equal (imagpart-unguarded x)
-         (imagpart x))
-  :hints (("Goal" :in-theory (enable imagpart-unguarded imagpart))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,7 +112,7 @@
   (if (and (stringp pkg)
            (not (equal "" pkg)))
       (pkg-witness pkg)
-    'acl2::acl2-pkg-witness))
+    'acl2-pkg-witness))
 
 (defthmd equal-when-symbols
   (implies (and (symbolp x)

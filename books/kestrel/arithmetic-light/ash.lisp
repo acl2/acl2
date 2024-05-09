@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function ash
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,8 +16,8 @@
 
 (local (include-book "floor"))
 (local (include-book "expt"))
-(local (include-book "divides"))
-(local (include-book "times-and-divides"))
+(local (include-book "divide"))
+;(local (include-book "times-and-divide"))
 (local (include-book "times"))
 (local (include-book "plus"))
 
@@ -26,6 +26,11 @@
 (defthm ash-of-0
   (equal (ash i 0)
          (ifix i))
+  :hints (("Goal" :in-theory (enable ash))))
+
+(defthm ash-of-0-arg1
+  (equal (ash 0 c)
+         0)
   :hints (("Goal" :in-theory (enable ash))))
 
 (defthm integerp-of-ash
@@ -63,7 +68,7 @@
            :in-theory (e/d (ash expt-of-+)
                            (<-of-*-and-*-cancel)))))
 
-(defthm acl2::unsigned-byte-p-ash-alt-strong
+(defthm unsigned-byte-p-ash-alt-strong
   (implies (and (natp i)
                 (natp size)
                 (natp count)
@@ -117,7 +122,7 @@
                 )
            (equal (< (ash i c) (* x (expt 2 c)))
                   (< (ifix i) x)))
-  :hints (("Goal" :cases ((< 0 X))
+  :hints (("Goal"; :cases ((< 0 X))
            :in-theory (enable ash))))
 
 ;commutes the *
@@ -136,7 +141,7 @@
                 )
            (equal (< (* x (expt 2 c)) (ash i c))
                   (< x (ifix i))))
-  :hints (("Goal" :cases ((< X 0))
+  :hints (("Goal"; :cases ((< X 0))
            :in-theory (enable <-of-ash-arg2))))
 
 ;commutes the *
@@ -164,3 +169,9 @@
   :hints (("Goal" :use (:instance <=-of-ash-when-<=-free-linear
                                   (free (+ -1 free)))
            :in-theory (disable <-of-*-of-expt-and-ash))))
+
+(defthm ash-of-1-becomes-expt2
+  (implies (natp c)
+           (equal (ash 1 c)
+                  (expt 2 c)))
+  :hints (("Goal" :in-theory (enable ash))))

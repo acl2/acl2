@@ -1,7 +1,7 @@
 ; Strings that indicate methods within collections of classes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 ;; TODO: Move this book to the JVM package.  Maybe also include stuff like class-namep?
 
 (include-book "kestrel/utilities/string-utilities" :dir :system)
-(include-book "classes") ;reduce?  really we only need stuff about names
+(include-book "class-names")
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))

@@ -89,7 +89,8 @@
 (add-preprocessor
  :processor-fnc casesplitter
  :hints (("Goal"
-          :in-theory (e/d (casesplitter
+          :in-theory (e/d (VALID-RP-STATE-SYNTAXP
+                           casesplitter
                            RP-STATEP)
                           ()))))
 

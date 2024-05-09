@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-;; Analogously to kestrel-acl2/jvm/load-class.lisp ,
+;; Analogously to kestrel-acl2/jvm/read-class.lisp ,
 ;; this file defines
 ;;   (load-circom-json <json-file> <prime-field-form>)
 ;; which makes an event containing a defconstant with the R1CS constraints
@@ -85,7 +85,7 @@
     `(encapsulate ()
        ;; Currently required for the guard proof, and having this separate makes failure more clear:
        (local (defthm ,primality-theorem
-                (rtl::primep ,prime-form)))
+                (dm::primep ,prime-form)))
        (cw-event "Created local primality theorem, ~x0.~%" ',primality-theorem)
        (defund ,defun-vars-name () (declare (xargs :guard t)) ',vars)
        (cw-event "Created vars defun, ~x0.~%" ',defun-vars-name)

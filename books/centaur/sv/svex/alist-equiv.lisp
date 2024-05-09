@@ -139,7 +139,53 @@
               (equal (svex-alist-eval-equiv! x y) t))
      :hints ((witness))))
 
+(define svex-alist-eval-equiv!! ((x svex-alist-p) (y svex-alist-p))
+  ;; Svex-alist-eval-equiv, plus keys are equal and the whole list of values
+  ;; are eval-equiv including shadowed ones.
+  (and (ec-call (svexlist-eval-equiv (svex-alist-vals x) (svex-alist-vals y)))
+       (equal (svex-alist-keys x) (svex-alist-keys y)))
+  ///
+  (defequiv svex-alist-eval-equiv!!)
 
+  (local (defun ind (x x-equiv)
+           (declare (xargs :measure (+ (len x) (len x-equiv))))
+           (if (and (atom x) (atom x-equiv))
+               (list x x-equiv)
+             (if (or (atom x)
+                     (and (consp (car x))
+                          (svar-p (caar x))))
+                 (if (or (atom x-equiv)
+                         (and (consp (car x-equiv))
+                              (svar-p (caar x-equiv))))
+                     (ind (cdr x) (cdr x-equiv))
+                   (ind x (cdr x-equiv)))
+               (ind (cdr x) x-equiv)))))
+  (local (defcong svex-alist-eval-equiv!! svex-eval-equiv (svex-lookup k x) 2
+           :hints(("Goal" :in-theory (enable svex-lookup
+                                             svex-alist-keys
+                                             svex-alist-vals
+                                             svexlist-eval-equiv-redef)
+                   :induct (ind x x-equiv)))))
+
+  (local (defcong svex-alist-eval-equiv!! equal (svex-alist-keys x) 1))
+
+  (defcong svex-alist-eval-equiv!! svexlist-eval-equiv (svex-alist-vals x) 1)
+
+  (local (defthmd svex-alist-eval-is-pairlis$
+           (equal (svex-alist-eval x env)
+                  (pairlis$ (svex-alist-keys x)
+                            (svexlist-eval (svex-alist-vals x) env)))
+           :hints(("Goal" :in-theory (enable svex-alist-vals
+                                             svex-alist-keys
+                                             svexlist-eval
+                                             svex-alist-eval)))))
+  
+  (defcong svex-alist-eval-equiv!! equal (svex-alist-eval x env) 1
+    :hints(("Goal" :in-theory (enable svex-alist-eval-is-pairlis$))))
+  
+  (defrefinement svex-alist-eval-equiv!! svex-alist-eval-equiv!
+    :hints (("goal" :expand ((svex-alist-eval-equiv! x y))
+             :in-theory (disable svex-alist-eval-equiv!!)))))
 
 
 (defsection svex-envlists-similar
@@ -210,7 +256,22 @@
                       (:free (x y) (svex-envlists-equivalent y (cdr x)))))))
 
   (defcong svex-envlists-equivalent svex-envs-equivalent (nth n x) 2
-    :hints ((witness))))
+    :hints ((witness)))
+
+  (defthmd svex-envlists-equivalent-redef
+    (equal (svex-envlists-equivalent x y)
+           (if (atom x)
+               (atom y)
+             (and (consp y)
+                  (svex-envs-equivalent (car x) (car y))
+                  (svex-envlists-equivalent (cdr x) (cdr y)))))
+    :hints (("goal" :cases ((svex-envlists-equivalent x y)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc-equal 'svex-envlists-equivalent clause)))
+                   `(:expand (,lit
+                              (:free (n) (nth n x))
+                              (:free (n) (nth n y)))))))
+    :rule-classes ((:definition :install-body nil))))
 
 
 
@@ -300,3 +361,145 @@
 
   (defcong svex-alist-compose-equiv svex-eval-equiv (svex-compose-lookup var x) 2
     :hints((witness))))
+
+
+
+
+(local (defthmd hons-assoc-equal-iff-member-alist-keys
+         (iff (hons-assoc-equal k a)
+              (member-equal k (alist-keys a)))
+         :hints(("Goal" :in-theory (enable alist-keys)))))
+
+(defsection svex-alist-keys-equiv
+  (def-universal-equiv svex-alist-keys-equiv
+    :qvars ()
+    :equiv-terms ((set-equiv (svex-alist-keys x))))
+
+  (local (defthmd svex-lookup-under-iff
+           (iff (svex-lookup k a)
+                (hons-assoc-equal (svar-fix k) (svex-alist-fix a)))
+           :hints(("Goal" :in-theory (enable svex-lookup)))))
+
+  (local (defthmd svex-alist-keys-is-alist-keys-of-svex-alist-fix
+           (equal (svex-alist-keys x)
+                  (alist-keys (svex-alist-fix x)))
+           :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-fix alist-keys)))))
+
+
+
+  (local (defthm svex-alist-keys-not-set-equiv-by-svex-lookup-1
+           (implies (and (svex-lookup var a)
+                         (not (svex-lookup var b)))
+                    (not (set-equiv (svex-alist-keys a)
+                                    (svex-alist-keys b))))
+           :hints(("Goal" :in-theory (e/d (svex-lookup-under-iff
+                                           svex-alist-keys-is-alist-keys-of-svex-alist-fix
+                                           hons-assoc-equal-iff-member-alist-keys)
+                                          (hons-assoc-equal-of-svex-alist-fix))))))
+
+  (local (defthm svex-alist-keys-not-set-equiv-by-svex-lookup-2
+           (implies (and (svex-lookup var b)
+                         (not (svex-lookup var a)))
+                    (not (set-equiv (svex-alist-keys a)
+                                    (svex-alist-keys b))))
+           :hints(("Goal" :in-theory (e/d (svex-lookup-under-iff
+                                           svex-alist-keys-is-alist-keys-of-svex-alist-fix
+                                           hons-assoc-equal-iff-member-alist-keys)
+                                          (hons-assoc-equal-of-svex-alist-fix))))))
+
+  
+
+  (defthmd svex-lookup-iff-member-svex-alist-keys
+    (iff (svex-lookup k x)
+         (member-equal (svar-fix k) (svex-alist-keys x))))
+
+  
+  (defcong svex-alist-keys-equiv iff (svex-lookup var x) 2
+    :hints(("Goal" :in-theory (enable svex-alist-keys-equiv))))
+
+  (defthm set-equiv-forward-to-svex-alist-keys-equiv
+    (implies (set-equiv (svex-alist-keys x) (svex-alist-keys y))
+             (svex-alist-keys-equiv x y))
+    :hints(("Goal" :in-theory (enable svex-alist-keys-equiv)))
+    :rule-classes :forward-chaining)
+
+  
+
+  (defthm equal-svex-alist-keys-forward-to-svex-alist-keys-equiv
+    (implies (equal (svex-alist-keys x) (svex-alist-keys y))
+             (svex-alist-keys-equiv x y))
+    :hints(("Goal" :in-theory (enable svex-alist-keys-equiv)))
+    :rule-classes :forward-chaining)
+
+  (defrefinement svex-alist-eval-equiv svex-alist-keys-equiv
+    :hints(("Goal" :in-theory (enable svex-alist-eval-equiv
+                                      svex-alist-keys-equiv))))
+
+  (encapsulate
+    (((svex-alist-keys-equiv-lookup-witness * *) => *))
+    (local (defun svex-alist-keys-equiv-lookup-witness (x y)
+             (svar-fix (acl2::set-unequal-witness (svex-alist-keys x)
+                                                  (svex-alist-keys y)))))
+    (defthm svar-p-of-svex-alist-keys-equiv-lookup-witness
+      (svar-p (svex-alist-keys-equiv-lookup-witness x y)))
+           
+    (defthmd svex-alist-keys-equiv-in-terms-of-lookup
+      (equal (svex-alist-keys-equiv x y)
+             (let ((var (svex-alist-keys-equiv-lookup-witness x y)))
+               (iff (svex-lookup var x) (svex-lookup var y))))
+      :hints(("Goal" :in-theory (e/d (svex-alist-keys-equiv)))
+             (and stable-under-simplificationp
+                  '(:in-theory (e/d (acl2::set-unequal-witness-correct
+                                     svex-alist-keys-equiv-lookup-witness
+                                     svex-lookup-iff-member-svex-alist-keys)
+                                    (member-svex-alist-keys)))))
+      :rule-classes ((:definition :install-body nil))))
+
+  (defcong svex-alist-keys-equiv set-equiv (svex-alist-keys x) 1
+    :hints(("Goal" :in-theory (enable svex-alist-keys-equiv))))
+  )
+
+
+(defsection svex-env-keys-equiv
+  (def-universal-equiv svex-env-keys-equiv
+    :qvars ()
+    :equiv-terms ((set-equiv (alist-keys (svex-env-fix x)))))
+
+  (local (defthmd svex-env-boundp-under-iff
+           (iff (svex-env-boundp k a)
+                (hons-assoc-equal (svar-fix k) (svex-env-fix a)))
+           :hints(("Goal" :in-theory (enable svex-env-boundp)))))
+
+
+  (local (defthm svex-env-keys-not-set-equiv-by-svex-env-boundp-1
+           (implies (and (svex-env-boundp var a)
+                         (not (svex-env-boundp var b)))
+                    (not (set-equiv (alist-keys (svex-env-fix a))
+                                    (alist-keys (svex-env-fix b)))))
+           :hints(("Goal" :in-theory (e/d (svex-env-boundp-under-iff
+                                           hons-assoc-equal-iff-member-alist-keys)
+                                          (hons-assoc-equal-of-svex-env-fix))))))
+
+  (local (defthm svex-env-keys-not-set-equiv-by-svex-env-boundp-2
+           (implies (and (svex-env-boundp var b)
+                         (not (svex-env-boundp var a)))
+                    (not (set-equiv (alist-keys (svex-env-fix a))
+                                    (alist-keys (svex-env-fix b)))))
+           :hints(("Goal" :in-theory (e/d (svex-env-boundp-under-iff
+                                           hons-assoc-equal-iff-member-alist-keys)
+                                          (hons-assoc-equal-of-svex-env-fix))))))
+
+  (defcong svex-env-keys-equiv iff (svex-env-boundp var x) 2
+    :hints(("Goal" :in-theory (enable svex-env-keys-equiv))))
+
+  (defthm equal-svex-env-keys-forward-to-svex-env-keys-equiv
+    (implies (equal (alist-keys (svex-env-fix x))
+                    (alist-keys (svex-env-fix y)))
+             (svex-env-keys-equiv x y))
+    :hints(("Goal" :in-theory (enable svex-env-keys-equiv)))
+    :rule-classes :forward-chaining)
+
+  ;; (defthmd svex-alist-keys-equiv-iff-svex-alist-keys-set-equiv
+  ;;   (iff (svex-alist-keys-equiv x y)
+  ;;        (set-equiv (svex-alist-keys x) (svex-alist-keys y))))
+  )

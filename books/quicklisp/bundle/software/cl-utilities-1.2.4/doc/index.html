@@ -1,0 +1,58 @@
+<html>
+<head>
+  <title>cl-utilities manual</title>
+  <link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+<body>
+
+<h1>cl-utilities manual</h1>
+
+<p>Everybody writes some utilities because they're not part of the
+standard but they're so broadly useful. This results in a lot of wheel
+reinvention, and most reinventions are not as good as they should
+be. The cl-utilities project is an actively maintained collection of
+some of these utilities, with high-quality public-domain
+implementations and decent documentation.
+
+<h2>Table of contents:</h2>
+
+<ul style="list-style-type: none;">
+
+<li><a href="split-sequence.html">SPLIT-SEQUENCE, SPLIT-SEQUENCE-IF,
+SPLIT-SEQUENCE-IF-NOT</a>. Used for splitting sequences.</li>
+
+<li><a href="extremum.html">EXTREMUM, EXTREMA,
+N-MOST-EXTREME</a>: Finding extreme values in sequences based on
+user-defined criteria.</li>
+
+<li><a href="read-delimited.html">READ-DELIMITED</a> reads from a
+sequence delimited somehow, in a somewhat inconvenient but hopefully
+efficient way.</li>
+
+<li><a href="expt-mod.html">EXPT-MOD</a>, an interface for calculating
+<tt>(mod (expt n e) m)</tt> efficiently across implementations.</li>
+
+<li><a href="with-unique-names.html">WITH-UNIQUE-NAMES, n&eacute;e
+WITH-GENSYMS</a>. A classic macro-writing macro for preventing
+variable capture.</li>
+
+<li><a href="collecting.html">COLLECTING, WITH-COLLECTORS</a>. Some
+macros for clearly and efficiently collecting items into lists.</li>
+
+<li><a href="once-only.html">ONCE-ONLY</a>, a classic macro-writing
+macro for preventing multiple evaluation.</li>
+
+<li><a href="rotate-byte.html">ROTATE-BYTE</a> rotates bits in a byte</li>
+
+<li><a href="copy-array.html">COPY-ARRAY</a> shallow copies arrays.</li>
+
+<li><a href="compose.html">COMPOSE</a>. Composes functions.</li>
+
+</ul>
+
+<p><hr>Public domain, maintained by <a
+href="mailto:sketerpot@gmail.com">Peter Scott</a>. For more information, see
+the <a href="http://common-lisp.net/project/cl-utilities/">home page</a>.
+
+</body>
+</html>

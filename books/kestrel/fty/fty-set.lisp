@@ -1,10 +1,11 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Stephen Westfold (westfold@kestrel.edu), Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Stephen Westfold (westfold@kestrel.edu)
+;          Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,7 +17,6 @@
 (include-book "std/osets/top" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,6 +151,8 @@
    (xdoc::p
     "See the implementation, which uses a readable backquote notation,
      for details.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defset-implementation
   :parents (defset)
@@ -333,6 +335,7 @@
          (defrule ,setp-when-pred
            (implies (,x.pred ,x.xvar)
                     (set::setp ,x.xvar))
+           :induct t
            :enable set::setp
            :rule-classes (:rewrite ;; :forward-chaining
                                    )) ; ??
@@ -342,10 +345,10 @@
                             `(,x.elt-type (set::head ,x.xvar)))
                            ((eq x.elementp-of-nil nil)
                             `(equal (,x.elt-type (set::head ,x.xvar))
-                                    (not (set::empty ,x.xvar))))
-                           (t `(implies (not (set::empty ,x.xvar))
+                                    (not (set::emptyp ,x.xvar))))
+                           (t `(implies (not (set::emptyp ,x.xvar))
                                         (,x.elt-type (set::head ,x.xvar))))))
-           :enable (set::head set::empty))
+           :enable (set::head set::emptyp))
          (defrule ,pred-of-tail-when-pred
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::tail ,x.xvar)))
@@ -354,24 +357,29 @@
            (equal (,x.pred (set::insert ,a ,x.xvar))
                   (and (,x.elt-type ,a)
                        (,x.pred (set::sfix ,x.xvar))))
-           :enable (set::insert set::empty set::head set::tail set::setp))
+           :induct t
+           :enable (set::insert set::emptyp set::head set::tail set::setp))
          (defrule ,elt-type-when-in-pred-binds-free-xvar
            (implies (and (set::in ,a ,x.xvar) ; binds free X
                          (,x.pred ,x.xvar))
                     (,x.elt-type ,a))
+           :induct t
            :enable (set::in set::head))
          (defrule ,pred-of-union
            (equal (,x.pred (set::union ,x.xvar ,y))
                   (and (,x.pred (set::sfix ,x.xvar))
                        (,x.pred (set::sfix ,y))))
-           :enable (set::union set::empty set::setp set::head set::tail))
+           :induct t
+           :enable (set::union set::emptyp set::setp set::head set::tail))
          (defrule ,pred-of-difference
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::difference ,x.xvar ,y)))
+           :induct t
            :enable set::difference)
          (defrule ,pred-of-delete
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::delete ,a ,x.xvar)))
+           :induct t
            :enable set::delete)))))
 
 
@@ -379,7 +387,7 @@
   (b* (((flexset x))
        (pred-of-fix (acl2::packn-pos (list x.pred '-of- x.fix) x.name))
        (fix-when-pred (acl2::packn-pos (list x.fix '-when- x.pred) x.name))
-       (empty-fix (acl2::packn-pos (list 'empty- x.fix) x.name)))
+       (emptyp-fix (acl2::packn-pos (list 'emptyp- x.fix) x.name)))
     (if x.fix-already-definedp
         '(progn)
       `(define ,x.fix ((,x.xvar ,x.pred))
@@ -396,7 +404,7 @@
          ,@(and flagp `(:flag ,x.name))
          :progn t
          ; :inline t
-         (mbe :logic ;; (if (set::empty ,x.xvar)
+         (mbe :logic ;; (if (set::emptyp ,x.xvar)
                      ;;     nil
                      ;;   (set::insert (,x.elt-fix (set::head ,x.xvar))
                      ;;                (,x.fix (set::tail ,x.xvar))))
@@ -409,10 +417,10 @@
          (defrule ,fix-when-pred
            (implies (,x.pred ,x.xvar)
                     (equal (,x.fix ,x.xvar) ,x.xvar)))
-         (defrule ,empty-fix
-           (implies (or (set::empty ,x.xvar)
+         (defrule ,emptyp-fix
+           (implies (or (set::emptyp ,x.xvar)
                         (not (,x.pred ,x.xvar)))
-                    (set::empty (,x.fix ,x.xvar))))))))
+                    (set::emptyp (,x.fix ,x.xvar))))))))
 
 (define flexset-fix-postevents (x)
   :ignore-ok t
@@ -451,7 +459,7 @@
                `(:measure-debug t))
         :verify-guards nil
         :progn t
-        (if (or (set::empty ,x.xvar)
+        (if (or (set::emptyp ,x.xvar)
                 (not (,x.pred ,x.xvar)))
             1
           (+ 1
@@ -467,16 +475,16 @@
        (foo-count-of-insert (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-INSERT") x.count))
        (foo-count-of-head  (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-HEAD") x.count))
        (foo-count-of-tail  (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-TAIL") x.count))
-       (foo-count-when-empty  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-EMPTY") x.count))
-       (foo-count-when-not-empty  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-NOT-EMPTY") x.count)))
-    `((defthm ,foo-count-when-empty
-        (implies (empty ,x.xvar)
+       (foo-count-when-emptyp  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-EMPTYP") x.count))
+       (foo-count-when-not-emptyp  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-NOT-EMPTYP") x.count)))
+    `((defthm ,foo-count-when-emptyp
+        (implies (emptyp ,x.xvar)
                  (equal (,x.count ,x.xvar)
                         1))
         :hints (("Goal" :in-theory (enable ,x.count))))
 
-      (defthm ,foo-count-when-not-empty
-        (implies (and (not (empty ,x.xvar))
+      (defthm ,foo-count-when-not-emptyp
+        (implies (and (not (emptyp ,x.xvar))
                       (,x.pred ,x.xvar))
                  (equal (,x.count ,x.xvar)
                         (+ 1
@@ -486,13 +494,13 @@
 
       ,@(and eltcount
              `((defthm ,foo-count-of-head
-                 (implies (and (not (empty ,x.xvar))
+                 (implies (and (not (emptyp ,x.xvar))
                                (,x.pred ,x.xvar))
                           (< (,eltcount (set::head ,x.xvar)) (,x.count ,x.xvar)))
                  :rule-classes :linear)))
 
       (defthm ,foo-count-of-tail
-        (implies (and (not (empty ,x.xvar))
+        (implies (and (not (emptyp ,x.xvar))
                       (,x.pred ,x.xvar))
                  (< (,x.count (set::tail ,x.xvar)) (,x.count ,x.xvar)))
         :rule-classes :linear

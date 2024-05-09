@@ -4,3 +4,6 @@ Makefile-deps
 Makefile-books
 Makefile-features
 Makefile-cache
+git_source_deps
+git_other_deps
+git_lisp_sources

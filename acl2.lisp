@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -360,6 +360,12 @@
 
 (defun acl2-set-character-encoding ()
 
+; Warning: If we change from :iso-8859-1, consider the effect on the raw Lisp
+; code in read-file-into-string2.  That function allocates a string and copies
+; a stream into it.  Presumably that works because the stream is interpreted as
+; a character stream (since character is the default element-type for open) and
+; a each byte in the file is treated as a single character in that stream.
+
 ; We set the character encoding (see discussion above).
 
   #+allegro
@@ -493,6 +499,10 @@
 
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
+
+; The following form is executed by LP, but we also need it to be evaluated
+; during the build.
+(setq *read-default-float-format* 'double-float)
 
 ; See the function print-number-base-16-upcase-digits for an explanation of the
 ; following code, which pushes a feature when that function can be needed.
@@ -655,15 +665,15 @@
 
 ;;; Special-form-or-op-p: treat ecl like sbcl.
 
-;;; System-call: treat ecl like akcl (actually replace #+akcl by #+(or akcl
+;;; System-call: treat ecl like gcl (actually replace #+gcl by #+(or gcl
 ;;; ecl)).
 
 ;;; Initialize-state-globals: treat ecl just like lispworks.
 
-;;; Where we have the binding (compiler:*suppress-compiler-notes* t) for akcl,
+;;; Where we have the binding (compiler:*suppress-compiler-notes* t) for gcl,
 ;;; perhaps include the binding (*compile-verbose* t) for ecl.
 
-;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
+;;; Modify exit-lisp to treat ecl like gcl, except using ext::quit instead of
 ;;; si::bye.
 
 #+ccl
@@ -688,6 +698,10 @@
   t
   #-static-conses-should-work-with-egc-in-ccl
   nil)
+
+; Avoid error from e.g.: (defun foo (x) (member x 'a :test 'eq)).
+#+ccl
+(declaim (notinline memq))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
@@ -836,27 +850,6 @@
 
 (defvar acl2::*compiling-certified-file* nil)
 
-(defun acl2::defconst-redeclare-error (name)
-  (let ((stk (symbol-value 'acl2::*load-compiled-stack*)))
-    (cond (stk
-           (error
-            "Illegal attempt to redeclare the constant ~s.~%~
-             The problem appears to be that you are including a book,~%~
-             ~2T~a,~%~
-             that attempts to give a definition of this constant that~%~
-             is incompatible with its existing definition.  The ~%~
-             discrepancy is being discovered while loading that book's~%~
-             compiled (or expansion) file~:[, as the last such load for~%~
-             the following nested sequence of included books (outermost~%~
-             to innermost):~%~{  ~a~%~}~;.~]"
-            name
-            (caar stk)
-            (null (cdr stk))
-            (reverse (loop for x in stk collect (car x)))))
-          (t
-           (error "Illegal attempt to redeclare the constant ~s."
-                  name)))))
-
 (defparameter acl2::*safe-mode-verified-p*
 
 ; This global may be bound to t when we are evaluating a form that we know will
@@ -931,7 +924,7 @@
                                    (equal (car (cdr disc)) qterm)))
                             (equal (cdr (cdr ,disc)) ,term)))
                    (symbol-value ',name))
-                  (t (acl2::defconst-redeclare-error ',name))))
+                  (t (acl2::qfuncall acl2::defconst-redeclare-error ',name))))
                 ((acl2::raw-mode-p acl2::*the-live-state*)
 
 ; In this case we allow redeclaration of the constant; this is, after all, raw
@@ -939,7 +932,7 @@
 
                  ,term)
                 (t
-                 (acl2::defconst-redeclare-error ',name)))))))
+                 (acl2::qfuncall acl2::defconst-redeclare-error ',name)))))))
 
 ; If ',name is not bound, we must evaluate ,term.  Note that we do so
 ; outside of all local bindings, so as not to disturb variables in
@@ -991,6 +984,7 @@
     #+acl2-par "futures-raw"
     #+acl2-par "parallel-raw"
     "memoize-raw"
+    "float-a"
     "translate"
     "type-set-a"
     "linear-a"
@@ -1011,10 +1005,12 @@
     "proof-builder-a"
     "defthm"
     "other-events"
+    "float-b"
     "ld"
     "proof-builder-b"
     "apply-raw"
     "interface-raw"
+    "float-raw"
     "defpkgs"
     "boot-strap-pass-2-a"
     "apply-prim"
@@ -1076,7 +1072,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 8.4"
+                      "ACL2 Version 8.5"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -1171,8 +1167,16 @@ ACL2 from scratch.")
        #+unix
        (f-put-global 'tmp-dir "/tmp" state)
        #+gcl ; for every OS, including Windows (thanks to Camm Maguire)
-       (when (boundp 'si::*tmp-dir*)
-         (f-put-global 'tmp-dir si::*tmp-dir* state))
+       (when (and (boundp 'si::*tmp-dir*)
+                  (stringp si::*tmp-dir*)
+                  (not (equal si::*tmp-dir* "")))
+         (f-put-global
+          'tmp-dir
+          (if (eql (char si::*tmp-dir* (1- (length si::*tmp-dir*)))
+                   *directory-separator*)
+              (subseq si::*tmp-dir* 0 (1- (length si::*tmp-dir*)))
+            si::*tmp-dir*)
+          state))
        nil)))
 
 (defconstant *suppress-compile-build-time*
@@ -1257,22 +1261,14 @@ ACL2 from scratch.")
 (defconstant *acl2-package* (find-package "ACL2"))
 
 (dolist (x *features*)
-        (cond ((or (equal "AKCL-SET-MV"
-                          (symbol-name x))
-                   (equal "ACL2-LOOP-ONLY"
+        (cond ((or (equal "ACL2-LOOP-ONLY"
                           (symbol-name x))
                    (equal "ACL2-METERING"
                           (symbol-name x)))
                (format t "~%~%Warning:  This Common Lisp may be ~
                           unsuitable for ACL2 because a symbol with~
-                          ~%the name \"ACL2-LOOP-ONLY\", ~
-                          \"AKCL-SET-MV\" or \"ACL2-METERING\" is ~
+                          ~%the name \"ACL2-LOOP-ONLY\" or \"ACL2-METERING\" is ~
                           a member of *FEATURES*."))))
-
-#+akcl
-(if (fboundp 'si::set-mv)
-    (push :akcl-set-mv *features*)
-  (error "Use a version of ACKL after 206"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            EXITING LISP
@@ -1346,7 +1342,7 @@ ACL2 from scratch.")
   (if status-p (user::exit status) (user::exit))
   #+lispworks ; Version 4.2.0; older versions have used bye
   (if status-p (lispworks:quit :status status) (lispworks:quit))
-  #+akcl
+  #+gcl
   (if status-p (si::bye status) (si::bye))
   #+lucid
   (lisp::exit) ; don't know how to handle status, but don't support lucid
@@ -1390,6 +1386,46 @@ ACL2 from scratch.")
 ; flag may help though.
 
   (progn status-p status))
+
+#+lispworks
+(defun my-debugger-wrapper (func condition)
+  (declare (ignore func condition))
+  (exit-lisp 1))
+
+(defmacro exit-with-build-error (str &rest args)
+
+; This macro may be used when intending to cause an error that aborts an ACL2
+; build.  It needs to be defined after exit-lisp is defined.  It's not ever
+; critical to use this, but it's polite when the error message is likely to be
+; meaningful to the user; for a low-level ACL2 implementation error, the user
+; would just pass along to the ACL2 implementors whatever was printed, and that
+; would likely suffice.
+
+; Causing such an error is straightforward for Allegro CL, CCL, and GCL, but as
+; of this writing (3/2024) there are issues for the others.  For SBCL and
+; CMUCL, errors are signalled by printing the source error form to the
+; terminal, not by printing the error message.  In LispWorks, an error does
+; print as one might expect, but below that one also gets a potentially huge
+; amount of output with debugging information that is likely not relevant when
+; ACL2 deliberately causes a build-time error.
+
+  (let ((prefix "~%***** ERROR ******~%ACL2 build error: ")
+        (suffix "~%******************~%"))
+    (declare (ignorable prefix suffix))
+    #+(or sbcl cmucl)
+    `(progn (format t (concatenate 'string ,prefix ,str ,suffix) ,@args)
+            (exit-lisp 1))
+    #+lispworks
+    `(dbg:with-debugger-wrapper
+      'my-debugger-wrapper
+      (progn (format t (concatenate 'string ,prefix ,str ,suffix) ,@args)
+
+; The following error will probably not print anything, but we need the error
+; in order to get Lisp to quit.
+
+             (error "Build error encountered")))
+    #-(or sbcl cmucl lispworks)
+    `(error (concatenate 'string ,prefix ,str ,suffix) ,@args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                CHECKS
@@ -1713,6 +1749,126 @@ ACL2 from scratch.")
        (load acl2-fns-compiled)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                          FP SUPPORT CHECKS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2.
+
+(or (member :ieee-floating-point *features*)
+    (let ((x (getenv$-raw "ACL2_FP_OK")))
+      (and x
+           (not (equal x ""))))
+
+; Quoting
+; http://www.lispworks.com/documentation/lw71/CLHS/Body/v_featur.htm
+
+; :ieee-floating-point
+;    If present, indicates that the implementation purports to conform to the
+;    requirements of IEEE Standard for Binary Floating-Point Arithmetic.
+
+; Note regarding addition of :ieee-floating-point to CCL.  The page
+; https://github.com/Clozure/ccl/pull/384
+; says:  "xrme merged commit 110c230 into Clozure:master  on Sep 27, 2021".
+
+    (error "This Lisp may be unsuitable for ACL2, because it does not ~%~
+            specify support for IEEE floating point, that is, feature ~%~
+            :ieee-floating-point is missing from *features*.  This may ~%~
+            be easily fixed with an environment variable; see :DOC fp."))
+
+(or (equal (rational (float 0 0.0D0))
+           0)
+
+; See comments in constrained-to-df-idempotent and constrained-to-df-0.
+
+    (error "This Lisp is unsuitable for ACL2, because it failed~%~
+            the sanity check that ~s."
+           '(equal (rational (float 0 0.0D0))
+                   0)))
+
+(or (equal (float-radix 1.0d0) 2)
+    (error "This Lisp is unsuitable for ACL2, because it failed~%~
+            the sanity check that ~s."
+           '(equal (float-radix 1.0d0) 2)))
+
+(defun break-on-overflow-and-nan ()
+
+; In GCL at least, the effects of this function may not take effect unless this
+; form is executed at startup.  So we call it not only during the build, but
+; also in the code for lp conditioned on (not *lp-ever-entered-p*).  Thanks to
+; Camm Maguire for suggesting that we specify an effect for every legal keyword
+; in GCL, in case the defaults change.  We're applying that principle here for
+; other Lisps too.
+
+; We aren't concerned about underflow or inexact results.
+
+; It probably isn't important to set the rounding-mode to :nearest, as this is
+; probably the default anyhow.  But we do so just to tie things down a bit,
+; since that's what IEEE specifies that a language should do by default (see
+; documentation in the partial-encapsulate that introduces df-round).
+
+  #+gcl
+  (fpe:break-on-floating-point-exceptions :division-by-zero t
+                                          :floating-point-invalid-operation t
+                                          :floating-point-overflow t
+                                          :floating-point-underflow nil
+                                          :floating-point-inexact nil)
+  #+ccl
+  (ccl::set-fpu-mode :rounding-mode :nearest
+                     :overflow t
+                     :underflow nil
+                     :division-by-zero t
+                     :invalid t
+                     :inexact nil)
+
+  #+sbcl
+  (sb-int:set-floating-point-modes :traps
+                                   '(:overflow :invalid :divide-by-zero)
+                                   :rounding-mode :nearest)
+
+  #+cmucl
+  (ext:set-floating-point-modes :traps
+                                '(:overflow :invalid :divide-by-zero)
+                                :rounding-mode :nearest)
+
+; LispWorks and Allegro CL seem to have no mechanism like those above, so we
+; define a wrapper elsewhere, df-signal?, that is a no-op except in those two
+; Lisps.
+
+  nil)
+
+(break-on-overflow-and-nan)
+
+(unless
+
+; See the Essay on Support for Floating-point (double-float, df) Operations in
+; ACL2, specifically the section "On overflow and soundness".
+
+    (and
+
+; Check that floating-point overflow produces a double-float (presumably an
+; infinity) or an error, at least in one overflow case.
+
+     (let ((*my-most-positive-double-float*
+            most-positive-double-float))
+
+; The reason we let-bind a special variable here is that otherwise, SBCL
+; issues a style-warning, "Lisp error during constant folding".
+
+       (declare (special *my-most-positive-double-float*))
+       (typep (handler-case
+               (* *my-most-positive-double-float*
+                  *my-most-positive-double-float*)
+               (error () 0.0d0))
+              'double-float))
+     #+sbcl
+     (member :overflow
+             (cadr (member :traps
+                           (sb-int:get-floating-point-modes)))))
+  (error "This Lisp is unsuitable for ACL2, because it failed ~%a check that ~
+          floating-point overflow causes an error."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           ACL2-READTABLE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1813,6 +1969,12 @@ which is saved just in case it's needed later.")
    #\f
    #'sharp-f-read))
 
+(defun define-sharp-d ()
+  (set-new-dispatch-macro-character
+   #\#
+   #\d
+   #'sharp-d-read))
+
 (defvar *old-character-reader*
   (get-dispatch-macro-character #\# #\\))
 
@@ -1868,7 +2030,8 @@ which is saved just in case it's needed later.")
 ;     (define-sharp-atsign) ; see interface-raw.lisp
       (define-sharp-bang)
       (define-sharp-u)
-      (define-sharp-f))
+      (define-sharp-f)
+      (define-sharp-d))
 
 ;  Keep control of character reader.  However, we do not need to keep such
 ;  control when reading in a .fas file for CLISP, and in fact, the set-theory
@@ -1899,6 +2062,7 @@ which is saved just in case it's needed later.")
           (define-sharp-bang)
           (define-sharp-u)
           (define-sharp-f)
+          (define-sharp-d)
           (set-dispatch-macro-character
            #\#
            #\\
@@ -1988,8 +2152,6 @@ which is saved just in case it's needed later.")
 ;          will be rejected by bad-lisp-object
 ;   #,  load-time evaluation
 ;          we shut it off
-;   #0-#9 used for infix arguments
-;          ok
 ;   #:  uninterned symbol
 ;          will be rejected by bad-lisp-object
 ;   #<  signals an error
@@ -2081,7 +2243,7 @@ which is saved just in case it's needed later.")
 ; terminating macro character.
 
 ; Finally, here is an argument that we cannot reasonably allow ACL2 to
-; accept character notations of the sort akcl allows, such as #\\112
+; accept character notations of the sort gcl allows, such as #\\112
 ; for #\J for example.  (By the way, 112 is octal for 74, which is
 ; (char-code #\J).)  This is sad, because it would have been nice to
 ; provide a way of reading arbitrary 8-bit characters in ACL2.
@@ -2097,9 +2259,8 @@ which is saved just in case it's needed later.")
 ; "\\112".  Then, the documentation for ``char-name'' (part of which
 ; is also below) implies that CHAR-NAME returns the character name,
 ; and hence (CHAR-NAME #\J) must be "\\112".  But probably this isn't
-; true of the implementation (it's not true for akcl or allegro, for
-; example).  And, it seems really dangerous for us to redefine
-; CHAR-NAME in ACL2.
+; true of the implementation.  And, it seems really dangerous for us
+; to redefine CHAR-NAME in ACL2.
 
 ; What's worse, if we apply the first part of this argument to
 ; #\Newline, we see that the name of the character #\Newline is
@@ -2273,9 +2434,9 @@ You are using version ~s.~s.~s."
    (when (not *suppress-compile-build-time*)
      (our-with-compilation-unit
       (let ((*readtable* *acl2-readtable*)
-            #+akcl
+            #+gcl
 
-; AKCL compiler note stuff.  We have so many tail recursive functions
+; GCL compiler note stuff.  We have so many tail recursive functions
 ; that the notes about tail recursion optimization are just too much
 ; to take.
 
@@ -2326,19 +2487,19 @@ You are using version ~s.~s.~s."
     (when fast
       (setq user::*fast-acl2-gcl-build* t))
 
-    #+akcl
+    #+gcl
 
 ; We grow the image slowly, since we now do allocation on start-up.  We are
 ; assuming that people will be using load-acl2 only as part of the process of
 ; building a saved image, and hence that this slow growth policy will be undone
-; by the function save-acl2-in-akcl.  If we are
+; by the function save-acl2-in-gcl.  If we are
 
     (when (not fast)
       (loop
        for type in
        '(cons fixnum symbol array string cfun sfun
 
-; In akcl, at least some versions of it, we cannot call allocate-growth on the
+; In gcl, at least some versions of it, we cannot call allocate-growth on the
 ; following two types.
 
               #+gcl contiguous

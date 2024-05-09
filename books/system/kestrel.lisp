@@ -1,6 +1,6 @@
 ; Kestrel's Contributions to the ACL2 System Code
 ;
-; Copyright (C) 2016-2019
+; Copyright (C) 2016-2022
 ;   Kestrel Institute (http://www.kestrel.edu)
 ;   Regents of the University of Texas
 ;
@@ -135,15 +135,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(verify-termination lookup-brr-stack)
-
-(verify-termination get-brr-global)
-
 (verify-termination get-brr-local)
 
 (verify-termination ens-maybe-brr)
 
-; The above four forms ensure that the expansion of the disabledp macro is in
+; The above two forms ensure that the expansion of the disabledp macro is in
 ; logic mode.
 
 ; For verify-guards, we need to add a suitable guard to lookup-brr-stack, and
@@ -158,4 +154,24 @@
 (verify-termination new-namep) ; and guards
 
 (verify-termination chk-all-but-new-name-cmp) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination partition-rest-and-keyword-args1) ; and guards
+
+(verify-termination partition-rest-and-keyword-args2) ; and guards
+
+(verify-termination partition-rest-and-keyword-args) ; and guards
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+  (local (include-book "kestrel/acl2-arrays/aset1" :dir :system))
+  (local (include-book "kestrel/acl2-arrays/dimensions" :dir :system))
+  (local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+
+  (local (in-theory (disable array1p)))
+
+  (verify-termination aset1-lst) ; and guards
+  )
 

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,10 +14,15 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-conditional-expressions
-  :parents (atc-implementation)
+  :parents (atc-shallow-embedding)
   :short "Representation of C conditional expressions for ATC."
   :long
   (xdoc::topstring

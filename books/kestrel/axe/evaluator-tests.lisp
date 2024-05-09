@@ -1,7 +1,7 @@
 ; Tests of the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -48,6 +48,12 @@
            (ENDP ARGS-TO-WALK-DOWN)
            (LET
             ((ARG1 (NTH 0 ARGS)))
+            (IF
+             (EQ 'NUMERATOR FN)
+             (MV T (NUMERATOR-UNGUARDED ARG1))
+            (IF
+             (EQ 'DENOMINATOR FN)
+             (MV T (DENOMINATOR-UNGUARDED ARG1))
             (IF
              (EQ 'COMPLEX-RATIONALP FN)
              (MV T (COMPLEX-RATIONALP ARG1))
@@ -101,7 +107,7 @@
                              (MV T (UNARY-/-UNGUARDED ARG1))
                              (IF
                               (EQ 'CEILING-OF-LG FN)
-                              (MV T (CEILING-OF-LG ARG1))
+                              (MV T (CEILING-OF-LG-unguarded ARG1))
                               (IF
                                (EQ 'INTEGER-LENGTH FN)
                                (MV
@@ -123,7 +129,7 @@
                                     (EQ 'WIDTH-OF-WIDEST-INT FN)
                                     (MV
                                      T
-                                     (WIDTH-OF-WIDEST-INT-unguarded ARG1))
+                                     (WIDTH-OF-WIDEST-INT-UNGUARDED ARG1))
                                     (IF
                                      (EQ 'BYTES-TO-BITS FN)
                                      (MV T (BYTES-TO-BITS ARG1))
@@ -307,7 +313,7 @@
                                                                   (QUOTEP ARG1))
                                                                  (MV
                                                                   NIL
-                                                                  NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                                  NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
            (LET
             ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
             (IF
@@ -350,7 +356,7 @@
                         (MV T (NTH-UNGUARDED ARG1 ARG2))
                         (IF
                          (EQ 'LOGEXT FN)
-                         (MV T (LOGEXT ARG1 (IFIX ARG2)))
+                         (MV T (LOGEXT-unguarded ARG1 ARG2))
                          (IF
                           (EQ 'LOGTAIL$INLINE FN)
                           (MV T (LOGTAIL-UNGUARDED ARG1 ARG2))
@@ -417,19 +423,19 @@
                                          (MV T
                                              (SIGNED-BYTE-P
                                               ARG1 ARG2))
-                                         (IF
-                                          (EQ 'GETBIT-IS-ALWAYS-1
-                                              FN)
-                                          (MV T
-                                              (GETBIT-IS-ALWAYS-1-UNGUARDED
-                                               ARG1 ARG2))
-                                          (IF
-                                           (EQ
-                                            'GETBIT-IS-ALWAYS-0
-                                            FN)
-                                           (MV T
-                                               (GETBIT-IS-ALWAYS-0-UNGUARDED
-                                                ARG1 ARG2))
+                                         ;; (IF
+                                         ;;  (EQ 'GETBIT-IS-ALWAYS-1
+                                         ;;      FN)
+                                         ;;  (MV T
+                                         ;;      (GETBIT-IS-ALWAYS-1-UNGUARDED
+                                         ;;       ARG1 ARG2))
+                                         ;;  (IF
+                                         ;;   (EQ
+                                         ;;    'GETBIT-IS-ALWAYS-0
+                                         ;;    FN)
+                                         ;;   (MV T
+                                         ;;       (GETBIT-IS-ALWAYS-0-UNGUARDED
+                                         ;;        ARG1 ARG2))
                                            (IF
                                             (EQ 'BINARY-APPEND
                                                 FN)
@@ -579,11 +585,11 @@
                                                                 ARG2))
                                                               (IF
                                                                (EQ
-                                                                'TAKE-EVERY-NTH
+                                                                'EVERY-NTH
                                                                 FN)
                                                                (MV
                                                                 T
-                                                                (TAKE-EVERY-NTH
+                                                                (EVERY-NTH
                                                                  ARG1
                                                                  ARG2))
                                                                (IF
@@ -898,7 +904,8 @@
 
                                                                                   NIL))))))))))))))))))))))))
                                                            ;;)
-                                                           ))))))))))))))))))))))))))))))))))))))))))))))
+                                                           ))))))))))))))) ;))
+                                           )))))))))))))))))))))))))))))
              (LET
               ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
               (IF
@@ -940,9 +947,9 @@
                          (IF
                           (EQ 'MYIF FN)
                           (MV T (MYIF ARG1 ARG2 ARG3))
-                          (IF
-                           (EQ 'NTH2 FN)
-                           (MV T (NTH2 ARG1 ARG2 ARG3))
+                          ;; (IF
+                          ;;  (EQ 'NTH2 FN)
+                          ;;  (MV T (NTH2 ARG1 ARG2 ARG3))
                            (IF
                             (EQ 'S FN)
                             (MV T (S ARG1 ARG2 ARG3))
@@ -1025,6 +1032,9 @@
                                               T
                                               (BVLT-UNGUARDED
                                                ARG1 ARG2 ARG3))
+                                            (IF
+                                             (EQ 'BVequal FN)
+                                             (MV T (BVequal-UNGUARDED ARG1 ARG2 ARG3))
                                              (IF
                                               (EQ 'BVPLUS-LST FN)
                                               (MV
@@ -1096,7 +1106,8 @@
                                                         ARG3))
                                                       (MV
                                                        NIL
-                                                       NIL))))))))))))))))))))))))))))))))))))))))
+                                                       NIL))))))))))))))))))))))))))))) ;)
+                           )))))))))))
                (LET
                 ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                 (IF
@@ -1114,9 +1125,9 @@
                     (MV T
                         (BV-ARRAY-READ-UNGUARDED
                          ARG1 ARG2 ARG3 ARG4))
-                    (IF
-                     (EQ 'BVNTH FN)
-                     (MV T (BVNTH ARG1 ARG2 (NFIX ARG3) ARG4))
+                    ;; (IF
+                    ;;  (EQ 'BVNTH FN)
+                    ;;  (MV T (BVNTH ARG1 ARG2 (NFIX ARG3) ARG4))
                      (IF
                       (EQ 'BVCAT FN)
                       (MV
@@ -1144,7 +1155,9 @@
                             T
                             (DAG-VAL-WITH-AXE-EVALUATOR
                              ARG1 ARG2 ARG3 (+ 1 ARRAY-DEPTH)))
-                           (MV NIL NIL)))))))))))
+                           (MV NIL NIL)))))))
+;)
+                     )))
                  (LET
                   ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                   (IF
@@ -1290,7 +1303,7 @@
       (AND
        (OR (QUOTEP DAG)
            (AND (PSEUDO-DAGP DAG)
-                (< (LEN DAG) 2147483646)))
+                (< (LEN DAG) *max-1d-array-length*)))
        (SYMBOL-ALISTP ALIST)
        (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
        (NATP ARRAY-DEPTH))))
@@ -1507,6 +1520,12 @@
           (ENDP ARGS-TO-WALK-DOWN)
           (LET
            ((ARG1 (UNQUOTE (NTH 0 ARGS))))
+            (IF
+             (EQ 'NUMERATOR FN)
+             (MV T (NUMERATOR-UNGUARDED ARG1))
+            (IF
+             (EQ 'DENOMINATOR FN)
+             (MV T (DENOMINATOR-UNGUARDED ARG1))
            (IF
             (EQ 'COMPLEX-RATIONALP FN)
             (MV T (COMPLEX-RATIONALP ARG1))
@@ -1560,7 +1579,7 @@
                             (MV T (UNARY-/-UNGUARDED ARG1))
                             (IF
                              (EQ 'CEILING-OF-LG FN)
-                             (MV T (CEILING-OF-LG ARG1))
+                             (MV T (CEILING-OF-LG-unguarded ARG1))
                              (IF
                               (EQ 'INTEGER-LENGTH FN)
                               (MV
@@ -1762,7 +1781,7 @@
                                                                   ARG1))
                                                                 (MV
                                                                  NIL
-                                                                 NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))
+                                                                 NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
           (LET
            ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
            (IF
@@ -1805,7 +1824,7 @@
                         (MV T (NTH-UNGUARDED ARG1 ARG2))
                         (IF
                          (EQ 'LOGEXT FN)
-                         (MV T (LOGEXT ARG1 (IFIX ARG2)))
+                         (MV T (LOGEXT-unguarded ARG1 ARG2))
                          (IF
                           (EQ 'LOGTAIL$INLINE FN)
                           (MV T (LOGTAIL-UNGUARDED ARG1 ARG2))
@@ -1869,18 +1888,18 @@
                                          (MV T
                                              (SIGNED-BYTE-P
                                               ARG1 ARG2))
-                                         (IF
-                                          (EQ 'GETBIT-IS-ALWAYS-1
-                                              FN)
-                                          (MV T
-                                              (GETBIT-IS-ALWAYS-1-UNGUARDED
-                                               ARG1 ARG2))
-                                          (IF
-                                           (EQ 'GETBIT-IS-ALWAYS-0
-                                               FN)
-                                           (MV T
-                                               (GETBIT-IS-ALWAYS-0-UNGUARDED
-                                                ARG1 ARG2))
+                                         ;; (IF
+                                         ;;  (EQ 'GETBIT-IS-ALWAYS-1
+                                         ;;      FN)
+                                         ;;  (MV T
+                                         ;;      (GETBIT-IS-ALWAYS-1-UNGUARDED
+                                         ;;       ARG1 ARG2))
+                                         ;;  (IF
+                                         ;;   (EQ 'GETBIT-IS-ALWAYS-0
+                                         ;;       FN)
+                                         ;;   (MV T
+                                         ;;       (GETBIT-IS-ALWAYS-0-UNGUARDED
+                                         ;;        ARG1 ARG2))
                                            (IF
                                             (EQ 'BINARY-APPEND FN)
                                             (MV T
@@ -2025,11 +2044,11 @@
                                                                 ARG2))
                                                               (IF
                                                                (EQ
-                                                                'TAKE-EVERY-NTH
+                                                                'EVERY-NTH
                                                                 FN)
                                                                (MV
                                                                 T
-                                                                (TAKE-EVERY-NTH
+                                                                (EVERY-NTH
                                                                  ARG1
                                                                  ARG2))
                                                                (IF
@@ -2323,7 +2342,8 @@
 
                                                                                          NIL))))))))))))))))))))))))
                                                            ;;)
-                                                           ))))))))))))))))))))))))))))))))))))))))))))))
+                                                           ))))))))))))))) ;))
+                                           )))))))))))))))))))))))))))))
                         (LET
                          ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                          (IF
@@ -2365,9 +2385,9 @@
                                     (IF
                                      (EQ 'MYIF FN)
                                      (MV T (MYIF ARG1 ARG2 ARG3))
-                                     (IF
-                                      (EQ 'NTH2 FN)
-                                      (MV T (NTH2 ARG1 ARG2 ARG3))
+                                     ;; (IF
+                                     ;;  (EQ 'NTH2 FN)
+                                     ;;  (MV T (NTH2 ARG1 ARG2 ARG3))
                                       (IF
                                        (EQ 'S FN)
                                        (MV T (S ARG1 ARG2 ARG3))
@@ -2449,6 +2469,9 @@
                                                          T
                                                          (BVLT-UNGUARDED
                                                              ARG1 ARG2 ARG3))
+                                                       (IF
+                                                        (EQ 'BVequal FN)
+                                                        (MV T (BVequal-UNGUARDED ARG1 ARG2 ARG3))
                                                         (IF
                                                          (EQ 'BVPLUS-LST FN)
                                                          (MV
@@ -2519,7 +2542,9 @@
                                                                     ARG3))
                                                                  (MV
                                                                   NIL
-                                                                  NIL))))))))))))))))))))))))))))))))))))))))
+                                                                  NIL)))))))))))))))))))))))))))))
+;)
+                                      )))))))))))
                           (LET
                            ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                            (IF
@@ -2537,9 +2562,9 @@
                                (MV T
                                    (BV-ARRAY-READ-UNGUARDED
                                         ARG1 ARG2 ARG3 ARG4))
-                               (IF
-                                (EQ 'BVNTH FN)
-                                (MV T (BVNTH ARG1 ARG2 (NFIX ARG3) ARG4))
+                               ;; (IF
+                               ;;  (EQ 'BVNTH FN)
+                               ;;  (MV T (BVNTH ARG1 ARG2 (NFIX ARG3) ARG4))
                                 (IF
                                  (EQ 'BVCAT FN)
                                  (MV T (BVCAT-UNGUARDED ARG1 ARG2 ARG3 ARG4))
@@ -2564,7 +2589,8 @@
                                        T
                                        (DAG-VAL-WITH-AXE-EVALUATOR
                                            ARG1 ARG2 ARG3 (+ 1 ARRAY-DEPTH)))
-                                      (MV NIL NIL)))))))))))
+                                      (MV NIL NIL))))))) ;)
+                                )))
                             (LET
                              ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
                              (IF

@@ -13,6 +13,7 @@
 (include-book "blake2s-extended")
 (local (include-book "kestrel/bv/bvxor" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 
 ;(local (in-theory (disable ceiling len)))
 

@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "world")
+(include-book "kestrel/world-light/defs-in-world" :dir :system)
 (include-book "centaur/bridge/to-json" :dir :system)
 
 (defund print-rule-classes (rule-classes)

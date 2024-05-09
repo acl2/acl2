@@ -91,15 +91,16 @@
 
 
 (define svtv-data-maybe-compute-flatnorm (svtv-data (setup flatnorm-setup-p))
-  :returns new-svtv-data
+  :returns (mv updated new-svtv-data)
   :guard (svtv-data->flatten-validp svtv-data)
   (if (and (svtv-data->flatnorm-validp svtv-data)
            (equal (flatnorm-setup-fix setup) (svtv-data->flatnorm-setup svtv-data)))
-      svtv-data
+      (mv nil svtv-data)
     (b* ((svtv-data (update-svtv-data->flatnorm-validp nil svtv-data))
          (svtv-data (update-svtv-data->phase-fsm-validp nil svtv-data))
-         (svtv-data (update-svtv-data->flatnorm-setup setup svtv-data)))
-    (svtv-data-compute-flatnorm svtv-data)))
+         (svtv-data (update-svtv-data->flatnorm-setup setup svtv-data))
+         (svtv-data (svtv-data-compute-flatnorm svtv-data)))
+      (mv t svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))

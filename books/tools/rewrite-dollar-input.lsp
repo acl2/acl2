@@ -139,8 +139,12 @@
            :prove-forced-assumptions :none-forced)
  '((BINARY-APPEND X (BINARY-APPEND Y Z))
    ((:REWRITE APPEND-ASSOC-WITH-FORCE)
-    (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
-    (:TYPE-PRESCRIPTION SYMBOL-LISTP))))
+    (:FORWARD-CHAINING ATOM-LISTP-FORWARD-TO-TRUE-LISTP)
+    (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+    (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-EQLABLE-LISTP)
+    (:TYPE-PRESCRIPTION SYMBOL-LISTP)
+    (:TYPE-PRESCRIPTION EQLABLE-LISTP)
+    (:TYPE-PRESCRIPTION ATOM-LISTP))))
 
 (must-eval-to
  (rewrite$ '(binary-append (binary-append x y) z)
@@ -148,8 +152,12 @@
            :hyps '((symbol-listp (nth a b))))
  '((BINARY-APPEND (NTH A B) (BINARY-APPEND Y Z))
    ((:REWRITE APPEND-ASSOC-WITH-FORCE)
-    (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
-    (:TYPE-PRESCRIPTION SYMBOL-LISTP))))
+    (:FORWARD-CHAINING ATOM-LISTP-FORWARD-TO-TRUE-LISTP)
+    (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+    (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-EQLABLE-LISTP)
+    (:TYPE-PRESCRIPTION SYMBOL-LISTP)
+    (:TYPE-PRESCRIPTION EQLABLE-LISTP)
+    (:TYPE-PRESCRIPTION ATOM-LISTP))))
 
 ; uses forcing
 (must-eval-to
@@ -673,11 +681,14 @@
 (must-eval-to-rh
  (rewrite$-hyps '((p1 x) (p2 x)) :repeat 2)
  '(((SYMBOL-LISTP X) (EQUAL (LEN X) '5))
-   ((LEMMA (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-TRUE-LISTP)
-           (:TYPE-PRESCRIPTION SYMBOL-LISTP)
-           (:DEFINITION P2)
-           (:DEFINITION P1))
-;   (SPLITTER-IF-INTRO (:DEFINITION P2))
+   ((LEMMA (:FORWARD-CHAINING ATOM-LISTP-FORWARD-TO-TRUE-LISTP)
+     (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+     (:FORWARD-CHAINING SYMBOL-LISTP-FORWARD-TO-EQLABLE-LISTP)
+     (:TYPE-PRESCRIPTION SYMBOL-LISTP)
+     (:TYPE-PRESCRIPTION EQLABLE-LISTP)
+     (:TYPE-PRESCRIPTION ATOM-LISTP)
+     (:DEFINITION P2)
+     (:DEFINITION P1))
     (PT 0))))
 
 (defun p3 (x) (atom x))
@@ -728,11 +739,19 @@
 ; Tests of simplifying contexts.
 
 (defmacro must-eval-to-context (form result)
-  `(must-eval-to (er-let* ((x ,form))
-                   (value (list* (car x)
-                                 (access rewrite$-record (cadr x) :type-alist)
-                                 (cddr x))))
-                 ,result))
+
+; We return a Boolean to avoid an output mismatch for the form that uses
+; (fixnum-bound) below, when running with ACL2 built with environment variable
+; ACL2_SMALL_FIXNUMS set to a non-empty value.
+
+  `(er-let* ((val (must-eval-to (er-let* ((x ,form))
+                                  (value (list* (car x)
+                                                (access rewrite$-record
+                                                        (cadr x)
+                                                        :type-alist)
+                                                (cddr x))))
+                                ,result)))
+     (value t)))
 
 (make-event
  (b* (((er ; from rewrite$-hyps-return
@@ -829,14 +848,14 @@
  (rewrite$-context '((p5 x) (and (p6 x) (p6 x))) *rrec-4*
                    :translate t
                    :repeat 2)
- '(((P5 X) (P6 X))
+ `(((P5 X) (P6 X))
    (((P6 X)
      256 (LEMMA (:TYPE-PRESCRIPTION P6)))
     ((P5 X)
      256 (LEMMA (:TYPE-PRESCRIPTION P5))))
    ((LEMMA (:TYPE-PRESCRIPTION P6))
     (RW-CACHE-ANY-TAG T
-                      (P6-IMPLIES-P5 ((536870909 1 REWROTE-TO P6 X)
+                      (P6-IMPLIES-P5 ((,(- (fixnum-bound) 2) 1 REWROTE-TO P6 X)
                                       ((X . X))
                                       P6 X))))))
 

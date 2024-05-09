@@ -19,7 +19,7 @@
 (include-book "numeric-lists")
 (include-book "worklist-array")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
-(include-book "all-dargp")
+(include-book "darg-listp")
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -179,16 +179,14 @@
                               (= (alen1 'worklist-array worklist-array)
                                  (alen1 size-array-name size-array))
                               (all-< worklist (alen1 'worklist-array worklist-array)))
-                  ;;measure is: first, the number of examined nodes, then the length of the worklist
+                  ;;measure is: first, the number of unexamined nodes, then the length of the worklist
                   :measure (make-ord 1 (+ 1 (- (nfix (alen1 'worklist-array worklist-array))
                                                (num-examined-nodes (+ -1 (alen1 'worklist-array worklist-array))
                                                                    'worklist-array worklist-array)))
                                      (len worklist))
                   :guard-hints (("Goal" :do-not-induct t
                                  :do-not '(generalize eliminate-destructors)
-                                 :in-theory (e/d ()
-                                                 (consp-from-len-cheap
-                                                  dag-exprp))))))
+                                 :in-theory (disable consp-from-len-cheap dag-exprp)))))
   (if (or (endp worklist)
           ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
@@ -327,7 +325,7 @@
                               (true-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 dag-array-name dag-array)
-                                  2147483646)
+                                  *max-1d-array-length*)
                               (all-< nodenums dag-len)
                               (consp nodenums) ;since we call maxelem
                               (symbolp size-array-name-to-use))))
@@ -372,7 +370,7 @@
                               (true-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 dag-array-name dag-array)
-                                  2147483646)
+                                  *max-1d-array-length*)
                               (all-< nodenums dag-len)
                               (consp nodenums) ;since we call maxelem
                               (symbolp size-array-name-to-use))))
@@ -384,7 +382,7 @@
 ;;                               (true-listp nodenums)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                               (<= (alen1 dag-array-name dag-array)
-;;                                   2147483646)
+;;                                   *max-1d-array-length*)
 ;;                               (all-< nodenums dag-len)
 ;;                               (consp nodenums) ;since we call maxelem
 ;;                               (symbolp size-array-name-to-use))))
@@ -428,7 +426,7 @@
 (defund size-of-node (nodenum dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (array1p dag-array-name dag-array)
                               (<= (alen1 dag-array-name dag-array)
-                                  2147483646)
+                                  *max-1d-array-length*)
                               (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len))

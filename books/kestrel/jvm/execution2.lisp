@@ -68,9 +68,7 @@
 (defthm run-until-exit-segment-or-hit-loop-header-base-case-3
   (implies (and (equal (stack-height s) segment-stack-height)
                 (not (member-equal (jvm::pc (jvm::thread-top-frame (th) s)) segment-pcs)))
-           (equal (run-until-exit-segment-or-hit-loop-header
-                   segment-stack-height
-                   segment-pcs loop-headers s)
+           (equal (run-until-exit-segment-or-hit-loop-header segment-stack-height segment-pcs loop-headers s)
                   s)))
 
 ;; Push run-until-exit-segment-or-hit-loop-header into the myif branches.

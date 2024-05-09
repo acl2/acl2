@@ -22,6 +22,9 @@
 
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 
 #|

@@ -82,9 +82,10 @@ following:</p>
  (include-book \"xdoc/constructors\" :dir :system)
 })
 
-<p>This book includes @('[books]/xdoc/top.lisp'), and in addition provides
-utilities to construct well-formed XDOC strings in a modular way.  See <see
-topic='@(url xdoc::constructors)'>the documentation</see> for more details.</p>
+<p>This book includes community book @('xdoc/top.lisp'), and in addition
+provides utilities to construct well-formed XDOC strings in a modular way.  See
+<see topic='@(url xdoc::constructors)'>the documentation</see> for more
+details.</p>
 
 <p>Once you have documented your books, you may wish to create a manual that
 can be viewed from a web browser or from the @(see acl2::acl2-doc) Emacs-based
@@ -209,6 +210,9 @@ tags.</p>
  <li><color rgb=\"#ff0000\">&lt;color rgb=&quot;#ff0000&quot;&gt;colored text&lt;/color&gt;</color></li>
  <li><sf>&lt;sf&gt;sans-serif&lt;/sf&gt;</sf></li>
 </ul>
+
+<p>See @(see terminal) for how such tags are displayed at the terminal or with
+the @(see acl2::ACL2-Doc) browser for Emacs.</p>
 
 <h3>Displaying Source Code</h3>
 
@@ -587,9 +591,207 @@ Some examples:</p>
 to escape it.  You can write @('@@') to generate a single @('@') sign.</p>
 
 <p>Besides @('@(') and @('@@'), the preprocessor leaves any other uses of
-@('@') in tact.  So, most uses of @('@'), such as in email addresses, do not
+@('@') intact.  So, most uses of @('@'), such as in email addresses, do not
 need to be escaped.</p>")
 
+(defxdoc terminal
+  :short "Display of XDOC tags at the terminal or in @(see acl2::ACL2-Doc)"
+
+  :long "<p>For relevant background see @(see markup).  This topic discusses
+the display of certain XDOC tags when using either the @(':')@(see doc) command
+at the terminal or the @(see acl2::ACL2-Doc) browser for Emacs.  We begin with
+a brief summary that should suffice for most users, followed by basic
+information about three ways to display marked-up text, and concluding with
+design notes followed by further information including additional options
+provided by building text-based manuals.</p>
+
+<h3>Summary</h3>
+
+<p>The following tags, which we call &ldquo;font tags&rdquo;, indicate a
+desired font; see @(see markup).</p>
+
+<ul>
+ <li><b>&lt;b&gt;bold&lt;/b&gt;</b></li>
+ <li><i>&lt;i&gt;italics&lt;/i&gt;</i></li>
+ <li><em>&lt;em&gt;emphasis&lt;/em&gt;</em></li>
+ <li><u>&lt;u&gt;underline&lt;/u&gt;</u></li>
+ <li><tt>&lt;tt&gt;typewriter text&lt;/tt&gt;</tt></li>
+</ul>
+
+<p>Note that the XDOC @(see preprocessor) replaces <tt>@@('{some text}')</tt>
+with @('<v>{some text}</v>'), which is treated as described here for
+@('<tt>{some text}</tt>').</p>
+
+<p>By default, the @(':doc') command at the terminal and the ACL2-Doc browser
+attempt to handle font tags as indicated above.  (There can be variations
+depending on your platform; for example, sometimes text to be italicized is
+displayed with underlining.)  The next section discusses ways to modify that
+that behavior without having to rebuild the manuals; then we discuss rebuilding
+the manuals.</p>
+
+<h3>Three ways to display marked-up text</h3>
+
+<p>The behaviors of the font tags correspond to the legal values of environment
+variable @('\"ACL2_XDOC_TAGS\"'), as follows.</p>
+
+<ul>
+
+<li>@('\"FANCY\"'), @('\"\"'), or (the default) @('nil'), representing what is
+refernced below as a &ldquo;fancy environment&rdquo;:<br/>An attempt is made to
+use a font that conveys the intention, as follows.
+
+<ul>
+ <li>@('<b>..</b>'): bold text, often red or blue to help it to stand out</li>
+ <li>@('<i>..</i>'): italics</li>
+ <li>@('<em>..</em>'): italics</li>
+ <li>@('<u>..</u>'): underlined</li>
+ <li>@('<tt>..</tt>'): grey background</li>
+</ul>
+</li>
+
+<li>@('\"SIMPLE\"'):<br/>The font tags are handled as follows.
+<ul>
+ <li>@('<b>..</b>'): Replace each of @('<b>') and @('</b>') by two underscores,
+@('__').</li>
+ <li>@('<i>..</i>'): Replace each of @('<i>') and @('</i>') by an underscore, @('_').</li>
+ <li>@('<em>..</em>'): Replace each of @('<em>') and @('</em>') by an underscore, @('_').</li>
+ <li>@('<u>..</u>'): Replace each of @('<u>') and @('</u>') by an underscore, @('_').</li>
+ <li>@('<tt>..</tt>'): Just drop @('<tt>') and @('</tt>')</li>
+</ul>
+</li>
+
+<li>@('\"PLAIN\"'):<br/>The font tags are all dropped; that is, the text is
+printed as though the tags were not present.</li>
+
+</ul>
+
+<p>As noted above, the default is a fancy environment, where the @(':doc')
+command and ACL2-Doc browser attempt to handle font tags as indicated
+(italic, etc.).  Technically, this is controlled by the addition of so-called
+Select Graphic Rendition (SGR) control sequences when rendering the
+documentation as text.  Customization of this behavior depends on the following
+three cases.</p>
+
+<ul>
+
+<li>For the built-in @(':doc') command this behavior cannot be customized.</li>
+
+<li>However, behavior is fully customizable for the &ldquo;modified
+@(':doc')&rdquo; command, which is the @(':doc') command provided by @(see
+XDOC), for example after evaluating @('(include-book
+\"xdoc/init\" :dir :system)').  One simply sets environment variable
+@('\"ACL2_XDOC_TAGS\"') according to the desired case of the three cases above.
+This can be done either before starting ACL2 or else by calling @(tsee setenv$)
+inside ACL2, e.g., @('(setenv$ \"ACL2_XDOC_TAGS\" \"PLAIN\")').</li>
+
+<li>For ACL2-Doc the behavior is partially customizable.  For a default build
+of the manual (which however can be overridden as described in the next
+section), one cannot get the behavior described above for @('\"SIMPLE\"').
+However, if you set environment variable @('\"ACL2_XDOC_TAGS\"') to
+@('\"PLAIN\"') or @('\"SIMPLE\"') in a way that is visible to Emacs, you can
+eliminate the SGR control sequences so that you see plain text.  One way to
+accomplish this is to evaluate the form @('(setenv \"ACL2_XDOC_TAGS\"
+\"PLAIN\")') inside Emacs.</li>
+
+</ul>
+
+<h3>Design notes</h3>
+
+<p>Here we make a few observations about why font tags are handled as they
+are.</p>
+
+<ul>
+
+<li>We have seen that for a fancy environment, text within
+<tt>&lt;b&gt;...&lt;/b&gt;</tt> is rendered not only as bold but also as red.
+That is because bold text does not often show up clearly.</li>
+
+<li>The use of &lsquo;@('*')&rsquo; as a delimiter is avoided because that
+character so often appears in ACL2 names, in particular, in constant symbols.
+Underscore, by contrast, appears much less often.</li>
+
+<li>The use of a grey background (which may technically be called
+&ldquo;white&rdquo;, but it's really grey!) is rather common for fixed-width
+code text, so it seems a good choice for the @('<tt>') tag in a fancy
+environment.</li>
+
+</ul>
+
+<h3>Changing the default builds of text-based manuals</h3>
+
+<p>The remainder of this topic can probably be ignored by most.  It discusses
+how to build the text-based documentation used by @(':doc') and ACL2-Doc to
+modify handling of the font tags above.</p>
+
+<p>First let us review basics of how @(':doc'), modified @(':doc'), and
+ACL2-Doc work.  These all read a text-based manual that has been built by
+removing all @(see preprocessor) directives and all tags, including font tags.
+By default, these are built in a fancy environment (as defined above), which
+inserts SGR control sequences for font tags.  Terminals often intepret these
+tags by displaying text using suitable fonts (italics, underline, etc.), and
+this is how text is displayed by @(':doc').  ACL2-Doc invokes Emacs utilities
+to provide such fonts.  We are ready to explain the restrictions above.</p>
+
+<ul>
+
+<li>The built-in @(':doc') command simply prints out the rendered text, which
+is why its behavior cannot be customized (unless perhaps one modifies the
+terminal environment).</li>
+
+<li>If Emacs sees a value of environment variable @('\"ACL2_XDOC_TAGS\"') of
+@('\"PLAIN\"') or @('\"SIMPLE\"'), it removes SGR control sequences from the
+rendered text before displaying it as plain text.  But there is no way to take
+that rendered text and add markings as specified for the @('\"SIMPLE\"')
+case.</li>
+
+</ul>
+
+<p>On the other hand, the modified @(':doc') command renders the original
+documentation, which still has tags.  That rendering is sensitive to the value
+of environment variable @('\"ACL2_XDOC_TAGS\"').  But the items above tells us
+that there is not the same flexibility for the built-in @(':doc') command or
+ACL2-Doc.</p>
+
+<p>The only way to get such flexibility is to build text-based manuals for
+@(':doc') and ACL2-Doc that render text as desired, which requires setting
+environment variable @('\"ACL2_XDOC_TAGS\"') when building thse manuals.  Since
+@(':doc') is based off ACL2 source file @('doc.lisp'), which is to be modified
+only by the ACL2 implementors, we focus on building the documentation for
+ACL2-Doc.</p>
+
+<p>The ACL2+books rendered manual is file
+@('books/system/doc/rendered-doc-combined.lsp'), and there is also an
+&ldquo;ACL2 only&rdquo; manual restricted to built-in functions in file
+@('books/system/doc/rendered-doc.lsp').  These can be built with any of the
+three default behaviors (fancy, simple, or plain) by setting the environment
+variable @('\"ACL2_XDOC_TAGS\"') before building those manuals, for example as
+follows while standing in the @('books') directory.  The @('--acl2') and
+@('-j') options are up to the user.  Note: You might need first to delete file
+@('doc/top.cert') under @('books/').</p>
+
+@({
+(export ACL2_XDOC_TAGS=FANCY ; ./build/cert.pl --acl2 acl2 doc/top)
+(export ACL2_XDOC_TAGS=SIMPLE ; ./build/cert.pl --acl2 acl2 doc/top)
+(export ACL2_XDOC_TAGS=PLAIN ; ./build/cert.pl --acl2 acl2 doc/top)
+})
+
+<p>For example, suppose you want underscores to surround text that is marked
+with @('<i>'), so that for example &ldquo;&lt;i&gt;italicized
+text&lt;/i&gt;&rdquo; is printed as &ldquo;_italicized text_&rdquo;.  It then
+suffices to build the manual with @('\"SIMPLE\"') as in the second command
+displayed above, except that when using @(':doc') at the terminal you would
+first need to include the @(see acl2::community-book) @('\"xdoc/init\"') as
+discussed above, so that you are using the modified @(':doc') command.</p>
+
+<p>We close by describing an implementation detail; ideally it can be ignored,
+but we mention it in case someone finds it to be useful.  When the manual is
+built (by certifying @(see acl2::community-book) @('doc/top')), a file is
+created, @('system/doc/acl2-doc-search'), that is consulted by search commands
+in ACL2-Doc.  When that file is built in a fancy environment (which, again, is
+the default), then environment variable @('ACL2_XDOC_TAGS') is first
+temporarily bound to @('\"PLAIN\"') so that @('system/doc/acl2-doc-search')
+will not contain any SGR control sequences that might cause search
+mismatches.</p>")
 
 (defxdoc save
   :short "Saves the XDOC database into files for web browsers, etc."
@@ -667,7 +869,10 @@ As might be expected:</p>
 <li>If the target directory does not exist, it will be created.</li>
 
 <li>If the target directory already exists, it <color rgb=\"#ff0000\">will be
-overwritten</color>.</li>
+overwritten</color>.  (<b><color rgb=\"#ff0000\">WARNING</color></b>: So, the
+target directory should not be one containing files that you want to keep, such
+as the directory containing the file that invokes @('xdoc::save'), or its
+parent directory (or its parent, etc.).)</li>
 
 </ul>
 
@@ -1218,6 +1423,7 @@ with keyword arguments.  See also @(see extract-keyword-from-args).</p>
     [:long      long]
     [:autodoc   autodoc]
     [:extension topic]
+    [:set-as-default-parent t/nil]
     ... events and commentary ...)
 })
 
@@ -1298,6 +1504,10 @@ with:</p>
 <p>If you do not want this automatic documentation, you can turn it off with
 @(':autodoc nil').</p>
 
+<p>If you want the section name to be the default parent for the encapsulated
+events, then you can pass @(':set-as-default-parent t'). Then @('(local
+(xdoc::set-default-parents name))') will be inserted at the beginning of the
+events, where \"name\" is the name of the section.</p>
 
 <h3>Extended Sections</h3>
 
@@ -1601,11 +1811,19 @@ manual.</p>")
 
 (local (set-default-parents xdoc-tests))
 
-(defxdoc test-of-entities
-  :short "Placeholder topic for testing out HTML entity support in XDOC."
-  :long "<p>Here are the entities that XDOC allows:</p>
+(defxdoc entities
+
+; Warning: Keep this in sync with *entity-strings* and
+; *entitytok-as-plaintext-fal* in parse-xml.lisp, wrapXdocFragment in
+; fancy/xslt.js, *xml-entity-stuff*in prepare-topic.lisp, and
+; wrap_xdoc_fragment in fancy/xdata2html.pl
+
+  :parents (xdoc xdoc-tests)
+  :short "HTML entity support in XDOC."
+  :long "<h3>Entities that XDOC allows:</h3>
 
 <p>Normal XML entities:</p>
+
 <ul>
 <li>@('&amp;')   becomes &amp;</li>
 <li>@('&lt;')    becomes &lt;</li>
@@ -1614,16 +1832,102 @@ manual.</p>")
 <li>@('&apos;')  becomes &apos;</li>
 </ul>
 
-<p>Additional entities allowed by XDOC:</p>
+<p>Additional basic and math entities allowed by XDOC:</p>
+
 <ul>
-<li>@('&nbsp;')  becomes &nbsp; (this one can be hard to see)</li>
+<li>@('&nbsp;')  becomes &nbsp; (that is, a single space)</li>
 <li>@('&mdash;') becomes &mdash;</li>
+<li>@('&larr;')  becomes &larr;</li>
 <li>@('&rarr;')  becomes &rarr;</li>
+<li>@('&harr;')  becomes &harr;</li>
+<li>@('&lang;')  becomes &lang;</li>
+<li>@('&rang;')  becomes &rang;</li>
+<li>@('&hellip;') becomes &hellip;</li>
 <li>@('&lsquo;') becomes &lsquo;</li>
 <li>@('&rsquo;') becomes &rsquo;</li>
 <li>@('&ldquo;') becomes &ldquo;</li>
 <li>@('&rdquo;') becomes &rdquo;</li>
+<li>@('&and;')   becomes &and;</li>
+<li>@('&or;')    becomes &or;</li>
+<li>@('&not;')   becomes &not;</li>
+<li>@('&ne;')    becomes &ne;</li>
+<li>@('&le;')    becomes &le;</li>
+<li>@('&ge;')    becomes &ge;</li>
+<li>@('&mid;')   becomes &mid;</li>
+<li>@('&times;') becomes &times;</li>
 </ul>
+
+<p>Capitalized Greek letters:</p>
+
+<ul>
+<li>@('&Alpha;') becomes &Alpha;</li>
+<li>@('&Beta;') becomes &Beta;</li>
+<li>@('&Gamma;') becomes &Gamma;</li>
+<li>@('&Delta;') becomes &Delta;</li>
+<li>@('&Epsilon;') becomes &Epsilon;</li>
+<li>@('&Zeta;') becomes &Zeta;</li>
+<li>@('&Eta;') becomes &Eta;</li>
+<li>@('&Theta;') becomes &Theta;</li>
+<li>@('&Iota;') becomes &Iota;</li>
+<li>@('&Kappa;') becomes &Kappa;</li>
+<li>@('&Lambda;') becomes &Lambda;</li>
+<li>@('&Mu;') becomes &Mu;</li>
+<li>@('&Nu;') becomes &Nu;</li>
+<li>@('&Xi;') becomes &Xi;</li>
+<li>@('&Omicron;') becomes &Omicron;</li>
+<li>@('&Pi;') becomes &Pi;</li>
+<li>@('&Rho;') becomes &Rho;</li>
+<li>@('&Sigma;') becomes &Sigma;</li>
+<li>@('&Tau;') becomes &Tau;</li>
+<li>@('&Upsilon;') becomes &Upsilon;</li>
+<li>@('&Phi;') becomes &Phi;</li>
+<li>@('&Chi;') becomes &Chi;</li>
+<li>@('&Psi;') becomes &Psi;</li>
+<li>@('&Omega;') becomes &Omega;</li>
+</ul>
+
+<p>Lower case Greek letters:</p>
+
+<ul>
+<li>@('&alpha;') becomes &alpha;</li>
+<li>@('&beta;') becomes &beta;</li>
+<li>@('&gamma;') becomes &gamma;</li>
+<li>@('&delta;') becomes &delta;</li>
+<li>@('&epsilon;') becomes &epsilon;</li>
+<li>@('&zeta;') becomes &zeta;</li>
+<li>@('&eta;') becomes &eta;</li>
+<li>@('&theta;') becomes &theta;</li>
+<li>@('&iota;') becomes &iota;</li>
+<li>@('&kappa;') becomes &kappa;</li>
+<li>@('&lambda;') becomes &lambda;</li>
+<li>@('&mu;') becomes &mu;</li>
+<li>@('&nu;') becomes &nu;</li>
+<li>@('&xi;') becomes &xi;</li>
+<li>@('&omicron;') becomes &omicron;</li>
+<li>@('&pi;') becomes &pi;</li>
+<li>@('&rho;') becomes &rho;</li>
+<li>@('&sigma;') becomes &sigma;</li>
+<li>@('&tau;') becomes &tau;</li>
+<li>@('&upsilon;') becomes &upsilon;</li>
+<li>@('&phi;') becomes &phi;</li>
+<li>@('&chi;') becomes &chi;</li>
+<li>@('&psi;') becomes &psi;</li>
+<li>@('&omega;') becomes &omega;</li>
+</ul>
+
+<p>Mathematical symbols:</p>
+
+<ul>
+<li>@('&forall;') becomes &forall;</li>
+<li>@('&exist;') becomes &exist;</li>
+<li>@('&empty;') becomes &empty;</li>
+<li>@('&isin;') becomes &isin;</li>
+<li>@('&notin;') becomes &notin;</li>
+<li>@('&prod;') becomes &prod;</li>
+<li>@('&sum;') becomes &sum;</li>
+</ul>
+
+<h3>A few tests</h3>
 
 <p>Test of `single' and ``double'' smart quoting for legacy topics.</p>
 

@@ -1,7 +1,7 @@
 ; Rules that deal with both bvcat and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "bvcat")
 (include-book "bvxor")
 (include-book "bvor")
+(include-book "bitnot")
 (include-book "bvand")
 (include-book "bitand")
 (include-book "bitor")
@@ -23,7 +24,51 @@
 (include-book "bvminus")
 (include-book "bvuminus")
 (include-book "bvif")
+(local (include-book "logior-b"))
+(local (include-book "logxor-b"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+
+;; rules about bitnot/bvnot and bvcat:
+
+;why didn't the trim rule work?
+(defthm bvnot-of-bvcat-trim
+  (implies (natp low)
+           (equal (bvnot low (bvcat width x low y))
+                  (bvnot low y)))
+  :hints (("Goal"
+           :use ((:instance bvchop-lognot-bvchop
+                            (n low)
+                            (x (bvcat width x low y)))
+                 (:instance bvchop-lognot-bvchop
+                            (n low)
+                            (x y)))
+           :in-theory (e/d (bvnot) (bvchop-lognot-bvchop ; are these 2 the same?
+                                    bvchop-of-lognot-of-bvchop)))))
+
+(defthmd bvcat-of-bitnot-and-bitnot
+  (equal (bvcat 1 (bitnot x) 1 (bitnot y))
+         (bvnot 2 (bvcat 1 x 1 y))))
+
+(defthmd bvcat-of-bvnot-and-bitnot
+  (implies (natp size)
+           (equal (bvcat size (bvnot size x) 1 (bitnot y))
+                  (bvnot (+ 1 size) (bvcat size x 1 y))))
+  :hints (("Goal" :cases ((equal 0 size)))))
+
+(defthmd bvcat-of-bitnot-and-bvnot
+  (implies (natp size)
+           (equal (bvcat 1 (bitnot x) size (bvnot size y))
+                  (bvnot (+ 1 size) (bvcat 1 x size y)))))
+
+(defthmd bvcat-of-bvnot-and-bvnot
+  (implies (and (posp highsize) ;why not 0?
+                (posp lowsize) ;why not 0?
+                )
+           (equal (bvcat highsize (bvnot highsize highval) lowsize (bvnot lowsize lowval))
+                  (bvnot (+ highsize lowsize) (bvcat highsize highval lowsize lowval)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvand-of-bvcat-low-arg2
   (implies (and (<= size lowsize)
@@ -49,9 +94,8 @@
                 (natp highsize))
            (equal (bvand size (bvcat highsize highval lowsize lowval) y)
                   (bvand size (bvcat (- size lowsize) highval lowsize lowval) y)))
-  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                         bvchop-of-logapp-bigger)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
+                                     bvchop-of-logapp-bigger))))
 
 (defthm bvand-of-bvcat-tighten-arg3
   (implies (and (< size (+ lowsize highsize))
@@ -61,9 +105,8 @@
                 (natp highsize))
            (equal (bvand size x (bvcat highsize highval lowsize lowval))
                   (bvand size x (bvcat (- size lowsize) highval lowsize lowval))))
-  :hints (("Goal" :in-theory (e/d (bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                         bvchop-of-logapp-bigger)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
+                                     bvchop-of-logapp-bigger))))
 
 (defthmd bvand-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -87,7 +130,7 @@
                          (bvand highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvand lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :use (:instance bvand-of-bvcat-arg3)
+  :hints (("Goal" :use bvand-of-bvcat-arg3
            :in-theory (disable bvand-of-bvcat-arg3))))
 
 (defthm bvand-of-bvcat-gen
@@ -169,7 +212,7 @@
                          (bvor highsize (slice (+ -1 size) lowsize x) highval)
                          lowsize
                          (bvor lowsize (bvchop lowsize x) lowval))))
-  :hints (("Goal" :use (:instance bvor-of-bvcat-arg3)
+  :hints (("Goal" :use bvor-of-bvcat-arg3
            :in-theory (disable bvor-of-bvcat-arg3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -340,7 +383,7 @@
            (equal (bvmult size2 (bvcat n z size y) x)
                   (bvmult size2 y x)))
   :hints (("Goal"
-           :use (:instance bvmult-of-bvcat-low-arg3)
+           :use bvmult-of-bvcat-low-arg3
            :in-theory (disable bvmult-of-bvcat-low-arg3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -397,3 +440,119 @@
            (equal (bvif size test x (bvcat highsize highval lowsize lowval))
                   (bvif size test x lowval)))
   :hints (("Goal" :in-theory (enable bvif myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+;bozo gen
+;strength reduction from bvmult to shift, so i guess this is a win? unless we are in an arithmetic context?
+(defthmd bvmult-of-2
+  (implies (natp n)
+           (equal (bvmult n 2 x)
+                  (bvcat (+ -1 n) x 1 0)))
+  :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice
+                                   logtail-of-bvchop-becomes-slice)))))
+
+
+;; TODO: organize this stuff:
+
+(defthm bvcat-getbit-slice-same
+  (implies (and (equal lowindex (+ 1 bitindex))
+                (equal size2 (+ 1 highindex (- lowindex) highsize))
+                (<= lowindex highindex) ;bozo
+                (natp bitindex)
+                (natp highindex)
+                (natp lowindex)
+                (integerp highval)
+                (natp highsize)
+                (< 0 highsize)
+                (integerp b))
+           (equal (bvcat size2 (bvcat highsize highval (+ 1 highindex (- lowindex)) (slice highindex lowindex b)) 1 (getbit bitindex b))
+                  (bvcat highsize highval (+ 2 highindex (- lowindex)) (slice highindex bitindex b)))))
+
+(defthm bvcat-slice-getbit-same
+  (implies (and (equal (+ 1 highindex) bitindex)
+                (equal size2 (+ 1 highindex (- lowindex)))
+                (<= lowindex highindex) ;bozo
+                (natp bitindex)
+                (natp highindex)
+                (natp lowindex)
+                (integerp highval)
+                (natp highsize)
+                (< 0 highsize)
+                (integerp b))
+           (equal (bvcat (+ 1 highsize) (bvcat highsize highval 1 (getbit bitindex b)) size2 (slice highindex lowindex b))
+                  (bvcat highsize highval (+ 1 bitindex (- lowindex)) (slice bitindex lowindex b)))))
+
+(defthm bvcat-slice-slice-same
+  (implies (and (equal (+ -1 lowindex2) highindex1)
+                (equal size1 (+ 1 highindex1 (- lowindex1)))
+                (equal size2 (+ 1 highindex2 (- lowindex2)))
+                (equal size3 (+ size2 highsize))
+                (<= lowindex2 highindex2) ;bozo
+                (<= lowindex1 highindex1) ;bozo
+                (natp highindex1)
+                (natp lowindex1)
+                (natp highindex2)
+                (natp lowindex2)
+                (integerp highval)
+                (natp highsize)
+                (< 0 highsize)
+                (integerp b))
+           (equal (bvcat size3 (bvcat highsize highval size2 (slice highindex2 lowindex2 b)) size1 (slice highindex1 lowindex1 b))
+                  (bvcat highsize highval (+ 1 highindex2 (- lowindex1)) (slice highindex2 lowindex1 b))
+                  )))
+
+;; tightens the upper size
+;use a more general rule?
+(defthm bvcat-tighten
+  (implies (and (< (+ lowsize highsize) size)
+                (< 0 highsize) ;bozo
+                (natp size)
+                (natp lowsize)
+                (natp highsize)
+                (natp lowsize2)
+                ;;(integerp x)
+                ;;(integerp y)
+                ;;(integerp z)
+                )
+           (equal (bvcat size (bvcat highsize x lowsize z) lowsize2 y)
+                  (bvcat (+ lowsize highsize) (bvcat highsize x lowsize z) lowsize2 y)))
+  :hints (("Goal" :cases ((and (integerp z) (integerp y))
+                          (and (integerp z) (not (integerp y)))
+                          (and (not (integerp z)) (integerp y)))
+           :in-theory (e/d (bvcat) (logtail-of-bvchop-becomes-slice)))))
+
+;move
+(DEFTHM BVCAT-SLICE-SLICE-SAME-2
+  (IMPLIES (AND (EQUAL LOWINDEX2 size1)
+                (EQUAL SIZE2 (+ 1 HIGHINDEX2 (- LOWINDEX2)))
+                (EQUAL SIZE3 (+ SIZE2 HIGHSIZE))
+                (<= LOWINDEX2 HIGHINDEX2)
+                (natp size1)
+                (NATP HIGHINDEX2)
+                (NATP LOWINDEX2)
+                (INTEGERP HIGHVAL)
+                (NATP HIGHSIZE)
+                (< 0 HIGHSIZE)
+                (INTEGERP B))
+           (EQUAL (bvcat
+                   SIZE3
+                   (bvcat
+                    HIGHSIZE HIGHVAL SIZE2 (SLICE HIGHINDEX2 LOWINDEX2 B)) SIZE1 B)
+                  (bvcat
+                   HIGHSIZE HIGHVAL (+ 1 HIGHINDEX2 0)
+                   (SLICE HIGHINDEX2 0 B))))
+  :hints (("Goal" :use (:instance BVCAT-SLICE-SLICE-SAME (lowindex1 0) (highindex1 (+ -1 size1)))
+           :in-theory (disable BVCAT-SLICE-SLICE-SAME))))
+
+(defthm bvcat-of-slice-tighten
+  (implies (and (<= highsize (- high low))
+                ;; (<= low high)
+                (natp highsize)
+                (natp low)
+                (natp high))
+           (equal (bvcat highsize (slice high low x) lowsize lowval)
+                  (bvcat highsize (slice (+ -1 low highsize) low x) lowsize lowval))))

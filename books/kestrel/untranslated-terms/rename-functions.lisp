@@ -21,10 +21,10 @@
 
 (local
  (defthm natp-of-cdr-of-assoc-equal
-   (IMPLIES (AND (NAT-LISTP (STRIP-CDRS alist))
-                 (SYMBOL-ALISTP alist)
-                 (member-equal fn (STRIP-CARS alist)))
-            (NATP (CDR (ASSOC-EQUAL fn alist))))))
+   (implies (and (nat-listp (strip-cdrs alist))
+                 ;; (symbol-alistp alist)
+                 (member-equal fn (strip-cars alist)))
+            (natp (cdr (assoc-equal fn alist))))))
 
 ;; Returns a list of forms of the form (<function> :arg1 ... :argn).
 (defund make-calls-on-args-keywords (fns fn-arity-alist)

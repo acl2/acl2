@@ -1,6 +1,6 @@
 ; Prime fields library: additional rules
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,50 +92,10 @@
 (defthm divides-of-prime-means-0
   (implies (and (fep x p)
                 (integerp p))
-           (equal (rtl::divides p x)
+           (equal (divides p x)
                   (equal 0 x)))
-  :hints (("Goal" :in-theory (enable ;rtl::divides
+  :hints (("Goal" :in-theory (enable ;divides
                               fep))))
-
-;move?
-(defthm equal-of-0-and-mul
-  (implies (and (fep x p)
-                (fep y p)
-                (primep p))
-           (equal (equal 0 (mul x y p))
-                  (or (equal x 0)
-                      (equal y 0))))
-  :hints (("Goal"
-           :use (;primep-of-prime
-                 (:instance rtl::euclid
-                            (p p)
-                            (a x)
-                            (b y)))
-           :in-theory (enable mul rtl::divides acl2::equal-of-0-and-mod))))
-
-(defthm equal-of-0-and-mul-gen
-  (implies (primep p)
-           (equal (equal 0 (mul x y p))
-                  (or (equal (mod (ifix x) p) 0)
-                      (equal (mod (ifix y) p) 0))))
-  :hints (("Goal" :use (:instance equal-of-0-and-mul
-                                  (x (mod (ifix x) p))
-                                  (y (mod (ifix y) p)))
-           :in-theory (disable equal-of-0-and-mul))))
-
-;; commutes the args to MUL in the lhs
-(defthm mul-of-inv-arg1
-  (implies (primep p)
-           (equal (mul (inv x p) x p)
-                  (if (equal 0 (mod (ifix x) p))
-                      0
-                    ;; usual case:
-                    1)))
-  :hints (("Goal" :use ((:instance mul-of-inv-arg2)
-                        (:instance mul-commutative
-                                   (x x)
-                                   (y (inv x p))))
-           :in-theory (disable mul-of-inv-arg2))))
 
 ;; 2 is in the field iff the prime is bigger than 2.
 (defthm fep-of-2
@@ -153,8 +113,6 @@
            (equal (mul (minus1 p) x p)
                   (neg x p)))
   :hints (("Goal" :in-theory (enable mul neg sub minus1 fep acl2::mod-sum-cases))))
-
-
 
 (local
  (defthm +-same
@@ -178,30 +136,6 @@
 
 (theory-invariant (incompatible (:rewrite mul-of-2) (:rewrite add-same)))
 
-(defthm mul-of-mul-of-inv
-  (implies (and (fep a p)
-                (fep x p)
-                (primep p))
-           (equal (mul a (mul (inv a p) x p) p)
-                  (if (equal 0 a)
-                      0
-                    x)))
-  :hints (("Goal" :use (:instance mul-associative (x a) (y (inv a p)) (z x))
-           :in-theory (disable mul-associative
-                               MUL-COMMUTATIVE
-                               MUL-COMMUTATIVE-2))))
-
-;todo: swap mul args if one is the inv of the other... as a tiebreaker
-(defthm mul-of-inv-mul-of-inv
-  (implies (and (fep a p)
-                (not (equal 0 a))
-                (fep x p)
-                (primep p))
-           (equal (mul (inv a p) (mul a x p) p)
-                  x))
-  :hints (("Goal" :use (:instance mul-associative (y a) (x (inv a p)) (z x))
-           :in-theory (disable mul-associative))))
-
 (defthm add-of-neg-same-arg2
   (equal (add x (neg x p) p)
          0)
@@ -223,47 +157,6 @@
            (equal (add (neg x p) (add x y p) p)
                   (mod (ifix y) p)))
   :hints (("Goal" :in-theory (enable neg add acl2::mod-sum-cases))))
-
-;; If the resulting constant (* x y) is too large, the next rule below will
-;; reduce it.
-(defthm mul-of-mul-combine-constants
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep y)))
-                (integerp x) ;(fep x p)
-                (integerp y) ;(fep y p)
-                (integerp z) ;(fep z p)
-                (integerp p))
-           (equal (mul x (mul y z p) p)
-                  (mul
-                   (* x y) ;we don't call mul here in case the p argument is not known (todo: do something similar for the add rule)
-                   z p)))
-  :hints (("Goal" :in-theory (enable mul))))
-
-(defthmd mul-of-mul-combine-constants-alt
-  (implies (syntaxp (and (quotep x)
-                         (quotep y)))
-           (equal (mul x (mul y z p) p)
-                  (mul (mul x y p) z p)))
-  :hints (("Goal" :in-theory (enable mul))))
-
-(defthm mul-when-constant-reduce-arg1
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep p)))
-                (<= p x) ;x is too big
-                ;; (integerp x)
-                ;; (integerp y)
-                ;; (natp p)
-                )
-           (equal (mul x y p)
-                  (mul (mod x p) y p)))
-  :hints (("Goal" :in-theory (enable mul))))
-
-(defthm mul-same-arg1
-  (implies (and (integerp y)
-                (posp p))
-           (equal (mul p y p)
-                  0))
-  :hints (("Goal" :in-theory (enable mul))))
 
 ;distributivity
 (defthm mul-of-add-arg2
@@ -387,11 +280,6 @@
   :hints (("Goal" :use (:instance add-of-mul-and-mul-combine-constants)
            :in-theory (disable add-of-mul-and-mul-combine-constants))))
 
-(defthm mod-of-mul
-  (equal (mod (mul x y p) p)
-         (mul x y p))
-  :hints (("Goal" :in-theory (enable mul))))
-
 (local
  (defthmd *-of-2
    (equal (* 2 x)
@@ -502,11 +390,6 @@
            (< (add x y p) p))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm mul-bound
-  (implies (posp p)
-           (< (mul x y p) p))
-  :hints (("Goal" :in-theory (enable mul))))
-
 (defthm sub-bound
   (implies (posp p)
            (< (sub x y p) p))
@@ -539,41 +422,9 @@
                 (< x1 p)
                 (not (equal x1 0))
                 (< 2 p)
-                (rtl::primep p))
+                (primep p))
            (not (equal (add x1 x1 p) 0)))
   :hints (("Goal" :in-theory (enable add-same fep))))
-
-(defthm not-equal-of-inv-and-0
-  (implies (and (fep a p)
-                (not (equal 0 a))
-                (rtl::primep p))
-           (not (equal 0 (inv a p))))
-  :hints (("Goal" :use (:instance mul-of-inv-arg2
-                                  (x (mod a p))
-                                  (p p))
-           :in-theory (e/d (fep inv)
-                           (mul-of-inv-arg2)))))
-
-;; Turns 1/a=b into 1=a*b.
-(defthm equal-of-inv
-  (implies (and (not (equal 0 a))
-                (fep a p)
-                (rtl::primep p))
-           (equal (equal (inv a p) b)
-                  (and (equal 1 (mul a b p))
-                       (fep b p))))
-  :hints (("Goal" :use (:instance mul-of-inv-mul-of-inv
-                                  (a a)
-                                  (x b)
-                                  (p p))
-           :in-theory (disable mul-of-inv-mul-of-inv))))
-
-(defthm inv-of-inv
-  (implies (and (fep a p)
-                (rtl::primep p))
-           (equal (inv (inv a p) p)
-                  a))
-  :hints (("Goal" :cases ((equal 0 a)))))
 
 ;; a cancellation rule
 (defthm equal-of-mul-and-mul-same
@@ -603,7 +454,7 @@
                               (quotep y)))
                 (fep y p)
                 (fep z p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal x (mul y z p))
                   (and (fep x p)
                        (if (equal 0 y)
@@ -616,7 +467,7 @@
                               (quotep y)))
                 (fep y p)
                 (fep z p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal (mul y z p) x)
                   (and (fep x p)
                        (if (equal 0 y)
@@ -624,17 +475,12 @@
                          (equal (div x y p) z)))))
   :hints (("Goal" :in-theory (enable div))))
 
-(defthm div-of-0-arg1
-  (equal (div 0 y p)
-         0)
-  :hints (("Goal" :in-theory (enable div))))
-
 ;; x=y/z becomes xz=y.
 (defthmd equal-of-div
   (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
                 (fep z p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal x (div y z p))
                   (if (equal 0 z)
                       ;; odd case:
@@ -650,7 +496,7 @@
   (implies (and (not (equal 0 z)) ;exclude odd case
                 (fep z p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal x (div y z p))
                   (and (fep x p)
                        (equal (mul x z p)
@@ -661,7 +507,7 @@
   (implies (and (syntaxp (not (equal z ''0))) ;prevent loops
                 (fep z p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal 0 (div y z p))
                   (if (equal 0 z)
                       ;; odd case (usually t unless p=2):
@@ -681,7 +527,7 @@
 (defthmd equal-of-0-and-div-special
   (implies (and (fep z p)
                 (fep y p)
-                (rtl::primep p)
+                (primep p)
                 (< 2 p))
            (equal (equal 0 (div y z p))
                   (or (equal 0 z)
@@ -721,7 +567,7 @@
 (defthm equal-of-mul-same-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal x (mul x y p))
                   (if (equal 0 x)
                       t
@@ -739,7 +585,7 @@
 (defthm equal-of-mul-same-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal x (mul y x p))
                   (if (equal 0 x)
                       t
@@ -751,7 +597,7 @@
 (defthmd equal-of-mul-cancel
   (implies (and (fep y p)
                 (fep z p)
-                (rtl::primep p))
+                (primep p))
            (equal (equal x (mul y z p))
                   (and (fep x p)
                        (if (equal 0 z)
@@ -875,8 +721,9 @@
                               (quotep p)))
                 (not (fep x p)) ; gets computed
                 ;; these two hyps ensure that the mod will return a fep:
-                (integerp x)
-                (posp p))
+                (integerp x) ; may be needed to prevent loops
+                (posp p) ; may be needed to prevent loops
+                )
            (equal (mul x y p)
                   ;; the (mod x p) gets computed:
                   (mul (mod x p) y p))))
@@ -1066,7 +913,7 @@
   :hints (("Goal" :in-theory (e/d (pow) (PFIELD::EQUAL-OF-NEG)))))
 
 (defthm inv-of-neg
-  (implies (rtl::primep p)
+  (implies (primep p)
            (equal (inv (neg x p) p)
                   (neg (inv x p) p)))
   :hints (("Goal" :in-theory (enable inv pfield::minus1))))
@@ -1075,7 +922,7 @@
 (defthm mul-of-div-same-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (mul x (div y x p) p)
                   (if (equal x 0)
                       0
@@ -1086,7 +933,7 @@
 (defthm div-of-div-same-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p)
+                (primep p)
                 (< 2 p) ;gen?
                 )
            (equal (div x (div x y p) p)
@@ -1099,7 +946,7 @@
 (defthm div-of-mul-same-arg1-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (div (mul x y p) y p)
                   (if (equal y 0)
                       0
@@ -1110,7 +957,7 @@
 (defthm div-of-mul-same-arg1-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (div (mul y x p) y p)
                   (if (equal y 0)
                       0
@@ -1122,7 +969,7 @@
 (defthmd div-of-neg-arg1-move-to-arg2
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (div (neg x p) y p)
                   (div x (neg y p) p)))
   :hints (("Goal" :in-theory (enable div))))

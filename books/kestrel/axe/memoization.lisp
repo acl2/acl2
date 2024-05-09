@@ -22,7 +22,7 @@
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "axe-trees")
 (include-book "count-worlds")
-(include-book "all-dargp")
+(include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
@@ -44,14 +44,14 @@
 (local (in-theory (disable mod natp)))
 
 (local (in-theory (enable integerp-when-natp
-                           <=-of-0-when-0-natp)))
+                           <=-of-0-when-natp)))
 
 ;; Recognize an axe-tree that is a cons
 ;; TODO: Restrict to bounded-axe-trees?
 (defund tree-to-memoizep (tree)
   (declare (xargs :guard t))
   (and (axe-treep tree)
-       (bounded-axe-treep tree 2147483646)
+       (bounded-axe-treep tree 1152921504606846974) ; because of the type decl in sum-of-nodenums-aux (todo: widen?)
        (consp tree)
        (not (eq 'quote (ffn-symb tree)))))
 
@@ -85,7 +85,7 @@
                        (equal (len (cadr fn))
                               (len args))))
               (not (equal 'quote fn))
-              (bounded-axe-tree-listp args 2147483646)))
+              (bounded-axe-tree-listp args 1152921504606846974)))
   :hints (("Goal" :in-theory (enable tree-to-memoizep))))
 
 (defthmd axe-treep-when-tree-to-memoizep
@@ -96,7 +96,7 @@
 (defthmd tree-to-memoizep-when-axe-treep-and-bounded-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (bounded-axe-treep tree bound)
-                (<= bound 2147483646)
+                (<= bound 1152921504606846974)
                 ;; (natp bound)
                 )
            (equal (tree-to-memoizep tree)
@@ -108,7 +108,7 @@
 (defthm tree-to-memoizep-when-axe-treep-and-bounded-axe-treep-cheap-2
   (implies (and (axe-treep tree)
                 (bounded-axe-treep tree bound)
-                (<= bound 2147483646)
+                (<= bound 1152921504606846974)
                 ;; (natp bound)
                 (consp tree)
                 (not (equal 'quote (ffn-symb tree)))
@@ -151,7 +151,7 @@
 
 (defthm dargp-of-lookup-equal-alt ;name clash
   (implies (and ;(alistp alist)
-                (all-dargp (strip-cdrs alist))
+                (darg-listp (strip-cdrs alist))
                 (lookup-equal tree alist))
            (dargp (lookup-equal tree alist)))
   :hints (("Goal" :in-theory (e/d (lookup-equal assoc-equal) (dargp)))))
@@ -177,7 +177,7 @@
  ;; TODO: Can variables actually occur in this?
  (defun sum-of-nodenums-aux (tree acc)
    (declare (xargs :guard (and (axe-treep tree)
-                               (bounded-axe-treep tree 2147483646)
+                               (bounded-axe-treep tree 1152921504606846974)
                                (natp acc)
                                (< acc *memoization-size*))
                    :split-types t)
@@ -187,7 +187,7 @@
            acc ;it's a variable
          ;;it's a nodenum
          (logand 1048575 ; 20 ones
-                 (+ (the (integer 0 2147483645) tree)
+                 (+ (the (integer 0 1152921504606846973) tree)
                     acc)))
      (if (eq 'quote (ffn-symb tree))
          acc ;it's a quoted constant
@@ -195,7 +195,7 @@
        (sum-of-nodenums-aux-lst (fargs tree) acc))))
 
  (defun sum-of-nodenums-aux-lst (trees acc)
-   (declare (xargs :guard (and (bounded-axe-tree-listp trees 2147483646)
+   (declare (xargs :guard (and (bounded-axe-tree-listp trees 1152921504606846974)
                                (natp acc)
                                (< acc *memoization-size*))
                    :verify-guards nil ;done below
@@ -290,7 +290,7 @@
   (declare (xargs :guard t))
   (and (alistp alist)
        (trees-to-memoizep (strip-cars alist))
-       (all-dargp (strip-cdrs alist))))
+       (darg-listp (strip-cdrs alist))))
 
 (defthm memo-alistp-of-cons-of-cons
   (equal (memo-alistp (cons (cons tree result) memo-alist))
@@ -306,9 +306,9 @@
    :hints (("Goal" :in-theory (enable memo-alistp)))))
 
 (local
- (defthm all-dargp-of-strip-cdrs-when-memo-alistp
+ (defthm darg-listp-of-strip-cdrs-when-memo-alistp
    (implies (memo-alistp alist)
-            (all-dargp (strip-cdrs alist)))
+            (darg-listp (strip-cdrs alist)))
    :hints (("Goal" :in-theory (enable memo-alistp)))))
 
 (local
@@ -379,7 +379,7 @@
        ;;        (len alist-for-key)
        ;;        key
        ;;        result))
-       (new-alist (acons-fast tree result alist-for-key))
+       (new-alist (acons-fast tree result alist-for-key)) ; todo: could it ever already be present?
        (memoization (aset1 'memoization memoization key new-alist)))
     memoization))
 
@@ -530,7 +530,7 @@
   (implies (and (symbolp array-name)
                 (natp index)
                 (posp size)
-                (< size 2147483647))
+                (<= size 1152921504606846974))
            (array-of-bounded-memo-alistsp-aux array-name
                                          (make-empty-array array-name size)
                                          index

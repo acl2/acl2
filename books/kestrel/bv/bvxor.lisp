@@ -1,7 +1,7 @@
 ; BV Library: bvxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,9 @@
 
 (in-package "ACL2")
 
-(include-book "logxor-b")
-(include-book "bvchop")
+;(include-book "bvchop")
 (include-book "getbit")
+(local (include-book "logxor-b"))
 (local (include-book "../utilities/equal-of-booleans"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -32,7 +32,6 @@
 
 (in-theory (disable (:type-prescription bvxor))) ; bvxor-type is at least as good
 
-;rename params in this and other rules
 (defthm bvxor-associative
   (equal (bvxor size (bvxor size x y) z)
          (bvxor size x (bvxor size y z)))
@@ -47,7 +46,7 @@
   (equal (bvxor size x (bvxor size y z))
          (bvxor size y (bvxor size x z)))
   :hints (("Goal" :in-theory (e/d (bvxor-commutative) (bvxor-associative))
-           :use ((:instance bvxor-associative)
+           :use (bvxor-associative
                  (:instance bvxor-associative (x y) (y x))))))
 
 (defthmd bvxor-commute-constant
@@ -67,6 +66,7 @@
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvxor))))
 
+;; A bvxor of size 0 is 0.
 (defthm bvxor-of-0-arg1
   (equal (bvxor 0 x y)
          0)
@@ -79,27 +79,18 @@
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;; Do not remove: helps justify the correctness of some operations done by Axe.
-;in case we don't have commutativity - disable, since we'll always commute constants to the front?
-(defthm bvxor-of-0-arg3
+;; Disabled, since we'll always commute constants to the front.
+(defthmd bvxor-of-0-arg3
   (equal (bvxor size x 0)
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-combine-constants
-  (implies (syntaxp (and (quotep y) ;put this hyp first to fail fast
+  (implies (syntaxp (and (quotep y) ;tested first to fail fast
                          (quotep x)
                          (quotep size)))
            (equal (bvxor size x (bvxor size y z))
                   (bvxor size (bvxor size x y) z)))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
-;i guess this is how we should phrase all the bvchop-of-xxx rules?
-;when n=size this will cause the bvxor to be rewritten again, unlike if we let bvchop-identity fire.  does that slow things down much?
-(defthm bvchop-of-bvxor
-  (implies (and (natp n)
-                (natp size))
-           (equal (bvchop n (bvxor size x y))
-                  (bvxor (min n size) x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;todo more like this for other ops
@@ -135,6 +126,22 @@
          (natp size))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+;i guess this is how we should phrase all the bvchop-of-xxx rules?
+;when n=size this will cause the bvxor to be rewritten again, unlike if we let bvchop-identity fire.  does that slow things down much?
+(defthm bvchop-of-bvxor
+  (implies (and (natp n)
+                (natp size))
+           (equal (bvchop n (bvxor size x y))
+                  (bvxor (min n size) x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+;no hyps
+(defthm bvchop-of-bvxor-same
+  (equal (bvchop size (bvxor size x y))
+         (bvxor size x y))
+  :hints (("Goal" :cases ((integerp size)))))
+
+
 (defthm unsigned-byte-p-of-bvxor-gen
   (implies (<= size size2)
            (equal (unsigned-byte-p size2 (bvxor size x y))
@@ -148,6 +155,7 @@
            (unsigned-byte-p size (bvxor size2 x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+;; todo: rename these to have equal in the name:
 (defthm bvxor-cancel
   (equal (equal (bvxor size x y) (bvxor size x z))
          (equal (bvchop size y) (bvchop size z)))
@@ -180,6 +188,7 @@
          (bvxor 1 x y))
   :hints (("Goal" :use (:instance bvxor-1-of-getbit-arg2 (y x) (x y)))))
 
+;rename bvxor-of-bvchop-arg2
 (defthm bvxor-of-bvchop-1
   (implies (and (<= size size2)
                 (integerp size2))
@@ -187,11 +196,22 @@
                   (bvxor size x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
+;rename bvxor-of-bvchop-arg3
 (defthm bvxor-of-bvchop-2
   (implies (and (<= size size2)
                 (integerp size2))
            (equal (bvxor size x (bvchop size2 y))
                   (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthm bvxor-of-bvchop-same-arg1
+  (equal (bvxor size (bvchop size x) y)
+         (bvxor size x y))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(defthm bvxor-of-bvchop-same-arg2
+  (equal (bvxor size x (bvchop size y))
+         (bvxor size x y))
   :hints (("Goal" :in-theory (enable bvxor))))
 
 ;todo make a general lemma for all bvs, like we do for trimming?
@@ -212,8 +232,7 @@
   :hints (("Goal"
            :in-theory (e/d (getbit slice bvxor
                                    bvchop-of-logtail)
-                           (slice-becomes-getbit
-                            bvchop-1-becomes-getbit
+                           (bvchop-1-becomes-getbit
                             bvchop-of-logtail-becomes-slice)))))
 
 ;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient
@@ -223,6 +242,7 @@
                   (bvxor 1 x y)))
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
+;rename
 (defthm getbit-of-bvxor-eric
   (implies (and (< 0 n) ;prevents the n=0,size=1 case
                 (< n size)
@@ -244,7 +264,7 @@
 (defthm bvxor-numeric-bound
   (implies (<= (expt 2 size) k)
            (< (bvxor size x y) k))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvxor)
+  :hints (("Goal" :use unsigned-byte-p-of-bvxor
            :in-theory (disable unsigned-byte-p-of-bvxor unsigned-byte-p-of-bvxor-gen))))
 
 (defthm bvxor-cancel-lemma1
@@ -261,7 +281,7 @@
            (equal (equal x (bvxor size y x))
                   (and (unsigned-byte-p size x)
                        (equal (bvchop size y) 0))))
-  :hints (("Goal" :use (:instance bvxor-cancel-lemma1)
+  :hints (("Goal" :use bvxor-cancel-lemma1
            :in-theory (e/d (bvxor-commutative)
                            (bvxor-cancel-cross-2 bvxor-cancel-cross-1 bvxor-cancel-lemma1)))))
 
@@ -317,22 +337,6 @@
                            (y (bvchop size X))
                            (z k2))
            :in-theory (enable bvxor-commutative))))
-
-(defthm bvxor-of-bvchop-same-arg1
-  (equal (bvxor size (bvchop size x) y)
-         (bvxor size x y))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
-(defthm bvxor-of-bvchop-same-arg2
-  (equal (bvxor size x (bvchop size y))
-         (bvxor size x y))
-  :hints (("Goal" :in-theory (enable bvxor))))
-
-;no hyps
-(defthm bvchop-of-bvxor-same
-  (equal (bvchop size (bvxor size x y))
-         (bvxor size x y))
-  :hints (("Goal" :cases ((integerp size)))))
 
 ;todo: add more
 (defthm equal-of-bvxor-and-bvxor-arg1-arg2
@@ -430,6 +434,7 @@
            (equal (bvxor n x (+ y (* k z)))
                   (bvxor n x y))))
 
+;todo: drop
 (defthm bvxor-of-bvchop-tighten-2
   (implies (and (< size1 size2)
                 (natp size1)
@@ -441,6 +446,7 @@
   :hints (("Goal" :in-theory (enable bvxor ;bvchop-bvchop
                                      ))))
 
+;todo: drop
 (defthm bvxor-of-bvchop-tighten-1
   (implies (and (< size1 size2)
                 (natp size1)
@@ -470,9 +476,9 @@
                   (bvxor (+ 1 highbit (- lowbit))
                          (slice highbit lowbit x)
                          (slice highbit lowbit y))))
-  :hints (("Goal" :in-theory (e/d (slice bvxor natp BVCHOP-OF-LOGTAIL)
-                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
+                                  (bvchop-of-logtail-becomes-slice
+                                   logtail-of-bvchop-becomes-slice)))))
 
 ;bozo or just use SLICE-TOO-HIGH-IS-0 - which is cheaper?
 ;or just pass slice through?
@@ -498,6 +504,59 @@
                       (bvxor (+ size (- low))
                              (slice (+ -1 size) low x)
                              (slice (+ -1 size) low y))))))
-  :hints (("Goal" :in-theory (e/d (slice bvxor natp BVCHOP-OF-LOGTAIL)
-                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                   LOGTAIL-OF-BVCHOP-BECOMES-SLICE)))))
+  :hints (("Goal" :in-theory (e/d (slice bvxor natp bvchop-of-logtail)
+                                  (bvchop-of-logtail-becomes-slice
+                                   logtail-of-bvchop-becomes-slice)))))
+
+(defthm bvxor-cancel-2-of-more-and-1-of-more
+  (equal (equal (bvxor size y (bvxor size x z)) (bvxor size x w))
+         (equal (bvxor size y z) (bvchop size w))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;newly disabled
+(defthmd logxor-bvchop-bvchop
+  (implies (and (integerp x)
+                (<= 0 size)
+                (integerp size)
+                (integerp y))
+           (equal (LOGXOR (BVCHOP size x)
+                          (BVCHOP size y))
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-bvchop-bvchop)))
+
+(defthmd logxor-of-bvchop-and-bvchop
+  (implies (and (integerp x)
+                (integerp y)
+                (natp size1)
+                (natp size2))
+           (equal (LOGXOR (BVCHOP size1 x)
+                          (BVCHOP size2 y))
+                  (if (<= size1 size2)
+                      (bvxor size2 (bvchop size1 x) y)
+                    (bvxor size1 x (bvchop size2 y)))))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-and-bvchop)))
+
+(defthmd logxor-of-bvchop-becomes-bvxor-arg1
+  (implies (and (unsigned-byte-p size y)
+                (integerp x)
+                (natp size))
+           (equal (logxor (bvchop size x) y)
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-becomes-bvxor-arg1)))
+
+(defthmd logxor-of-bvchop-becomes-bvxor-arg2
+  (implies (and (unsigned-byte-p size x)
+                (integerp y)
+                (natp size))
+           (equal (logxor x (bvchop size y))
+                  (bvxor size x y)))
+  :hints (("Goal" :in-theory (enable bvxor))))
+
+(theory-invariant (incompatible (:definition bvxor) (:rewrite logxor-of-bvchop-becomes-bvxor-arg2)))

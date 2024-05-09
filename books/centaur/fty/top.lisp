@@ -1206,9 +1206,9 @@ functions.</p>
 <li>Accessors @('arithtm-num->val'), @('arithtm-plus->left'),
 @('arithtm-plus->right'), and @('arithtm-minus->arg')</li>
 <li>Constructor macros @('make-aritherm-num'), @('make-arithtm-plus'),
-@('make-arithtm-minus')</li>
+@('make-arithtm-minus'), similarly to @(tsee defprod)</li>
 <li>Changer macros @('change-arithtm-num'), @('change-arithtm-plus'),
-@('change-arithtm-minus')</li>
+@('change-arithtm-minus'), similarly to @(tsee defprod)</li>
 <li>@(see B*) binders @('arithtm-num'), @('arithtm-plus'),
 @('arithtm-minus')</li>
 <li>@('arithtm-case'), a macro that combines case splitting and accessor binding.</li>

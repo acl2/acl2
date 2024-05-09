@@ -10,6 +10,7 @@
   :uncertified-okp nil :ttags ((:ccg))
   :load-compiled-file nil)
 (include-book "base-lists")
+(include-book "guard-obligation-testing")
 
 #|
 
@@ -111,7 +112,7 @@ as follows.
   '(:proofs? :proof-timeout
              :testing? :testing-timeout
              :doc
-             :check-contracts? :complete-contracts?
+             :check-contracts? :test-contracts? :complete-contracts?
              :debug?))
 
 (def-const *property-conjecture-keywords*
@@ -130,6 +131,7 @@ as follows.
   (:testing? . t)
   (:testing-timeout . 20)
   (:check-contracts? . t)
+  (:test-contracts? . t)
   (:complete-contracts? . t)))
 
 #|
@@ -141,6 +143,7 @@ as follows.
           (:testing? . t)
           (:testing-timeout . 20)
           (:check-contracts? . t)
+          (:test-contracts? . t)
           (:complete-contracts? . t)))
 
 
@@ -185,6 +188,10 @@ with the same hints and directives that defthm accepts.
 
 (sig find-first-duplicate ((listof :a)) => (listof :a))
 
+#|
+
+Moved to utilities.lisp and acl2s-sigs.lisp
+
 (definec remove-dups-aux (l :tl seen :tl) :tl
   (cond ((endp l) (revappend seen nil))
         ((in (car l) seen) (remove-dups-aux (cdr l) seen))
@@ -199,6 +206,7 @@ with the same hints and directives that defthm accepts.
 (sig remove-dups ((listof :a)) => (listof :a))
 
 ; (remove-dups '(1 2 3 3 1 3 2 1 1 3))
+|#
 
 #|
 (definec extract-hyps (x :all) :tl
@@ -231,6 +239,8 @@ with the same hints and directives that defthm accepts.
                   (hyps-list-from-hyps hyps))
                  (('=> hyps &)
                   (hyps-list-from-hyps hyps))
+                 (('-> hyps &)
+                  (hyps-list-from-hyps hyps))
                  (& nil)))
 ;      ((unless (tlp x-hyps)) nil)
        (find-duplicate-x-hyps (find-first-duplicate x-hyps))
@@ -244,6 +254,7 @@ with the same hints and directives that defthm accepts.
   (case-match x
     (('implies & body) body)
     (('=> & body) body)
+    (('-> & body) body)
     (& x)))
 
 (definec del1 (e :all x :tl) :tl
@@ -363,12 +374,19 @@ I don't need this?
         (defdata::extract-keywords ctx *property-keywords* args PT nil))
        (debug? (defdata::get1 :debug? kwd-alist))
        (debug-all? (== debug? :all))
+       (- (cw? debug-all? "~%**prop-rest is: ~x0~%" prop-rest))
+       (- (cw? debug-all? "~|**kwd-alist is: ~x0~%" kwd-alist))
        (vars? (assoc :vars kwd-alist))
+       (- (cw? debug-all? "~|**vars? is: ~x0~%" vars?))
+       ((when (and (! vars?)
+                   (! (proper-argsp (car prop-rest)))))
+        (ecw "~%**ERROR: The argument list: ~x0 is not well-formed."
+             (car prop-rest)
+             nil))
        (ivars? (and (! vars?)
-                    (property-varsp (car prop-rest))
-                    (cons :vars (car prop-rest))))
+                    (cons :vars (process-typed-args (car prop-rest)))))
        (vars? (or vars? ivars?))
-       (- (cw? debug-all? "~%**vars? is: ~x0~%" vars?))
+       (- (cw? debug-all? "~|**vars? is: ~x0~%" vars?))
        (prop-rest (if ivars? (cdr prop-rest) prop-rest))
        (hyps? (assoc :hyps kwd-alist))
        (hyps? (or hyps? (assoc :h kwd-alist)))
@@ -378,13 +396,15 @@ I don't need this?
        ;; definec. Allow multiple hyps, bodys and combine them.
        ;; Search for :body, :hyps in function.
        (check-contracts? (defdata::get1 :check-contracts? kwd-alist))
+       (test-contracts? (defdata::get1 :test-contracts? kwd-alist))
 ;       ((when (and hyps? (not body?)))
 ;         (er soft ctx
 ;             "~|**ERROR: If :hyps is provided, then :body must also be provided."))
-       (body (if body?
-                 (or (defdata::get1 :body kwd-alist)
-                     (defdata::get1 :b kwd-alist))
-               (extract-body (car prop-rest))))
+       (body (cond (body?
+                    (or (defdata::get1 :body kwd-alist)
+                        (defdata::get1 :b kwd-alist)))
+                   (hyps? (car prop-rest))
+                   (t (extract-body (car prop-rest)))))
        (hyps-list (cond (hyps? (hyps-list-from-hyps
                                 (or (defdata::get1 :hyps kwd-alist)
                                     (defdata::get1 :h kwd-alist))))
@@ -394,7 +414,7 @@ I don't need this?
             (mv nil nil)
           (acl2::pseudo-translate (car prop-rest) nil wrld)))
        ((when erp)
-        (ecw "~|**ERROR: The translation of hyps: ~
+        (ecw "~%**ERROR: The translation of hyps: ~
               ~x0 ~
               resulted in an error."
              (car prop-rest)
@@ -410,13 +430,18 @@ I don't need this?
        (user-vars (evens user-var-list))
        (user-types (odds user-var-list))
        (user-types (map-intern-types user-types pkg))
-       (- (cw? debug-all? "~%**user-types is: ~x0~%" user-types))
+       (- (cw? debug-all? "~|**user-types is: ~x0~%" user-types))
        (user-preds (map-preds user-types tbl atbl))
-       (- (cw? debug-all? "~%**user-preds is: ~x0~%" user-preds))
+       (- (cw? debug-all? "~|**user-preds is: ~x0~%" user-preds))
+       (bad-type
+        (find-bad-d-arg-types user-types user-preds))
+       ((when bad-type)
+        (ecw "~%**ERROR: One of the argument types, ~x0, is not a type."
+             bad-type nil))
        (type-list1 (make-input-contract user-vars user-preds))
        (type-list (hyps-list-from-hyps type-list1))
        (type-hyps-list (append type-list hyps-list))
-       (- (cw? debug-all? "~%**type-hyps-list is: ~x0~%" type-hyps-list))
+       (- (cw? debug-all? "~|**type-hyps-list is: ~x0~%" type-hyps-list))
        (prop (cond ((endp type-hyps-list) body)
                    ((endp (cdr type-hyps-list))
                     `(implies ,(car type-hyps-list) ,body))
@@ -425,78 +450,92 @@ I don't need this?
         (acl2::pseudo-translate prop nil wrld))
        (all-vars (acl2::all-vars trans-prop))
        (vars (if vars? user-vars all-vars))
-       (- (cw? debug-all? "~%**vars is: ~x0~%" vars))
-       (- (cw? debug-all? "~%**all-vars is: ~x0~%" all-vars))
+       (- (cw? debug-all? "~|**vars is: ~x0~%" vars))
+       (- (cw? debug-all? "~|**all-vars is: ~x0~%" all-vars))
        (var-diff (sym-diff vars all-vars))
-       (- (cw? debug-all? "~%**prop is: ~x0~%" prop))
-       (- (cw? debug-all? "~%**trans-prop is: ~x0~%" trans-prop))
+       (- (cw? debug-all? "~|**prop is: ~x0~%" prop))
+       (- (cw? debug-all? "~|**trans-prop is: ~x0~%" trans-prop))
        (parsed (list name? name prop kwd-alist))
        ((when erp)
-        (ecw "~|**ERROR: The translation of prop: ~
+        (ecw "~%**ERROR: The translation of prop: ~
               ~x0 ~
               resulted in an error."
              prop
              parsed))
        ((unless (or (consp prop-rest) body?))
-        (ecw "~|**ERROR: Empty properties are not allowed."
+        (ecw "~%**ERROR: Empty properties are not allowed."
              parsed))
        ((when var-diff)
-        (ecw "~|**ERROR: The :vars provided do not match the actual variables ~
+        (ecw "~%**ERROR: The :vars provided do not match the actual variables ~
                 appearing in the property. An example is ~x0."
              (car var-diff)
              parsed))
        (gprop (sublis-fn-simple '((implies . impliez)) trans-prop))
-       (- (cw? debug-all? "~%**gprop is: ~x0~%" gprop))
-       ((mv erp val)
+       (- (cw? debug-all? "~|**gprop is: ~x0~%" gprop))
+       ((mv gc-erp val)
         (if check-contracts?
             (guard-obligation gprop nil nil t ctx state)
           (guard-obligation t nil nil t ctx state)))
-       ((when erp)
-        (ecw "~|**ERROR Determining Contract Checking Proof Obligation.** ~
+       ((list* & CL &) val)
+       (gc-guards (if gc-erp t (acl2::prettyify-clause-set CL nil wrld)))
+       (check-guards (if (and check-contracts? (not gc-erp)) gc-guards t))
+
+       ((mv gt-erp val)
+        (if test-contracts?
+            (acl2::guard-obligation-testing gprop nil nil t ctx state)
+          (guard-obligation t nil nil t ctx state)))
+       ((when gt-erp)
+        (ecw "~%**ERROR Determining Contract Checking Proof Obligation.** ~
               ~%**val is: ~x0"
              val
              parsed))
        ((list* & CL &) val)
-       (guards (acl2::prettyify-clause-set CL nil wrld))
-       (- (cw? debug? "~|**The Contract Checking Proof Obligation is: ~x0~%" guards))
+       (gt-guards (acl2::prettyify-clause-set CL nil wrld))
+       (test-guards (if test-contracts? gt-guards t))
+       (- (cw? debug? "~|**The Original Contract Checking Proof Obligation is: ~x0~%" gc-guards))
+       (- (cw? debug? "~|**The Original Contract Testing Proof Obligation is: ~x0~%" gt-guards))
+       (- (cw? debug? "~|**The Contract Checking Proof Obligation is: ~x0~%" check-guards))
+       (- (cw? debug? "~|**The Contract Testing Proof Obligation is: ~x0~%" test-guards))
        (proof-timeout (defdata::get1 :proof-timeout kwd-alist))
        (testing-timeout (defdata::get1 :testing-timeout kwd-alist))
-       (- (cw? check-contracts? "~%Form:  ( CONTRACT-CHECKING PROPERTY ...)"))
+       (- (cw? (and check-contracts? (not gc-erp)) "~%Form:  ( CONTRACT-CHECKING PROPERTY ...)"))
        (- (cw "~%"))
        ((mv te-thm-erp val state)
-        (with-time-limit
-         proof-timeout
-         (trans-eval
-          `(with-output
-            ,@(if debug?
-                  '(:on :all :summary-on :all :gag-mode nil
-                        :off (proof-builder proof-tree))
-                (if check-contracts?
-                    '(:off :all :on (summary comment)
-                           :summary-on :all
-                           :summary-off (:other-than time))
-                  '(:off :all :summary-off :all :on comment)))
-            (thm-no-test ,guards))
-          ctx state t)))
+        (if (and check-contracts? (not gc-erp))
+            (with-time-limit
+             proof-timeout
+             (trans-eval
+              `(with-output
+                ,@(if debug?
+                      '(:on :all :summary-on :all :gag-mode nil
+                            :off (proof-builder proof-tree))
+                    (if check-contracts?
+                        '(:off :all :on (summary comment)
+                               :summary-on :all
+                               :summary-off (:other-than time))
+                      '(:off :all :summary-off :all :on comment)))
+                (thm-no-test ,check-guards))
+              ctx state t))
+          (mv nil nil state)))
        ((list* & thm-erp &) val)
        (- (cw? debug-all? "~|**te-thm-erp is: ~x0~%" te-thm-erp))
        (- (cw? debug-all? "~|**val is: ~x0~%" val))
        (- (cw? debug-all? "~|**thm-erp is: ~x0~%" thm-erp))
-       ((when thm-erp)
-        (ecw "~|**ERROR During Contract Checking.** ~
+       (- (cw? thm-erp
+             "~%**ERROR During Contract Checking.** ~
               ~|**The Contract Checking Proof Obligation is: ~x0"
-             guards
-             parsed))
-       (- (cw? thm-erp "~|Form:  ( TESTING PROPERTY CONTRACTS ...)"))
+             check-guards))
+       (- (cw? (and test-contracts? (or thm-erp gc-erp (not check-contracts?)))
+               "~%Form:  ( TESTING PROPERTY CONTRACTS ...)"))
        ((mv te-test-erp val state)
-        (if thm-erp
+        (if (and test-contracts? (or thm-erp gc-erp (not check-contracts?)))
             (with-time-limit
              testing-timeout
              (trans-eval `(with-output
                            ,@(if debug?
                                  '(:on :all :off (proof-builder proof-tree) :gag-mode nil)
                                '(:off :all :on (error comment)))
-                           (test? ,guards
+                           (test? ,test-guards
                              ,@(if debug?
                                    '()
                                  '(:print-cgen-summary nil :num-witnesses 0))))
@@ -506,17 +545,24 @@ I don't need this?
        (- (cw? debug-all? "~|**te-test-erp is: ~x0~%" te-test-erp))
        (- (cw? debug-all? "~|**val is: ~x0~%" val))
        (- (cw? debug-all? "~|**test-erp is: ~x0~%" test-erp))
+       ((when gc-erp)
+        (ecw "~%**ERROR Determining Contract Checking Proof Obligation.** ~
+              ~%**val is: ~x0"
+             val
+             parsed))
        ((when test-erp)
-        (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
+        (ecw "~%**Contract Testing Error. The hypotheses of your property must imply:~
 ~%  ~x0.~
 ~%The counterexample above shows that this is not the case."
-             guards
+             test-guards
              parsed))
        ((when thm-erp)
-        (ecw "~|**Contract Completion Error. The hypotheses of your property must imply:~
+        (ecw "~%**Contract Checking Error. The hypotheses of your property must imply:~
 ~%  ~x0."
-             guards
-             parsed)))
+             check-guards
+             parsed))
+
+)
     (value parsed)))
 
 #|
@@ -582,12 +628,12 @@ I don't need this?
        (- (cw? t "~|**val is: ~x0~%" val))
        (- (cw? t "~|**test-erp is: ~x0~%" test-erp))
        ((when test-erp)
-        (er soft ctx "~|**Contract Completion Error. The hypotheses of your property must imply:~
+        (er soft ctx "~%**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0.~
 ~%The counterexample above shows that this is not the case."
             guards))
        ((when thm-erp)
-        (er soft ctx "~|**Contract Completion Error. The hypotheses of your property must imply:~
+        (er soft ctx "~%**Contract Completion Error. The hypotheses of your property must imply:~
 ~%  ~x0."
             guards)))
     (value t)))
@@ -694,8 +740,8 @@ I don't need this?
                    '(:on :all :off (proof-builder proof-tree)
                          :summary-on :all :gag-mode nil)
                  '(:off :all :on (error comment)))
-             (test? ,prop)))
-           ;; (with-output :stack :pop (test? ,prop)))
+             (test? ,@args)))
+           ;; (with-output :stack :pop (test? ,@args)))
            (value-triple
             (cw "~|Form:  ( PROPERTY PASSED TESTING )~%")))))
        ((when name?)
@@ -782,6 +828,7 @@ Properties are just tested with a short timeout.
      (set-defunc-skip-admissibilityp t)
      (set-defunc-skip-function-contractp t)
      (set-defunc-skip-body-contractsp t)
+     (set-acl2s-property-table-test-contracts? t)
      (set-acl2s-property-table-check-contracts? nil)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
@@ -798,6 +845,7 @@ Properties are just tested with a short timeout.
      (set-defunc-termination-strictp nil)
      (set-defunc-function-contract-strictp nil)
      (set-defunc-body-contracts-strictp nil)
+     (set-acl2s-property-table-test-contracts? t)
      (set-acl2s-property-table-check-contracts? nil)
      (set-acl2s-property-table-proofs? nil)
      (set-acl2s-property-table-testing? t)
@@ -828,14 +876,137 @@ Properties are just tested with a short timeout.
      (set-defunc-termination-strictp t)
      (set-defunc-function-contract-strictp t)
      (set-defunc-body-contracts-strictp t)
+     (set-acl2s-property-table-test-contracts? t)
      (set-acl2s-property-table-check-contracts? t)
      (set-acl2s-property-table-proofs? t)
      (set-acl2s-property-table-testing? t)
      (modeling-set-parms ,cgen ,cgen-local ,defunc ,proof ,testing)))
+
+; some tests to make sure we pick up :hyps when :body is/is not specified
+(property (i :int)
+  :hyps (natp i)
+  (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (intp i)
+  (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (< 0 i)
+  (=> (intp i) (posp i)))
+
+(property (i :int)
+  :hyps (natp i)
+  :body (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (intp i)
+  :body (=> (< 0 i) (posp i)))
+
+(property (i :rational)
+  :hyps (< 0 i)
+  :body (=> (intp i) (posp i)))
 
 #|
 (modeling-start)
 (modeling-validate-defs)
 (modeling-admit-defs)
 (modeling-admit-all)
+|#
+
+(defmacro propertyd (name &rest args)
+  `(with-output
+    :off :all :on (error) :stack :push
+    (encapsulate
+     ()
+     (property ,name ,@args)
+     (in-theory (disable ,name)))))
+
+
+#|
+
+Example of contract testing/checking.
+
+; Fails contract checking (proofs).
+; But then should proceed to also test contracts and generate a
+; counterexample and explain what the contracts mean.
+
+(property (x y :all)
+  :debug? t
+  (== (app x y) (app x y)))
+
+; Without debugging messages
+(property (x y :all)
+  (== (app x y) (app x y)))
+
+; Fails contract checking (proofs) 
+; Should not try testing contracts; should not show any testing info
+
+(property (x y :all)
+  :debug? t
+  :test-contracts? nil 
+  (== (app x y) (app x y)))
+
+; Without debugging messages
+(property (x y :all)
+  :test-contracts? nil 
+  (== (app x y) (app x y)))
+
+; Should not try proving contracts; should not show any proving info
+; Fails contract testing (cgen) with counterexample
+(property (x y :all)
+  :debug? t
+  :check-contracts? nil 
+  (== (app x y) (app x y)))
+
+; Without debugging messages
+(property (x y :all)
+  :check-contracts? nil 
+  (== (app x y) (app x y)))
+
+; No contract checking or testing, so should pass
+(property (x y :all)
+  :debug? t
+  :check-contracts? nil 
+  :test-contracts? nil 
+  (== (app x y) (app x y)))
+
+; Without debugging messages
+(property (x y :all)
+  :check-contracts? nil 
+  :test-contracts? nil 
+  (== (app x y) (app x y)))
+
+; Note that if the property has functions whose guards have not been
+; checked, that should not lead to an error if :check-contracts? and
+; :test-contracts? are both nil. ;
+
+(defun appp (x y)
+  (declare (xargs :mode :program))
+  (app x y))
+
+(defun appp (x y)
+  (app x y))
+
+(property (x y :all)
+  :debug? t
+  (== (appp x y) (appp x y)))
+
+(property (x y :all)
+  :debug? t
+  (== (appp x y) (appp x y)))
+
+(property (x y :all)
+  :check-contracts? nil
+  :debug? t
+  (== (appp x y) (appp x y)))
+
+(property (x y :all)
+  :check-contracts? nil
+  :test-contracts? nil
+  :debug? t
+  (== (appp x y) (appp x y)))
+
+
+
 |#

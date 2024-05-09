@@ -13,9 +13,15 @@
 
 ;; Turn each of the ITEMS into a unary call of FN on that item.  FN is usually
 ;; a symbol but may be a lambdas.
-(defun wrap-all (fn items)
+(defund wrap-all (fn items)
   (declare (xargs :guard (true-listp items)))
   (if (endp items)
       nil
     (cons `(,fn ,(first items))
           (wrap-all fn (rest items)))))
+
+(defthm pseudo-term-listp-of-wrap-all
+  (implies (and (pseudo-term-listp items)
+                (symbolp fn))
+           (pseudo-term-listp (wrap-all fn items)))
+  :hints (("Goal" :in-theory (enable wrap-all))))

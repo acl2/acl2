@@ -51,8 +51,8 @@
      since the pair may be a large binary tree,
      we prefer not to generate a large Java expression.
      Instead, we generate
-     a Java block that sets a local variable to the @(tsee car),
-     a Java block that sets another local variable to the @(tsee cdr),
+     a Java block that sets a local variable to be the @(tsee car),
+     a Java block that sets another local variable to be the @(tsee cdr),
      and then a Java expression that builds the pair
      from those two variables.
      The two blocks are concatenated,
@@ -92,8 +92,13 @@
      that is closer to the target Java code,
      thus making the translation simpler.
      The correctness of the pre-translation can be formally proved within ACL2,
-     without involving (the semantics of) Java.
-     The post-translation makes some improvements directly on the Java code."))
+     without involving (the semantics of) Java;
+     however, some of the proofs may need to be based on an "
+    (xdoc::seetopic "acl2pl::acl2-programming-language"
+                    "an evaluation semantics of ACL2")
+    ", rather than just a logical semantics.
+     The post-translation makes some improvements directly on the Java code,
+     making it more efficient and idiomatic."))
   :order-subtopics t
   :default-parent t)
 
@@ -397,7 +402,7 @@
     "This is generated only if the @(':tests') input is not @('nil').")
    (xdoc::p
     "This is a public class that contains all the generated methods.
-     [JLS:7.6] says that a Java implementation may require
+     [JLS14:7.6] says that a Java implementation may require
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement."))
   (b* (((run-when verbose$)

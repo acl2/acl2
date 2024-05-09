@@ -1,7 +1,7 @@
 ; Utilities for querying the ACL2 logical world.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2015-2017, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,8 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "legal-variable-listp")
+(include-book "kestrel/world-light/fn-definedp" :dir :system)
+(include-book "kestrel/world-light/world-triplep" :dir :system)
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 ;; TODO: Change some of these to just take wrld instead of state.
@@ -30,8 +32,6 @@
 (defthm alistp-of-getprops
   (alistp (getprops key world-name w))
   :hints (("Goal" :in-theory (enable symbol<))))
-
-;; TODO: Add a check for a primitive function (using *primitive-formals-and-guards*)
 
 ;; Returns the body (as a translated term) of NAME, which should be a function.
 ;ffixme any time we lookup unnormalized-body (here and elsewhere) consider what happens when we try to lookup the body of a primitive..  fixme and what about a constrained function?
@@ -51,23 +51,13 @@
           (er hard? 'fn-body  "Body of function ~x0 is not a pseudo-term !" name)
         body))))
 
-;; Check whether NAME is a defined function.
-(defund fn-definedp (name wrld)
-  (declare (xargs :guard (and (symbolp name)
-                              (plist-worldp wrld))))
-  (let ((body (getpropc name 'unnormalized-body nil wrld)))
-    (if (not body)
-        nil                         ;; function is not defined
-      (if (not (pseudo-termp body)) ;todo: not sure this check is appropriate here
-          (er hard? 'fn-definedp "Function ~x0's body is not a pseudo-termp (it's ~x1).~%" name body)
-        t))))
-
 (defun all-fn-definedp (names wrld)
   (declare (xargs :guard (and (symbol-listp names)
                               (plist-worldp wrld))))
   (if (atom names)
       t
-    (and (fn-definedp (first names) wrld)
+    (and (function-symbolp (first names) wrld) ; todo, move to guard
+         (fn-definedp (first names) wrld)
          (all-fn-definedp (rest names) wrld))))
 
 ;Happens to be true even if FN is not defined, because hard-error returns nil, which is a pseudo-term
@@ -130,6 +120,7 @@
 ;; Returns the (translated) guard of the given function (a result of t means
 ;; either no guard given or an explicit guard of t).  Works even on :program
 ;; mode functions.
+;; See also the built-in function GUARD.
 (defun fn-guard (name world)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp world))))
@@ -282,8 +273,8 @@
 (defmacro check-arities (term)
   `(check-arities-fn ,term state))
 
-;;assumes defthm-name is the name of a theorem in the world. ;todo:
-;;make a separate version that checks that
+;; Returns the (translated) body of DEFTHM-NAME, which must be the name of a
+;; theorem in the world.
 (defund defthm-body (defthm-name wrld)
   (declare (xargs :guard (and (symbolp defthm-name)
                               (plist-worldp wrld))))
@@ -341,7 +332,8 @@
   (if (endp fns)
       nil
     (let ((fn (first fns)))
-      (if (and (fn-definedp fn (w state))
+      (if (and (function-symbolp fn (w state)) ; todo: move to guard
+               (fn-definedp fn (w state))
                (null (fn-formals fn (w state))))
           (cons fn (filter-0ary-fns (rest fns) state))
         (filter-0ary-fns (rest fns) state)))))
@@ -373,33 +365,6 @@
          )
     runes))
 
-;; Helper function for all-functions-in-world.
-(defun all-functions-in-world-aux (wrld acc)
-  (declare (xargs :guard (and (plist-worldp wrld)
-                              (true-listp acc))))
-  (if (endp wrld)
-      (remove-duplicates-equal acc) ;slow?  consider a version of remove-duplicates that uses fast alists or property worlds?
-    (let* ((triple (first wrld))
-           (prop (cadr triple)))
-      (if (eq 'formals prop)
-          (all-functions-in-world-aux (rest wrld) (cons (car triple) acc))
-        (all-functions-in-world-aux (rest wrld) acc)))))
-
-(defthm symbol-listp-of-all-functions-in-world-aux
-  (implies (and (symbol-listp acc)
-                (plist-worldp wrld))
-           (symbol-listp (all-functions-in-world-aux wrld acc))))
-
-;; Return a list of all functions currently present in WRLD.
-;; Example usage: (all-functions-in-world (w state))
-(defun all-functions-in-world (wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (all-functions-in-world-aux wrld nil))
-
-(defthm symbol-listp-of-all-functions-in-world
-  (implies (plist-worldp wrld)
-           (symbol-listp (all-functions-in-world wrld))))
-
 ;; throws a hard error if all the NAMES are not theorems or function names
 ;; (representing their definition rules) in WRLD
 (defun ensure-all-theoremsp (names wrld)
@@ -407,57 +372,12 @@
                               (plist-worldp wrld))))
   (if (endp names)
       t
-    (and (or (fn-definedp (first names) wrld)
+    (and (or (and (function-symbolp (first names) wrld)
+                  (fn-definedp (first names) wrld))
              (defthm-body (first names) wrld))
          (ensure-all-theoremsp (rest names) wrld))))
 
-;; Recognize a triple of the form (symb prop . val).
-(defund world-triplep (trip)
-  (declare (xargs :guard t))
-  (and (consp trip)
-       (symbolp (car trip))
-       (consp (cdr trip))
-       (symbolp (cadr trip))))
-
-;; Returns (mv defun-names defthm-names).  In the result, older defuns/defthms come first.
-(defund defuns-and-defthms-in-world (world
-                                     triple-to-stop-at ; may be nil
-                                     whole-world defuns-acc defthms-acc)
-  (declare (xargs :guard (and (plist-worldp world)
-                              (plist-worldp whole-world)
-                              (or (null triple-to-stop-at)
-                                  (world-triplep triple-to-stop-at))
-                              (true-listp defuns-acc)
-                              (true-listp defthms-acc))))
-  (if (endp world)
-      (mv defuns-acc defthms-acc)
-    (let ((triple (first world)))
-      (if (equal triple triple-to-stop-at)
-          (mv defuns-acc defthms-acc)
-        (let ((symb (car triple))
-              (prop (cadr triple)))
-          (if (and (eq prop 'unnormalized-body)
-                   (let ((still-definedp (fgetprop symb 'unnormalized-body nil whole-world))) ;todo: hack: make sure the function is still defined (why does this sometimes fail?)
-                     (if (not still-definedp)
-                         (prog2$ (cw "Note: ~x0 seems to no longer be defined." symb)
-                                 nil)
-                       t)))
-              (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world (cons symb defuns-acc) defthms-acc)
-            (if (eq prop 'theorem)
-                (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc (cons symb defthms-acc))
-              (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc defthms-acc))))))))
-
-(defthm symbol-listp-of-mv-nth-0-of-defuns-and-defthms-in-world
-  (implies (and (plist-worldp world)
-                (symbol-listp defuns-acc))
-           (symbol-listp (mv-nth 0 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
-  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
-
-(defthm symbol-listp-of-mv-nth-1-of-defuns-and-defthms-in-world
-  (implies (and (plist-worldp world)
-                (symbol-listp defthms-acc))
-           (symbol-listp (mv-nth 1 (defuns-and-defthms-in-world world triple-to-stop-at whole-world defuns-acc defthms-acc))))
-  :hints (("Goal" :in-theory (enable defuns-and-defthms-in-world))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Extracts the triples that represent defthms in WORLD.  If
 ;; MAYBE-TRIPLE-TO-STOP-AT is nil, or is not a triple in WORLD, all of the

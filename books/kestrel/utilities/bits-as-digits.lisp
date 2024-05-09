@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Bit Digits
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,12 +17,20 @@
 
 (defdigits bits-as-digits-in-base-2
   :base 2
+  :digit-pred bitp
+  :digit-fix bfix
   :digits-pred bit-listp
   :digits-fix bit-list-fix
   :bendian-to-nat bebits=>nat
   :lendian-to-nat lebits=>nat
   :nat-to-bendian nat=>bebits
   :nat-to-lendian nat=>lebits
+  :digit-pred-hints (("Goal" :in-theory (enable bitp
+                                                dab-digitp)))
+  :digit-fix-hints (("Goal" :in-theory (enable bfix
+                                               bitp
+                                               dab-digit-fix
+                                               dab-digitp)))
   :digits-pred-hints (("Goal" :in-theory (enable bit-listp
                                                  bitp
                                                  dab-digit-listp

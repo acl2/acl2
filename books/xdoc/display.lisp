@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Mods to merge-text (and callers) made 5/2016 by Matt Kaufmann.
+; Various mods made by Matt Kaufmann.
 
 (in-package "XDOC")
 (include-book "prepare-topic")
@@ -58,14 +58,128 @@
 ; normalizes whitespace throughout text nodes, and merges any adjacent text
 ; nodes.
 
-(defconst *throwaway-tags*
-  ;; We leave "img" and "icon" in this list even thouggh we process them in
+
+; We start with three alists for text display as explained in :DOC terminal.
+; The first one, *xdoc-tag-alist-simple*, avoids using italics, color, or any
+; other "fancy" displays of characters, instead using underscores for certain
+; tags and a grey background for inline code.  The second,
+; *xdoc-tag-alist-fancy*, is the default, and uses italics etc. as specified.
+; The third, *xdoc-tag-alist-plain*, does neither.  But environment variable
+; ACL2_XDOC_TAGS can be set to "FANCY", "SIMPLE", or "PLAIN" to get the other
+; respective behaviors, or state global xdoc-tag-alist can be modified as shown
+; above.  See :DOC terminal.
+
+(defconst *xdoc-tag-alist-simple*
+  ;; We leave "img" and "icon" in this list even though we process them in
   ;; merge-text below, because we don't want to process </img> or </icon>.
-  (list "b" "i" "u" "tt" "v" "em" "color" "sf" "box" "img" "icon"
-        "page"
-        ;; We'll just render mathfrag formulas without any special marks
-        "mathfrag"
-        ))
+  '(("b" "__" . "__")
+    ("i" "_" . "_")
+    ("u" "_" . "_")
+    ("tt")
+    ("v") ; apparently generated from @('...')
+    ("em" "_" . "_")
+    ("color")
+    ("sf")
+    ("box")
+    ("img") ; see comment above
+    ("icon") ; see comment above
+    ("page")
+   ;; We'll just render mathfrag formulas without any special marks
+    ("mathfrag")
+    ("stv" "{STV display}" . nil)
+   ))
+
+(defun sgr-prefix (n)
+
+; N is a string representation of a code as described below.
+
+; We use Select Graphic Rendition (SGR) control sequences to handle font tags;
+; see :DOC xdoc::terminal.  On the web page
+; https://en.wikipedia.org/wiki/ANSI_escape_code
+; we see that "ESC [" is the Control Sequence Introducer (CSI) and we see
+; under "SGR (Select Graphic Rendition) parameters" that a control seqeunce
+; is of the form CSI n m, where CSI is "ESC [" as above, n is a code, and m is
+; literally the character m as a terminator.  Note that n=0 ends the font
+; change.
+
+    (concatenate 'string *sgr-prefix* n "m"))
+
+(defconst *sgr-suffix*
+  (sgr-prefix "0"))
+
+(defconst *xdoc-tag-alist-fancy*
+  ;; We leave "img" and "icon" in this list even though we process them in
+  ;; merge-text below, because we don't want to process </img> or </icon>.
+  (list*
+
+; See comments in modify-for-sgr.
+
+; For "b" we add "31;" as shown to get a red color, since bold doesn't
+; always show up well.
+
+   (list* "b" (sgr-prefix "31;1") *sgr-suffix*)
+   (list* "i" (sgr-prefix "3") *sgr-suffix*)
+   (list* "u" (sgr-prefix "4") *sgr-suffix*)
+   (list* "tt" (sgr-prefix "47") *sgr-suffix*)
+   (list* "v" (sgr-prefix "47") *sgr-suffix*)
+   (list* "em" (sgr-prefix "3") *sgr-suffix*)
+   '(("color")
+     ("sf")
+     ("box")
+     ("img") ; see comment above
+     ("icon") ; see comment above
+     ("page")
+     ;; We'll just render mathfrag formulas without any special marks
+     ("mathfrag")
+     ("stv" "{STV display}" . nil)
+     )))
+
+(defconst *xdoc-tag-alist-plain*
+  ;; We leave "img" and "icon" in this list even though we process them in
+  ;; merge-text below, because we don't want to process </img> or </icon>.
+  '(("b")
+    ("i")
+    ("u")
+    ("tt")
+    ("v") ; apparently generated from @('...')
+    ("em")
+    ("color")
+    ("sf")
+    ("box")
+    ("img") ; see comment above
+    ("icon") ; see comment above
+    ("page")
+   ;; We'll just render mathfrag formulas without any special marks
+    ("mathfrag")
+    ("stv" "{STV display}" . nil)
+   ))
+
+(defun xdoc-tag-alist-fancy-p (val)
+
+; Keep this in sync with function xdoc-tag-alist-fancy-p in emacs/acl2-doc.el
+; and books/emacs/acl2-doc.el.
+
+  (or (null val)
+      (equal val "")
+      (string-equal val "FANCY")))
+
+(defun xdoc-tag-alist (state)
+  (declare (xargs :guard t))
+  (b* (((er val)
+        (getenv$ "ACL2_XDOC_TAGS" state)))
+    (value (cond
+            ((xdoc-tag-alist-fancy-p val)
+             *xdoc-tag-alist-fancy*)
+            ((string-equal val "SIMPLE")
+             *xdoc-tag-alist-simple*)
+            ((string-equal val "PLAIN")
+             *xdoc-tag-alist-plain*)
+            (t (er hard 'update-tags-display
+                   "When environment variable ACL2_XDOC_TAGS has a non-empty ~
+                    value, that value must be (up to case) ~v0.  The value ~
+                    ~x1 is thus illegal.  See :DOC terminal."
+                   '("FANCY" "SIMPLE" "PLAIN")
+                   val))))))
 
 (defun topic-to-rendered (topic topic-to-rendered-table)
 
@@ -75,6 +189,22 @@
 ; Note that rendered does not have a package prefix.
 
   (cdr (hons-get (intern topic "ACL2") topic-to-rendered-table)))
+
+(defun print-missing-topic-name (name)
+  (wormhole-eval 'xdoc-missing-link
+                 '(lambda (acl2::whs)
+                    (set-wormhole-data
+                     acl2::whs
+                     (cons name (wormhole-data acl2::whs))))
+                 nil))
+
+(defun left-bracket-start (text bound)
+  (let ((p (search "[" text :from-end t :end2 bound)))
+    (and p
+         (cond ((eql p 0) 0)
+               ((eql (char text (1- p)) *escape-char*)
+                (left-bracket-start text (1- p)))
+               (t p)))))
 
 (defun text-matches-mangle (text mangle topic-to-rendered-table)
 
@@ -129,14 +259,16 @@
 
 ;    See double-lt (see [<<]).
 
-  (let* ((bracket-posn (search "[" text :from-end t))
+  (let* ((bracket-posn (left-bracket-start text (length text)))
          (start (and bracket-posn
                      (1+ bracket-posn)))
          (rendered (and start ; optimization
                         (topic-to-rendered mangle topic-to-rendered-table))))
     (cond
-     ((or (null start) (null rendered))
+     ((null start)
       nil)
+     ((null rendered)
+      (print-missing-topic-name (subseq text start (length text))))
      (t
       (let* ((text-topic0 (subseq text start (length text)))
              (acl2-prefix-posn (search "acl2::" text-topic0 :test 'char-equal))
@@ -200,15 +332,6 @@
                                (car match)
                                "]")))))
 
-; This variable can be modified here or by the user.  It is an alist so that
-; for every tag TAG for which <TAG>...</TAG> is to be replaced by text TEXT,
-; the alist contains the entry (TAG . TEXT).
-(make-event (pprogn (f-put-global 'xdoc-tag-elide-alist
-                                  '(("stv" . "{STV display}"))
-                                  state)
-                    (value '(value-triple t)))
-            :check-expansion t)
-
 (defun skip-to-close (tag x)
   (cond ((atom x)
          x)
@@ -248,10 +371,61 @@
         ""))
     text))
 
+(defconst *img-prefix*
+; Control-Y.
+  (coerce (list (code-char 25)) 'string))
+
+(defconst *img-suffix*
+; Control-Z.
+  (coerce (list (code-char 26)) 'string))
+
+(defun push-tstk (tok tstk)
+
+; Tok is a text token and tstk is as described in merge-text.  We extend tstk
+; with tok.
+
+  (cond ((null tstk) tok)
+        (t (cons tok tstk))))
+
+(defun pop-tstk (tstk)
+
+; Tstk is as described in merge-text.
+
+  (cond ((atom tstk)
+
+; This is an error in the normal case.  But to provide flexibility when
+; parse-xml encountered ill-formed xdoc, we don't signal an error here.
+
+         nil)
+        ((eq (car tstk) :TEXT)
+         nil)
+        (t (cdr tstk))))
+
+(defun accumulate-tstk (tstk rest)
+
+; Tstk is as described in merge-text.  We have hit a :CLOSE token and tstk has
+; already been popped.  Rest is a list of tokens, as in the first argument of
+; merge-text.  We accumulate tstk into rest, reversing it to respect the
+; original order of corresponding :OPEN tokens.
+
+  (cond ((atom tstk) ; presumably nil
+         rest)
+        ((eq (car tstk) :TEXT)
+         (cons tstk rest))
+        (t (accumulate-tstk (cdr tstk)
+                            (cons (car tstk) rest)))))
+
 (defun merge-text (x acc codes href topic-to-rendered-table
-                     xdoc-tag-elide-alist)
-  ;; CODES is number of open <code> tags -- we don't normalize whitespace
-  ;; within them, but entities still get converted.
+                     xdoc-tag-alist imgp tstk)
+
+; CODES is number of open <code> tags -- we don't normalize whitespace within
+; them, but entities still get converted.
+
+; Tstk is a stack of :TEXT tokens that records the active open font tags from
+; *xdoc-tag-alist-fancy*.  To avoid consing, when the stack has just one
+; member, it is a :TEXT token (rather than a one-element list with that token
+; as a member).
+
   (b* (((when (atom x))
         acc)
        (tok1 (car x))
@@ -262,24 +436,31 @@
                         (+ 1 codes)
                       codes)))
           (cond ((equal name "img")
-                 (b* ((tok  (list :TEXT "{IMAGE}")))
+                 (b* ((tok
+                       (list :TEXT
+                             (cond (imgp
+                                    (concatenate
+                                     'string
+                                     *img-prefix*
+                                     (cdr (assoc-equal "src"
+                                                       (opentok-atts tok1)))
+                                     *img-suffix*))
+                                   (t
+                                    "{IMAGE}")))))
                    (merge-text (cons tok rest) acc codes href
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
+                               xdoc-tag-alist imgp tstk)))
                 ((equal name "icon")
                  (b* ((tok  (list :TEXT "{ICON}")))
                    (merge-text (cons tok rest) acc codes href
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
-                ((member-equal name *throwaway-tags*)
-                 (merge-text rest acc codes nil topic-to-rendered-table
-                             xdoc-tag-elide-alist))
+                               xdoc-tag-alist imgp tstk)))
                 ((equal name "a")
                  (b* ((href (cdr (assoc-equal "href" (opentok-atts tok1))))
                       (tok  (list :TEXT (str::cat "{"))))
                    (merge-text (cons tok rest) acc codes href
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
+                               xdoc-tag-alist imgp tstk)))
                 ((equal name "see")
                  (b* ((href (or
 ; It's probably rare or impossible to have a <see> within an <a href...>, but
@@ -292,34 +473,60 @@
                       (tok  (list :TEXT "[")))
                    (merge-text (cons tok rest) acc codes href
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
+                               xdoc-tag-alist imgp tstk)))
                 ((equal name "srclink")
                  (b* ((tok  (list :TEXT "<")))
                    (merge-text (cons tok rest) acc codes href
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
+                               xdoc-tag-alist imgp tstk)))
                 (t
-                 (let ((pair (assoc-equal name xdoc-tag-elide-alist)))
+                 (let ((entry (assoc-equal name xdoc-tag-alist)))
                    (cond
-                    (pair (b* ((tok (list :TEXT (cdr pair))))
-                            (merge-text (cons tok (skip-to-close name x))
-                                        acc codes href
-                                        topic-to-rendered-table
-                                        xdoc-tag-elide-alist)))
-                    (t (merge-text rest (cons tok1 acc) codes href
+                    ((null entry)
+                     (merge-text rest (cons tok1 acc) codes href
+                                 topic-to-rendered-table
+                                 xdoc-tag-alist imgp tstk))
+                    ((null (cdr entry)) ; (name . nil)
+                     (merge-text rest acc codes nil topic-to-rendered-table
+                                 xdoc-tag-alist imgp tstk))
+                    ((null (cddr entry)) ; (name "text" . nil)
+                     (b* ((tok (list :TEXT (cadr entry))))
+                       (merge-text (cons tok (skip-to-close name x))
+                                   acc codes href
                                    topic-to-rendered-table
-                                   xdoc-tag-elide-alist))))))))
+                                   xdoc-tag-alist imgp tstk)))
+                    (t ; ("TAG" "str1" . "str2")
+                     (b* ((tok (list :TEXT (cadr entry))))
+                       (merge-text (cons tok rest) acc codes href
+                                   topic-to-rendered-table
+                                   xdoc-tag-alist imgp
+                                   (push-tstk tok tstk))))))))))
        ((when (closetok-p tok1))
         (b* ((name  (closetok-name tok1))
              (codes (if (equal name "code")
                         (- 1 codes)
-                      codes)))
-          (cond ((member-equal name *throwaway-tags*)
-                 (merge-text rest acc codes href topic-to-rendered-table
-                             xdoc-tag-elide-alist))
+                      codes))
+             (entry (assoc-equal name xdoc-tag-alist)))
+          (cond (entry
+                 (cond
+                  ((null (cdr entry)) ; (name . nil)
+                   (merge-text rest acc codes href topic-to-rendered-table
+                               xdoc-tag-alist imgp tstk))
+                  ((null (cddr entry)) ; (name "text" . nil) ; impossible?
+                   (merge-text rest acc codes href topic-to-rendered-table
+                               xdoc-tag-alist imgp tstk))
+                  (t ; ("TAG" "str1" . "str2")
+                   (b* ((tok (list :TEXT (cddr entry)))
+                        (tstk (pop-tstk tstk)))
+                     (merge-text (cons tok
+                                       (accumulate-tstk tstk rest))
+                                 acc codes href
+                                 topic-to-rendered-table
+                                 xdoc-tag-alist imgp
+                                 tstk)))))
                 ((member-equal name '("see"))
                  (b* ((text (texttok-text (car acc)))
-                      (bracket-posn (search "[" text :from-end t))
+                      (bracket-posn (left-bracket-start text (length text)))
                       (match
                        (assert$
                         bracket-posn
@@ -333,14 +540,14 @@
                      (let ((tok (list :TEXT "]")))
                        (merge-text (cons tok rest) acc codes nil
                                    topic-to-rendered-table
-                                   xdoc-tag-elide-alist)))
+                                   xdoc-tag-alist imgp tstk)))
                     (t (merge-text
                         rest
                         (cons (list :text
                                     (fix-close-see text bracket-posn match))
                               (cdr acc))
                         codes nil topic-to-rendered-table
-                        xdoc-tag-elide-alist)))))
+                        xdoc-tag-alist imgp tstk)))))
                 ((member-equal name '("a"))
                  (let* ((href-plain (if href
                                         (translate-att-to-plaintext 'href href)
@@ -348,16 +555,16 @@
                         (tok (list :TEXT (str::cat " | " href-plain "}"))))
                    (merge-text (cons tok rest) acc codes nil
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
+                               xdoc-tag-alist imgp tstk)))
                 ((equal name "srclink")
                  (let ((tok (list :TEXT ">")))
                    (merge-text (cons tok rest) acc codes href
                                topic-to-rendered-table
-                               xdoc-tag-elide-alist)))
+                               xdoc-tag-alist imgp tstk)))
                 (t
                  (merge-text rest (cons tok1 acc) codes href
                              topic-to-rendered-table
-                             xdoc-tag-elide-alist)))))
+                             xdoc-tag-alist imgp tstk)))))
        (tok1
         ;; Goofy.  Convert any entities into ordinary text.  Normalize
         ;; whitespace for any non-code tokens.
@@ -371,13 +578,13 @@
                tok1)))
        ((unless (texttok-p (car acc)))
         (merge-text rest (cons tok1 acc) codes href topic-to-rendered-table
-                    xdoc-tag-elide-alist))
+                    xdoc-tag-alist imgp tstk))
 
        (merged-tok (list :TEXT (cons (texttok-texttree (car acc))
                                      (texttok-texttree tok1)))))
     (merge-text rest (cons merged-tok (cdr acc)) codes href
                 topic-to-rendered-table
-                xdoc-tag-elide-alist)))
+                xdoc-tag-alist imgp tstk)))
 
 (defun has-tag-above (tag open-tags)
   (if (atom open-tags)
@@ -592,7 +799,15 @@
                                    0)))
                   (prepend-each-line (make-list level :initial-element #\Space)
                                      text start-from (length text) acc))
-              (let ((wrapped (word-wrap-paragraph text level wrap-col)))
+              (let ((wrapped
+
+; Note that text origially marked as &nbsp; disappears when preceded only by
+; spaces except in <code>..</code>, because of the following call of
+; word-wrap-paragraph (note that here codep = nil).  It might take some code
+; reorganization to fix that problem, because at this point, each &nbsp; has
+; already been converted to a space.
+
+                     (word-wrap-paragraph text level wrap-col)))
                 (str::revappend-chars wrapped acc)))))
     (tokens-to-terminal rest wrap-col open-tags list-nums acc)))
 
@@ -675,6 +890,20 @@
                                             state)))
                         (value fal))))))))
 
+(defun render-images (state)
+
+; Environment variable ACL2_DOC_IMAGES is normally not set.  But we set it when
+; building the combined manual.  We do not set it when building the ACL2-only
+; manual (see books/system/doc/render-doc.lisp), since that is displayed by the
+; built-in :doc command, which just prints the rendered text.
+
+  (mv-let (erp val state)
+    (getenv$ "ACL2_DOC_IMAGES" state)
+    (declare (ignore erp))
+    (mv (and val
+             (not (equal val "")))
+        state)))
+
 (defun topic-to-text (x all-topics state)
   "Returns (MV TEXT STATE)"
   (b* ((name (cdr (assoc :name x)))
@@ -705,10 +934,12 @@
        ((when err)
         (mv (str::cat "Error displaying xdoc topic: " *nls* *nls* err *nls* *nls*)
             state))
+       ((mv - xdoc-tag-alist state) (xdoc-tag-alist state))
+       ((mv imgp state) (render-images state))
        (merged-tokens
         (reverse (merge-text tokens nil 0 nil
                              topic-to-rendered-table
-                             (f-get-global 'xdoc-tag-elide-alist state))))
+                             xdoc-tag-alist imgp nil)))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string
                   (tokens-to-terminal merged-tokens 70 nil nil nil)))
@@ -736,10 +967,29 @@
        (ans (cons #\Newline ans)))
     (mv (str::rchars-to-string ans) state)))
 
+(defun warn-on-missing-topic-names (state)
+  (cond ((acl2::warning-off-p "xdoc-link" state)
+         nil)
+        (t (wormhole-eval
+            'xdoc-missing-link
+            '(lambda (acl2::whs)
+               (let ((data (wormhole-data acl2::whs)))
+                 (and data
+                      (acl2::warning$-cw0
+                       'xdoc
+                       nil
+                       (default-state-vars t)
+                       "Please note the following broken topic link ~
+                        name~#0~[~/s~]: ~&0.  To suppress such warnings: ~x1."
+                       (reverse (remove-duplicates-equal data))
+                       '(toggle-inhibit-warning "xdoc-link")))))
+            nil))))
+
 (defun display-topic (x all-topics state)
   (b* (((mv text state) (topic-to-text x all-topics state))
        (state (princ$ text *standard-co* state)))
-    state))
+    (prog2$ (warn-on-missing-topic-names state)
+            state)))
 
 
 ; We previously tried to see if there was an acl2 doc topic.  But now that we
@@ -805,10 +1055,12 @@
              (state (newline *standard-co* state))
              (state (newline *standard-co* state)))
           state))
+       ((mv - xdoc-tag-alist state) (xdoc-tag-alist state))
+       ((mv imgp state) (render-images state))
        (merged-tokens
         (reverse (merge-text tokens nil 0 nil
                              topic-to-rendered-table
-                             (f-get-global 'xdoc-tag-elide-alist state))))
+                             xdoc-tag-alist imgp nil)))
 ;       (- (cw "Merged tokens are ~x0.~%" merged-tokens))
        (terminal (str::rchars-to-string (tokens-to-terminal merged-tokens 70 nil nil nil)))
        (state (princ$ "    " *standard-co* state))
@@ -842,7 +1094,8 @@
   (declare (xargs :guard (symbolp name)))
   (b* ((topic-names (all-topic-names all-topics))
        (suggestions (xdoc-autocorrect name topic-names))
-       (- (cw "~%Argh!  No documentation for ~s0::~s1.~%" (symbol-package-name name)
+       (- (cw "~%Argh!  No documentation for ~s0::~s1.~%"
+              (symbol-package-name name)
               (symbol-name name)))
        ((unless suggestions)
         state)

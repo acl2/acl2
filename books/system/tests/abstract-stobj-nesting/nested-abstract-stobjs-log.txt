@@ -15,18 +15,19 @@ Summary
 Form:  ( DEFSTOBJ SUB$C ...)
 Rules: NIL
  SUB$C
-ACL2 !>>(DEFSTOBJ TOP$C (SUB0$C :TYPE SUB$C)
-                  MISC$C)
+ACL2 !>>(DEFSTOBJ TOP$C
+          (SUB0$C :TYPE SUB$C)
+          MISC$C)
 
 Summary
 Form:  ( DEFSTOBJ TOP$C ...)
 Rules: NIL
  TOP$C
 ACL2 !>>(DEFUN SUB$AP (X)
-               (DECLARE (XARGS :GUARD T))
-               (AND (CONSP X)
-                    (NULL (CDR X))
-                    (OR (NATP (CAR X)) (NULL (CAR X)))))
+          (DECLARE (XARGS :GUARD T))
+          (AND (CONSP X)
+               (NULL (CDR X))
+               (OR (NATP (CAR X)) (NULL (CAR X)))))
 
 Since SUB$AP is non-recursive, its admission is trivial.  We observe
 that the type of SUB$AP is described by the theorem 
@@ -44,11 +45,11 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  SUB$AP
 ACL2 !>>(DEFUN TOP$AP (X)
-               (DECLARE (XARGS :GUARD T))
-               (AND (CONSP X)
-                    (CONSP (CDR X))
-                    (NULL (CDDR X))
-                    (SUB$AP (CAR X))))
+          (DECLARE (XARGS :GUARD T))
+          (AND (CONSP X)
+               (CONSP (CDR X))
+               (NULL (CDDR X))
+               (SUB$AP (CAR X))))
 
 Since TOP$AP is non-recursive, its admission is trivial.  We observe
 that the type of TOP$AP is described by the theorem 
@@ -64,9 +65,9 @@ Summary
 Form:  ( DEFUN TOP$AP ...)
 Rules: ((:TYPE-PRESCRIPTION SUB$AP))
  TOP$AP
-ACL2 !>>(DEFUN CREATE-TOP$A
-               NIL (DECLARE (XARGS :GUARD T))
-               (LIST (LIST NIL) NIL))
+ACL2 !>>(DEFUN CREATE-TOP$A NIL
+          (DECLARE (XARGS :GUARD T))
+          (LIST (LIST NIL) NIL))
 
 Since CREATE-TOP$A is non-recursive, its admission is trivial.  We
 observe that the type of CREATE-TOP$A is described by the theorem 
@@ -82,8 +83,8 @@ Form:  ( DEFUN CREATE-TOP$A ...)
 Rules: NIL
  CREATE-TOP$A
 ACL2 !>>(DEFUN SUB0$A (X)
-               (DECLARE (XARGS :GUARD (TOP$AP X)))
-               (CAR X))
+          (DECLARE (XARGS :GUARD (TOP$AP X)))
+          (CAR X))
 
 Since SUB0$A is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of SUB0$A.
@@ -152,8 +153,8 @@ Rules: ((:DEFINITION FLD0$C)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  (:DEFUN-NX UPDATE-SUB0$A)
 ACL2 !>>(DEFUN MISC$A (X)
-               (DECLARE (XARGS :GUARD (TOP$AP X)))
-               (CADR X))
+          (DECLARE (XARGS :GUARD (TOP$AP X)))
+          (CADR X))
 
 Since MISC$A is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of MISC$A.
@@ -200,8 +201,8 @@ Form:  ( DEFUN TOP-CORR ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  (:DEFUN-NX TOP-CORR)
 ACL2 !>>(DEFTHM CREATE-TOP{CORRESPONDENCE}
-                (TOP-CORR (CREATE-TOP$C) (CREATE-TOP$A))
-                :RULE-CLASSES NIL)
+          (TOP-CORR (CREATE-TOP$C) (CREATE-TOP$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -215,8 +216,8 @@ Rules: ((:DEFINITION CREATE-SUB$C)
         (:EXECUTABLE-COUNTERPART EQUAL))
  CREATE-TOP{CORRESPONDENCE}
 ACL2 !>>(DEFTHM CREATE-TOP{PRESERVED}
-                (TOP$AP (CREATE-TOP$A))
-                :RULE-CLASSES NIL)
+          (TOP$AP (CREATE-TOP$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -226,9 +227,9 @@ Rules: ((:EXECUTABLE-COUNTERPART CREATE-TOP$A)
         (:EXECUTABLE-COUNTERPART TOP$AP))
  CREATE-TOP{PRESERVED}
 ACL2 !>>(DEFTHM SUB0{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
-                         (EQUAL (SUB0$C TOP$C) (SUB0$A TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                   (EQUAL (SUB0$C TOP$C) (SUB0$A TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -246,13 +247,13 @@ Rules: ((:DEFINITION NATP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  SUB0{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB0{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP$C TOP)
-                              (SUB$CP SUB$C)
-                              (TOP$AP TOP)
-                              (NATP (FLD0$C SUB$C)))
-                         (TOP-CORR (UPDATE-SUB0$C SUB$C TOP$C)
-                                   (UPDATE-SUB0$A SUB$C TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP$C TOP)
+                        (SUB$CP SUB$C)
+                        (TOP$AP TOP)
+                        (NATP (FLD0$C SUB$C)))
+                   (TOP-CORR (UPDATE-SUB0$C SUB$C TOP$C)
+                             (UPDATE-SUB0$A SUB$C TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -276,8 +277,8 @@ Rules: ((:DEFINITION FLD0$C)
         (:REWRITE CDR-CONS))
  UPDATE-SUB0{CORRESPONDENCE}
 ACL2 !>>(DEFTHM EQUAL-LEN-1
-                (EQUAL (EQUAL (LEN X) 1)
-                       (AND (CONSP X) (ATOM (CDR X)))))
+          (EQUAL (EQUAL (LEN X) 1)
+                 (AND (CONSP X) (ATOM (CDR X)))))
 
 Splitter note (see :DOC splitter) for Goal (2 subgoals).
   if-intro: ((:DEFINITION ATOM) (:DEFINITION LEN))
@@ -305,9 +306,10 @@ conjecture.  (See :DOC otf-flg.)
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (LEN X).  This suggestion
-was produced using the :induction rule LEN.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (LEN X).
+
+This suggestion was produced using the :induction rule LEN.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -347,11 +349,11 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION ATOM))
  EQUAL-LEN-1
 ACL2 !>>(DEFTHM UPDATE-SUB0{PRESERVED}
-                (IMPLIES (AND (SUB$CP SUB$C)
-                              (TOP$AP TOP)
-                              (NATP (FLD0$C SUB$C)))
-                         (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (SUB$CP SUB$C)
+                        (TOP$AP TOP)
+                        (NATP (FLD0$C SUB$C)))
+                   (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -376,9 +378,9 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB0{PRESERVED}
 ACL2 !>>(DEFTHM SUB0-AGAIN{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
-                         (EQUAL (SUB0$C TOP$C) (SUB0$A TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                   (EQUAL (SUB0$C TOP$C) (SUB0$A TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -396,13 +398,13 @@ Rules: ((:DEFINITION NATP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  SUB0-AGAIN{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB0-AGAIN{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP$C TOP)
-                              (SUB$CP SUB$C)
-                              (TOP$AP TOP)
-                              (NATP (FLD0$C SUB$C)))
-                         (TOP-CORR (UPDATE-SUB0$C SUB$C TOP$C)
-                                   (UPDATE-SUB0$A SUB$C TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP$C TOP)
+                        (SUB$CP SUB$C)
+                        (TOP$AP TOP)
+                        (NATP (FLD0$C SUB$C)))
+                   (TOP-CORR (UPDATE-SUB0$C SUB$C TOP$C)
+                             (UPDATE-SUB0$A SUB$C TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -428,11 +430,11 @@ Rules: ((:DEFINITION ATOM)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB0-AGAIN{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB0-AGAIN{PRESERVED}
-                (IMPLIES (AND (SUB$CP SUB$C)
-                              (TOP$AP TOP)
-                              (NATP (FLD0$C SUB$C)))
-                         (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (SUB$CP SUB$C)
+                        (TOP$AP TOP)
+                        (NATP (FLD0$C SUB$C)))
+                   (TOP$AP (UPDATE-SUB0$A SUB$C TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -457,9 +459,9 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB0-AGAIN{PRESERVED}
 ACL2 !>>(DEFTHM MISC{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
-                         (EQUAL (MISC$C TOP$C) (MISC$A TOP)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP$C TOP) (TOP$AP TOP))
+                   (EQUAL (MISC$C TOP$C) (MISC$A TOP)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Splitter note (see :DOC splitter) for Goal' (2 subgoals).
@@ -495,40 +497,40 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION NATP))
  MISC{CORRESPONDENCE}
 ACL2 !>>(DEFABSSTOBJ TOP
-                     :RECOGNIZER (TOPP :LOGIC TOP$AP :EXEC TOP$CP)
-                     :CREATOR (CREATE-TOP :LOGIC CREATE-TOP$A
-                                          :EXEC CREATE-TOP$C)
-                     :CORR-FN TOP-CORR
-                     :EXPORTS ((SUB0 :LOGIC SUB0$A
-                                     :EXEC SUB0$C
-                                     :UPDATER UPDATE-SUB0)
-                               (SUB0-AGAIN :LOGIC SUB0$A
-                                           :EXEC SUB0$C
-                                           :UPDATER UPDATE-SUB0)
-                               (UPDATE-SUB0 :LOGIC UPDATE-SUB0$A
-                                            :EXEC UPDATE-SUB0$C)
-                               (MISC :LOGIC MISC$A :EXEC MISC$C)))
+          :RECOGNIZER (TOPP :LOGIC TOP$AP :EXEC TOP$CP)
+          :CREATOR (CREATE-TOP :LOGIC CREATE-TOP$A
+                               :EXEC CREATE-TOP$C)
+          :CORR-FN TOP-CORR
+          :EXPORTS ((SUB0 :LOGIC SUB0$A
+                          :EXEC SUB0$C
+                          :UPDATER UPDATE-SUB0)
+                    (SUB0-AGAIN :LOGIC SUB0$A
+                                :EXEC SUB0$C
+                                :UPDATER UPDATE-SUB0)
+                    (UPDATE-SUB0 :LOGIC UPDATE-SUB0$A
+                                 :EXEC UPDATE-SUB0$C)
+                    (MISC :LOGIC MISC$A :EXEC MISC$C)))
 
 Summary
 Form:  ( DEFABSSTOBJ TOP ...)
 Rules: NIL
  TOP
 ACL2 !>>(DEFABSSTOBJ TOP2
-                     :FOUNDATION TOP$C
-                     :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOP$CP)
-                     :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
-                                           :EXEC CREATE-TOP$C)
-                     :CORR-FN TOP-CORR
-                     :EXPORTS ((SUB02 :LOGIC SUB0$A
-                                      :EXEC SUB0$C
-                                      :UPDATER UPDATE-SUB02)
-                               (SUB02-AGAIN :LOGIC SUB0$A
-                                            :EXEC SUB0$C
-                                            :UPDATER UPDATE-SUB02)
-                               (UPDATE-SUB02 :LOGIC UPDATE-SUB0$A
-                                             :EXEC UPDATE-SUB0$C)
-                               (MISC2 :LOGIC MISC$A :EXEC MISC$C))
-                     :CONGRUENT-TO TOP)
+          :FOUNDATION TOP$C
+          :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOP$CP)
+          :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
+                                :EXEC CREATE-TOP$C)
+          :CORR-FN TOP-CORR
+          :EXPORTS ((SUB02 :LOGIC SUB0$A
+                           :EXEC SUB0$C
+                           :UPDATER UPDATE-SUB02)
+                    (SUB02-AGAIN :LOGIC SUB0$A
+                                 :EXEC SUB0$C
+                                 :UPDATER UPDATE-SUB02)
+                    (UPDATE-SUB02 :LOGIC UPDATE-SUB0$A
+                                  :EXEC UPDATE-SUB0$C)
+                    (MISC2 :LOGIC MISC$A :EXEC MISC$C))
+          :CONGRUENT-TO TOP)
 
 Summary
 Form:  ( DEFABSSTOBJ TOP2 ...)
@@ -537,13 +539,13 @@ Rules: NIL
 ACL2 !>>(U)
    d      21:x(DEFABSSTOBJ TOP :RECOGNIZER ...)
 ACL2 !>>(DEFUN FOO (TOP)
-               (DECLARE (XARGS :STOBJS TOP))
-               (STOBJ-LET ((SUB$C (SUB0 TOP)))
-                          (SUB$C SUB$C-VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-VAL (FLD0$C SUB$C)))
-                                (MV SUB$C SUB$C-VAL))
-                          (MV TOP SUB$C-VAL)))
+          (DECLARE (XARGS :STOBJS TOP))
+          (STOBJ-LET ((SUB$C (SUB0 TOP)))
+                     (SUB$C SUB$C-VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-VAL (FLD0$C SUB$C)))
+                       (MV SUB$C SUB$C-VAL))
+                     (MV TOP SUB$C-VAL)))
 
 Since FOO is non-recursive, its admission is trivial.  We observe that
 the type of FOO is described by the theorem 
@@ -561,9 +563,9 @@ Goal
          (LET* ((SUB$C (SUB0 TOP))
                 (MV (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
                            (SUB$C-VAL (FLD0$C SUB$C)))
-                          (LIST SUB$C SUB$C-VAL)))
+                      (LIST SUB$C SUB$C-VAL)))
                 (SUB$C (MV-NTH 0 MV)))
-               (NATP (FLD0$C SUB$C)))).
+           (NATP (FLD0$C SUB$C)))).
 Goal'
 
 Q.E.D.
@@ -590,26 +592,27 @@ Rules: ((:DEFINITION FLD0$C)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  FOO
-ACL2 !>>(DEFSTOBJ SUB$C-CONG FLD0$C-CONG
-                  :CONGRUENT-TO SUB$C)
+ACL2 !>>(DEFSTOBJ SUB$C-CONG
+          FLD0$C-CONG
+          :CONGRUENT-TO SUB$C)
 
 Summary
 Form:  ( DEFSTOBJ SUB$C-CONG ...)
 Rules: NIL
  SUB$C-CONG
 ACL2 !>>(DEFUN FOO-BAD (TOP)
-               (DECLARE (XARGS :STOBJS TOP))
-               (STOBJ-LET ((SUB$C (SUB0 TOP))
-                           (SUB$C-CONG (SUB0-AGAIN TOP)
-                                       UPDATE-SUB0))
-                          (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
-                                 (SUB$C-VAL (FLD0$C SUB$C))
-                                 (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
-                                (MV SUB$C
-                                    SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
-                          (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
+          (DECLARE (XARGS :STOBJS TOP))
+          (STOBJ-LET ((SUB$C (SUB0 TOP))
+                      (SUB$C-CONG (SUB0-AGAIN TOP)
+                                  UPDATE-SUB0))
+                     (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                            (SUB$C-VAL (FLD0$C SUB$C))
+                            (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                       (MV SUB$C
+                           SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+                     (MV TOP SUB$C-VAL SUB$C-CONG-VAL)))
 
 
 ACL2 Error [Translate] in ( DEFUN FOO-BAD ...):  The stobj-let binding
@@ -625,8 +628,8 @@ variables), this aliasing is illegal.  The form
                   (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
                   (SUB$C-VAL (FLD0$C SUB$C))
                   (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
-                 (MV SUB$C
-                     SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+             (MV SUB$C
+                 SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
            (MV TOP SUB$C-VAL SUB$C-CONG-VAL))
 is thus illegal.  See :DOC stobj-let.
 
@@ -639,8 +642,8 @@ ACL2 Error [Failure] in ( DEFUN FOO-BAD ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM CREATE-TOP2{CORRESPONDENCE}
-                (TOP-CORR (CREATE-TOP) (CREATE-TOP$A))
-                :RULE-CLASSES NIL)
+          (TOP-CORR (CREATE-TOP) (CREATE-TOP$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -652,8 +655,8 @@ Rules: ((:DEFINITION CREATE-TOP)
         (:EXECUTABLE-COUNTERPART EQUAL))
  CREATE-TOP2{CORRESPONDENCE}
 ACL2 !>>(DEFTHM CREATE-TOP2{PRESERVED}
-                (TOP$AP (CREATE-TOP$A))
-                :RULE-CLASSES NIL)
+          (TOP$AP (CREATE-TOP$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -663,9 +666,9 @@ Rules: ((:EXECUTABLE-COUNTERPART CREATE-TOP$A)
         (:EXECUTABLE-COUNTERPART TOP$AP))
  CREATE-TOP2{PRESERVED}
 ACL2 !>>(DEFTHM SUB02{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP TOP2) (TOP$AP TOP2))
-                         (EQUAL (SUB0 TOP) (SUB0$A TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP TOP2) (TOP$AP TOP2))
+                   (EQUAL (SUB0 TOP) (SUB0$A TOP2)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -680,9 +683,9 @@ Rules: ((:DEFINITION SUB$AP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  SUB02{CORRESPONDENCE}
 ACL2 !>>(DEFTHM SUB02-AGAIN{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP TOP2) (TOP$AP TOP2))
-                         (EQUAL (SUB0-AGAIN TOP) (SUB0$A TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP TOP2) (TOP$AP TOP2))
+                   (EQUAL (SUB0-AGAIN TOP) (SUB0$A TOP2)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -697,13 +700,13 @@ Rules: ((:DEFINITION SUB$AP)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  SUB02-AGAIN{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB02{CORRESPONDENCE}
-                (IMPLIES (AND (TOP-CORR TOP TOP2)
-                              (SUB$CP SUB$C)
-                              (TOP$AP TOP2)
-                              (NATP (FLD0$C SUB$C)))
-                         (TOP-CORR (UPDATE-SUB0 SUB$C TOP)
-                                   (UPDATE-SUB0$A SUB$C TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP-CORR TOP TOP2)
+                        (SUB$CP SUB$C)
+                        (TOP$AP TOP2)
+                        (NATP (FLD0$C SUB$C)))
+                   (TOP-CORR (UPDATE-SUB0 SUB$C TOP)
+                             (UPDATE-SUB0$A SUB$C TOP2)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -721,11 +724,11 @@ Rules: ((:DEFINITION FLD0$C)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  UPDATE-SUB02{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-SUB02{PRESERVED}
-                (IMPLIES (AND (SUB$CP SUB$C)
-                              (TOP$AP TOP2)
-                              (NATP (FLD0$C SUB$C)))
-                         (TOP$AP (UPDATE-SUB0$A SUB$C TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (SUB$CP SUB$C)
+                        (TOP$AP TOP2)
+                        (NATP (FLD0$C SUB$C)))
+                   (TOP$AP (UPDATE-SUB0$A SUB$C TOP2)))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -750,32 +753,32 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:REWRITE EQUAL-LEN-1))
  UPDATE-SUB02{PRESERVED}
 ACL2 !>>(DEFABSSTOBJ TOP2
-                     :FOUNDATION TOP
-                     :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOPP)
-                     :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
-                                           :EXEC CREATE-TOP)
-                     :CORR-FN TOP-CORR
-                     :EXPORTS ((SUB02 :LOGIC SUB0$A
-                                      :EXEC SUB0
-                                      :UPDATER UPDATE-SUB02)
-                               (SUB02-AGAIN :LOGIC SUB0$A
-                                            :EXEC SUB0-AGAIN
-                                            :UPDATER UPDATE-SUB02)
-                               (UPDATE-SUB02 :LOGIC UPDATE-SUB0$A
-                                             :EXEC UPDATE-SUB0)))
+          :FOUNDATION TOP
+          :RECOGNIZER (TOP2P :LOGIC TOP$AP :EXEC TOPP)
+          :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP$A
+                                :EXEC CREATE-TOP)
+          :CORR-FN TOP-CORR
+          :EXPORTS ((SUB02 :LOGIC SUB0$A
+                           :EXEC SUB0
+                           :UPDATER UPDATE-SUB02)
+                    (SUB02-AGAIN :LOGIC SUB0$A
+                                 :EXEC SUB0-AGAIN
+                                 :UPDATER UPDATE-SUB02)
+                    (UPDATE-SUB02 :LOGIC UPDATE-SUB0$A
+                                  :EXEC UPDATE-SUB0)))
 
 Summary
 Form:  ( DEFABSSTOBJ TOP2 ...)
 Rules: NIL
  TOP2
 ACL2 !>>(DEFUN FOO2 (TOP2)
-               (DECLARE (XARGS :STOBJS TOP2))
-               (STOBJ-LET ((SUB$C (SUB02 TOP2)))
-                          (SUB$C SUB$C-VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-VAL (FLD0$C SUB$C)))
-                                (MV SUB$C SUB$C-VAL))
-                          (MV TOP2 SUB$C-VAL)))
+          (DECLARE (XARGS :STOBJS TOP2))
+          (STOBJ-LET ((SUB$C (SUB02 TOP2)))
+                     (SUB$C SUB$C-VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-VAL (FLD0$C SUB$C)))
+                       (MV SUB$C SUB$C-VAL))
+                     (MV TOP2 SUB$C-VAL)))
 
 Since FOO2 is non-recursive, its admission is trivial.  We observe
 that the type of FOO2 is described by the theorem 
@@ -793,9 +796,9 @@ Goal
          (LET* ((SUB$C (SUB02 TOP2))
                 (MV (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
                            (SUB$C-VAL (FLD0$C SUB$C)))
-                          (LIST SUB$C SUB$C-VAL)))
+                      (LIST SUB$C SUB$C-VAL)))
                 (SUB$C (MV-NTH 0 MV)))
-               (NATP (FLD0$C SUB$C)))).
+           (NATP (FLD0$C SUB$C)))).
 Goal'
 
 Q.E.D.
@@ -823,18 +826,18 @@ Rules: ((:DEFINITION FLD0$C)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  FOO2
 ACL2 !>>(DEFUN FOO2-BAD (TOP2)
-               (DECLARE (XARGS :STOBJS TOP2))
-               (STOBJ-LET ((SUB$C (SUB02 TOP2))
-                           (SUB$C-CONG (SUB02-AGAIN TOP2)
-                                       UPDATE-SUB02))
-                          (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
-                                 (SUB$C-VAL (FLD0$C SUB$C))
-                                 (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
-                                (MV SUB$C
-                                    SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
-                          (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
+          (DECLARE (XARGS :STOBJS TOP2))
+          (STOBJ-LET ((SUB$C (SUB02 TOP2))
+                      (SUB$C-CONG (SUB02-AGAIN TOP2)
+                                  UPDATE-SUB02))
+                     (SUB$C SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
+                            (SUB$C-VAL (FLD0$C SUB$C))
+                            (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
+                       (MV SUB$C
+                           SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+                     (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL)))
 
 
 ACL2 Error [Translate] in ( DEFUN FOO2-BAD ...):  The stobj-let binding
@@ -850,8 +853,8 @@ producer variables), this aliasing is illegal.  The form
                   (SUB$C-CONG (UPDATE-FLD0$C 2 SUB$C-CONG))
                   (SUB$C-VAL (FLD0$C SUB$C))
                   (SUB$C-CONG-VAL (FLD0$C SUB$C-CONG)))
-                 (MV SUB$C
-                     SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
+             (MV SUB$C
+                 SUB$C-VAL SUB$C-CONG SUB$C-CONG-VAL))
            (MV TOP2 SUB$C-VAL SUB$C-CONG-VAL))
 is thus illegal.  See :DOC stobj-let.
 
@@ -874,17 +877,19 @@ ACL2 !>>(INCLUDE-BOOK "two-usuallyequal-nums-stobj")
 Summary
 Form:  ( INCLUDE-BOOK "two-usuallyequal-nums-stobj" ...)
 Rules: NIL
- "two-usuallyequal-nums-stobj.lisp"
+ (:SYSTEM
+      .
+      "system/tests/abstract-stobj-nesting/two-usuallyequal-nums-stobj.lisp")
 ACL2 !>>(DEFUN INTERRUPT-0 (TWO-USUALLYEQUAL-NUMS)
-               (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
-               (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
-                          (VAL)
-                          (LET* ((OLD (N$VAL N$))
-                                 (V (PROG2$ (ER HARD? 'TOP "Interrupt!")
-                                            (N$VAL N$))))
-                                (DECLARE (IGNORE OLD))
-                                V)
-                          (MV VAL TWO-USUALLYEQUAL-NUMS)))
+          (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
+          (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+                     (VAL)
+                     (LET* ((OLD (N$VAL N$))
+                            (V (PROG2$ (ER HARD? 'TOP "Interrupt!")
+                                       (N$VAL N$))))
+                       (DECLARE (IGNORE OLD))
+                       V)
+                     (MV VAL TWO-USUALLYEQUAL-NUMS)))
 
 Since INTERRUPT-0 is non-recursive, its admission is trivial.  We observe
 that the type of INTERRUPT-0 is described by the theorem 
@@ -910,8 +915,8 @@ HARD ACL2 ERROR in TOP:  Interrupt!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(VALUE-TRIPLE
              (EQUAL (FIELDS-OF-TWO-USUALLYEQUAL-NUMS TWO-USUALLYEQUAL-NUMS)
@@ -926,14 +931,14 @@ ACL2 !>>(VALUE-TRIPLE
              :CHECK T)
  :PASSED
 ACL2 !>>(DEFUN INTERRUPT-1 (TWO-USUALLYEQUAL-NUMS)
-               (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
-               (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
-                          (N$)
-                          (LET* ((OLD (N$VAL N$))
-                                 (N$ (PROG2$ (ER HARD? 'TOP "Interrupt!")
-                                             (UPDATE-N$VAL OLD N$))))
-                                N$)
-                          TWO-USUALLYEQUAL-NUMS))
+          (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
+          (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+                     (N$)
+                     (LET* ((OLD (N$VAL N$))
+                            (N$ (PROG2$ (ER HARD? 'TOP "Interrupt!")
+                                        (UPDATE-N$VAL OLD N$))))
+                       N$)
+                     TWO-USUALLYEQUAL-NUMS))
 
 Since INTERRUPT-1 is non-recursive, its admission is trivial.  We observe
 that the type of INTERRUPT-1 is described by the theorem 
@@ -949,13 +954,11 @@ The non-trivial part of the guard conjecture for INTERRUPT-1 is
 Goal
 (IMPLIES
  (TWO-USUALLYEQUAL-NUMSP TWO-USUALLYEQUAL-NUMS)
- (LET
-  ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+ (LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
   (AND
    (LET ((OLD (N$VAL N$))) (NATP OLD))
-   (LET
-    ((N$ (LET ((OLD (N$VAL N$)))
-              (UPDATE-N$VAL OLD N$))))
+   (LET ((N$ (LET ((OLD (N$VAL N$)))
+               (UPDATE-N$VAL OLD N$))))
     (OR
       (NOT (UENVALID TWO-USUALLYEQUAL-NUMS))
       (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(EQUAL (N$VAL N$)
@@ -1000,8 +1003,8 @@ HARD ACL2 ERROR in TOP:  Interrupt!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
 
@@ -1016,15 +1019,15 @@ See :DOC set-absstobj-debug.
 [Illegal-State] >>:CONTINUE-FROM-ILLEGAL-STATE
  :CONTINUING
 ACL2 !>>(DEFUN INTERRUPT-2 (TWO-USUALLYEQUAL-NUMS)
-               (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
-               (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
-                          (N$)
-                          (LET* ((OLD (N$VAL N$))
-                                 (N$ (UPDATE-N$VAL (1+ OLD) N$))
-                                 (N$ (PROG2$ (ER HARD? 'TOP "Interrupt!")
-                                             (UPDATE-N$VAL OLD N$))))
-                                N$)
-                          TWO-USUALLYEQUAL-NUMS))
+          (DECLARE (XARGS :STOBJS TWO-USUALLYEQUAL-NUMS))
+          (STOBJ-LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+                     (N$)
+                     (LET* ((OLD (N$VAL N$))
+                            (N$ (UPDATE-N$VAL (1+ OLD) N$))
+                            (N$ (PROG2$ (ER HARD? 'TOP "Interrupt!")
+                                        (UPDATE-N$VAL OLD N$))))
+                       N$)
+                     TWO-USUALLYEQUAL-NUMS))
 
 Since INTERRUPT-2 is non-recursive, its admission is trivial.  We observe
 that the type of INTERRUPT-2 is described by the theorem 
@@ -1040,16 +1043,14 @@ The non-trivial part of the guard conjecture for INTERRUPT-2 is
 Goal
 (IMPLIES
  (TWO-USUALLYEQUAL-NUMSP TWO-USUALLYEQUAL-NUMS)
- (LET
-  ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
+ (LET ((N$ (UENSLOT1 TWO-USUALLYEQUAL-NUMS)))
   (AND
    (LET ((OLD (N$VAL N$)))
-        (AND (ACL2-NUMBERP OLD)
-             (NATP (+ 1 OLD))
-             (NATP OLD)))
-   (LET
-    ((N$ (LET* ((OLD (N$VAL N$))
-                (N$ (UPDATE-N$VAL (+ 1 OLD) N$)))
+     (AND (ACL2-NUMBERP OLD)
+          (NATP (+ 1 OLD))
+          (NATP OLD)))
+   (LET ((N$ (LET* ((OLD (N$VAL N$))
+                    (N$ (UPDATE-N$VAL (+ 1 OLD) N$)))
                (UPDATE-N$VAL OLD N$))))
     (OR
       (NOT (UENVALID TWO-USUALLYEQUAL-NUMS))
@@ -1095,8 +1096,8 @@ HARD ACL2 ERROR in TOP:  Interrupt!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
 
@@ -1121,27 +1122,26 @@ ACL2 !>>(INCLUDE-BOOK "two-ordered-nums-stobj")
 Summary
 Form:  ( INCLUDE-BOOK "two-ordered-nums-stobj" ...)
 Rules: NIL
- "two-ordered-nums-stobj.lisp"
+ (:SYSTEM .
+          "system/tests/abstract-stobj-nesting/two-ordered-nums-stobj.lisp")
 ACL2 !>>(UPDATE-TWO-ORDERED-NUMS 3 5 TWO-ORDERED-NUMS)
 <two-ordered-nums>
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIELDS-OF-TWO-ORDERED-NUMS TWO-ORDERED-NUMS)
                              '(:N 3 :N2 5 :VALID T)))
  :PASSED
-ACL2 !>>(DEFUN
-         INTERRUPT-3 (TWO-ORDERED-NUMS)
-         (DECLARE (XARGS :STOBJS TWO-ORDERED-NUMS))
-         (STOBJ-LET
-            ((N$ (UENSLOT1 TWO-ORDERED-NUMS))
-             (N$2 (UENSLOT2 TWO-ORDERED-NUMS)))
-            (N$ N$2)
-            (MV-LET
-                 (N$ N$2)
-                 (SWAP-STOBJS N$ N$2)
+ACL2 !>>(DEFUN INTERRUPT-3 (TWO-ORDERED-NUMS)
+          (DECLARE (XARGS :STOBJS TWO-ORDERED-NUMS))
+          (STOBJ-LET
+               ((N$ (UENSLOT1 TWO-ORDERED-NUMS))
+                (N$2 (UENSLOT2 TWO-ORDERED-NUMS)))
+               (N$ N$2)
+               (MV-LET (N$ N$2)
+                       (SWAP-STOBJS N$ N$2)
                  (LET ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$)))
-                      (PROG2$ (ER HARD? 'TOP "Stopping!")
-                              (LET ((N$ (UPDATE-N$VAL (1+ (N$2VAL N$2)) N$)))
-                                   (SWAP-STOBJS N$ N$2)))))
-            TWO-ORDERED-NUMS))
+                   (PROG2$ (ER HARD? 'TOP "Stopping!")
+                           (LET ((N$ (UPDATE-N$VAL (1+ (N$2VAL N$2)) N$)))
+                             (SWAP-STOBJS N$ N$2)))))
+               TWO-ORDERED-NUMS))
 
 Since INTERRUPT-3 is non-recursive, its admission is trivial.  We observe
 that the type of INTERRUPT-3 is described by the theorem 
@@ -1158,21 +1158,19 @@ The non-trivial part of the guard conjecture for INTERRUPT-3 is
 Goal
 (IMPLIES
  (TWO-ORDERED-NUMSP TWO-ORDERED-NUMS)
- (LET
-  ((N$ (UENSLOT1 TWO-ORDERED-NUMS))
-   (N$2 (UENSLOT2 TWO-ORDERED-NUMS)))
+ (LET ((N$ (UENSLOT1 TWO-ORDERED-NUMS))
+       (N$2 (UENSLOT2 TWO-ORDERED-NUMS)))
   (AND
    (LET* ((MV (LIST N$2 N$)) (N$2 (MV-NTH 1 MV)))
-         (AND (NATP (N$2VAL N$2))
-              (ACL2-NUMBERP (N$2VAL N$2))
-              (NATP (+ 1 (N$2VAL N$2)))))
-   (MV-LET
-    (N$ N$2)
-    (MV-LET (N$ N$2)
-            (MV N$2 N$)
-            (LET* ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$))
-                   (N$ (UPDATE-N$VAL (+ 1 (N$2VAL N$2)) N$)))
-                  (MV N$2 N$)))
+     (AND (NATP (N$2VAL N$2))
+          (ACL2-NUMBERP (N$2VAL N$2))
+          (NATP (+ 1 (N$2VAL N$2)))))
+   (MV-LET (N$ N$2)
+           (MV-LET (N$ N$2)
+                   (MV N$2 N$)
+             (LET* ((N$ (UPDATE-N$VAL (N$2VAL N$2) N$))
+                    (N$ (UPDATE-N$VAL (+ 1 (N$2VAL N$2)) N$)))
+               (MV N$2 N$)))
     (AND
      (OR
       (NOT (UENVALID TWO-ORDERED-NUMS))
@@ -1181,11 +1179,11 @@ Goal
        (< (N$VAL N$)
           (N$VAL (UENSLOT2 TWO-ORDERED-NUMS)))))
      (LET ((TWO-ORDERED-NUMS (UPDATE-UENSLOT1 N$ TWO-ORDERED-NUMS)))
-          (OR (NOT (UENVALID TWO-ORDERED-NUMS))
-              (PROG2$ (THROW-NONEXEC-ERROR
-                           :NON-EXEC '(< (N$VAL (UENSLOT1$A X)) (N$VAL N$2)))
-                      (< (N$VAL (UENSLOT1 TWO-ORDERED-NUMS))
-                         (N$VAL N$2)))))))))).
+       (OR (NOT (UENVALID TWO-ORDERED-NUMS))
+           (PROG2$ (THROW-NONEXEC-ERROR
+                        :NON-EXEC '(< (N$VAL (UENSLOT1$A X)) (N$VAL N$2)))
+                   (< (N$VAL (UENSLOT1 TWO-ORDERED-NUMS))
+                      (N$VAL N$2)))))))))).
 Goal'
 Goal''
 
@@ -1233,8 +1231,8 @@ HARD ACL2 ERROR in TOP:  Stopping!
 
 
 
-ACL2 Error in TOP-LEVEL:  Evaluation aborted.  To debug see :DOC print-
-gv, see :DOC trace, and see :DOC wet.
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
 
 
@@ -1257,16 +1255,17 @@ Summary
 Form:  ( DEFSTOBJ ST1 ...)
 Rules: NIL
  ST1
-ACL2 !>>(DEFSTOBJ ST3$C (FLD3 :TYPE (ARRAY T (8))))
+ACL2 !>>(DEFSTOBJ ST3$C
+          (FLD3 :TYPE (ARRAY T (8))))
 
 Summary
 Form:  ( DEFSTOBJ ST3$C ...)
 Rules: NIL
  ST3$C
 ACL2 !>>(DEFUN ST3$AP (X)
-               (DECLARE (XARGS :GUARD T))
-               (DECLARE (IGNORE X))
-               T)
+          (DECLARE (XARGS :GUARD T))
+          (DECLARE (IGNORE X))
+          T)
 
 Since ST3$AP is non-recursive, its admission is trivial.  We observe
 that the type of ST3$AP is described by the theorem (EQUAL (ST3$AP X) T).
@@ -1280,9 +1279,9 @@ Summary
 Form:  ( DEFUN ST3$AP ...)
 Rules: NIL
  ST3$AP
-ACL2 !>>(DEFUN CREATE-ST3$A
-               NIL (DECLARE (XARGS :GUARD T))
-               NIL)
+ACL2 !>>(DEFUN CREATE-ST3$A NIL
+          (DECLARE (XARGS :GUARD T))
+          NIL)
 
 Since CREATE-ST3$A is non-recursive, its admission is trivial.  We
 observe that the type of CREATE-ST3$A is described by the theorem 
@@ -1298,9 +1297,9 @@ Form:  ( DEFUN CREATE-ST3$A ...)
 Rules: NIL
  CREATE-ST3$A
 ACL2 !>>(DEFUN ST3$CORR (ST3$C ST3$A)
-               (DECLARE (XARGS :STOBJS ST3$C :GUARD T))
-               (DECLARE (IGNORE ST3$C ST3$A))
-               T)
+          (DECLARE (XARGS :STOBJS ST3$C :GUARD T))
+          (DECLARE (IGNORE ST3$C ST3$A))
+          T)
 
 Since ST3$CORR is non-recursive, its admission is trivial.  We observe
 that the type of ST3$CORR is described by the theorem 
@@ -1318,8 +1317,8 @@ Form:  ( DEFUN ST3$CORR ...)
 Rules: NIL
  ST3$CORR
 ACL2 !>>(DEFUN BAD3$A (X Y ST3$A)
-               (DECLARE (XARGS :GUARD (AND (NATP X) (< X 8))))
-               (MV X (AND Y ST3$A NIL)))
+          (DECLARE (XARGS :GUARD (AND (NATP X) (< X 8))))
+          (MV X (AND Y ST3$A NIL)))
 
 Since BAD3$A is non-recursive, its admission is trivial.  We observe
 that the type of BAD3$A is described by the theorem 
@@ -1340,11 +1339,11 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  BAD3$A
 ACL2 !>>(DEFUN BAD3$C (X Y ST1 ST3$C)
-               (DECLARE (XARGS :STOBJS (ST1 ST3$C)
-                               :GUARD (AND (NATP X) (< X 8)))
-                        (IGNORE ST1))
-               (LET ((ST3$C (UPDATE-FLD3I X Y ST3$C)))
-                    (MV X ST3$C)))
+          (DECLARE (XARGS :STOBJS (ST1 ST3$C)
+                          :GUARD (AND (NATP X) (< X 8)))
+                   (IGNORE ST1))
+          (LET ((ST3$C (UPDATE-FLD3I X Y ST3$C)))
+            (MV X ST3$C)))
 
 Since BAD3$C is non-recursive, its admission is trivial.  We observe
 that the type of BAD3$C is described by the theorem 
@@ -1382,7 +1381,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  BAD3$C
 ACL2 !>>(DEFABSSTOBJ ST3
-                     :EXPORTS ((BAD3 :LOGIC BAD3$A :EXEC BAD3$C)))
+          :EXPORTS ((BAD3 :LOGIC BAD3$A :EXEC BAD3$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST3 ...):  The :LOGIC and :EXEC functions
@@ -1413,8 +1412,8 @@ Form:  ( DEFSTOBJ ST3-AUX ...)
 Rules: NIL
  ST3-AUX
 ACL2 !>>(DEFUN GOOD3$A (X Y ST3$A)
-               (DECLARE (XARGS :GUARD (AND (NATP X) (< X 8))))
-               (MV X (AND Y ST3$A NIL) Y))
+          (DECLARE (XARGS :GUARD (AND (NATP X) (< X 8))))
+          (MV X (AND Y ST3$A NIL) Y))
 
 Since GOOD3$A is non-recursive, its admission is trivial.  We observe
 that the type of GOOD3$A is described by the theorem 
@@ -1435,9 +1434,9 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  GOOD3$A
 ACL2 !>>(DEFUN GOOD3$C (X ST3-AUX ST3$C)
-               (DECLARE (XARGS :STOBJS (ST3$C ST3-AUX)
-                               :GUARD (AND (NATP X) (< X 8))))
-               (MV X ST3$C ST3-AUX))
+          (DECLARE (XARGS :STOBJS (ST3$C ST3-AUX)
+                          :GUARD (AND (NATP X) (< X 8))))
+          (MV X ST3$C ST3-AUX))
 
 Since GOOD3$C is non-recursive, its admission is trivial.  We observe
 that the type of GOOD3$C is described by the theorem 
@@ -1459,8 +1458,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  GOOD3$C
 ACL2 !>>(DEFTHM CREATE-ST3{CORRESPONDENCE}
-                (ST3$CORR (CREATE-ST3$C) (CREATE-ST3$A))
-                :RULE-CLASSES NIL)
+          (ST3$CORR (CREATE-ST3$C) (CREATE-ST3$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1469,8 +1468,8 @@ Form:  ( DEFTHM CREATE-ST3{CORRESPONDENCE} ...)
 Rules: ((:TYPE-PRESCRIPTION ST3$CORR))
  CREATE-ST3{CORRESPONDENCE}
 ACL2 !>>(DEFTHM CREATE-ST3{PRESERVED}
-                (ST3$AP (CREATE-ST3$A))
-                :RULE-CLASSES NIL)
+          (ST3$AP (CREATE-ST3$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1479,15 +1478,15 @@ Form:  ( DEFTHM CREATE-ST3{PRESERVED} ...)
 Rules: ((:TYPE-PRESCRIPTION ST3$AP))
  CREATE-ST3{PRESERVED}
 ACL2 !>>(DEFTHM GOOD3{CORRESPONDENCE}
-                (IMPLIES (AND (ST3$CORR ST3$C ST3)
-                              (NATP X)
-                              (< X 8))
-                         (LET ((LHS (GOOD3$C X ST3-AUX ST3$C))
-                               (RHS (GOOD3$A X ST3-AUX ST3)))
-                              (AND (EQUAL (MV-NTH 0 LHS) (MV-NTH 0 RHS))
-                                   (ST3$CORR (MV-NTH 1 LHS) (MV-NTH 1 RHS))
-                                   (EQUAL (MV-NTH 2 LHS) (MV-NTH 2 RHS)))))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (ST3$CORR ST3$C ST3)
+                        (NATP X)
+                        (< X 8))
+                   (LET ((LHS (GOOD3$C X ST3-AUX ST3$C))
+                         (RHS (GOOD3$A X ST3-AUX ST3)))
+                     (AND (EQUAL (MV-NTH 0 LHS) (MV-NTH 0 RHS))
+                          (ST3$CORR (MV-NTH 1 LHS) (MV-NTH 1 RHS))
+                          (EQUAL (MV-NTH 2 LHS) (MV-NTH 2 RHS)))))
+          :RULE-CLASSES NIL)
 Goal'
 
 Q.E.D.
@@ -1500,9 +1499,9 @@ Rules: ((:DEFINITION GOOD3$A)
         (:DEFINITION ST3$CORR))
  GOOD3{CORRESPONDENCE}
 ACL2 !>>(DEFTHM GOOD3{PRESERVED}
-                (IMPLIES (AND (ST3$AP ST3) (NATP X) (< X 8))
-                         (ST3$AP (MV-NTH 1 (GOOD3$A X ST3-AUX ST3))))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (ST3$AP ST3) (NATP X) (< X 8))
+                   (ST3$AP (MV-NTH 1 (GOOD3$A X ST3-AUX ST3))))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1511,21 +1510,21 @@ Form:  ( DEFTHM GOOD3{PRESERVED} ...)
 Rules: ((:TYPE-PRESCRIPTION ST3$AP))
  GOOD3{PRESERVED}
 ACL2 !>>(DEFABSSTOBJ ST3
-                     :EXPORTS ((GOOD3 :LOGIC GOOD3$A :EXEC GOOD3$C)))
+          :EXPORTS ((GOOD3 :LOGIC GOOD3$A :EXEC GOOD3$C)))
 
 Summary
 Form:  ( DEFABSSTOBJ ST3 ...)
 Rules: NIL
  ST3
 ACL2 !>>(DEFUN BIND-NON-CHILD-STOBJ-FIELD (TOP)
-               (DECLARE (XARGS :STOBJS TOP))
-               (STOBJ-LET ((SUB$C (SUB0 TOP))
-                           (MISC-VAL (MISC TOP)))
-                          (SUB$C SUB$C-VAL VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-VAL (FLD0$C SUB$C)))
-                                (MV SUB$C SUB$C-VAL MISC-VAL))
-                          (MV TOP SUB$C-VAL MISC-VAL)))
+          (DECLARE (XARGS :STOBJS TOP))
+          (STOBJ-LET ((SUB$C (SUB0 TOP))
+                      (MISC-VAL (MISC TOP)))
+                     (SUB$C SUB$C-VAL VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-VAL (FLD0$C SUB$C)))
+                       (MV SUB$C SUB$C-VAL MISC-VAL))
+                     (MV TOP SUB$C-VAL MISC-VAL)))
 
 
 ACL2 Error [Translate] in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):
@@ -1538,7 +1537,7 @@ The form
            (SUB$C SUB$C-VAL VAL)
            (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
                   (SUB$C-VAL (FLD0$C SUB$C)))
-                 (MV SUB$C SUB$C-VAL MISC-VAL))
+             (MV SUB$C SUB$C-VAL MISC-VAL))
            (MV TOP SUB$C-VAL MISC-VAL))
 is thus illegal.  See :DOC stobj-let.
 
@@ -1552,14 +1551,14 @@ ACL2 Error [Failure] in ( DEFUN BIND-NON-CHILD-STOBJ-FIELD ...):  See
 
 ******** FAILED ********
 ACL2 !>>(DEFUN BIND-NON-FUNCTION (TOP)
-               (DECLARE (XARGS :STOBJS TOP))
-               (STOBJ-LET ((SUB$C (SUB0 TOP))
-                           (MISC-VAL (ABC TOP)))
-                          (SUB$C SUB$C-VAL VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-VAL (FLD0$C SUB$C)))
-                                (MV SUB$C SUB$C-VAL MISC-VAL))
-                          (MV TOP SUB$C-VAL MISC-VAL)))
+          (DECLARE (XARGS :STOBJS TOP))
+          (STOBJ-LET ((SUB$C (SUB0 TOP))
+                      (MISC-VAL (ABC TOP)))
+                     (SUB$C SUB$C-VAL VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-VAL (FLD0$C SUB$C)))
+                       (MV SUB$C SUB$C-VAL MISC-VAL))
+                     (MV TOP SUB$C-VAL MISC-VAL)))
 
 
 ACL2 Error [Translate] in ( DEFUN BIND-NON-FUNCTION ...):  The name
@@ -1569,7 +1568,7 @@ ABC is not the name of a field accessor for the stobj TOP.  The form
            (SUB$C SUB$C-VAL VAL)
            (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
                   (SUB$C-VAL (FLD0$C SUB$C)))
-                 (MV SUB$C SUB$C-VAL MISC-VAL))
+             (MV SUB$C SUB$C-VAL MISC-VAL))
            (MV TOP SUB$C-VAL MISC-VAL))
 is thus illegal.  See :DOC stobj-let.
 
@@ -1582,11 +1581,11 @@ ACL2 Error [Failure] in ( DEFUN BIND-NON-FUNCTION ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN SUB0-VAL (TOP)
-               (DECLARE (XARGS :STOBJS TOP))
-               (STOBJ-LET ((SUB$C (SUB0 TOP)))
-                          (SUB$C-VAL)
-                          (FLD0$C SUB$C)
-                          SUB$C-VAL))
+          (DECLARE (XARGS :STOBJS TOP))
+          (STOBJ-LET ((SUB$C (SUB0 TOP)))
+                     (SUB$C-VAL)
+                     (FLD0$C SUB$C)
+                     SUB$C-VAL))
 
 Since SUB0-VAL is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of SUB0-VAL.
@@ -1603,14 +1602,14 @@ Form:  ( DEFUN SUB0-VAL ...)
 Rules: NIL
  SUB0-VAL
 ACL2 !>>(DEFUN BIND-NON-FIELD-FUNCTION (TOP)
-               (DECLARE (XARGS :STOBJS TOP))
-               (STOBJ-LET ((SUB$C (SUB0 TOP))
-                           (VAL (SUB0-VAL TOP)))
-                          (SUB$C SUB$C-VAL VAL)
-                          (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
-                                 (SUB$C-VAL (FLD0$C SUB$C)))
-                                (MV SUB$C SUB$C-VAL MISC-VAL))
-                          (MV TOP SUB$C-VAL MISC-VAL)))
+          (DECLARE (XARGS :STOBJS TOP))
+          (STOBJ-LET ((SUB$C (SUB0 TOP))
+                      (VAL (SUB0-VAL TOP)))
+                     (SUB$C SUB$C-VAL VAL)
+                     (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
+                            (SUB$C-VAL (FLD0$C SUB$C)))
+                       (MV SUB$C SUB$C-VAL MISC-VAL))
+                     (MV TOP SUB$C-VAL MISC-VAL)))
 
 
 ACL2 Error [Translate] in ( DEFUN BIND-NON-FIELD-FUNCTION ...):  The
@@ -1621,7 +1620,7 @@ The form
            (SUB$C SUB$C-VAL VAL)
            (LET* ((SUB$C (UPDATE-FLD0$C 1 SUB$C))
                   (SUB$C-VAL (FLD0$C SUB$C)))
-                 (MV SUB$C SUB$C-VAL MISC-VAL))
+             (MV SUB$C SUB$C-VAL MISC-VAL))
            (MV TOP SUB$C-VAL MISC-VAL))
 is thus illegal.  See :DOC stobj-let.
 
@@ -1640,8 +1639,9 @@ Summary
 Form:  ( DEFSTOBJ ST4$C-FLD ...)
 Rules: NIL
  ST4$C-FLD
-ACL2 !>>(DEFSTOBJ ST4$C (FLD4$C :TYPE ST4$C-FLD)
-                  ST4$C-MISC)
+ACL2 !>>(DEFSTOBJ ST4$C
+          (FLD4$C :TYPE ST4$C-FLD)
+          ST4$C-MISC)
 
 Summary
 Form:  ( DEFSTOBJ ST4$C ...)
@@ -1735,13 +1735,12 @@ Summary
 Form:  ( DEFUN UPDATE-FLD4$A ...)
 Rules: ((:TYPE-PRESCRIPTION UPDATE-FLD4$C))
  (:DEFUN-NX UPDATE-FLD4$A)
-ACL2 !>>(SKIP-PROOFS
-             (DEFABSSTOBJ ST4
-                          :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                          :EXEC FLD4$C
-                                          :UPDATER UPDATE-FLD4)
-                                    (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
-                                                 :EXEC UPDATE-FLD4$C))))
+ACL2 !>>(SKIP-PROOFS (DEFABSSTOBJ ST4
+                       :EXPORTS ((FLD4 :LOGIC FLD4$A
+                                       :EXEC FLD4$C
+                                       :UPDATER UPDATE-FLD4)
+                                 (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
+                                              :EXEC UPDATE-FLD4$C))))
 
 ACL2 Warning [defabsstobj] in ( DEFABSSTOBJ ST4 ...):  The following
 events would have to be admitted, if not for proofs currently being
@@ -1749,32 +1748,32 @@ skipped (see :DOC ld-skip-proofsp), before the given defabsstobj event.
 See :DOC defabsstobj.
 
 (DEFTHM CREATE-ST4{CORRESPONDENCE}
-        (ST4$CORR (CREATE-ST4$C) (CREATE-ST4$A))
-        :RULE-CLASSES NIL)
+  (ST4$CORR (CREATE-ST4$C) (CREATE-ST4$A))
+  :RULE-CLASSES NIL)
 
 (DEFTHM CREATE-ST4{PRESERVED}
-        (ST4$AP (CREATE-ST4$A))
-        :RULE-CLASSES NIL)
+  (ST4$AP (CREATE-ST4$A))
+  :RULE-CLASSES NIL)
 
 (DEFTHM FLD4{CORRESPONDENCE}
-        (IMPLIES (AND (ST4$CORR ST4$C ST4) (ST4$CP ST4))
-                 (EQUAL (FLD4$C ST4$C) (FLD4$A ST4)))
-        :RULE-CLASSES NIL)
+  (IMPLIES (AND (ST4$CORR ST4$C ST4) (ST4$CP ST4))
+           (EQUAL (FLD4$C ST4$C) (FLD4$A ST4)))
+  :RULE-CLASSES NIL)
 
 (DEFTHM UPDATE-FLD4{CORRESPONDENCE}
-        (IMPLIES (AND (ST4$CORR ST4$C ST4)
-                      (ST4$CP ST4)
-                      (ST4$C-FLDP ST4$C-FLD))
-                 (ST4$CORR (UPDATE-FLD4$C ST4$C-FLD ST4$C)
-                           (UPDATE-FLD4$A ST4$C-FLD ST4)))
-        :RULE-CLASSES NIL)
+  (IMPLIES (AND (ST4$CORR ST4$C ST4)
+                (ST4$CP ST4)
+                (ST4$C-FLDP ST4$C-FLD))
+           (ST4$CORR (UPDATE-FLD4$C ST4$C-FLD ST4$C)
+                     (UPDATE-FLD4$A ST4$C-FLD ST4)))
+  :RULE-CLASSES NIL)
 
 (DEFTHM UPDATE-FLD4{PRESERVED}
-        (IMPLIES (AND (ST4$AP ST4)
-                      (ST4$CP ST4)
-                      (ST4$C-FLDP ST4$C-FLD))
-                 (ST4$AP (UPDATE-FLD4$A ST4$C-FLD ST4)))
-        :RULE-CLASSES NIL)
+  (IMPLIES (AND (ST4$AP ST4)
+                (ST4$CP ST4)
+                (ST4$C-FLDP ST4$C-FLD))
+           (ST4$AP (UPDATE-FLD4$A ST4$C-FLD ST4)))
+  :RULE-CLASSES NIL)
 
 
 
@@ -1811,6 +1810,10 @@ must not be applied to the wrong stobj.
 
 
 
+
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(UBT 'FLD4$A)
    d      54:x(DEFUN-NX CREATE-ST4$A NIL ...)
 ACL2 !>>(DEFUN-NX FLD4$A (X)
@@ -1889,8 +1892,8 @@ Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR)
         (:TYPE-PRESCRIPTION UPDATE-ST4$C-MISC))
  (:DEFUN-NX UPDATE-ST4$A-MISC)
 ACL2 !>>(DEFTHM CREATE-ST4{CORRESPONDENCE}
-                (ST4$CORR (CREATE-ST4$C) (CREATE-ST4$A))
-                :RULE-CLASSES NIL)
+          (ST4$CORR (CREATE-ST4$C) (CREATE-ST4$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1904,8 +1907,8 @@ Rules: ((:DEFINITION CREATE-ST4$A)
         (:EXECUTABLE-COUNTERPART EQUAL))
  CREATE-ST4{CORRESPONDENCE}
 ACL2 !>>(DEFTHM CREATE-ST4{PRESERVED}
-                (ST4$AP (CREATE-ST4$A))
-                :RULE-CLASSES NIL)
+          (ST4$AP (CREATE-ST4$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1918,13 +1921,12 @@ Rules: ((:DEFINITION CREATE-ST4$A)
         (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART ST4$CP))
  CREATE-ST4{PRESERVED}
-ACL2 !>>(DEFTHM
-            FLD4{CORRESPONDENCE}
-            (IMPLIES (AND (ST4$CORR ST4$C ST4)
-                          (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(ST4$CP X))
-                                  (ST4$CP ST4)))
-                     (EQUAL (FLD4$C ST4$C) (FLD4$A ST4)))
-            :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM FLD4{CORRESPONDENCE}
+          (IMPLIES (AND (ST4$CORR ST4$C ST4)
+                        (PROG2$ (THROW-NONEXEC-ERROR :NON-EXEC '(ST4$CP X))
+                                (ST4$CP ST4)))
+                   (EQUAL (FLD4$C ST4$C) (FLD4$A ST4)))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -1940,8 +1942,7 @@ Rules: ((:DEFINITION FLD4$A)
         (:DEFINITION THROW-NONEXEC-ERROR)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
  FLD4{CORRESPONDENCE}
-ACL2 !>>(DEFTHM
-         UPDATE-FLD4{CORRESPONDENCE}
+ACL2 !>>(DEFTHM UPDATE-FLD4{CORRESPONDENCE}
          (IMPLIES
           (AND
            (ST4$CORR ST4$C ST4)
@@ -1967,8 +1968,7 @@ Rules: ((:DEFINITION FLD4$CP)
         (:DEFINITION UPDATE-FLD4$C)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
  UPDATE-FLD4{CORRESPONDENCE}
-ACL2 !>>(DEFTHM
-         UPDATE-FLD4{PRESERVED}
+ACL2 !>>(DEFTHM UPDATE-FLD4{PRESERVED}
          (IMPLIES
           (AND
            (ST4$AP ST4)
@@ -1994,11 +1994,11 @@ Rules: ((:DEFINITION FLD4$CP)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
  UPDATE-FLD4{PRESERVED}
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER UPDATE-FLD4)
-                               (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
-                                            :EXEC UPDATE-FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER UPDATE-FLD4)
+                    (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
+                                 :EXEC UPDATE-FLD4$C)))
 
 Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
@@ -2007,11 +2007,11 @@ Rules: NIL
 ACL2 !>>(U)
           63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER NIL)
-                               (NIL :LOGIC UPDATE-FLD4$A
-                                    :EXEC UPDATE-FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER NIL)
+                    (NIL :LOGIC UPDATE-FLD4$A
+                         :EXEC UPDATE-FLD4$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  Symbols in the main Lisp package,
@@ -2026,11 +2026,11 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER NTH)
-                               (NTH :LOGIC UPDATE-FLD4$A
-                                    :EXEC UPDATE-FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER NTH)
+                    (NTH :LOGIC UPDATE-FLD4$A
+                         :EXEC UPDATE-FLD4$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The name NTH is in use as a
@@ -2056,11 +2056,11 @@ Form:  (DEFSTUB STUB ...)
 Rules: NIL
  STUB
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER STUB)
-                               (STUB :LOGIC UPDATE-FLD4$A
-                                     :EXEC UPDATE-FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER STUB)
+                    (STUB :LOGIC UPDATE-FLD4$A
+                          :EXEC UPDATE-FLD4$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The name STUB is in use as a
@@ -2081,9 +2081,9 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 ACL2 !>>(UBT 'STUB)
           63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER NIL)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER NIL)))
 
 Summary
 Form:  ( DEFABSSTOBJ ST4 ...)
@@ -2104,8 +2104,8 @@ Form:  ( DEFUN FLD4$A-NON-GV ...)
 Rules: NIL
  (:DEFUN-NX FLD4$A-NON-GV)
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A-NON-GV
-                                     :EXEC FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A-NON-GV
+                          :EXEC FLD4$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The :LOGIC component of field
@@ -2123,12 +2123,12 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 ACL2 !>>(UBT 'FLD4$A-NON-GV)
           63:x(DEFTHM UPDATE-FLD4{PRESERVED} ...)
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER UPDATE-FLD4)
-                               (FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER UPDATE-FLD4)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER UPDATE-FLD4)
+                    (FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER UPDATE-FLD4)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The name FLD4 is introduced
@@ -2143,11 +2143,11 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER FOO)
-                               (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
-                                            :EXEC UPDATE-FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER FOO)
+                    (UPDATE-FLD4 :LOGIC UPDATE-FLD4$A
+                                 :EXEC UPDATE-FLD4$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  In the function spec for FLD4,
@@ -2163,9 +2163,9 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER UPDATE-FLD4)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER UPDATE-FLD4)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  In the function spec for FLD4,
@@ -2181,11 +2181,11 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((FLD4 :LOGIC FLD4$A
-                                     :EXEC FLD4$C
-                                     :UPDATER UPDATE-FLD4)
-                               (UPDATE-FLD4 :LOGIC FLD4$A
-                                            :EXEC FLD4$C)))
+          :EXPORTS ((FLD4 :LOGIC FLD4$A
+                          :EXEC FLD4$C
+                          :UPDATER UPDATE-FLD4)
+                    (UPDATE-FLD4 :LOGIC FLD4$A
+                                 :EXEC FLD4$C)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The :EXPORTS specify that the
@@ -2203,11 +2203,11 @@ ACL2 Error [Failure] in ( DEFABSSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFABSSTOBJ ST4
-                     :EXPORTS ((ST4-MISC :LOGIC ST4$A-MISC
-                                         :EXEC ST4$C-MISC
-                                         :UPDATER UPDATE-ST4-MISC)
-                               (UPDATE-ST4-MISC :LOGIC UPDATE-ST4$A-MISC
-                                                :EXEC UPDATE-ST4$C-MISC)))
+          :EXPORTS ((ST4-MISC :LOGIC ST4$A-MISC
+                              :EXEC ST4$C-MISC
+                              :UPDATER UPDATE-ST4-MISC)
+                    (UPDATE-ST4-MISC :LOGIC UPDATE-ST4$A-MISC
+                                     :EXEC UPDATE-ST4$C-MISC)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST4 ...):  The function spec for ST4-MISC
@@ -2295,9 +2295,8 @@ Summary
 Form:  ( DEFUN ST5$CORR ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  (:DEFUN-NX ST5$CORR)
-ACL2 !>>(SKIP-PROOFS
-             (DEFABSSTOBJ ST5
-                          :EXPORTS ((FLD5 :LOGIC FLD5$A :EXEC FLD5$C))))
+ACL2 !>>(SKIP-PROOFS (DEFABSSTOBJ ST5
+                       :EXPORTS ((FLD5 :LOGIC FLD5$A :EXEC FLD5$C))))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST5 ...):  the :LOGIC function FLD5$A for
@@ -2305,6 +2304,10 @@ export FLD5 declares as a stobj the formal parameter, ST5$C.  This
 is illegal because ST5$C is the foundational stobj for the proposed
 abstract stobj, ST5.
 
+
+ACL2 Error [Failure] in ( DEFABSSTOBJ ST5 ...):  See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(DEFUN-NX FLD5$C-ALT (X)
                   (DECLARE (XARGS :GUARD (NON-EXEC (ST5$CP X))))
                   (FLD5$C X))
@@ -2323,7 +2326,7 @@ Form:  ( DEFUN FLD5$C-ALT ...)
 Rules: ((:TYPE-PRESCRIPTION THROW-NONEXEC-ERROR))
  (:DEFUN-NX FLD5$C-ALT)
 ACL2 !>>(DEFABSSTOBJ ST5
-                     :EXPORTS ((FLD5 :LOGIC FLD5$A :EXEC FLD5$C-ALT)))
+          :EXPORTS ((FLD5 :LOGIC FLD5$A :EXEC FLD5$C-ALT)))
 
 
 ACL2 Error in ( DEFABSSTOBJ ST5 ...):  The foundational stobj name,

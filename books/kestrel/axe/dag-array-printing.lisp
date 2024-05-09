@@ -1,7 +1,7 @@
 ; Printing DAG arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -31,7 +31,7 @@
 ;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
 ;; TODO: This must already exist (keep-atoms?).
 (defund filter-nodenums (items acc)
-  (declare (xargs :guard (all-dargp items)))
+  (declare (xargs :guard (darg-listp items)))
   (if (atom items)
       acc
     (if (consp (car items)) ;tests for quotep
@@ -56,7 +56,7 @@
                   :measure (+ 1 (nfix (+ 1 index)))
                   :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
-	   (type integer index))
+           (type integer index))
   (if (or (< index 0)
           (not (mbt (integerp index))))
       nil
@@ -120,7 +120,7 @@
                   :measure (+ 1 (nfix (+ 1 nodenum)))
 ;                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
                   :split-types t)
-	   (type integer nodenum))
+           (type integer nodenum))
   (if (or (< nodenum 0)
           (not (mbt (integerp nodenum))))
       nil
@@ -132,7 +132,7 @@
                                        dag-array
                                        nil)))))
 
-;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM.
+;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
 (defund print-dag-array-all (nodenum dag-array-name dag-array)
   (declare (xargs :guard (and (integerp nodenum)
                               (<= -1 nodenum)
@@ -140,3 +140,15 @@
   (progn$ (cw "(")
           (print-dag-array-all-aux nodenum dag-array-name dag-array t)
           (cw ")~%")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun print-dag-nodes-as-terms (nodenums dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (all-natp nodenums)
+                              (true-listp nodenums)
+                              (all-< nodenums dag-len))))
+  (if (endp nodenums)
+      nil
+    (prog2$ (fmt-to-comment-window "~x0~%" (acons #\0 (dag-to-term-aux-array dag-array-name dag-array (first nodenums)) nil) 2 nil 10)
+            (print-dag-nodes-as-terms (rest nodenums) dag-array-name dag-array dag-len))))

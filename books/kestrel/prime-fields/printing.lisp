@@ -1,6 +1,6 @@
 ; Utilities for readable naming and printing of prime field values
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "PFIELD")
 
 (include-book "prime-fields")
-(include-book "kestrel/utilities/pack" :dir :system) ;for nat-to-string, todo reduce
+(include-book "kestrel/utilities/nat-to-string" :dir :system)
 (local (include-book "prime-fields-rules"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 

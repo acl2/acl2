@@ -231,7 +231,8 @@
                       (implies (and (svarlist-p x)
                                     (string-listp y)
                                     (eql (len x) (len y)))
-                               (svtv-namemap-p (pairlis$ x y))))))
+                               (svtv-namemap-p (pairlis$ x y)))
+                      :hints(("Goal" :in-theory (enable pairlis$))))))
   :returns (mv err
                (namemap svtv-name-lhs-map-p)
                (probes svtv-probealist-p))
@@ -268,9 +269,12 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable debugdatap))))
   :parents (svtv)
-  :short "Diagnose hardware or stimulus bugs by studying an SVTV run in a special-purpose
+  :short "(Deprecated) Diagnose hardware or stimulus bugs by studying an SVTV run in a special-purpose
           read-eval-print loop."
-  :long "<p>To enter this read-eval-print loop for the first time, run:</p>
+  :long "
+<p>This version of the utility is deprecated in favor of @(see svtv-chase$).</p>
+
+<p>To enter this read-eval-print loop for the first time, run:</p>
 @({
  (svtv-chase svtv env)
  })

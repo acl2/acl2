@@ -15,10 +15,11 @@
 
 (defun book-of-event (name wrld)
 
-; Evaluate (book-of-event NAME (w state)) to get the pathname of the book in
-; which the event named NAME is introduced.  If that event exists but is not
-; introduced in a book, return :top-level.  If that event doesn't exist, return
-; nil.
+; Evaluate (book-of-event NAME (w state)) to get the book-name (which may be a
+; sysfile; see :DOC book-name and :DOC sysfile) in which the event named NAME
+; is introduced.  If that event exists but is not introduced in a book, return
+; :built-in if the event is built into ACL2 and otherwise :top-level.  If that
+; event doesn't exist, return nil.
 
   (declare (xargs :mode :program
                   :guard (or (symbolp name) (stringp name))))

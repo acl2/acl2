@@ -1,0 +1,87 @@
+David M. Russinoff
+david@russinoff.com
+http://www.russinoff.com
+
+This directory contains an ACL2 formalization of elementary finite group theory, essentially the content of an advanced undergraduate course in the subject that the author taught at Cooper Union in the Spring of 1976.  The top-level directory consists of the following books:
+
+* lists
+  - Lists of distinct members
+  - Sublists
+  - Disjoint lists
+  - Permutations of lists
+  - Intersections of lists
+  
+* groups
+  - Finite groups: definition and properties
+  - Ordered lists of group elements
+  - Subgroups
+  - Defgroup: a macro for defining parametrized groups
+  - Additive and multiplicative groups of integers modulo n
+  - Defsubgroup: a macro for defining parametrized subgroups
+  - Intersection of subgroups
+  - Centralizer of a group element
+  - Center of a group
+  - Cyclic subgroups
+
+* quotients
+  - Left cosets
+  - Lagrange's Theorem
+  - Normal subgroups
+  - Quotient groups
+  - Lifting a subgroup of a quotient group
+
+* cauchy
+  - Cauchy's Theorem for abelian groups
+  - Conjugacy classes
+  - Class equation
+  - Cauchy's Theorem for non-abelian groups
+  - P-groups
+  
+* maps
+  - Definition of a map as an alist
+  - Defmap: a macro for defining parametrized maps
+  - Homomorphisms
+  - Image of a homomorphism
+  - Kernel of a homomorphism
+  - Epimorphisms
+  - Endomorphisms
+  - Isomorphisms
+  
+* products
+  - Direct products
+  - Products of subgroups
+  - Internal direct products
+
+* abelian
+  - Every abelian p-group is a direct product of cyclic groups
+  - Every abelian group is a direct product of cyclic p-groups
+  - Powers of abelian groups
+  - Fundamental Theorem of Finite Abelian Groups
+  - Euler's totient theorem
+ 
+* symmetric
+  - Symmetric groups
+  - Permutations of Lists
+  - Transpositions
+  - Parity
+  - Alternating groups
+  - Dihedral groups
+
+* actions
+  - Action of a group on a dlist
+  - Defaction: a macro for defining parametrized group actions
+  - Orbits of an action
+  - Stabilizer of a domain element
+  - Conjugate subgroups
+  - Conjugation of subgroups as a group action
+  - Normalizer of a subgroup
+  - Induced homomorphism to the symmetric group
+
+* sylow
+  - p-Sylow subgroups
+  - Comjugation of p-Sylow subgroups
+  - Sylow Theorems
+
+* simple
+  - Simplcity of the alternating group (alt 5) 
+  - Groups of order less than 60 are solvable

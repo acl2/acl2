@@ -1,6 +1,6 @@
 ; A lightweight book about explode-nonnegative-integer
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/typed-lists-light/all-digit-charsp" :dir :system)
 (local (include-book "digit-to-char"))
+(local (include-book "our-digit-char-p"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -124,3 +126,12 @@
                 (not (subsetp-equal k '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
                 (subsetp-equal ans '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)))
            (not (equal k (explode-nonnegative-integer n 10 ans)))))
+
+;; Could move to a separate book
+(defthm all-digit-charsp-of-explode-nonnegative-integer
+  (implies (and (all-digit-charsp ans print-base)
+                (posp print-base))
+           (all-digit-charsp (explode-nonnegative-integer n print-base ans) print-base))
+  :hints (("Goal" :in-theory (e/d (explode-nonnegative-integer
+                                   all-digit-charsp)
+                                  (digit-to-char)))))

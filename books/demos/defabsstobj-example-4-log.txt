@@ -22,8 +22,8 @@ Form:  (DEFSTUB STOP ...)
 Rules: NIL
  STOP
 ACL2 !>>(DEFUN UPDATE-FLD-NIL-GOOD$C (ST$C)
-               (DECLARE (XARGS :STOBJS ST$C))
-               (UPDATE-FLD$C NIL ST$C))
+          (DECLARE (XARGS :STOBJS ST$C))
+          (UPDATE-FLD$C NIL ST$C))
 
 Since UPDATE-FLD-NIL-GOOD$C is non-recursive, its admission is trivial.
 We observe that the type of UPDATE-FLD-NIL-GOOD$C is described by the
@@ -42,10 +42,10 @@ Form:  ( DEFUN UPDATE-FLD-NIL-GOOD$C ...)
 Rules: ((:TYPE-PRESCRIPTION UPDATE-FLD$C))
  UPDATE-FLD-NIL-GOOD$C
 ACL2 !>>(DEFUN UPDATE-FLD-NIL-BAD$C (ST$C)
-               (DECLARE (XARGS :STOBJS ST$C))
-               (LET ((ST$C (UPDATE-FLD$C T ST$C)))
-                    (PROG2$ (STOP)
-                            (UPDATE-FLD$C NIL ST$C))))
+          (DECLARE (XARGS :STOBJS ST$C))
+          (LET ((ST$C (UPDATE-FLD$C T ST$C)))
+            (PROG2$ (STOP)
+                    (UPDATE-FLD$C NIL ST$C))))
 
 Since UPDATE-FLD-NIL-BAD$C is non-recursive, its admission is trivial.
 We observe that the type of UPDATE-FLD-NIL-BAD$C is described by the
@@ -64,8 +64,8 @@ Form:  ( DEFUN UPDATE-FLD-NIL-BAD$C ...)
 Rules: ((:TYPE-PRESCRIPTION UPDATE-FLD$C))
  UPDATE-FLD-NIL-BAD$C
 ACL2 !>>(DEFUN ST$AP (X)
-               (DECLARE (XARGS :GUARD T))
-               (EQUAL X NIL))
+          (DECLARE (XARGS :GUARD T))
+          (EQUAL X NIL))
 
 Since ST$AP is non-recursive, its admission is trivial.  We observe
 that the type of ST$AP is described by the theorem 
@@ -81,9 +81,9 @@ Summary
 Form:  ( DEFUN ST$AP ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  ST$AP
-ACL2 !>>(DEFUN CREATE-ST$A
-               NIL (DECLARE (XARGS :GUARD T))
-               NIL)
+ACL2 !>>(DEFUN CREATE-ST$A NIL
+          (DECLARE (XARGS :GUARD T))
+          NIL)
 
 Since CREATE-ST$A is non-recursive, its admission is trivial.  We observe
 that the type of CREATE-ST$A is described by the theorem 
@@ -99,8 +99,8 @@ Form:  ( DEFUN CREATE-ST$A ...)
 Rules: NIL
  CREATE-ST$A
 ACL2 !>>(DEFUN FLD$A (ST$A)
-               (DECLARE (XARGS :GUARD T))
-               ST$A)
+          (DECLARE (XARGS :GUARD T))
+          ST$A)
 
 Since FLD$A is non-recursive, its admission is trivial.  We observe
 that the type of FLD$A is described by the theorem (EQUAL (FLD$A ST$A) ST$A).
@@ -115,8 +115,8 @@ Form:  ( DEFUN FLD$A ...)
 Rules: NIL
  FLD$A
 ACL2 !>>(DEFUN UPDATE-FLD-NIL-BAD$A (ST$A)
-               (DECLARE (XARGS :GUARD T) (IGNORE ST$A))
-               NIL)
+          (DECLARE (XARGS :GUARD T) (IGNORE ST$A))
+          NIL)
 
 Since UPDATE-FLD-NIL-BAD$A is non-recursive, its admission is trivial.
 We observe that the type of UPDATE-FLD-NIL-BAD$A is described by the
@@ -132,8 +132,8 @@ Form:  ( DEFUN UPDATE-FLD-NIL-BAD$A ...)
 Rules: NIL
  UPDATE-FLD-NIL-BAD$A
 ACL2 !>>(DEFUN UPDATE-FLD-NIL-GOOD$A (ST$A)
-               (DECLARE (XARGS :GUARD T) (IGNORE ST$A))
-               NIL)
+          (DECLARE (XARGS :GUARD T) (IGNORE ST$A))
+          NIL)
 
 Since UPDATE-FLD-NIL-GOOD$A is non-recursive, its admission is trivial.
 We observe that the type of UPDATE-FLD-NIL-GOOD$A is described by the
@@ -169,8 +169,8 @@ Form:  ( IN-THEORY (DISABLE ...))
 Rules: NIL
  :CURRENT-THEORY-UPDATED
 ACL2 !>>(DEFTHM CREATE-ST{CORRESPONDENCE}
-                (ST$CORR (CREATE-ST$C) (CREATE-ST$A))
-                :RULE-CLASSES NIL)
+          (ST$CORR (CREATE-ST$C) (CREATE-ST$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -186,8 +186,8 @@ Rules: ((:DEFINITION CREATE-ST$C)
         (:EXECUTABLE-COUNTERPART ST$CP))
  CREATE-ST{CORRESPONDENCE}
 ACL2 !>>(DEFTHM CREATE-ST{PRESERVED}
-                (ST$AP (CREATE-ST$A))
-                :RULE-CLASSES NIL)
+          (ST$AP (CREATE-ST$A))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -197,9 +197,9 @@ Rules: ((:EXECUTABLE-COUNTERPART CREATE-ST$A)
         (:EXECUTABLE-COUNTERPART ST$AP))
  CREATE-ST{PRESERVED}
 ACL2 !>>(DEFTHM FLD{CORRESPONDENCE}
-                (IMPLIES (ST$CORR ST$C ST)
-                         (EQUAL (FLD$C ST$C) (FLD$A ST)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (ST$CORR ST$C ST)
+                   (EQUAL (FLD$C ST$C) (FLD$A ST)))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -213,10 +213,10 @@ Rules: ((:DEFINITION FLD$A)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
  FLD{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-FLD-NIL-GOOD{CORRESPONDENCE}
-                (IMPLIES (ST$CORR ST$C ST)
-                         (ST$CORR (UPDATE-FLD-NIL-GOOD$C ST$C)
-                                  (UPDATE-FLD-NIL-GOOD$A ST)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (ST$CORR ST$C ST)
+                   (ST$CORR (UPDATE-FLD-NIL-GOOD$C ST$C)
+                            (UPDATE-FLD-NIL-GOOD$A ST)))
+          :RULE-CLASSES NIL)
 Goal'
 Goal''
 
@@ -253,9 +253,9 @@ Rules: ((:DEFINITION FLD$C)
         (:REWRITE NTH-0-CONS))
  UPDATE-FLD-NIL-GOOD{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-FLD-NIL-GOOD{PRESERVED}
-                (IMPLIES (ST$AP ST)
-                         (ST$AP (UPDATE-FLD-NIL-GOOD$A ST)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (ST$AP ST)
+                   (ST$AP (UPDATE-FLD-NIL-GOOD$A ST)))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -267,10 +267,10 @@ Rules: ((:DEFINITION ST$AP)
         (:EXECUTABLE-COUNTERPART ST$AP))
  UPDATE-FLD-NIL-GOOD{PRESERVED}
 ACL2 !>>(DEFTHM UPDATE-FLD-NIL-BAD{CORRESPONDENCE}
-                (IMPLIES (ST$CORR ST$C ST)
-                         (ST$CORR (UPDATE-FLD-NIL-BAD$C ST$C)
-                                  (UPDATE-FLD-NIL-BAD$A ST)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (ST$CORR ST$C ST)
+                   (ST$CORR (UPDATE-FLD-NIL-BAD$C ST$C)
+                            (UPDATE-FLD-NIL-BAD$A ST)))
+          :RULE-CLASSES NIL)
 Goal'
 Goal''
 
@@ -308,9 +308,9 @@ Rules: ((:DEFINITION FLD$C)
         (:REWRITE NTH-0-CONS))
  UPDATE-FLD-NIL-BAD{CORRESPONDENCE}
 ACL2 !>>(DEFTHM UPDATE-FLD-NIL-BAD{PRESERVED}
-                (IMPLIES (ST$AP ST)
-                         (ST$AP (UPDATE-FLD-NIL-BAD$A ST)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (ST$AP ST)
+                   (ST$AP (UPDATE-FLD-NIL-BAD$A ST)))
+          :RULE-CLASSES NIL)
 
 Q.E.D.
 
@@ -322,9 +322,9 @@ Rules: ((:DEFINITION ST$AP)
         (:EXECUTABLE-COUNTERPART ST$AP))
  UPDATE-FLD-NIL-BAD{PRESERVED}
 ACL2 !>>(DEFABSSTOBJ ST
-                     :EXPORTS ((FLD)
-                               (UPDATE-FLD-NIL-GOOD)
-                               (UPDATE-FLD-NIL-BAD :PROTECT T)))
+          :EXPORTS ((FLD)
+                    (UPDATE-FLD-NIL-GOOD)
+                    (UPDATE-FLD-NIL-BAD :PROTECT T)))
 
 Summary
 Form:  ( DEFABSSTOBJ ST ...)
@@ -334,17 +334,17 @@ ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                             (TRANS-EVAL '(UPDATE-FLD-NIL-BAD ST)
                                         'TOP
                                         STATE T)
-                            (DECLARE (IGNORE ERP VAL))
-                            (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
+                      (DECLARE (IGNORE ERP VAL))
+                      (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE-FLD-NIL-BAD ST) has modified the user stobj ST.
-See :DOC user-stobjs-modified-warnings.
+on the term (UPDATE-FLD-NIL-BAD ST) may have modified the user stobj
+ST.  See :DOC user-stobjs-modified-warnings.
 
 
 
-ACL2 Error in TOP:  ACL2 cannot ev the call of non-executable function
-STOP on argument list:
+ACL2 Error [Evaluation] in TOP:  ACL2 cannot ev the call of non-executable
+function STOP on argument list:
 
 NIL
 
@@ -384,12 +384,12 @@ ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                             (TRANS-EVAL '(UPDATE-FLD-NIL-GOOD ST)
                                         'TOP
                                         STATE T)
-                            (DECLARE (IGNORE ERP VAL))
-                            (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
+                      (DECLARE (IGNORE ERP VAL))
+                      (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE-FLD-NIL-GOOD ST) has modified the user stobj ST.
-See :DOC user-stobjs-modified-warnings.
+on the term (UPDATE-FLD-NIL-GOOD ST) may have modified the user stobj
+ST.  See :DOC user-stobjs-modified-warnings.
 
 
 Summary
@@ -399,23 +399,23 @@ Warnings:  User-stobjs-modified
  :IRRELEVANT-VALUE
 ACL2 !>>(ASSERT-EVENT (EQUAL (FLD ST) NIL))
  :PASSED
-ACL2 !>>(LOCAL (SET-ABSSTOBJ-DEBUG T))
+ACL2 !>>(SET-ABSSTOBJ-DEBUG T)
  T
 ACL2 !>>(MAKE-EVENT (MV-LET (ERP VAL STATE)
                             (TRANS-EVAL '(UPDATE-FLD-NIL-BAD ST)
                                         'TOP
                                         STATE T)
-                            (DECLARE (IGNORE ERP VAL))
-                            (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
+                      (DECLARE (IGNORE ERP VAL))
+                      (VALUE '(VALUE-TRIPLE :IRRELEVANT-VALUE))))
 
 ACL2 Warning [User-stobjs-modified] in TOP:  A call of the ACL2 evaluator
-on the term (UPDATE-FLD-NIL-BAD ST) has modified the user stobj ST.
-See :DOC user-stobjs-modified-warnings.
+on the term (UPDATE-FLD-NIL-BAD ST) may have modified the user stobj
+ST.  See :DOC user-stobjs-modified-warnings.
 
 
 
-ACL2 Error in TOP:  ACL2 cannot ev the call of non-executable function
-STOP on argument list:
+ACL2 Error [Evaluation] in TOP:  ACL2 cannot ev the call of non-executable
+function STOP on argument list:
 
 NIL
 
@@ -463,10 +463,10 @@ Subgoal 2
 Subgoal 1
  (EVL EVL-LIST)
 ACL2 !>>(DEFUN SIMPLE-CL-PROC (CL TERM ST)
-               (DECLARE (XARGS :STOBJS ST)
-                        (IGNORE TERM))
-               (LET ((ST (UPDATE-FLD-NIL-BAD ST)))
-                    (MV NIL (LIST CL) ST)))
+          (DECLARE (XARGS :STOBJS ST)
+                   (IGNORE TERM))
+          (LET ((ST (UPDATE-FLD-NIL-BAD ST)))
+            (MV NIL (LIST CL) ST)))
 
 Since SIMPLE-CL-PROC is non-recursive, its admission is trivial.  We
 observe that the type of SIMPLE-CL-PROC is described by the theorem
@@ -487,8 +487,7 @@ Form:  ( DEFUN SIMPLE-CL-PROC ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION UPDATE-FLD-NIL-BAD))
  SIMPLE-CL-PROC
-ACL2 !>>(DEFTHM
-         CORRECTNESS-OF-SIMPLE-CL-PROC
+ACL2 !>>(DEFTHM CORRECTNESS-OF-SIMPLE-CL-PROC
          (IMPLIES
           (AND
            (PSEUDO-TERM-LISTP CL)
@@ -521,7 +520,7 @@ ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
+ (:SYSTEM . "std/testing/must-fail.lisp")
 ACL2 !>>(MUST-FAIL (THM (EQUAL X X)
                         :HINTS (("Goal" :CLAUSE-PROCESSOR SIMPLE-CL-PROC))))
 
@@ -548,8 +547,6 @@ ACL2 !>>(WITH-OUTPUT
              (EQUAL X X)
              :HINTS (("Goal" :INSTRUCTIONS ((CL-PROC :FUNCTION SIMPLE-CL-PROC
                                                      :HINT NIL))))))
-
-ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 
 
 ACL2 Error in CHK-ABSSTOBJ-INVARIANTS:  Possible invariance violation

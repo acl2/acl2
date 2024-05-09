@@ -15,11 +15,11 @@ ACL2 !>>(SET-GAG-MODE NIL)
 ACL2 !>>(DEFSTOBJ TOP (TBL :TYPE (STOBJ-TABLE)))
  TOP
 ACL2 !>>(DEFUN BASIC-1 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1))))
-                          (VAL1)
-                          (FLD1 ST1)
-                          VAL1))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1))))
+                     (VAL1)
+                     (FLD1 ST1)
+                     VAL1))
 
 
 ACL2 Error [Translate] in ( DEFUN BASIC-1 ...):  The variable ST1 is
@@ -30,28 +30,32 @@ not the name of a stobj.  See :DOC stobj-table.  The form
 (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))) (VAL1) (FLD1 ST1) VAL1)
 is thus illegal.  See :DOC stobj-let.
 
-ACL2 !>>(DEFSTOBJ ST1 (FLD1 :TYPE INTEGER :INITIALLY 0))
+ACL2 !>>(DEFSTOBJ ST1
+          (FLD1 :TYPE INTEGER :INITIALLY 0))
  ST1
-ACL2 !>>(DEFSTOBJ ST2 (FLD2 :TYPE INTEGER :INITIALLY 0))
+ACL2 !>>(DEFSTOBJ ST2
+          (FLD2 :TYPE INTEGER :INITIALLY 0))
  ST2
-ACL2 !>>(DEFSTOBJ ST3 (FLD3 :TYPE INTEGER :INITIALLY 0))
+ACL2 !>>(DEFSTOBJ ST3
+          (FLD3 :TYPE INTEGER :INITIALLY 0))
  ST3
-ACL2 !>>(DEFSTOBJ ST3A (FLD3A :TYPE INTEGER :INITIALLY 0)
-                  :CONGRUENT-TO ST3)
+ACL2 !>>(DEFSTOBJ ST3A
+          (FLD3A :TYPE INTEGER :INITIALLY 0)
+          :CONGRUENT-TO ST3)
  ST3A
 ACL2 !>>(DEFUN BASIC-1 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1))))
-                          (VAL1)
-                          (FLD1 ST1)
-                          VAL1))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1))))
+                     (VAL1)
+                     (FLD1 ST1)
+                     VAL1))
  BASIC-1
 ACL2 !>>(DEFUN BAD (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP)))
-                          (VAL1)
-                          (FLD1 ST1)
-                          VAL1))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP)))
+                     (VAL1)
+                     (FLD1 ST1)
+                     VAL1))
 
 
 ACL2 Error [Translate] in ( DEFUN BAD ...):  The stobj-let binding
@@ -63,52 +67,48 @@ for ST1 should be called as a third argument of that expression; see
 illegal.  See :DOC stobj-let.
 
 ACL2 !>>(DEFUN UPDATE-1 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))
-                           (ST2 (TBL-GET 'ST2 TOP (CREATE-ST2)))
-                           (ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
-                           (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
-                          (ST3 ST2 ST1 E)
-                          (LET* ((VAL1 (FLD1 ST1))
-                                 (VAL2 (FLD2 ST2))
-                                 (VAL3 (FLD3 ST3))
-                                 (VAL3A (FLD3A ST3A))
-                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1))
-                                 (ST2 (UPDATE-FLD2 (+ 2 VAL2) ST2))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3)))
-                                (MV ST3 ST2 ST1 (EQUAL VAL3 VAL3A)))
-                          (MV E TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))
+                      (ST2 (TBL-GET 'ST2 TOP (CREATE-ST2)))
+                      (ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                      (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
+                     (ST3 ST2 ST1 E)
+                     (LET* ((VAL1 (FLD1 ST1))
+                            (VAL2 (FLD2 ST2))
+                            (VAL3 (FLD3 ST3))
+                            (VAL3A (FLD3A ST3A))
+                            (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1))
+                            (ST2 (UPDATE-FLD2 (+ 2 VAL2) ST2))
+                            (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3)))
+                       (MV ST3 ST2 ST1 (EQUAL VAL3 VAL3A)))
+                     (MV E TOP)))
  UPDATE-1
 ACL2 !>>(DEFUN READ-1 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))
-                           (ST2 (TBL-GET 'ST2 TOP (CREATE-ST2)))
-                           (ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
-                           (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
-                          (VAL1 VAL2 VAL3 VAL3A)
-                          (MV (FLD1 ST1)
-                              (FLD2 ST2)
-                              (FLD3 ST3)
-                              (FLD3A ST3A))
-                          (LIST VAL1 VAL2 VAL3 VAL3A)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (CREATE-ST1)))
+                      (ST2 (TBL-GET 'ST2 TOP (CREATE-ST2)))
+                      (ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                      (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
+                     (VAL1 VAL2 VAL3 VAL3A)
+                     (MV (FLD1 ST1)
+                         (FLD2 ST2)
+                         (FLD3 ST3)
+                         (FLD3A ST3A))
+                     (LIST VAL1 VAL2 VAL3 VAL3A)))
  READ-1
-ACL2 !>>(DEFMACRO
-         RUNS (I &KEY STOBJ-INDEX)
+ACL2 !>>(DEFMACRO RUNS (I &KEY STOBJ-INDEX)
          (LET
           ((READ-I (PACKN (LIST 'READ- I)))
            (UPDATE-I (PACKN (LIST 'UPDATE- I)))
-           (STOBJ (IF STOBJ-INDEX
-                      (PACKN (LIST 'TOP STOBJ-INDEX))
-                      'TOP))
-           (TBL-BOUNDP (IF STOBJ-INDEX
-                           (PACKN (LIST 'TBL STOBJ-INDEX '-BOUNDP))
-                           'TBL-BOUNDP))
-           (TBL-CLEAR (IF STOBJ-INDEX
-                          (PACKN (LIST 'TBL STOBJ-INDEX '-CLEAR))
-                          'TBL-CLEAR))
-           (TBL-INIT (IF STOBJ-INDEX
-                         (PACKN (LIST 'TBL STOBJ-INDEX '-INIT))
-                         'TBL-INIT))
+           (STOBJ (IF STOBJ-INDEX (PACKN (LIST 'TOP STOBJ-INDEX))
+                    'TOP))
+           (TBL-BOUNDP
+                (IF STOBJ-INDEX (PACKN (LIST 'TBL STOBJ-INDEX '-BOUNDP))
+                  'TBL-BOUNDP))
+           (TBL-CLEAR (IF STOBJ-INDEX (PACKN (LIST 'TBL STOBJ-INDEX '-CLEAR))
+                        'TBL-CLEAR))
+           (TBL-INIT (IF STOBJ-INDEX (PACKN (LIST 'TBL STOBJ-INDEX '-INIT))
+                       'TBL-INIT))
            (STI (IF (EQL I 2) 'ST4 'ST1)))
           (CONS
            'LD
@@ -287,28 +287,28 @@ ACL2 !>>(TBL-REM 'ST1 TOP)
 ACL2 !>>(ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 2))
  :PASSED
 ACL2 !>>(DEFUN UPDATE-1A (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
-                           (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
-                          (ST3 ST3A VAL3 VAL3A)
-                          (LET* ((VAL3 (FLD3 ST3A))
-                                 (VAL3A (FLD3 ST3A))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
-                                 (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
-                                (MV ST3 ST3A VAL3 VAL3A))
-                          (MV VAL3 VAL3A TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                      (ST3A (TBL-GET 'ST3A TOP (CREATE-ST3A))))
+                     (ST3 ST3A VAL3 VAL3A)
+                     (LET* ((VAL3 (FLD3 ST3A))
+                            (VAL3A (FLD3 ST3A))
+                            (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
+                            (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
+                       (MV ST3 ST3A VAL3 VAL3A))
+                     (MV VAL3 VAL3A TOP)))
  UPDATE-1A
 ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
-                           (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3))))
-                          (ST3 ST3A VAL3 VAL3A)
-                          (LET* ((VAL3 (FLD3 ST3A))
-                                 (VAL3A (FLD3 ST3A))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
-                                 (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
-                                (MV ST3 ST3A VAL3 VAL3A))
-                          (MV VAL3 VAL3A TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                      (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3))))
+                     (ST3 ST3A VAL3 VAL3A)
+                     (LET* ((VAL3 (FLD3 ST3A))
+                            (VAL3A (FLD3 ST3A))
+                            (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
+                            (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
+                       (MV ST3 ST3A VAL3 VAL3A))
+                     (MV VAL3 VAL3A TOP)))
 
 
 ACL2 Error [Translate] in ( DEFUN UPDATE-1A-BAD ...):  The stobj-let
@@ -325,22 +325,22 @@ form
                   (VAL3A (FLD3 ST3A))
                   (ST3 (UPDATE-FLD3 # ST3))
                   (ST3A (UPDATE-FLD3 # ST3A)))
-                 (MV ST3 ST3A VAL3 VAL3A))
+             (MV ST3 ST3A VAL3 VAL3A))
            (MV VAL3 VAL3A TOP))
 is thus illegal.  See :DOC stobj-let.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
-                           (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3A))))
-                          (ST3 ST3A VAL3 VAL3A)
-                          (LET* ((VAL3 (FLD3 ST3A))
-                                 (VAL3A (FLD3 ST3A))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
-                                 (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
-                                (MV ST3 ST3A VAL3 VAL3A))
-                          (MV VAL3 VAL3A TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
+                      (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3A))))
+                     (ST3 ST3A VAL3 VAL3A)
+                     (LET* ((VAL3 (FLD3 ST3A))
+                            (VAL3A (FLD3 ST3A))
+                            (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3))
+                            (ST3A (UPDATE-FLD3 (+ 3 VAL3A) ST3A)))
+                       (MV ST3 ST3A VAL3 VAL3A))
+                     (MV VAL3 VAL3A TOP)))
 
 
 ACL2 Error [Translate] in ( DEFUN UPDATE-1A-BAD ...):  The variable
@@ -356,42 +356,42 @@ See :DOC stobj-table.  The form
                   (VAL3A (FLD3 ST3A))
                   (ST3 (UPDATE-FLD3 # ST3))
                   (ST3A (UPDATE-FLD3 # ST3A)))
-                 (MV ST3 ST3A VAL3 VAL3A))
+             (MV ST3 ST3A VAL3 VAL3A))
            (MV VAL3 VAL3A TOP))
 is thus illegal.  See :DOC stobj-let.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 ACL2 !>>(DEFSTOBJ ST4
-                  (AR4 :TYPE (ARRAY INTEGER (8))
-                       :INITIALLY 0))
+          (AR4 :TYPE (ARRAY INTEGER (8))
+               :INITIALLY 0))
  ST4
 ACL2 !>>(DEFTHM INTEGERP-NTH-AR4P
-                (IMPLIES (AND (AR4P AR) (NATP I) (< I (LEN AR)))
-                         (INTEGERP (NTH I AR)))
-                :RULE-CLASSES :TYPE-PRESCRIPTION)
+          (IMPLIES (AND (AR4P AR) (NATP I) (< I (LEN AR)))
+                   (INTEGERP (NTH I AR)))
+          :RULE-CLASSES :TYPE-PRESCRIPTION)
  INTEGERP-NTH-AR4P
 ACL2 !>>(DEFUN UPDATE-2 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST4 (TBL-GET 'ST4 TOP (CREATE-ST4))))
-                          (ST4)
-                          (LET* ((V0 (AR4I 0 ST4))
-                                 (V1 (AR4I 1 ST4))
-                                 (V2 (AR4I 2 ST4))
-                                 (ST4 (UPDATE-AR4I 0 (+ 1 V0) ST4))
-                                 (ST4 (UPDATE-AR4I 1 (+ 2 V1) ST4))
-                                 (ST4 (UPDATE-AR4I 2 (+ 3 V2) ST4)))
-                                ST4)
-                          TOP))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST4 (TBL-GET 'ST4 TOP (CREATE-ST4))))
+                     (ST4)
+                     (LET* ((V0 (AR4I 0 ST4))
+                            (V1 (AR4I 1 ST4))
+                            (V2 (AR4I 2 ST4))
+                            (ST4 (UPDATE-AR4I 0 (+ 1 V0) ST4))
+                            (ST4 (UPDATE-AR4I 1 (+ 2 V1) ST4))
+                            (ST4 (UPDATE-AR4I 2 (+ 3 V2) ST4)))
+                       ST4)
+                     TOP))
  UPDATE-2
 ACL2 !>>(DEFUN READ-2 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST4 (TBL-GET 'ST4 TOP (CREATE-ST4))))
-                          (V0 V1 V2 V3)
-                          (MV (AR4I 0 ST4)
-                              (AR4I 1 ST4)
-                              (AR4I 2 ST4)
-                              (AR4I 3 ST4))
-                          (LIST V0 V1 V2 V3)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST4 (TBL-GET 'ST4 TOP (CREATE-ST4))))
+                     (V0 V1 V2 V3)
+                     (MV (AR4I 0 ST4)
+                         (AR4I 1 ST4)
+                         (AR4I 2 ST4)
+                         (AR4I 3 ST4))
+                     (LIST V0 V1 V2 V3)))
  READ-2
 ACL2 !>>(TBL-CLEAR TOP)
 <top>
@@ -478,115 +478,111 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 0))
 ACL2 !>>(OOPS)
           19:x(VERIFY-GUARDS READ-2)
 ACL2 !>>(DEFUN TOP2$AP (X)
-               (DECLARE (XARGS :GUARD T))
-               (ALISTP X))
+          (DECLARE (XARGS :GUARD T))
+          (ALISTP X))
  TOP2$AP
-ACL2 !>>(DEFUN CREATE-TOP2$A
-               NIL (DECLARE (XARGS :GUARD T))
-               NIL)
+ACL2 !>>(DEFUN CREATE-TOP2$A NIL
+          (DECLARE (XARGS :GUARD T))
+          NIL)
  CREATE-TOP2$A
 ACL2 !>>(DEFUN TBL2$A-GET (KEY X DEFAULT)
-               (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
-               (LET ((PAIR (ASSOC-EQ KEY X)))
-                    (IF PAIR (CDR PAIR) DEFAULT)))
+          (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
+          (LET ((PAIR (ASSOC-EQ KEY X)))
+            (IF PAIR (CDR PAIR) DEFAULT)))
  TBL2$A-GET
 ACL2 !>>(DEFUN TBL2$A-PUT (KEY VAL X)
-               (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
-               (ACONS KEY VAL X))
+          (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
+          (ACONS KEY VAL X))
  TBL2$A-PUT
 ACL2 !>>(DEFUN TBL2$A-CLEAR (X)
-               (DECLARE (XARGS :GUARD T) (IGNORE X))
-               NIL)
+          (DECLARE (XARGS :GUARD T) (IGNORE X))
+          NIL)
  TBL2$A-CLEAR
-ACL2 !>>(DEFUN
-            TBL2$A-INIT
-            (HT-SIZE REHASH-SIZE REHASH-THRESHOLD X)
-            (DECLARE (XARGS :GUARD (AND (TOP2$AP X)
-                                        (OR (NATP HT-SIZE) (NOT HT-SIZE))
-                                        (OR (AND (RATIONALP REHASH-SIZE)
-                                                 (<= 1 REHASH-SIZE))
-                                            (NOT REHASH-SIZE))
-                                        (OR (AND (RATIONALP REHASH-THRESHOLD)
-                                                 (<= 0 REHASH-THRESHOLD)
-                                                 (<= REHASH-THRESHOLD 1))
-                                            (NOT REHASH-THRESHOLD))))
-                     (IGNORABLE HT-SIZE REHASH-SIZE REHASH-THRESHOLD X))
-            NIL)
+ACL2 !>>(DEFUN TBL2$A-INIT (HT-SIZE REHASH-SIZE REHASH-THRESHOLD X)
+          (DECLARE (XARGS :GUARD (AND (TOP2$AP X)
+                                      (OR (NATP HT-SIZE) (NOT HT-SIZE))
+                                      (OR (AND (RATIONALP REHASH-SIZE)
+                                               (<= 1 REHASH-SIZE))
+                                          (NOT REHASH-SIZE))
+                                      (OR (AND (RATIONALP REHASH-THRESHOLD)
+                                               (<= 0 REHASH-THRESHOLD)
+                                               (<= REHASH-THRESHOLD 1))
+                                          (NOT REHASH-THRESHOLD))))
+                   (IGNORABLE HT-SIZE REHASH-SIZE REHASH-THRESHOLD X))
+          NIL)
  TBL2$A-INIT
 ACL2 !>>(DEFUN TBL2$A-BOUNDP (KEY X)
-               (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
-               (CONSP (ASSOC-EQ KEY X)))
+          (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY) (TOP2$AP X))))
+          (CONSP (ASSOC-EQ KEY X)))
  TBL2$A-BOUNDP
 ACL2 !>>(DEFUN-NX TOP2$CORR (TOP X)
                   (DECLARE (XARGS :STOBJS TOP))
                   (EQUAL (CAR TOP) X))
  (:DEFUN-NX TOP2$CORR)
 ACL2 !>>(DEFTHM CREATE-TOP2{CORRESPONDENCE}
-                (TOP2$CORR (CREATE-TOP) (CREATE-TOP2$A))
-                :RULE-CLASSES NIL)
+          (TOP2$CORR (CREATE-TOP) (CREATE-TOP2$A))
+          :RULE-CLASSES NIL)
  CREATE-TOP2{CORRESPONDENCE}
 ACL2 !>>(DEFTHM CREATE-TOP2{PRESERVED}
-                (TOP2$AP (CREATE-TOP2$A))
-                :RULE-CLASSES NIL)
+          (TOP2$AP (CREATE-TOP2$A))
+          :RULE-CLASSES NIL)
  CREATE-TOP2{PRESERVED}
 ACL2 !>>(DEFTHM HONS-ASSOC-EQUAL-IS-ASSOC-EQUAL
-                (IMPLIES (ALISTP ALIST)
-                         (EQUAL (HONS-ASSOC-EQUAL KEY ALIST)
-                                (ASSOC-EQUAL KEY ALIST))))
+          (IMPLIES (ALISTP ALIST)
+                   (EQUAL (HONS-ASSOC-EQUAL KEY ALIST)
+                          (ASSOC-EQUAL KEY ALIST))))
  HONS-ASSOC-EQUAL-IS-ASSOC-EQUAL
 ACL2 !>>(DEFTHM TBL2-GET{CORRESPONDENCE}
-                (IMPLIES (AND (TOP2$CORR TOP TOP2)
-                              (SYMBOLP K)
-                              (TOP2$AP TOP2))
-                         (EQUAL (TBL-GET K TOP V)
-                                (TBL2$A-GET K TOP2 V)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP2$CORR TOP TOP2)
+                        (SYMBOLP K)
+                        (TOP2$AP TOP2))
+                   (EQUAL (TBL-GET K TOP V)
+                          (TBL2$A-GET K TOP2 V)))
+          :RULE-CLASSES NIL)
  TBL2-GET{CORRESPONDENCE}
 ACL2 !>>(DEFTHM TBL2-PUT{CORRESPONDENCE}
-                (IMPLIES (AND (TOP2$CORR TOP TOP2)
-                              (SYMBOLP K)
-                              (TOP2$AP TOP2))
-                         (TOP2$CORR (TBL-PUT K V TOP)
-                                    (TBL2$A-PUT K V TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP2$CORR TOP TOP2)
+                        (SYMBOLP K)
+                        (TOP2$AP TOP2))
+                   (TOP2$CORR (TBL-PUT K V TOP)
+                              (TBL2$A-PUT K V TOP2)))
+          :RULE-CLASSES NIL)
  TBL2-PUT{CORRESPONDENCE}
 ACL2 !>>(DEFTHM TBL2-PUT{PRESERVED}
-                (IMPLIES (AND (SYMBOLP K) (TOP2$AP TOP2))
-                         (TOP2$AP (TBL2$A-PUT K V TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (SYMBOLP K) (TOP2$AP TOP2))
+                   (TOP2$AP (TBL2$A-PUT K V TOP2)))
+          :RULE-CLASSES NIL)
  TBL2-PUT{PRESERVED}
 ACL2 !>>(DEFTHM TBL2-CLEAR{CORRESPONDENCE}
-                (IMPLIES (TOP2$CORR TOP TOP2)
-                         (TOP2$CORR (TBL-CLEAR TOP)
-                                    (TBL2$A-CLEAR TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (TOP2$CORR TOP TOP2)
+                   (TOP2$CORR (TBL-CLEAR TOP)
+                              (TBL2$A-CLEAR TOP2)))
+          :RULE-CLASSES NIL)
  TBL2-CLEAR{CORRESPONDENCE}
 ACL2 !>>(DEFTHM TBL2-CLEAR{PRESERVED}
-                (IMPLIES (TOP2$AP TOP2)
-                         (TOP2$AP (TBL2$A-CLEAR TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (TOP2$AP TOP2)
+                   (TOP2$AP (TBL2$A-CLEAR TOP2)))
+          :RULE-CLASSES NIL)
  TBL2-CLEAR{PRESERVED}
-ACL2 !>>(DEFTHM
-            TBL2-INIT{CORRESPONDENCE}
-            (IMPLIES
-                 (AND (TOP2$CORR TOP TOP2)
-                      (TOP2$AP TOP2)
-                      (OR (NATP HT-SIZE) (NOT HT-SIZE))
-                      (OR (AND (RATIONALP REHASH-SIZE)
-                               (<= 1 REHASH-SIZE))
-                          (NOT REHASH-SIZE))
-                      (OR (AND (RATIONALP REHASH-THRESHOLD)
-                               (<= 0 REHASH-THRESHOLD)
-                               (<= REHASH-THRESHOLD 1))
-                          (NOT REHASH-THRESHOLD)))
-                 (TOP2$CORR (TBL-INIT HT-SIZE
-                                      REHASH-SIZE REHASH-THRESHOLD TOP)
-                            (TBL2$A-INIT HT-SIZE
-                                         REHASH-SIZE REHASH-THRESHOLD TOP2)))
-            :RULE-CLASSES NIL)
+ACL2 !>>(DEFTHM TBL2-INIT{CORRESPONDENCE}
+          (IMPLIES
+               (AND (TOP2$CORR TOP TOP2)
+                    (TOP2$AP TOP2)
+                    (OR (NATP HT-SIZE) (NOT HT-SIZE))
+                    (OR (AND (RATIONALP REHASH-SIZE)
+                             (<= 1 REHASH-SIZE))
+                        (NOT REHASH-SIZE))
+                    (OR (AND (RATIONALP REHASH-THRESHOLD)
+                             (<= 0 REHASH-THRESHOLD)
+                             (<= REHASH-THRESHOLD 1))
+                        (NOT REHASH-THRESHOLD)))
+               (TOP2$CORR (TBL-INIT HT-SIZE
+                                    REHASH-SIZE REHASH-THRESHOLD TOP)
+                          (TBL2$A-INIT HT-SIZE
+                                       REHASH-SIZE REHASH-THRESHOLD TOP2)))
+          :RULE-CLASSES NIL)
  TBL2-INIT{CORRESPONDENCE}
-ACL2 !>>(DEFTHM
-          TBL2-INIT{PRESERVED}
+ACL2 !>>(DEFTHM TBL2-INIT{PRESERVED}
           (IMPLIES (AND (TOP2$AP TOP2)
                         (OR (NATP HT-SIZE) (NOT HT-SIZE))
                         (OR (AND (RATIONALP REHASH-SIZE)
@@ -601,59 +597,59 @@ ACL2 !>>(DEFTHM
           :RULE-CLASSES NIL)
  TBL2-INIT{PRESERVED}
 ACL2 !>>(DEFTHM TBL2-BOUNDP{CORRESPONDENCE}
-                (IMPLIES (AND (TOP2$CORR TOP TOP2)
-                              (SYMBOLP K)
-                              (TOP2$AP TOP2))
-                         (EQUAL (TBL-BOUNDP K TOP)
-                                (TBL2$A-BOUNDP K TOP2)))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (TOP2$CORR TOP TOP2)
+                        (SYMBOLP K)
+                        (TOP2$AP TOP2))
+                   (EQUAL (TBL-BOUNDP K TOP)
+                          (TBL2$A-BOUNDP K TOP2)))
+          :RULE-CLASSES NIL)
  TBL2-BOUNDP{CORRESPONDENCE}
 ACL2 !>>(DEFABSSTOBJ TOP2
-                     :FOUNDATION TOP
-                     :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP2$A
-                                           :EXEC CREATE-TOP)
-                     :RECOGNIZER (TOP2P :LOGIC TOP2$AP :EXEC TOPP)
-                     :EXPORTS ((TBL2-GET :LOGIC TBL2$A-GET
-                                         :EXEC TBL-GET
-                                         :UPDATER TBL2-PUT)
-                               (TBL2-PUT :LOGIC TBL2$A-PUT
-                                         :EXEC TBL-PUT)
-                               (TBL2-CLEAR :LOGIC TBL2$A-CLEAR
-                                           :EXEC TBL-CLEAR)
-                               (TBL2-INIT :LOGIC TBL2$A-INIT
-                                          :EXEC TBL-INIT)
-                               (TBL2-BOUNDP :LOGIC TBL2$A-BOUNDP
-                                            :EXEC TBL-BOUNDP)))
+          :FOUNDATION TOP
+          :CREATOR (CREATE-TOP2 :LOGIC CREATE-TOP2$A
+                                :EXEC CREATE-TOP)
+          :RECOGNIZER (TOP2P :LOGIC TOP2$AP :EXEC TOPP)
+          :EXPORTS ((TBL2-GET :LOGIC TBL2$A-GET
+                              :EXEC TBL-GET
+                              :UPDATER TBL2-PUT)
+                    (TBL2-PUT :LOGIC TBL2$A-PUT
+                              :EXEC TBL-PUT)
+                    (TBL2-CLEAR :LOGIC TBL2$A-CLEAR
+                                :EXEC TBL-CLEAR)
+                    (TBL2-INIT :LOGIC TBL2$A-INIT
+                               :EXEC TBL-INIT)
+                    (TBL2-BOUNDP :LOGIC TBL2$A-BOUNDP
+                                 :EXEC TBL-BOUNDP)))
  TOP2
 ACL2 !>>(DEFUN UPDATE-3 (TOP2)
-               (DECLARE (XARGS :STOBJS TOP2 :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL2-GET 'ST1 TOP2 (CREATE-ST1)))
-                           (ST2 (TBL2-GET 'ST2 TOP2 (CREATE-ST2)))
-                           (ST3 (TBL2-GET 'ST3 TOP2 (CREATE-ST3)))
-                           (ST3A (TBL2-GET 'ST3A TOP2 (CREATE-ST3A))))
-                          (ST3 ST2 ST1 E)
-                          (LET* ((VAL1 (FLD1 ST1))
-                                 (VAL2 (FLD2 ST2))
-                                 (VAL3 (FLD3 ST3))
-                                 (VAL3A (FLD3A ST3A))
-                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1))
-                                 (ST2 (UPDATE-FLD2 (+ 2 VAL2) ST2))
-                                 (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3)))
-                                (MV ST3 ST2 ST1 (EQUAL VAL3 VAL3A)))
-                          (MV E TOP2)))
+          (DECLARE (XARGS :STOBJS TOP2 :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL2-GET 'ST1 TOP2 (CREATE-ST1)))
+                      (ST2 (TBL2-GET 'ST2 TOP2 (CREATE-ST2)))
+                      (ST3 (TBL2-GET 'ST3 TOP2 (CREATE-ST3)))
+                      (ST3A (TBL2-GET 'ST3A TOP2 (CREATE-ST3A))))
+                     (ST3 ST2 ST1 E)
+                     (LET* ((VAL1 (FLD1 ST1))
+                            (VAL2 (FLD2 ST2))
+                            (VAL3 (FLD3 ST3))
+                            (VAL3A (FLD3A ST3A))
+                            (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1))
+                            (ST2 (UPDATE-FLD2 (+ 2 VAL2) ST2))
+                            (ST3 (UPDATE-FLD3 (+ 3 VAL3) ST3)))
+                       (MV ST3 ST2 ST1 (EQUAL VAL3 VAL3A)))
+                     (MV E TOP2)))
  UPDATE-3
 ACL2 !>>(DEFUN READ-3 (TOP2)
-               (DECLARE (XARGS :STOBJS TOP2 :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL2-GET 'ST1 TOP2 (CREATE-ST1)))
-                           (ST2 (TBL2-GET 'ST2 TOP2 (CREATE-ST2)))
-                           (ST3 (TBL2-GET 'ST3 TOP2 (CREATE-ST3)))
-                           (ST3A (TBL2-GET 'ST3A TOP2 (CREATE-ST3A))))
-                          (VAL1 VAL2 VAL3 VAL3A)
-                          (MV (FLD1 ST1)
-                              (FLD2 ST2)
-                              (FLD3 ST3)
-                              (FLD3A ST3A))
-                          (LIST VAL1 VAL2 VAL3 VAL3A)))
+          (DECLARE (XARGS :STOBJS TOP2 :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL2-GET 'ST1 TOP2 (CREATE-ST1)))
+                      (ST2 (TBL2-GET 'ST2 TOP2 (CREATE-ST2)))
+                      (ST3 (TBL2-GET 'ST3 TOP2 (CREATE-ST3)))
+                      (ST3A (TBL2-GET 'ST3A TOP2 (CREATE-ST3A))))
+                     (VAL1 VAL2 VAL3 VAL3A)
+                     (MV (FLD1 ST1)
+                         (FLD2 ST2)
+                         (FLD3 ST3)
+                         (FLD3A ST3A))
+                     (LIST VAL1 VAL2 VAL3 VAL3A)))
  READ-3
 ACL2 !>>(TBL2-CLEAR TOP2)
 <top2>
@@ -737,89 +733,90 @@ package "ACL2") has neither a function nor macro definition in ACL2.
 Please define it.  See :DOC near-misses.  Note:  this error occurred
 in the context (TBL2-COUNT TOP2).
 
-ACL2 !>>(DEFSTOBJ TOP0 (TBL0 :TYPE (STOBJ-TABLE))
-                  :CONGRUENT-TO TOP)
+ACL2 !>>(DEFSTOBJ TOP0
+          (TBL0 :TYPE (STOBJ-TABLE))
+          :CONGRUENT-TO TOP)
  TOP0
 ACL2 !>>(DEFUN UPDATE-1-REC (TOP0 N)
-               (DECLARE (XARGS :STOBJS TOP0
-                               :GUARD (NATP N)
-                               :VERIFY-GUARDS NIL))
-               (COND ((ZP N)
-                      (MV-LET (E TOP0)
-                              (UPDATE-1 TOP0)
-                              (DECLARE (IGNORE E))
-                              TOP0))
-                     (T (STOBJ-LET ((TOP (TBL-GET 'TOP TOP0 (CREATE-TOP))))
-                                   (TOP)
-                                   (UPDATE-1-REC TOP (1- N))
-                                   TOP0))))
+          (DECLARE (XARGS :STOBJS TOP0
+                          :GUARD (NATP N)
+                          :VERIFY-GUARDS NIL))
+          (COND ((ZP N)
+                 (MV-LET (E TOP0)
+                         (UPDATE-1 TOP0)
+                   (DECLARE (IGNORE E))
+                   TOP0))
+                (T (STOBJ-LET ((TOP (TBL-GET 'TOP TOP0 (CREATE-TOP))))
+                              (TOP)
+                              (UPDATE-1-REC TOP (1- N))
+                              TOP0))))
  UPDATE-1-REC
 ACL2 !>>(DEFUN READ-1-REC (TOP0 N)
-               (DECLARE (XARGS :STOBJS TOP0
-                               :GUARD (NATP N)
-                               :VERIFY-GUARDS NIL))
-               (COND ((ZP N) (READ-1 TOP0))
-                     (T (STOBJ-LET ((TOP (TBL-GET 'TOP TOP0 (CREATE-TOP))))
-                                   (VAL)
-                                   (READ-1-REC TOP (1- N))
-                                   VAL))))
+          (DECLARE (XARGS :STOBJS TOP0
+                          :GUARD (NATP N)
+                          :VERIFY-GUARDS NIL))
+          (COND ((ZP N) (READ-1 TOP0))
+                (T (STOBJ-LET ((TOP (TBL-GET 'TOP TOP0 (CREATE-TOP))))
+                              (VAL)
+                              (READ-1-REC TOP (1- N))
+                              VAL))))
  READ-1-REC
 ACL2 !>>(DEFMACRO REC-TEST NIL
-                  '(LD '((TBL-CLEAR TOP)
-                         (UPDATE-1-REC TOP 3)
-                         (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
-                                                    (READ-1-REC TOP 1)
-                                                    (READ-1-REC TOP 2)
-                                                    (READ-1-REC TOP 3)
-                                                    (READ-1-REC TOP 4)
-                                                    (READ-1-REC TOP 5))
-                                              '((0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)
-                                                (1 2 3 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0))))
-                         (UPDATE-1-REC TOP 3)
-                         (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
-                                                    (READ-1-REC TOP 1)
-                                                    (READ-1-REC TOP 2)
-                                                    (READ-1-REC TOP 3)
-                                                    (READ-1-REC TOP 4)
-                                                    (READ-1-REC TOP 5))
-                                              '((0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)
-                                                (2 4 6 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0))))
-                         (UPDATE-1-REC TOP 3)
-                         (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
-                                                    (READ-1-REC TOP 1)
-                                                    (READ-1-REC TOP 2)
-                                                    (READ-1-REC TOP 3)
-                                                    (READ-1-REC TOP 4)
-                                                    (READ-1-REC TOP 5))
-                                              '((0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)
-                                                (3 6 9 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0))))
-                         (ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 1))
-                         (TBL-CLEAR TOP)
-                         (ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 0))
-                         (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
-                                                    (READ-1-REC TOP 1)
-                                                    (READ-1-REC TOP 2)
-                                                    (READ-1-REC TOP 3)
-                                                    (READ-1-REC TOP 4)
-                                                    (READ-1-REC TOP 5))
-                                              '((0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)
-                                                (0 0 0 0)))))))
+          '(LD '((TBL-CLEAR TOP)
+                 (UPDATE-1-REC TOP 3)
+                 (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
+                                            (READ-1-REC TOP 1)
+                                            (READ-1-REC TOP 2)
+                                            (READ-1-REC TOP 3)
+                                            (READ-1-REC TOP 4)
+                                            (READ-1-REC TOP 5))
+                                      '((0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)
+                                        (1 2 3 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0))))
+                 (UPDATE-1-REC TOP 3)
+                 (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
+                                            (READ-1-REC TOP 1)
+                                            (READ-1-REC TOP 2)
+                                            (READ-1-REC TOP 3)
+                                            (READ-1-REC TOP 4)
+                                            (READ-1-REC TOP 5))
+                                      '((0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)
+                                        (2 4 6 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0))))
+                 (UPDATE-1-REC TOP 3)
+                 (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
+                                            (READ-1-REC TOP 1)
+                                            (READ-1-REC TOP 2)
+                                            (READ-1-REC TOP 3)
+                                            (READ-1-REC TOP 4)
+                                            (READ-1-REC TOP 5))
+                                      '((0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)
+                                        (3 6 9 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0))))
+                 (ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 1))
+                 (TBL-CLEAR TOP)
+                 (ASSERT-EVENT (EQUAL (TBL-COUNT TOP) 0))
+                 (ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
+                                            (READ-1-REC TOP 1)
+                                            (READ-1-REC TOP 2)
+                                            (READ-1-REC TOP 3)
+                                            (READ-1-REC TOP 4)
+                                            (READ-1-REC TOP 5))
+                                      '((0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)
+                                        (0 0 0 0)))))))
  REC-TEST
 ACL2 !>>(REC-TEST)
 ACL2 !>>>(TBL-CLEAR TOP)
@@ -999,12 +996,13 @@ ACL2 !>>>(ASSERT-EVENT (EQUAL (LIST (READ-1-REC TOP 0)
 ACL2 !>>>Bye.
  :EOF
 ACL2 !>>(DEFUN UPDATE-1B (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL0-GET 'ST1 TOP (CREATE-ST1))))
-                          (ST1)
-                          ST1 TOP))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL0-GET 'ST1 TOP (CREATE-ST1))))
+                     (ST1)
+                     ST1 TOP))
  UPDATE-1B
-ACL2 !>>(DEFSTOBJ TOP-BAD (TBL :TYPE STOBJ-TABLE))
+ACL2 !>>(DEFSTOBJ TOP-BAD
+          (TBL :TYPE STOBJ-TABLE))
 
 
 ACL2 Error in ( DEFSTOBJ TOP-BAD ...):  The :type specified for the
@@ -1013,31 +1011,31 @@ as a type-spec (see :DOC type-spec) or as a user-defined stobj name.
 
 
 ACL2 Error [Failure] in ( DEFSTOBJ TOP-BAD ...):  See :DOC failure.
-ACL2 !>>(ENCAPSULATE
-             NIL (DEFSTOBJ ST5 FLD5)
-             (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
-                    (DECLARE (XARGS :STOBJS TOP))
-                    (STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
-                               (ST5)
-                               (UPDATE-FLD5 FLD-VAL ST5)
-                               TOP))
-             (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
-                              (MV NIL '(VALUE-TRIPLE :OK)
-                                  STATE TOP))))
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFSTOBJ ST5 FLD5)
+          (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
+            (DECLARE (XARGS :STOBJS TOP))
+            (STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
+                       (ST5)
+                       (UPDATE-FLD5 FLD-VAL ST5)
+                       TOP))
+          (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
+                        (MV NIL '(VALUE-TRIPLE :OK)
+                            STATE TOP))))
  T
 ACL2 !>>(U)
  L        48:x(DEFUN UPDATE-1B (TOP) ...)
-ACL2 !>>(ENCAPSULATE
-             NIL (LOCAL (DEFSTOBJ ST5 FLD5))
-             (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
-                    (DECLARE (XARGS :STOBJS TOP))
-                    (STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
-                               (ST5)
-                               (UPDATE-FLD5 FLD-VAL ST5)
-                               TOP))
-             (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
-                              (MV NIL '(VALUE-TRIPLE :OK)
-                                  STATE TOP))))
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFSTOBJ ST5 FLD5))
+          (DEFUN SET-ST-IN-STOBJ-TABLE (FLD-VAL TOP)
+            (DECLARE (XARGS :STOBJS TOP))
+            (STOBJ-LET ((ST5 (TBL-GET 'ST5 TOP (CREATE-ST5))))
+                       (ST5)
+                       (UPDATE-FLD5 FLD-VAL ST5)
+                       TOP))
+          (MAKE-EVENT (LET ((TOP (SET-ST-IN-STOBJ-TABLE 100 TOP)))
+                        (MV NIL '(VALUE-TRIPLE :OK)
+                            STATE TOP))))
 
 
 ACL2 Error [Translate] in ( DEFUN SET-ST-IN-STOBJ-TABLE ...):  The
@@ -1060,20 +1058,22 @@ incompatibility.  The attempted ENCAPSULATE has failed.
 ACL2 !>>(UBT 2)
    d       1:x(INCLUDE-BOOK "tools/run-script"
                             :DIR ...)
-ACL2 !>>(DEFSTOBJ TOP (TBL :TYPE (STOBJ-TABLE))
-                  :RENAMING ((TBL-GET TOP-TBL-GET)))
+ACL2 !>>(DEFSTOBJ TOP
+          (TBL :TYPE (STOBJ-TABLE))
+          :RENAMING ((TBL-GET TOP-TBL-GET)))
  TOP
-ACL2 !>>(DEFSTOBJ ST1 (FLD1 :TYPE INTEGER :INITIALLY 0)
-                  :RENAMING ((CREATE-ST1 NEW-ST1)))
+ACL2 !>>(DEFSTOBJ ST1
+          (FLD1 :TYPE INTEGER :INITIALLY 0)
+          :RENAMING ((CREATE-ST1 NEW-ST1)))
  ST1
 ACL2 !>>(DEFUN UPDATE-1-1 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (CREATE-ST1))))
-                          (ST1 E)
-                          (LET* ((VAL1 (FLD1 ST1))
-                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
-                                (MV ST1 (EQUAL VAL1 3)))
-                          (MV E TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (CREATE-ST1))))
+                     (ST1 E)
+                     (LET* ((VAL1 (FLD1 ST1))
+                            (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                       (MV ST1 (EQUAL VAL1 3)))
+                     (MV E TOP)))
 
 
 ACL2 Error [Translate] in ( DEFUN UPDATE-1-1 ...):  The variable ST1
@@ -1086,19 +1086,19 @@ However, the stobj creator for ST1 is NEW-ST1, not CREATE-ST1.  See
            (ST1 E)
            (LET* ((VAL1 (FLD1 ST1))
                   (ST1 (UPDATE-FLD1 # ST1)))
-                 (MV ST1 (EQUAL VAL1 3)))
+             (MV ST1 (EQUAL VAL1 3)))
            (MV E TOP))
 is thus illegal.  See :DOC stobj-let.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 ACL2 !>>(DEFUN UPDATE-1-2 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (NEW-ST1))))
-                          (ST1 E)
-                          (LET* ((VAL1 (FLD1 ST1))
-                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
-                                (MV ST1 (EQUAL VAL1 3)))
-                          (MV E TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TBL-GET 'ST1 TOP (NEW-ST1))))
+                     (ST1 E)
+                     (LET* ((VAL1 (FLD1 ST1))
+                            (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                       (MV ST1 (EQUAL VAL1 3)))
+                     (MV E TOP)))
 
 
 ACL2 Error [Translate] in ( DEFUN UPDATE-1-2 ...):  The name TBL-GET
@@ -1108,19 +1108,19 @@ congruent to it.  The form
            (ST1 E)
            (LET* ((VAL1 (FLD1 ST1))
                   (ST1 (UPDATE-FLD1 # ST1)))
-                 (MV ST1 (EQUAL VAL1 3)))
+             (MV ST1 (EQUAL VAL1 3)))
            (MV E TOP))
 is thus illegal.  See :DOC stobj-let.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 ACL2 !>>(DEFUN UPDATE-1-3 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))))
-                          (ST1 E)
-                          (LET* ((VAL1 (FLD1 ST1))
-                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
-                                (MV ST1 (EQUAL VAL1 3)))
-                          (MV E TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))))
+                     (ST1 E)
+                     (LET* ((VAL1 (FLD1 ST1))
+                            (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                       (MV ST1 (EQUAL VAL1 3)))
+                     (MV E TOP)))
 
 
 ACL2 Error [Translate] in ( DEFUN UPDATE-1-3 ...):  The stobj-let bindings
@@ -1131,34 +1131,34 @@ updater is TBL-PUT.  The form
            (ST1 E)
            (LET* ((VAL1 (FLD1 ST1))
                   (ST1 (UPDATE-FLD1 # ST1)))
-                 (MV ST1 (EQUAL VAL1 3)))
+             (MV ST1 (EQUAL VAL1 3)))
            (MV E TOP))
 is thus illegal.  See :DOC stobj-let.
 (See :DOC set-iprint to be able to see elided values in this message.)
 
 ACL2 !>>(DEFUN UPDATE-1-4 (TOP)
-               (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
-               (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))
-                                TBL-PUT))
-                          (ST1 E)
-                          (LET* ((VAL1 (FLD1 ST1))
-                                 (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
-                                (MV ST1 (EQUAL VAL1 3)))
-                          (MV E TOP)))
+          (DECLARE (XARGS :STOBJS TOP :VERIFY-GUARDS NIL))
+          (STOBJ-LET ((ST1 (TOP-TBL-GET 'ST1 TOP (NEW-ST1))
+                           TBL-PUT))
+                     (ST1 E)
+                     (LET* ((VAL1 (FLD1 ST1))
+                            (ST1 (UPDATE-FLD1 (+ 1 VAL1) ST1)))
+                       (MV ST1 (EQUAL VAL1 3)))
+                     (MV E TOP)))
  UPDATE-1-4
 ACL2 !>>(UBT 2)
    d       1:x(INCLUDE-BOOK "tools/run-script"
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobj-table.lisp"
+ (:SYSTEM . "std/stobjs/stobj-table.lisp")
 ACL2 !>>(IN-THEORY (DISABLE NTH UPDATE-NTH))
  :CURRENT-THEORY-UPDATED
 ACL2 !>>(DEFSTOBJ FOO (FOO-FLD))
  FOO
 ACL2 !>>(DEFTHM FOO-FLD-OF-UPDATE-FOO-FLD
-                (EQUAL (FOO-FLD (UPDATE-FOO-FLD VAL FOO))
-                       VAL))
+          (EQUAL (FOO-FLD (UPDATE-FOO-FLD VAL FOO))
+                 VAL))
 
 ACL2 Warning [Non-rec] in ( DEFTHM FOO-FLD-OF-UPDATE-FOO-FLD ...):
 A :REWRITE rule generated from FOO-FLD-OF-UPDATE-FOO-FLD will be triggered
@@ -1176,30 +1176,28 @@ be tried first, it may nonetheless find application.
  FOO-FLD-OF-UPDATE-FOO-FLD
 ACL2 !>>(IN-THEORY (DISABLE FOOP FOO-FLD UPDATE-FOO-FLD))
  :CURRENT-THEORY-UPDATED
-ACL2 !>>(DEFUND DO-SOMETHING-COMPLICATED-WITH-FOO
-                (IN FOO)
-                (DECLARE (XARGS :STOBJS FOO))
-                (UPDATE-FOO-FLD IN FOO))
+ACL2 !>>(DEFUND DO-SOMETHING-COMPLICATED-WITH-FOO (IN FOO)
+          (DECLARE (XARGS :STOBJS FOO))
+          (UPDATE-FOO-FLD IN FOO))
  (:DEFUND DO-SOMETHING-COMPLICATED-WITH-FOO)
-ACL2 !>>(DEFTHM
-            FOO-FLD-OF-DO-SOMETHING-COMPLICATED
-            (EQUAL (FOO-FLD (DO-SOMETHING-COMPLICATED-WITH-FOO IN FOO))
-                   IN)
-            :HINTS
-            (("Goal" :IN-THEORY (ENABLE DO-SOMETHING-COMPLICATED-WITH-FOO))))
+ACL2 !>>(DEFTHM FOO-FLD-OF-DO-SOMETHING-COMPLICATED
+          (EQUAL (FOO-FLD (DO-SOMETHING-COMPLICATED-WITH-FOO IN FOO))
+                 IN)
+          :HINTS
+          (("Goal" :IN-THEORY (ENABLE DO-SOMETHING-COMPLICATED-WITH-FOO))))
  FOO-FLD-OF-DO-SOMETHING-COMPLICATED
 ACL2 !>>(DEFUN TEST1 (STOBJ-TABLE)
-               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
-               (STOBJ-LET ((FOO (TBL-GET 'FOO
-                                         STOBJ-TABLE (CREATE-FOO))))
-                          (FLD)
-                          (FOO-FLD FOO)
-                          FLD))
+          (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+          (STOBJ-LET ((FOO (TBL-GET 'FOO
+                                    STOBJ-TABLE (CREATE-FOO))))
+                     (FLD)
+                     (FOO-FLD FOO)
+                     FLD))
  TEST1
 ACL2 !>>(DEFTHM TEST1-OF-DO-SOMETHING-COMPLICATED
-                (LET* ((FOO1 (DO-SOMETHING-COMPLICATED-WITH-FOO IN FOO))
-                       (STOBJ-TABLE (TBL-PUT 'FOO FOO1 STOBJ-TABLE)))
-                      (EQUAL (TEST1 STOBJ-TABLE) IN)))
+          (LET* ((FOO1 (DO-SOMETHING-COMPLICATED-WITH-FOO IN FOO))
+                 (STOBJ-TABLE (TBL-PUT 'FOO FOO1 STOBJ-TABLE)))
+            (EQUAL (TEST1 STOBJ-TABLE) IN)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM TEST1-OF-DO-SOMETHING-COMPLICATED
 ...):  A :REWRITE rule generated from TEST1-OF-DO-SOMETHING-COMPLICATED
@@ -1220,135 +1218,130 @@ ACL2 !>>(UBT 2)
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobj-table.lisp"
-ACL2 !>>(DEFSTOBJ ST (FLD :TYPE INTEGER :INITIALLY 0))
+ (:SYSTEM . "std/stobjs/stobj-table.lisp")
+ACL2 !>>(DEFSTOBJ ST
+          (FLD :TYPE INTEGER :INITIALLY 0))
  ST
-ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-TRY1
-               (STOBJ-TABLE)
-               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
-               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                          (VAL)
-                          (FLD ST)
-                          VAL))
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-TRY1 (STOBJ-TABLE)
+          (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                     (VAL)
+                     (FLD ST)
+                     VAL))
  READ-FLD-FROM-STOBJ-TABLE-TRY1
 ACL2 !>>(THM
            (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                     (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-TRY1 STOBJ-TABLE))))
 
 ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
-ACL2 !>>(DEFUN
-          READ-FLD-FROM-STOBJ-TABLE (STOBJ-TABLE)
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE (STOBJ-TABLE)
           (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
           (STOBJ-LET
                ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
                (VAL)
                (MBE :LOGIC (NON-EXEC (LET ((ST (IF (STP ST) ST (CREATE-ST))))
-                                          (FLD ST)))
+                                       (FLD ST)))
                     :EXEC (FLD ST))
                VAL))
  READ-FLD-FROM-STOBJ-TABLE
 ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                       (INTEGERP (READ-FLD-FROM-STOBJ-TABLE STOBJ-TABLE))))
-ACL2 !>>(DEFMACRO
-             STOBJ-FIX (ST &KEY RECOGNIZER CREATOR)
-             (DECLARE (XARGS :GUARD (AND (SYMBOLP ST)
-                                         (SYMBOLP RECOGNIZER)
-                                         (SYMBOLP CREATOR))))
-             (LET ((RECOGNIZER (OR RECOGNIZER
-                                   (DEFSTOBJ-FNNAME ST :RECOGNIZER
-                                                    :TOP NIL)))
-                   (CREATOR (OR CREATOR
-                                (DEFSTOBJ-FNNAME ST :CREATOR
-                                                 :TOP NIL))))
-                  (CONS 'IF
-                        (CONS (CONS RECOGNIZER (CONS ST 'NIL))
-                              (CONS ST (CONS (CONS CREATOR 'NIL) 'NIL))))))
+ACL2 !>>(DEFMACRO STOBJ-FIX (ST &KEY RECOGNIZER CREATOR)
+          (DECLARE (XARGS :GUARD (AND (SYMBOLP ST)
+                                      (SYMBOLP RECOGNIZER)
+                                      (SYMBOLP CREATOR))))
+          (LET ((RECOGNIZER (OR RECOGNIZER
+                                (DEFSTOBJ-FNNAME ST :RECOGNIZER
+                                                 :TOP NIL)))
+                (CREATOR (OR CREATOR
+                             (DEFSTOBJ-FNNAME ST :CREATOR
+                                              :TOP NIL))))
+            (CONS 'IF
+                  (CONS (CONS RECOGNIZER (CONS ST 'NIL))
+                        (CONS ST (CONS (CONS CREATOR 'NIL) 'NIL))))))
  STOBJ-FIX
-ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-2
-               (STOBJ-TABLE)
-               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
-               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                          (VAL)
-                          (MBE :LOGIC (NON-EXEC (FLD (STOBJ-FIX ST)))
-                               :EXEC (FLD ST))
-                          VAL))
+ACL2 !>>(DEFUN READ-FLD-FROM-STOBJ-TABLE-2 (STOBJ-TABLE)
+          (DECLARE (XARGS :STOBJS (STOBJ-TABLE)))
+          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                     (VAL)
+                     (MBE :LOGIC (NON-EXEC (FLD (STOBJ-FIX ST)))
+                          :EXEC (FLD ST))
+                     VAL))
  READ-FLD-FROM-STOBJ-TABLE-2
 ACL2 !>>(THM (IMPLIES (STOBJ-TABLEP STOBJ-TABLE)
                       (INTEGERP (READ-FLD-FROM-STOBJ-TABLE-2 STOBJ-TABLE))))
 ACL2 !>>(DEFUN FOO (SUM STOBJ-TABLE)
-               (DECLARE (XARGS :STOBJS (STOBJ-TABLE)
-                               :GUARD (ACL2-NUMBERP SUM)))
-               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                          (SUM)
-                          (+ SUM (FLD ST))
-                          SUM))
+          (DECLARE (XARGS :STOBJS (STOBJ-TABLE)
+                          :GUARD (ACL2-NUMBERP SUM)))
+          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                     (SUM)
+                     (+ SUM (FLD ST))
+                     SUM))
  FOO
 ACL2 !>>(UBT 2)
    d       1:x(INCLUDE-BOOK "tools/run-script"
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobjtab"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobjtab.lisp"
-ACL2 !>>(DEFSTOBJ ST (FLD :TYPE INTEGER :INITIALLY 0))
+ (:SYSTEM . "std/stobjs/stobjtab.lisp")
+ACL2 !>>(DEFSTOBJ ST
+          (FLD :TYPE INTEGER :INITIALLY 0))
  ST
-ACL2 !>>(DEFTHM
-           MBE-SIDES-ARE-EQUAL
-           (IMPLIES
-                (STBL-BOUNDP 'ST STOBJTAB)
-                (EQUAL (NON-EXEC (NTH 0
-                                      (CDR (HONS-ASSOC-EQUAL 'ST STOBJTAB))))
-                       (STOBJ-LET ((ST (STBL-GET 'ST STOBJTAB (CREATE-ST))))
-                                  (FLD)
-                                  (FLD ST)
-                                  FLD)))
-           :RULE-CLASSES NIL)
- MBE-SIDES-ARE-EQUAL
-ACL2 !>>(DEFUN
-           FLD-OF-STOBJTAB-ST (STOBJTAB)
-           (DECLARE (XARGS :STOBJS STOBJTAB
-                           :GUARD (STBL-BOUNDP 'ST STOBJTAB)))
-           (MBE :LOGIC (NON-EXEC (NTH 0
-                                      (CDR (HONS-ASSOC-EQUAL 'ST STOBJTAB))))
-                :EXEC (STOBJ-LET ((ST (STBL-GET 'ST STOBJTAB (CREATE-ST))))
+ACL2 !>>(DEFTHM MBE-SIDES-ARE-EQUAL
+          (IMPLIES
+               (STBL-BOUNDP 'ST STOBJTAB)
+               (EQUAL (NON-EXEC (NTH 0
+                                     (CDR (HONS-ASSOC-EQUAL 'ST STOBJTAB))))
+                      (STOBJ-LET ((ST (STBL-GET 'ST STOBJTAB (CREATE-ST))))
                                  (FLD)
                                  (FLD ST)
                                  FLD)))
+          :RULE-CLASSES NIL)
+ MBE-SIDES-ARE-EQUAL
+ACL2 !>>(DEFUN FLD-OF-STOBJTAB-ST (STOBJTAB)
+          (DECLARE (XARGS :STOBJS STOBJTAB
+                          :GUARD (STBL-BOUNDP 'ST STOBJTAB)))
+          (MBE :LOGIC (NON-EXEC (NTH 0
+                                     (CDR (HONS-ASSOC-EQUAL 'ST STOBJTAB))))
+               :EXEC (STOBJ-LET ((ST (STBL-GET 'ST STOBJTAB (CREATE-ST))))
+                                (FLD)
+                                (FLD ST)
+                                FLD)))
  FLD-OF-STOBJTAB-ST
 ACL2 !>>(UBT 2)
    d       1:x(INCLUDE-BOOK "tools/run-script"
                             :DIR ...)
 ACL2 !>>(INCLUDE-BOOK "std/top" :DIR :SYSTEM)
- "[books]/std/top.lisp"
+ (:SYSTEM . "std/top.lisp")
 ACL2 !>>(INCLUDE-BOOK "std/stobjs/stobj-table"
                       :DIR :SYSTEM)
- "[books]/std/stobjs/stobj-table.lisp"
+ (:SYSTEM . "std/stobjs/stobj-table.lisp")
 ACL2 !>>(DEFSTOBJ ST FLD)
  ST
 ACL2 !>>(DEFINE GOOD-ST-P (ST) (NATP (FLD ST)))
  GOOD-ST-P
 ACL2 !>>(DEFINE GOOD-TBL-P (STOBJ-TABLE)
-                (AND (TBL-BOUNDP 'ST STOBJ-TABLE)
-                     (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                                (CHK)
-                                (GOOD-ST-P ST)
-                                CHK)))
+          (AND (TBL-BOUNDP 'ST STOBJ-TABLE)
+               (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                          (CHK)
+                          (GOOD-ST-P ST)
+                          CHK)))
  GOOD-TBL-P
-ACL2 !>>(DEFTHM
-             GOOD-TBL-P-IMPLIES-GOOD-ST-P
-             (IMPLIES (GOOD-TBL-P X)
-                      (AND (HONS-ASSOC-EQUAL 'ST (CAR X))
-                           (GOOD-ST-P (CDR (HONS-ASSOC-EQUAL 'ST (CAR X))))))
-             :HINTS (("Goal" :IN-THEORY (ENABLE GOOD-TBL-P))))
+ACL2 !>>(DEFTHM GOOD-TBL-P-IMPLIES-GOOD-ST-P
+          (IMPLIES (GOOD-TBL-P X)
+                   (AND (HONS-ASSOC-EQUAL 'ST (CAR X))
+                        (GOOD-ST-P (CDR (HONS-ASSOC-EQUAL 'ST (CAR X))))))
+          :HINTS (("Goal" :IN-THEORY (ENABLE GOOD-TBL-P))))
  GOOD-TBL-P-IMPLIES-GOOD-ST-P
 ACL2 !>>(DEFINE DO-ST (ST)
-                :GUARD (GOOD-ST-P ST)
-                ST)
+          :GUARD (GOOD-ST-P ST)
+          ST)
  DO-ST
 ACL2 !>>(DEFINE DO-TBL (STOBJ-TABLE)
-                :GUARD (GOOD-TBL-P STOBJ-TABLE)
-                (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
-                           (ST)
-                           (DO-ST ST)
-                           STOBJ-TABLE))
+          :GUARD (GOOD-TBL-P STOBJ-TABLE)
+          (STOBJ-LET ((ST (TBL-GET 'ST STOBJ-TABLE (CREATE-ST))))
+                     (ST)
+                     (DO-ST ST)
+                     STOBJ-TABLE))
  DO-TBL
 ACL2 !>>Bye.

@@ -51,6 +51,10 @@
   (declare (ignorable prop))
   term)
 
+(defun equals (term1 term2)
+  (declare (ignorable term1 term2))
+  term1)
+
 (defun falist (fast-list term)
   (declare (ignorable fast-list))
   term)
@@ -135,6 +139,8 @@
        (cons (beta-search-reduce (car subterms) (1- limit))
              (beta-search-reduce-subterms (cdr subterms) (1- limit)))))))
 
+
+
 (define is-rp (term)
   :inline t
   (case-match term (('rp ('quote type) &)
@@ -155,6 +161,17 @@
                      (not (booleanp type))
                      (not (equal type 'quote))))
                (& nil)))))
+
+(define is-equals (term)
+  :inline t
+  (case-match term (('equals & &)
+                    t))
+  ///
+  (defthm is-equals-implies
+    (implies (is-equals term)
+             (case-match term (('equals & &) t)))
+    :rule-classes :forward-chaining))
+
 (define is-if (term)
   :inline t
   (case-match term (('if & & &) t)
@@ -301,7 +318,7 @@
            (& nil))))))
 
   (define falist-consistent (falist-term)
-    :parents (rp-utilities)
+    :parents (rp-other-utilities)
     :short "Given a falist term \(falist \* \*\), checks consistence of arguments."
     (case-match falist-term
       (('falist ('quote falist) term)
@@ -539,29 +556,40 @@
          (not (quotep (car lst)))
          (cons-consp (cdr lst)))))
 
+
+
+(define maybe-natp (x)
+  :enabled t
+  (or (not x)
+      (natp x))) 
+
 (acl2::defines
  include-fnc
- (define include-fnc (term fnc)
+ (define include-fnc (term fnc &optional arg-size)
    :enabled t
-   :guard (symbolp fnc)
+   :guard (and (symbolp fnc)
+               (maybe-natp arg-size))
    :parents (rp-utilities)
    :short "Searches a term for an instance of fnc. Returns t or nil."
    (if (or (atom term)
            (quotep term))
        nil
-     (if (eq (car term) fnc)
+     (if (and (eq (car term) fnc)
+              (implies arg-size
+                       (equal (len (cdr term)) arg-size)))
          t
-       (include-fnc-subterms (cdr term) fnc))))
+       (include-fnc-subterms (cdr term) fnc arg-size))))
 
- (define include-fnc-subterms (subterms fnc)
-   :guard (symbolp fnc)
+ (define include-fnc-subterms (subterms fnc &optional arg-size)
+   :guard (and (symbolp fnc)
+               (maybe-natp arg-size))
    :enabled t
-   :parents (rp-utilities)
+   :parents (include-fnc)
    :short "Searches a list of terms for an instance of fnc. Returns t or nil."
    (if (atom subterms)
        nil
-     (or (include-fnc (car subterms) fnc)
-         (include-fnc-subterms (cdr subterms) fnc)))))
+     (or (include-fnc (car subterms) fnc arg-size)
+         (include-fnc-subterms (cdr subterms) fnc arg-size)))))
 
 (defun is-honsed-assoc-eq-values (term)
   (declare (xargs :guard t))
@@ -602,7 +630,7 @@
    (in-theory (enable IS-RP-LOOSE)))
 
   (define ex-from-rp-loose (term)
-    :parents (rp-utilities)
+    :parents (ex-from-rp)
     :short "Same as @(see rp::ex-from-rp) when term is @(see rp::rp-termp) but
     a little faster."
     (mbe :logic (if (is-rp-loose term)
@@ -675,8 +703,8 @@
            ',(cdr (unquote term))))
 
   (define context-from-rp (term context)
-    :short "Expands the context with the side-conditions from the term"
-    :parents (rp-utilities)
+    :short "Expands a given context list with the side-conditions from the term"
+    :parents (ex-from-rp)
     (if (is-rp term)
         (let ((type (car (cdr (car (cdr term)))))
               (x (car (cdr (cdr term)))))
@@ -970,11 +998,23 @@
      (cons (remove-return-last (car subterms))
            (remove-return-last-subterms (cdr subterms))))))
 
-(defund is-hide (term)
+(defund light-remove-return-last (term)
+  (declare (xargs :guard t))
+  (if (is-return-last term)
+      (light-remove-return-last (cadddr term))
+    term))
+
+(define is-hide (term)
   (declare (xargs :guard t))
   (case-match term
     (('hide &) t)
-    (& nil)))
+    (& nil))
+  ///
+  (defthm is-hide-implies
+    (implies (is-hide x)
+             (case-match x
+               (('hide &) t)))
+    :rule-classes :forward-chaining))
 
 (in-theory (disable extract-from-rp-with-context))
 
@@ -1064,7 +1104,7 @@
 
   (acl2::defines
    rp-equal-cw
-   :parents (rp-utilities)
+   :parents (rp-equal)
    :short "Same as @(see rp::rp-equal) but prints a mismatch."
    (define rp-equal-cw (term1 term2)
      :enabled t
@@ -1129,7 +1169,7 @@
 
   (acl2::defines
    rp-equal-cnt
-   :parents (rp-utilities)
+   :parents (rp-equal)
    :short "Same as @(see rp::rp-equal) but when counts down from cnt and starts ~
    using 'equal' when it hits 0."
    ;; check if two terms are equivalent by discarding rp terms
@@ -1217,7 +1257,7 @@
     (in-theory (disable (:type-prescription no-free-variablep))))
 
   (define rule-syntaxp (rule &key warning)
-    :parents (rp-utilities)
+    :parents (rp-other-utilities)
     :short "Syntax check for a 'rule' defined with rp::custom-rewrite-rule. If
     warning key is set to non-nil, a warning is issued for failures. "
     (and
@@ -1237,14 +1277,26 @@
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'rp))
     failed! LHS cannot contain an instance of rp. ~%")))
+        (or (not (include-fnc (rp-lhs rule) 'equals))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-lhs rule) 'equals))
+    failed! LHS cannot contain an instance of equals. ~%")))
         (or (not (include-fnc-subterms (rp-hyp rule) 'rp))
             (and warning
                  (cw "ATTENTION! (not (include-fnc-subterms (rp-hyp rule) 'rp))
     failed! HYP cannot contain an instance of rp. ~%")))
+        (or (not (include-fnc-subterms (rp-hyp rule) 'equals))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc-subterms (rp-hyp rule) 'equals))
+    failed! HYP cannot contain an instance of equals ~%")))
         (or (not (include-fnc (rp-rhs rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'falist))
     failed! RHS cannot contain an instance of falist ~%")))
+        (or (not (include-fnc (rp-rhs rule) 'equals))
+            (and warning
+                 (cw "ATTENTION! (not (include-fnc (rp-rhs rule) 'equals))
+    failed! RHS cannot contain an instance of equals ~%")))
         (or (not (include-fnc-subterms (rp-hyp rule) 'falist))
             (and warning
                  (cw "ATTENTION! (not (include-fnc (rp-hyp rule) 'falist))
@@ -1333,7 +1385,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (acl2::defines
  ex-from-rp-all
- :parents (rp-utilities)
+ :parents (ex-from-rp)
  :short "Removes all instances of 'rp' from a term"
  (define ex-from-rp-all (term)
    :returns (res )
@@ -1357,8 +1409,9 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (acl2::defines
     ex-from-rp-all2
-    :parents (rp-utilities)
-    :short "Removes all instances of 'rp' from a term, including the stuff under falist"
+    :parents (ex-from-rp)
+    :short "Removes all instances of 'rp' from a term, and remove falist instances along
+    the way"
     :prepwork ((local
                 (in-theory (enable is-rp
                                    is-rp-loose))))
@@ -1372,6 +1425,8 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
              (ex-from-rp-all2 (caddr term)))
             ((is-rp-loose term)
              (ex-from-rp-all2 (caddr term)))
+            ((is-equals term)
+             (ex-from-rp-all2 (cadr term)))
             (t
              (cons-with-hint (car term)
                              (ex-from-rp-all2-lst (cdr term))
@@ -1571,7 +1626,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
         (rp-beta-reduce (caddr (car term)) (cadar term) (cdr term))
       term)))
 
-(encapsulate
+#|(encapsulate
   nil
 
   (local
@@ -1636,7 +1691,7 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
      (implies (true-listp l)
               (true-listp (merge-comperator-sort l comperator)))))
 
-  (verify-guards merge-comperator-sort))
+  (verify-guards merge-comperator-sort))|#
 
 #|(define remove-disabled-meta-rules ((meta-rules weak-rp-meta-rule-recs-p)
                                     (disabled-meta-rules ))
@@ -1695,7 +1750,10 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
             term)
            ((and (equal (car term) 'list))
             (trans-list (rp-trans-lst (cdr term))))
-           ((and (is-falist term))
+           ((and (equal (car term) 'falist) ;; not using is-falist so that I
+                 ;; can prove (equal (rp-trans (rp-trans x)) (rp-trans x)). 
+                 (consp (cdr term))
+                 (consp (cddr term)))
             (rp-trans (caddr term)))
            (t (cons-with-hint (car term)
                               (rp-trans-lst (cdr term))
@@ -1755,6 +1813,11 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   term)
 
 
+(defconst *rw-recent-terms-size-width*
+  6)
+(defconst *rw-recent-terms-size*
+   ;; the last value will be used for the pointer.
+  (1+ (expt 2 *rw-recent-terms-size-width*)))
 
 (defstobj rp-state
 
@@ -1779,17 +1842,49 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
   (rw-step-limit :type (unsigned-byte 58) :initially 100000)
   (rw-backchain-limit :type (unsigned-byte 58) :initially 1000)
   (rw-backchain-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be set outside and read internally when starting to rewrite a hyp.
-  (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used
-  ;; only internally.
+  (rw-limit-throws-error :type (satisfies booleanp) :initially t) ;; to be used only internally.
   (backchaining-rule :type t :initially nil)
-  (backchaining-just-started :type t :initially nil)
+  
   (rw-context-disabled :type (satisfies booleanp) :initially nil) 
 
   (not-simplified-action :type (satisfies symbolp) :initially :error)
+  (suppress-not-simplified-error :type (satisfies booleanp) :initially nil) ;; only used internally
 
   (casesplitter-cases :type (satisfies rp-term-listp) :initially nil)
 
+  (orig-conjecture :type (satisfies rp-termp) :initially ''nil)
+
+
+  (rw-recent-terms :type (array t (*rw-recent-terms-size*)))
+  ;; the last value will be the pointer.
+
   :inline t)
+
+(encapsulate
+  nil
+  (local
+   (include-book "arithmetic-3/top" :dir :system))
+  (defund push-to-rw-recent-terms (term rp-state)
+    (declare (xargs :stobjs (rp-state)))
+    (b* ((length (mbe :exec *rw-recent-terms-size*
+                      :logic (rw-recent-terms-length rp-state)))
+         (ptr (nfix (rw-recent-termsI (1- length) rp-state)))
+         (rp-state (update-rw-recent-termsI (1- length)
+                                            (1+ ptr)
+                                            rp-state))
+         (rp-state (update-rw-recent-termsI (mod ptr (1- length))
+                                            term
+                                            rp-state)))
+      rp-state))
+
+  (defund get-from-rw-recent-terms (cnt rp-state)
+    (declare (xargs :stobjs (rp-state)
+                    :guard (integerp cnt)))
+    (b* ((ptr (nfix (rw-recent-termsI (1- *rw-recent-terms-size*) rp-state)))
+         (ptr (- ptr cnt))
+         (term (rw-recent-termsI (mod ptr (1- *rw-recent-terms-size*))
+                                 rp-state)))
+      term)))
 
 
 (in-theory (disable rules-alist-inside-out-put
@@ -1859,7 +1954,15 @@ In the hyps: ~p0, in the rhs :~p1. ~%")))|#
 
 (define valid-rp-state-syntaxp (rp-state)
   (and (rp-statep rp-state)
-       (valid-rp-state-syntaxp-aux rp-state)))
+       (valid-rp-state-syntaxp-aux rp-state))
+  ///
+  (defthm VALID-RP-STATE-SYNTAXP-implies
+    (implies (VALID-RP-STATE-SYNTAXP rp-state)
+             (AND (RP-STATEP RP-STATE)
+                  (VALID-RP-STATE-SYNTAXP-AUX RP-STATE)))
+    :rule-classes (:forward-chaining)
+    :hints (("Goal"
+             :in-theory (e/d (VALID-RP-STATE-SYNTAXP) ())))))
 
 (defun-sk rp-state-preservedp-sk (old-rp-state new-rp-state)
   (declare (xargs :verify-guards nil))

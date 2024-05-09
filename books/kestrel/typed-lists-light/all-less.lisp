@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; Somewhat similar to bounded-integer-listp, which is built-in.
+
 (include-book "kestrel/sequences/defforall" :dir :system)
 
 ;; Checks whether each element of X is less than N.
@@ -32,6 +34,11 @@
               (all-< y n)))
   :hints (("Goal" :induct (REVAPPEND X Y)
            :in-theory (enable revappend all-<))))
+
+(defthm all-<-of-reverse
+  (equal (all-< (reverse x) bound)
+         (all-< x bound))
+  :hints (("Goal" :cases ((stringp x)))))
 
 (defthm <-of-nth-of-0-when-all-<-cheap
   (implies (and (all-< items x)

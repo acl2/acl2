@@ -41,6 +41,7 @@
 ;; (include-book "centaur/vl/transforms/always/util" :dir :system)
 (local (include-book "centaur/vl/util/default-hints" :dir :system))
 (local (include-book "std/basic/arith-equivs" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 (local (in-theory (disable (tau-system)
                            nfix natp)))
@@ -248,7 +249,7 @@ because... (BOZO)</p>
                                               svexlist-set-nonblocking)))))
     (b* ((x (svex-fix x)))
       (svex-case x
-        :var (change-svex-var x :name (change-svar x.name :nonblocking t))
+        :var (change-svex-var x :name (change-svar x.name :bits (logior #x100 (svar->bits x.name))))
         :quote x
         :call (change-svex-call x :args (svexlist-set-nonblocking x.args)))))
 
@@ -279,7 +280,8 @@ because... (BOZO)</p>
                                               svexlist-unset-nonblocking)))))
     (b* ((x (svex-fix x)))
       (svex-case x
-        :var (change-svex-var x :name (change-svar x.name :nonblocking nil))
+        :var (change-svex-var x :name (change-svar x.name
+                                                   :bits (logandc1 #x100 (svar->bits x.name))))
         :quote x
         :call (change-svex-call x :args (svexlist-unset-nonblocking x.args)))))
 
@@ -698,7 +700,8 @@ because... (BOZO)</p>
     "$fwrite" "$fwriteb" "$fwriteo" "$fwriteh"
     "$monitoroff" "$monitoron"
     "$dumpoff" "$dumpon" "$dumpvars"
-    "$fsdbDumpoff" "$fsdbDumpon" "$fsdbDumpvars" "$fsdbDumpvarsByFile"))
+    "$fsdbDumpoff" "$fsdbDumpon" "$fsdbDumpvars" "$fsdbDumpvarsByFile"
+    "$error"))
 
 (fty::defprod svstmt-config
   ((nonblockingp booleanp)
@@ -1387,7 +1390,69 @@ because... (BOZO)</p>
 
 
 
+
+;; (define vl-function-pair-inputs-with-const-actuals ((inputs vl-portdecllist-p)
+;;                                                     (consts sv::maybe-4veclist-p))
+;;   :guard (equal (len inputs) (len consts))
+;;   :returns (sigma sv::svex-alist-p)
+;;   :guard-hints (("goal" :in-theory (enable sv::name-p)))
+;;   (if (atom inputs)
+;;       nil
+;;     (if (car consts)
+;;         (cons (cons #!sv
+;;                     (make-svar
+;;                      :name (make-address
+;;                             :path (make-path-wire
+;;                                    :name #!vl (vl-portdecl->name (car inputs)))))
+;;                     (sv::svex-quote (car consts)))
+;;               (vl-function-pair-inputs-with-const-actuals (cdr inputs) (cdr consts)))
+;;       (vl-function-pair-inputs-with-const-actuals (cdr inputs) (cdr consts))))
+;;   ///
+;;   (local (in-theory (enable sv::maybe-4veclist-fix
+;;                             acl2::default-cdr))))
+
+
+
+
+;; Note: Original implementation of function specialization used this code to
+;; add assignments for each constant input port.  Now instead, before
+;; elaboration of the VL function body, we wrap it in a block that adds them as
+;; constant parameters, so that function calls inside the body can also have
+;; these constants resolved.
+
+;; (define vl-function-const-args->svstmts ((ports vl-portdecllist-p)
+;;                                          (consts sv::maybe-4veclist-p)
+;;                                          (ss vl-scopestack-p)
+;;                                          (scopes vl-elabscopes-p))
+;;   :returns (mv (ok)
+;;                (vttree (and (vttree-p vttree)
+;;                             (sv::svarlist-addr-p (sv::constraintlist-vars (vttree->constraints vttree)))))
+;;                (res (and (sv::svstmtlist-p res)
+;;                          (sv::svarlist-addr-p
+;;                           (sv::svstmtlist-vars res)))))
+;;   (b* (((when (atom ports)) (mv t nil nil))
+;;        ((when (not (car consts)))
+;;         (vl-function-const-args->svstmts (cdr ports) (cdr consts) ss scopes))
+;;        ((vl-portdecl port1) (car ports))
+;;        ((mv ok vttree rest)
+;;         (vl-function-const-args->svstmts (cdr ports) (cdr consts) ss scopes))
+;;        ((unless ok)
+;;         (mv nil vttree nil))
+;;        (lhs (vl-idexpr port1.name))
+;;        ((vmv ok vttree writes ?shift)
+;;         (vl-procedural-assign->svstmts lhs (sv::svex-quote (car consts)) t ;; blockingp
+;;                                        ss scopes)))
+;;     (mv ok vttree (cons (sv::make-svstmt-assign :writes writes :blockingp t)
+;;                         rest)))
+;;   ///
+;;   (local (in-theory (enable sv::maybe-4veclist-fix
+;;                             default-cdr))))
+       
+       
+                 
+
 (define vl-fundecl-to-svex  ((x vl-fundecl-p)
+                             ;; (consts sv::maybe-4veclist-p)
                              (ss vl-scopestack-p)
                              (scopes vl-elabscopes-p
                                      "Scope info for inside the function decl")
@@ -1395,7 +1460,8 @@ because... (BOZO)</p>
                              ;; (fntable sv::svex-alist-p)
                              ;; (paramtable sv::svex-alist-p)
                              )
-  :returns (mv (warnings vl-warninglist-p)
+  :returns (mv ok
+               (warnings vl-warninglist-p)
                (svex sv::svex-p)
                (constraints sv::constraintlist-p))
   (b* (((vl-fundecl x) (vl-fundecl-fix x))
@@ -1406,7 +1472,7 @@ because... (BOZO)</p>
                                                      x.vardecls)
                                  ss scopes))
        (var-constraints (vttree-constraints-to-svstmts vttree))
-       ((unless ok) (mv warnings (svex-x) nil))
+       ((unless ok) (mv nil warnings (svex-x) nil))
        (x.body (vl-stmt-strip-nullstmts x.body))
        ((vl-simpconfig config))
 
@@ -1418,10 +1484,19 @@ because... (BOZO)</p>
                                                                         :uniquecase-constraints
                                                                         config.uniquecase-constraints)
                                                     (vl-idexpr x.name)))
-       ((unless ok) (mv warnings (svex-x) nil))
+       ((unless ok) (mv nil warnings (svex-x) nil))
+
+       ;; ((vwmv ok vttree const-svstmts)
+       ;;  (vl-function-const-args->svstmts x.portdecls consts ss scopes))
+       ;; ((unless ok)
+       ;;  (mv nil warnings (svex-x) nil))
+       
        (svstmts (append-without-guard var-constraints
                                       (list (sv::make-svstmt-scope :locals localvars
-                                                                   :body (append-without-guard varstmts svstmts)))))
+                                                                   :body (append-without-guard
+                                                                          ;; const-svstmts
+                                                                          varstmts
+                                                                          svstmts)))))
        ((wmv ok warnings svstate constraints blk-masks nonblk-masks)
         (time$ (sv::svstmtlist-compile-top svstmts
                                            :sclimit config.sc-limit
@@ -1431,16 +1506,17 @@ because... (BOZO)</p>
                :args (list x.name)))
        (- (fast-alist-free blk-masks)
           (fast-alist-free nonblk-masks))
-       ((unless ok) (mv warnings (svex-x) nil))
+       ((unless ok) (mv nil warnings (svex-x) nil))
        ((sv::svstate svstate))
        (expr (sv::svstack-lookup (sv::make-svar :name x.name) svstate.blkst))
        (- (sv::svstate-free svstate))
        ((unless expr)
-        (mv (warn :type :vl-fundecl-to-svex-fail
+        (mv nil
+            (warn :type :vl-fundecl-to-svex-fail
                   :msg "Function has no return value")
             (svex-x)
             nil)))
-    (mv (ok) expr constraints))
+    (mv t (ok) expr constraints))
   ///
   (defret vars-of-vl-fundecl-to-svex
     (and (sv::svarlist-addr-p (sv::svex-vars svex))
@@ -1898,6 +1974,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 (local (defthm integer-length-when-posp
          (implies (posp x)
                   (posp (integer-length x)))
+         :hints(("Goal" :in-theory (enable integer-length)))
          :rule-classes :type-prescription))
 
 #!sv
@@ -2233,7 +2310,8 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((x (svex-alist-fix x)))
     (if (atom x)
         nil
-      (cons (cons (change-svar (caar x) :nonblocking nil)
+      (cons (cons (change-svar (caar x)
+                               :bits (logandc1 #x100 (svar->bits (caar x))))
                   (svex-unset-nonblocking (cdar x)))
             (svex-alist-unset-nonblocking (cdr x))))))
 
@@ -2276,7 +2354,7 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
   (b* ((x (4vmask-alist-fix x)))
     (if (atom x)
         nil
-      (cons (cons (change-svar (caar x) :nonblocking nil)
+      (cons (cons (change-svar (caar x) :bits (logandc1 #x100 (svar->bits (caar x))))
                   (cdar x))
             (4vmask-alist-unset-nonblocking (cdr x))))))
   
@@ -2334,6 +2412,34 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
           (append (svex-alist-keys a)
                   (svex-alist-keys b)))
    :hints(("Goal" :in-theory (enable svex-alist-keys)))))
+
+#!sv
+(define svarlist-masked-x-subst ((vars svarlist-p) (masks 4vmask-alist-p))
+  :prepwork ((local (defthm sparseint-p-when-4vmask-p
+                      (implies (4vmask-p x)
+                               (sparseint-p x))
+                      :hints(("Goal" :in-theory (enable 4vmask-p))))))
+  :returns (subst svex-alist-p)
+  (b* (((when (atom vars)) nil)
+       (var (svar-fix (car vars)))
+       (mask (cdr (hons-get var (4vmask-alist-fix masks))))
+       ((when (or (not mask)
+                  (sparseint-equal mask 0)))
+        ;; leave it out of the substitution
+        (svarlist-masked-x-subst (cdr vars) masks)))
+    (cons (cons var
+                (make-svex-call :fn 'bit?
+                                :args (list (sv::svex-quote (sv::2vec (sparseint-val mask)))
+                                            (svex-x)
+                                            (svex-var var))))
+          (svarlist-masked-x-subst (cdr vars) masks)))
+  ///
+  (defret vars-of-<fn>
+    (implies (not (member-equal v (svarlist-fix vars)))
+             (not (member-equal v (svex-alist-vars subst))))
+    :hints(("Goal" :in-theory (enable svex-alist-vars)))))
+    
+
 
 (define vl-always->svex ((x vl-always-p)
                          (ss vl-scopestack-p)
@@ -2416,13 +2522,6 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
             nil nil))
 
        (written-vars (append blk-written-vars nb-written-vars))
-       ;; Set initial values of the registers in the expressions.  We'll
-       ;; set these to Xes for always_comb and to their delay-1 values for
-       ;; other types.
-       (subst
-        (if (eq x.type :vl-always-comb)
-            (sv::svarlist-x-subst written-vars)
-          (sv::svarlist-delay-subst written-vars)))
 
        (nb-read-vars (sv::svex-alist-vars st.nonblkst))
 
@@ -2465,6 +2564,15 @@ assign foo = ((~clk' & clk) | (resetb' & ~resetb)) ?
 
        (write-masks (fast-alist-clean
                      (combine-mask-alists blkst-write-masks nbst-write-masks)))
+
+       
+       ;; Set initial values of the registers in the expressions.  We'll
+       ;; set these to Xes for always_comb and to their delay-1 values for
+       ;; other types.
+       (subst
+        (if (eq x.type :vl-always-comb)
+            (sv::svarlist-masked-x-subst written-vars write-masks)
+          (sv::svarlist-delay-subst written-vars)))
 
        ((wmv warnings :ctx x)
         (if (eq x.type :vl-always-comb)

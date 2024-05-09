@@ -43,6 +43,17 @@
                       (memberp a x))))
   :hints (("Goal" :in-theory (enable memberp))))
 
+;BOZO really the other should be called -cheap and this one should have no suffix
+(defthm memberp-of-cons-irrel-strong
+  (implies (not (equal a b))
+           (equal (memberp a (cons b x))
+                  (memberp a x)))
+  :hints (("Goal" :in-theory (enable memberp-of-cons))))
+
+(defthm memberp-of-cons-same
+  (memberp x (cons x y))
+  :hints (("Goal" :in-theory (enable memberp))))
+
 (defthm memberp-of-append
   (equal (memberp a (append x y))
          (or (memberp a x)
@@ -104,8 +115,7 @@
              t
            (memberp nil x))))
 
-;the -2 avoids a name clash
-(defthm memberp-of-update-nth-same-2
+(defthm memberp-of-update-nth-same
   (memberp val (update-nth n val lst))
   :hints (("Goal" :in-theory (enable update-nth))))
 
@@ -299,7 +309,8 @@
 
 (defthm not-memberp-of-take
   (implies (and (not (memberp a l))
-                (<= n (len l)))
+                (or a
+                    (<= n (len l))))
            (not (memberp a (take n l))))
   :hints (("Goal" :in-theory (enable take))))
 
@@ -335,3 +346,29 @@
                  (consp lst))) ;clean this up?
            (consp lst)))
   :hints (("Goal" :in-theory (enable memberp ))))
+
+;rename
+(defthm memberp-of-cdr-when-not-memberp
+  (implies (not (memberp x lst))
+           (not (memberp x (cdr lst)))))
+
+(defthm memberp-nth-1-cdr
+  (equal (memberp (nth 1 x) (cdr x))
+         (< 1 (len x))))
+
+;todo: think about whther i need both
+(defthm not-equal-nth-when-not-memberp-cheap
+  (implies (and (not (memberp a x))
+                (natp n)
+                (consp x))
+           (equal (equal (nth n x) a)
+                  (if (< n (len x)) nil (equal a nil))))
+  :hints (("Goal" :in-theory (e/d (memberp nth) (nth-of-cdr))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil))))
+
+(defthmd not-equal-nth-when-not-memberp-no-limit
+  (implies (and (not (memberp a x))
+                (natp n)
+                (consp x))
+           (equal (equal a (nth n x))
+                  (if (< n (len x)) nil (equal a nil)))))

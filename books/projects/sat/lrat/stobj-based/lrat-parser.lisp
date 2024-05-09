@@ -963,10 +963,14 @@
     ans))
 
 (defun parse-lrat-file (filename state)
-  (value (lrat-read-file filename state)))
+  (let ((x (lrat-read-file filename state)))
+    (pprogn (increment-file-clock state)
+            (value x))))
 
 (defun parse-cnf-file (filename state)
-  (value (cnf-read-file filename state)))
+    (let ((x (cnf-read-file filename state)))
+    (pprogn (increment-file-clock state)
+            (value x))))
 
 
 ; Keep rest of this file from the original...

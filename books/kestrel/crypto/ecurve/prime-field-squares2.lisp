@@ -29,25 +29,25 @@
    (xdoc::p
     "Implementation notes:")
    (xdoc::p
-    "Use @('residue-meaning-backwards') to turn @('has-square-root?') into @('residue'),"
-    "open it up to expose @('find-root'), use the theorem about @('find-root') to obtain"
-    "that the square of @('find-root') is @('a'), and finally use that as witness to"
+    "Use @('residue-meaning-backwards') to turn @('has-square-root?') into @('dm::residue'),"
+    "open it up to expose @('dm::find-root'), use the theorem about @('dm::find-root') to obtain"
+    "that the square of @('dm::find-root') is @('a'), and finally use that as witness to"
     "conclude @('pfield-squarep').")
    (xdoc::p
     "There is a case split on whether @('a') is @('0') or not,"
-    "due to the definition of @('residue'). The enablement of @('mul') is so that"
+    "due to the definition of @('dm::residue'). The enablement of @('mul') is so that"
     "@('pfield-squarep') is phrased as @('(mod (* ... ...) p)'), and enablement of"
     "@('fep') because some of the theorems used have @('natp') and @('< p') as hyps."))
   :parents (elliptic-curves)
-  (implies (and (rtl::primep p)
-		(not (equal p 2))
-		(fep a p)
-		(primes::has-square-root? a p))
-	   (pfield-squarep a p))
+  (implies (and (dm::primep p)
+                (not (equal p 2))
+                (fep a p)
+                (primes::has-square-root? a p))
+           (pfield-squarep a p))
   :cases ((equal a 0))
-  :enable (mul fep rtl::residue primes::residue-meaning-backwards)
-  :use ((:instance pfield-squarep-suff (r (rtl::find-root (- p 1) a p)) (x a))
-	(:instance rtl::res-root1-lemma (n (- p 1)) (m a) (p p))))
+  :enable (mul fep dm::residue primes::residue-meaning-backwards)
+  :use ((:instance pfield-squarep-suff (r (dm::find-root (- p 1) a p)) (x a))
+        (:instance dm::res-root1-lemma (n (- p 1)) (m a) (p p))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,7 +59,7 @@
 ;; Let's make sure the other direction is proved first
 
 (defruled pfield-squarep-->has-square-root?
-  (implies (and (rtl::primep p)
+  (implies (and (dm::primep p)
                 (not (equal p 2))
                 (fep a p)
                 (pfield-squarep a p))
@@ -71,7 +71,7 @@
  (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (defruled pfield-squarep<->has-square-root?
- (implies (and (rtl::primep p)
+ (implies (and (dm::primep p)
                 (not (equal p 2))
                 (fep a p))
          (equal (pfield-squarep a p)
@@ -80,7 +80,7 @@
            has-square-root?-satisfies-pfield-squarep))
 
 (defruled has-square-root?<->pfield-squarep
- (implies (and (rtl::primep p)
+ (implies (and (dm::primep p)
                 (not (equal p 2))
                 (fep a p))
          (equal (primes::has-square-root? a p)

@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Byte Digits
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,12 +17,20 @@
 
 (defdigits bytes-as-digits-in-base-256
   :base 256
+  :digit-pred bytep
+  :digit-fix byte-fix
   :digits-pred byte-listp
   :digits-fix byte-list-fix
   :bendian-to-nat bebytes=>nat
   :lendian-to-nat lebytes=>nat
   :nat-to-bendian nat=>bebytes
   :nat-to-lendian nat=>lebytes
+  :digit-pred-hints (("Goal" :in-theory (enable bytep
+                                                dab-digitp)))
+  :digit-fix-hints (("Goal" :in-theory (enable byte-fix
+                                               bytep
+                                               dab-digit-fix
+                                               dab-digitp)))
   :digits-pred-hints (("Goal" :in-theory (enable byte-listp
                                                  bytep
                                                  dab-digit-listp

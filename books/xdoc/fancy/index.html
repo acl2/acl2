@@ -73,17 +73,15 @@ if (!window.history || !window.history.replaceState) {
 </script>
 
 <!-- General Libraries -->
-<script src="lib/jquery-2.1.0.min.js"></script>
-<script src="lib/jquery.base64.js"></script>
+<script src="lib/jquery-3.6.4.min.js"></script>
 <script src="lib/jquery.powertip.min.js"></script>
 <link rel="stylesheet" type="text/css" href="lib/jquery.powertip.css"/>
 <script src="lib/typeahead-bundle/bloodhound.js"></script>
 <script src="lib/typeahead-bundle/typeahead.jquery.min.js"></script>
-<script src="lib/lazyload.js"></script>
 <link rel="stylesheet" type="text/css" href="lib/katex/katex.min.css"/>
+<script defer src="lib/katex/katex.min.js"></script>
 
 <!-- Actual XDOC stuff -->
-<script src="render.js"></script>
 <script src="config.js"></script>
 <script src="xdoc_index.js"></script>
 <script src="xslt.js"></script>
@@ -96,9 +94,11 @@ if (!window.history || !window.history.replaceState) {
          print.css  - search for font names and replace everywhere
          xdoc.js    - printerFriendly function
   -->
-<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Noto+Serif">
-<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Lato">
-<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Source+Code+Pro">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Lato:ital@0;1&family=Noto+Serif&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+  rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="desktop.css" media="all and (min-width: 50em)"/>
 <link rel="stylesheet" type="text/css" href="mobile.css" media="all and (max-width: 50em)"/>
 

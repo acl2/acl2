@@ -157,21 +157,31 @@
           (phase-compute-override-test-alist phase (cdr overrides)))))
     
 (define svtv-compute-input-phases ((phase natp) (nphases natp)
-                                   (ins true-list-listp)
-                                   (overrides true-list-listp))
+                                   (ins true-list-listp))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
   :returns (inputs svex-alistlist-p)
   (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
                    :exec (eql phase nphases)))
         nil)
-       (inputs (phase-compute-input-alist phase ins))
+       (inputs (phase-compute-input-alist phase ins)))
+    (cons inputs
+          (svtv-compute-input-phases (1+ (lnfix phase)) nphases ins))))
+
+(define svtv-compute-override-val-phases ((phase natp) (nphases natp)
+                                          (overrides true-list-listp))
+  :guard (<= phase nphases)
+  :measure (nfix (- (nfix nphases) (nfix phase)))
+  :returns (override-vals svex-alistlist-p)
+  (b* (((when (mbe :logic (zp (- (nfix nphases) (nfix phase)))
+                   :exec (eql phase nphases)))
+        nil)
        (override-vals (phase-compute-override-val-alist phase overrides)))
-    (cons (append inputs override-vals)
-          (svtv-compute-input-phases (1+ (lnfix phase)) nphases ins overrides))))
+    (cons override-vals
+          (svtv-compute-override-val-phases (1+ (lnfix phase)) nphases overrides))))
 
 (define svtv-compute-override-test-phases ((phase natp) (nphases natp)
-                                   (overrides true-list-listp))
+                                           (overrides true-list-listp))
   :guard (<= phase nphases)
   :measure (nfix (- (nfix nphases) (nfix phase)))
   :returns (override-tests svex-alistlist-p)
@@ -196,10 +206,12 @@
                                 (overrides true-list-listp))
   :returns (mv (nphases natp :rule-classes :type-prescription)
                (inputs svex-alistlist-p)
+               (override-vals svex-alistlist-p)
                (override-tests svex-alistlist-p))
   (b* ((nphases (max (svtv-lines-max-length ins) (svtv-lines-max-length overrides))))
     (mv nphases
-        (svtv-compute-input-phases 0 nphases ins overrideS)
+        (svtv-compute-input-phases 0 nphases ins)
+        (svtv-compute-override-val-phases 0 nphases overrides)
         (svtv-compute-override-test-phases 0 nphases overrides))))
        
 
@@ -282,17 +294,17 @@
 
 
 (define defsvtv-compute-pipeline-setup ((outs+ true-list-listp)
-                                            (ins true-list-listp)
-                                            (overrides true-list-listp)
-                                            (initial-state-vars)
-                                            (statevars svarlist-p)
-                                            (namemap svtv-name-lhs-map-p))
+                                        (ins true-list-listp)
+                                        (overrides true-list-listp)
+                                        (initial-state-vars)
+                                        (statevars svarlist-p)
+                                        (namemap svtv-name-lhs-map-p))
   :returns (setup pipeline-setup-p)
   (b* ((probes (defsvtv-compute-probes outs+))
        (nphases (svtv-lines-max-length outs+))
        (ins (svtv-lines-expand ins nphases namemap))
        (overrides (svtv-lines-expand overrides nphases namemap))
-       ((mv ?in-nphases inputs override-tests) (defsvtv-compute-inputs ins overrides))
+       ((mv ?in-nphases inputs override-vals override-tests) (defsvtv-compute-inputs ins overrides))
        (initst
         (make-fast-alist
          (if initial-state-vars
@@ -300,7 +312,8 @@
            (svex-x-subst statevars)))))
     (make-pipeline-setup :probes probes
                          :inputs (make-fast-alists inputs)
-                         :overrides (make-fast-alists override-tests)
+                         :override-vals (make-fast-alists override-vals)
+                         :override-tests (make-fast-alists override-tests)
                          :initst initst))
   ///
   (defret initst-keys-of-<fn>
@@ -310,29 +323,12 @@
 
 (defthm svex-alist-keys-of-svtv-data->cycle-nextstate
   (implies (and (svtv-data$ap svtv-data)
-                ;; (svtv-data$c->base-fsm-validp svtv-data)
+                ;; (svtv-data$c->fsm-validp svtv-data)
                 (svtv-data$c->cycle-fsm-validp svtv-data))
-           (equal (svex-alist-keys (base-fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
-                  (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
+           (equal (svex-alist-keys (fsm->nextstate (svtv-data$c->cycle-fsm svtv-data)))
+                  (svex-alist-keys (fsm->nextstate (svtv-data$c->phase-fsm svtv-data)))))
   :hints(("Goal" :in-theory (enable svtv-data$ap))))
 
-(define defsvtv-compute-pipeline ((outs+ true-list-listp)
-                                  (ins true-list-listp)
-                                  (overrides true-list-listp)
-                                  (simplify booleanp)
-                                  (pipe-simp svex-simpconfig-p)
-                                  (initial-state-vars)
-                                  svtv-data)
-  :guard (and (svtv-data->phase-fsm-validp svtv-data)
-              (svtv-data->cycle-fsm-validp svtv-data))
-  (b* ((namemap (svtv-data->namemap svtv-data))
-       (fsm (svtv-data->cycle-fsm svtv-data))
-       (statevars (svex-alist-keys (base-fsm->nextstate fsm)))
-       (setup (defsvtv-compute-pipeline-setup
-                outs+ ins overrides initial-state-vars statevars namemap))
-       (svtv-data (svtv-data-maybe-compute-pipeline setup svtv-data :simp pipe-simp))
-       (svtv-data (svtv-data-maybe-rewrite-pipeline simplify svtv-data)))
-    svtv-data))
 
 
 
@@ -340,13 +336,19 @@
 
 (defprod defsvtv-args
   ((name symbolp)
+   (stages true-list-listp)
    (inputs true-list-listp)
    (overrides true-list-listp)
    (outputs true-list-listp)
    (internals true-list-listp)
    (design design-p)
    (design-const symbolp)
-   labels
+   (labels symbol-listp)
+   (phase-config phase-fsm-config-p
+                 :default (make-phase-fsm-config
+                           :override-config (make-svtv-assigns-override-config-omit)))
+   (clocks svarlist-p :default nil)
+   (phase-scc-limit maybe-natp :default nil)
    (monotonify booleanp :default t)
    (simplify booleanp :default t)
    (pre-simplify booleanp :default t)
@@ -359,10 +361,11 @@
    ;; keep-final-state
    ;; keep-all-states
    (define-macros :default t)
-   (define-mod :default t)
+   (define-mod)
    parents
    short
-   long)
+   long
+   form)
   :layout :list)
 
 (define keyword-value-list-add-quotes ((quoted-keys symbol-listp)
@@ -423,7 +426,48 @@
                :orig-internals x.internals
                :expanded-ins expanded-ins
                :expanded-overrides expanded-overrides
-               :nphases nphases)))
+               :nphases nphases
+               :labels x.labels
+               :form x.form)))
+
+(local (defthm string-listp-of-remove-duplicates
+         (implies (string-listp x)
+                  (string-listp (remove-duplicates-equal x)))))
+
+(local (defthm true-list-listp-of-svtv*-outputs-to-svtv-lines
+         (true-list-listp (svtv*-outputs-to-svtv-lines names phases))
+         :hints(("Goal" :in-theory (enable svtv*-outputs-to-svtv-lines)))))
+
+(local (defthm true-list-listp-of-svtv*-inputs-to-svtv-lines
+         (true-list-listp (svtv*-inputs-to-svtv-lines names phases overridep))
+         :hints(("Goal" :in-theory (enable svtv*-inputs-to-svtv-lines)))))
+
+(define defsvtv-args-expand-stages ((x defsvtv-args-p))
+  :returns (args defsvtv-args-p)
+  ;; If it has phases, expand them to inputs/outputs/overrides/labels. If not, return unchanged.
+  (b* ((stages (defsvtv-args->stages x))
+       ((unless stages) (defsvtv-args-fix x))
+       (parsed-stages (svtv*-parse-phases stages))
+       (innames (acl2::hons-remove-dups (svtv*-phaselist-collect-inputnames parsed-stages)))
+       (overridenames (acl2::hons-remove-dups (svtv*-phaselist-collect-overridenames parsed-stages)))
+       (outputnames (acl2::hons-remove-dups (svtv*-phaselist-collect-outputnames parsed-stages)))
+       (inputs (svtv*-inputs-to-svtv-lines innames parsed-stages nil))
+       (overrides (svtv*-inputs-to-svtv-lines overridenames parsed-stages t))
+       (outputs (svtv*-outputs-to-svtv-lines outputnames parsed-stages))
+       (labels (svtv*-phaselist-collect-labels parsed-stages)))
+    (change-defsvtv-args
+     x
+     :inputs inputs
+     :overrides overrides
+     :outputs outputs
+     :labels labels))
+  ///
+  (defret design-of-<fn>
+    (equal (defsvtv-args->design args) (defsvtv-args->design x)))
+  (defret cycle-phases-of-<fn>
+    (equal (defsvtv-args->cycle-phases args) (defsvtv-args->cycle-phases x)))
+  (defret cycle-phases-p-of-<fn>
+    (equal (defsvtv-args->cycle-phases-p args) (defsvtv-args->cycle-phases-p x))))
 
 ;; Does everything EXCEPT compute the pipeline.
 (define defsvtv-stobj-pipeline-setup ((x defsvtv-args-p)
@@ -436,16 +480,19 @@
   :returns (mv err
                (pipeline-setup (implies (not err) (pipeline-setup-p pipeline-setup)))
                (new-svtv-data))
-  (b* (((defsvtv-args x))
-       (phases (if x.cycle-phases-p
-                   x.cycle-phases
-                 (list (make-svtv-cyclephase :constants nil
-                                             :inputs-free t
-                                             :outputs-captured t))))
+  (b* (((defsvtv-args x)) 
+       (cycle-phases (if x.cycle-phases-p
+                         x.cycle-phases
+                       (list (make-svtv-cyclephase :constants nil
+                                                   :inputs-free t
+                                                   :outputs-captured t))))
        (outs+ (append x.internals x.outputs))
 
        ((mv err svtv-data)
-        (svtv-data-defcycle-core x.design phases svtv-data
+        (svtv-data-defcycle-core x.design cycle-phases svtv-data
+                                 :phase-config x.phase-config
+                                 :phase-scc-limit x.phase-scc-limit
+                                 :clocks-avoid-overrides x.clocks
                                  :rewrite-assigns x.pre-simplify
                                  :rewrite-phases x.pre-simplify
                                  :rewrite-cycle x.pre-simplify
@@ -462,7 +509,7 @@
         (mv err nil svtv-data))
 
        (namemap (svtv-data->namemap svtv-data))
-       (statevars (svex-alist-keys (base-fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+       (statevars (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data))))
        (pipeline-setup (defsvtv-compute-pipeline-setup
                          outs+ x.inputs x.overrides x.initial-state-vars statevars namemap)))
     (mv nil pipeline-setup svtv-data))
@@ -470,24 +517,29 @@
   (defret initst-keys-of-<fn>
     (implies (not err)
              (equal (svex-alist-keys (pipeline-setup->initst pipeline-setup))
-                    (svex-alist-keys (base-fsm->nextstate
+                    (svex-alist-keys (fsm->nextstate
                                       (svtv-data->phase-fsm new-svtv-data))))))
 
   (defret validp-of-<fn>
     (implies (not err)
              (and (b* (((defsvtv-args x)))
                     (and (equal (svtv-data$c->design new-svtv-data) x.design)
-                         (equal (svtv-data$c->cycle-phases new-svtv-data)
-                                (if x.cycle-phases-p
-                                    x.cycle-phases
-                                  (list (make-svtv-cyclephase :constants nil
-                                                              :inputs-free t
-                                                              :outputs-captured t))))))
+                         ;; (equal (svtv-data$c->cycle-phases new-svtv-data)
+                         ;;        (if x.cycle-phases-p
+                         ;;            x.cycle-phases
+                         ;;          (list (make-svtv-cyclephase :constants nil
+                         ;;                                      :inputs-free t
+                         ;;                                      :outputs-captured t))))
+                         ))
                   (equal (svtv-data$c->flatten-validp new-svtv-data) t)
                   (equal (svtv-data$c->flatnorm-validp new-svtv-data) t)
                   (equal (svtv-data$c->phase-fsm-validp new-svtv-data) t)
                   (implies (not skip-cycle)
                            (equal (svtv-data$c->cycle-fsm-validp new-svtv-data) t))))))
+
+(local (defthm intersection-equal-under-iff
+         (iff (intersection-equal x y)
+              (intersectp-equal x y))))
 
 
 (define defsvtv-stobj-main ((x defsvtv-args-p)
@@ -500,13 +552,27 @@
   :returns (mv err
                (svtv (implies (not err) (svtv-p svtv)))
                (new-svtv-data))
-  (b* (((mv err pipeline-setup svtv-data)
+  (b* ((x (defsvtv-args-expand-stages x))
+       ((mv err pipeline-setup svtv-data)
         (defsvtv-stobj-pipeline-setup x svtv-data))
        ((when err)
         (mv err nil svtv-data))
        ((defsvtv-args x))
-       (svtv-data (svtv-data-maybe-compute-pipeline pipeline-setup svtv-data :simp x.pipe-simp))
-       (svtv-data (svtv-data-maybe-rewrite-pipeline x.simplify svtv-data))
+       (st-vars  (svex-alist-keys (fsm->nextstate (svtv-data->phase-fsm svtv-data))))
+       (bad-clocks (intersection-equal x.clocks st-vars))
+       ((when bad-clocks)
+        (mv (msg "Clocks cannot include previous-state variables -- ~x0~%" bad-clocks)
+            nil svtv-data))
+       (dups (acl2::hons-dups-p st-vars))
+       ((when dups)
+        (mv (msg "state variables have duplicates -- ~x0~%" (car dups))
+            nil svtv-data))
+       ((mv updatedp svtv-data)
+        (svtv-data-maybe-compute-pipeline
+         pipeline-setup svtv-data
+         :simp x.pipe-simp
+         :precomp-inputs x.clocks))
+       (svtv-data (svtv-data-maybe-rewrite-pipeline (and updatedp x.simplify) svtv-data))
        (svtv (svtv-data-to-svtv x svtv-data)))
     (mv nil svtv svtv-data)))
 
@@ -533,7 +599,7 @@
         (raise "Failed to generate svtv: ~@0" err)
         (mv err nil state svtv-data))
        ((defsvtv-args x))
-       (events (defsvtv-events svtv x.design-const x.labels x.define-macros x.define-mod x.parents x.short x.long)))
+       (events (defsvtv-events svtv x.design-const x.define-macros x.define-mod x.parents x.short x.long)))
     (mv nil events state svtv-data)))
 
 
@@ -568,47 +634,44 @@
        (stobj-look (assoc-keyword :stobj args))
        (stobj (if stobj-look (cadr stobj-look) 'svtv-data))
        (cycle-phases-p (consp (assoc-keyword :cycle-phases args)))
+       (stages-look (or (assoc-keyword :phases args)
+                        (assoc-keyword :stages args)))
+       (in/out/overrides-look (or (assoc-keyword :inputs args)
+                                  (assoc-keyword :outputs args)
+                                  (assoc-keyword :overrides args)))
+       ((when (and stages-look in/out/overrides-look))
+        (raise "Must provide either :stages or (deprecated) :phases or :inputs/:outputs/:overrides, not both.~%")
+        (mv nil nil))
+       (stages-args (and stages-look
+                         (b* ((stages-arg (cadr stages-look))
+                              (stages-quote (if (and (consp stages-arg)
+                                                     (consp (car stages-arg))
+                                                     (keywordp (caar stages-arg)))
+                                                ;; can't be a term, and looks like a literal phases list
+                                                (kwote stages-arg)
+                                              stages-arg)))
+                           `(:stages ,stages-quote))))
        (norm-args (list* :name (list 'quote name)
                          :design design
                          :design-const (list 'quote design)
                          :cycle-phases-p cycle-phases-p
-                         (remove-keywords '(:mod :design :stobj) args))))
+                         (append stages-args
+                                 (remove-keywords '(:mod :design :stobj :phases :stages) args)))))
     (mv stobj norm-args)))
 
 
 
 ;; Documented in new-svtv-doc.lisp
-(defmacro defsvtv$ (name &rest args)
+(defmacro defsvtv$ (&whole form name &rest args)
   (b* (((mv stobj norm-args)
-        (process-defsvtv$-user-args name args)))
+        (process-defsvtv$-user-args name (list* :form (kwote form) args))))
     `(make-event (defsvtv$-fn (make-defsvtv-args! . ,norm-args)
                    ,stobj state))))
 
+(defmacro defsvtv$-phasewise (&rest args)
+  (cons 'defsvtv$ args))
 
 
-(define process-defsvtv$-phasewise-user-args (name args)
-  :mode :program
-  :returns (mv stobj norm-args)
-  (b* (((unless (keyword-value-listp args))
-        (raise "Arguments must be a keyword/value list.~%")
-        (mv nil nil))
-       (phases-look (assoc-keyword :phases args))
-       ((unless phases-look)
-        (raise "Needs a :phases argument.~%")
-        (mv nil nil))
-       (rest-args (remove-keywords '(:phases) args))
-       (phases (svtv*-parse-phases (cadr phases-look)))
-       (main-args (defsvtv*-phases-to-defsvtv-args phases)))
-    (process-defsvtv$-user-args name (append main-args rest-args))))
-
-
-
-
-(defmacro defsvtv$-phasewise (name &rest args)
-  (b* (((mv stobj norm-args)
-        (process-defsvtv$-phasewise-user-args name args)))
-    `(make-event (defsvtv$-fn (make-defsvtv-args! . ,norm-args)
-                   ,stobj state))))
 
 ;; Doc in new-svtv-doc.lisp
 
@@ -637,11 +700,22 @@
                                        :value (svcall bitnot
                                                       (svcall zerox 5 "in")))))))))))
 (local
- (defsvtv$-phasewise my-svtv
+ (defsvtv$ my-svtv
    :design *my-design*
-   :phases
+   :stages
    ((:label the-phase
      :inputs (("in" in))
+     :outputs (("out" out)))
+    (:label the-next-phase
+     :inputs (("in" in2))
+     :outputs (("out" out2))))))
+
+(local
+ (defsvtv$ my-svtv2
+   :design *my-design*
+   :stages
+   `((:label the-phase
+      ,@'(:inputs (("in" in)))
      :outputs (("out" out)))
     (:label the-next-phase
      :inputs (("in" in2))

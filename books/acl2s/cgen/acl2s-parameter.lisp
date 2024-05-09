@@ -125,21 +125,21 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 </p>
 ")
 
-(def-const *testing-enabled-values* '(T NIL :naive))
+(def-const *testing-enabled-values* '(T NIL :naive :on-failure))
 
 (add-acl2s-parameter 
  testing-enabled :naive
  :short "Testing enable/disable flag"
  :long
 " <p>Testing can be enabled or disabled using this parameter.
-  The default value is  <tt>:naive</tt> (unless you are in
-  the usual ACL2 Sedan session modes, where default is @('t')).
-  Setting this parameter to @('nil') amounts to disabling
-  the testing mechanism. Setting this parameter
-  to <tt>:naive</tt> leads to top-level testing without any
-  theorem prover support.</p>
-  <code>
-   Usage:
+  The default value is <tt>:naive</tt> (unless you are in the usual
+  ACL2 Sedan session modes, where default is @('t')).  Setting this
+  parameter to @('nil') amounts to disabling the testing
+  mechanism. Setting this parameter to <tt>:on-failure</tt> is similar to
+  setting it to @('t'), except for some undocumented behavior related
+  to redefined versions of @('defthm'). Setting this parameter to
+  <tt>:naive</tt> leads to top-level testing without any theorem
+  prover support.</p> <code> Usage:
    (acl2s-defaults :set testing-enabled :naive)
    (acl2s-defaults :get testing-enabled)
    :doc testing-enabled
@@ -506,7 +506,7 @@ These are stored in the constant @('*acl2s-parameters*') and are package-agnosti
 
 ;top-level exported macro to know enable random testing
 (defmacro set-acl2s-random-testing-enabled (v forms)
-  (declare (xargs :guard (member-eq v '(T NIL :naive))))
+  (declare (xargs :guard (member-eq v *testing-enabled-values*)))
   `(make-event
      (let ((mode (cdr (assoc-eq :defun-mode 
                                 (table-alist

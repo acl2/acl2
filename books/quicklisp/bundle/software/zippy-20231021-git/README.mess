@@ -1,0 +1,59 @@
+## About Zippy
+Zippy is a library for the PKWARE Zip archive format. It can read and write zip files.
+
+## Feature list
+- Archive inspection without extraction
+- Zip64 support
+- Split archive support
+- PKWARE decryption
+- Fast deflate decompression thanks to 3bz
+- Operates on streams and vectors
+- Can compress stream->stream
+- Extensible for other encryption and compression mechanisms
+
+## How To
+For this tutorial we will assume the ``org.shirakumo.zippy`` package has a local-nickname of ``zippy``.
+
+Extracting a zip file to disk is straight-forward:
+
+::
+(zippy:extract-zip "file.zip" "~/")
+::
+
+Similarly, compressing a file or directory to a zip:
+
+::
+(zippy:compress-zip "foo" "file.zip")
+::
+
+You can also compress things from in memory:
+
+::
+(zippy:compress-zip #(8 0 8) "file.zip")
+::
+
+In order to simply examine a zip file's contents:
+
+::
+(zippy:with-zip-file (zip "file.zip")
+  (zippy:entries zip))
+::
+
+The source zip does not have to be a path to a file on disk, but may also be an octet vector or a file-stream.
+
+You can look at the raw payload of a ``zip-entry`` by using ``decode-entry``. All of the other metadata is stored directly in the entry and does not require decoding.
+
+For greater control when constructing a zip file, you can manually create ``zip-entry`` instances yourself and pass the final ``zip-file`` instance to ``compress-zip``.
+
+## Split Zip Files
+When reading a split zip file from disk, Zippy will take care of accessing the other zip parts automatically. However, when decoding from an octet vector, Zippy has no way of guessing where to get the rest of the data from and will signal an error of type ``archive-file-required`` with the requested ``disk`` id. You should then invoke the ``use-value`` restart with a suitable ``io`` instance to continue the decoding.
+
+## Unsupported Features
+The following features remain unsupported at the moment:
+
+- Encrypted or compressed central directory
+- PKWARE-style strong encryption
+- Compression methods other than deflate
+- Handling of additional metadata in third-party extra structures
+
+With the exception of the central directory encryption however, the architecture is designed in such a way that additional encryption and compression algorithms can be added in a pluggable and easy way at a later point. See ``make-decompression-state``, ``make-compression-state``, ``make-decryption-state``, ``make-encryption-state``.

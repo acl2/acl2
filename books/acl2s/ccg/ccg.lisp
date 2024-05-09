@@ -6227,7 +6227,7 @@ e2-e1+1.
                    (ld-skip-proofsp state) lst wrld))) ;ccg rewrite - CHECK - harshrc
           (cond
            ((eq rc 'redundant)
-            (chk-acceptable-defuns-redundancy names ctx wrld state))
+            (chk-acceptable-defuns-redundancy names defun-mode ctx wrld state))
            ((eq rc 'verify-guards)
 
 ; We avoid needless complication by simply causing a polite error in this
@@ -7273,6 +7273,7 @@ e2-e1+1.
                  nil
                  nil
                  nil
+                 nil ; save-event-data, added by Matt K.
                  event-form
                  state))
 
@@ -7455,7 +7456,7 @@ e2-e1+1.
   :program (value nil)
   :raw
   (with-ctx-summarized
-   (defun-ctx def-lst state event-form #+:non-standard-analysis std-p)
+   (defun-ctx def-lst #+:non-standard-analysis std-p)
    (let ((wrld (w state))
          (def-lst0
            #+:non-standard-analysis
@@ -7476,8 +7477,11 @@ e2-e1+1.
 ; All other properties are put by the defuns-fn0 call below.
 
        (cond
-        ((eq tuple 'redundant)
-         (stop-redundant-event ctx state))
+        ((eq (car tuple) 'redundant)
+         (stop-redundant-event ctx state
+                               :name (caar def-lst)
+                               :defun-mode (cdr tuple)
+                               :def-lst def-lst0))
         (t
          (enforce-redundancy
           event-form ctx wrld
@@ -8233,4 +8237,3 @@ analysis."
 
  <p>To see what the current termination method setting is, use @(tsee
  get-termination-method).</p>")
-

@@ -18,6 +18,36 @@
 (include-book "recover-type-hyp")
 (include-book "pretty-printer")
 
+; Matt K. addition: definition from before November 2022 of pseudo-termp, to
+; fix a proof failure occurring after changing that definition.
+(local
+ #!acl2
+ (defthm pseudo-termp-def
+     (equal (pseudo-termp x)
+            (cond ((atom x) (symbolp x))
+                  ((eq (car x) 'quote)
+                   (and (consp (cdr x))
+                        (null (cdr (cdr x)))))
+                  ((not (true-listp x)) nil)
+                  ((not (pseudo-term-listp (cdr x))) nil)
+                  (t (or (symbolp (car x))
+
+; For most function applications we do not check that the number of
+; arguments matches the number of formals.  However, for lambda
+; applications we do make that check.  The reason is that the
+; constraint on an evaluator dealing with lambda applications must use
+; pairlis$ to pair the formals with the actuals and pairlis$ insists on
+; the checks below.
+
+                         (and (true-listp (car x))
+                              (equal (length (car x)) 3)
+                              (eq (car (car x)) 'lambda)
+                              (symbol-listp (cadr (car x)))
+                              (pseudo-termp (caddr (car x)))
+                              (equal (length (cadr (car x)))
+                                     (length (cdr x))))))))
+   :rule-classes ((:definition :controller-alist ((pseudo-termp t))))))
+
 (defsection SMT-translator
   :parents (z3-py)
   :short "SMT-translator does the LISP to Python translation."

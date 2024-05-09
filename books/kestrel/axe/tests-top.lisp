@@ -33,7 +33,7 @@
 
 (include-book "rewriter-tests")
 (include-book "rewriter-alt-tests")
-(include-book "prune-tests")
+(include-book "prune-term-tests")
 (include-book "unroll-spec-tests")
 
 (include-book "query-tests")

@@ -32,7 +32,7 @@
            (equal (integerp (* m (/ n)))
                   (equal m n)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
-  :hints (("Goal" :in-theory (enable DIVISIBILITY-IN-TERMS-OF-FLOOR))))
+  :hints (("Goal" :in-theory (enable divisibility-in-terms-of-floor))))
 
 ;the n here is mostly so we don't have to rediscover it later?
 (defund ungroup (n x)
@@ -86,7 +86,6 @@
                                  )
                            (;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                             ;SUBRANGE-OF-APPEND
-                            DIVISIBILITY-IN-TERMS-OF-FLOOR
                             ;TAKE-OF-CDR-BECOMES-SUBRANGE
                             ;NTH-OF-CDR LIST::NTH-OF-CDR ;fixme are these two the same?
 ;LIST::EQUAL-APPEND-REDUCTION!

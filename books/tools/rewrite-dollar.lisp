@@ -52,6 +52,9 @@
 ;   rewrite$-return.  In particular, the "pairs" isn't easy to use without some
 ;   documentation.
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)
@@ -1104,7 +1107,7 @@
 ; forced-assumptions, where we call prove, whose generated call of waterfall
 ; will take care of that.
 
-        (- (initialize-brr-stack state))
+        (- (semi-initialize-brr-wormhole state))
         (- (initialize-fc-wormhole-sites)))
      (rewrite$-main tterm translated-alist geneqv obj
                     prove-forced-assumptions forced-assumptions-hints
@@ -1694,3 +1697,4 @@
                           ,contradiction-ok ,prove-forced-assumptions
                           ,translate ,untranslate ,repeat
                           ,ctx ,wrld state))
+

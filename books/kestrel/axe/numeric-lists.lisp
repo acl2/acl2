@@ -58,10 +58,11 @@
            (all-< nodenums (+ 1 (maxelem nodenums)))))
 
 (defthm maxelem-bound-maxint
-  (implies (and (all-< nodenums 2147483646)
+  (implies (and (all-< nodenums (+ 1 bound))
                 (nat-listp nodenums)
+                (natp bound)
                 (consp nodenums))
-           (<= (maxelem nodenums) 2147483645)))
+           (<= (maxelem nodenums) bound)))
 
 (defthm maxelem-bound
   (implies (and (all-natp x)

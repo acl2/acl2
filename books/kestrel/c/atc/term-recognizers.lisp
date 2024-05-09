@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,18 @@
 
 (in-package "C")
 
-(include-book "integer-operations")
+(include-book "../representation/integer-operations")
 
 (include-book "kestrel/std/system/check-and-call" :dir :system)
 (include-book "kestrel/std/system/check-or-call" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/irecursivep-plus" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,7 +56,7 @@
 (defval *atc-boolean-from-type-fns*
   :short "List of the @('boolean-from-<type>') functions
           described in the user documentation."
-  (atc-boolean-from-type-fns-gen *integer-nonbool-nonchar-types*)
+  (atc-boolean-from-type-fns-gen *nonchar-integer-types*)
 
   :prepwork
   ((defun atc-boolean-from-type-fns-gen (types)
@@ -64,7 +69,7 @@
 (defval *atc-type-base-const-fns*
   :short "List of the @('<type>-<base>-const') functions
           described in the user documentation."
-  (atc-type-base-const-fns-gen *integer-nonbool-nonchar-types*)
+  (atc-type-base-const-fns-gen *nonchar-integer-types*)
 
   :prepwork
 
@@ -86,7 +91,7 @@
 (defval *atc-op-type-fns*
   :short "List of the @('<op>-<type>') functions
           described in the user documentation."
-  (atc-op-type-fns-gen *integer-nonbool-nonchar-types*)
+  (atc-op-type-fns-gen *nonchar-integer-types*)
 
   :prepwork
 
@@ -109,7 +114,7 @@
 (defval *atc-op-type1-type2-fns*
   :short "List of the @('<op>-<type1>-<type2>') functions
           described in the user documentation."
-  (atc-op-type1-type2-fns-gen *integer-nonbool-nonchar-types*)
+  (atc-op-type1-type2-fns-gen *nonchar-integer-types*)
 
   :prepwork
 
@@ -147,7 +152,7 @@
      (cond ((endp type1s) nil)
            (t (append (atc-op-type1-type2-fns-gen-aux
                        (car type1s)
-                       *integer-nonbool-nonchar-types*)
+                       *nonchar-integer-types*)
                       (atc-op-type1-type2-fns-gen (cdr type1s))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,7 +160,7 @@
 (defval *atc-type1-from-type2-fns*
   :short "List of the @('<type1>-from-<type2>') functions
           described in the user documentation."
-  (atc-type1-from-type2-fns-gen *integer-nonbool-nonchar-types*)
+  (atc-type1-from-type2-fns-gen *nonchar-integer-types*)
 
   :prepwork
 
@@ -171,7 +176,7 @@
      (cond ((endp type1s) nil)
            (t (append (atc-type1-from-type2-fns-gen-aux
                        (car type1s)
-                       *integer-nonbool-nonchar-types*)
+                       *nonchar-integer-types*)
                       (atc-type1-from-type2-fns-gen (cdr type1s))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,14 +189,13 @@
    (xdoc::p
     "We just check whether the term is
      a call of a @('boolean-from-<type>') function
-     or a call of @(tsee not), @(tsee and), or @(tsee or)."))
+     or a call of @(tsee and) or @(tsee or)."))
   (b* (((mv andp & &) (check-and-call term))
        ((when andp) t)
        ((mv orp & &) (check-or-call term))
        ((when orp) t))
     (case-match term
-      ((fn . &) (if (or (member-eq fn *atc-boolean-from-type-fns*)
-                        (eq fn 'not))
+      ((fn . &) (if (member-eq fn *atc-boolean-from-type-fns*)
                     t
                   nil))
       (& nil))))
@@ -262,4 +266,5 @@
     (case-match term
       ((fn . &) (or (consp fn) ; lambda
                     (consp (irecursivep+ fn wrld))))
-      (& nil))))
+      (& nil)))
+  :guard-hints (("Goal" :in-theory (enable pseudo-termp))))

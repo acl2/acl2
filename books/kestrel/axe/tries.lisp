@@ -1,6 +1,6 @@
 ; A datatype for counting rewrite attempts.
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,9 +11,11 @@
 
 (in-package "ACL2")
 
-;; A datatype for counting how many times rewrite rules are tried.  Either nil
-;; (meaning we are not counting tries), or a natural number.  We keep triesp
-;; disabled to avoid case splits in proofs.
+;; A datatype for counting how much work the Rewriter has done (how many times
+;; rewrite rules have been tried).  Either nil (meaning we are not counting
+;; tries), or a natural number.  Note that the count is for all rules together
+;; (todo: consider more fine-grained counting).  We keep triesp disabled to
+;; avoid case splits in proofs.
 
 (defund triesp (x)
   (declare (xargs :guard t))
@@ -30,9 +32,8 @@
 (defmacro zero-tries () 0)
 
 (defund-inline increment-tries (tries)
-  (declare (xargs :guard (and (triesp tries)
-                              tries)))
-  (+ 1 tries))
+  (declare (xargs :guard (triesp tries)))
+  (if tries (+ 1 tries) tries))
 
 (defthm triesp-of-increment-tries
   (implies (triesp x)
@@ -59,4 +60,10 @@
   (implies (and (triesp tries1)
                 (triesp tries2))
            (integerp (sub-tries tries1 tries2)))
+  :hints (("Goal" :in-theory (enable sub-tries))))
+
+(defthmd rationalp-of-sub-tries
+  (implies (and (triesp tries1)
+                (triesp tries2))
+           (rationalp (sub-tries tries1 tries2)))
   :hints (("Goal" :in-theory (enable sub-tries))))

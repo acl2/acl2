@@ -20,7 +20,10 @@
 ;gen?
 (defthm bound-global1-when-state-p1
   (implies (and (state-p1 state)
-                (member-eq sym '(safe-mode ld-skip-proofsp temp-touchable-vars parallel-execution-enabled boot-strap-flg guard-checking-on temp-touchable-fns)) ;(member-eq sym *initial-global-table*)
+                (member-eq sym '(safe-mode ld-skip-proofsp temp-touchable-vars parallel-execution-enabled boot-strap-flg guard-checking-on temp-touchable-fns 
+; Matt K. additions 3/1/2023 to accommodate changes to support
+; set-warnings-as-errors:
+                                           warnings-as-errors inhibit-output-lst)) ;(member-eq sym *initial-global-table*)
                 )
            (boundp-global1 sym state))
   :hints (("Goal" :in-theory (enable state-p1 boundp-global1))))

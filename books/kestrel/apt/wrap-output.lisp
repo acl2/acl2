@@ -1,6 +1,6 @@
-; A transformation to transform the output of a function using a wrapper
+; A transformation to combine a function's body with a wrapper
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,12 +13,12 @@
 
 ;; STATUS: IN-PROGRESS
 
+;; See tests in wrap-output-tests.lisp.
+
 ;;TODO: Restrict the hints to these transforms to keep them from going off the rails.
 
 ;;TODO: We may be able to better handle non-tail calls as follows: Say my
 ;;function f(x) makes a non-tail call in some branch.  Say that call is:
-
-;; TODO: Improve this to operate on untranslated terms
 
 ;; TODO: Applicability guard conditions for calling the wrapper on each branch.
 
@@ -34,7 +34,6 @@
 ;; then I can replace the (w (f (update x))) with (f' (update x)).
 
 (include-book "tools/flag" :dir :system)
-(include-book "misc/records" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "utilities/deftransformation")
 (include-book "utilities/defun-variant")
@@ -53,95 +52,9 @@
 (include-book "kestrel/apt/utilities/verify-guards-for-defun" :dir :system)
 (include-book "kestrel/terms-light/wrap-pattern-around-term" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 
-(defxdoc wrap-output
-  :parents (apt::apt)
-  :short "Push an external computation into a function (by pushing it
-through the top-level if-branches of the function)."
-
-  :long "<p>Given a function @('f') and a (unary) wrapper function @('wrapper'), the
-transformation acts on the top level @(see if) branches as follows:</p>
-
-<p>If the branch contains no recursive call then @('wrapper') is simply wrapped around the branch.
-Otherwise, if the branch contains a tail-recursive call then the recursive call is replaced by a recursive call of the transformed
-function @('f$1'), and if the recursive call is not a tail call then @('wrapper') is wrapped
-around the original call of @('f'). In particular this means that
-the resulting function may no longer be recursive. The same rules apply if @('f')
-lies in a mutual-recursion nest, so that the new functions may no longer be
-mutually recursive.</p>
-
-<p>If a top-level term is a lambda then the body of the lambda is treated as a branch <b>unless</b> free variables in @('wrapper') become bound in the body (TODO: treat this case).</p>
-
-<p> Note furthermore that this transformation is applied to the untranslated (see @(see trans)) form of the body, so macros are not expanded. The only macros treated separately are @(see and), @(see or) (TODO!), @(see let), @(see let*), @(see b*), (TODO? @(see mv-let)) and @(see cond).</p>
-
-<p>The transformation produces the equivalence theorem</p>
-@({(defthm f-f$1-connection
-    (equal (w (f arg-1 ... arg-n))
-           (f$1 arg-1 ... arg-n free-1 ... free-k)))
-   })
-
-<p>where @('free-1'), ..., @('free-k') are free variables possibly introduced in @('wrapper') if it is a lambda term.</p>
-
-<h3>Example Scenarios</h3>
-
-<ul>
-<li>Suppose @('foo') is defined as follows
-@({(defun foo (x)
-     (cond ((<test-1>)
-            (bar x))          ;; non-recursive
-           ((<test-2>)
-            (foo (bar x)))    ;; tail-recursive
-           ((<test-3>)
-            (bar (foo x)))    ;; recursive but not tail-recursive
-           ((<test-4>)
-            ((lambda (y) (foo y)) (foo x)))) ;; lambda
-   })
-then if @('wrapper') is a wrapper function then @('foo') is transformed to the function
-@({(defun foo$1 (x)
-     (cond ((<test-1>)
-            (wrapper (bar x)))
-           ((<test-2>)
-            (foo$1 (bar x)))
-           ((<test-3>)
-            (wrapper (bar (foo x))))
-           ((<test-4>)
-            ((lambda (y) (foo$1 y)) (foo x))))) ;; the argument is unchanged
-   })</li>
-
-<li>If the term @('(lambda (x) (nth '2 x))') is wrapped around a function that returns @('(list x y z)'), then the new functions simply returns @('z').  (This is useful for
-functions that axe has lifted).</li>
-</ul>
-
-
-
-<h3>Usage</h3>
-
-@({
-    (wrap-output fn                        ;; Function to refine
-                 wrapper                   ;; A unary function or unary lambda, where free variables are added as arguments
-                 [:theorem-disabled bool]  ;; Whether to disable the theorem(s) that replace the old function with the new, Default: nil
-                 [:function-disabled bool] ;; Whether to disable the new function, Default: nil
-                                           ;; In a mutual-recursion nest this applies to all functions
-                 [:new-name map]           ;; New name to use for the function (if :auto, the transformation generates a name)
-                 [:guard map]              ;; Apply a guard to the generated function
-                 [:guard-hints hints]      ;; Hints for the guard proof, Default: nil
-                 [:show-only bool]         ;; Show event without execution
-                 [:print print-specifier]  ;; Specifies how output is printed (see @(see print-specifier))
-                 )
-    ;; If a function is in a mutual-recursion nest then the parameters :new-name and :guard
-    ;; can be applied separately through a list of doublets of the form
-    (:map (name-1 val-1) ... (name-k val-k))
-})
-
-
-<p>TODO: Add check: For now, the wrapper should only be over one variable.</p>"
- 
-  ;; TODO: add check that free variables are not function parameters! (or that they don't do bad things)
-  ;; TODO: When wrap-input is added to community books, restore the following:
-  ;; <p>This transformation is in some sense the dual of @(see wrap-input).</p>
-  )
-
+;; todo: compare to untranslated-lambda-exprp
 (defun untranslated-lambdap (x)
   (declare (xargs :guard t))
   (and (true-listp x)
@@ -158,14 +71,14 @@ functions that axe has lifted).</li>
   ))
 
 (defun wrap-pattern-around-untranslated-term (term pattern)
-  (declare (xargs :guard (and (untranslated-TERMP TERM)
+  (declare (xargs :guard (and (untranslated-termp term) ; because of sublis-var-untranslated-term
                               (untranslated-unary-lambdap pattern))
-                  :guard-hints (("Goal" :in-theory (enable untranslated-LAMBDAP))))) ;todo
+                  :guard-hints (("Goal" :in-theory (enable untranslated-lambdap))))) ;todo
   (let* ((lambda-formals (second pattern))
          (lambda-body (third pattern))
          (var (first lambda-formals)) ;the only formal
          )
-    (sublis-var-UNTRANSLATED-TERM (acons var term nil) lambda-body)))
+    (sublis-var-untranslated-term (acons var term nil) lambda-body)))
 
 
 ;;TODO: Or maybe the extra vars can be names of params of the function (that are passed around unchanged??)?
@@ -191,7 +104,9 @@ functions that axe has lifted).</li>
 ;                              (pseudo-termp (third wrapper))
                                (function-renamingp fn-renaming)
                                (symbol-listp new-formals))
-                   :guard-hints (("Goal" :expand (UNTRANSLATED-TERMP TERM)))))
+                   :guard-hints (("Goal" :in-theory (enable legal-cond-clausesp
+                                                            extract-terms-from-cond-clauses)
+                                  :expand ((untranslated-termp term))))))
    (if (atom term)
        (wrap-pattern-around-untranslated-term term wrapper)
      (let ((fn (ffn-symb term)))
@@ -217,11 +132,19 @@ functions that axe has lifted).</li>
                      `(if (and ,@(butlast (fargs term) 1))
                           ,(wrap-pattern-around-untranslated-term (car (last (fargs term))) wrapper)
                         ,(wrap-pattern-around-untranslated-term nil wrapper)))))
-             ;;fixme: handle nary OR as we do for AND above
-             (if (eq fn 'or) ;; (or x y) = (if x t y)
-                 `(if ,(farg1 term)
-                      ,(wrap-pattern-around-untranslated-term t wrapper)
-                    ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals))
+             ;; I can't think of a nice way to wrap an OR, since any of the
+             ;; arguments may be returned, and we also need the original
+             ;; versions of all the arguments, to test.
+             (if (eq fn 'or)
+                 ;; or we could do (wrap-output-in-term (or-macro (fargs term)) wrapper fn-renaming new-formals)
+                 ;; but then termination is tricky
+               (if (eql 0 (len (fargs term))) ;; (or) = nil, so we wrap nil:
+                   (wrap-pattern-around-untranslated-term nil wrapper)
+                 (if (eql 1 (len (fargs term))) ;; (or x) = x, so we wrap x:
+                     (wrap-pattern-around-untranslated-term (farg1 term) wrapper)
+                   `(if ,(farg1 term) ; (or x y) = (if x x y)
+                        ,(wrap-output-in-term (farg1 term) wrapper fn-renaming new-formals)
+                      ,(wrap-output-in-term `(or ,@(rest (fargs term))) wrapper fn-renaming new-formals))))
                (if (consp fn) ;test for lambda application: ((lambda (vars) body) ... args ...)
                    ;; If it's a lambda, wrap the lambda body (TODO: think about free vars in the wrapper)
                    ;; TODO: Think about this case
@@ -229,7 +152,8 @@ functions that axe has lifted).</li>
                           (lambda-formals (ulambda-formals fn))
                           (lambda-declares (ulambda-declares fn))
                           (lambda-body (ulambda-body fn)))
-                     `(,(make-ulambda lambda-formals lambda-declares (wrap-output-in-term lambda-body wrapper fn-renaming new-formals)) ,@args))
+                     `(,(make-ulambda lambda-formals lambda-declares (wrap-output-in-term lambda-body wrapper fn-renaming new-formals))
+                       ,@args))
                  (if (member-eq fn '(let let*))
                      (let ((bindings (farg1 term))
                            (declares (let-declares term))
@@ -238,13 +162,19 @@ functions that axe has lifted).</li>
                          ,bindings
                          ,@declares
                          ,(wrap-output-in-term body wrapper fn-renaming new-formals)))
-                   (if (eq 'b* fn)      ;no declare allowed for b*
-                       `(b* ,(farg1 term) ;the bindings
-                          ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals))
+                   (if (eq 'b* fn) ; (b* <bindings> ...result-terms...)
+                       (let ((bindings (farg1 term))
+                             ;; (result-terms (rest (fargs term)))
+                             )
+                         `(b* ,bindings ; TODO: Support bindings that return?
+                            ;; TODO: Support more than 1 result term:
+                            ,(wrap-output-in-term (farg2 term) wrapper fn-renaming new-formals)))
                      (if (eq 'cond fn)
-                         `(cond ,@(make-doublets
-                                   (strip-cars (rest term))
-                                   (wrap-output-in-terms (strip-cadrs (rest term)) wrapper fn-renaming new-formals)))
+                         `(cond ;; ,@(make-doublets
+                           ;;    (strip-cars (rest term))
+                           ;;    (wrap-output-in-terms (strip-cadrs (rest term)) wrapper fn-renaming new-formals))
+                           ,@(wrap-output-in-cond-clauses (fargs term) wrapper fn-renaming new-formals)
+                           )
                        ;; TODO: Handle case!
                        (if (assoc-eq fn fn-renaming)
                            ;; It's a tail call, so
@@ -255,6 +185,25 @@ functions that axe has lifted).</li>
                          ;;anything other than an IF or lambda or call of the old function is just a branch to be wrapped:
                          ;; There may be calls of functions in the nest below this, so they just remain.
                          (wrap-pattern-around-untranslated-term term wrapper)))))))))))))
+
+ ;; todo: instead, split and reassemble:
+ (defun wrap-output-in-cond-clauses (clauses wrapper fn-renaming new-formals)
+   (declare (xargs :guard (and (legal-cond-clausesp clauses)
+                               (untranslated-term-listp (extract-terms-from-cond-clauses clauses))
+                               (untranslated-unary-lambdap wrapper)
+;                              (pseudo-termp (third wrapper))
+                               (function-renamingp fn-renaming)
+                               (symbol-listp new-formals))))
+   (if (endp clauses)
+       nil
+     (let ((clause (first clauses)))
+       (cons (if (= 2 (len clause))
+                 ;; normal case (wrap the second item in the clause only):
+                 (list (first clause)
+                       (wrap-output-in-term (second clause) wrapper fn-renaming new-formals))
+               ;; todo: handle:
+               (er hard? 'wrap-output-cond-clauses "Unsupported case (cond clause of length 1)."))
+             (wrap-output-in-cond-clauses (rest clauses) wrapper fn-renaming new-formals)))))
 
  (defun wrap-output-in-terms (terms wrapper fn-renaming new-formals)
    (declare (xargs :guard (and (untranslated-term-listp terms)
@@ -291,19 +240,20 @@ functions that axe has lifted).</li>
                              fn-event wrapper fn-renaming rec options guard new-formals state)
   (declare (xargs :stobjs state :guard (and (symbolp fn)
                                             (symbolp new-fn)
-                                            (untranslated-UNARY-LAMBDAP WRAPPER)
+                                            (untranslated-unary-lambdap wrapper)
                                             (defun-or-mutual-recursion-formp fn-event)
 ;                                            (PSEUDO-TERMP (THIRD WRAPPER))
                                             (function-renamingp fn-renaming)
+                                            (symbol-alistp options)
                                             (symbol-listp new-formals))
-                  :verify-guards nil ;TODO
+                  :verify-guards nil ;TODO: because of defun-variant
                   ))
   (let* ((body (get-body-from-event fn fn-event)) ; untranslated
          (wrld (w state))
          ;(body (fn-body fn t wrld))
          (formals (fn-formals fn wrld))
          (non-executable (non-executablep fn wrld))
-         (function-disabled (g :function-disabled options))
+         (function-disabled (lookup-eq :function-disabled options))
          ;; Chose between defun, defund, defun-nx, etc.:
          (defun-variant (defun-variant fn non-executable function-disabled state))
 
@@ -325,7 +275,7 @@ functions that axe has lifted).</li>
          (declares (remove-xarg-in-declares :guard-debug declares)) ; verify-guards is done separately
          (declares (remove-xarg-in-declares :guard-simplify declares)) ; verify-guards is done separately
          ;; Deal with the :guard xarg:
-;         (guard-alist (g :guard-alist options))
+;         (guard-alist (lookup-eq :guard-alist options))
 ;         (guard (lookup-eq-safe fn guard-alist))
          (declares (if (not (eq :auto guard))
                        (replace-xarg-in-declares :guard guard declares)
@@ -361,6 +311,7 @@ functions that axe has lifted).</li>
                               (defun-or-mutual-recursion-formp fn-event)
 ;                              (PSEUDO-TERMP (THIRD WRAPPER))
                               (function-renamingp fn-renaming)
+                              (symbol-alistp options)
                               (symbol-listp new-formals))))
   (if (endp fns)
       nil
@@ -380,10 +331,11 @@ functions that axe has lifted).</li>
                                             (not (member-eq fn *supported-untranslated-term-macros*))
                                             (symbolp new-fn)
                                             (untranslated-UNARY-LAMBDAP WRAPPER)
+                                            (symbol-alistp options)
 ;                                            (PSEUDO-TERMP (THIRD WRAPPER))
                                             )))
   (let ((formals (fn-formals fn (w state)))
-        (theorem-disabled (g :theorem-disabled options))
+        (theorem-disabled (lookup-eq :theorem-disabled options))
         (fn-not-normalized (install-not-normalized-name fn))
         (new-fn-not-normalized (install-not-normalized-name new-fn))
         )
@@ -424,7 +376,7 @@ functions that axe has lifted).</li>
                                             (symbol-listp new-fns)
                                             (untranslated-unary-lambdap wrapper)
 ;                                            (pseudo-termp (third wrapper))
-                                            )))
+                                            (symbol-alistp options))))
   (if (endp fns)
       nil
     (cons (make-wrap-output-defthm (first fns) (first new-fns) wrapper use-flagp options recursivep
@@ -432,7 +384,8 @@ functions that axe has lifted).</li>
                                    state)
           (make-wrap-output-defthms (rest fns) (rest new-fns) wrapper use-flagp options recursivep new-formals state))))
 
-(defun wrap-output-event (fn wrapper guard guard-hints theorem-disabled function-disabled new-name verify-guards state)
+;; Returns (mv erp event state).
+(defun wrap-output-event (fn wrapper new-name guard guard-hints theorem-disabled function-disabled verify-guards state)
   (declare (xargs :stobjs state
                   :verify-guards nil ;TODO!
                   :guard (and (symbolp fn)
@@ -445,14 +398,16 @@ functions that axe has lifted).</li>
   (b* ((wrld (w state))
        (fn-event (my-get-event fn wrld))
        (options nil)
-;         (options (s :guard-hints guard-hints options))
-;         (options (s :guard guard options))
-       (options (s :theorem-disabled theorem-disabled options))
-       (options (s :function-disabled function-disabled options))
+;         (options (acons :guard-hints guard-hints options))
+;         (options (acons :guard guard options))
+       (options (acons :theorem-disabled theorem-disabled options))
+       (options (acons :function-disabled function-disabled options))
        (wrapper (if (symbolp wrapper) `(lambda (x) (,wrapper x)) wrapper)) ;convert a symbol into a unary lambda
        (lambda-formals (lambda-formals wrapper))
+       ;; (lambda-formal (first lambda-formals)) ; must be exactly one
        (wrapper-body (lambda-body wrapper))
        (wrapper-body-vars (all-vars (translate-term wrapper-body 'wrap-output wrld)))
+       ;; (wrapper-free-vars (remove-eq lambda-formal wrapper-body-vars))
        (extra-wrapper-vars (set-difference-eq wrapper-body-vars lambda-formals))
        ;; ((when extra-wrapper-vars)
        ;;  (mv t
@@ -460,6 +415,10 @@ functions that axe has lifted).</li>
        ;;      state))
        ;; TODO: Check that any formals among the wrapper vars are passed through unchanged to all recursive calls
        (formals (fn-formals fn wrld))
+       ;; this occurs in at least one derivation (where the param mentioned is just passed through):
+       ;; ((when (intersection-eq formals extra-wrapper-vars))
+       ;;  (er hard? 'wrap-output-event "Overlap between wrapper vars, ~x0, and existing formals, ~x1." extra-wrapper-vars formals)
+       ;;  (mv :clash nil state))
        (new-formals (set-difference-eq extra-wrapper-vars formals))
        ;; (- (cw "Adding formals: ~x0.~%" new-formals)) ;;todo: optionally print this
        (recursivep (fn-recursivep fn state))
@@ -552,15 +511,91 @@ functions that axe has lifted).</li>
               state))))))
 
 (deftransformation wrap-output
-  (fn      ;must be a defined function
+  (fn ;must be a defined function
    wrapper
    )
-  ((guard ':auto) ;TODO: Document
+  ((new-name ':auto)
+   (guard ':auto)       ;TODO: Document
    (guard-hints ':auto) ;TODO: Document
    (theorem-disabled 'nil)
    (function-disabled ':auto)
-   (new-name ':auto)
    (verify-guards ':auto)
-   ))
+   )
+  :parents (apt::apt)
+  :short "Push an external computation into a function (by pushing it
+through the top-level if-branches of the function)."
 
-;; See tests in wrap-output-tests.lisp.
+  :description "<p>Given a function @('f') and a (unary) wrapper function @('wrapper'), the
+transformation acts on the top level @(see if) branches as follows:</p>
+
+<p>If the branch contains no recursive call then @('wrapper') is simply wrapped around the branch.
+Otherwise, if the branch contains a tail-recursive call then the recursive call is replaced by a recursive call of the transformed
+function @('f$1'), and if the recursive call is not a tail call then @('wrapper') is wrapped
+around the original call of @('f'). In particular this means that
+the resulting function may no longer be recursive. The same rules apply if @('f')
+lies in a mutual-recursion nest, so that the new functions may no longer be
+mutually recursive.</p>
+
+<p>If a top-level term is a lambda then the body of the lambda is treated as a branch <b>unless</b> free variables in @('wrapper') become bound in the body (TODO: treat this case).</p>
+
+<p> Note furthermore that this transformation is applied to the untranslated (see @(see trans)) form of the body, so macros are not expanded. The only macros treated separately are @(see and), @(see or) (TODO!), @(see let), @(see let*), @(see b*), (TODO? @(see mv-let)) and @(see cond).</p>
+
+<p>The transformation produces the equivalence theorem</p>
+@({(defthm f-f$1-connection
+    (equal (w (f arg-1 ... arg-n))
+           (f$1 arg-1 ... arg-n free-1 ... free-k)))
+   })
+
+<p>where @('free-1'), ..., @('free-k') are free variables possibly introduced in @('wrapper') if it is a lambda term.</p>
+
+<h3>Example Scenarios</h3>
+
+<ul>
+<li>Suppose @('foo') is defined as follows
+@({(defun foo (x)
+     (cond ((<test-1>)
+            (bar x))          ;; non-recursive
+           ((<test-2>)
+            (foo (bar x)))    ;; tail-recursive
+           ((<test-3>)
+            (bar (foo x)))    ;; recursive but not tail-recursive
+           ((<test-4>)
+            ((lambda (y) (foo y)) (foo x)))) ;; lambda
+   })
+then if @('wrapper') is a wrapper function then @('foo') is transformed to the function
+@({(defun foo$1 (x)
+     (cond ((<test-1>)
+            (wrapper (bar x)))
+           ((<test-2>)
+            (foo$1 (bar x)))
+           ((<test-3>)
+            (wrapper (bar (foo x))))
+           ((<test-4>)
+            ((lambda (y) (foo$1 y)) (foo x))))) ;; the argument is unchanged
+   })</li>
+
+<li>If the term @('(lambda (x) (nth '2 x))') is wrapped around a function that returns @('(list x y z)'), then the new functions simply returns @('z').  (This is useful for
+functions that axe has lifted).</li>
+</ul>
+
+<p> If FN is defined in a mutual-recursion, then the :new-name and :guard
+options support :map syntax (see the Special Note in the documentation for
+@(tsee apt::simplify-defun)) such as (:map (name-1 val-1) ... (name-k val-k)).</p>"
+
+;; TODO: Add check: For now, the wrapper should only be over one variable.
+
+  :arg-descriptions
+  ((fn "The function to transform.")
+   (wrapper "A unary function or a unary lambda (in which case any free variables in the lambda body become arguments of the new function).")
+   (new-name "New name to use for the function (if :auto, the transformation generates a name)")       ;TODO: Document :map
+   (guard "Guard for the generated function")       ;TODO: Document :map
+   (guard-hints "Hints for the guard proof")
+   (theorem-disabled "Whether to disable the theorem(s) that replace the old function with the new")
+   (function-disabled "Whether to disable the new function.  In a mutual-recursion nest this applies to all functions.")
+   (verify-guards "Whether to verify guards for the new function(s).")
+   )
+
+    ;; TODO: add check that free variables are not function parameters! (or that they don't do bad things)
+  ;; TODO: When wrap-input is added to community books, restore the following:
+  ;; <p>This transformation is in some sense the dual of @(see wrap-input).</p>
+)

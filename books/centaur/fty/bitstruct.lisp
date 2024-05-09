@@ -78,7 +78,7 @@
 
 (defconst *defbitstruct-keywords*
   '(:pred :fix :equiv :xvar :signedp :inline :fullp
-    :parents :short :long :msb-first))
+    :parents :short :long :msb-first :extra-binder-names))
 
 (define lookup-bitstruct (name bitstruct-table)
   (cond ((atom bitstruct-table) nil)
@@ -400,6 +400,9 @@
 (define bitstruct-fields-fix (fields xvar)
   (b* (((when (atom fields)) xvar)
        ((bitstruct-field field) (car fields))
+       ((when field.subfield-hierarchy)
+        ;; skip this, it's just a subfield
+        (bitstruct-fields-fix (cdr fields) xvar))
        (sel `(bitops::part-select ,xvar :width ,field.width :low ,field.lsb))
        (signed (if field.signedp
 		   `(logext ,field.width ,sel)
@@ -883,11 +886,12 @@
 		     (b ,(+ 1 x.width))))))
     `(define ,field.updater ((,field.name ,field.pred)
 			     (,x.xvar ,x.pred))
-       :returns (,new-x ,x.pred
+       ,@(and (not field.subfield-hierarchy)
+              `(:returns (,new-x ,x.pred
 			,@(and (not x.fullp)
 			       `(:hints (("goal" :in-theory (enable ,x.pred ,x.fix
 								    part-select-at-0-of-unsigned-byte-identity
-								    logext-part-select-at-0-identity))))))
+								    logext-part-select-at-0-identity))))))))
        :no-function t
        ,@(and x.inline `(:inline ,x.inline))
        :parents (,x.name)
@@ -1146,7 +1150,7 @@
 (defxdoc defbitstruct
   :parents (fty)
   :short "Define a bitvector type with accessors for its fields."
-  :long "<p>This macto defines a bitstruct type.  A bitstruct can either be a
+  :long "<p>This macro defines a bitstruct type.  A bitstruct can either be a
 base type, which is a single fixed-width integer, or a product type containing
 fields that are bits, Booleans, or other bitstructs.  Such a product is
 represented as a single integer produced by concatenating all the fields
@@ -1191,7 +1195,7 @@ important.  This defines a rounding-control as a 2-bit unsigned value.</p>
 directly access the fields of the internal struct.  Providing the
 @(':subfields') keyword causes defbitstruct to produce direct accessors and
 updaters for the subfields of the nested struct.  The following definition of
-@('mxcsr') produces the usual accesors and updaters including @('mxcsr->flags')
+@('mxcsr') produces the usual accessors and updaters including @('mxcsr->flags')
 and @('mxcsr->masks'), but also @('mxcsr->ie') and @('mxcsr->im'), etc.</p>
 @({
  (defbitstruct fp-flags
@@ -1235,6 +1239,16 @@ relation.</li>
 rather than an unsigned one.  (Signed and unsigned fields can be used inside
 unsigned and signed bitstructs -- they are simply sign- or zero-extended as
 necessary when accessed.)</li>
+
+<li>@(':msb-first') -- when non-NIL, reverses the order of the top-level fields,
+it does not reverse @(':subfield') accessors/updaters.</li>
+
+<li>@(':extra-binder-args') -- a list of symbols that, in addition to the
+fields, will be accessible through the generated B* binder once corresponding
+accessor functions are defined.  For example if we define a bitstruct @('foo')
+with @(':extra-binder-args (bar)'), then once the function @('foo->bar') is
+defined, the B* binder @('(b* (((foo x))) ...)') will allow access to
+@('(foo->bar x)') via variable @('x.bar').</li>
 
 </ul>
 
@@ -1305,7 +1319,7 @@ accessors, in addition to the direct accessors @('toplevel->ss') and
 @({
  (toplevel->saa x)    == (innermost->aa (toplevel->ss x))
  (toplevel->sbb x)    == (innermost->bb (toplevel->ss x))
- (toplevel->tii x)    == (midlevel->ii (toplevel->ss x))
+ (toplevel->tii x)    == (midlevel->ii (toplevel->tt x))
  (toplevel->tiaa x)   == (innermost->aa (midlevel->ii (toplevel->tt x)))
  (toplevel->tibb x)   == (innermost->bb (midlevel->ii (toplevel->tt x)))
  (toplevel->tqq x)    == (midlevel->qq (toplevel->tt x))

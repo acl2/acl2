@@ -65,7 +65,9 @@
                  :args (list cmd))
           (if (and (equal exit-status 0) (not (equal lines nil)))
               (car lines)
-            (prog2$ (er hard? 'SMT-prove=>make-fname "Error: Generate file error.")
+            (prog2$ (er hard? 'SMT-prove=>make-fname "Error: Command ~x0 ~
+                                                      failed."
+                        cmd)
                     "")))))
     )
 

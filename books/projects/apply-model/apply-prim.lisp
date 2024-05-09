@@ -17,6 +17,8 @@
 ; boot-strap process is completed.  For example, MODAPP::APPLY$-PRIM can apply
 ; 'ACL2::APPLY$-PRIM, whereas ACL2::APPLY$-PRIM cannot!
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
+
 (in-package "MODAPP")
 
 ; Handling the Primitives
@@ -51,8 +53,8 @@
 
 ; Note that stobj creators take no stobjs in but return stobjs.  We don't want
 ; any such functions in our answer!  Also, we don't want to think about
-; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
-; STATE-STATE as a formal preventing their execution.
+; functions like BOUNDP-GLOBAL1 that use STATE-STATE as a formal preventing
+; their execution.
 
           (first-order-like-terms-and-out-arities1
            (cdr runes)
@@ -119,6 +121,9 @@
      HONS-WASH!                             ; bad -- requires trust tag
      UNTOUCHABLE-MARKER                     ; bad -- untouchable
      ASET1-TRUSTED                          ; bad -- untouchable (added 7/2021)
+     INIT-IPRINT-FAL                        ; bad -- untouchable (added 7/2023)
+     UPDATE-IPRINT-FAL-REC                  ; bad -- untouchable (added 7/2023)
+     UPDATE-IPRINT-FAL                      ; bad -- untouchable (added 7/2023)
 ;    BREAK$
 ;    PRINT-CALL-HISTORY
 ;    NEVER-MEMOIZE-FN

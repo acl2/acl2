@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun |notandor| (|x|)
+(defun |andor| (|x|)
   (declare (xargs :guard (c::sintp |x|)))
   (c::sint-from-boolean
    (and (or (and (c::boolean-from-sint
@@ -92,12 +92,12 @@
                  (c::boolean-from-sint
                   (c::le-sint-sint |x|
                                    (c::sint-dec-const 200)))))
-        (not (and (c::boolean-from-sint
-                   (c::le-sint-sint (c::sint-dec-const 4)
-                                    |x|))
-                  (c::boolean-from-sint
-                   (c::le-sint-sint |x|
-                                    (c::sint-dec-const 6))))))))
+        (and (c::boolean-from-sint
+              (c::le-sint-sint (c::sint-dec-const 4)
+                               |x|))
+             (c::boolean-from-sint
+              (c::le-sint-sint |x|
+                               (c::sint-dec-const 6)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,5 +107,6 @@
         |ifor|
         |condand|
         |condor|
-        |notandor|
-        :output-file "nonstrict.c")
+        |andor|
+        :file-name "nonstrict"
+        :header t)

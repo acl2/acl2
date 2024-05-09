@@ -302,7 +302,11 @@
                                       assoc-eql-exec-is-assoc-equal
                                       alistp-pairlis$
                                       atom not eq
-                                      symbol-listp-forward-to-true-listp)))
+                                      ;; Matt K. mod for rule changes 7/15/2022:
+                                      ;; symbol-listp-forward-to-true-listp
+                                      symbol-listp-forward-to-eqlable-listp
+                                      eqlable-listp-forward-to-atom-listp
+                                      atom-listp-forward-to-true-listp)))
      (def-geval _geval_ _apply-fns_)
      (verify-guards _geval_
        :hints (("goal" :use ((:functional-instance

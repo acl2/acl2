@@ -20,6 +20,8 @@
 ; boot-strap process is completed.  For example, MODAPP::APPLY$-PRIM can apply
 ; 'ACL2::APPLY$-PRIM, whereas ACL2::APPLY$-PRIM cannot!
 
+; (depends-on "build/ground-zero-theory.certdep" :dir :system)
+
 (in-package "MODAPP")
 
 ; Handling the Primitives
@@ -65,8 +67,8 @@
 
 ; Note that stobj creators take no stobjs in but return stobjs.  We don't want
 ; any such functions in our answer!  Also, we don't want to think about
-; functions like BOUNDP-GLOBAL1 and 32-BIT-INTEGER-STACK-LENGTH1 that use
-; STATE-STATE as a formal preventing their execution.
+; functions like BOUNDP-GLOBAL1 that use STATE-STATE as a formal preventing
+; their execution.
 
           (first-order-like-terms-and-out-arities1
            (cdr runes)
@@ -114,16 +116,21 @@
 ; prevent warrants.
 
   (union-eq
-   '(SYNP                   ; bad
-     WORMHOLE1              ; restricts arguments
-     WORMHOLE-EVAL          ; restricts arguments
-     SYS-CALL               ; bad -- requires trust tag
-     HONS-CLEAR!            ; bad -- requires trust tag
-     HONS-WASH!             ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER     ; bad -- untouchable
-     ASET1-TRUSTED          ; bad -- untouchable
-     COERCE-OBJECT-TO-STATE ; bad -- creates live state
-     CREATE-STATE           ; bad -- creates live state
+   '(SYNP                                   ; restricts arguments
+     WORMHOLE1                              ; restricts arguments
+     WORMHOLE-EVAL                          ; restricts arguments
+     SYNC-EPHEMERAL-WHS-WITH-PERSISTENT-WHS ; restricts arguments
+     SET-PERSISTENT-WHS-AND-EPHEMERAL-WHS   ; restricts arguments
+     SYS-CALL                               ; bad -- requires trust tag
+     HONS-CLEAR!                            ; bad -- requires trust tag
+     HONS-WASH!                             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                     ; bad -- untouchable
+     ASET1-TRUSTED                          ; bad -- untouchable
+     COERCE-OBJECT-TO-STATE                 ; bad -- creates live state
+     CREATE-STATE                           ; bad -- creates live state
+     INIT-IPRINT-FAL                        ; bad -- untouchable
+     UPDATE-IPRINT-FAL-REC                  ; bad -- untouchable
+     UPDATE-IPRINT-FAL                      ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that

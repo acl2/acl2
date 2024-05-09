@@ -33,7 +33,7 @@
 (in-package "ACL2")
 
 ;; We introduce the function half-translate, which expands away any ACL2 macros
-;; we don't know how to handle, but leaves in tact the Milawa-supported macros
+;; we don't know how to handle, but leaves intact the Milawa-supported macros
 ;; such as let, let*, and, or, etc.
 ;;
 ;; We do this in a stupid and straightforward way.
@@ -242,5 +242,3 @@
                             (list a b c))))))
   (half-translate term state))
 |#
-
-

@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -46,6 +46,10 @@
 (include-book "deftutorial")
 (include-book "deftutorial-doc")
 
+(include-book "defirrelevant")
+
+(include-book "error-value-tuples")
+
 (include-book "tuple")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +65,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These extensions could be moved under @('[books]/std/util')
+    "These extensions could be moved under @('std/util')
      at some point.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

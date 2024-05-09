@@ -1,10 +1,11 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Contributing Author: Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,9 +27,16 @@
 (include-book "kestrel/std/basic/mbt-dollar" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
+(include-book "kestrel/std/system/non-executablep" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
+(include-book "kestrel/std/system/recursive-calls" :dir :system)
+(include-book "kestrel/std/system/term-guard-obligation" :dir :system)
+(include-book "kestrel/std/system/unwrapped-nonexec-body" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "utilities/defaults-table")
@@ -391,6 +399,14 @@
   :returns (appconds "A @(tsee evmac-appcond-listp).")
   :mode :program
   :short "Generate the applicability conditions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We retrieve the guard with limited simplification,
+     for greater predictability and robustness.
+     This is matched by the fact that
+     we verify guards with limited simplification,
+     in @(tsee restrict-gen-verify-guards)."))
   (b* ((wrld (w state)))
     (append
      (make-evmac-appcond?
@@ -406,7 +422,7 @@
       :restriction-guard
       (b* ((old-guard (guard old nil wrld))
            (restriction-guard
-            (term-guard-obligation restriction state)))
+            (term-guard-obligation restriction :limited state)))
         (implicate old-guard
                    restriction-guard))
       :when verify-guards))))
@@ -421,7 +437,8 @@
                           (verify-guards booleanp)
                           (wrld plist-worldp))
   :returns (mv (local-event "A @(tsee pseudo-event-formp).")
-               (exported-event "A @(tsee pseudo-event-formp)."))
+               (exported-event "A @(tsee pseudo-event-formp).")
+               (new-body "A @(tsee pseudo-termp)."))
   :mode :program
   :short "Generate the new function definition."
   :long
@@ -514,13 +531,14 @@
                                  :guard ,new-guard
                                  :verify-guards ,verify-guards))
                  ,new-body)))
-    (mv local-event exported-event)))
+    (mv local-event exported-event new-body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-gen-old-to-new ((old symbolp)
                                  (restriction pseudo-termp)
                                  (new symbolp)
+                                 (new-body pseudo-termp)
                                  (old-to-new symbolp)
                                  (old-to-new-enable booleanp)
                                  (appcond-thm-names symbol-symbol-alistp)
@@ -533,57 +551,82 @@
   :mode :program
   :short "Generate the theorem that relates the old and new functions."
   :long
-  "<p>
-   The macro used to introduce the theorem is determined by
-   whether the theorem must be enabled or not.
-   </p>
-   <p>
-   The formula of the theorem equates old and new functions
-   under the restricting predicate,
-   as described in the documentation.
-   </p>
-   <p>
-   If the old and new functions are not recursive,
-   then, following the design notes, the theorem is proved
-   in the theory consisting of
-   the two theorems that install the non-normalized definitions of the functions
-   and the induction rule of the old function.
-   If the old and new functions are recursive,
-   then, following the design notes, the theorem is proved
-   by induction on the old function,
-   in the theory consisting of
-   the two theorems that install the non-normalized definitions of the functions
-   and the induction rule of the old function,
-   and using the @(':restriction-of-rec-calls') applicability condition.
-   If the old and new functions are reflexive,
-   we functionally instantiate the stub in that applicability condition.
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The macro used to introduce the theorem is determined by
+     whether the theorem must be enabled or not.")
+   (xdoc::p
+    "The formula of the theorem equates old and new functions
+     under the restricting predicate,
+     as described in the documentation.")
+   (xdoc::p
+    "If the old and new functions are not recursive,
+     then, following the design notes, the theorem is proved
+     in the theory consisting of
+     the non-normalized definitions of the functions.")
+   (xdoc::p
+    "If the old and new functions are recursive,
+     then, following the design notes, the theorem is proved
+     by induction on the old function,
+     utilizing the non-normalized definitions of the functions
+     and the applicability condition.
+     We have seen at least one case in which a definition was not expanded,
+     presumably due to some ACL2 heuristics.
+     Using @(':expand') hints does not work when the restricting predicate
+     equates a formal with a quoted constant,
+     because in that case ACL2 may replace the formal with the constant,
+     preventing the @(':expand') from applying.
+     So we generate proof builder instructions to
+     apply the induction rule,
+     claims the non-normalized definitions
+     (which are thus added as hypothesis to the induction step),
+     and prove the induction step(s) and base case(s).
+     Since there may be multiple induction step(s) and/or base case(s),
+     we repeat the same proof builder instructions
+     until there are no more goals.
+     If the old and new functions are reflexive,
+     we functionally instantiate the stub in that applicability condition,
+     in the induction step."))
   (b* ((formals (formals old wrld))
        (formula (implicate restriction
                            `(equal (,old ,@formals)
                                    (,new ,@formals))))
        (formula (untranslate formula t wrld))
-       (recursive (recursivep old nil wrld))
-       (hints (if recursive
-                  (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
-                                          appcond-thm-names)))
-                       (lemma-instance (if stub?
-                                           `(:functional-instance ,lemma-name
-                                             (,stub? ,new))
-                                         lemma-name)))
-                    `(("Goal"
-                       :in-theory '(,old-unnorm
-                                    ,new-unnorm
-                                    (:induction ,old))
-                       :induct (,old ,@formals))
-                      '(:use ,lemma-instance)))
-                `(("Goal"
-                   :in-theory '(,old-unnorm
-                                ,new-unnorm))))))
-    (evmac-generate-defthm old-to-new
-                           :formula formula
-                           :hints hints
-                           :enable old-to-new-enable)))
+       (recursive (recursivep old nil wrld)))
+    (if recursive
+        (b* ((lemma-name (cdr (assoc-eq :restriction-of-rec-calls
+                                        appcond-thm-names)))
+             (lemma-instance (if stub?
+                                 `(:functional-instance ,lemma-name
+                                                        (,stub? ,new))
+                               lemma-name))
+             (instructions
+              `((in-theory (enable (:induction ,old)))
+                (then
+                 (induct (,old ,@formals))
+                 (do-all
+                  (claim (equal (,old ,@formals)
+                                ,(ubody old wrld))
+                         :hints (("Goal"
+                                  :in-theory '(,old-unnorm)
+                                  :expand ((,old ,@formals)))))
+                  (claim (equal (,new ,@formals)
+                                ,new-body)
+                         :hints (("Goal"
+                                  :in-theory '(,new-unnorm)
+                                  :expand ((,new ,@formals)))))
+                  (prove :hints (("Goal"
+                                  :in-theory '(,old-unnorm ,new-unnorm)
+                                  :use ,lemma-instance))))))))
+          (evmac-generate-defthm old-to-new
+                                 :formula formula
+                                 :instructions instructions
+                                 :enable old-to-new-enable))
+      (b* ((hints `(("Goal" :in-theory '(,old-unnorm ,new-unnorm)))))
+        (evmac-generate-defthm old-to-new
+                               :formula formula
+                               :hints hints
+                               :enable old-to-new-enable)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -634,62 +677,88 @@
   :verify-guards nil
   :short "Generate the event to verify the guards of the new function."
   :long
-  "<p>
-   As mentioned in @(tsee restrict-gen-new),
-   the verification of the guards of the new function,
-   when it has to take place,
-   is deferred when the function is introduced.
-   The reason is that, as shown in the design notes,
-   the guard verification proof for the recursive case
-   uses the theorem that relates the old and new functions:
-   thus, the theorem must be proved before guard verification,
-   and the new function must be introduced before proving the theorem.
-   In the non-recursive case, we could avoid deferring guard verification,
-   but we defer it anyhow for uniformity.
-   </p>
-   <p>
-   Following the design notes, the guards are verified
-   using the guard theorem of the old function
-   and the @(':restriction-guard') applicability condition.
-   This suffices for the non-recursive case (in the empty theory).
-   For the recursive case,
-   we also use the @(':restriction-of-rec-calls') applicability condition,
-   and we carry out the proof in the theory consisting of
-   the theorem that relates the old and new functions:
-   this theorem rewrites all the recursive calls of the old function,
-   in the old function's guard theorem,
-   to corresponding recursive calls of the new function
-   (the design notes cover the representative case of a single recursive call,
-   but the transformation covers functions with multiple recursive calls).
-   If the old and new functions are reflexive,
-   we functionally instantiate the stub
-   in the @(':restriction-of-rec-calls') applicability condition.
-   </p>
-   <p>
-   The guard verification event is local;
-   the exported function definition has @(':verify-guards') set to @('t')
-   (when it must be guard-verified).
-   </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "As mentioned in @(tsee restrict-gen-new),
+     the verification of the guards of the new function,
+     when it has to take place,
+     is deferred when the function is introduced.
+     The reason is that, as shown in the design notes,
+     the guard verification proof for the recursive case
+     uses the theorem that relates the old and new functions:
+     thus, the theorem must be proved before guard verification,
+     and the new function must be introduced before proving the theorem.
+     In the non-recursive case, we could avoid deferring guard verification,
+     but we defer it anyhow for uniformity.")
+   (xdoc::p
+    "Following the design notes, the guards are verified
+     using the guard theorem of the old function
+     and the @(':restriction-guard') applicability condition.
+     This suffices for the non-recursive case (in the empty theory).
+     For the recursive case,
+     we also use the @(':restriction-of-rec-calls') applicability condition,
+     and we carry out the proof in the theory consisting of
+     the theorem that relates the old and new functions:
+     this theorem rewrites all the recursive calls of the old function,
+     in the old function's guard theorem,
+     to corresponding recursive calls of the new function
+     (the design notes cover the representative case of a single recursive call,
+     but the transformation covers functions with multiple recursive calls).
+     If the old and new functions are reflexive,
+     we functionally instantiate the stub
+     in the @(':restriction-of-rec-calls') applicability condition.")
+   (xdoc::p
+    "The guard verification event is local;
+     the exported function definition has @(':verify-guards') set to @('t')
+     (when it must be guard-verified).")
+   (xdoc::p
+    "We use the limited simplification option
+     to prevent the dropping of guard hypotheses,
+     which we have otherwise observed in at least one case.
+     As this may involve additional obligations,
+     we make sure to use the guard theorem with limited simplification
+     (which is actually the default, but we make it explicit for clarity),
+     and, in @(tsee restrict-gen-appconds), as discussed there,
+     we retrieve the guard obligations of the restricting predicate
+     with limited simplification as well,
+     so that we have a possibly stronger theorem
+     as that applicability condition.")
+   (xdoc::p
+    "We also enable @(tsee not) in the quoted theory.
+     We have seen at least one example fail without this,
+     due to some special treatment by ACL2 in clausification.
+     It is not clear whether enabling @(tsee not) may cause problems elsewhere:
+     the proofs in the design notes,
+     upon which the generated ACL2 proofs are based,
+     assume that certain parts of the terms are ``atomic'';
+     those parts might start with @(tsee not),
+     in which case enabling @(tsee not) may disrupt the proofs.
+     As we have not yet observed such cases though,
+     for now we add @(tsee not) to the theory,
+     but with the caveat that we may need something more general and robust
+     at some point in the future."))
   (b* ((recursive (recursivep old nil wrld))
        (hints (if recursive
                   `(("Goal"
-                     :in-theory '(,old-to-new)
+                     :in-theory '(,old-to-new not)
                      :use ((:guard-theorem ,old)
                            ,(cdr (assoc-eq :restriction-guard
-                                   appcond-thm-names))
+                                           appcond-thm-names))
                            ,(if stub?
                                 `(:functional-instance
                                   ,(cdr (assoc-eq :restriction-of-rec-calls
-                                          appcond-thm-names))
+                                                  appcond-thm-names))
                                   (,stub? ,new))
                               (cdr (assoc-eq :restriction-of-rec-calls
-                                     appcond-thm-names))))))
+                                             appcond-thm-names))))))
                 `(("Goal"
-                   :in-theory nil
+                   :in-theory '(not)
                    :use ((:guard-theorem ,old)
                          ,(cdr (assoc-eq :restriction-guard
-                                 appcond-thm-names)))))))
-       (event `(local (verify-guards ,new :hints ,hints))))
+                                         appcond-thm-names)))))))
+       (event `(local (verify-guards ,new
+                        :guard-simplify :limited
+                        :hints ,hints))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -815,7 +884,8 @@
             names-to-avoid)
         (install-not-normalized-event old t names-to-avoid wrld))
        ((mv new-local-event
-            new-exported-event)
+            new-exported-event
+            new-body)
         (restrict-gen-new old
                           restriction
                           undefined
@@ -832,6 +902,7 @@
         (restrict-gen-old-to-new old
                                  restriction
                                  new
+                                 new-body
                                  old-to-new
                                  old-to-new-enable
                                  appcond-thm-names

@@ -15,13 +15,21 @@
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "times"))
-(local (include-book "divides"))
-(local (include-book "times-and-divides"))
+(local (include-book "divide"))
+(local (include-book "times-and-divide"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
 (local (include-book "plus"))
 (local (include-book "minus"))
 (local (include-book "nonnegative-integer-quotient"))
+
+(defthm floor-of-expt-2-and-2
+  (implies (integerp n)
+           (equal (floor (expt 2 n) 2)
+                  (if (posp n)
+                      (expt 2 (+ -1 n))
+                    0)))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm floor-of-expt-and-2
   (implies (posp n)
@@ -69,10 +77,10 @@
   :hints (("Goal" :in-theory (enable floor-of-floor))))
 
 (defthm floor-of-*-of-expt-and-expt
-  (implies  (and (< size size2)
-                 (natp size)
-                 (integerp size2)
-                 (integerp i))
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2)
+                (integerp i))
             (equal (floor (* i (expt 2 size))
                           (expt 2 size2))
                    (floor i (expt 2 (- size2 size)))))

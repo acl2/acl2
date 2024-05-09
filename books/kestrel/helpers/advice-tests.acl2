@@ -1,0 +1,21 @@
+; Portcullis and cert flags for advice-tests.lisp
+;
+; Copyright (C) 2022 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Matt K. mod for ACL2(p): test2 failed in ACL2(p) with
+; waterfall-parallelism, perhaps because the advice tool is checkpoint
+; based and ACL2(p) has a different mechanism for checkpoints when
+; waterfall-parallelism is enabled.
+(set-waterfall-parallelism nil)
+
+(include-book "portcullis")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; cert-flags: ? T :TTAGS :ALL

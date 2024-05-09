@@ -55,7 +55,7 @@
   (xdoc::topstring
    (xdoc::p
     "The allowed ATJ types for this are
-     @(':aboolean'), @(':acharacter'), and the @(':j...') types;
+     @(':aboolean'), @(':acharacter'), @(':astring'), and the @(':j...') types;
      see the user documentation.")
    (xdoc::p
     "This is used on the input and output types of
@@ -65,7 +65,8 @@
     "If the check fails, we stop with an error."))
   (b* ((pass (atj-type-case type
                             :acl2 (or (atj-atype-case type.get :boolean)
-                                      (atj-atype-case type.get :character))
+                                      (atj-atype-case type.get :character)
+                                      (atj-atype-case type.get :string))
                             :jprim t
                             :jprimarr t)))
     (or pass
@@ -94,8 +95,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The check fails for all quoted constants except @('t') and @('nil'),
-     which are translated to Java booleans.
+    "The check fails for all quoted constants except:
+     @('t') and @('nil'), which are translated to Java booleans;
+     ACL2 characters, which are translated to Java characters;
+     and ACL2 strings, which are translated to Java strings.
      Other quoted constants are only allowed
      as arguments of the functions in @(tsee *atj-jprim-constr-fns*),
      and those calls are checked as a whole,
@@ -125,6 +128,8 @@
          ((when (pseudo-term-case term :quote))
           (or (equal term acl2::*t*)
               (equal term acl2::*nil*)
+              (characterp (pseudo-term-quote->val term))
+              (stringp (pseudo-term-quote->val term))
               (raise "The function ~x0 includes the quoted constant ~x1, ~
                       which violates the checks required by :NO-AIJ-TYPES T."
                      fn term)))

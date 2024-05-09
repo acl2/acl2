@@ -1,5 +1,5 @@
-# ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2022, Regents of the University of Texas
+# ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+# Copyright (C) 2024, Regents of the University of Texas
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
@@ -235,7 +235,8 @@ sources := axioms.lisp memoize.lisp hons.lisp\
            other-processes.lisp induct.lisp prove.lisp\
            proof-builder-a.lisp history-management.lisp defuns.lisp\
            defthm.lisp other-events.lisp ld.lisp proof-builder-b.lisp\
-           proof-builder-pkg.lisp apply-raw.lisp interface-raw.lisp\
+           proof-builder-pkg.lisp float-a.lisp float-b.lisp float-raw.lisp\
+           apply-raw.lisp interface-raw.lisp\
            serialize.lisp serialize-raw.lisp\
            defpkgs.lisp\
            apply-prim.lisp apply-constraints.lisp apply.lisp
@@ -253,6 +254,10 @@ sources_extra := GNUmakefile acl2-characters doc.lisp \
 
 ACL2_DEPS := $(sources) $(sources_extra)
 
+ACL2_SAVED ?= custom-saved_acl2${ACL2_SUFFIX}
+
+ACL2_SAVED_ARGS ?= "Saved with additions from $(ACL2_CUSTOMIZATION)"
+
 # Top (default) target:
 .PHONY: all
 all: large
@@ -267,6 +272,26 @@ else
 endif
 endif
 endif
+
+# We run target update_books_build_info when ACL2 is built, to update
+# certain files in books/build/, in particular
+# books/build/Makefile-features and books/build/*.certdep files.  Note
+# that we do this every time ACL2 is built, not merely when the
+# sources have changed, because variables ACL2_HOST_LISP and
+# ACL2_COMP_EXT are written to books/build/Makefile-features.  (Of
+# course, one might use cert.pl on a saved_acl2 previously built in
+# the same directory on a different host Lisp.  But this approach is
+# probably much better than nothing, and the target
+# update_books_build_info is only relevant for using cert.pl, not
+# make, as books/GNUmakefile rebuilds books/build/Makefile-features
+# every time it is invoked.)
+.PHONY: update_books_build_info
+update_books_build_info:
+	@if [ ! -d books/build ] ; then \
+	echo "ERROR: Directory, books/build/ does not exist." ;\
+	exit 1 ;\
+	fi
+	@export ACL2=$(ACL2) ; export STARTJOB=$(SHELL) ; cd books/build ; (./features.sh 2>&1) > features.out
 
 # The following target is intended only for when $(ACL2_MAKE_LOG) is
 # not NONE.
@@ -294,8 +319,8 @@ set-up-log:
 # Build tags table for acl2-doc, with ACL2 topics first.
 TAGS-acl2-doc: $(ACL2_DEPS)
 	rm -f TAGS-acl2-doc
-	etags *.lisp -o TAGS-acl2-doc
-	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append)
+	etags -o TAGS-acl2-doc -- *.lisp
+	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append --)
 
 # The targets acl2r and acl2r.lisp were originally created to support
 # ACL2(r) builds.  It has more uses that that now.
@@ -583,7 +608,6 @@ check-books:
 # The next target, DOC, is the target that should generally be used
 # for rebuilding the ACL2 User's Manual.
 # WARNING: Sub-targets below have their own warnings!
-# WARNING: This is unlikely to work with ACL2; use ACL2(h).
 # WARNING: We suggest that you supply ACL2=, e.g., make DOC
 # ACL2=/u/acl2/saved_acl2.  Otherwise parts of the build might use
 # copies of ACL2 that surprise you.  (It seems awkward to pass
@@ -647,7 +671,7 @@ update-doc.lisp: books/system/doc/acl2-doc.lisp books/system/doc/rendered-doc.ls
 # been super carefully thought out, so could change.
 books/system/doc/rendered-doc.lsp: check-books
 	rm -f books/system/doc/rendered-doc.lsp
-	cd books ; $(MAKE) USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2)
+	cd books ; (export ACL2_XDOC_TAGS=FANCY ; $(MAKE) USE_QUICKLISP=1 system/doc/render-doc.cert ACL2=$(ACL2))
 
 .PHONY: STATS
 
@@ -721,6 +745,10 @@ else
 	@$(MAKE) init >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\n**ERROR**: See $(ACL2_MAKE_LOG)." ; exit 1)
 	@echo " done."
 	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
+	@echo "Updating books/build/."
+	@if [ -d books/build ] ; then \
+	$(MAKE) --no-print-directory update_books_build_info ;\
+	fi
 endif
 
 # The following target should be used with care, since it fails to
@@ -759,6 +787,27 @@ large-acl2d:
 .PHONY: large-acl2p
 large-acl2p:
 	@$(MAKE) -s large ACL2_PAR=p
+
+.PHONY: save-exec
+# Note: As per GitHub Issue #1422, $(ACL2_SAVED) is rebuilt unconditionally.
+save-exec:
+	@if [ "$(ACL2_CUSTOMIZATION)" = "" ] || \
+            [ "$(ACL2_CUSTOMIZATION)" = "NONE" ] ; then \
+	  echo "Error: ACL2_CUSTOMIZATION must be set for target $(@)." ;\
+	  exit 1 ;\
+	  fi
+	@if [ ! -f "$(ACL2_CUSTOMIZATION)" ] ; then \
+	  echo "Error: ACL2_CUSTOMIZATION = $(ACL2_CUSTOMIZATION), but" ;\
+	  echo "       that file does not exist." ;\
+	  exit 1 ;\
+	  fi
+	@$(MAKE) update
+	@rm -f workxxx
+	@echo "Preparing to save $(ACL2_SAVED) using ACL2_CUSTOMIZATION = $(ACL2_CUSTOMIZATION) ..."
+	@echo '(value :q) (save-exec "$(ACL2_SAVED)" $(ACL2_SAVED_ARGS))' > workxxx
+	@./$(PREFIXsaved_acl2) < workxxx > $(ACL2_SAVED).out
+	@echo "... done (see $(ACL2_SAVED).out for log)."
+	@rm -f workxxx
 
 # Since ACL2_WAG is for implementors only, we don't bother making a
 # target for it.  Instead one just uses ACL2_WAG=w on the "make"

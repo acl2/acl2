@@ -1,7 +1,7 @@
 ; Signed bit-vector remainder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 ;fixme make sure this is what i want and that it matches what java does
@@ -105,3 +105,9 @@
          0)
   :hints (("Goal" :cases ((posp size))
            :in-theory (enable sbvrem))))
+
+(defthm sbvrem-of-when-not-integerp-arg1
+  (implies (not (integerp x))
+           (equal (sbvrem size x y)
+                  0))
+  :hints (("Goal" :in-theory (enable sbvrem))))

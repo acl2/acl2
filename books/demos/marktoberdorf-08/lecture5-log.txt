@@ -12,7 +12,7 @@ ACL2 !>>(INCLUDE-BOOK "m1-fast")
 Summary
 Form:  ( INCLUDE-BOOK "m1-fast" ...)
 Rules: NIL
- "m1-fast.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/m1-fast.lisp")
 ACL2 !>>(IN-PACKAGE "M1")
  "M1"
 M1 !>>'(END OF SETUP)
@@ -22,15 +22,15 @@ M1 !>>(CORRECT "ABCXDBC" "xxxxABCxxxGxABCXDBC")
 M1 !>>(FAST "ABCXDBC" "xxxxABCxxxGxABCXDBC")
 12
 M1 !>>(DEFUN RUN-FAST (PAT TXT)
-             (TOP (STACK (RUN (M1-BOYER-MOORE-SCHED PAT TXT)
-                              (MAKE-STATE 0
-                                          (LIST PAT (- (LENGTH PAT) 1)
-                                                TXT (- (LENGTH PAT) 1)
-                                                (LENGTH PAT)
-                                                (LENGTH TXT)
-                                                (PREPROCESS PAT)
-                                                0)
-                                          NIL *M1-BOYER-MOORE-PROGRAM*)))))
+        (TOP (STACK (RUN (M1-BOYER-MOORE-SCHED PAT TXT)
+                         (MAKE-STATE 0
+                                     (LIST PAT (- (LENGTH PAT) 1)
+                                           TXT (- (LENGTH PAT) 1)
+                                           (LENGTH PAT)
+                                           (LENGTH TXT)
+                                           (PREPROCESS PAT)
+                                           0)
+                                     NIL *M1-BOYER-MOORE-PROGRAM*)))))
 
 Since RUN-FAST is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of RUN-FAST.
@@ -73,11 +73,10 @@ M1 !>>(PE 'M1-BOYER-MOORE-IS-CORRECT)
    d       2  (INCLUDE-BOOK "m1-fast")
               \
               [Included books, outermost to innermost:
-               "[books]/demos/marktoberdorf-08/m1-fast.lisp"
+               (:SYSTEM . "demos/marktoberdorf-08/m1-fast.lisp")
               ]
               \
->              (DEFTHM
-                M1-BOYER-MOORE-IS-CORRECT
+>              (DEFTHM M1-BOYER-MOORE-IS-CORRECT
                 (IMPLIES
                  (AND (STRINGP PAT) (STRINGP TXT))
                  (EQUAL

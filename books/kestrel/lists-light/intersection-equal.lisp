@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function intersection-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (local (include-book "remove1-equal"))
+(local (include-book "member-equal"))
 
 (in-theory (disable intersection-equal))
 
@@ -22,11 +23,23 @@
            (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
-(defthm intersection-equal-of-append
+(defthm intersection-equal-of-append-arg1
   (equal (intersection-equal (append x y) z)
          (append (intersection-equal x z)
                  (intersection-equal y z)))
   :hints (("Goal" :in-theory (enable intersection-equal append))))
+
+(defthm intersection-equal-of-append-arg2-iff
+  (iff (intersection-equal x (append y z))
+       (or (intersection-equal x y)
+           (intersection-equal x z)))
+  :hints (("Goal" :in-theory (enable intersection-equal append))))
+
+(local
+ (defthm member-equal-of-intersection-equal-iff-helper
+   (implies (not (member-equal a y))
+            (not (member-equal a (intersection-equal x y))))
+   :hints (("Goal" :in-theory (enable member-equal intersection-equal)))))
 
 (defthm member-equal-of-intersection-equal-iff
   (iff (member-equal a (intersection-equal x y))
@@ -93,10 +106,29 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable intersection-equal))))
 
-(defthmd intersection-equal-when-subsetp-equal-iff
+(defthm intersection-equal-when-intersection-equal-of-cdr-arg2-cheap
+  (implies (intersection-equal x (cdr y))
+           (intersection-equal x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthm intersection-equal-when-not-intersection-equal-of-cdr-arg2-iff
+  (implies (and (not (intersection-equal x (cdr y)))
+                (consp y))
+           (iff (intersection-equal x y)
+                (member-equal (car y) x)))
+  :hints (("Goal" :in-theory (enable intersection-equal))))
+
+(defthmd intersection-equal-when-subsetp-equal-swapped-iff
   (implies (subsetp-equal y x)
            (iff (intersection-equal x y)
                 (consp y))))
+
+(defthm intersection-equal-when-subsetp-equal
+  (implies (subsetp-equal x y)
+           (equal (intersection-equal x y)
+                  (true-list-fix x)))
+  :hints (("Goal" ;:induct (intersection-equal y x)
+           :in-theory (enable intersection-equal))))
 
 (defthm intersection-equal-of-remove1-equal-arg1-irrel-arg1
   (implies (not (member-equal a y))
@@ -136,3 +168,10 @@
   :hints (("Goal" :induct (intersection-equal-induct x y)
            :expand (intersection-equal y x)
            :in-theory (enable intersection-equal intersection-equal-induct))))
+
+;; The corresponding rule for y is not true.  Consider (intersection-equal '(1 1) '(1)) = '(1 1).
+(defthm <=-of-len-of-intersection-equal-linear
+  (<= (len (intersection-equal x y))
+      (len x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable intersection-equal))))

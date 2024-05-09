@@ -1,7 +1,7 @@
 ; Bounded dag args
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -144,3 +144,11 @@
   (implies (and (dargp-less-than item bound)
                 (not (consp item)))
            (< item bound)))
+
+(defthmd dargp-less-than-when-dargp
+  (implies (dargp item)
+           (equal (dargp-less-than item bound)
+                  (if (consp item)
+                      t
+                    (< item bound))))
+  :hints (("Goal" :in-theory (enable dargp-less-than))))

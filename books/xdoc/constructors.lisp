@@ -1,6 +1,6 @@
 ; XDOC Documentation System for ACL2
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,7 +26,7 @@
 
 (defxdoc constructors
   :parents (xdoc)
-  :short "Utilities to costruct
+  :short "Utilities to construct
           well-formed <see topic='@(url xdoc)'>XDOC</see> strings."
   :long
   "<p>XDOC strings use <see topic='@(url markup)'>XML tags</see>,
@@ -666,7 +666,7 @@
       @('table') would conflict with the built-in @(tsee table),
       @('u') would conflict with the built-in @(tsee u),
       and @('see') would conflict with an existing function called @('see')
-      in @('[books]/xdoc/names.lisp').</p>
+      in community book @('xdoc/names.lisp').</p>
    <p>See also @(tsee generate-primitive-constructor-for-dir/&&).</p>
    @(def generate-primitive-constructor-for-tag)"
 
@@ -1160,3 +1160,86 @@
 
   (defmacro seetopic (topic text)
     `(see_ :topic (@url ,topic) ,text)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection section
+  :parents (generic-composite-constructors)
+  :short "Construct a section with a title and some content."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This provides more abstraction and structure,
+     compared to using a specific heading followed by the content.")
+   (xdoc::p
+    "This is currently producing a level-3 heading,
+     which is often used for the top-level sectioning of XDOC pages.
+     It could be made customizable in the future.")
+   (xdoc::@def "section"))
+
+  (defmacro section (title &rest content)
+    `(xdoc::&&
+      (xdoc::h3 ,title)
+      ,@content)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection subsection
+  :parents (generic-composite-constructors)
+  :short "Construct a subsection with a title and some content."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be used inside a @(tsee section).")
+   (xdoc::p
+    "Currently this produces a level-4 heading,
+     which is adequate since @(tsee section) produces a level-3 heading.
+     As mentioned in @(tsee section),
+     the exact heading level could be made customizable;
+     in order to enforce the right relationship
+     between the levels of @(tsee section) and @(tsee subsection),
+     this could be based on a changeable global setting (e.g. in a table).")
+   (xdoc::@def "subsection"))
+
+  (defmacro subsection (title &rest content)
+    `(xdoc::&&
+      (xdoc::h4 ,title)
+      ,@content)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection subsubsection
+  :parents (generic-composite-constructors)
+  :short "Construct a subsubsection with a title and some content."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be used inside a @(tsee subsection).")
+   (xdoc::p
+    "Currently this produces a level-5 heading.
+     See the discussion in @(tsee section) and @(tsee subsection)
+     regarding possible future level customization."))
+
+  (defmacro subsubsection (title &rest content)
+    `(xdoc::&&
+      (xdoc::h5 ,title)
+      ,@content)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection subsubsubsection
+  :parents (generic-composite-constructors)
+  :short "Construct a subsubsubsection with a title and some content."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This should be used inside a @(tsee subsubsection).")
+   (xdoc::p
+    "Currently this produces a level-6 heading.
+     See the discussion in @(tsee section) and @(tsee subsection)
+     regarding possible future level customization."))
+
+  (defmacro subsubsubsection (title &rest content)
+    `(xdoc::&&
+      (xdoc::h6 ,title)
+      ,@content)))

@@ -1,0 +1,156 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFCONST *OLD-STANDARD-OI*
+          *STANDARD-OI*)
+
+Summary
+Form:  ( DEFCONST *OLD-STANDARD-OI* ...)
+Rules: NIL
+ *OLD-STANDARD-OI*
+ACL2 !>>(REDEF+)
+ T
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-OI*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-OI STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-OI* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-CO*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-CO STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-CO* ...):  *STANDARD-CO*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-CO* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-CO* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-CO*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(MONITOR! 'LEN T)
+ T
+ACL2 !>>(SET-EVISC-TUPLE (EVISC-TUPLE 5 6 NIL NIL)
+                         :IPRINT :SAME
+                         :SITES :ALL)
+ (:TERM :LD
+        :TRACE :ABBREV
+        :GAG-MODE :BRR)
+ACL2 !>>(MV-LET (STEP-LIMIT TERM TTREE)
+                (REWRITE '(LEN (CONS A B))
+                         NIL 1 20 100 ...)
+          (DECLARE (IGNORE STEP-LIMIT TERM TTREE))
+          (MAKE-LIST 10))
+
+(1 Breaking (:DEFINITION LEN) on (LEN (CONS A B)):
+1 ACL2 !>
+ACL2 Observation in SET-IPRINT:  Iprinting has been enabled.
+1 ACL2 !>(NIL NIL NIL NIL NIL NIL . #@1#)NIL
+1 ACL2 !>
+(2 Breaking (:DEFINITION LEN) on (LEN B):
+2 ACL2 !>
+2x (:DEFINITION LEN) failed because the :REWRITTEN-RHS is judged heuristically
+unattractive.
+2)
+
+1 (:DEFINITION LEN) produced (BINARY-+ '1 (LEN B)).
+1)
+(NIL NIL NIL NIL NIL NIL . #@2#)
+ACL2 !>>(ASSERT-EVENT (EQUAL '(NIL NIL NIL NIL NIL NIL . #@3#)
+                             (MAKE-LIST 8)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL '(NIL NIL NIL NIL NIL NIL . #@4#)
+                             (MAKE-LIST 10)))
+ :PASSED
+ACL2 !>>(SET-IPRINT T)
+
+ACL2 Observation in SET-IPRINT:  Iprinting remains enabled.
+ACL2 !>>(MV-LET (STEP-LIMIT TERM TTREE)
+                (REWRITE '(LEN (CONS A B))
+                         NIL 1 20 100 . #@5#)
+          (DECLARE (IGNORE STEP-LIMIT TERM TTREE))
+          (MAKE-LIST 10))
+
+(1 Breaking (:DEFINITION LEN) on (LEN (CONS A B)):
+1 ACL2 !>(NIL NIL NIL NIL NIL NIL . #@6#)NIL
+1 ACL2 !>
+(2 Breaking (:DEFINITION LEN) on (LEN B):
+2 ACL2 !>
+2x (:DEFINITION LEN) failed because the :REWRITTEN-RHS is judged heuristically
+unattractive.
+2)
+
+1 (:DEFINITION LEN) produced (BINARY-+ '1 (LEN B)).
+1)
+(NIL NIL NIL NIL NIL NIL . #@7#)
+ACL2 !>>(ASSERT-EVENT (EQUAL '(NIL NIL NIL NIL NIL NIL . #@8#)
+                             (MAKE-LIST 8)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL '(NIL NIL NIL NIL NIL NIL . #@9#)
+                             (MAKE-LIST 10)))
+ :PASSED
+ACL2 !>>(REDEF+)
+
+TTAG NOTE: Adding ttag :REDEF+ from the top level loop.
+ T
+ACL2 p!>>(DEFCONST *STANDARD-OI*
+           *OLD-STANDARD-OI*)
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>Bye.

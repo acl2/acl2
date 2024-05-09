@@ -1,0 +1,231 @@
+; -*-Lisp-*-
+
+; README
+
+; Copyright (C) 2020-2022, ForrestHunt, Inc.
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Authors: Warren A. Hunt, Jr., Vivek Ramanathan, J Strother Moore,
+; Matt Kaufmann
+; {hunt,vivek,moore,mattk}@forresthunt.com
+
+; This is joint work of the authors Hunt & Ramanathan from Summer 2020
+; to present.  Moore has been involved from Summer, 2021, implementing
+; a Gaussian-elimination equation solver.  Kaufmann contributed a
+; Spice parser and he has provided a great deal ACL2-specific guidance
+; for this work.
+
+; Support for this work, in part, was provided by the U.S. Army.
+
+; VWSIM -- an RSFQ simulator written in ACL2
+; __________________________________________________________________
+
+; To build the simulator:
+
+  ; For a release build, run the following commands:
+
+    ; <ACL2>/books/build/clean.pl
+    ; <ACL2>/books/build/cert.pl -j <n> --acl2 <acl2> top
+
+  ; For a development build (that includes a local copy of the
+  ; documentation), run the following commands:
+
+    ; <ACL2>/books/build/clean.pl
+    ; <ACL2>/books/build/cert.pl -j <n> --acl2 <acl2> top vwsim-doc
+
+
+; To read the documentation:
+
+  ; For a released build,
+
+    ; open the ACL2 XDOC
+    ; (https://www.cs.utexas.edu/users/moore/acl2/manuals/current/)
+    ; and jump to topic "vwsim".
+
+  ; For a development build,
+
+    ; open doc/index.html
+
+    ; Within the browser, jump to topic "vwsim".
+
+    ; To read with Emacs using the ACL2-Doc extension, do M-x acl2-doc
+    ; and then C-u I vwsim-preview -- see additional instructions
+    ; below.
+
+#||
+
+The following list describes the important files:
+
+constants.lisp
+==============
+
+Contains the unit prefixes (femto, pico, nano,...) and other useful
+constants (pi, e, phi0, ...) stored as lisp constants.
+
+names-and-indices.lisp
+======================
+
+Defines recognizers for simulation variables.
+
+num.lisp
+========
+
+Defines the rational/floating-point number recognizers.
+
+arith-fp.lisp
+=============
+
+Defines the arithmetic functions used to perform floating-point
+arithmetic.
+
+records.lisp
+============
+
+Defines the linked-list style records that store the simulation values
+for all variables. This is used by the unoptimized evaluator and
+constant-folder.
+
+sra-matrix-defuns.lisp
+======================
+
+Contains the recognizers, accessors, and modifiers for
+sparse-representation-alist (sra) rows in VWSIM.
+
+vw-eval.lisp
+============
+
+Defines VWSIM's complete, unoptimized evaluator and its corresponding
+term recognizer for symbolic equations.  We recognize terms with
+function "vw-eval-termp" and evaluate terms using
+function "vw-eval". Also defines the term constant-folder.
+
+vw-eval-ar.lisp
+===============
+
+Defines VWSIM's optimized evaluator and corresponding
+recognizers. This mechanism ensures that all unique subterms in the
+simulation state are evaluated only once.
+
+vw-flat-hdl.lisp
+================
+
+Defines the VWSIM hardware description language (HDL) for flat
+(non-heirarchical) circuits.
+
+vw-hrchl-hdl.lisp
+=================
+
+Defines the VWSIM hardware description language (HDL) for heirarchical
+circuits.
+
+vw-flatten-top-sort.lisp
+========================
+
+Defines a function to flatten a heirarchical netlist into one module.
+Also provides a function to sort a heirarchical netlist (topological
+sort) so that every occurrence in a module only references modules
+defined later in the netlist.
+
+sra-vw-flat-sim-help.lisp
+=========================
+
+Provides helper functions that build the symbolic equations (Ax=b) in
+sparse-representation format and help perform simulation for a
+flattened circuit netlist.
+
+sra-vw-flat-sim.lisp
+===================
+
+Defines the simulation loop. This file includes the linear system
+solver ``dz-unc'', which is not yet guard-verified. Thus, this file
+contains some skip-proofs.
+
+driver.lsp
+==========
+
+Defines the top-level VWSIM macro.
+
+
+doc/
+====
+
+The code to make VWSIM documentation is in this directory.  When
+everything is (re-)certified, ACL2-style document is generated.  One
+can read the generated HTML content by opening file ``index.html''
+with a browser.  Or, one can use ACL2's M-x acl2-doc Emacs command to
+read the documentation by using the command C-u I (in ACL2-Doc) after
+the form below has been evaluated by Emacs.
+
+Just to repeat ourselves, to use Emacs to read ACL2-Emacs-Info-style
+documentation, one evaluates the E-lisp form below which extends the
+list of known topics for the Emacs-based ACL2 documentation reader.
+For example, once the documentation has been created, one evaluates a
+command like what you find below (e.g., inside of the Emacs *scratch*
+buffer) and then uses the ACL2-Doc, C-u I command provided by the
+Emacs Lisp files created for reading ACL2 documentation.
+
+This next command should be run only once so as to provide another
+known place that contains ACL2-style Emacs documentation; thus, this
+form can be either placed in one's ".emacs" file or evaluated after
+starting an Emacs session.
+
+(extend-acl2-doc-manual-alist
+  ;; The name of the manual. You can select this manual by running the
+  ;; command "I" with a prefix argument in acl2-doc. That is, run C-u
+  ;; I. Then, type vwsim-preview to select the topic to view.
+  'vwsim-preview
+  ;; documentation source, typically of the form *doc*.lsp
+  "~/Sync/sf/Hunt/vwsim-2.9/doc/rendered-vwsim-acl2-doc.lsp"
+  ;; the "top" node name. In this case, we want to jump directly to the
+  ;; VWSIM topic.
+  'VWSIM
+  )
+
+
+parse-spice/
+============
+
+    parse-spice.lisp
+    ================
+
+    Converts a ".cir" file to an ACL2 list that contains the parsed
+    result.
+
+    spice-to-vwsim.lisp
+    ===================
+
+    Converts the parsed result produced by the functions in
+    "parse-spice.lisp" into VWSIM's representation of heirarchical
+    netlists.
+
+dz-unc/
+======
+
+Provides functions to solve a linear system Ax=b using Gaussian
+Elimination.  This code has been optimized to leverage the sparsity of
+the ``A'' matrix. We are currently working on the guard-verification
+of this code.
+
+Testing/
+========
+
+Contains ".cir" and ".csv" files that are used used for testing the
+VWSIM simulator.
+
+
+General Notes
+=============
+
+To perform profiling, this next form can be used.
+
+(progn (clear-memoize-statistics)
+       (profile-fn 'vw-eval-subterm-list)
+       (profile-fn 'back-ar)
+       (profile-fn 'dz-unc-solve)
+       (profile-fn 'xp-rec-updates)
+       (profile-fn 'update-rec-x-names))
+
+
+
+||#

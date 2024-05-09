@@ -30,6 +30,7 @@
 (include-book "kestrel/soft/defun-inst" :dir :system)
 (include-book "kestrel/soft/defthm-inst" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/fsublis-fn" :dir :system)
 (include-book "kestrel/std/system/if-tree-leaf-terms" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/runes" :dir :system)
@@ -209,16 +210,16 @@
            (er-soft+
             ctx t nil
             "In order to use the ACL2 rewriter as the solving method ~
-             it is necessary to include ~
-             [books]/kestrel/apt/solve-method-acl2-rewriter.lisp.")))
+             it is necessary to include community book ~
+             kestrel/apt/solve-method-acl2-rewriter.lisp.")))
         ((eq method :axe-rewriter)
          (if (function-symbolp *solve-call-axe-rewriter* (w state))
              (value nil)
            (er-soft+
             ctx t nil
             "In order to use the Axe rewriter as the solving method ~
-             it is necessary to include ~
-             [books]/kestrel/apt/solve-method-axe-rewriter.lisp.")))
+             it is necessary to include community book ~
+             kestrel/apt/solve-method-axe-rewriter.lisp.")))
         ((eq method :manual)
          (value nil))
         (method?

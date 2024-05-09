@@ -1,7 +1,7 @@
 ; A utility to split a list of characters at a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,10 +60,20 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
+(defthm true-listp-of-mv-nth-1-of-split-chars-aux
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (split-chars-aux chars char acc))))
+  :hints (("Goal" :in-theory (enable split-chars-aux))))
+
 (defthm character-listp-of-mv-nth-1-of-split-chars-aux
   (implies (and (character-listp chars)
                 (character-listp acc))
            (character-listp (mv-nth 1 (split-chars-aux chars char acc))))
+  :hints (("Goal" :in-theory (enable split-chars-aux))))
+
+(defthm true-listp-of-mv-nth-2-of-split-chars-aux
+  (implies (true-listp chars)
+           (true-listp (mv-nth 2 (split-chars-aux chars char acc))))
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
 (defthm character-listp-of-mv-nth-2-of-split-chars-aux
@@ -81,6 +91,13 @@
   (implies (mv-nth 0 (split-chars-aux chars char acc))
            (< (len (mv-nth 2 (split-chars-aux chars char acc)))
               (len chars)))
+  :hints (("Goal" :in-theory (enable split-chars-aux))))
+
+(defthm <-of-len-of-mv-nth-1-of-split-chars-aux
+  (implies (mv-nth 0 (split-chars-aux chars char acc))
+           (< (len (mv-nth 1 (split-chars-aux chars char acc)))
+              (+ (len chars)
+                 (len acc))))
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
 ;; Splits the CHARS into two parts, the characters before the first occurence
@@ -101,15 +118,36 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable split-chars))))
 
+(defthm true-listp-of-mv-nth-1-of-split-chars-type
+  (true-listp (mv-nth 1 (split-chars chars char)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable split-chars))))
+
 (defthm character-listp-of-mv-nth-1-of-split-chars
   (implies (character-listp chars)
            (character-listp (mv-nth 1 (split-chars chars char))))
+  :hints (("Goal" :in-theory (enable split-chars))))
+
+(defthm true-listp-of-mv-nth-2-of-split-chars-type
+  (implies (true-listp chars)
+           (true-listp (mv-nth 2 (split-chars chars char))))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable split-chars))))
 
 (defthm character-listp-of-mv-nth-2-of-split-chars
   (implies (character-listp chars)
            (character-listp (mv-nth 2 (split-chars chars char))))
   :hints (("Goal" :in-theory (enable split-chars))))
+
+(defthm <-of-len-of-mv-nth-1-of-split-chars
+  (implies (mv-nth 0 (split-chars chars char))
+           (< (len (mv-nth 1 (split-chars chars char)))
+              (len chars)))
+  :hints (("Goal"
+           :use (:instance <-of-len-of-mv-nth-1-of-split-chars-aux
+                           (acc nil))
+           :in-theory (e/d (split-chars)
+                           (<-of-len-of-mv-nth-1-of-split-chars-aux)))))
 
 (defthm <=-of-len-of-mv-nth-2-of-split-chars
   (<= (len (mv-nth 2 (split-chars chars char)))
@@ -144,3 +182,9 @@
   :hints (("Goal" :use (:instance split-chars-aux-correct-2
                                   (acc nil))
            :in-theory (e/d (split-chars) (split-chars-aux-correct-1)))))
+
+(defthm split-chars-when-not-consp
+  (implies (not (consp chars))
+           (equal (split-chars chars char)
+                  (mv nil nil nil)))
+  :hints (("Goal" :in-theory (enable split-chars split-chars-aux))))

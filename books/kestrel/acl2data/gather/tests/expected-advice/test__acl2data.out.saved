@@ -1,0 +1,106 @@
+
+0 ;failure_count_hints
+2 ;total_count_hints
+0 ;failure_count_hypotheses
+0 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+0 ;failure_count_single_rune
+0 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test.lisp"
+ (ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
+  (:GOAL
+   (IMPLIES
+     (IF (ORDERED-SYMBOL-ALISTP L)
+         (IF (SYMBOLP KEY)
+             ((LAMBDA (X ALIST)
+                (RETURN-LAST 'MBE1-RAW
+                             (ASSOC-EQ-EXEC X ALIST)
+                             (RETURN-LAST 'PROGN
+                                          (ASSOC-EQ-EXEC$GUARD-CHECK X ALIST)
+                                          (ASSOC-EQUAL X ALIST))))
+              KEY L)
+           'NIL)
+       'NIL)
+     (ORDERED-SYMBOL-ALISTP
+          ((LAMBDA (KEY ALIST)
+             (RETURN-LAST
+                  'MBE1-RAW
+                  (REMOVE1-ASSOC-EQ-EXEC KEY ALIST)
+                  (RETURN-LAST 'PROGN
+                               (REMOVE1-ASSOC-EQ-EXEC$GUARD-CHECK KEY ALIST)
+                               (REMOVE1-ASSOC-EQUAL KEY ALIST))))
+           KEY L))))
+  (:HASH 2096270016)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((NOT (ORDERED-SYMBOL-ALISTP L))
+                   (NOT (SYMBOLP KEY))
+                   (NOT (ASSOC-EQUAL KEY L))
+                   (ORDERED-SYMBOL-ALISTP (REMOVE1-ASSOC-EQUAL KEY L)))))
+  (:EVENT
+     (DEFTHM ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
+       (IMPLIES (AND (ORDERED-SYMBOL-ALISTP L)
+                     (SYMBOLP KEY)
+                     (ASSOC-EQ KEY L))
+                (ORDERED-SYMBOL-ALISTP (REMOVE1-ASSOC-EQ KEY L)))
+       :HINTS
+       (("Goal" :IN-THEORY (DISABLE ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ)))
+       :RULE-CLASSES :FORWARD-CHAINING))
+  (:RULE-CLASSES :FORWARD-CHAINING)
+  (:USED-INDUCTION NIL)
+  (:HINT-SETTING-ALIST
+       (((:DISABLE ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ)
+         :REMOVE
+         (DEFTHM ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
+           (IMPLIES (AND (ORDERED-SYMBOL-ALISTP L)
+                         (SYMBOLP KEY)
+                         (ASSOC-EQ KEY L))
+                    (ORDERED-SYMBOL-ALISTP (REMOVE1-ASSOC-EQ KEY L)))
+           :RULE-CLASSES :FORWARD-CHAINING))))
+  (:SYMBOL-TABLE ((SYMBOLP . :BUILTIN)
+                  (RETURN-LAST . :BUILTIN)
+                  (REMOVE1-ASSOC-EQUAL . :BUILTIN)
+                  (REMOVE1-ASSOC-EQ-EXEC$GUARD-CHECK . :BUILTIN)
+                  (REMOVE1-ASSOC-EQ-EXEC . :BUILTIN)
+                  (ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ . :BUILTIN)
+                  (ORDERED-SYMBOL-ALISTP . :BUILTIN)
+                  (IMPLIES . :BUILTIN)
+                  (IF . :BUILTIN)
+                  (ASSOC-EQUAL . :BUILTIN)
+                  (ASSOC-EQ-EXEC$GUARD-CHECK . :BUILTIN)
+                  (ASSOC-EQ-EXEC . :BUILTIN))))
+ (APP-ASSOC (:GOAL (IMPLIES (IF (TRUE-LISTP X)
+                                (IF (TRUE-LISTP Y) (TRUE-LISTP Z) 'NIL)
+                              'NIL)
+                            (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                   (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+            (:HASH 2021904664)
+            (:EXPANSION-STACK NIL)
+            (:GOAL-CLAUSES (((NOT (TRUE-LISTP X))
+                             (NOT (TRUE-LISTP Y))
+                             (NOT (TRUE-LISTP Z))
+                             (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                    (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+            (:EVENT (DEFTHM APP-ASSOC
+                      (IMPLIES (AND (TRUE-LISTP X)
+                                    (TRUE-LISTP Y)
+                                    (TRUE-LISTP Z))
+                               (EQUAL (APPEND (APPEND X Y) Z)
+                                      (APPEND X Y Z)))
+                      :HINTS (("Goal" :IN-THEORY (DISABLE NTH)))))
+            (:RULE-CLASSES (:REWRITE))
+            (:USED-INDUCTION T)
+            (:HINT-SETTING-ALIST (((:DISABLE NTH)
+                                   :REMOVE
+                                   (DEFTHM APP-ASSOC
+                                     (IMPLIES (AND (TRUE-LISTP X)
+                                                   (TRUE-LISTP Y)
+                                                   (TRUE-LISTP Z))
+                                              (EQUAL (APPEND (APPEND X Y) Z)
+                                                     (APPEND X Y Z)))))))
+            (:SYMBOL-TABLE ((TRUE-LISTP . :BUILTIN)
+                            (NTH . :BUILTIN)
+                            (IMPLIES . :BUILTIN)
+                            (IF . :BUILTIN)
+                            (EQUAL . :BUILTIN)
+                            (BINARY-APPEND . :BUILTIN)))))

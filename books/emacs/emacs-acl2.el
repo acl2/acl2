@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -177,13 +177,13 @@
 (if (and (not (boundp '*acl2-sources-dir*))
          (file-name-absolute-p load-file-name))
     (let ((pattern (if (string-match "[\\]" load-file-name)
-		       "\\books\\emacs\\*$"
-		     "/books/emacs/*$"))
-	  (dir (file-name-directory load-file-name)))
+                       "\\books\\emacs\\*$"
+                     "/books/emacs/*$"))
+          (dir (file-name-directory load-file-name)))
       (let ((posn (string-match pattern dir)))
-	(if posn
-	    (setq *acl2-sources-dir*
-		  (substring dir 0 (1+ posn)))))))
+        (if posn
+            (setq *acl2-sources-dir*
+                  (substring dir 0 (1+ posn)))))))
 
 ; The following causes, for every event, the event name to be given
 ; the same color (in font-lock mode) as when defun is called.  If you
@@ -1071,10 +1071,10 @@ of the current s-expression in the enclosing list"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Support for Dynamic Monitoring of Rewrites (dmr)
-(load (concat (acl2-sources-dir) "emacs/monitor.el"))
+(load (concat (acl2-sources-dir) "books/emacs/monitor.el"))
 
 ; Support for ACL2-Doc browser
-(load (concat (acl2-sources-dir) "emacs/acl2-doc.el"))
+(load (concat (acl2-sources-dir) "books/emacs/acl2-doc.el"))
 
 ; Support for xdoc-link-mode, used by acl2+books XDOC manual
 (let ((xdoc-el-file (concat (acl2-sources-dir) "books/xdoc/xdoc.el")))

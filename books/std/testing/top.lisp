@@ -44,5 +44,5 @@
      This library does not contain actual tests
      (other than perhaps tests for the testing utilities themselves),
      which are normally next to the code that they test.
-     Note that @('[books]/system/tests/') contains actual tests,
+     Note that @(see community-book) @('system/tests/') contains actual tests,
      for the ACL2 system code.")))

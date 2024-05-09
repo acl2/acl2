@@ -42,6 +42,7 @@
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroll-java-code") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")
+(include-book "../prune-dag-precisely")
 
 ;; Used by Axe
 (defthm natp-of-+
@@ -119,7 +120,7 @@
             run-until-return-from-stack-height-base-axe
             run-until-return-from-stack-height-opener-axe ;introduces a call of step (this is not the fast version)
             run-until-return-from-stack-height-lemma-for-invoke
-            member-equal-of-nil
+            not-member-equal-of-nil
             )
           ;; Handle Ifs smartly (todo: make this an option?):
           (step-state-with-pc-and-call-stack-height-rules)
@@ -269,7 +270,7 @@
                              use-lets-in-terms ;boolean
                              wrld)
   (declare (xargs :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (or (null max-term-size)
                                   (natp max-term-size))
@@ -511,7 +512,7 @@
        ;; Build a rule to inline methods not already lifted:
        (inlining-theorem (make-step-opener-for-non-already-lifted-methods all-lifted-method-designator-strings))
        ;; This gets rolled back after the make-event:
-       (state (submit-event inlining-theorem state))
+       (state (submit-event-brief inlining-theorem state))
        ;; Set up the rule sets:
        (symbolic-execution-rules (if t ;(eq :auto steps) ;todo
                                      (compositional-symbolic-execution-rules)
@@ -565,20 +566,24 @@
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
         (mv erp nil state))
        (- (cw "  Done simplifying term.)~%"))
+       ;; TODO: Handle a result-dag that is a quotep.
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
         (if prune-branches
-            (prune-dag-new result-dag
-                           assumptions
-                           (set-difference-eq
-                            ;; no actual symbolic execution is done here:
-                            (union-eq (unroll-java-code2-rules)
-                                      extra-rules)
-                            remove-rules)
-                           nil ; interpreted-fns
-                           monitor
-                           call-stp
-                           state)
+            (prune-dag-precisely result-dag
+                                 assumptions
+                                 (set-difference-eq
+                                  ;; no actual symbolic execution is done here:
+                                  (union-eq (unroll-java-code2-rules)
+                                            extra-rules)
+                                  remove-rules)
+                                 :none ; todo: pass a rule-alist here?
+                                 nil ; interpreted-fns
+                                 monitor
+                                 call-stp
+                                 t ; check-fnsp
+                                 print
+                                 state)
           (mv nil result-dag state)))
        ((when erp) (mv erp nil state))
        ;; Now simplify the pruned dag (TODO, repeatedly simplifying and pruning might help?)

@@ -64,7 +64,9 @@
          (t (b* (((mv err args)
                   (magic-ev-lst (cdr x) alist state hard-errp aokp))
                  ((when err)
-                  (mv err args)))
+                  (mv err args))
+                 ((when (programp (car x) (w state)))
+                  (mv (msg "program mode: ~x0" (car x)) nil)))
               (magic-ev-fncall (car x) args state hard-errp aokp)))))
 
  (defun magic-ev-lst (x alist state hard-errp aokp)

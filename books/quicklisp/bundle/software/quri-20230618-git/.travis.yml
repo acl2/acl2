@@ -1,0 +1,30 @@
+language: common-lisp
+sudo: required
+
+env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_BRANCH=release
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+    - COVERAGE_EXCLUDE=t
+  matrix:
+    - LISP=sbcl-bin COVERALLS=true
+    - LISP=ccl-bin
+    - LISP=abcl
+    - LISP=clisp
+    - LISP=ecl
+    - LISP=allegro
+    - LISP=cmucl
+
+matrix:
+  allow_failures:
+    - env: LISP=clisp
+    - env: LISP=cmucl
+
+install:
+  - curl -L https://raw.githubusercontent.com/roswell/roswell/$ROSWELL_BRANCH/scripts/install-for-ci.sh | sh
+  - ros install prove
+
+script:
+  - ros -s quri-test
+  - run-prove quri-test.asd

@@ -1,0 +1,503 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(DEFUN F1-BAD1 (X)
+          (FLET ((G (X) X))
+                (MACROLET ((MAC (A) (LIST 'QUOTE (G A))))
+                          (CONS X (MAC X)))))
+
+
+ACL2 Error [Translate] in ( DEFUN F1-BAD1 ...):  The call (G A) is
+illegal in the body of a MACROLET binding of the symbol MAC, because
+that binding is in the scope of a superior binding of G by FLET.  See
+:DOC macrolet.
+
+
+Summary
+Form:  ( DEFUN F1-BAD1 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F1-BAD1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F1-BAD2 (X)
+          (MACROLET ((G (X) X))
+                    (MACROLET ((MAC (A) (LIST 'QUOTE (G A))))
+                              (CONS X (MAC X)))))
+
+
+ACL2 Error [Translate] in ( DEFUN F1-BAD2 ...):  The call (G A) is
+illegal in the body of a MACROLET binding of the symbol MAC, because
+that binding is in the scope of a superior binding of G by MACROLET.
+See :DOC macrolet.
+
+
+Summary
+Form:  ( DEFUN F1-BAD2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F1-BAD2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN F1 (X)
+          (FLET ((G (X) X))
+                (MACROLET ((MAC (A) (LIST 'QUOTE A)))
+                          (CONS (G X) (MAC X)))))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem 
+(AND (CONSP (F1 X)) (NOT (TRUE-LISTP (F1 X)))).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F1
+ACL2 !>>(ASSERT-EVENT (EQUAL (F1 3) '(3 . X)))
+ :PASSED
+ACL2 !>>(VERIFY-GUARDS F1)
+
+Computing the guard conjecture for F1....
+
+The guard conjecture for F1 is trivial to prove.  F1 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( VERIFY-GUARDS F1)
+Rules: NIL
+ F1
+ACL2 !>>(ASSERT-EVENT (EQUAL (F1 3) '(3 . X)))
+ :PASSED
+ACL2 !>>(DEFUN BINDS-AND-CALLS-F1 NIL
+          (MACROLET ((F1 (X) X)
+                     (F2 NIL (LIST 'QUOTE (F1 3))))
+                    (F2)))
+
+Since BINDS-AND-CALLS-F1 is non-recursive, its admission is trivial.
+We observe that the type of BINDS-AND-CALLS-F1 is described by the
+theorem 
+(AND (CONSP (BINDS-AND-CALLS-F1)) (NOT (TRUE-LISTP (BINDS-AND-CALLS-F1)))).
+
+Summary
+Form:  ( DEFUN BINDS-AND-CALLS-F1 ...)
+Rules: NIL
+ BINDS-AND-CALLS-F1
+ACL2 !>>(ASSERT-EVENT (EQUAL (BINDS-AND-CALLS-F1) '(3 . X)))
+ :PASSED
+ACL2 !>>(DEFUN F2 (X)
+          (FLET ((G (X) (DECLARE (TYPE CONS X)) X))
+                (DECLARE (INLINE G))
+                (FLET ((MAC (A)
+                            (DECLARE (TYPE (SATISFIES TRUE-LISTP) A))
+                            (LIST 'QUOTE (G A))))
+                      (CONS X (MAC X)))))
+
+Since F2 is non-recursive, its admission is trivial.  We observe that
+the type of F2 is described by the theorem 
+(AND (CONSP (F2 X)) (TRUE-LISTP (F2 X))).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F2
+ACL2 !>>(ASSERT-EVENT (EQUAL (F2 '(A B C)) '((A B C) QUOTE (A B C))))
+ :PASSED
+ACL2 !>>(VERIFY-GUARDS F2)
+
+Computing the guard conjecture for F2....
+
+The non-trivial part of the guard conjecture for F2 is
+
+Goal
+(LET ((A X))
+  (AND (TRUE-LISTP A)
+       (LET ((X A)) (CONSP X)))).
+Subgoal 2
+
+([ A key checkpoint:
+
+Subgoal 2
+(TRUE-LISTP X)
+
+*1 (Subgoal 2) is pushed for proof by induction.
+
+])
+Subgoal 1
+
+([ A key checkpoint:
+
+Subgoal 1
+(CONSP X)
+
+Normally we would attempt to prove Subgoal 1 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+
+ACL2 Error in ( VERIFY-GUARDS F2):  The proof of the guard conjecture
+for F2 has failed.  You may wish to avoid specifying a guard, or to
+supply option :VERIFY-GUARDS NIL with the :GUARD.  Otherwise, you may
+wish to specify :GUARD-DEBUG T; see :DOC verify-guards.
+
+
+
+Summary
+Form:  ( VERIFY-GUARDS F2)
+Rules: NIL
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 2
+(TRUE-LISTP X)
+
+Subgoal 1
+(CONSP X)
+
+ACL2 Error [Failure] in ( VERIFY-GUARDS F2):  The proof of the guard
+conjecture for F2 has failed; see the discussion above about :VERIFY-GUARDS
+and :GUARD-DEBUG.  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN MAC-FN (X)
+          (DECLARE (XARGS :GUARD (TRUE-LISTP X)))
+          (CONS (CADR X) (CAR X)))
+
+Since MAC-FN is non-recursive, its admission is trivial.  We observe
+that the type of MAC-FN is described by the theorem (CONSP (MAC-FN X)).
+We used primitive type reasoning.
+
+Computing the guard conjecture for MAC-FN....
+
+The guard conjecture for MAC-FN is trivial to prove, given primitive
+type reasoning.  MAC-FN is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN MAC-FN ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ MAC-FN
+ACL2 !>>(DEFUN F3 (Y Z)
+          (MACROLET ((MAC (X) (MAC-FN X)))
+                    (MAC (((IFIX Y) (IFIX Z)) EXPT))))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (RATIONALP (F3 Y Z)).  We
+used the :type-prescription rules IFIX and RATIONALP-EXPT-TYPE-PRESCRIPTION.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:TYPE-PRESCRIPTION IFIX)
+        (:TYPE-PRESCRIPTION RATIONALP-EXPT-TYPE-PRESCRIPTION))
+ F3
+ACL2 !>>(ASSERT-EVENT (EQUAL (F3 2 3) 8))
+ :PASSED
+ACL2 !>>(DEFUN F3-BAD (Y Z)
+          (MACROLET ((MAC (X) (MAC-FN X)))
+                    (MAC (((IFIX Y) (IFIX Z)) . EXPT))))
+
+
+ACL2 Error [Translate] in ( DEFUN F3-BAD ...):  In the attempt to macroexpand
+the call (MAC (((IFIX Y) (IFIX Z)) . EXPT)) of a macrolet-bound symbol,
+evaluation of the macro body caused the error below.
+
+The guard for the function call (MAC-FN X), which is (TRUE-LISTP X),
+is violated by the arguments in the call (MAC-FN '(# . EXPT)).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.  Note:
+this error occurred in the context 
+(MACROLET ((MAC (X) (MAC-FN X))) (MAC (((IFIX Y) (IFIX Z)) . EXPT))).
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( DEFUN F3-BAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F3-BAD ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ (:SYSTEM . "projects/apply/top.lisp")
+ACL2 !>>(DEFUN$ MY-ID (X) X)
+
+
+ACL2 !>>>(DEFUN MY-ID (X) X)
+
+Since MY-ID is non-recursive, its admission is trivial.  We observe
+that the type of MY-ID is described by the theorem (EQUAL (MY-ID X) X).
+
+Summary
+Form:  ( DEFUN MY-ID ...)
+Rules: NIL
+MY-ID
+
+
+ACL2 !>>>(DEFWARRANT MY-ID)
+
+
+MY-ID is now warranted by APPLY$-WARRANT-MY-ID, with badge 
+(APPLY$-BADGE 1 1 . T).
+
+:WARRANTED
+
+Summary
+Form:  ( PROGN (DEFUN MY-ID ...) ...)
+Rules: NIL
+ :WARRANTED
+ACL2 !>>(DEFUN F3-BAD2 (Y Z)
+          (MACROLET ((MAC (X)
+                          (MAC-FN (APPLY$ 'MY-ID (LIST X)))))
+                    (MAC (((IFIX Y) (IFIX Z)) EXPT))))
+
+
+ACL2 Error [Translate] in ( DEFUN F3-BAD2 ...):  All quoted function
+objects in :FN slots in the :guard and in the body of a macro definition,
+such as in the MACROLET binding for MAC, must be apply$ primitives.
+Apply$ cannot run user-defined functions or ill-formed or untame lambda
+objects while expanding macros.   Because of logical considerations,
+attachments (including DOPPELGANGER-APPLY$-USERFN) must not be called
+in this context.  See :DOC ignored-attachment.  Thus it is illegal
+to use the quoted function object MY-ID in the body of MAC.  Note:
+this error occurred in the context 
+(MACROLET ((MAC (X) (MAC-FN (APPLY$ # #))))
+          (MAC (((IFIX Y) (IFIX Z)) EXPT))).
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+Summary
+Form:  ( DEFUN F3-BAD2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN F3-BAD2 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN DUPS-DISALLOWED (X Z)
+          (FLET ((F1 (Y) (LIST 'QUOTE (LIST Y X)))
+                 (F1 (Y) (LIST 'QUOTE (LIST X Y))))
+                (F1 Z)))
+
+
+ACL2 Error [Translate] in ( DEFUN DUPS-DISALLOWED ...):  We do not
+permit duplications among the list of symbols being defined.  However,
+the symbol F1 is defined more than once.
+
+The above error indicates a problem with the form 
+(FLET ((F1 (Y) (LIST 'QUOTE (LIST Y X)))
+       (F1 (Y) (LIST 'QUOTE (LIST X Y))))
+      (F1 Z)).
+
+
+
+Summary
+Form:  ( DEFUN DUPS-DISALLOWED ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN DUPS-DISALLOWED ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN CANNOT-BIND-PREDEFINED NIL
+          (FLET ((NTH (N X) (CONS N X)))
+                (NTH 3 NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-PREDEFINED ...):  An
+FLET form has attempted to bind NTH, which is predefined in ACL2 hence
+may not be FLET-bound.  Note:  this error occurred in the context 
+(FLET ((NTH (N X) (CONS N X))) (NTH 3 NIL)).
+
+
+Summary
+Form:  ( DEFUN CANNOT-BIND-PREDEFINED ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN CANNOT-BIND-PREDEFINED ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED NIL
+          (FLET ((THROW-RAW-EV-FNCALL (N X) (CONS N X)))
+                (THROW-RAW-EV-FNCALL 3 NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED
+...):  An FLET form has attempted to bind THROW-RAW-EV-FNCALL.  However,
+this symbol must not be FLET-bound.  Note:  this error occurred in
+the context 
+(FLET ((THROW-RAW-EV-FNCALL (N X) (CONS N X))) (THROW-RAW-EV-FNCALL 3 NIL)).
+
+
+Summary
+Form:  ( DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN CANNOT-BIND-BUILT-INS-NOT-PREDEFINED
+...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN CANNOT-BIND-IN-MAIN-LISP-PACKAGE NIL
+          (FLET ((LET (N X) (CONS N X)))
+                (LET 3 NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-IN-MAIN-LISP-PACKAGE
+...):  Symbols in the main Lisp package, such as LET, may not be defined
+or constrained.
+
+The above error indicates a problem with the form 
+(FLET ((LET (N X) (CONS N X))) (LET 3 NIL)).
+
+
+Summary
+Form:  ( DEFUN CANNOT-BIND-IN-MAIN-LISP-PACKAGE ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN CANNOT-BIND-IN-MAIN-LISP-PACKAGE ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN CANNOT-BIND-RETURN-LAST-TABLE NIL
+          (MACROLET ((TIME$1-RAW (N X) (CONS N X)))
+                    (TIME$1-RAW 3 NIL)))
+
+
+ACL2 Error [Translate] in ( DEFUN CANNOT-BIND-RETURN-LAST-TABLE ...):
+It is illegal for MACROLET to bind a symbol that is given special handling
+by RETURN-LAST.  The MACROLET-binding is thus illegal for TIME$1-RAW.
+See :DOC return-last-table.
+
+The above error indicates a problem with the form 
+(MACROLET ((TIME$1-RAW (N X) (CONS N X))) (TIME$1-RAW 3 NIL)).
+
+
+Summary
+Form:  ( DEFUN CANNOT-BIND-RETURN-LAST-TABLE ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN CANNOT-BIND-RETURN-LAST-TABLE ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFUN UNUSED-VAR NIL
+          (FLET ((FOO (N X) X)) (FOO 3 4)))
+
+
+ACL2 Error [Translate] in ( DEFUN UNUSED-VAR ...):  The variable N
+is not used in the body of an FLET-binding of FOO that binds N and
+X.  But N is not declared IGNOREd or IGNORABLE.  See :DOC set-ignore-
+ok.  Note:  this error occurred in the context 
+(FLET ((FOO (N X) X)) (FOO 3 4)).
+
+
+Summary
+Form:  ( DEFUN UNUSED-VAR ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN UNUSED-VAR ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE NIL
+          (SET-IGNORE-OK T)
+          (DEFUN UNUSED-VAR NIL
+            (FLET ((FOO (N X) X)) (FOO 3 4)))
+          (ASSERT-EVENT (EQUAL (UNUSED-VAR) 4)))
+
+To verify that the three encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(SET-IGNORE-OK T)
+T
+
+
+ACL2 !>>>(DEFUN UNUSED-VAR NIL
+           (FLET ((FOO (N X) X)) (FOO 3 4)))
+
+Since UNUSED-VAR is non-recursive, its admission is trivial.  We observe
+that the type of UNUSED-VAR is described by the theorem 
+(AND (INTEGERP (UNUSED-VAR)) (< 1 (UNUSED-VAR))).  
+
+Summary
+Form:  ( DEFUN UNUSED-VAR ...)
+Rules: NIL
+UNUSED-VAR
+
+
+ACL2 !>>>(ASSERT-EVENT (EQUAL (UNUSED-VAR) 4))
+:PASSED
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export UNUSED-VAR.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (SET-IGNORE-OK T) ...)
+Rules: NIL
+ T
+ACL2 !>>(DEFUN F4 (X)
+          (MACROLET ((MAC (&REST A) (LIST 'QUOTE A)))
+                    (CONS X (MAC X Y Z))))
+
+Since F4 is non-recursive, its admission is trivial.  We observe that
+the type of F4 is described by the theorem 
+(AND (CONSP (F4 X)) (TRUE-LISTP (F4 X))).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F4 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F4
+ACL2 !>>(ASSERT-EVENT (EQUAL (F4 7) '(7 X Y Z)))
+ :PASSED
+ACL2 !>>(DEFMACRO MAC (&KEY K) K)
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+ MAC
+ACL2 !>>(DEFUN F5 (X)
+          (MACROLET ((MAC (&KEY K)
+                          (LIST 'QUOTE (LIST K K K))))
+                    (CONS X (MAC :K Y))))
+
+Since F5 is non-recursive, its admission is trivial.  We observe that
+the type of F5 is described by the theorem 
+(AND (CONSP (F5 X)) (TRUE-LISTP (F5 X))).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F5 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F5
+ACL2 !>>(ASSERT-EVENT (EQUAL (F5 7) '(7 Y Y Y)))
+ :PASSED
+ACL2 !>>Bye.

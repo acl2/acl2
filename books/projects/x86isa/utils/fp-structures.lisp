@@ -41,17 +41,19 @@
 (include-book "utilities")
 (include-book "basic-structs")
 
+;; ----------------------------------------------------------------------
+
 (defsection fp-bitstructs
   :parents (structures)
-  :short "<b>Bitstructs related to floating-point operations</b>"
-  )
+  :short "<b>Bitstructs related to floating-point operations</b>")
 
 (local (xdoc::set-default-parents fp-bitstructs))
 
 ;; ----------------------------------------------------------------------
 
 (defbitstruct fp-statusBits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 1, Section 8.1.3</p>"
+  :short "The x87 FPU Status Register."
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 8.1.3.</p>"
   ((ie bitp)    ;; Invalid Operation Flag
    (de bitp)    ;; Denormalized Operand Flag
    (ze bitp)    ;; Zero Divide Flag
@@ -63,7 +65,7 @@
    (c0 bitp)    ;; Condition Code
    (c1 bitp)    ;; Condition Code
    (c2 bitp)    ;; Condition Code
-   (top 3bits) ;; Top of stack pointer
+   (top 3bits)  ;; Top of stack pointer
    (c3 bitp)    ;; Condition Code
    (b bitp)     ;; FPU Busy
    )
@@ -77,16 +79,14 @@
    :rule-classes nil))
 
 (defbitstruct mxcsrBits
-  :long "<p>Source: Intel Manual, Feb-14, Vol. 1, Section 10.2.3</p>"
-
-  ;; MXCSR (Intel Manual, Feb-14, Vol. 1, Section 10.2.3)
-
-  ;;    Bits 16 through 31 of the MXCSR register are reserved and are
-  ;;    cleared on a power-up or reset of the processor; attempting to
-  ;;    write a non-zero value to these bits, using either the FXRSTOR
-  ;;    or LDMXCSR instructions, will result in a general-protection
-  ;;    exception (#GP) being generated.
-
+  :short "The MXCSR Control and Status Register."
+  :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 10.2.3.</p>"
+  ;; From the manual:
+  ;;   Bits 16 through 31 of the MXCSR register are reserved and are
+  ;;   cleared on a power-up or reset of the processor; attempting to
+  ;;   write a non-zero value to these bits, using either the FXRSTOR
+  ;;   or LDMXCSR instructions, will result in a general-protection
+  ;;   exception (#GP) being generated.
   ((ie bitp)          ;; Invalid Operation Flag
    (de bitp)          ;; Denormal Flag
    (ze bitp)          ;; Divide-by-Zero Flag
@@ -100,9 +100,9 @@
    (om bitp)          ;; Overflow Mask
    (um bitp)          ;; Underflow Mask
    (pm bitp)          ;; Precision Mask
-   (rc 2bits)        ;; Rounding Control
-   (fz bitp)          ;; Flush to Zero
-   (reserved 16bits) ;; Reserved bits
+   (rc 2bits)         ;; Rounding Control
+   (ftz bitp)         ;; Flush to Zero
+   (reserved 16bits)  ;; Reserved bits
    )
   :msb-first nil
   :inline t)

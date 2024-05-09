@@ -1,7 +1,7 @@
 ; Mixed theorems about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 
 ;move
 ;gen the bvchops
-(defthm usigned-byte-p-of-+-of-bvchop-and-bvchop-one-more
+(defthm unsigned-byte-p-of-+-of-bvchop-and-bvchop-one-more
   (implies (and (integerp size) (<= 0 size))
            (unsigned-byte-p (+ 1 size)
                             (+ (bvchop size x) (bvchop size y))))
@@ -48,7 +48,7 @@
                           (expt 2 size))
                       (+ 1 (logtail size x) (logtail size y))
                     (+ (logtail size x) (logtail size y)))))
-  :hints (("Goal" :use (:instance logtail-of-plus-helper)
+  :hints (("Goal" :use logtail-of-plus-helper
            :in-theory (e/d (bvplus expt-of-+) ( logtail-of-plus-helper
                                       ;anti-bvplus
                                       )))))
@@ -74,7 +74,7 @@
                               (+ (slice high low x)
                                  (slice high low y)))))))
   :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop expt-of-+)
-                                  ( ;bvlt-of-plus-arg2 bvlt-of-plus-arg1
+                                  ( ;
                                    ;anti-slice
                                    bvchop-of-logtail
                                    ;;logtail-of-sum
@@ -103,5 +103,4 @@
                     (bvchop (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low))) (- (slice high low x)))))))
   :hints (("Goal" :in-theory (e/d (slice bvplus bvchop-of-sum-cases)
                                   (;anti-slice ;anti-bvplus
-;bvlt-of-plus-arg1 bvlt-of-plus-arg2
                                    )))))

@@ -69,14 +69,16 @@ point.</li>
 and hons-AIG modes are not complete.  Shape specifiers don't exist yet.  Many
 of the usual ways of doing things in GL are done differently in FGL.</p>
 
-<p>To get started with FGL in the default configuration:</p>
-@({
+<p>To get started with FGL in the default configuration, first set up a <see
+topic='@(url satlink::sat-solver-options)'>SAT solver</see>; the default for
+FGL is glucose.  To use a different SAT solver, see @(see fgl-solving).</p>
+
+ @({
  ;; include FGL
  (include-book \"centaur/fgl/top\" :dir :system)
- ;; attach to an incremental SAT backend library.
- ;; Note: must have environment variable IPASIR_SHARED_LIBRARY set to the path to 
- ;; an IPASIR-compliant shared library
- (include-book \"centaur/ipasir/ipasir-backend\" :dir :system)
+
+ ;; start an external shell from which the SAT solver can be called
+ (value-triple (acl2::tshell-ensure))
 
  ;; test a proof 
  (fgl::fgl-thm
@@ -88,6 +90,14 @@ of the usual ways of doing things in GL are done differently in FGL.</p>
   :concl (not (logbitp 4 x)))
  })
  
+<p>In addition to a standalone SAT solver program (monolithic solver), for
+certain FGL features you may also want an incremental solver implementing the
+IPASIR interface; see @(see ipasir::ipasir) for an overview and
+(see ipasir::building-an-ipasir-solver-library) for how to build one.  Then
+you'll need to set the environment variable @('IPASIR_SHARED_LIBRARY') and
+include the book @('centaur/ipasir/ipasir-backend') in order to allow its
+use.</p>
+
 <p>To learn more about FGL, here are some places to get started:</p>
 
 <ul>
@@ -749,12 +759,29 @@ pertains to the usual situation where its attachment is
 
 <p>When FGL calls SAT automatically on the result of symbolically executing a
 theorem, the @(see fgl-sat-config) object that is used is the result of calling
-the attachable stub function @('fgl-toplevel-sat-check-config').  When FGL
-rewrite rules or top-level theorems call SAT using @(see fgl-sat-check), the
-configuration object is provided as an argument to that function.</p>
+the attachable stub function @('fgl-toplevel-sat-check-config'). The default
+attachment produces a config object that calls an external SAT solver through
+SATLINK, and delegates the configuration of SATLINK to another attachable
+function, @('fgl-satlink-config').  So the easiest way to change the SAT solver
+used by FGL is to change this attachment as follows (see @(see satlink::config)):</p>
+
+@({
+ (define my-fgl-satlink-config ()
+   :returns (config satlink::config-p)
+   (satlink::change-config satlink::*default-config* :cmdline \"kissat \"))
+
+ (defattach fgl::fgl-satlink-config my-fgl-satlink-config)
+ })
+
+<p>When FGL rewrite rules or top-level theorems call
+SAT using @(see fgl-sat-check), the configuration object is provided as an
+argument to that function.  FGL also checks vacuity of hypotheses by default,
+and the default configuration for this uses another attachable stub function
+@('fgl-toplevel-vacuity-check-config').</p>
 
 <p>An @(see fgl-sat-config) object is either an @(see
-fgl-satlink-monolithic-sat-config) or an @(see fgl-ipasir-config) object.  When
+fgl-satlink-monolithic-sat-config), an @(see fgl-ipasir-config), or an @(see fgl-exhaustive-test-config)
+ object.  When
 it is a @(see fgl-satlink-monolithic-sat-config), satisfiability is checked by
 perhaps performing some
 <see topic='@(url aignet::aignet-comb-transforms)'>AIG transformations</see>
@@ -766,18 +793,26 @@ checked by calling an
 <see topic='@(url ipasir::ipasir)'>IPASIR</see>
 incremental SAT shared library, which may allow the
 current check to benefit from learned lemmas and heuristic information from
-previous checks.</p>
+previous checks.  Finally, when it is an @(see fgl-exhaustive-test-config),
+satisfiability is checked by exhaustive testing of the AIG using <see
+topic='@(url aignet::vector-simulation)'>vector simulation</see>, perhaps after
+some AIG transformations.  This requires that the AIG have 37 or fewer inputs,
+corresponding to the number of entries in FGL's Boolean variable database (see
+@(see fgl-getting-bits-from-objects).  However, if the @('random-iters') field
+of the config object is set, then this input constraint is removed, randomized
+testing is used instead of exhaustive testing, and the check can never return
+UNSAT.</p>
 
-<p>Both the @(see fgl-satlink-monolithic-sat-config) and @(see
-fgl-ipasir-config) types are simple tagged products, and they have two fields
-in common:</p>
+<p>All three such config object types are simple tagged products, and they have
+two fields in common:</p>
 <ul>
 <li>@('ignore-pathcond') says to ignore the path condition when checking satisfiability</li>
 <li>@('ignore-constraint') says to ignore the constraint condition (see @(see def-fgl-boolean-constraint) when checking satisfiability.</li>
 </ul>
 
 <p>The other fields of the @(see fgl-satlink-monolithic-sat-config) object are
-as follows:</p>
+as follows.  The @('transform') and @('transform-config-override') fields also
+pertain to @('fgl-exhaustive-test-config') objects:</p>
 
 <ul>
 
@@ -1331,6 +1366,9 @@ from the ACL2 loop or within the raw Lisp break:</p>
  (defconsts *my-stack* (fgl::interp-st-extract-stack fgl::interp-st))
  ;; Or put it in a state global, accessed as (@ :my-stack):
  (f-put-global ':my-stack (fgl::interp-st-extract-stack fgl::interp-st) state)
+ ;; The following macro does the same as the call above:
+ (fgl::save-fgl-stack :to :my-stack)
+
 
  ;; From within a raw Lisp break, save the stack as a defparameter:
  (defparameter *my-stack* (fgl::interp-st-extract-stack (cdr (assoc 'fgl::interp-st *user-stobj-alist*)))

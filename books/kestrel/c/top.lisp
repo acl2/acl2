@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "language/top")
+(include-book "representation/top")
 (include-book "atc/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -22,15 +23,21 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a library that is being populated with:")
+    "This library contains:")
    (xdoc::ul
     (xdoc::li
-     "A formalization of (some aspects of) the C language.")
+     "A formalization of (a subset of) the C language.
+      This is a deep embedding of C in ACL2.")
     (xdoc::li
-     "A proof-generating C code generator for ACL2."))
+     "A representation of (a subset of) the C language constructs in ACL2.
+      This is a shallow embedding of C in ACL2.")
+    (xdoc::li
+     "A proof-generating C code generator for ACL2.
+      This recognizes, and translates to C,
+      the shallowly embedded ACL2 representation of C constructs,
+      and generates proofs based on the deep embedding."))
    (xdoc::p
-    "The library may also extended with
-     more C-related formalizations and tools.")
+    "The library is work in progress.")
    (xdoc::p
     "This library is based on the "
     (xdoc::ahref "https://www.iso.org/standard/74528.html"
@@ -46,5 +53,6 @@
      These square-bracketed references may be used
      as nouns or parenthetically."))
   :order-subtopics (language
+                    representation
                     atc
                     pack))

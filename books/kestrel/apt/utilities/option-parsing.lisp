@@ -1,6 +1,6 @@
 ; Utilities for handling transformation options
 ;
-; Copyright (C) 2016-2021 Kestrel Institute
+; Copyright (C) 2016-2022 Kestrel Institute
 ; Copyright (C) 2016-2017, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,7 @@
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/messages2" :dir :system)
-(include-book "std/lists/list-defuns" :dir :system) ;for repeat
+(include-book "kestrel/lists-light/repeat-def" :dir :system)
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
@@ -179,7 +179,7 @@
         (elaborate-mut-rec-option-cmp option-value option-name clique-members ctx))
        ((when erp)
         ;; alist-or-msg is a msgp:
-        (er hard? ctx (message-string alist-or-msg) (message-alist alist-or-msg))
+        (er hard? ctx "~@0" alist-or-msg)
         nil))
     alist-or-msg))
 

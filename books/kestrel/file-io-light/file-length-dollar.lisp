@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function file-length$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,12 @@
 
 (in-package "ACL2")
 
-;move
-(local
- (defthm state-p1-of-read-acl2-oracle
-   (implies (state-p1 state)
-            (state-p1 (mv-nth 2 (read-acl2-oracle state))))
-   :hints (("Goal" :in-theory (enable read-acl2-oracle)))))
+(local (include-book "kestrel/utilities/read-acl2-oracle" :dir :system))
+
+(local (in-theory (disable open-input-channels)))
 
 (in-theory (disable file-length$
-                    open-input-channel-p
+                    open-input-channel-p ; drop?  needed for the rule below to fire...
                     mv-nth))
 
 (defthm open-input-channel-p-of-file-length$
@@ -28,9 +25,7 @@
   :hints (("Goal" :in-theory (enable open-input-channel-p
                                      open-input-channel
                                      open-input-channel-p1
-                                     file-length$
-                                     read-acl2-oracle
-                                     update-acl2-oracle))))
+                                     file-length$))))
 
 (defthm state-p1-of-mv-nth-1-of-file-length$
   (implies (state-p1 state)

@@ -18,6 +18,10 @@
 (include-book "std/testing/must-fail-local" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
+(include-book "kestrel/std/system/fundef-disabledp" :dir :system)
+(include-book "kestrel/std/system/rune-disabledp" :dir :system)
+(include-book "kestrel/std/system/rune-enabledp" :dir :system)
+(include-book "kestrel/std/system/theorem-namep" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,5 +713,37 @@
           (f (1- x)))))
 
  (restrict f (natp x))
+
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test a function on which RESTRICT failed at some point.")
+
+ ;; This inspired the use of proof builder instructions
+ ;; in the proof of the old-to-new theorem.
+ ;; Previously the proof was just enabling (in the quoted theory)
+ ;; the (non-normalized) definitions of the old and new functions.
+ ;; But apparently some ACL2 heuristics prevented the desired expansion.
+ ;; Attempting to use :EXPAND hints did not work either,
+ ;; because the restricting causes ACL2 to replace M with 3,
+ ;; and thus the call no longer matches the pattern of the expansion.
+ ;; So now we generate proof builder instructions
+ ;; to "inject" the expansions into the proof.
+
+ (defstub foo (x y) (mv * *))
+
+ (defun bar (n m b)
+   (declare (xargs :verify-guards nil))
+   (if (zp n)
+       nil
+     (cons (mv-nth 0 (mv-list 2 (foo m b)))
+           (bar (+ -1 n)
+                m
+                (mv-nth 1 (mv-list 2 (foo m b)))))))
+
+ (restrict bar (equal m 3))
 
  :with-output-off nil)

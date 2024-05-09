@@ -1,7 +1,7 @@
 ; A parser for Java class files (passed in as sequences of bytes)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,6 +45,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
+(local (include-book "kestrel/lists-light/resize-list" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -158,10 +159,10 @@
 
 ; helps in backchaining
 ;for termination of parse-fieldtype
-(local
- (defthm if-hack-99
-  (equal (< (if (< x y) y x) x)
-         nil)))
+;; (local
+;;  (defthm if-hack-99
+;;   (equal (< (if (< x y) y x) x)
+;;          nil)))
 
 ;dup:
 ;(defforall all-unsigned-byte-p (size lst) (unsigned-byte-p size lst) :fixed size :declares ((type t size lst)))
@@ -202,8 +203,16 @@
 
 ;; Returns an unsigned-byte-p 16
 (defund 2bytes-to-int (highbyte lowbyte)
-  (declare (type (unsigned-byte 8) highbyte lowbyte))
-  (bvcat 8 highbyte 8 lowbyte))
+  (declare (xargs :guard (and (unsigned-byte-p 8 highbyte)
+                              (unsigned-byte-p 8 lowbyte))
+                  :split-types t
+                  :guard-hints (("Goal" :in-theory (enable bvcat logapp))))
+           (type (unsigned-byte 8) highbyte lowbyte))
+  (mbe :logic (bvcat 8 highbyte 8 lowbyte) ; todo: do we even need this?
+       :exec (the (unsigned-byte 16)
+                  (+ (the (unsigned-byte 16)
+                          (* 256 highbyte))
+                     lowbyte))))
 
 (defthm unsigned-byte-p-of-2bytes-to-int
   (unsigned-byte-p 16 (2bytes-to-int highbyte lowbyte))
@@ -661,7 +670,7 @@
   :hints (("Goal" :in-theory (enable constant-pool-entryp))))
 
 ;; Introduces constant-poolp
-;; TODO: Also introduce an invaraint over the constant pool, saying that the information in it is well-typed.
+;; TODO: Also introduce an invariant over the constant pool, saying that the information in it is well-typed.
 (defstobj constant-pool
   (entries :type (array (satisfies constant-pool-entryp) (0)) ; initially empty
            :initially nil
@@ -2983,8 +2992,9 @@
   (b* ((info nil)
        ((mv erp magic bytes) (readu4 bytes))
        ((when erp) (mv erp nil constant-pool))
-       ((when (not (equal magic #xCAFEBABE)))
-        (er hard? 'parse-bytes-into-raw-parsed-class  "Incorrect magic number.  The file does not appear to be a valid class file.")
+       (expected-magic #xCAFEBABE)
+       ((when (not (= magic expected-magic)))
+        (er hard? 'parse-bytes-into-raw-parsed-class  "Incorrect magic number (got ~x0 but expected ~x1).  The file does not appear to be a valid class file." magic expected-magic)
         (mv t nil constant-pool))
        ((mv erp & ;minor_version
             bytes)
@@ -3074,7 +3084,7 @@
        ((when (not (superclass-and-interfaceness-okp this-class-name
                                                       superclass-name
                                                       interfacep)))
-        (mv :bad-class nil constant-pool)))
+        (mv `(:bad-class ,this-class-name) nil constant-pool)))
     (mv (erp-nil) info constant-pool)))
 
 (defthm raw-parsed-classp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class

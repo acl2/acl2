@@ -71,6 +71,23 @@
   (defun foo$not-normalized (y) (cons y y))
   (simplify foo))
 
+; Simple test of heavy-linearp
+(deftest
+  (defun f1 (x)
+    (declare (ignore x))
+    3)
+  (defthm f1-greater-than-2
+    (< 2 (f1 x))
+    :rule-classes :linear)
+  (in-theory (disable f1))
+  (defun f2 (x a b)
+    (if (< 2 (f1 x))
+        a
+      b))
+  (simplify f2)
+  (must-be-redundant
+   (DEFUN F2$1 (X A B) (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL)) A)))
+
 ;;simple example of a recursive function
 (deftest
   (defun bar (x) (if (zp x) 0 (+ 1 1 (bar (+ -1 x)))))
@@ -3684,6 +3701,145 @@ of :?, namely, (:? X).
                      :VERIFY-GUARDS T))
      (CONS (+ 5 X) X))))
 
+(deftest
+
+; The tests below involving removing unused LET/LET* bindings after
+; simplification when :untranslate t is supplied, with function
+; apt::remove-let-bindings.  Each example below shows, as a comment, the result
+; as obtained when that function isn't called.
+
+  (defun f1 (x y)
+    (let* ((u (cons x x))
+           (v (cons y y))
+           (w (car u)))
+      (list v w)))
+
+  (simplify f1
+            :untranslate t)
+
+; Without removing unused let/let* bindings:
+; (DEFUN F1$1 (X Y)
+;        (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+;        (LET* ((U (CONS X X)) (V (CONS Y Y)) (W X))
+;              (LIST V W)))
+
+  (DEFUN F1$1 (X Y)
+         (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+         (LET* ((V (CONS Y Y)) (W X))
+               (LIST V W)))
+
+  (defun f2 (x y)
+    (let* ((u (cons x x))
+           (v (cons y y))
+           (w (car (cons (cons y y) u))))
+      (list v w)))
+
+  (simplify f2
+            :untranslate t)
+
+; Without removing unused let/let* bindings:
+; (DEFUN F2$1 (X Y)
+;        (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+;        (LET* ((U (CONS X X)) (V (CONS Y Y)))
+;              (LIST V V)))
+
+  (DEFUN F2$1 (X Y)
+         (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+         (LET* ((V (CONS Y Y))) (LIST V V)))
+
+  (defun f3 (x y)
+    (let ((v y)
+          (w (cons y y))
+          (u (cons 3 (cdr (cons x y)))))
+      (list u v (car w))))
+
+  (simplify f3
+            :untranslate t)
+
+; Without removing unused let/let* bindings:
+; (DEFUN F3$1 (X Y)
+;        (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+;        (LET ((V Y) (W (CONS Y Y)) (U (CONS 3 Y)))
+;             (LIST U V V)))
+
+  (DEFUN F3$1 (X Y)
+         (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+         (LET ((V Y) (U (CONS 3 Y)))
+              (LIST U V V)))
+
+  (defun f4 (x y)
+    (let ((v y)
+          (w (cons y y))
+          (u (cons 3 (cdr (cons x y)))))
+      (declare (type cons w))
+      (list u v (car w))))
+
+  (simplify f4
+            :untranslate t)
+
+; Without removing unused let/let* bindings:
+; (DEFUN F4$1 (X Y)
+;        (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+;        (LET ((V Y) (W (CONS Y Y)) (U (CONS 3 Y)))
+;             (LIST U V V)))
+
+  (DEFUN F4$1 (X Y)
+         (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+         (LET ((V Y) (U (CONS 3 Y)))
+              (LIST U V V)))
+
+  (defun f5 (x y)
+    (let ((v y)
+          (w (cons y y))
+          (u (cons 3 (cdr (cons x y)))))
+      (declare (type cons w u)
+               (ignorable v w))
+      (list u v (car w))))
+
+  (simplify f5
+            :untranslate t)
+
+; Without removing unused let/let* bindings:
+; (DEFUN F5$1 (X Y)
+;        (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+;        (LET ((V Y) (W (CONS Y Y)) (U (CONS 3 Y)))
+;             (LIST U V V)))
+
+  (DEFUN F5$1 (X Y)
+         (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+         (LET ((V Y) (U (CONS 3 Y)))
+  ; The following declare form is what would be appropriate, but apt::simplify
+  ; currently drops the declare form before attempting to remove unused bindings.
+              #+skip
+              (declare (type cons u)
+                       (ignorable v))
+              (LIST U V V)))
+
+  (defun f6 (x y z)
+    (let ((v y)
+          (w (cons y y))
+          (u (cons 3 (cdr (cons x y))))
+          (w2 (cons z z)))
+      (list u v (car w) (car w2))))
+
+  (simplify f6
+            :untranslate t)
+
+; Without removing unused let/let* bindings:
+; (DEFUN F6$1 (X Y Z)
+;        (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+;        (LET ((V Y)
+;              (W (CONS Y Y))
+;              (U (CONS 3 Y))
+;              (W2 (CONS Z Z)))
+;             (LIST U V V Z)))
+
+  (DEFUN F6$1 (X Y Z)
+         (DECLARE (XARGS :GUARD T :VERIFY-GUARDS NIL))
+         (LET ((V Y) (U (CONS 3 Y)))
+              (LIST U V V Z)))
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Some explanation for how simplify-defun works
 ;;; Matt Kaufmann, Nov. 2015
@@ -3730,7 +3886,7 @@ of :?, namely, (:? X).
         (CONS X (F0$1 (CDR (CDR X))))
       NIL)))
 
-; The large comment below provides some explanataion about the events
+; The large comment below provides some explanation about the events
 ; generated.  For simplicity we ignore wrappers (WITH-OUTPUT, ENCAPSULATE,
 ; PROGN, and LOCAL); of course, to see those you may simply change the call of
 ; simplify-defun above to the corresponding call of show-simplify-defun.

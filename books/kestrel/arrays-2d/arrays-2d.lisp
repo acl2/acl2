@@ -1,7 +1,7 @@
 ; A formalization of 2-dimensional arrays as lists of rows
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,6 +38,28 @@
   (equal (items-have-len n (true-list-fix-list lst))
          (items-have-len n lst))
   :hints (("Goal" :in-theory (enable items-have-len true-list-fix-list))))
+
+(defthm true-list-fix-list-does-nothing
+  (implies (all-true-listp lst)
+           (equal (true-list-fix-list lst)
+                  (true-list-fix lst)))
+  :hints (("Goal" :in-theory (enable true-list-fix-list))))
+
+(defthm true-list-fix-list-of-true-list-fix-list
+  (equal (true-list-fix-list (true-list-fix-list lst))
+         (true-list-fix-list lst))
+  :hints (("Goal" :in-theory (enable true-list-fix-list))))
+
+(defthm len-of-true-list-fix-list
+  (equal (len (true-list-fix-list lst))
+         (len lst))
+  :hints (("Goal" :in-theory (enable true-list-fix-list))))
+
+(defthm all-true-listp-of-true-list-fix-list
+  (all-true-listp (true-list-fix-list lst))
+  :hints (("Goal" :in-theory (enable true-list-fix-list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;move
 (defthm len-of-car-when-items-have-len-strong
@@ -153,7 +175,6 @@
          nil)
   :hints (("Goal" :in-theory (enable cols-to-row))))
 
-
 ;contents is a list of lists
 (defund array-elem-2d (row col contents)
   (declare (xargs :guard (and (natp row)
@@ -164,69 +185,69 @@
 
 (defthm array-elem-2d-of-cons
   (implies (and (natp row)
-                (natp col))
+                ;; (natp col)
+                )
            (equal (array-elem-2d row col (cons a b))
                   (if (equal 0 row)
                       (nth col a)
                     (array-elem-2d (+ -1 row) col b))))
-  :hints (("Goal" :in-theory (e/d (array-elem-2d) ()))))
+  :hints (("Goal" :in-theory (enable array-elem-2d))))
 
-
-(defthm len-of-COLS-TO-ARRAY-AUX
+(defthm len-of-cols-to-array-aux
   (implies (natp rownum)
-           (equal (len (COLS-TO-ARRAY-AUX ROWNUM COLS))
+           (equal (len (cols-to-array-aux rownum cols))
                   (+ 1 rownum)))
-  :hints (("Goal" :expand (COLS-TO-ARRAY-AUX 0 COLS)
-           :in-theory (enable COLS-TO-ARRAY-aux))))
+  :hints (("Goal" :expand (cols-to-array-aux 0 cols)
+           :in-theory (enable cols-to-array-aux))))
 
 (defthm len-of-cols-to-array
   (implies (and (integerp n)
                 (< 0 n))
-           (equal (LEN (COLS-TO-ARRAY n cols))
+           (equal (len (cols-to-array n cols))
                   n))
-  :hints (("Goal" :in-theory (enable COLS-TO-ARRAY))))
+  :hints (("Goal" :in-theory (enable cols-to-array))))
 
 (defthm true-listp-of-cols-to-array
   (true-listp (cols-to-array numrows cols))
   :hints (("Goal" :in-theory (enable cols-to-array))))
 
-(defun indhhh (n rownum)
-  (declare (xargs :measure (nfix (+ 1 rownum))))
-  (if (OR (NOT (INTEGERP ROWNUM))
-          (< ROWNUM 0))
-      (list n rownum)
-    (indhhh (+ -1 n) (+ -1 rownum))))
+(local
+  (defun sub1-sub1-induct (n rownum)
+    (declare (xargs :measure (nfix (+ 1 rownum))))
+    (if (or (not (integerp rownum))
+            (< rownum 0))
+        (list n rownum)
+      (sub1-sub1-induct (+ -1 n) (+ -1 rownum)))))
 
-(defthm nth-of-COLS-TO-ARRAY-aux
+(defthm nth-of-cols-to-array-aux
   (implies (and (<= n rownum)
                 (natp n)
-                (natp rownum)
-                )
-           (equal (NTH n (COLS-TO-ARRAY-aux rownum cols))
+                (natp rownum))
+           (equal (nth n (cols-to-array-aux rownum cols))
                   (cols-to-row (- rownum n) cols)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (indhhh n rownum)
-           :in-theory (enable COLS-TO-ARRAY-aux))))
+           :induct (sub1-sub1-induct n rownum)
+           :in-theory (enable cols-to-array-aux))))
 
-(defthm nth-of-COLS-TO-ARRAY
+(defthm nth-of-cols-to-array
   (implies (and (< n m)
                 (natp n)
                 (natp m)
                 )
-           (equal (NTH n (COLS-TO-ARRAY m cols))
+           (equal (nth n (cols-to-array m cols))
                   (cols-to-row n cols)))
-  :hints (("Goal" :in-theory (enable COLS-TO-ARRAY cols-to-row))))
+  :hints (("Goal" :in-theory (enable cols-to-array cols-to-row))))
 
 (defthm len-of-cols-to-row
-  (equal (LEN (COLS-TO-ROW rownum cols))
+  (equal (len (cols-to-row rownum cols))
          (len cols))
-  :hints (("Goal" :in-theory (enable COLS-TO-ROW))))
+  :hints (("Goal" :in-theory (enable cols-to-row))))
 
 (defthm cols-to-row-of-cons
-  (equal (COLS-TO-ROW rownum (cons col cols))
+  (equal (cols-to-row rownum (cons col cols))
          (cons (nth rownum col)
-               (COLS-TO-ROW rownum cols)))
-  :hints (("Goal" :in-theory (enable COLS-TO-ROW))))
+               (cols-to-row rownum cols)))
+  :hints (("Goal" :in-theory (enable cols-to-row))))
 
 (defthm len-of-get-column
   (equal (len (get-column n rows))
@@ -247,66 +268,68 @@
            :in-theory (enable get-column reverse-list))))
 
 (defthm get-column-of-cons
-  (equal (GET-COLUMN N (CONS row rows))
-         (cons (nth n row)  (GET-COLUMN N rows)))
-  :hints (("Goal" :in-theory (enable GET-COLUMN))))
+  (equal (get-column n (cons row rows))
+         (cons (nth n row)  (get-column n rows)))
+  :hints (("Goal" :in-theory (enable get-column))))
 
-(defthm helper-th
-  (IMPLIES (AND (NATP ROWNUM) (CONSP COLS))
-           (EQUAL (NTH 0 (COLS-TO-ROW ROWNUM COLS))
-                  (NTH ROWNUM (NTH 0 COLS))))
-  :hints (("Goal" :expand ((COLS-TO-ROW ROWNUM COLS)))))
+(local
+  (defthm helper-th
+    (implies t ;(and (natp rownum) (consp cols))
+             (equal (nth 0 (cols-to-row rownum cols))
+                    (nth rownum (nth 0 cols))))
+    :hints (("Goal" :expand ((cols-to-row rownum cols))))))
 
-(defthm nth-of-COLS-TO-ROW
-  (implies (and (natp n)
-                (natp rownum))
-           (equal (NTH N (COLS-TO-ROW rownum COLS))
+(defthm nth-of-cols-to-row
+  (implies (and ;(natp n)
+                ;(natp rownum)
+                )
+           (equal (nth n (cols-to-row rownum cols))
                   (nth rownum (nth n cols))))
   :hints (("Goal" :induct t
-           :in-theory (e/d (COLS-TO-ROW nth) (nth-of-cdr)))))
+           :in-theory (e/d (cols-to-row nth) (nth-of-cdr)))))
 
 (defthm get-column-of-nil
-  (equal (GET-COLUMN N NIL)
+  (equal (get-column n nil)
          nil)
-  :hints (("Goal" :in-theory (enable GET-COLUMN))))
+  :hints (("Goal" :in-theory (enable get-column))))
 
-(defthmd reverse-take-one-more
-  (implies (and (<= (+ 1 n) (len lst))
-                (natp n))
-           (equal (REVERSE-LIST (TAKE (+ 1 n) lst))
-                  (cons (nth n lst) (REVERSE-LIST (TAKE n lst)))))
-  :hints (("Goal" :in-theory (enable take)))
-  )
+;; (local
+;;   (defthmd reverse-take-one-more
+;;     (implies (and (<= (+ 1 n) (len lst))
+;;                   (natp n))
+;;              (equal (reverse-list (take (+ 1 n) lst))
+;;                     (cons (nth n lst) (reverse-list (take n lst)))))
+;;     :hints (("Goal" :in-theory (enable take)))))
 
 (defthm GET-COLUMN-of-COLS-TO-ARRAY-AUX
-  (implies (and (natp n)
+  (implies (and ;; (natp n)
                 (natp rownum)
                 (< rownum (len (nth n cols))) ;yuck?
                 ;; (consp cols)
                 )
            (equal (GET-COLUMN N (COLS-TO-ARRAY-AUX rownum COLS))
                   (reverse-list (take (+ 1 rownum) (nth n cols)))))
-  :hints (("Subgoal *1/4''" :in-theory (e/d (REVERSE-TAKE-ONE-MORE) (;CONS-NTH-REVERSE-TAKE
-                                                                         )))
+  :hints (;("Subgoal *1/4''" :in-theory (e/d (REVERSE-TAKE-ONE-MORE) (;CONS-NTH-REVERSE-TAKE
+           ;                                                              )))
           ("Goal"
            :do-not '(generalize eliminate-destructors)
            :expand ( ;(REVERSE-LIST (TAKE ROWNUM (NTH N COLS)))
                     (COLS-TO-ARRAY-AUX 0 COLS))
-     ;:induct (indhhh n rownum)
+     ;:induct (sub1-sub1-induct n rownum)
            :in-theory (e/d ( ;REVERSE-TAKE-ONE-MORE
                             COLS-TO-ARRAY-AUX) (;CONS-NTH-REVERSE-TAKE
                                                 )))))
 
-(defthm GET-COLUMN-of-COLS-TO-ARRAY
-  (implies (and (<= M (LEN (NTH N COLS)))
+(defthm get-column-of-cols-to-array
+  (implies (and (<= m (len (nth n cols)))
                 (< n m)
                 ;; (< n (len cols))
                 (natp n)
                 (natp m))
-           (equal (GET-COLUMN n (COLS-TO-ARRAY m cols))
+           (equal (get-column n (cols-to-array m cols))
                   (take m (nth n cols))))
   :hints (("Goal"
-           :in-theory (enable COLS-TO-ARRAY))))
+           :in-theory (enable cols-to-array))))
 
 ;move
 (defthm ARRAY-ELEM-2D-of-cols-to-array
@@ -316,35 +339,28 @@
                 (natp i)
                 (< j (len cols))
                 (natp j))
-           (equal (ARRAY-ELEM-2D i j (cols-to-array numrows cols))
-                  (ARRAY-ELEM-2D j i cols))
-           )
+           (equal (array-elem-2d i j (cols-to-array numrows cols))
+                  (array-elem-2d j i cols)))
   :hints (("Goal" :in-theory (e/d (cols-to-array ARRAY-ELEM-2D) (;NTH-OF-ARRAY-ROW ARRAY-ELEM-2D-RECOLLAPSE
                                                                  )))))
 
-(defun take-list (n lst)
-  (if (endp lst)
-      nil
-    (cons (take n (car lst)) (take-list n (cdr lst)))))
+;; (defun take-list (n lst)
+;;   (if (endp lst)
+;;       nil
+;;     (cons (take n (car lst)) (take-list n (cdr lst)))))
 
-;use a defmap..
-(defthm len-of-take-list
-  (equal (len (take-list n lst))
-         (len lst))
-  :hints (("Goal" :in-theory (enable take-list))))
+;; ;use a defmap..
+;; (defthm len-of-take-list
+;;   (equal (len (take-list n lst))
+;;          (len lst))
+;;   :hints (("Goal" :in-theory (enable take-list))))
 
-(defthm take-list-when-right-length
-  (implies (and (items-have-len n lst) ;slow?
-                (natp n))
-           (equal (take-list n lst)
-                  (true-list-fix-list lst)))
-  :hints (("Goal" :in-theory (enable true-list-fix-list))))
-
-(defthm true-list-fix-list-does-nothing
-  (implies (all-true-listp lst)
-           (equal (true-list-fix-list lst)
-                  (true-list-fix lst)))
-  :hints (("Goal" :in-theory (enable true-list-fix-list))))
+;; (defthm take-list-when-right-length
+;;   (implies (and (items-have-len n lst) ;slow?
+;;                 (natp n))
+;;            (equal (take-list n lst)
+;;                   (true-list-fix-list lst)))
+;;   :hints (("Goal" :in-theory (enable true-list-fix-list))))
 
 (defthm consp-nth-from-items-have-len
   (implies (and (items-have-len n a)
@@ -366,23 +382,6 @@
                   n))
   :hints (("Goal" :in-theory (e/d (items-have-len nth) (nth-of-cdr)))))
 
-(defthm true-list-fix-list-of-true-list-fix-list
-  (equal (true-list-fix-list (true-list-fix-list lst))
-         (true-list-fix-list lst))
-  :hints (("Goal" :in-theory (enable true-list-fix-list))))
-
-
-
-(defthm len-of-true-list-fix-list
-  (equal (len (true-list-fix-list lst))
-         (len lst))
- :hints (("Goal" :in-theory (enable true-list-fix-list))))
-
-
-(defthm ALL-TRUE-LISTP-of-TRUE-LIST-FIX-LIST
-  (ALL-TRUE-LISTP (TRUE-LIST-FIX-LIST lst))
-  :hints (("Goal" :in-theory (enable TRUE-LIST-FIX-LIST))))
-
 ;disable these?
 (defun row (n x)
   (nth n x))
@@ -397,30 +396,27 @@
                         (cols-to-row rownum (cdr cols)))))
   :hints (("Goal" :in-theory (enable cols-to-row))))
 
-
 (defthm len-of-get-columns
   (implies (natp n)
-           (equal (len (get-columns n COLS))
+           (equal (len (get-columns n cols))
                   (+ 1 n)))
-  :hints (("Goal" :expand (get-columns 0 COLS)
+  :hints (("Goal" :expand (get-columns 0 cols)
            :in-theory (enable get-columns))))
 
 (defthm nth-of-get-columns
   (implies (and (<= n colnum)
                 (natp n)
-                (natp colnum)
-                )
-           (equal (NTH n (get-columns colnum cols))
+                (natp colnum))
+           (equal (nth n (get-columns colnum cols))
                   (get-column (- colnum n) cols)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (indhhh n colnum)
+           :induct (sub1-sub1-induct n colnum)
            :in-theory (enable get-columns))))
 
 (defthm nth-of-transpose-2d-array
   (implies (and (2d-arrayp array)
                 (< n (2d-array-width array))
-                (natp n)
-                )
+                (natp n))
            (equal (nth n (transpose-2d-array array))
                   (get-column n array)))
   :hints (("Goal" :in-theory (enable cols-to-array cols-to-row))))
@@ -433,21 +429,19 @@
            :in-theory (e/d (get-column nth) (nth-of-cdr)))))
 
 (local
- (defun ind77 (j rows)
+ (defun sub1-cdr-induct (j rows)
    (if (endp rows)
        (list j rows)
-     (ind77 (+ -1 j) (cdr rows)))))
+     (sub1-cdr-induct (+ -1 j) (cdr rows)))))
 
 (defthm nth-of-get-column
   (implies (natp j)
-           (equal (NTH j (GET-COLUMN i rows))
-                  (ARRAY-ELEM-2D j i rows))
-           )
+           (equal (nth j (get-column i rows))
+                  (array-elem-2d j i rows)))
   :hints (("Goal"
            :do-not '(generalize eliminate-destructors)
-           :induct (ind77 j rows)
-           :in-theory (e/d (GET-COLUMN cols-to-array ARRAY-ELEM-2D nth-of-0)
-                           ( )))))
+           :induct (sub1-cdr-induct j rows)
+           :in-theory (enable get-column cols-to-array array-elem-2d nth-of-0))))
 
 (defthmd array-elem-2d-constant-opener
   (implies (and (syntaxp (quotep val))
@@ -471,13 +465,13 @@
                 (natp col))
            (equal (array-elem-2d row col val)
                   (if (equal 0 row)
-                      (NTH COL (NTH 0 VAL))
+                      (nth col (nth 0 val))
                     (if (equal 1 row)
-                        (NTH COL (NTH 1 VAL))
+                        (nth col (nth 1 val))
                       (if (equal 2 row)
-                          (NTH COL (NTH 2 VAL))
-                        (NTH COL (NTH 3 VAL)))))))
-  :hints (("Goal" :in-theory (e/d (ARRAY-ELEM-2D) (;NTH-OF-ARRAY-ROW ARRAY-ELEM-2D-RECOLLAPSE
+                          (nth col (nth 2 val))
+                        (nth col (nth 3 val)))))))
+  :hints (("Goal" :in-theory (e/d (array-elem-2d) (;nth-of-array-row array-elem-2d-recollapse
                                                    )))))
 
 (defthm 2d-arrayp-of-cons

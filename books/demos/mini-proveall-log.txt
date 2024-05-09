@@ -26,10 +26,11 @@ However, one of these is flawed and so we are left with one viable
 candidate.  
 
 We will induct according to a scheme suggested by (REVAPPEND X Z),
-but modified to accommodate (APPEND X Y).  These suggestions were produced
-using the :induction rules BINARY-APPEND, REVAPPEND and TRUE-LISTP.
-If we let (:P X Y Z) denote *1 above then the induction scheme we'll
-use is
+but modified to accommodate (APPEND X Y).
+
+These suggestions were produced using the :induction rules BINARY-APPEND,
+REVAPPEND and TRUE-LISTP.  If we let (:P X Y Z) denote *1 above then
+the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X))
                    (:P (CDR X) Y (CONS (CAR X) Z)))
               (:P X Y Z))
@@ -67,9 +68,9 @@ Rules: ((:DEFINITION BINARY-APPEND)
 
 Proof succeeded.
 ACL2 !>>>(DEFUN APP (X Y)
-                (IF (CONSP X)
-                    (CONS (CAR X) (APP (CDR X) Y))
-                    Y))
+           (IF (CONSP X)
+               (CONS (CAR X) (APP (CDR X) Y))
+             Y))
 
 The admission of APP is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -82,8 +83,8 @@ Form:  ( DEFUN APP ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  APP
 ACL2 !>>>(DEFTHM ASSOC-OF-APP
-                 (EQUAL (APP (APP A B) C)
-                        (APP A (APP B C))))
+           (EQUAL (APP (APP A B) C)
+                  (APP A (APP B C))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -92,9 +93,11 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rule APP.  If we let (:P A B C)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P A B C) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B C))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B C))
               (:P A B C))).
@@ -118,9 +121,9 @@ Rules: ((:DEFINITION APP)
         (:REWRITE CDR-CONS))
  ASSOC-OF-APP
 ACL2 !>>>(DEFUN REV (X)
-                (IF (CONSP X)
-                    (APP (REV (CDR X)) (CONS (CAR X) NIL))
-                    NIL))
+           (IF (CONSP X)
+               (APP (REV (CDR X)) (CONS (CAR X) NIL))
+             NIL))
 
 The admission of REV is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -133,17 +136,19 @@ Form:  ( DEFUN REV ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION APP))
  REV
-ACL2 !>>>(DEFTHM TRUE-LISTP-REV (TRUE-LISTP (REV X))
-                 :RULE-CLASSES (:REWRITE :GENERALIZE))
+ACL2 !>>>(DEFTHM TRUE-LISTP-REV
+           (TRUE-LISTP (REV X))
+           :RULE-CLASSES (:REWRITE :GENERALIZE))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rule REV.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -200,16 +205,16 @@ Rules: ((:DEFINITION APP)
         (:TYPE-PRESCRIPTION TRUE-LISTP))
  TRUE-LISTP-REV
 ACL2 !>>>(DEFTHM REV-APP-PROOF-BUILDER
-                 (EQUAL (REV (APP A B))
-                        (APP (REV B) (REV A)))
-                 :RULE-CLASSES NIL
-                 :INSTRUCTIONS (:INDUCT :BASH :INDUCT :BASH :SPLIT (:DV 1)
-                                        :X :NX (:DV 1)
-                                        :X
-                                        :TOP :S
-                                        :BASH (:DIVE 1 1)
-                                        := (:DROP 2)
-                                        :TOP :BASH))
+           (EQUAL (REV (APP A B))
+                  (APP (REV B) (REV A)))
+           :RULE-CLASSES NIL
+           :INSTRUCTIONS (:INDUCT :BASH :INDUCT :BASH :SPLIT (:DV 1)
+                                  :X :NX (:DV 1)
+                                  :X
+                                  :TOP :S
+                                  :BASH (:DIVE 1 1)
+                                  := (:DROP 2)
+                                  :TOP :BASH))
 
 Entering the proof-builder....
 
@@ -222,10 +227,11 @@ We have been told to use induction.  Three induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to two.  However,
 one of these is flawed and so we are left with one viable candidate.
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rules APP and REV.  If
-we let (:P A B) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rules APP and REV.
+If we let (:P A B) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B))
               (:P A B))).
@@ -302,9 +308,10 @@ Now proving ((MAIN . 1) . 1).
 We have been told to use induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (REV B).  This suggestion
-was produced using the :induction rule REV.  If we let (:P A B) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV B).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P A B) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP B)) (:P A B))
      (IMPLIES (AND (CONSP B) (:P A (CDR B)))
               (:P A B))).
@@ -464,8 +471,8 @@ Rules: ((:DEFINITION APP)
         (:REWRITE CDR-CONS))
  REV-APP-PROOF-BUILDER
 ACL2 !>>>(DEFTHM REV-APP
-                 (EQUAL (REV (APP A B))
-                        (APP (REV B) (REV A))))
+           (EQUAL (REV (APP A B))
+                  (APP (REV B) (REV A))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -474,10 +481,11 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rules APP and REV.  If
-we let (:P A B) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rules APP and REV.
+If we let (:P A B) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B))
               (:P A B))).
@@ -537,17 +545,19 @@ Rules: ((:DEFINITION APP)
         (:REWRITE CONS-CAR-CDR))
  REV-APP
 ACL2 !>>>(DEFTHM REV-REV
-                 (IMPLIES (TRUE-LISTP X)
-                          (EQUAL (REV (REV X)) X)))
+           (IMPLIES (TRUE-LISTP X)
+                    (EQUAL (REV (REV X)) X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rules REV and TRUE-LISTP.  If we
-let (:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rules REV and TRUE-LISTP.
+If we let (:P X) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -580,11 +590,11 @@ Rules: ((:DEFINITION APP)
         (:REWRITE REV-APP))
  REV-REV
 ACL2 !>>>(ENCAPSULATE (((LT * *) => *))
-                      (LOCAL (DEFUN LT (X Y)
-                                    (DECLARE (IGNORE X Y))
-                                    NIL))
-                      (DEFTHM LT-NON-SYMMETRIC
-                              (IMPLIES (LT X Y) (NOT (LT Y X)))))
+           (LOCAL (DEFUN LT (X Y)
+                    (DECLARE (IGNORE X Y))
+                    NIL))
+           (DEFTHM LT-NON-SYMMETRIC
+             (IMPLIES (LT X Y) (NOT (LT Y X)))))
 
 To verify that the two encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -594,8 +604,8 @@ Encapsulated Events:
 
 
 ACL2 !>>>>(LOCAL (DEFUN LT (X Y)
-                        (DECLARE (IGNORE X Y))
-                        NIL))
+                   (DECLARE (IGNORE X Y))
+                   NIL))
 
 Since LT is non-recursive, its admission is trivial.  We observe that
 the type of LT is described by the theorem (EQUAL (LT X Y) NIL).  
@@ -607,7 +617,7 @@ LT
 
 
 ACL2 !>>>>(DEFTHM LT-NON-SYMMETRIC
-                  (IMPLIES (LT X Y) (NOT (LT Y X))))
+            (IMPLIES (LT X Y) (NOT (LT Y X))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM LT-NON-SYMMETRIC ...):  A :REWRITE
 rule generated from LT-NON-SYMMETRIC will be triggered only by terms
@@ -648,9 +658,9 @@ Rules: NIL
 Warnings:  Subsume and Non-rec
  LT
 ACL2 !>>>(DEFUN INSERT (X LST)
-                (COND ((ATOM LST) (LIST X))
-                      ((LT X (CAR LST)) (CONS X LST))
-                      (T (CONS (CAR LST) (INSERT X (CDR LST))))))
+           (COND ((ATOM LST) (LIST X))
+                 ((LT X (CAR LST)) (CONS X LST))
+                 (T (CONS (CAR LST) (INSERT X (CDR LST))))))
 
 The admission of INSERT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -662,9 +672,9 @@ Form:  ( DEFUN INSERT ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  INSERT
 ACL2 !>>>(DEFUN INSERT-SORT (LST)
-                (COND ((ATOM LST) NIL)
-                      (T (INSERT (CAR LST)
-                                 (INSERT-SORT (CDR LST))))))
+           (COND ((ATOM LST) NIL)
+                 (T (INSERT (CAR LST)
+                            (INSERT-SORT (CDR LST))))))
 
 The admission of INSERT-SORT is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -678,9 +688,9 @@ Form:  ( DEFUN INSERT-SORT ...)
 Rules: ((:TYPE-PRESCRIPTION INSERT))
  INSERT-SORT
 ACL2 !>>>(DEFUN DEL (X LST)
-                (COND ((ATOM LST) NIL)
-                      ((EQUAL X (CAR LST)) (CDR LST))
-                      (T (CONS (CAR LST) (DEL X (CDR LST))))))
+           (COND ((ATOM LST) NIL)
+                 ((EQUAL X (CAR LST)) (CDR LST))
+                 (T (CONS (CAR LST) (DEL X (CDR LST))))))
 
 The admission of DEL is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -691,9 +701,9 @@ Form:  ( DEFUN DEL ...)
 Rules: NIL
  DEL
 ACL2 !>>>(DEFUN MEM (X LST)
-                (COND ((ATOM LST) NIL)
-                      ((EQUAL X (CAR LST)) T)
-                      (T (MEM X (CDR LST)))))
+           (COND ((ATOM LST) NIL)
+                 ((EQUAL X (CAR LST)) T)
+                 (T (MEM X (CDR LST)))))
 
 The admission of MEM is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -705,10 +715,10 @@ Form:  ( DEFUN MEM ...)
 Rules: NIL
  MEM
 ACL2 !>>>(DEFUN PERM (LST1 LST2)
-                (COND ((ATOM LST1) (ATOM LST2))
-                      ((MEM (CAR LST1) LST2)
-                       (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
-                      (T NIL)))
+           (COND ((ATOM LST1) (ATOM LST2))
+                 ((MEM (CAR LST1) LST2)
+                  (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
+                 (T NIL)))
 
 The admission of PERM is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -726,9 +736,10 @@ ACL2 !>>>(DEFTHM PERM-REFLEXIVE (PERM X X))
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (PERM X X).  This
-suggestion was produced using the :induction rule PERM.  If we let
-(:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (PERM X X).
+
+This suggestion was produced using the :induction rule PERM.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) X)))
               (:P X))
@@ -767,19 +778,21 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION PERM))
  PERM-REFLEXIVE
 ACL2 !>>>(DEFTHM PERM-CONS
-                 (IMPLIES (MEM A X)
-                          (EQUAL (PERM X (CONS A Y))
-                                 (PERM (DEL A X) Y)))
-                 :HINTS (("Goal" :INDUCT (PERM X Y))))
+           (IMPLIES (MEM A X)
+                    (EQUAL (PERM X (CONS A Y))
+                           (PERM (DEL A X) Y)))
+           :HINTS (("Goal" :INDUCT (PERM X Y))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 We have been told to use induction.  One induction scheme is suggested
 by the induction hint.  
 
-We will induct according to a scheme suggested by (PERM X Y).  This
-suggestion was produced using the :induction rule PERM.  If we let
-(:P A X Y) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (PERM X Y).
+
+This suggestion was produced using the :induction rule PERM.  If we
+let (:P A X Y) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) Y)))
               (:P A X Y))
@@ -830,16 +843,17 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION DEL) (:DEFINITION MEM))
  PERM-CONS
 ACL2 !>>>(DEFTHM PERM-SYMMETRIC
-                 (IMPLIES (PERM X Y) (PERM Y X)))
+           (IMPLIES (PERM X Y) (PERM Y X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (PERM X Y).  This
-suggestion was produced using the :induction rule PERM.  If we let
-(:P X Y) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (PERM X Y).
+
+This suggestion was produced using the :induction rule PERM.  If we
+let (:P X Y) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) Y)))
               (:P X Y))
@@ -884,8 +898,8 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION PERM))
  PERM-SYMMETRIC
 ACL2 !>>>(DEFTHM MEM-DEL
-                 (IMPLIES (MEM A (DEL B X)) (MEM A X))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+           (IMPLIES (MEM A (DEL B X)) (MEM A X))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -893,9 +907,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (MEM A X), but modified
-to accommodate (DEL B X).  These suggestions were produced using the
-:induction rules DEL and MEM.  If we let (:P A B X) denote *1 above
-then the induction scheme we'll use is
+to accommodate (DEL B X).
+
+These suggestions were produced using the :induction rules DEL and
+MEM.  If we let (:P A B X) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A B (CDR X)))
@@ -938,9 +954,9 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION MEM))
  MEM-DEL
 ACL2 !>>>(DEFTHM PERM-MEM
-                 (IMPLIES (AND (PERM X Y) (MEM A X))
-                          (MEM A Y))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+           (IMPLIES (AND (PERM X Y) (MEM A X))
+                    (MEM A Y))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -950,9 +966,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (MEM A X), but modified
-to accommodate (PERM X Y).  These suggestions were produced using the
-:induction rules MEM and PERM.  If we let (:P A X Y) denote *1 above
-then the induction scheme we'll use is
+to accommodate (PERM X Y).
+
+These suggestions were produced using the :induction rules MEM and
+PERM.  If we let (:P A X Y) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A (CDR X) (DEL (CAR X) Y)))
@@ -995,8 +1013,8 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION MEM))
  PERM-MEM
 ACL2 !>>>(DEFTHM MEM-DEL2
-                 (IMPLIES (AND (MEM A X) (NOT (EQUAL A B)))
-                          (MEM A (DEL B X))))
+           (IMPLIES (AND (MEM A X) (NOT (EQUAL A B)))
+                    (MEM A (DEL B X))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1004,9 +1022,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (DEL B X), but modified
-to accommodate (MEM A X).  These suggestions were produced using the
-:induction rules DEL and MEM.  If we let (:P A B X) denote *1 above
-then the induction scheme we'll use is
+to accommodate (MEM A X).
+
+These suggestions were produced using the :induction rules DEL and
+MEM.  If we let (:P A B X) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL B (CAR X)))
                    (:P A B (CDR X)))
@@ -1047,8 +1067,8 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION MEM))
  MEM-DEL2
 ACL2 !>>>(DEFTHM COMM-DEL
-                 (EQUAL (DEL A (DEL B X))
-                        (DEL B (DEL A X))))
+           (EQUAL (DEL A (DEL B X))
+                  (DEL B (DEL A X))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1056,9 +1076,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (DEL A X), but modified
-to accommodate (DEL B X).  These suggestions were produced using the
-:induction rule DEL.  If we let (:P A B X) denote *1 above then the
-induction scheme we'll use is
+to accommodate (DEL B X).
+
+These suggestions were produced using the :induction rule DEL.  If
+we let (:P A B X) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A B (CDR X)))
@@ -1103,8 +1125,8 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION DEL))
  COMM-DEL
 ACL2 !>>>(DEFTHM PERM-DEL
-                 (IMPLIES (PERM X Y)
-                          (PERM (DEL A X) (DEL A Y))))
+           (IMPLIES (PERM X Y)
+                    (PERM (DEL A X) (DEL A Y))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1114,9 +1136,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (DEL A X), but modified
-to accommodate (PERM X Y).  These suggestions were produced using the
-:induction rules DEL and PERM.  If we let (:P A X Y) denote *1 above
-then the induction scheme we'll use is
+to accommodate (PERM X Y).
+
+These suggestions were produced using the :induction rules DEL and
+PERM.  If we let (:P A X Y) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (EQUAL A (CAR X)))
                    (:P A (CDR X) (DEL (CAR X) Y)))
@@ -1162,9 +1186,9 @@ Rules: ((:DEFINITION ATOM)
         (:TYPE-PRESCRIPTION PERM))
  PERM-DEL
 ACL2 !>>>(DEFTHM PERM-TRANSITIVE
-                 (IMPLIES (AND (PERM X Y) (PERM Y Z))
-                          (PERM X Z))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+           (IMPLIES (AND (PERM X Y) (PERM Y Z))
+                    (PERM X Z))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1174,9 +1198,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (PERM X Z), but modified
-to accommodate (PERM X Y).  These suggestions were produced using the
-:induction rule PERM.  If we let (:P X Y Z) denote *1 above then the
-induction scheme we'll use is
+to accommodate (PERM X Y).
+
+These suggestions were produced using the :induction rule PERM.  If
+we let (:P X Y Z) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (MEM (CAR X) Z)))
               (:P X Y Z))
@@ -1308,9 +1334,9 @@ Rules: NIL
 Warnings:  Equiv
  PERM-IMPLIES-IFF-MEM-2
 ACL2 !>>>(DEFTHM ATOM-PERM
-                 (IMPLIES (NOT (CONSP X)) (PERM X NIL))
-                 :RULE-CLASSES :FORWARD-CHAINING
-                 :HINTS (("Goal" :IN-THEORY (ENABLE PERM))))
+           (IMPLIES (NOT (CONSP X)) (PERM X NIL))
+           :RULE-CLASSES :FORWARD-CHAINING
+           :HINTS (("Goal" :IN-THEORY (ENABLE PERM))))
 
 ACL2 Observation in ( DEFTHM ATOM-PERM ...):  The :TRIGGER-TERMS for
 the :FORWARD-CHAINING rule ATOM-PERM will consist of the list containing
@@ -1325,7 +1351,7 @@ Rules: ((:DEFINITION NOT)
         (:EXECUTABLE-COUNTERPART CONSP))
  ATOM-PERM
 ACL2 !>>>(DEFTHM INSERT-IS-CONS
-                 (PERM (INSERT A X) (CONS A X)))
+           (PERM (INSERT A X) (CONS A X)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-IS-CONS ...):  In
 a :REWRITE rule generated from INSERT-IS-CONS, equivalence relation
@@ -1341,9 +1367,11 @@ this issue.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (INSERT A X).  This
-suggestion was produced using the :induction rule INSERT.  If we let
-(:P A X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (INSERT A X).
+
+This suggestion was produced using the :induction rule INSERT.  If
+we let (:P A X) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (LT A (CAR X)))
                    (:P A (CDR X)))
@@ -1396,7 +1424,7 @@ Splitter rules (see :DOC splitter):
 Warnings:  Double-rewrite
  INSERT-IS-CONS
 ACL2 !>>>(DEFTHM INSERT-SORT-IS-ID
-                 (PERM (INSERT-SORT X) X))
+           (PERM (INSERT-SORT X) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM INSERT-SORT-IS-ID ...): 
 In a :REWRITE rule generated from INSERT-SORT-IS-ID, equivalence relation
@@ -1413,6 +1441,7 @@ Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
 We will induct according to a scheme suggested by (INSERT-SORT X).
+
 This suggestion was produced using the :induction rule INSERT-SORT.
 If we let (:P X) denote *1 above then the induction scheme we'll use
 is
@@ -1455,9 +1484,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (APP X Y-EQUIV),
-but modified to accommodate (APP X Y).  These suggestions were produced
-using the :induction rule APP.  If we let (:P X Y Y-EQUIV) denote *1
-above then the induction scheme we'll use is
+but modified to accommodate (APP X Y).
+
+These suggestions were produced using the :induction rule APP.  If
+we let (:P X Y Y-EQUIV) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP X))
               (:P X Y Y-EQUIV))
      (IMPLIES (AND (CONSP X) (:P (CDR X) Y Y-EQUIV))
@@ -1491,17 +1522,19 @@ Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-PERM-APP-2
 ACL2 !>>>(DEFTHM APP-CONS
-                 (PERM (APP A (CONS B C))
-                       (CONS B (APP A C))))
+           (PERM (APP A (CONS B C))
+                 (CONS B (APP A C))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (APP A C).  This
-suggestion was produced using the :induction rule APP.  If we let (:P A B C)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (APP A C).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P A B C) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B C))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B C))
               (:P A B C))).
@@ -1533,7 +1566,8 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-CONS-2)
         (:REWRITE CDR-CONS)
         (:REWRITE PERM-CONS))
  APP-CONS
-ACL2 !>>>(DEFTHM APP-COMMUTES (PERM (APP A B) (APP B A)))
+ACL2 !>>>(DEFTHM APP-COMMUTES
+           (PERM (APP A B) (APP B A)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM APP-COMMUTES ...):  In a
 :REWRITE rule generated from APP-COMMUTES, equivalence relation PERM
@@ -1554,9 +1588,10 @@ probably be applied whenever the old rule would have been.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (APP A B).  This
-suggestion was produced using the :induction rule APP.  If we let (:P A B)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (APP A B).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P A B) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B))
      (IMPLIES (AND (CONSP A) (:P (CDR A) B))
               (:P A B))).
@@ -1608,19 +1643,21 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-2)
         (:REWRITE CONS-CAR-CDR))
 Warnings:  Subsume and Double-rewrite
  APP-COMMUTES
-ACL2 !>>>(DEFCONG PERM PERM (APP X Y)
-                  1
-                  :HINTS (("Goal" :INDUCT (APP Y X))))
+ACL2 !>>>(DEFCONG PERM PERM
+           (APP X Y)
+           1
+           :HINTS (("Goal" :INDUCT (APP Y X))))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 We have been told to use induction.  One induction scheme is suggested
 by the induction hint.  
 
-We will induct according to a scheme suggested by (APP Y X).  This
-suggestion was produced using the :induction rule APP.  If we let 
-(:P X X-EQUIV Y) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APP Y X).
+
+This suggestion was produced using the :induction rule APP.  If we
+let (:P X X-EQUIV Y) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP Y))
               (:P X X-EQUIV Y))
      (IMPLIES (AND (CONSP Y) (:P X X-EQUIV (CDR Y)))
@@ -1680,9 +1717,10 @@ rewrite for more information on this issue.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rule REV.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -1715,12 +1753,12 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-PERM-APP-1)
 Warnings:  Double-rewrite
  REV-IS-ID
 ACL2 !>>>(DEFUN == (X Y)
-                (IF (CONSP X)
-                    (IF (CONSP Y)
-                        (AND (EQUAL (CAR X) (CAR Y))
-                             (== (CDR X) (CDR Y)))
-                        NIL)
-                    (NOT (CONSP Y))))
+           (IF (CONSP X)
+               (IF (CONSP Y)
+                   (AND (EQUAL (CAR X) (CAR Y))
+                        (== (CDR X) (CDR Y)))
+                 NIL)
+             (NOT (CONSP Y))))
 
 The admission of == is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -1738,9 +1776,10 @@ ACL2 !>>>(DEFTHM ==-SYMMETRIC (== X X))
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (== X X).  This suggestion
-was produced using the :induction rule ==.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (== X X).
+
+This suggestion was produced using the :induction rule ==.  If we let
+(:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X)
                    (CONSP X)
@@ -1777,16 +1816,17 @@ Rules: ((:DEFINITION ==)
         (:TYPE-PRESCRIPTION ==))
  ==-SYMMETRIC
 ACL2 !>>>(DEFTHM ==-REFLEXIVE
-                 (IMPLIES (== X Y) (== Y X)))
+           (IMPLIES (== X Y) (== Y X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (== Y X).  This suggestion
-was produced using the :induction rule ==.  If we let (:P X Y) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (== Y X).
+
+This suggestion was produced using the :induction rule ==.  If we let
+(:P X Y) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP Y)) (:P X Y))
      (IMPLIES (AND (CONSP Y) (NOT (CONSP X)))
               (:P X Y))
@@ -1843,9 +1883,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (== X Z), but modified
-to accommodate (== Y Z) and (== X Y).  These suggestions were produced
-using the :induction rule ==.  If we let (:P X Y Z) denote *1 above
-then the induction scheme we'll use is
+to accommodate (== Y Z) and (== X Y).
+
+These suggestions were produced using the :induction rule ==.  If we
+let (:P X Y Z) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (NOT (CONSP X)) (:P X Y Z))
      (IMPLIES (AND (CONSP X) (NOT (CONSP Z)))
               (:P X Y Z))
@@ -1943,9 +1985,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (APP X Y-EQUIV),
-but modified to accommodate (APP X Y).  These suggestions were produced
-using the :induction rule APP.  If we let (:P X Y Y-EQUIV) denote *1
-above then the induction scheme we'll use is
+but modified to accommodate (APP X Y).
+
+These suggestions were produced using the :induction rule APP.  If
+we let (:P X Y Y-EQUIV) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP X))
               (:P X Y Y-EQUIV))
      (IMPLIES (AND (CONSP X) (:P (CDR X) Y Y-EQUIV))
@@ -1985,10 +2029,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (APP X-EQUIV Y),
-but modified to accommodate (APP X Y) and (== X X-EQUIV).  These suggestions
-were produced using the :induction rules == and APP.  If we let 
-(:P X X-EQUIV Y) denote *1 above then the induction scheme we'll use
-is
+but modified to accommodate (APP X Y) and (== X X-EQUIV).
+
+These suggestions were produced using the :induction rules == and APP.
+If we let (:P X X-EQUIV Y) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (CONSP X-EQUIV))
               (:P X X-EQUIV Y))
      (IMPLIES (AND (CONSP X-EQUIV)
@@ -2023,7 +2068,8 @@ Summary
 Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  ==-IMPLIES-==-APP-1
-ACL2 !>>>(DEFTHM REV-REV-AGAIN (== (REV (REV X)) X))
+ACL2 !>>>(DEFTHM REV-REV-AGAIN
+           (== (REV (REV X)) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM REV-REV-AGAIN ...):  In a
 :REWRITE rule generated from REV-REV-AGAIN, equivalence relation ==
@@ -2038,9 +2084,10 @@ See :doc double-rewrite for more information on this issue.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (REV X).  This suggestion
-was produced using the :induction rule REV.  If we let (:P X) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV X).
+
+This suggestion was produced using the :induction rule REV.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X))
      (IMPLIES (AND (CONSP X) (:P (CDR X)))
               (:P X))).
@@ -2072,10 +2119,10 @@ Rules: ((:CONGRUENCE ==-IMPLIES-==-APP-2)
 Warnings:  Double-rewrite
  REV-REV-AGAIN
 ACL2 !>>>(DEFUN ENDS-IN-A-0 (X)
-                (DECLARE (XARGS :GUARD T))
-                (IF (CONSP X)
-                    (ENDS-IN-A-0 (CDR X))
-                    (EQUAL X 0)))
+           (DECLARE (XARGS :GUARD T))
+           (IF (CONSP X)
+               (ENDS-IN-A-0 (CDR X))
+             (EQUAL X 0)))
 
 The admission of ENDS-IN-A-0 is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -2094,11 +2141,12 @@ Form:  ( DEFUN ENDS-IN-A-0 ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  ENDS-IN-A-0
 ACL2 !>>>(DEFUN APP0 (X Y)
-                (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
-                (IF (ENDS-IN-A-0 X)
-                    (IF (EQUAL X 0)
-                        Y (CONS (CAR X) (APP0 (CDR X) Y)))
-                    'DEFAULT))
+           (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
+           (IF (ENDS-IN-A-0 X)
+               (IF (EQUAL X 0)
+                   Y
+                 (CONS (CAR X) (APP0 (CDR X) Y)))
+             'DEFAULT))
 
 For the admission of APP0 we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2110,8 +2158,6 @@ Goal
              (ACL2-COUNT X))).
 Goal'
 Goal''
-Goal'''
-Goal'4'
 
 Q.E.D.
 
@@ -2146,25 +2192,22 @@ with Common Lisp.
 
 Summary
 Form:  ( DEFUN APP0 ...)
-Rules: ((:DEFINITION ACL2-COUNT)
-        (:DEFINITION ENDS-IN-A-0)
+Rules: ((:DEFINITION ENDS-IN-A-0)
         (:DEFINITION NOT)
         (:DEFINITION O-FINP)
         (:DEFINITION O<)
-        (:ELIM CAR-CDR-ELIM)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:REWRITE CAR-CONS)
-        (:REWRITE CDR-CONS)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
         (:TYPE-PRESCRIPTION ACL2-COUNT))
  APP0
 ACL2 !>>>(DEFUN REV0 (X)
-                (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
-                (IF (ENDS-IN-A-0 X)
-                    (IF (EQUAL X 0)
-                        0
-                        (APP0 (REV0 (CDR X)) (CONS (CAR X) 0)))
-                    'DEFAULT))
+           (DECLARE (XARGS :GUARD (ENDS-IN-A-0 X)))
+           (IF (ENDS-IN-A-0 X)
+               (IF (EQUAL X 0)
+                   0
+                 (APP0 (REV0 (CDR X)) (CONS (CAR X) 0)))
+             'DEFAULT))
 
 For the admission of REV0 we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2176,8 +2219,6 @@ Goal
              (ACL2-COUNT X))).
 Goal'
 Goal''
-Goal'''
-Goal'4'
 
 Q.E.D.
 
@@ -2226,9 +2267,10 @@ Subgoal 1
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (REV0 X2).  This
-suggestion was produced using the :induction rules ENDS-IN-A-0 and
-REV0.  If we let (:P X2) denote *1 above then the induction scheme
+We will induct according to a scheme suggested by (REV0 X2).
+
+This suggestion was produced using the :induction rules ENDS-IN-A-0
+and REV0.  If we let (:P X2) denote *1 above then the induction scheme
 we'll use is
 (AND (IMPLIES (NOT (ENDS-IN-A-0 X2)) (:P X2))
      (IMPLIES (AND (ENDS-IN-A-0 X2)
@@ -2280,8 +2322,7 @@ with Common Lisp.
 
 Summary
 Form:  ( DEFUN REV0 ...)
-Rules: ((:DEFINITION ACL2-COUNT)
-        (:DEFINITION APP0)
+Rules: ((:DEFINITION APP0)
         (:DEFINITION ENDS-IN-A-0)
         (:DEFINITION NOT)
         (:DEFINITION O-FINP)
@@ -2297,15 +2338,15 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:INDUCTION APP0)
         (:INDUCTION ENDS-IN-A-0)
         (:INDUCTION REV0)
-        (:REWRITE CAR-CONS)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
         (:REWRITE CDR-CONS)
         (:TYPE-PRESCRIPTION ACL2-COUNT)
         (:TYPE-PRESCRIPTION APP0)
         (:TYPE-PRESCRIPTION ENDS-IN-A-0))
  REV0
 ACL2 !>>>(DEFTHM APP0-RIGHT-ID
-                 (IMPLIES (FORCE (ENDS-IN-A-0 X))
-                          (EQUAL (APP0 X 0) X)))
+           (IMPLIES (FORCE (ENDS-IN-A-0 X))
+                    (EQUAL (APP0 X 0) X)))
 Goal'
 
 ([ A key checkpoint:
@@ -2321,8 +2362,9 @@ Goal'
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
-We will induct according to a scheme suggested by (APP0 X 0).  This
-suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
+We will induct according to a scheme suggested by (APP0 X 0).
+
+This suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
 If we let (:P X) denote *1 above then the induction scheme we'll use
 is
 (AND (IMPLIES (NOT (ENDS-IN-A-0 X)) (:P X))
@@ -2360,7 +2402,7 @@ Rules: ((:DEFINITION APP0)
         (:TYPE-PRESCRIPTION ENDS-IN-A-0))
  APP0-RIGHT-ID
 ACL2 !>>>(DEFUN ENDS-IN-A-ZERO (X)
-                (ENDS-IN-A-0 X))
+           (ENDS-IN-A-0 X))
 
 Since ENDS-IN-A-ZERO is non-recursive, its admission is trivial.  We
 observe that the type of ENDS-IN-A-ZERO is described by the theorem
@@ -2372,8 +2414,8 @@ Form:  ( DEFUN ENDS-IN-A-ZERO ...)
 Rules: ((:TYPE-PRESCRIPTION ENDS-IN-A-0))
  ENDS-IN-A-ZERO
 ACL2 !>>>(DEFTHM ENDS-IN-A-ZERO-APP0
-                 (IMPLIES (FORCE (ENDS-IN-A-ZERO X))
-                          (ENDS-IN-A-0 (APP0 X (CONS Y 0)))))
+           (IMPLIES (FORCE (ENDS-IN-A-ZERO X))
+                    (ENDS-IN-A-0 (APP0 X (CONS Y 0)))))
 Goal'
 
 ([ A key checkpoint:
@@ -2390,6 +2432,7 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (APP0 X (CONS Y 0)).
+
 This suggestion was produced using the :induction rules APP0 and ENDS-IN-A-0.
 If we let (:P X Y) denote *1 above then the induction scheme we'll
 use is
@@ -2437,16 +2480,17 @@ Form:  ( IN-THEORY (DISABLE ...))
 Rules: NIL
  :CURRENT-THEORY-UPDATED
 ACL2 !>>>(DEFTHM FORCE-TEST
-                 (AND (IMPLIES (ENDS-IN-A-0 X)
-                               (EQUAL (APP0 (REV0 X) 0) (REV0 X)))
-                      (IMPLIES (ENDS-IN-A-0 Y)
-                               (EQUAL (APP0 (REV0 Y) 0) (REV0 Y)))
-                      (IMPLIES (ENDS-IN-A-0 Z)
-                               (EQUAL (APP0 (REV0 Z) 0) (REV0 Z))))
-                 :HINTS (("[2]Goal" :IN-THEORY (ENABLE ENDS-IN-A-ZERO))))
+           (AND (IMPLIES (ENDS-IN-A-0 X)
+                         (EQUAL (APP0 (REV0 X) 0) (REV0 X)))
+                (IMPLIES (ENDS-IN-A-0 Y)
+                         (EQUAL (APP0 (REV0 Y) 0) (REV0 Y)))
+                (IMPLIES (ENDS-IN-A-0 Z)
+                         (EQUAL (APP0 (REV0 Z) 0) (REV0 Z))))
+           :HINTS (("[2]Goal" :IN-THEORY (ENABLE ENDS-IN-A-ZERO))))
 Subgoal 3
 
-Forcing Round 1 is pending (caused first by Subgoal 3).
+Forcing Round 1 is pending (caused first by applying APP0-RIGHT-ID
+to Subgoal 3).
 Subgoal 2
 Subgoal 1
 
@@ -2512,9 +2556,11 @@ Perhaps we can prove [1]*1 by induction.  Two induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (REV0 Z).  This suggestion
-was produced using the :induction rules ENDS-IN-A-0 and REV0.  If we
-let (:P Z) denote [1]*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (REV0 Z).
+
+This suggestion was produced using the :induction rules ENDS-IN-A-0
+and REV0.  If we let (:P Z) denote [1]*1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (ENDS-IN-A-0 Z)) (:P Z))
      (IMPLIES (AND (ENDS-IN-A-0 Z)
                    (NOT (EQUAL Z 0))
@@ -2527,7 +2573,8 @@ When applied to the goal at hand the above induction scheme produces
 three nontautological subgoals.
 [1]Subgoal *1/3
 
-Forcing Round 2 is pending (caused first by [1]Subgoal *1/3).
+Forcing Round 2 is pending (caused first by applying ENDS-IN-A-ZERO-APP0
+to [1]Subgoal *1/3).
 [1]Subgoal *1/2
 [1]Subgoal *1/1
 
@@ -2565,12 +2612,12 @@ Rules: ((:DEFINITION ENDS-IN-A-0)
         (:TYPE-PRESCRIPTION ENDS-IN-A-0))
  FORCE-TEST
 ACL2 !>>>(DEFUN PROPER-CONS-NEST-P (X)
-                (DECLARE (XARGS :GUARD (PSEUDO-TERMP X)))
-                (COND ((SYMBOLP X) NIL)
-                      ((FQUOTEP X) (TRUE-LISTP (CADR X)))
-                      ((EQ (FFN-SYMB X) 'CONS)
-                       (PROPER-CONS-NEST-P (FARGN X 2)))
-                      (T NIL)))
+           (DECLARE (XARGS :GUARD (PSEUDO-TERMP X)))
+           (COND ((SYMBOLP X) NIL)
+                 ((FQUOTEP X) (TRUE-LISTP (CADR X)))
+                 ((EQ (FFN-SYMB X) 'CONS)
+                  (PROPER-CONS-NEST-P (FARGN X 2)))
+                 (T NIL)))
 
 For the admission of PROPER-CONS-NEST-P we will use the relation O<
 (which is known to be well-founded on the domain recognized by O-P)
@@ -2634,12 +2681,14 @@ Goal
 Subgoal 5
 Subgoal 4
 Subgoal 4'
-Subgoal 4''
+Subgoal 4.3
+Subgoal 4.3'
 Subgoal 4.2
 Subgoal 4.2'
 Subgoal 4.1
 Subgoal 4.1'
 Subgoal 3
+Subgoal 3'
 Subgoal 2
 Subgoal 1
 
@@ -2659,16 +2708,15 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:DEFINITION PSEUDO-TERM-LISTP)
         (:DEFINITION PSEUDO-TERMP)
         (:DEFINITION SYNP)
-        (:DEFINITION TRUE-LISTP)
         (:ELIM CAR-CDR-ELIM)
         (:EXECUTABLE-COUNTERPART ACL2-COUNT)
         (:EXECUTABLE-COUNTERPART BINARY-+)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
         (:EXECUTABLE-COUNTERPART CONSP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART NOT)
-        (:EXECUTABLE-COUNTERPART PSEUDO-TERM-LISTP)
         (:EXECUTABLE-COUNTERPART PSEUDO-TERMP)
         (:EXECUTABLE-COUNTERPART SYMBOLP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
@@ -2684,8 +2732,7 @@ Rules: ((:DEFINITION ACL2-COUNT)
         (:TYPE-PRESCRIPTION ACL2-COUNT)
         (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP))
  PROPER-CONS-NEST-P
-ACL2 !>>>(DEFTHM
-          ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
+ACL2 !>>>(DEFTHM ORDERED-SYMBOL-ALISTP-REMOVE1-ASSOC-EQ-TEST
           (IMPLIES (AND (ORDERED-SYMBOL-ALISTP L)
                         (SYMBOLP KEY)
                         (ASSOC-EQ KEY L))

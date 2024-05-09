@@ -156,6 +156,8 @@
 ; eliminates tests that originally had a "bogus" match that has since been
 ; eliminated by Rule 1.  But it deserves thought.
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "if-tracker")
@@ -707,4 +709,3 @@
                         =================================================================~%~%")
                    nil)
                (itt-term-recovery itt-lst clause itt-lst))))))
-

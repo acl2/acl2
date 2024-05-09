@@ -414,6 +414,15 @@
               (logicman->aignet (interp-st->logicman interp-st))))))
 
 
+;; the main monolithic SAT configs we tend to need:
+(define monolithic-sat-with-transforms ()
+  (make-fgl-satlink-monolithic-sat-config :transform t))
+
+(define monolithic-sat-without-transforms ()
+  (make-fgl-satlink-monolithic-sat-config :transform nil))
+
+
+
 (make-event
  `(define fgl-satlink-default-toplevel-sat-check-config ()
     ',(make-fgl-satlink-monolithic-sat-config :ignore-pathcond nil)))
@@ -421,7 +430,8 @@
 (defmacro fgl-use-satlink ()
   '(progn (defattach interp-st-sat-check interp-st-satlink-sat-check-impl)
           (defattach interp-st-sat-counterexample interp-st-satlink-counterexample)
-          (defattach fgl-toplevel-sat-check-config fgl-satlink-default-toplevel-sat-check-config)))
+          (defattach fgl-toplevel-sat-check-config fgl-satlink-default-toplevel-sat-check-config)
+          (defattach fgl-toplevel-vacuity-check-config fgl-satlink-default-toplevel-sat-check-config)))
 
 (fgl-use-satlink)
 

@@ -1,7 +1,7 @@
 ; A basic axe-syntaxp-evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,23 +16,22 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "make-axe-syntaxp-evaluator")
 
-(make-axe-syntaxp-evaluator 'basic '(not-quotep ;drop?
-                                     heavier-dag-term
-                                     bv-term-syntaxp
-                                     not-bv-term-syntaxp
+;; todo: what order should these be in?
+;; todo: could axe order this after analyzing its rules?
+(make-axe-syntaxp-evaluator 'basic '(heavier-dag-term
+                                     ;; bv-term-syntaxp
                                      is-a-myif
-                                     not-is-a-myif ;drop?
                                      syntactic-booleanp
                                      syntactic-call-of
                                      syntactic-constantp
                                      ;; syntactic-variablep ; maybe add this
                                      ;; is-the-variablep ; maybe add this
                                      should-reverse-equality
-                                     bv-array-write-nest-ending-inp
-                                     bvcat-nest-with-low-zeros
-                                     bv-array-write-nest-with-val-at-index
+                                     term-should-be-converted-to-bvp
+                                     bv-array-write-nest-ending-inp-axe
+                                     bvcat-nest-with-low-zerosp-axe
+                                     bv-array-write-nest-with-val-at-indexp-axe
                                      term-should-be-trimmed-axe-plus-one
                                      term-should-be-trimmed-axe
-                                     should-commute-args-dag
-                                     should-commute-args-increasing-dag
-                                     ))
+                                     should-commute-axe-argsp
+                                     should-commute-axe-args-increasingp))

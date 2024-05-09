@@ -49,7 +49,7 @@
 #   - use the directory specified by the -b or --acl2-books command line argument
 #   - use the directory specified by the environment variable $ACL2_SYSTEM_BOOKS
 #   - look for a "books" directory where the ACL2 we're using is located
-#   - run ACL2 and check if (@ system-books-dir) evaluates to a directory that exists
+#   - run ACL2 and check if (system-books-dir state) evaluates to a directory that exists
 #   - use the parent of the directory containing this script
 
 # This script also scans the relevant .acl2 files for each book, looking for
@@ -77,8 +77,7 @@ use Cygwin_paths;
 # (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 # (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
-my %reqparams = ("hons-only"      => "HONS_ONLY",
-                 "uses-glucose"   => "USES_GLUCOSE",
+my %reqparams = ("uses-glucose"   => "USES_GLUCOSE",
                  "uses-ipasir"    => "USES_IPASIR",
                  "uses-abc"       => "USES_ABC",
                  "uses-smtlink"   => "USES_SMTLINK",
@@ -123,8 +122,9 @@ my @run_all_out_of_date = ();
 my @run_all_up_to_date = ();
 my $make = $ENV{"MAKE"} || "make";
 my @make_args = ();
-my $acl2 = $ENV{"ACL2"};
-my $acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
+my $acl2;
+my $acl2_books;
+my $acl2_projects;
 # add default useless runes setting if undefined
 if (! defined($ENV{"ACL2_USELESS_RUNES"}) ) {
     $ENV{"ACL2_USELESS_RUNES"} = "-25";
@@ -141,25 +141,48 @@ my %certlib_opts = ( "debugging" => 0,
                      "pcert_all" => 0,
                      "debug_up_to_date" => 0,
                      "force_up_to_date" => {},
-                     "force_out_of_date" => {});
+                     "force_out_of_date" => {},
+                     "imagefile_src_dir" => 0 );
 my $target_ext = "cert";
 my $cache_file = 0;
 my $cache_read_only = 0;
 my $cache_write_only = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
+my $images_dir = $ENV{'ACL2_IMAGES'};
+my $image_src_dir = $ENV{'ACL2_IMAGE_SRC_DIR'};
 my $params_file = 0;
 my $print_relocs = 0;
 
 my $write_timestamps = 0;
 my $read_timestamps = 0;
 
-# Remove trailing slash from and canonicalize bin_dir
+if ($images_dir) {
+    if ($bin_dir && ! ($bin_dir eq $images_dir)) {
+	STDERR->print("ACL2_IMAGES: ${images_dir}\n");
+	STDERR->print("CERT_PL_BIN_DIR: ${bin_dir}\n");
+
+	die("Environment vars ACL2_IMAGES and CERT_PL_BIN_DIR must both be set to the same value if they are both set");
+    }
+    $bin_dir = $images_dir;
+}
+
+
+# Remove trailing slash from and canonicalize bin_dir and $image_src_dir
 if ($bin_dir) {
     my $cbin_dir = canonical_path(remove_trailing_slash($bin_dir));
     if (! $cbin_dir) {
         die("Fatal: bad path in environment var CERT_PL_BIN_DIR=$bin_dir");
     }
     $bin_dir = $cbin_dir;
+}
+
+if ($image_src_dir) {
+    my $cimage_src_dir = canonical_path(remove_trailing_slash($image_src_dir));
+    if (! $cimage_src_dir) {
+        die("Fatal: bad path in environment var ACL2_IMAGE_SRC_DIR=$image_src_dir");
+    }
+    $image_src_dir = $cimage_src_dir;
+    $certlib_opts{"imagefile_src_dir"} = $image_src_dir;
 }
 
 my $write_sources=0;
@@ -220,10 +243,16 @@ Depends-on is intended for non-book dependencies, so cert.pl won\'t
 scan the target for its dependencies.
 
  - (loads "<filename>" [:dir :<dirname>])
-     Adds the named file as a dependency of the current book, and also
-recursively scans that file for dependencies as if it were part of the
-current file.  May occur in a comment, since it is not defined in
-ACL2.
+ - (include-src-events "<filename>" [:dir :<dirname>])
+ - (include-events "<bookname>" [:dir :<dirname])
+     Adds the named source file as a dependency of the current book,
+and also recursively scans that file for dependencies as if it were
+part of the current file. Include-events and include-src-events are
+defined in build/include-events.lisp. They differ in that
+include-events appends ".lisp" to the bookname argument.  The LOADS
+form is not defined in ACL2 and may occur in a comment; it can be used
+to mark other occurrences where the contents of a source file are
+included in a book.
 
  - (ld "<filename>" [:dir :<dirname>])
      Ignored when it occurs while scanning the main book, as opposed
@@ -313,8 +342,17 @@ COMMAND LINE OPTIONS
            overrides the ACL2_SYSTEM_BOOKS environment variable, if
            that variable is set.  If neither is set, a directory is
            guessed based on the location of the ACL2 executable, or
-           the value of (@ system-books-dir) as reported by the ACL2
-           executable, or the location of this script, in that order.
+           the value of (system-books-dir state) as reported by the
+           ACL2 executable, or the location of this script, in that
+           order.
+
+   --acl2-projects <file>
+           Use <file> as the ACL2 projects file, containing a keyword
+           value list mapping directory keywords to directory paths
+           (strings). For cert.pl these must be listed one keyword
+           value pair per line.  Normally this is given by the
+           ACL2_PROJECTS environment variable; this argument overrides
+           that variable.
 
    --clean-certs
    --cc
@@ -476,7 +514,6 @@ COMMAND LINE OPTIONS
            as "--make-args -k".
 
    --bin <directory>
-
           Sets the location for ACL2 image files.  Cert.pl supports
           the use of different ACL2 images to certify different books.
           If for a book named foo.lisp either a file foo.image or
@@ -488,7 +525,19 @@ COMMAND LINE OPTIONS
           <bin_dir>/<image_name>, and uses <bin_dir>/<image_name> to
           certify the book.  Otherwise, no additional dependency is
           set, and at certification time we look for the image in the
-          user\'s PATH.
+          user\'s PATH.  This can also be set via environment variables
+          CERT_PL_BIN_DIR or ACL2_IMAGES (the --bin argument
+          overrides these, and these must be the same if both are set).
+
+   --image-sources <directory>
+
+          Sets the directory for source files from which to build ACL2
+          saved images.  For an ACL2 image to be named myimage (in the
+          images directory -- see the --bin argument above), the
+          source file must be myimage.lsp in the image sources
+          directory.  This may also be set via environment variable
+          ACL2_IMAGE_SRC_DIR (the --image-sources argument overrides
+          this).
 
    --params <filename>
           Specifies a file that contains lines like:
@@ -582,6 +631,10 @@ USEFUL ENVIRONMENT VARIABLES
          certification instructions) and .cert.out files.  Note that this
          does not affect .cert.time files.
 
+    CERT_PL_BIN_DIR or ACL2_IMAGES
+         Should be set to the directory in which saved ACL2 images are deposited,
+         if using saved images.
+
     STARTJOB (default: "bash")
          Can be set to the name of a command to use instead of bash
          when launching a subprocess that will run ACL2.  The command
@@ -652,12 +705,21 @@ GetOptions ("help|h"               => sub {
                                            $no_build = 1;},
             "acl2|a=s"             => \$acl2,
             "acl2-books|b=s"       => \$acl2_books,
+	    "acl2-projects=s"      => \$acl2_projects,
             "bin=s"                => sub {
                 shift;
                 my $arg = shift;
                 $bin_dir = canonical_path(remove_trailing_slash($arg));
                 if (!$bin_dir) {
                     die("Fatal: bad path in directive --bin $arg\n");
+                }
+            },
+            "image-sources=s"                => sub {
+                shift;
+                my $arg = shift;
+                $certlib_opts{"imagefile_src_dir"} = canonical_path(remove_trailing_slash($arg));
+                if (!$certlib_opts{"imagefile_src_dir"}) {
+                    die("Fatal: bad path in directive --image-sources $arg\n");
                 }
             },
             "include|i=s"          => sub {shift;
@@ -732,95 +794,27 @@ if ($read_timestamps) {
     read_timestamps($read_timestamps);
 }
 
-# If $acl2 is still not set, then set it based on the location of acl2
-# in the path, if available
 
-unless ($acl2) {
-    $acl2 = "acl2";
+
+$acl2 = determine_acl2_exec($acl2);
+unless ($acl2 || $quiet || $no_build) {
+    print(STDERR
+	  "ACL2 executable not found.  Please specify with --acl2 command line
+	  flag or ACL2 environment variable.\n");
 }
 
-# convert user-provided ACL2 to cygwin path, under cygwin
-$acl2 = path_import($acl2);
-# this is probably always /dev/null but who knows under windows
-my $devnull = File::Spec->devnull;
-# get the absolute path
-$acl2 = `which $acl2 2>$devnull`;
-chomp($acl2);  # remove trailing newline
+$acl2_books = determine_acl2_dirs($acl2_books, $acl2_projects, $acl2, $startjob, $RealBin);
 
-if ($acl2) {
-    # canonicalize the path
-    $acl2 = abs_canonical_path($acl2);
-    unless($quiet || $no_build) {
-        print STDERR "ACL2 executable is ${acl2}\n";
-    }
-    $ENV{"ACL2"} = $acl2;
-} else {
-    unless ($quiet || $no_build) {
-        print(STDERR
-"ACL2 executable not found.  Please specify with --acl2 command line
-flag or ACL2 environment variable.\n");
-    }
+unless ($acl2_books || $quiet || $no_build) {
+    print(STDERR
+	  "ACL2 system books not found.  Please specify with --acl2-books
+	  command line flag or ACL2_SYSTEM_BOOKS environment variable.");
 }
 
-# At this point, $acl2 is set, so we know which ACL2 we're using.  To
-# choose a value for $acl2_books if it is not yet set, we try the
-# following in order until one succeeds:
-#   - look for a "books" directory where the ACL2 we're using is located
-#   - run ACL2 and check if (@ system-books-dir) evaluates to a directory that exists
-#   - use the parent of the directory containing this script
 
-if (! $acl2_books && $acl2 ) {
-    # was:
-    # my $tmp_acl2_books = rel_path(dirname($acl2), "books");
-    my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
-    if (-d $tmp_acl2_books) {
-        $acl2_books = $tmp_acl2_books;
-    }
-}
-
-if (! $acl2_books && $acl2 ) {
-    my $dumper1 = # command to send to ACL2
-        '(cw \"~%CERT_PL_VAL:~S0~%\" (@ acl2::system-books-dir))';
-    my $dumper2 = # command to send to STARTJOB
-        'echo "' . $dumper1 . '" | ' .
-        "$acl2 2>$devnull | " .
-        'awk -F: "/CERT_PL_VAL/ { print \$2 }"';
-    my $dumper3 = # command to send to the shell
-        "$startjob -c '$dumper2'";
-    my $tmp_acl2_books = `$dumper3`;
-    chomp($tmp_acl2_books);
-    if (-d $tmp_acl2_books) {
-        $acl2_books = $tmp_acl2_books;
-    }
-}
-
-if (! $acl2_books ) {
-    my $tmp_acl2_books = "$RealBin/..";
-    if (-d $tmp_acl2_books) {
-        $acl2_books = $tmp_acl2_books;
-    }
-}
-
-if (! $acl2_books ) {
-    unless ($quiet || $no_build) {
-        print(STDERR
-"ACL2 system books not found.  Please specify with --acl2-books
-command line flag or ACL2_SYSTEM_BOOKS environment variable.");
-    }
-}
-
-$acl2_books = abs_canonical_path($acl2_books);
 unless($quiet) {
     print(STDERR "System books directory is ${acl2_books}\n");
 }
-
-certlib_add_dir("SYSTEM", $acl2_books);
-# In case we're going to run Make, set the ACL2_SYSTEM_BOOKS
-# and ACL2 environment variables to match our assumption.
-# In cygwin, ACL2 reads paths like c:/foo/bar whereas we're dealing in
-# paths like /cygdrive/c/foo/bar, so "export" it
-my $acl2_books_env = path_export($acl2_books);
-$ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
 
 my $depdb = new Depdb(evcache => $cache, pcert_all => $certlib_opts{"pcert_all"});
 
@@ -840,8 +834,9 @@ if (! $ext_valid) {
 }
 
 
-my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb, $target_ext);
+my ($targets_ref, $images_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $depdb, $target_ext);
 my @targets = @$targets_ref;
+my @images = @$images_ref;
 my %labels = %$labels_ref;
 
 # print "Targets\n";
@@ -851,14 +846,19 @@ my %labels = %$labels_ref;
 # print "end targets\n";
 
 unless (@targets) {
-    print STDERR "\nError: No targets provided.\n";
-    print STDERR $helpstr;
-    exit 1;
+    unless (@images) {
+	print STDERR "\nError: No targets provided.\n";
+	print STDERR $helpstr;
+	exit 1;
+    }
 }
 
 foreach my $target (@targets) {
     (my $tcert = $target) =~ s/\.(acl2x|pcert(0|1))/\.cert/;
     add_deps($tcert, $depdb, 0);
+}
+foreach my $image (@images) {
+    add_image_deps($image, $depdb, 0);
 }
 
 if ($params_file && open (my $params, "<", $params_file)) {
@@ -1002,6 +1002,16 @@ sub make_encode { # encode a filename for MAKE
 # this will prevent any leakage to the file system if output goes to $smf.
 $smf_name = $ysmf ? ( $mf_name . ".lsp" ) : "/dev/null";
 
+
+sub image_file_path {
+    my ($dotimage) = @_;
+    (my $barename = $dotimage) =~ s/\.image$//;
+    my $imagepath = canonical_path(File::Spec->catfile($bin_dir, $barename));
+    return make_encode($imagepath);
+}
+
+
+
 unless ($no_makefile) {
     # Build the makefile and run make.
     open (my $mf, ">", $mf_name)
@@ -1047,9 +1057,11 @@ unless ($no_makefile) {
         print $mf "\ninclude $incl\n";
     }
 
-    print $mf "\n.PHONY: all-cert-pl-certs\n\n";
+    print $mf "\n.PHONY: all-cert-pl-certs all-cert-pl-images\n\n";
     print $mf "# Depends on all certificate files.\n";
     print $mf "all-cert-pl-certs:\n\n";
+    print $mf "# Depends on all acl2 image files.\n";
+    print $mf "all-cert-pl-images:\n\n";
 
     # declare $var_prefix_CERTS to be the list of certificates
     print $mf "# Note: This variable lists the certificates for all books to be built.\n";
@@ -1059,14 +1071,29 @@ unless ($no_makefile) {
     $ysmf and print $smf "( " . ":" . $var_prefix . "_CERTS\n ";
 
     foreach my $cert (@certs) {
-        print $mf " \\\n     " . make_encode($cert);
-        $ysmf and print $smf " \"" . make_encode($cert) . "\"\n ";
-        # if (cert_get_param($cert, $depdb, "acl2x")) {
-        #     my $acl2xfile = cert_to_acl2x($cert);
-        #     print $mf " \\\n     $acl2xfile";
-        # }
+	my $cert_is_image = $cert =~ /\.image$/;
+	if (! $cert_is_image) {
+	    print $mf " \\\n     " . make_encode($cert);
+	    $ysmf and print $smf " \"" . make_encode($cert) . "\"\n ";
+	    # if (cert_get_param($cert, $depdb, "acl2x")) {
+	    #     my $acl2xfile = cert_to_acl2x($cert);
+	    #     print $mf " \\\n     $acl2xfile";
+	    # }
+	}
     }
     $ysmf and print $smf ")\n\n";
+    print $mf "\n\n";
+
+    print $mf $var_prefix . "_IMAGES :=";
+    # BOZO smf stuff
+
+    foreach my $cert (@certs) {
+	my $cert_is_image = $cert =~ /\.image$/;
+	if ($cert_is_image) {
+	    print $mf " \\\n     " . image_file_path($cert);
+	}
+    }
+    # Close out the list of images
     print $mf "\n\n";
 
     print $mf "# Note: This variable lists the certificates for all books to be built\n";
@@ -1119,6 +1146,8 @@ unless ($no_makefile) {
     # print $mf "\n\nendif\n";
 
     print $mf "all-cert-pl-certs: \$(" . $var_prefix . "_CERTS)\n\n";
+    # The "@:" means don't print a no-op recipe".  It avoids an empty target warning.
+    print $mf "all-cert-pl-images: \$(" . $var_prefix . "_IMAGES)\n\t\@:\n\n";
 
     # declare $var_prefix_SOURCES to be the list of sources
     print $mf $var_prefix . "_SOURCES :=";
@@ -1132,7 +1161,7 @@ unless ($no_makefile) {
     $ysmf and print $smf ")\n\n";
     print $mf "\n\n";
 
-    # Write out the list of hons-only certs and other reqparams.
+    # Write out the list of certs and other reqparams.
     my %visited;
     $ysmf and print $smf "; Note: following are lists of cert files needed for various optional build parameters.\n";
     foreach my $reqparam (keys %reqparams) {
@@ -1208,6 +1237,11 @@ unless ($no_makefile) {
 
     # write out the dependencies
     foreach my $cert (@certs) {
+	my $cert_is_image = $cert =~ /\.image$/;
+	if ($cert_is_image && ! $certlib_opts{"imagefile_src_dir"}) {
+	    # Don't write image dependencies if imagefile_src_dir isn't set.
+	    next;
+	}
         my $certdeps = $depdb->cert_deps($cert);
         my $srcdeps = $depdb->cert_srcdeps($cert);
         my $otherdeps = $depdb->cert_otherdeps($cert);
@@ -1217,17 +1251,36 @@ unless ($no_makefile) {
         my $pcert_ok = ( ! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
         my $acl2xskip = $depdb->cert_get_param($cert, "acl2xskip") || 0;
 
-        print $mf make_encode($cert) . " : acl2x = $useacl2x\n";
-        print $mf make_encode($cert) . " : pcert = $pcert_ok\n";
+	if ($cert_is_image && !@$srcdeps) {
+	    # If srcdeps is empty, we don't have any dependency info
+	    # and the recipe for building the image won't work because
+	    # we need the main source listed first.
+	    next;
+	}
+
+
+	my $maketarget;
+	if ($cert_is_image) {
+	    $maketarget = image_file_path($cert);
+	} else {
+	    $maketarget = make_encode($cert);
+	}
+
+        print $mf $maketarget . " : acl2x = $useacl2x\n";
+        print $mf $maketarget . " : pcert = $pcert_ok\n";
         # print $mf "#$cert params: ";
         # my $params = cert_get_params($cert, $depdb);
         # while (my ($key, $val) = each %$params) {
         #     print $mf "$key = $val ";
         # }
         print $mf "\n";
-        print $mf make_encode($cert) . " :";
-        $ysmf and print $smf " (\"" . make_encode($cert) . "\"";
-        foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
+        print $mf $maketarget . " :";
+        $ysmf and print $smf " (\"" . $maketarget . "\"";
+	# Note: reverse srcdeps and put it first because the make_cert
+	# recipe for building an image requires the first dependency
+	# to be the main source .lsp file, which is the first one
+	# added as a srcdep and therefore the last in the list.
+        foreach my $dep (reverse(@$srcdeps), @$certdeps, @$otherdeps) {
             print $mf " \\\n     " . make_encode($dep);
             $ysmf and print $smf "\n    \"" . make_encode($dep) . "\"";
         }
@@ -1246,8 +1299,15 @@ unless ($no_makefile) {
         print $mf "\n";
         $ysmf and print $smf ")\n";
 
+	# One newline after the dependency list, if the target is an
+	# image, insert the recipe for building the image, which in
+	# this case is just the make variable $(SAVED_IMAGE_RECIPE).
+	if ($cert_is_image) {
+	    print $mf "\t\$(SAVED_IMAGE_RECIPE)\n";
+	}
+
         # $smf is not yet writing out the order-only prerequisites to smf
-        if ($useacl2x) {
+        if ($useacl2x && ! $cert_is_image) {
             my $acl2xfile = cert_to_acl2x($cert);
 #     This would be a nice way to do things, but unfortunately the "private"
 #     keyword for target-specific variables was introduced in GNU Make 3.82,
@@ -1255,7 +1315,7 @@ unless ($no_makefile) {
 #           print $mf "$cert : private TWO_PASS := 1\n";
 #     Instead, sadly, we'll individually set the TWO_PASS variable for
 #     each target instead.  (Note the ELSE case below.)
-            print $mf make_encode($cert) . " : |";   # order-only prerequisite
+            print $mf $maketarget . " : |";   # order-only prerequisite
             print $mf " \\\n     " . make_encode($acl2xfile);
             print $mf "\n\n";
             print $mf make_encode($acl2xfile) . " : acl2xskip = $acl2xskip\n";
@@ -1293,6 +1353,11 @@ unless ($no_makefile) {
     # $smf is not yet capturing acl2x or pcert dependencies here
 
     foreach my $cert (@certs) {
+	my $cert_is_image = $cert =~ /\.image$/;
+	if ($cert_is_image) {
+	    next;
+	}
+
         my $useacl2x = $depdb->cert_get_param($cert, "acl2x") || 0;
         # BOZO acl2x implies no pcert
         my $pcert_ok = (! $useacl2x && ($depdb->cert_get_param($cert, "pcert") || $pcert_all)) || 0;
@@ -1357,8 +1422,13 @@ unless ($no_makefile) {
     my $builddir = make_encode(canonical_path("$acl2_books/build"));
     print $mf "\$(${var_prefix}_ALLCERTS) : ${builddir}/acl2-version.certdep ${builddir}/universal-dependency.certdep\n\n";
 
-    # Add a trivial recipe to build the required files in case they're missing.
-    print $mf "${builddir}/%.certdep :\n\ttouch \$@\n\n";
+    # Add a recipe to raise an error if a certdep file is missing.
+    print $mf "%.certdep :\n";
+    print $mf "\t\@echo \"** Missing \$\@\"\n";
+    print $mf "\t\@echo \"** Certdep files may be created by running 'make build/Makefile-features' under books/\"\n";
+    print $mf "\t\@echo \"** If this file does not exist after that, it is likely an incorrect dependency.\"\n";
+    print $mf "\t\@echo \"** See books/build/Makefile-deps to find what file depends on it.\"\n";
+    print $mf "\t\@false\n\n";
 
     foreach my $incl (@include_afters) {
         print $mf "\ninclude $incl\n";
@@ -1372,7 +1442,7 @@ unless ($no_makefile) {
         my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name --no-builtin-rules ",
                                   ($keep_going ? " -k" : ""),
                                   @make_args,
-                                  "all-cert-pl-certs"));
+                                  "all-cert-pl-certs all-cert-pl-images"));
         if ($certlib_opts{"debugging"}) {
 	    # Print debugging output on stdout
             print "$make_cmd\n";

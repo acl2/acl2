@@ -21,26 +21,51 @@ data last modified: [2014-08-06]
 (def-const *map-local-events* '())
 
 (def-const *map-export-defthms*
-  '((defthm _pred_-IMPLIES-GOOD-MAP
+  '((defthm _pred_-IMPLIES-ALISTP
       (implies (_pred_ x)
-               (acl2::good-map x))
+               (acl2::alistp x))
+      :hints (("goal" :in-theory (e/d (_pred_))))
+      :rule-classes ((:rewrite :backchain-limit-lst 1) 
+                     (:forward-chaining)))
+
+    (defthm _pred_-IMPLIES-NO-NIL-VAL-ALISTP
+      (implies (_pred_ x)
+               (acl2::no-nil-val-alistp x))
+      :hints (("goal" :in-theory (e/d (_pred_))))
+      :rule-classes ((:rewrite :backchain-limit-lst 1) 
+                     (:forward-chaining)))
+
+    (defthm _pred_-IMPLIES-ORDERED-UNIQUE-KEY-ALISTP
+      (implies (_pred_ x)
+               (acl2::ordered-unique-key-alistp x))
       :hints (("goal" :in-theory (e/d (_pred_))))
       :rule-classes ((:rewrite :backchain-limit-lst 1) 
                      (:forward-chaining)))
     
+    (defthm _pred_-IMPLIES-RECORDP
+      (implies (_pred_ x)
+               (acl2::recordp x))
+      :hints (("goal" :in-theory (e/d (_pred_))))
+      :rule-classes ((:rewrite :backchain-limit-lst 1) 
+                     (:forward-chaining)))
+
     (defthm _pred_-EXCLUDES-ATOM-LIST
       (implies (and (_pred_ x)
                     (consp x))
                (not (atom-listp x)))
       :hints (("goal" :in-theory (e/d (_pred_) )))
       :rule-classes (:tau-system))
-    
+
+    ;; PETE: I'm not sure why Harsh put this here, but I should
+    ;; revisit it since I redid records and maps.
     (defthm _pred_-MAP-IDENTITY2-GENERALIZE
       (implies (_pred_ x)
                (_pred_ (acl2::map-identity2 a x)))
       :rule-classes (:generalize))
 
     (:@ :key-is-typename
+
+        #|
         (defthm DISJOINT-_pred_-_keypred_
           (implies (_pred_ x)
                    (not (_keypred_ x)))
@@ -52,23 +77,28 @@ data last modified: [2014-08-06]
                    (acl2::wf-keyp x))
           :rule-classes ((:rewrite :backchain-limit-lst 1)
                          (:forward-chaining)))
+        |#
         
         (defthm _pred_-DOMAIN-LEMMA
           (implies (and (_pred_ x)
-                        (mget a x))
+                        (mget a x)
+                        )
                    (_keypred_ a))
           :hints (("Goal" :in-theory (e/d 
-                                      (_pred_ mget acl2::extensible-records)
+                                      (_pred_ mget
+                                              ;;acl2::minimal-records-theory
+                                              )
                                       (_keypred_))))
           :rule-classes (;(:rewrite :backchain-limit-lst 1)
-                         :forward-chaining :generalize))
+                         (:forward-chaining :trigger-terms ((mget a x)))
+                         :generalize))
 
         ;; added on jmitesh's request.
         (defthm DELETING-AN-ENTRY-IN-_pred_
           (implies (and (_pred_ x)
                         (_keypred_ a))
                    (_pred_ (mset a nil x)))
-          :hints (("Goal" :in-theory (e/d (acl2::extensible-records)))))
+          :hints (("Goal" :in-theory (e/d (acl2::minimal-records-theory)))))
 
 
         )
@@ -79,9 +109,9 @@ data last modified: [2014-08-06]
           (implies (and (_pred_ x)
                         (mget acl2::a x))
                    (_valpred_ (mget acl2::a x)))
-          :hints (("Goal" :in-theory (e/d 
-                                      (_pred_ mget acl2::extensible-records)
-                                      (_keypred_ _valpred_)))))
+          :hints (("Goal" :in-theory
+                   (e/d (_pred_ mget acl2::minimal-records-theory)
+                        (_keypred_ _valpred_)))))
 
 
         (defthm _pred_-SELECTOR-generalize
@@ -90,9 +120,9 @@ data last modified: [2014-08-06]
                         )
                    (or (_valpred_ (mget acl2::a x))
                        (equal (mget acl2::a x) nil)))
-          :hints (("Goal" :in-theory (e/d 
-                                      (_pred_ mget acl2::extensible-records)
-                                      (_keypred_ _valpred_))))
+          :hints (("Goal" :in-theory
+                   (e/d (_pred_ mget acl2::minimal-records-theory)
+                        (_keypred_ _valpred_))))
           :rule-classes :generalize)
 
         ;; (local
@@ -101,8 +131,8 @@ data last modified: [2014-08-06]
         ;;                  (_keypred_ acl2::a)
         ;;                  (_valpred_ v))
         ;;             (_pred_ (acl2::mset-wf acl2::a v x)))
-        ;;    :hints (("Goal" :induct (acl2::good-map x)
-        ;;             :in-theory (e/d (_pred_ acl2::good-map acl2::mset-wf)
+        ;;    :hints (("Goal" :induct (acl2::recordp x)
+        ;;             :in-theory (e/d (_pred_ acl2::recordp acl2::mset-wf)
         ;;                             (_keypred_ _valpred_ acl2::wf-keyp))))))
         (defthm _pred_-MODIFIER
           (implies (and (_pred_ x)
@@ -110,13 +140,9 @@ data last modified: [2014-08-06]
                         (_valpred_ v))
                    (_pred_ (mset acl2::a v x)))
           :hints (("Goal" :in-theory 
-                   (e/d (_pred_ mset acl2::extensible-records)
-                        (_keypred_ _valpred_ acl2::wf-keyp))))
+                   (e/d (_pred_ mset acl2::minimal-records-theory)
+                        (_keypred_ _valpred_))))
           :rule-classes (:rewrite :generalize)))
-    
-
-    
-    
     ))
 
 (defun map-attach-constraint-rules-ev (p wrld)
@@ -177,7 +203,8 @@ data last modified: [2014-08-06]
        (disabled (get1 :disabled kwd-alist))
        (curr-pkg (get1 :current-package kwd-alist))
        (pkg-sym (pkg-witness curr-pkg))
-       (disabled (cons 'acl2::mset-diff-mset disabled))
+       (disabled (append '(acl2::mset-diff-mset1 acl2::mset-diff-mset2)
+                         disabled))
        (local-events-template *map-local-events*)
        (export-defthms-template *map-export-defthms*)
        (features (append (and keypred '(:key-is-typename)) (and valpred '(:val-is-typename))))
@@ -236,15 +263,16 @@ data last modified: [2014-08-06]
 
 (logic)
 (deflabel map)
-(register-user-combinator map
-                          :arity 2 :verbose t
-                          :aliases (acl2::map)
-                          :expansion (lambda (_name _args) `(OR nil (mset ,(car _args) ,(cadr _args) ,_name)))
-                          :syntax-restriction-fn proper-symbol-listp
-                          :syntax-restriction-msg "map syntax restriction: ~x0 should be type names."
-                          :polymorphic-type-form (alistof :a :b)
-                          ;; :local-events *map-local-events*
-                          ;; :export-defthms *map-export-defthms*
-                          :post-pred-hook-fns (user-map-theory-events)
-                          :post-hook-fns (map-attach-constraint-rules-events))
+(register-user-combinator
+ map
+ :arity 2 :verbose t
+ :aliases (acl2::map)
+ :expansion (lambda (_name _args) `(OR nil (mset ,(car _args) ,(cadr _args) ,_name)))
+ :syntax-restriction-fn proper-symbol-listp
+ :syntax-restriction-msg "map syntax restriction: ~x0 should be type names."
+ :polymorphic-type-form (alistof :a :b)
+ ;; :local-events *map-local-events*
+ ;; :export-defthms *map-export-defthms*
+ :post-pred-hook-fns (user-map-theory-events)
+ :post-hook-fns (map-attach-constraint-rules-events))
 

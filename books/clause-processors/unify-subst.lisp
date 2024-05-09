@@ -31,6 +31,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
 
 (in-package "ACL2")
 
@@ -736,7 +737,7 @@
              rest
            (cons a rest)))
         (& (cons env rest))))))
-           
+
 
 ;; The above is only used in a bind-free hyp, as follows:
 (defun simple-one-way-unify-bind-free (rw-term eval-fns mfc state)

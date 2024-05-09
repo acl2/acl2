@@ -41,6 +41,9 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "arithmetic"))
+;(include-book "kestrel/lists-light/take" :dir :system)  ; when acl2-count-take rules added
+
+(local (in-theory (disable (:e tau-system))))
 
 (local (defthm unsigned-byte-p-5-when-print-base-p
          (implies (print-base-p x)
@@ -118,7 +121,9 @@ implementation of something like the @('~x') @(see fmt) directive.</p>
 
 <p>Even with respect to @('ppr'), there is some @(see missing-functionality).
 I don't implement @(see acl2::iprinting) or include any infix printing support.
-Various complex and unhelpful printer-control variables are also omitted.</p>
+(Note added June 2023 by ACL2 implementors: infix printing is now completely
+removed for ACL2.)  Various complex and unhelpful printer-control variables are
+also omitted.</p>
 
 
 <h3>Implementation Details</h3>
@@ -1061,6 +1066,15 @@ gives these instructions their semantics.</p>"
       (width  posp)
       (first  pinst-p)
       (rest   pinstlist-p)))
+
+    (:special-term
+     :layout :tree
+     ((width posp)
+      (first pinst-p)
+      (init-args-indent integerp)
+      (init-args pinstlist-p)
+      (body-args-indent natp)
+      (body-args pinstlist-p)))
     )
 
   (fty::deflist pinstlist
@@ -1079,7 +1093,8 @@ gives these instructions their semantics.</p>"
     :quote   x.width
     :wide    x.width
     :keypair x.width
-    :indent  x.width))
+    :indent  x.width
+    :special-term x.width))
 
 (define pinstlist->max-width ((x pinstlist-p) (maximum integerp))
   :returns (maximum integerp :rule-classes :type-prescription)
@@ -1191,7 +1206,6 @@ gives these instructions their semantics.</p>"
 
 
 (defines print-instruction
-
 ;; print-column is like acl2's ppr2-column
 ;; print-instruction is like acl2's ppr2
 
@@ -1264,8 +1278,23 @@ gives these instructions their semantics.</p>"
                    (acc (cons #\Newline acc))
                    ;; bozo recomputing sum
                    (acc (print-column x.rest 0 col config eviscp acc)))
-                (cons #\) acc)))))
-
+                (cons #\) acc))
+     :special-term (b* ((acc (cons #\( acc))
+                        ((the unsigned-byte col1) (+ col 1))
+                        (acc (print-instruction x.first col1 config eviscp acc))
+                        ((the unsigned-byte width) (pinst->width x.first))
+                        ((the unsigned-byte coli)
+                         (+ col1 (the unsigned-byte (the unsigned-byte width))))
+                        (acc (if (posp x.init-args-indent)
+                                 (print-column x.init-args 0
+                                               (the unsigned-byte (+ col x.init-args-indent))
+                                               config eviscp (cons #\Newline acc))
+                               (print-column x.init-args coli
+                                             (the unsigned-byte (+ 1 coli))
+                                             config eviscp acc)))
+                        (acc (cons #\Newline acc))
+                        (acc (print-column x.body-args 0 (+ col x.body-args-indent) config eviscp acc)))
+                     (cons #\) acc)))))
 
 
 ; ----------------------------------------------------------------------------
@@ -1455,6 +1484,7 @@ gives these instructions their semantics.</p>"
                        column.  Intuitively these are the instructions for the
                        @('cdr') of the list we're trying to print.")
    (width             posp)
+   (pair-keywords-p)
    (config            printconfig-p)
    (eviscp            booleanp))
   :guard (case (pinst-kind x)
@@ -1464,7 +1494,6 @@ gives these instructions their semantics.</p>"
            (otherwise
             t))
   :returns (new-rows pinstlist-p)
-  :guard-debug t
 
   :long "<p>The goal here is to add @('x') to @('rows') by either merging it
 with the first row or&mdash;if that won't work because it's too wide&mdash;by
@@ -1520,7 +1549,8 @@ without using up too many characters, then we should extend the first row.</p>
              ;; enough to check row2, because if there were any non
              ;; keyword/value pairs later on, we would have not created a
              ;; keyword/keypair instruction here.)
-             ((unless (or (atom (rest rows))
+             ((unless (or pair-keywords-p
+                          (atom (rest rows))
                           (eq (pinst-kind (second rows)) :keypair)
                           (eq (pinst-kind (second rows)) :keyline)))
               ;; The rest is NOT an alternating keyword/value list, so just
@@ -1563,6 +1593,66 @@ without using up too many characters, then we should extend the first row.</p>
                 (cdr rows)))))
     (cons x rows)))
 
+(defconst *ppr-special-syms*
+  ;; Value of (table acl2::ppr-special-syms). Additions are possible as long as they don't break pretty-tests
+  '((acl2::defxdoc+ . 1)
+    (acl2::defruledl . 1)
+    (acl2::defrulel . 1)
+    (acl2::defruled . 1)
+    (acl2::defrule . 1)
+    (defines . 1)
+    (define . 2)
+    (acl2::defsection-progn . 1)
+    (defsection . 1)
+    (defxdoc . 1)
+    (b* . 1)
+    (case . 1)
+    (case-match . 1)
+    (defabsstobj . 1)
+    (defaxiom . 1)
+    (defchoose . 3)
+    (defcong . 2)
+    (defconst . 1)
+    (defmacro . 2)
+    (defstobj . 1)
+    (defthm . 1)
+    (defthmd . 1)
+    (defun . 2)
+    (defun-inline . 2)
+    (defun-sk . 2)
+    (defund . 2)
+    (encapsulate . 1)
+    (if . 2)
+    (lambda . 1)
+    (lambda$ . 1)
+    (let . 1)
+    (let* . 1)
+    (mutual-recursion . 0)
+    (mv-let . 2)
+    (table . 1)))
+
+(define special-term-num ((sym symbolp))
+  :returns (i (or (null i)
+                  (natp i)))
+  (let ((special-term-num (cdr (assoc sym *ppr-special-syms*))))
+    (if (null special-term-num)
+        nil
+      (if (natp special-term-num)
+          special-term-num
+        (illegal 'special-term-num
+                 "Value for ~x0 is ~x1. Should be NIL or natp"
+                 (list (cons #\0 sym) (cons #\1 special-term-num)))))))
+
+(defthm true-list-fix-reduces-acl2-count
+  (<= (acl2-count (true-list-fix x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthm acl2-count-take
+  (implies (and (natp i)
+                (>= (len l) i))
+           (<= (acl2-count (take i l)) (acl2-count l)))
+  :rule-classes :linear)
 
 (defines ppr1
 
@@ -1603,7 +1693,17 @@ without using up too many characters, then we should extend the first row.</p>
          ;; (minus 1 for the minimal amount of indenting).  Note that x2
          ;; contains the ppr tuples for the car and the cdr.
          (first (ppr1 (car x) (if (cdr x) 0 (+ 1 rpc)) width-1 config eviscp))
-         (rest  (ppr1-lst (cdr x) (+ 1 rpc) width-1 config eviscp))
+
+         (special-term-num (and (symbolp (car x))
+                                (true-listp (cdr x))
+                                (special-term-num (car x))))
+         (special-term-num (and special-term-num
+                                (>= (len (cdr x)) special-term-num)
+                                special-term-num))
+
+         (rest (ppr1-lst (if special-term-num (nthcdr special-term-num (cdr x))
+                           (cdr x))
+                         (+ 1 rpc) width-1 special-term-num config eviscp))
 
          ((unless (or (atom (car x))
                       (and eviscp (evisceratedp (car x)))))
@@ -1618,17 +1718,61 @@ without using up too many characters, then we should extend the first row.</p>
          ;; Otherwise the CAR is an atom and we can print in the usual way.
          ;; Get the max width of any single argument, not counting the function
          ;; symbol.
-         (maximum (pinstlist->max-width rest
-                                        ;; ACL2 uses -1 here.  If rest happens to be NIL,
-                                        ;; then this -1 goes through??? wtf is going on here?
-                                        -1))
+         (maximum (pinstlist->max-width rest 0))
+         ((when special-term-num)
+          (b* ((init-args (take special-term-num (cdr x)))
+               (hd-width (pinst->width first))
+               (opt-name (if (and (consp init-args)
+                                  (symbolp (car init-args))
+                                  (<= (+ hd-width 2) width-1))
+                             (ppr1 (car init-args)
+                                   0 (- width-1 (+ 1 hd-width))
+                                   config eviscp)
+                           nil))
+               (opt-name (and opt-name
+                              (<= (+ hd-width 1 (pinst->width opt-name)) width-1)
+                              opt-name))
+               (opt-name-width (if opt-name (+ 1 (pinst->width opt-name)) 0))
+               (first (if opt-name (make-pinst-flat :guts (make-pflat :width (+ hd-width opt-name-width)
+                                                                      :what (list (car x) (car init-args))))
+                        first))
+               (init-args-pp (and init-args
+                                  (ppr1-lst (if opt-name (cdr init-args) init-args)
+                                            (if (endp rest) (+ 1 rpc) 0)
+                                            width-1 nil config eviscp)))
+               (max-init-args-pp (pinstlist->max-width init-args-pp 0))
+               (init-args-indent (if (and init-args-pp
+                                          (>= (+ hd-width opt-name-width max-init-args-pp)
+                                              width-1))
+                                     (if (>= (+ hd-width max-init-args-pp)
+                                             width-1)
+                                         (max 1 (- width-1 max-init-args-pp))
+                                       (+ hd-width 2))
+                                   0))
+               (rest-indent (if (or (>= maximum width-1)
+                                    (equal init-args-indent 1))
+                                1 2))
+               (maximum (max (max hd-width (+ maximum rest-indent -1))
+                             (if (> init-args-indent 0)
+                                 (+ init-args-indent max-init-args-pp -1)
+                               (+ hd-width opt-name-width 1 max-init-args-pp)))))
+            (make-pinst-special-term :width (+ 1 maximum)
+                                     :first first
+                                     :init-args-indent init-args-indent
+                                     :init-args init-args-pp
+                                     :body-args-indent rest-indent
+                                     :body-args rest)))
 
          (first.guts ;; why do we know this is flat????
-          (pinst-flat->guts first))
+           (pinst-flat->guts first))
 
          ;; We can print WIDE if we have room for an open paren, the fn, a
          ;; space, and the widest argument.
-         (wide-width (+ (pinst->width first) (+ 2 maximum)))
+         (wide-width (+ (pinst->width first)
+                        (if (null rest)
+                            ;; No space
+                            (+ 1 maximum)
+                          (+ 2 maximum))))
          ((when (<= wide-width width))
           (make-pinst-wide :width wide-width
                            :first first.guts
@@ -1647,7 +1791,7 @@ without using up too many characters, then we should extend the first row.</p>
           ;; the white space over on the right margin.  Note that we compute
           ;; the width of the whole term accordingly.
           (b* ((amount (min 5 (- width maximum)))
-               ;(?test1 (the (satisfies posp) amount))
+                                        ;(?test1 (the (satisfies posp) amount))
                (?test2 (the (satisfies posp) (+ maximum amount)))
                )
             (make-pinst-indent :amount amount
@@ -1664,6 +1808,7 @@ without using up too many characters, then we should extend the first row.</p>
     ((lst)
      (rpc    natp)
      (width  posp)
+     (pair-keywords-p)
      (config printconfig-p)
      (eviscp booleanp))
     :returns (insts pinstlist-p)
@@ -1685,25 +1830,56 @@ without using up too many characters, then we should extend the first row.</p>
            (and lst
                 (cons-ppr1 (pprdot)
                            (list (ppr1 lst rpc width config eviscp))
-                           width config eviscp)))
+                           width nil config eviscp)))
           ((and eviscp (evisceratedp lst))
            ;; The case for an eviscerated terminal cdr is handled the same way.
            (cons-ppr1 (pprdot)
                       (list (ppr1 lst rpc width config eviscp))
-                      width config eviscp))
+                      width nil config eviscp))
           ((null (cdr lst))
            ;; If the list is a true singleton, we just use ppr1 and we pass it
            ;; the rpc that was passed in because this last item will be
            ;; followed by that many parens on the same line.
            (list (ppr1 (car lst) rpc width config eviscp)))
           (t
-           ;; Otherwise, we know that the car is followed by more elements.  So
-           ;; its rpc is 0.
-           (cons-ppr1 (ppr1 (car lst) 0 width config eviscp)
-                      (ppr1-lst (cdr lst) rpc width config eviscp)
-                      width config eviscp)))))
+            ;; Otherwise, we know that the car is followed by more elements.  So
+            ;; its rpc is 0.
+            (cons-ppr1 (ppr1 (car lst) 0 width config eviscp)
+                       (ppr1-lst (cdr lst) rpc width pair-keywords-p config eviscp)
+                       width pair-keywords-p config eviscp))))
 
-(local (in-theory (enable ppr1 ppr1-lst)))
+  :prepwork ((local (set-induction-depth-limit 0))
+             (local (in-theory (disable acl2::take-of-len-free acl2::take-of-too-many
+                                        min max acl2-count acl2::zp-open member-equal
+                                        acl2::open-small-nthcdr unicity-of-0))))
+  ///
+
+  (defthm atom-of-ppr1-lst
+    (equal (consp (ppr1-lst x rpc width pair-keywords-p config eviscp))
+           (if x t nil))
+    :hints(("Goal" :expand (ppr1-lst x rpc width pair-keywords-p config eviscp))))
+
+  (defthm flat-constraint
+    (let ((inst (ppr1 x rpc width config eviscp)))
+      (implies (equal (pinst-kind inst) :flat)
+               (and (consp (pflat->what (pinst-flat->guts inst)))
+                    (not (cdr (pflat->what (pinst-flat->guts inst)))))))
+    :hints(("Goal"
+            :expand (ppr1 x rpc width config eviscp)
+            :do-not '(generalize fertilize eliminate-destructors)
+            :do-not-induct t)))
+
+  (defthm pinst-kind-ppr1-car-ex-simple
+    (implies (or (not (consp (car x)))
+                 (and eviscp (evisceratedp (car x))))
+             (equal (pinst-kind (ppr1 (car x) rpc width config eviscp))
+                    :flat)))
+
+  (defthm ppr1-lst-nil
+    (not (ppr1-lst nil rpc i j config eviscp)))
+  )
+
+;(local (in-theory (enable ppr1 ppr1-lst)))
 
 (defthm lower-bound-of-pinstlist->max-width
   (<= (ifix maximum) (pinstlist->max-width x maximum))
@@ -1732,28 +1908,25 @@ without using up too many characters, then we should extend the first row.</p>
   :rule-classes ((:rewrite) (:linear))
   :hints(("Goal" :in-theory (enable pinstlist->max-width))))
 
-(defthm atom-of-ppr1-lst
-  (equal (consp (ppr1-lst x rpc width config eviscp))
-         (if x t nil))
-  :hints(("Goal" :expand (ppr1-lst x rpc width config eviscp))))
+(local (defthm posp-max
+         (implies (or (and (posp x)
+                           (integerp y))
+                      (and (posp y)
+                           (integerp x)))
+                  (posp (max x y)))))
 
-(local (in-theory (disable (force))))
-
-(defthm flat-constraint
-  (let ((inst (ppr1 x rpc width config eviscp)))
-    (implies (equal (pinst-kind inst) :flat)
-             (and (consp (pflat->what (pinst-flat->guts inst)))
-                  (not (cdr (pflat->what (pinst-flat->guts inst)))))))
-  :hints(("Goal"
-          :expand (ppr1 x rpc width config eviscp)
-          :do-not '(generalize fertilize eliminate-destructors)
-          :do-not-induct t)))
+(local (defthm natp-max
+         (implies (or (and (natp x)
+                           (integerp y))
+                      (and (natp y)
+                           (integerp x)))
+                  (natp (max x y)))))
 
 (verify-guards ppr1
   :hints(("Goal"
           :do-not '(generalize fertilize eliminate-destructors)
-          :do-not-induct t)))
-
+          :do-not-induct t
+          :in-theory (disable not min max atom take len ppr1 ppr1-lst atom-of-ppr1-lst))))
 
 
 ; ----------------------------------------------------------------------------

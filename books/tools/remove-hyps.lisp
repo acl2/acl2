@@ -286,7 +286,8 @@
 (defun remove-hyps-formula (form name hyps concl kwd-alist let/let* bindings
                                  verbose-p ctx state)
   (do-proofs?
-   t
+   t ; do-proofsp
+   nil ; use-always-do-proofs is irrelevant since do-proofsp = t
    (mv-let (thmp name2 kwd-alist+)
      (assert$
       (iff (eq (car form) 'thm)

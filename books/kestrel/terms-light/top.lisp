@@ -1,6 +1,6 @@
 ; Top file for terms-light library
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,17 +11,23 @@
 (in-package "ACL2")
 
 (include-book "all-quotep")
+(include-book "trivial-formals")
 (include-book "non-trivial-formals")
+(include-book "non-trivial-formals-and-args")
 (include-book "bound-vars-in-term")
 (include-book "let-vars-in-term")
 (include-book "free-vars-in-term")
 (include-book "sublis-var-simple")
+(include-book "sublis-var-simple-proofs")
+(include-book "subst-var-alt")
+(include-book "subst-var-alt-proofs")
 (include-book "sublis-var-and-magic-eval")
 (include-book "expr-calls-fn")
 (include-book "unary-lambdap")
 (include-book "wrap-pattern-around-term")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
+(include-book "all-lambdas-serialized-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "expand-lambdas-in-term")
 (include-book "expand-lambdas-in-term-proof")
@@ -43,13 +49,19 @@
 (include-book "strengthen-conjuncts")
 (include-book "reconstruct-lets-in-term")
 (include-book "serialize-lambdas-in-term")
+(include-book "serialize-lambdas-in-term-proofs")
 (include-book "let-bind-formals-in-calls")
 (include-book "restore-mv-lets-in-term")
 (include-book "substitute-unnecessary-lambda-vars")
 (include-book "make-lambda-term-simple")
+(include-book "make-lambda-terms-simple")
 (include-book "make-lambda-application-simple")
 (include-book "make-lambda-application-simple-proof")
 (include-book "function-call-subterms")
 (include-book "replace-term-with-term")
 (include-book "count-occurrences-in-term")
 (include-book "no-nils-in-termp")
+(include-book "all-fnnames1")
+(include-book "get-conjuncts")
+(include-book "get-hyps-and-conc")
+(include-book "replace-corresponding-arg")

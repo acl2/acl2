@@ -35,10 +35,12 @@
  off.  We describe the @(':return') keyword argument later below.</p>
 
  @({
- Example Form:
+ Example:
 
+ (include-book \"kestrel/utilities/include-book-paths\" :dir :system)
+ (include-book \"arithmetic/top\" :dir :system)
  (include-book-paths \"cowles/acl2-asg.lisp\"
-                     :dir \"/projects/acl2/acl2/books\"
+                     :dir :system
                      :excluded-books '(\"meta/meta-times-equal\")
                      :verbose nil
                      :return t)
@@ -59,17 +61,21 @@
  ... Bn))') will give you remaining paths that cause the current session to
  depend on book @('A').</p>
 
+ <p>The entries in the paths may be of the form @('(:keyword . string)'), for
+ example, @('(:SYSTEM . \"arithmetic/top.lisp\")').  See @(see sysfile) for a
+ discussion of this format.</p>
+
  <p>By default, the maximum number of paths returned is the value of the
  constant @('*include-book-paths-default-count*'), which is
  @(`*include-book-paths-default-count*`).  If the value of keyword @(':return')
  is a natural number, then this number is used in place of that default.  If
- the number of maximal paths exceeds this number, only the first
- @(`*include-book-paths-default-count*`) are returned; otherwise all such paths
- are returned.  Regardless, the full list of maximal paths is stored in @(see
- state) global variable @('include-book-paths-last').  If the value of keyword
- argument @(':return') is supplied as other than a natural number, then all
- such maximal paths are returned, except that if the value is @('nil'), then no
- paths are returned.</p>
+ the number of maximal paths exceeds the specified maximum, @('m'), then only
+ the first @('m') paths are returned; otherwise all such paths are returned.
+ Regardless, the full list of maximal paths is stored in @(see state) global
+ variable @('include-book-paths-last').  If the value of keyword argument
+ @(':return') is supplied as other than a natural number, then all such maximal
+ paths are returned, except that if the value is @('nil'), then no paths are
+ returned.</p>
 
  <h3>Details: the algorithm and the notion of ``immediately included by''</h3>
 
@@ -218,7 +224,7 @@
 ;   (include-book C) ; where C includes A
 
 ; When we enumerate paths, we'll see the path from B through C to A; our
-; contention is taht seeing the path from B directly to A isn't particularly
+; contention is that seeing the path from B directly to A isn't particularly
 ; helpful, and is perhaps misleading (given the equivalence above).
 
 ; Let's call the initial alist hereditarily-includes-alist, and the second
@@ -233,7 +239,10 @@
 
 (defun books-included-by (full-book-name ctx state)
   (declare (xargs :mode :program))
-  (let ((cert-file-name (convert-book-name-to-cert-name full-book-name t)))
+  (let* ((full-book-string (book-name-to-filename full-book-name
+                                                  (w state)
+                                                  ctx))
+         (cert-file-name (convert-book-string-to-cert full-book-string t)))
     (er-let* ((alist (post-alist-from-pcert1
                       cert-file-name
                       (msg "Unable to open file ~x0 for input."
@@ -401,11 +410,12 @@
          (er hard ctx
              "Not a string: ~x0"
              (car books)))
-        (t (mv-let (full-book-name directory-name familiar-name)
+        (t (mv-let (full-book-string full-book-name directory-name
+                                     familiar-name)
              (parse-book-name cbd
                               (maybe-remove-dot-lisp-suffix (car books))
                               ".lisp" ctx state)
-             (declare (ignore directory-name familiar-name))
+             (declare (ignore full-book-string directory-name familiar-name))
              (cons full-book-name
                    (full-book-name-lst (cdr books) cbd ctx state))))))
 

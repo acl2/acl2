@@ -19,11 +19,11 @@
 
 (defxdoc+ types
   :parents (syntax)
-  :short "Java types [JLS:4]."
+  :short "Java types [JLS14:4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A type is either a primitive type or a reference type [JLS:4.1].
+    "A type is either a primitive type or a reference type [JLS14:4.1].
      Here we formalize this notion."))
   :order-subtopics t
   :default-parent t)
@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defflatsum jtype
-  :short "Fixtype of Java types [JLS:4.1]."
+  :short "Fixtype of Java types [JLS14:4.1]."
   :long
   (xdoc::topstring
    (xdoc::p

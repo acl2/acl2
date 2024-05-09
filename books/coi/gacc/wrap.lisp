@@ -28,6 +28,9 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "GACC")
 
 ;A book about wrapped address ranges...

@@ -1,7 +1,7 @@
 ; Utility to make a function that applies a function to each item in a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
 (include-book "generics-utilities")
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn-def" :dir :system)
-(include-book "kestrel/utilities/doublets2" :dir :system)
+(include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for manage-screen-output (TODO: reduce the stuff included in this book)
@@ -124,12 +124,12 @@
 (defthm true-listp-of-generic-map
   (equal (true-listp (generic-map x))
          t)
-  :hints (("Goal" :in-theory (e/d (generic-map) ()))))
+  :hints (("Goal" :in-theory (enable generic-map))))
 
 (defthm generic-map-of-nil
   (equal (generic-map nil)
          nil)
-  :hints (("Goal" :in-theory (e/d (generic-map) ()))))
+  :hints (("Goal" :in-theory (enable generic-map))))
 
 (defthm generic-map-of-true-list-fix
   (equal (generic-map (true-list-fix x))

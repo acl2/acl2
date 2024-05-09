@@ -1,6 +1,6 @@
 ; Utilities for generating xdoc documentation
 ;
-; Copyright (C) 2017-2021 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -115,7 +115,9 @@
 ;; todo: or call these Arguments?  But other xdoc uses "Inputs".
 (defconst *xdoc-inputs-header* "<h3>Inputs:</h3>")
 (defconst *xdoc-inputs-header-with-spacing*
-  (n-string-append *xdoc-inputs-header*
+  (n-string-append (newline-string)
+                   (newline-string)
+                   *xdoc-inputs-header*
                    (newline-string)
                    (newline-string)))
 
@@ -241,29 +243,35 @@
         (extract-required-and-optional-and-keyword-args macro-args))
        (max-len (max (len-of-longest-macro-formal required-args 0)
                      (max (+ 1 (len-of-longest-macro-formal keyword-args 0)) ; plus 1 for the :
-                          (+ 2 (len-of-longest-macro-formal keyword-args 0)) ; plus 2 for the []
+                          (+ 2 (len-of-longest-macro-formal optional-args 0)) ; plus 2 for the []
                           ))))
-    (n-string-append (xdoc-for-macro-general-form-required-args required-args indent-space t)
+    (n-string-append (if required-args
+                         (xdoc-for-macro-general-form-required-args required-args indent-space t)
+                       ;; must at least start next arg on new line, for alignment:
+                       (n-string-append "; no required args" (newline-string)))
                      (if optional-args
                          (n-string-append indent-space
                                           "&optional"
                                           (newline-string))
                        "")
-                     (xdoc-for-macro-general-form-optional-args optional-args indent-space (not required-args) max-len package)
+                     (xdoc-for-macro-general-form-optional-args optional-args indent-space nil ;(not required-args)
+                                                                max-len package)
                      (if keyword-args
                          (n-string-append indent-space
                                           "&key"
                                           (newline-string))
                        "")
                      (xdoc-for-macro-general-form-keyword-args keyword-args indent-space
-                                                               (and (not required-args)
-                                                                    (not optional-args))
+                                                               nil
+                                                               ;; (and (not required-args)
+                                                               ;;      (not optional-args))
                                                                max-len package))))
 
 ;; Returns a string
 (defun xdoc-for-macro-general-form (name macro-args package)
   (declare (xargs :mode :program
                   :guard (and (symbolp name)
+                              (macro-arg-listp macro-args)
                               (stringp package))))
   (let* ((name-string (string-downcase-gen (symbol-name name)))
          (name-len (length name-string))
@@ -279,6 +287,7 @@
 ;; Example:
 ;; ((arg1 "string")
 ;;  (arg2 "stringa" (concatenate 'string "stringb" "stringc")))
+;; TODO: Ensure no arg has more than 1 entry.
 (defun macro-arg-descriptionsp (arg-descriptions)
   (declare (xargs :guard t
                   :measure (len arg-descriptions)))
@@ -288,7 +297,7 @@
       (and (true-listp item)
            (<= 2 (len item)) ; must have an arg name and at least one description
            (symbolp (first item))
-           (true-listp (cdr item))
+           (true-listp (cdr item)) ; we don't really check the cdr, since the string-valued forms are untranslated terms
            (macro-arg-descriptionsp (rest arg-descriptions))))))
 
 (defthm macro-arg-descriptionsp-forward-to-symbol-alistp
@@ -306,8 +315,8 @@
 (defconst *open-blockquote-and-newline*
   (concatenate 'string "<blockquote>" (newline-string)))
 
-(defconst *close-blockquote-and-newline*
-  (concatenate 'string "</blockquote>" (newline-string)))
+(defconst *close-blockquote-and-two-newlines*
+  (concatenate 'string "</blockquote>" (newline-string) (newline-string)))
 
 (defconst *close-p-and-newline*
   (concatenate 'string "</p>" (newline-string)))
@@ -320,12 +329,12 @@
       (er hard 'xdoc-for-macro-required-arg "Required macro arg ~x0 is not a symbol." macro-arg)
     (let ((name (string-downcase-gen (symbol-name macro-arg)))
           (description-forms (lookup-eq macro-arg arg-descriptions)))
-      `("<p>@('" ,name "') &mdash; (required)</p>" (newline-string)
-        (newline-string)
+      `("<p>@('" ,name "') &mdash; (required)</p>
+
+"
         ,*open-blockquote-and-newline*
         ,@(xdoc-make-paragraphs description-forms)
-        ,*close-blockquote-and-newline*
-        (newline-string)))))
+        ,*close-blockquote-and-two-newlines*))))
 
 ;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-required-args (macro-args arg-descriptions)
@@ -348,12 +357,12 @@
        ;; add the brackets, since this is an optional arg:
        (name (n-string-append "[" (string-downcase-gen (symbol-name name)) "]"))
        (default-form `(string-downcase-gen (object-to-string ,default ,package))))
-    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
-      (newline-string)
+    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>
+
+"
       ,*open-blockquote-and-newline*
       ,@(xdoc-make-paragraphs description-strings)
-      ,*close-blockquote-and-newline*
-      (newline-string))))
+      ,*close-blockquote-and-two-newlines*)))
 
 ;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-optional-args (macro-args arg-descriptions package)
@@ -377,12 +386,12 @@
        ;; add the colon, since this is a keyword arg:
        (name (string-append ":" (string-downcase-gen (symbol-name name))))
        (default-form `(string-downcase-gen (object-to-string ,default ,package))))
-    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>" (newline-string)
-      (newline-string)
+    `("<p>@('" ,name "') &mdash; default @('" ,default-form "')</p>
+
+"
       ,*open-blockquote-and-newline*
       ,@(xdoc-make-paragraphs description-strings)
-      ,*close-blockquote-and-newline*
-      (newline-string))))
+      ,*close-blockquote-and-two-newlines*)))
 
 ;; Returns a list of string-valued forms.
 (defun xdoc-for-macro-keyword-args (macro-args arg-descriptions package)
@@ -397,18 +406,33 @@
 ;; Returns a defxdoc form.
 ;; TODO: Think about all the & things that can occur in the macro-args
 (defund defxdoc-for-macro-fn (name    ; the name of the macro being documented
-                              macro-args ; the formals of the macro
-                              parents
+                              macro-args ; :auto, or the exact formals of the macro, possibly with initial values, and suppliedp variables (also includes &whole, &key, etc.)
+                              parents ; a list of symbols
                               short ; a form that evaluates to a string or to nil
                               arg-descriptions
-                              description ; either nil, or a form that evaluates to a string, or a list of such forms
+                              description ; a form that evaluates to a string, or a list of such forms
+                              state
                               )
   (declare (xargs :guard (and (symbolp name)
-                              (macro-arg-listp macro-args)
+                              (or (eq :auto macro-args)
+                                  (macro-arg-listp macro-args))
                               (symbol-listp parents)
                               (macro-arg-descriptionsp arg-descriptions))
-                  :mode :program))
-  (b* ((macro-arg-names (macro-arg-names macro-args))
+                  :mode :program ; why?
+                  :stobjs state))
+  (b* (;; If the macro does exist, make sure the supplied macro-args are correct (todo: support just getting them?)
+       (expected-macro-args (getprop name 'macro-args :unavailable 'current-acl2-world (w state)))
+       ((when (and (eq :unavailable expected-macro-args)
+                   (eq :auto macro-args)))
+        (er hard? 'defxdoc-for-macro-fn "No macro-args supplied for ~x0 and it doesn't exist." name))
+       (macro-args (if (eq :auto macro-args) expected-macro-args macro-args))
+       ;; todo: suppress check if we did the assignment just above:
+       ((when (and (not (eq :unavailable expected-macro-args))
+                   (not (equal macro-args expected-macro-args))))
+        (er hard? 'defxdoc-for-macro-fn "Mismatch between supplied macro args (not counting &whole), ~X01, and existing args, ~X23."
+            macro-args nil expected-macro-args nil))
+
+       (macro-arg-names (macro-arg-names macro-args))
        (described-arg-names (strip-cars arg-descriptions))
        ((when (not (subsetp-eq described-arg-names macro-arg-names)))
         (er hard? 'defxdoc-for-macro-fn "Descriptions given for arguments, ~x0, that are not among the macro args, ~x1."
@@ -435,7 +459,7 @@
     `(defxdoc ,name
        ,@(and short `(:short ,short))
        ,@(and parents `(:parents ,parents))
-       :long (n-string-append
+       :long (n-string-append ; todo: can we evaluate this statically?
               ;; Shows the general form of a call (all args and defaults):
               ,(xdoc-for-macro-general-form name macro-args package)
               ,*xdoc-inputs-header-with-spacing*
@@ -448,22 +472,26 @@
                      (cons *xdoc-description-header-with-spacing*
                            (xdoc-make-paragraphs description-forms))))))) ; todo: what if we don't want to put all the forms in paragraphs?
 
-(defmacro defxdoc-for-macro (name ; the name of the macro being documented
-                             macro-args ; the formals of the macro, todo: allow extracting these from the world?
-                             parents
-                             short ; a form that evaluates to a string or to nil
-                             arg-descriptions
-                             description ; a form that evaluates to a string or to nil
-                             )
-  (defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))
+;; Generates a defxdoc form for the given macro.  Checks that all arguments are documented (if the macro exists).
+;; This one makes most args be keyword args.
+(defmacro defxdoc-for-macro (name ; the name of the macro to document, a symbol
+                              &key
+                              (macro-args ':auto) ; the arguments of the macro, including initial values, suppliedp variables, etc.
+                              (parents 'nil) ; a list of symbols
+                              (short 'nil) ; a form that evaluates to a string or to nil
+                              (arg-descriptions 'nil) ; a form that evaluates to a symbol-alist
+                              (description 'nil) ; a form that evaluates to a string, or a list of such forms
+                              )
+  `(make-event (defxdoc-for-macro-fn ',name ',macro-args ',parents ',short ',arg-descriptions ',description state)))
 
-;; Returns a progn including the original defmacro and a defxdoc form
+;; Returns a progn including the defmacro form and a defxdoc form.
 (defun defmacrodoc-fn (name macro-args
                             rest ; has the declares, the body, and xdoc stuff
-                            )
+                            state)
   (declare (xargs :mode :program
                   :guard (and (symbolp name)
-                              (macro-arg-listp macro-args))))
+                              (macro-arg-listp macro-args))
+                  :stobjs state))
   (b* (((mv declares rest) ;first come optional declares (no legacy doc strings)
         (get-declares rest))
        (body (first rest))      ;then the body
@@ -483,7 +511,7 @@
                    (not arg-descriptions)))
         (er hard 'defmacrodoc "No :args supplied for ~x0 (should contain descriptions of the macro args)" name)))
     `(progn (defmacro ,name ,macro-args ,@declares ,body)
-            ,(defxdoc-for-macro-fn name macro-args parents short arg-descriptions description))))
+            ,(defxdoc-for-macro-fn name macro-args parents short arg-descriptions description state))))
 
 ;; This is like defmacro, except it allows (after the macro's body), the
 ;; inclusion of :short and :parents (for generating xdoc) as well as the
@@ -492,6 +520,6 @@
 ;; does and is included in the :long xdoc section.
 (defmacro defmacrodoc (name macro-args &rest rest)
   ;; This previously used make-event to avoid a problem with calling FLPR in safe mode via fmt1-to-string.
-  (defmacrodoc-fn name macro-args rest))
+  `(make-event (defmacrodoc-fn ',name ',macro-args ',rest state)))
 
 ;; See tests in doc-tests.lisp.

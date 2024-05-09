@@ -1,6 +1,6 @@
 ; A lightweight book about firstn.
 ;
-; Copyright (C) 2018-2021 Kestrel Institute
+; Copyright (C) 2018-2023 Kestrel Institute
 ; See books/coi/lists/basic.lisp for the copyright on firstn itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -146,3 +146,44 @@
            (equal (firstn len1 (take len2 lst))
                   (take len1 lst)))
   :hints (("Goal" :in-theory (enable take firstn))))
+
+(defthm firstn-of-len
+  (equal (firstn (len x) x)
+         (true-list-fix x)))
+
+(defthm equal-of-firstn-and-take
+  (implies (natp n)
+           (equal (equal (firstn n x) (take n x))
+                  (<= n (len x))))
+  :hints (("Goal" :in-theory (enable take firstn))))
+
+(defthm equal-of-take-and-firstn
+  (implies (natp n)
+           (equal (EQUAL (TAKE N X) (FIRSTN N X))
+                  (<= n (len x))))
+  :hints (("Goal" :use (:instance equal-of-firstn-and-take)
+           :in-theory (disable equal-of-firstn-and-take))))
+
+(defthm equal-of-firstn-and-firstn-same
+  (implies (and (natp n1)
+                (natp n2)
+                (<= n1 (len x))
+                (<= n2 (len x)))
+           (equal (equal (firstn n1 x) (firstn n2 x))
+                  (equal n1 n2))))
+
+(defthm equal-of-firstn-same
+  (equal (equal x (firstn n x))
+         (and (true-listp x)
+              (<= (len x) (nfix n))))
+  :hints (("Goal" :in-theory (enable firstn))))
+
+(defthm nth-when-equal-of-firstn-and-constant
+  (implies (and (equal k (firstn m x))
+                (syntaxp (and (quotep k)
+                              (not (quotep x)))) ;gen to that k is a smaller term?
+                (< n m)
+                (natp n)
+                (natp m))
+           (equal (nth n x)
+                  (nth n k))))

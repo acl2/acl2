@@ -77,13 +77,14 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
   (declare (xargs :mode :program
                   :guard (symbolp fun-name)
                   :stobjs (state)))
-  (b* (((mv cl-set &) (guard-clauses-for-clique (list fun-name)
-                                                T ;debug-p
-                                                (ens state)
-                                                (w state)
-                                                (f-get-global 'safe-mode state)
-                                                (gc-off state)
-                                                nil))
+  (b* (((mv cl-set &)
+        (guard-clauses-for-clique (list fun-name)
+                                  T ;debug-p
+                                  (ens state)
+                                  (w state)
+                                  (f-get-global 'safe-mode state)
+                                  (gc-off state)
+                                  nil))
        (guard-ob (prettyify-clause-set cl-set (let*-abstractionp state) (w state)))
        ;;(- (cw "fn: ~x0 and body-contract-obligation: ~x1~%" fun-name guard-ob))
        )
@@ -191,64 +192,6 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun c-is-t (c)
   (declare (xargs :guard t))
   (or (equal c 't) (equal c ''t)))
-
-(defun type-of-pred-aux (pred tbl)
-  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl))))
-  (cond ((endp tbl) nil)
-        ((equal pred (get-alist :predicate (cdar tbl)))
-         (caar tbl))
-        (t (type-of-pred-aux pred (cdr tbl)))))
-
-#|
-(defun type-of-pred (pred tbl)
-  (cond ((equal pred 'intp) 'integer)
-        ((equal pred 'boolp) 'boolean)
-        ((equal pred 'tlp) 'true-list)
-        (t (type-of-pred-aux pred tbl))))
-|#
-
-(defun type-of-pred (pred tbl ptbl)
-  (declare (xargs :guard (and (symbolp pred) (sym-aalistp tbl) (sym-aalistp ptbl))))
-  (let ((apred (assoc-equal :type (get-alist pred ptbl))))
-    (if apred
-        (cdr apred)
-    (type-of-pred-aux pred tbl))))
-
-#|
-(type-of-pred 'boolp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'boolp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'bool
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'tlp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'intp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred 'integerp
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-(type-of-pred nil
-              (type-metadata-table (w state))
-              (pred-alias-table (w state)))
-|#
-
-(defun enum-of-type (type tbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
-  (get-alist :enumerator (get-alist type tbl)))
-
-; (enum-of-type 'integer (type-metadata-table (w state)))
-
-(defun base-val-of-type (type tbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl))))
-  (get-alist :default-base-value (get-alist type tbl)))
-
-; (base-val-of-type 'integer (type-metadata-table (w state)))
 
 (defun unalias-pred (pred ptbl)
   (declare (xargs :guard (and (symbolp pred) (sym-aalistp ptbl))))
@@ -546,7 +489,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
 (defun just-type-hyps (ic M P)
   (cond ((atom ic) nil)
         ((equal (car ic) 'and)
-         (remove-duplicates-equal (just-type-hyps1 (cdr ic) M P)))
+         (remove-dups (just-type-hyps1 (cdr ic) M P)))
         ((symbolp (car ic))
          (b* ((t-pred (type-of-pred (car ic) M P)))
            (and t-pred
@@ -612,6 +555,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (typed-undef (get1 :typed-undef kwd-alist))
        (generalize-rules?
         (get1 :generate-generalize-rules kwd-alist))
+       (try-induct-fc?
+        (get1 :try-induct-function-contractp kwd-alist))
        ((mv body-rm-hyps no-hyps?-rm-hyps)
         (make-contract-body name ic oc formals d? t f-c-thm? typed-undef pkg w))
        ((mv no-force-body-hyps &)
@@ -642,7 +587,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                  ;; hints are treated as extra
                  ,(append `(("Goal" :induct ,(cons name formals)))
                           hints)))
-       (rhints (if recursivep
+       (rhints (if (and recursivep try-induct-fc?)
                    ihints
                  (and hints `(:hints ,hints))))
        (rewrite-class-rm-hyps (if no-hyps?-rm-hyps
@@ -680,6 +625,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                 ,@(and otf-flg `(:otf-flg ,otf-flg))
                 ,@(and instructions `(:instructions ,instructions)))))
        (rewrite-fc (and rewrite-fc (list (wrap-skip-fun rewrite-fc))))
+       (induct-rewrite-fc (and (not (equal rewrite-fc induct-rewrite-fc))
+                               induct-rewrite-fc))
        (induct-rewrite-fc-h
         `(DEFTHM ,contract-name ,body-hyps ,@rhints
            ,@(and rclass-hyps `(:rule-classes ,rclass-hyps))
@@ -694,6 +641,8 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                 ,@(and otf-flg `(:otf-flg ,otf-flg))
                 ,@(and instructions `(:instructions ,instructions)))))
        (rewrite-fc-h (and rewrite-fc-h (wrap-skip-fun rewrite-fc-h)))
+       (rewrite-fc-h (and (not (equal rewrite-fc-h induct-rewrite-fc-h))
+                          rewrite-fc-h))
        (rewrite-fc-h (and rewrite-fc-h
                           `((with-output :off :all :on (comment error)
                                          ,rewrite-fc-h))))
@@ -729,6 +678,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (skip-function-contractp
       `(encapsulate
         ()
+        (set-induction-depth-limit 3)
         (with-output
          :off :all :on (error comment)
          ;; ,@induct-rewrite-fc-h)))
@@ -748,6 +698,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      ((and gen? no-hyps?-rm-hyps)
       `(encapsulate
         ()
+        (set-induction-depth-limit 3)
         (with-output
          :off :all :on comment
          (make-event
@@ -776,6 +727,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      (t
       `(encapsulate
         ()
+        (set-induction-depth-limit 3)
         (with-output
          :off :all :on comment
          (make-event '(:or ,@induct-rewrite-fc-h ,@rewrite-fc-h ,@non-strict-escape)))
@@ -853,54 +805,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         (t (gather-alias1 alias (cdr alist)))))
 
 (defun gather-alias (alias alist)
-  (remove-duplicates-equal (gather-alias1 alias alist)))
-
-
-#|
-
-(defun type-of-type (type tbl atbl ctx)
-  (let ((atype (assoc-equal :type (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist type tbl)))
-        (if res
-            type
-          (er soft ctx
- "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
-
-(defun pred-of-type (type tbl atbl ctx)
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        (or res
-            (er hard ctx
- "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
-
-|#
-
-; Decided to take care of error printing on my own, but kept previous
-; versions above.
-
-(defun type-of-type (type tbl atbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
-                              (sym-aalistp atbl))))
-  (let ((atype (assoc-equal :type (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist type tbl)))
-        (if res
-            type
-          nil)))))
-
-(defun pred-of-type (type tbl atbl)
-  (declare (xargs :guard (and (symbolp type) (sym-aalistp tbl)
-                              (sym-aalistp atbl))))
-  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
-    (if atype
-        (cdr atype)
-      (let ((res (get-alist :predicate (get-alist type tbl))))
-        res))))
+  (remove-dups (gather-alias1 alias alist)))
 
 (defun make-contract (name args pred)
   (declare (xargs :guard (and (symbolp name)
@@ -962,7 +867,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
                               (pkgp pkg))
                   :verify-guards nil))
   (b* ((sct (simplify-constant-types l nil name formals tbl atbl pkg))
-       (sct (remove-duplicates-equal sct)))
+       (sct (remove-dups sct)))
     (cond ((null sct) t)
           ((null (cdr sct)) (car sct))
           (t `(and ,@sct)))))
@@ -988,6 +893,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
      :termination-strictp :function-contract-strictp :body-contracts-strictp
      :force-ic-hyps-in-definitionp :force-ic-hyps-in-contract-thmp
      :skip-admissibilityp :skip-function-contractp :skip-body-contractsp
+     :try-induct-function-contractp 
      :rule-classes
      :instructions :function-contract-hints :otf-flg ;for contract defthm
      :body-contracts-hints ;for verify-guards event
@@ -1313,15 +1219,36 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
         ;(make-event ,(print-summary-ev name oc kwd-alist pkg))
         )))))
 
-(defun print-guard-extra-info-hyps (hyps yesp)
-  (if (endp hyps)
+(defun car-eq-extra-info (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (consp (car x))
+       (eq (car (car x)) 'ACL2::EXTRA-INFO)))
+  
+(defun extract-extra-info (hyps)
+  (declare (xargs :guard t))
+  (cond
+   ((atom hyps) nil)
+   ((car-eq-extra-info hyps)
+    (cons (car hyps)
+          (extract-extra-info (cdr hyps))))
+   ((atom (car hyps))
+    (extract-extra-info (cdr hyps)))
+   (t (append (extract-extra-info (car hyps))
+              (extract-extra-info (cdr hyps))))))
+
+(defun print-guard-extra-info-hyps-aux (x yesp)
+  (declare (xargs :guard (booleanp yesp)))
+  (if (atom x)
       nil
-    (if (and (consp (car hyps))
-             (eq (car (car hyps)) 'ACL2::EXTRA-INFO))
-        (prog2$
-         (cgen::cw? yesp "~| -- ~x0~%" (car hyps))
-         (print-guard-extra-info-hyps (cdr hyps) yesp))
-      (print-guard-extra-info-hyps (cdr hyps) yesp))))
+    (prog2$
+     (cgen::cw? yesp "~| -- ~x0~%" (car x))
+     (print-guard-extra-info-hyps-aux (cdr x) yesp))))
+
+(defun print-guard-extra-info-hyps (hyps yesp)
+  (declare (xargs :guard (booleanp yesp)))
+  (let ((ei (remove-dups (extract-extra-info hyps))))
+    (print-guard-extra-info-hyps-aux ei yesp)))
 
 ;; ((acl2::fun (check-syntax form logicp state)) ;flet
 ;;          (acl2::state-global-let*
@@ -1591,6 +1518,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
          (:skip-admissibilityp . nil)
          (:skip-function-contractp . nil)
          (:skip-body-contractsp . nil)
+         (:try-induct-function-contractp . t)
          (:rule-classes . nil)
          (:instructions . nil)
          (:function-contract-hints . nil)
@@ -1753,7 +1681,7 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
        (undefined-value? (assoc :undefined-value kwd-alist))
        (undefined-value (if undefined-value?
                             (get1 :undefined-value kwd-alist)
-                          `',(base-val-of-type type tbl)))
+                          (base-val-of-type type tbl w)))
        (base-val (and type typed-undef undefined-value))
        (defthm-d? `(defthm ,thm-name (,pred (,undef-name))
                      :rule-classes ((:type-prescription) (:rewrite))))
@@ -1912,6 +1840,11 @@ Let termination-strictp, function-contract-strictp and body-contracts-strictp be
             (defunc-timeout (get-defunc-timeout))
             (defunc-timeout (or timeout-arg (* 3/4 (or defunc-timeout 10000))))
             (timeout (min ccg-timeout defunc-timeout))
+            (name-bad? (arity name (w state)))
+            (- (cw? (and debug? name-bad?)
+                    "~%The name ~x0 is already defined.
+This is fine if you are redefining the function,
+but may otherwise indicate an error. "   name))
             (args (list* (car args)
                          `(declare (xargs :time-limit ,timeout))
                          (cdr args)))
@@ -2398,3 +2331,4 @@ To debug a failed defunc form, you can proceed in multiple ways:
 (defmacro prove-function-contract (name)
   `(... ,name))
 |#
+

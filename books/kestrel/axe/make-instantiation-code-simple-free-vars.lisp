@@ -23,12 +23,15 @@
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
+;dup, needed for the proofs?
 (defthmd assoc-equal-iff-member-equal-of-strip-cars
-  (implies (alistp alist)
+  (implies (or (alistp alist)
+               key)
            (iff (assoc-equal key alist)
                 (member-equal key (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal))))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
 
 ;move
 (defthm set-difference-equal-of-union-equal-arg1
@@ -58,7 +61,7 @@
           (declare (xargs :verify-guards nil ;done below
                           :guard (and (pseudo-termp term)
                                       (symbol-alistp alist)
-                                      (all-dargp (strip-cdrs alist))
+                                      (darg-listp (strip-cdrs alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
           (if (variablep term) ;todo: we could mark the var as free or not free
               (let ((match (assoc-eq term alist)))
@@ -92,7 +95,7 @@
         (defund ,instantiate-hyp-lst-name (terms alist interpreted-function-alist)
           (declare (xargs :guard (and (pseudo-term-listp terms)
                                       (symbol-alistp alist)
-                                      (all-dargp (strip-cdrs alist))
+                                      (darg-listp (strip-cdrs alist))
                                       (interpreted-function-alistp interpreted-function-alist))))
           (if (endp terms)
               (mv t nil)
@@ -130,12 +133,12 @@
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
         (defthm ,(pack$ 'axe-treep-of- instantiate-hyp-name)
           (implies (and (pseudo-termp term)
-                        (all-dargp (strip-cdrs alist)))
+                        (darg-listp (strip-cdrs alist)))
                    (axe-treep (,instantiate-hyp-name term alist interpreted-function-alist)))
           :flag ,instantiate-hyp-name)
         (defthm ,(pack$ 'axe-tree-listp-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (pseudo-term-listp terms)
-                        (all-dargp (strip-cdrs alist)))
+                        (darg-listp (strip-cdrs alist)))
                    (axe-tree-listp (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
         :hints (("Goal" :in-theory (enable ,instantiate-hyp-name ,instantiate-hyp-lst-name))))
@@ -159,7 +162,7 @@
         (defthm ,(pack$ 'all-myquotep-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (mv-nth 0 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))
                         (pseudo-term-listp terms)
-                        (all-dargp (strip-cdrs alist)))
+                        (darg-listp (strip-cdrs alist)))
                    (all-myquotep (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist))))
           :flag ,instantiate-hyp-lst-name)
         :skip-others t
@@ -201,7 +204,7 @@
 
        (defthm ,(pack$ 'axe-tree-listp-of-cdr-of- instantiate-hyp-name)
          (implies (and (pseudo-termp term)
-                       (all-dargp (strip-cdrs alist))
+                       (darg-listp (strip-cdrs alist))
                        (consp term) ;guarantees that the result is a consp
                        (not (equal 'quote (car (,instantiate-hyp-name term alist interpreted-function-alist))))
                        ;; ;; free vars remain in the term:
@@ -223,7 +226,7 @@
        (,(pack$ 'defthm-flag- instantiate-hyp-name)
         (defthm ,(pack$ 'axe-tree-vars-of- instantiate-hyp-name)
           (implies (and (pseudo-termp term)
-                        (all-dargp (strip-cdrs alist))
+                        (darg-listp (strip-cdrs alist))
                         (alistp alist))
                    (equal (axe-tree-vars (,instantiate-hyp-name term alist interpreted-function-alist))
                           (set-difference-equal (free-vars-in-term term)
@@ -231,7 +234,7 @@
           :flag ,instantiate-hyp-name)
         (defthm ,(pack$ 'axe-tree-vars-lst-of-mv-nth-1-of- instantiate-hyp-lst-name)
           (implies (and (pseudo-term-listp terms)
-                        (all-dargp (strip-cdrs alist))
+                        (darg-listp (strip-cdrs alist))
                         (alistp alist))
                    (equal (axe-tree-vars-lst (mv-nth 1 (,instantiate-hyp-lst-name terms alist interpreted-function-alist)))
                           (set-difference-equal (free-vars-in-terms terms)
@@ -245,7 +248,7 @@
 
        ;; ;; All the vars in the alist get replaced when we instantiate
        ;; (defthm ,(pack$ 'not-intersection-equal-of-strip-cars-and-axe-tree-vars-of- instantiate-hyp-name)
-       ;;   (implies (and (all-dargp (strip-cdrs alist))
+       ;;   (implies (and (darg-listp (strip-cdrs alist))
        ;;                 (symbol-alistp alist)
        ;;                 (pseudo-termp term))
        ;;            (not (intersection-equal (strip-cars alist)
@@ -255,7 +258,7 @@
        (defthm ,(pack$ 'axe-tree-vars-lst-of-cdr-of- instantiate-hyp-name)
          (implies (and (consp (,instantiate-hyp-name TERM ALIST INTERPRETED-FUNCTION-ALIST))
                        (not (equal 'quote (car (,instantiate-hyp-name term alist interpreted-function-alist))))
-                       (all-dargp (strip-cdrs alist))
+                       (darg-listp (strip-cdrs alist))
                        (symbol-alistp alist)
                        (pseudo-termp term))
                   (equal (axe-tree-vars-lst (cdr (,instantiate-hyp-name term alist interpreted-function-alist)))
@@ -275,7 +278,7 @@
                        (pseudo-termp (cdr (car hyps)))
                        (lambda-free-termp (cdr (car hyps)))
                        (axe-rule-hyp-listp (cdr hyps))
-                       (consp hyps)
+                       ;; (consp hyps)
                        (not (equal 'quote (car (,instantiate-hyp-name (cdr (car hyps)) alist interpreted-function-alist)))))
                   (alist-suitable-for-hyp-args-and-hypsp alist
                                                          (cdr (,instantiate-hyp-name (cdr (car hyps)) alist interpreted-function-alist))

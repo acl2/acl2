@@ -239,7 +239,7 @@
 (define vcd-make-svar ((scope vcd-scope-lst-p))
   :returns (rslt sv::svar-p)
   (hons-copy (sv::make-svar :name (vcd-svar-name scope)
-                            :delay 0 :nonblocking nil)))
+                            :delay 0)))
 
 (define vcd$-make-svar (vcd$)
   :returns (rslt sv::svar-p)
@@ -716,7 +716,7 @@
 
 (define mk-svar (x &key ((d natp) '0))
   :returns (x sv::svar-p)
-  (sv::make-svar :name x :delay d :nonblocking nil))
+  (sv::make-svar :name x :delay d))
 
 (defconst *svar-top* (mk-svar "top"))
 
@@ -818,10 +818,14 @@
         ((atom (cdr x)) (car x))
         (t (last-car (cdr x)))))
 
+; Commented out 11/2022 by Matt K.: last-cdr is now defined equivalently in the
+; ACL2 sources.
+#|
 (define last-cdr (x)
   (cond ((atom x) x)
         ((atom (cdr x)) (cdr x))
         (t (last-cdr (cdr x)))))
+|#
 
 (define vcd-output-scope ((vars sv::svarlist-p)
                           &key ((depth natp) '10000) (vcd$ 'vcd$))

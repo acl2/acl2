@@ -1,7 +1,9 @@
+#! /bin/bash
+
 # A script to compile .java files
 #
 # Copyright (C) 2008-2011 Eric Smith and Stanford University
-# Copyright (C) 2013-2020 Kestrel Institute
+# Copyright (C) 2013-2023 Kestrel Institute
 # Copyright (C) 2016-2020 Kestrel Technology, LLC
 #
 # License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -10,7 +12,6 @@
 
 ################################################################################
 
-#! /bin/bash
 set -e # Exit on first error
 
 # Compile a source file, placing the class file next to it

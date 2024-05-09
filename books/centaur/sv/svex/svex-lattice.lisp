@@ -36,6 +36,7 @@
 (local (std::add-default-post-define-hook :fix))
 
 (defsection svex-<<=
+  :parents (4vec-<<=)
   (defun-sk svex-<<= (x y)
     (forall env
             (4vec-<<= (svex-eval x env)
@@ -115,6 +116,7 @@
            (nth-ind (1- n) (cdr x)))))
 
 (defsection svexlist-<<=
+  :parents (4vec-<<=)
   (defun-sk svexlist-<<= (x y)
     (forall env
             (4veclist-<<= (svexlist-eval x env)
@@ -338,6 +340,7 @@
                 (svex-env-lookup k (svex-alist-eval x env)))))
 
 (defsection svex-alist-<<=
+  :parents (4vec-<<=)
   (defun-sk svex-alist-<<= (x y)
     (forall env
             (svex-env-<<= (svex-alist-eval x env)
@@ -373,9 +376,6 @@
              :use ((:instance svex-alist-<<=-necc
                     (env (svex-<<=-witness (svex-lookup k x) (svex-lookup k y))))))))
 
-  (local (defthmd svex-lookup-iff-member-svex-alist-keys
-           (iff (svex-lookup var x)
-                (member-equal (svar-fix var) (svex-alist-keys x)))))
 
   (defthm svex-<<=-of-svex-compose-lookup-when-svex-alist-<<=
     (implies (and (svex-alist-<<= x y)
@@ -510,9 +510,6 @@
              :use ((:instance svex-alist-compose-<<=-necc
                     (var k))))))
 
-  (local (defthmd svex-lookup-iff-member-svex-alist-keys
-           (iff (svex-lookup var x)
-                (member-equal (svar-fix var) (svex-alist-keys x)))))
 
   (defthm svex-alist-compose-<<=-refl
     (svex-alist-compose-<<= x x)
@@ -595,6 +592,7 @@
                           (var (svex-alist-compose-equiv-witness y x)))))))))
 
 (defsection svex-monotonic-p
+  :parents (4vec-<<=)
   (defcong svex-eval-equiv equal (svex-monotonic-p x) 1
     :hints(("Goal" :in-theory (e/d (svex-monotonic-p)
                                    (svex-monotonic-p-necc))
@@ -611,6 +609,7 @@
     :hints(("Goal" :in-theory (enable svex-monotonic-p svex-eval)))))
 
 (defsection svexlist-monotonic-p
+  :parents (4vec-<<=)
   (defcong svexlist-eval-equiv equal (svexlist-monotonic-p x) 1
     :hints(("Goal" :in-theory (e/d (svexlist-monotonic-p)
                                    (svexlist-monotonic-p-necc))
@@ -647,6 +646,7 @@
              :in-theory (e/d (nth-redef) (nth))))))
 
 (defsection svex-alist-monotonic-p
+  :parents (4vec-<<=)
   (defun-sk svex-alist-monotonic-p (x)
     (forall (env1 env2)
             (implies (svex-env-<<= env1 env2)
@@ -767,3 +767,43 @@
     (implies (svex-alist-<<= x y)
              (svex-alist-<<= (svex-alist-compose x a) (svex-alist-compose y a)))
     :hints (("goal" :expand ((svex-alist-<<= (svex-alist-compose x a) (svex-alist-compose y a)))))))
+
+
+(define svex-alist-check-monotonic ((x svex-alist-p))
+  (if (atom x)
+      t
+    (and (or (not (mbt (and (consp (car x))
+                            (svar-p (caar x)))))
+             (svex-check-monotonic (cdar x)))
+         (svex-alist-check-monotonic (cdr x))))
+  ///
+  (defthm svex-lookup-when-svex-alist-check-monotonic
+    (implies (svex-alist-check-monotonic x)
+             (svex-monotonic-p (svex-lookup k x)))
+    :hints(("Goal" :in-theory (enable svex-lookup
+                                      svex-monotonic-p-of-const
+                                      hons-assoc-equal))))
+  
+  (defthm svex-alist-monotonic-p-when-svex-alist-check-monotonic
+    (implies (svex-alist-check-monotonic x)
+             (svex-alist-monotonic-p x))
+    :hints(("Goal" :in-theory (enable svex-alist-monotonic-in-terms-of-lookup))))
+
+  (local (in-theory (enable svex-alist-fix))))
+
+
+(define svex-alistlist-check-monotonic ((x svex-alistlist-p))
+  (if (atom x)
+      t
+    (and (svex-alist-check-monotonic (car x))
+         (svex-alistlist-check-monotonic (cdr x))))
+  ///
+  
+  (defthm svex-envlist-<<=-when-svex-alistlist-check-monotonic
+    (implies (and (svex-alistlist-check-monotonic x)
+                  (svex-env-<<= a b))
+             (svex-envlist-<<= (svex-alistlist-eval x a)
+                               (svex-alistlist-eval x b)))
+    :hints(("Goal" :in-theory (enable svex-alistlist-eval
+                                      svex-envlist-<<=)))))
+

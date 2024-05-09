@@ -1,6 +1,6 @@
-; A lightweight book about digit-to-char
+; A lightweight book about the built-in function digit-to-char
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,22 @@
 (in-package "ACL2")
 
 (in-theory (disable digit-to-char))
+
+(defthm our-digit-char-p-of-digit-to-char
+  (implies (and (natp n)
+                (< n radix))
+           (our-digit-char-p (digit-to-char n) radix))
+  :hints (("Goal" :in-theory (enable our-digit-char-p digit-to-char))))
+
+;; Note that our-digit-char-p is deceptively named, as it is not boolean.
+(defthm our-digit-char-p-of-digit-to-char-gen
+  (implies (< 0 radix)
+           (iff (our-digit-char-p (digit-to-char n) radix)
+                (if (and (< n 16) ; so digit-to-char works
+                         (natp n))
+                    (< n radix)
+                  t)))
+  :hints (("Goal" :in-theory (enable our-digit-char-p digit-to-char))))
 
 (defthm equal-of-0-and-digit-to-char
   (equal (equal #\0 (digit-to-char n))

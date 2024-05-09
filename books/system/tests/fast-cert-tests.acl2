@@ -1,0 +1,348 @@
+; Copyright (C) 2023, ForrestHunt, Inc.
+; Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+(in-package "ACL2")
+
+; See also fast-cert-tests.lisp, which contains tests pertaining to fast-cert
+; for events executed during certify-book.  The events below are to be executed
+; at the top level.
+
+;;;;;;;;;;
+;;; Preliminaries
+;;;;;;;;;;
+
+(set-fast-cert t state)
+
+; Undo possible skipping of locals, e.g., by the build system:
+(set-ld-always-skip-top-level-locals nil state)
+
+(table my-top-level-cltl-command-stack t nil)
+
+(defmacro extend-stack (entries)
+  `(progn
+     (table my-top-level-cltl-command-stack
+            t
+            (append
+             ',entries
+             (cdr (assoc-eq t
+                            (table-alist 'my-top-level-cltl-command-stack
+                                         world)))))
+     (assert-event
+      (let ((wrld (w state)))
+        (equal (global-val 'top-level-cltl-command-stack wrld)
+               (cdr (assoc-eq t
+                              (table-alist 'my-top-level-cltl-command-stack
+                                           wrld))))))))
+
+(extend-stack
+ ((defmacro extend-stack (entries)
+    `(progn
+       (table my-top-level-cltl-command-stack
+              t
+              (append
+               ',entries
+               (cdr (assoc-eq t
+                              (table-alist 'my-top-level-cltl-command-stack
+                                           world)))))
+       (assert-event
+        (let ((wrld (w state)))
+          (equal (global-val 'top-level-cltl-command-stack wrld)
+                 (cdr (assoc-eq t
+                                (table-alist 'my-top-level-cltl-command-stack
+                                             wrld))))))))))
+
+(table my-top-level-cltl-command-stack
+       :initial
+       (cdr (assoc-eq t
+                      (table-alist 'my-top-level-cltl-command-stack
+                                   world))))
+
+;;;;;;;;;;
+;;; Test 0: Redundant defun
+;;;;;;;;;;
+
+; Local events do not extend the top-level-cltl-command-stack (called "the
+; stack" in comments below).
+(local (defun g0 (x) x))
+
+(extend-stack nil)
+
+; The following is redundant, so is not added to the portcullis commands; thus
+; the stack is not extended.
+(defun g0 (x) x)
+
+(extend-stack nil)
+
+;;;;;;;;;;
+;;; Test 1: Redundant encapsulate containing non-local redundant defun
+;;;;;;;;;;
+
+; See comments about Test 1 in fast-cert-tests.lisp.  The test here is a
+; version to be carried out at the top level rather than within certify-book.
+
+(local (defun g1 (x) x))
+
+; The following is redundant at the top level, as opposed to within
+; certify-book, where the local event above would disappear at include-book
+; time.  By allowing this to be redundant (which is what one might expect when
+; not thinking about fast-cert), we avoid having to deal with it as a
+; portcullis command.
+(encapsulate
+  ()
+  (defun g1 (x) x)
+  (local (defun g2 (x) x)))
+
+; Since the first definition of g1 above is local and the encapsulate after it
+; (also above) is redundant, nothing is yet added to the
+; top-level-cltl-command-stack (called "the stack" in comments below).
+(extend-stack nil)
+
+; The next encapsulate is not redundant because, unlike the preceding one,
+; g2 is introduced non-locally here.
+(encapsulate
+  ()
+  (defun g1 (x) x)
+  (defun g2 (x) x))
+
+; Since g2 is new, its definition is pushed onto the stack.  But the definition
+; of g1 is also pushed onto the stack (first actually).  That's because the
+; first, local definition of g1 would be ignored by include-book but the
+; non-local definition of g1 just above would not be ignored.
+(extend-stack
+ ((DEFUNS :LOGIC NIL (G2 (X) X))
+  (DEFUNS :LOGIC NIL (G1 (X) X))))
+
+;;;;;;;;;;
+;;; Test 2: Encapsulate redundant with encapsulate
+;;;;;;;;;;
+
+(local
+ (encapsulate
+   ()
+   (defun g3 (x) x)))
+ 
+; reundant
+(encapsulate
+  ()
+  (defun g3 (x) x))
+
+; no extension of stack: g3 will not be defined when including the book
+(extend-stack nil)
+
+; Test compress-cltl-command-stack
+
+; Just for fun, let's make the redundant definition be program-mode.  Since
+; it's local, it doesn't extend the stack.
+(local (defun g3 (x)
+         (declare (xargs :mode :program))
+         x))
+
+(extend-stack nil)
+
+; This is redundant, so it still doesn't extend the stack.
+(defun g3 (x)
+  (declare (xargs :mode :program))
+  x)
+
+(extend-stack nil)
+
+; The defun below is redundant; but this time it adds to the stack.
+; That's because the progn is not redundant, hence winds up in the portcullis
+; commands, which will be executed when including the book.
+(progn
+ (defun g3 (x)
+   (declare (xargs :mode :program))
+   x)
+ (table foo 3 4))
+
+(extend-stack
+ ((DEFUNS :PROGRAM NIL (G3 (X) (DECLARE (XARGS :MODE :PROGRAM)) X))))
+
+; As above, the following adds to the stack.  But now we have two defuns for g3
+; on the stack!  That will be fixed by compressing the stack near the end of
+; the certify-book process.
+(progn
+ (defun g3 (x)
+   (declare (xargs :mode :program))
+   x)
+ (table foo 3 5))
+
+(extend-stack
+ ((DEFUNS :PROGRAM NIL (G3 (X) (DECLARE (XARGS :MODE :PROGRAM)) X))))
+
+(assert-event
+ (equal (compress-cltl-command-stack
+         (global-val 'top-level-cltl-command-stack (w state)))
+        `((DEFUNS :PROGRAM NIL (G3 (X) (DECLARE (XARGS :MODE :PROGRAM)) X))
+          (DEFUNS :LOGIC NIL (G2 (X) X))
+          (DEFUNS :LOGIC NIL (G1 (X) X))
+          ,@(cdr (assoc-eq :initial
+                           (table-alist 'my-top-level-cltl-command-stack
+                                        (w state)))))))
+
+; This defun is local so it doesn't add to the stack.
+(local (defun g3 (x) x))
+
+(extend-stack nil)
+
+; This is redundant so it doesn't add to the stack, since this event does not
+; get included in the portcullis commands.
+(defun g3 (x) x)
+
+(extend-stack nil)
+
+; The following adds to the stack even though the defun is redundant, because
+; of the progn (as before).
+(progn
+ (defun g3 (x)
+   (declare (xargs :mode :program))
+   x)
+ (table foo 3 6))
+
+(extend-stack
+ ((DEFUNS :PROGRAM NIL (G3 (X) (DECLARE (XARGS :MODE :PROGRAM)) X))))
+
+; This adds to the stack yet again, as above, this time for a logic mode defun.
+(progn
+ (defun g3 (x) x)
+ (table foo 3 7))
+
+(extend-stack
+ ((DEFUNS :LOGIC NIL (G3 (X) X))))
+
+; And this adds a stack entry yet again.
+(progn
+ (defun g3 (x) x)
+ (table foo 3 8))
+
+(extend-stack
+ ((DEFUNS :LOGIC NIL (G3 (X) X))))
+
+; But compression gets rid of the excess and properlly marks the logic-mode
+; defun as reclassifying.
+(assert-event
+ (equal (compress-cltl-command-stack
+         (global-val 'top-level-cltl-command-stack (w state)))
+        `((DEFUNS :LOGIC RECLASSIFYING (G3 (X) X))
+          (DEFUNS :PROGRAM NIL (G3 (X) (DECLARE (XARGS :MODE :PROGRAM)) X))
+          (DEFUNS :LOGIC NIL (G2 (X) X))
+          (DEFUNS :LOGIC NIL (G1 (X) X))
+          ,@(cdr (assoc-eq :initial
+                           (table-alist 'my-top-level-cltl-command-stack
+                                        (w state)))))))
+
+;;;;;;;;;;
+;;; Test 3: Event local to portcullis but non-local in book
+;;;;;;;;;;
+
+; See Test 3 in fast-cert-tests.lisp.
+(local (defun h (x) x))
+
+; no change
+(extend-stack nil)
+
+;;;;;;;;;;
+;;; Test 4: Redundancy with earlier progn
+;;;;;;;;;;
+
+(progn
+  (defun g4 (x) x)
+  (local (defun g5 (x) x)))
+
+; The stack is extended for g4 but not g5: only non-local definiitons extend
+; the stack.
+(extend-stack
+ ((DEFUNS :LOGIC NIL (G4 (X) X))))
+
+; The next progn is of course redundant, but during its processing, the
+; non-local defun of g5 extends the stack.  However, at the end of the progn it
+; is seen no events were actually executed (the world extension is only for the
+; stack extension), so the world extension is discarded and the progn is indeed
+; truly redundant.
+
+(progn
+  (defun g4 (x) x)
+  (defun g5 (x) x))
+
+; no change
+(extend-stack nil)
+
+; This is handled similarly to the preceding event.
+(encapsulate
+  ()
+  (defun g4 (x) x)
+  (defun g5 (x) x))
+
+; no change
+(extend-stack nil)
+
+;;;;;;;;;;
+;;; Test 5: Redundancy of progn with defun
+;;;;;;;;;;
+
+(local (defun g6 (x) x))
+
+(progn
+  (defun g7 (x) x)
+  (defun g6 (x) x))
+
+; Although the non-local defun of g6 is redundant, it shows up in the
+; certification world, as part of the (non-redundant) progn command.  Any book
+; certified on top of this world will have g6 defined non-locally in its
+; portcullis commands.
+
+(extend-stack
+ ((DEFUNS :LOGIC NIL (G6 (X) X))
+  (DEFUNS :LOGIC NIL (G7 (X) X))))
+
+;;;;;;;;;;
+;;; Test 6: Handling of defun-mode
+;;;;;;;;;;
+
+; The version of Test 6 is more interesting in fast-cert-tests.lisp, but we
+; include a version here.
+
+; The last two of the following three are redundant, so the stack isn't
+; extended.
+
+(local (defun g8 (x) x)) ; :logic mode
+(defun g8 (x) (declare (xargs :mode :program)) x) ; :program mode
+(defun g8 (x) x) ; :logic mode
+
+(extend-stack nil)
+
+; The following variant, which involves verify-termination, works out the same
+; way.
+
+(local (defun g9 (x) (declare (xargs :mode :program)) x))
+(local (verify-termination g9))
+(defun g9 (x) (declare (xargs :mode :program)) x)
+(defun g9 (x) (declare (xargs :mode :logic)) x)
+
+(extend-stack nil)
+
+;;;;;;;;;;
+;;; Record the final stack.
+;;;;;;;;;;
+
+(defmacro port-cltl-command-stack (&optional compressed-p)
+  `(cdr (assoc-eq ,(if compressed-p :compressed t)
+                  (table-alist 'port-cltl-command-stack (w state)))))
+
+(extend-stack
+ ((defmacro port-cltl-command-stack (&optional compressed-p)
+    `(cdr (assoc-eq ,(if compressed-p :compressed t)
+                    (table-alist 'port-cltl-command-stack (w state)))))))
+ 
+
+; The following two events should occur at the end of this file.
+
+(table port-cltl-command-stack
+       t
+       (global-val 'top-level-cltl-command-stack world))
+
+(table port-cltl-command-stack
+       :compressed
+       (compress-cltl-command-stack
+        (global-val 'top-level-cltl-command-stack world)))

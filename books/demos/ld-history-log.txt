@@ -17,18 +17,15 @@ ACL2 !>>(CW
 NIL
 ACL2 !>>(WITH-OUTPUT
          :OFF EVENT
-         (DEFUN
-          SHOW-LD-HISTORY-ENTRY (N STATE)
+         (DEFUN SHOW-LD-HISTORY-ENTRY (N STATE)
           (DECLARE (XARGS :STOBJS STATE
                           :GUARD (AND (NATP N)
                                       (F-BOUNDP-GLOBAL 'LD-HISTORY STATE))))
-          (LET
-           ((LD-HISTORY (@ LD-HISTORY)))
+          (LET ((LD-HISTORY (@ LD-HISTORY)))
            (AND
             (TRUE-LISTP LD-HISTORY)
             (< N (LEN LD-HISTORY))
-            (LET
-             ((ENTRY (NTH N (LD-HISTORY STATE))))
+            (LET ((ENTRY (NTH N (LD-HISTORY STATE))))
              (AND
               (WEAK-LD-HISTORY-ENTRY-P ENTRY)
               (LIST
@@ -67,9 +64,9 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (SHOW-LD-HISTORY-ENTRY 0 STATE)
 ACL2 !>>(CAR 3)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (CAR X),
-which is (OR (CONSP X) (EQUAL X NIL)), is violated by the arguments
-in the call (CAR 3).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(CAR X), which is (OR (CONSP X) (EQUAL X NIL)), is violated by the
+arguments in the call (CAR 3).
 See :DOC set-guard-checking for information about suppressing this
 check with (set-guard-checking :none), as recommended for new users.
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
@@ -149,8 +146,8 @@ ACL2 !>>(ADJUST-LD-HISTORY 1 STATE)
 ACL2 !>>(ASSERT-EVENT (= (LENGTH (LD-HISTORY STATE)) 2))
  :PASSED
 ACL2 !>>(DEFUN F1 (X)
-               (DECLARE (XARGS :MODE :PROGRAM))
-               (CAR X))
+          (DECLARE (XARGS :MODE :PROGRAM))
+          (CAR X))
 
 Summary
 Form:  ( DEFUN F1 ...)
@@ -170,28 +167,27 @@ Rules: NIL
  H
 ACL2 !>>>Bye.
  :EOF
-ACL2 !>>(ASSERT-EVENT
-             (EQUAL (LIST (SHOW-LD-HISTORY-ENTRY 0 STATE)
-                          (SHOW-LD-HISTORY-ENTRY 1 STATE)
-                          (SHOW-LD-HISTORY-ENTRY 2 STATE))
-                    '(((:INPUT (LD '((F1 7) (DEFUN H (X) X))
-                                   :LD-ERROR-ACTION :CONTINUE))
-                       (:ERROR-FLG NIL)
-                       (:STOBJS-OUT (NIL NIL STATE))
-                       (:VALUE (NIL :EOF REPLACED-STATE))
-                       (:USER-DATA NIL))
-                      ((:INPUT (DEFUN H (X) X))
-                       (:ERROR-FLG NIL)
-                       (:STOBJS-OUT (NIL NIL STATE))
-                       (:VALUE (NIL H REPLACED-STATE))
-                       (:USER-DATA NIL))
-                      ((:INPUT (DEFUN F1 (X)
-                                      (DECLARE (XARGS :MODE :PROGRAM))
-                                      (CAR X)))
-                       (:ERROR-FLG NIL)
-                       (:STOBJS-OUT (NIL NIL STATE))
-                       (:VALUE (NIL F1 REPLACED-STATE))
-                       (:USER-DATA NIL)))))
+ACL2 !>>(ASSERT-EVENT (EQUAL (LIST (SHOW-LD-HISTORY-ENTRY 0 STATE)
+                                   (SHOW-LD-HISTORY-ENTRY 1 STATE)
+                                   (SHOW-LD-HISTORY-ENTRY 2 STATE))
+                             '(((:INPUT (LD '((F1 7) (DEFUN H (X) X))
+                                            :LD-ERROR-ACTION :CONTINUE))
+                                (:ERROR-FLG NIL)
+                                (:STOBJS-OUT (NIL NIL STATE))
+                                (:VALUE (NIL :EOF REPLACED-STATE))
+                                (:USER-DATA NIL))
+                               ((:INPUT (DEFUN H (X) X))
+                                (:ERROR-FLG NIL)
+                                (:STOBJS-OUT (NIL NIL STATE))
+                                (:VALUE (NIL H REPLACED-STATE))
+                                (:USER-DATA NIL))
+                               ((:INPUT (DEFUN F1 (X)
+                                          (DECLARE (XARGS :MODE :PROGRAM))
+                                          (CAR X)))
+                                (:ERROR-FLG NIL)
+                                (:STOBJS-OUT (NIL NIL STATE))
+                                (:VALUE (NIL F1 REPLACED-STATE))
+                                (:USER-DATA NIL)))))
  :PASSED
 ACL2 !>>(CAR '(7))
 7

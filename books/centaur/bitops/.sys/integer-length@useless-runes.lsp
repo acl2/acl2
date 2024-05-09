@@ -1,5 +1,5 @@
 (BITOPS::|(integerp (* 1/2 (expt 2 n)))|
- (93 93 (:TYPE-PRESCRIPTION |x < y  =>  0 < y-x|))
+ (90 90 (:TYPE-PRESCRIPTION |x < y  =>  0 < y-x|))
  (60 12 (:REWRITE DEFAULT-*-2))
  (18 3 (:REWRITE NATP-POSP))
  (16 16 (:TYPE-PRESCRIPTION |x < y  =>  0 < -x+y|))

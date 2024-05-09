@@ -11,6 +11,9 @@
 (include-book "term-rectify")
 (set-state-ok t)
 
+; Matt K. mod: Avoid ACL2(p) failure ("Exit code from ACL2 is 0")
+(set-waterfall-parallelism nil)
+
 (fty::defalist rational-integer-alist
                :key-type rationalp
                :val-type integerp

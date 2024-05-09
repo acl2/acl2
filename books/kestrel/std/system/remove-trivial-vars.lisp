@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -73,7 +73,7 @@
      which means that they often include formal parameters
      that are replaced by themselves (i.e. by the same symbols)
      when the lambda expression is applied.
-     For instance, the untranslated term @('(let ((x 0)) (+ x y))')
+     For instance, the untranslated term @('(let ((x 3)) (+ x y))')
      is @('((lambda (x y) (binary-+ x y)) '3 y)') in translated form:
      the lambda expression includes the extra formal parameter @('y')
      which is not bound by the @(tsee let),
@@ -102,7 +102,7 @@
      These do not satisfy @(tsee termp),
      but they still satisfy @(tsee pseudo-termp).
      Furthermore, it is easy to close any open lambda expressions,
-     by adding formal parameter, and corresponding actual parameters,
+     by adding formal parameters, and corresponding actual parameters,
      for the free variables in the lambda expression.")
    (xdoc::p
     "For certain term transformations,

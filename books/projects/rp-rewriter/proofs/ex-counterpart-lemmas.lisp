@@ -41,8 +41,10 @@
 
 (include-book "../rp-rewriter")
 (include-book "aux-function-lemmas")
-(include-book "proof-functions")
 (include-book "rp-state-functions-lemmas")
+
+(local
+ (in-theory (disable equal-of-len-with-constant)))
 
 (defthm pseudo-termp-rp-ex-counterpart
   (implies (rp-termp term)
@@ -113,6 +115,46 @@
                             UPDATE-RW-STACK-SIZE
                             MAGIC-EV-FNCALL-WRAPPER
                             RW-STACK-SIZE
+                            VALID-RULESP
+                            RULES-ALIST-OUTSIDE-IN-GET
+                            RULES-ALIST-INSIDE-OUT-GET
+                            (:REWRITE DEFAULT-CAR)
+                            (:TYPE-PRESCRIPTION RP-STATEP)
+                            (:REWRITE DEFAULT-CDR)
+                            (:TYPE-PRESCRIPTION RULE-LIST-SYNTAXP)
+;;                            (:REWRITE ACL2::O-P-O-INFP-CAR)
+                            (:TYPE-PRESCRIPTION O<)
+                            (:DEFINITION BITP)
+                            (:DEFINITION NATP)
+                            (:DEFINITION NFIX)
+                            (:DEFINITION NOT)
+                            GET-GLOBAL
+                            GLOBAL-TABLE
+                            RULES-USED-PUT
+                           ;; UPDATE-RULES-USED
+                            )))))
+
+(defthm rp-ex-counterpart-return-RP-STATE-PRESERVEDP
+  (implies (rp-state-preservedp rp-state-old rp-state)
+                  (RP-STATE-PRESERVEDP
+                   rp-state-old  (mv-nth 1 (rp-ex-counterpart term rp-state
+                                                         state))))
+  :hints (("Goal"
+           :expand ((rp-ex-counterpart term rp-state
+                                       state)) 
+           :in-theory (e/d (rp-ex-counterpart
+                            ;;RP-STATE-PRESERVEDP
+                            ;;INCREMENT-RW-STACK-SIZE
+                            ;;RP-STAT-ADD-TO-RULES-USED
+                            ;;UPDATE-RW-STACK-SIZE
+                            ;;rp-statep
+                            ;;RW-STACK-SIZE
+                            )
+                           (RP-STATE-PRESERVEDP-sk
+                            ;;rp-statep
+                            ;;UPDATE-RW-STACK-SIZE
+                            MAGIC-EV-FNCALL-WRAPPER
+                            ;; RW-STACK-SIZE
                             VALID-RULESP
                             RULES-ALIST-OUTSIDE-IN-GET
                             RULES-ALIST-INSIDE-OUT-GET

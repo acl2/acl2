@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -137,7 +137,8 @@
           (list 'nonnegative-integer-quotient
                 'string-append
                 'len
-                'char)))
+                'char
+                'hard-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,7 +195,8 @@
     (nonnegative-integer-quotient . "NONNEGATIVE_INTEGER_QUOTIENT")
     (string-append . "STRING_APPEND")
     (len . "LEN")
-    (char . "CHAR"))
+    (char . "CHAR")
+    (hard-error . "HARD_ERROR"))
   ///
   (assert-event (symbol-string-alistp *aij-symbol-constants*))
   (assert-event (no-duplicatesp-equal (strip-cdrs *aij-symbol-constants*))))

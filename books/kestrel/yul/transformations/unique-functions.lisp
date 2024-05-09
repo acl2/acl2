@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -61,12 +61,12 @@
      :assign-multi (identifier-set-fix funs)
      :funcall (identifier-set-fix funs)
      :if (block-unique-funs stmt.body funs)
-     :for (b* (((ok funs) (block-unique-funs stmt.init funs))
-               ((ok funs) (block-unique-funs stmt.update funs))
-               ((ok funs) (block-unique-funs stmt.body funs)))
+     :for (b* (((okf funs) (block-unique-funs stmt.init funs))
+               ((okf funs) (block-unique-funs stmt.update funs))
+               ((okf funs) (block-unique-funs stmt.body funs)))
             funs)
-     :switch (b* (((ok funs) (swcase-list-unique-funs stmt.cases funs))
-                  ((ok funs) (block-option-unique-funs stmt.default funs)))
+     :switch (b* (((okf funs) (swcase-list-unique-funs stmt.cases funs))
+                  ((okf funs) (block-option-unique-funs stmt.default funs)))
                funs)
      :leave (identifier-set-fix funs)
      :break (identifier-set-fix funs)
@@ -79,8 +79,8 @@
     :returns (new-funs identifier-set-resultp)
     :short "Check that a list of statements has unique function names."
     (b* (((when (endp stmts)) (identifier-set-fix funs))
-         ((ok funs) (statement-unique-funs (car stmts) funs))
-         ((ok funs) (statement-list-unique-funs (cdr stmts) funs)))
+         ((okf funs) (statement-unique-funs (car stmts) funs))
+         ((okf funs) (statement-list-unique-funs (cdr stmts) funs)))
       funs)
     :measure (statement-list-count stmts))
 
@@ -110,8 +110,8 @@
     :returns (new-funs identifier-set-resultp)
     :short "Check that a list of switch cases has unique function names."
     (b* (((when (endp cases)) (identifier-set-fix funs))
-         ((ok funs) (swcase-unique-funs (car cases) funs))
-         ((ok funs) (swcase-list-unique-funs (cdr cases) funs)))
+         ((okf funs) (swcase-unique-funs (car cases) funs))
+         ((okf funs) (swcase-list-unique-funs (cdr cases) funs)))
       funs)
     :measure (swcase-list-count cases))
 
@@ -120,7 +120,7 @@
     :short "Check that a function definition has unique function names."
     (b* ((name (fundef->name fundef))
          ((when (set::in name (identifier-set-fix funs)))
-          (err (list :duplicate-funs name)))
+          (reserrf (list :duplicate-funs name)))
          (funs (set::insert name (identifier-set-fix funs))))
       (block-unique-funs (fundef->body fundef) funs))
     :measure (fundef-count fundef))

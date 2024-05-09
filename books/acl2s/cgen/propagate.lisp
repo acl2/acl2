@@ -5,6 +5,8 @@
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+
 (in-package "CGEN")
 
 (include-book "basis")
@@ -19,7 +21,7 @@
                               state)
   (declare (XargS :mode :program :stobjs state))
   (b* ((world (w state))
-       
+
        ((er hint-settings)
         (acl2::translate-hint-settings
          'simp-term "Goal" hints 'easy-simplify-term world state))
@@ -55,7 +57,7 @@
 
 
 (def easy-simplify-term (term hyps hints state)
-  (decl :sig ((pseudo-term pseudo-term-list true-list state) 
+  (decl :sig ((pseudo-term pseudo-term-list true-list state)
               -> (mv erp pseudo-term state))
         :mode :program
         :doc "simplify term under hyps. erp is T if hyps have a contradiction
@@ -65,7 +67,7 @@
 
 
 (def easy-simplify-terms (terms hyps hints state)
-  (decl :sig ((pseudo-term pseudo-term-list true-list state) 
+  (decl :sig ((pseudo-term pseudo-term-list true-list state)
               -> (mv erp pseudo-term state))
         :mode :program
         :doc "loop over simplify-term")
@@ -105,12 +107,12 @@
 ;; ; leading to a big IF term being generated in shyp.
 ;; ; SO now if the above happens(I should give a warning here), at the very
 ;; ;  least I subst the assignment in hyp.
-;;          (- (cw? (and (system-debug-flag vl) 
+;;          (- (cw? (and (system-debug-flag vl)
 ;;                       (not simplified?))
 ;;              "~|ACHTUNG: simplify-hyps result not less than hyp in term-order~|"))
 ;;          (shyp (if simplified? shyp (subst a x hyp))))
-     
-;;       (simplify-hyps1-under-assignment 
+
+;;       (simplify-hyps1-under-assignment
 ;;        (cdr rem-hyps) init-hyps x a hints
 ;;        (if (equal shyp ''t) ans.
 ;;          (append ans. (list shyp))) ;dont mess with order
@@ -119,7 +121,7 @@
 
 
 (def simplify-term (hyp other-hyps hints state)
-  (decl :sig ((pseudo-term pseudo-term-list true-list state) 
+  (decl :sig ((pseudo-term pseudo-term-list true-list state)
               -> (mv erp pseudo-term state))
         :mode :program
         :doc "simplify term under hyps. erp is T if hyps have a contradiction
@@ -135,10 +137,10 @@
                  hyp
                (acl2::normalize-no-ttree (cadr x) t nil ens wrld))))
     (value shyp)))
-         
+
 
 (def simplify-term-lst (terms hyps hints state)
-  (decl :sig ((pseudo-term pseudo-term-list true-list state) 
+  (decl :sig ((pseudo-term pseudo-term-list true-list state)
               -> (mv erp pseudo-term state))
         :mode :program
         :doc "loop over simplify-term, but be conservative")
@@ -181,13 +183,13 @@
 ; leading to a big IF term being generated in shyp.
 ; SO now if the above happens(I should give a warning here), at the very
 ;  least I subst the assignment in hyp.
-         (- (cw? (and (debug-flag vl) 
+         (- (cw? (and (debug-flag vl)
                       (not simplified?))
                  "~|ACHTUNG: simplify-hyps result not less than hyp in term-order~|"))
          (shyp-list (acl2::expand-assumptions-1 shyp))
          )
-     
-      (simplify-hyps1 
+
+      (simplify-hyps1
        (cdr rem-hyps) init-hyps hints
        (cond ((type-hyp-p hyp (w state)) (append ans. (list hyp))) ;leave type hyps unchanged
              ((equal shyp ''t) ans.)
@@ -249,7 +251,7 @@
        ;;                             nil (debug-flag vl) 'propagate state))
        ;; ((er shyps) (translate-lst shyps state)) ;convert them back to terms
        ((er shyps) (simplify-hyps-under-assignment hyps x a vl state))
-       
+
 ;IMP: sconcl shud be a pseudo-term; not a term-list, or an IF
       (- (cw? (debug-flag vl)
 "~|CEGen/Debug/Propagate: ~x0 ---~x1=~x2--> ~x3~|" hyps x a shyps))
@@ -261,11 +263,11 @@
       ((when (or (equal sconcl 't)
                  (equal sconcl ''t)))
        (mv T nil state))
-      
+
       ;; (simplified? (term-order sconcl concl))
       ;; ;[2015-09-25 Fri] Uncomment these two lines for ma-pipeline-original to work..
       ;; ;[2015-12-08 Tue] Comment these back, because the invariant below (assert) breaks..
-      ;; (sconcl (if simplified? sconcl concl)) 
+      ;; (sconcl (if simplified? sconcl concl))
 
 ;TODO: this following check is causing problem in regression
 ; May 13 '12
@@ -273,12 +275,12 @@
 ;;                  ;(eq (ffn-symb sconcl) 'IF)))
 ;; ;IF is okay for an and in the conclusion. But will we ever get an IF from
 ;; ;inside test-checkpoint??
-;;        (mv (prog2$ 
+;;        (mv (prog2$
 ;;             (cw? (normal-output-flag vl)
 ;; "~|BAD: conclusion got reduced to something we dont want!!~|")
 ;;             T)
 ;;            (list shyps sconcl) state))
       (vars (all-vars-lst (cons sconcl shyps))))
-      
+
   (assert$ (not (member-eq x vars)) (mv NIL (list vars shyps sconcl) state))))
-                  
+

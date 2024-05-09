@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,7 +184,7 @@
    (xdoc::p
     "We transform all the function information values of the map."))
   (b* ((funscope (funscope-fix funscope))
-       ((when (omap::empty funscope)) nil)
+       ((when (omap::emptyp funscope)) nil)
        ((mv name info) (omap::head funscope)))
     (omap::update name
                   (funinfo-dead info)
@@ -200,14 +200,14 @@
 
   (defrule consp-of-in-of-funscope-dead
     (implies (funscopep funscope)
-             (equal (consp (omap::in fun (funscope-dead funscope)))
-                    (consp (omap::in fun funscope)))))
+             (equal (consp (omap::assoc fun (funscope-dead funscope)))
+                    (consp (omap::assoc fun funscope)))))
 
   (defrule cdr-of-in-of-funscope-dead
     (implies (and (funscopep funscope)
-                  (omap::in fun funscope))
-             (equal (cdr (omap::in fun (funscope-dead funscope)))
-                    (funinfo-dead (cdr (omap::in fun funscope))))))
+                  (omap::assoc fun funscope))
+             (equal (cdr (omap::assoc fun (funscope-dead funscope)))
+                    (funinfo-dead (cdr (omap::assoc fun funscope))))))
 
   (defrule funscope-dead-of-update
     (implies (and (identifierp name)
@@ -234,7 +234,7 @@
    (xdoc::p
     "We transform function scopes and leave errors unchanged."))
   (b* ((funscope? (funscope-result-fix funscope?)))
-    (if (resulterrp funscope?)
+    (if (reserrp funscope?)
         funscope?
       (funscope-dead funscope?)))
   :hooks (:fix))
@@ -269,7 +269,7 @@
    (xdoc::p
     "We transform function environments and leave errors unchanged."))
   (b* ((funenv? (funenv-result-fix funenv?)))
-    (if (resulterrp funenv?)
+    (if (reserrp funenv?)
         funenv?
       (funenv-dead funenv?)))
   :hooks (:fix))
@@ -306,7 +306,7 @@
    (xdoc::p
     "We transform the pairs and leave errors unchanged."))
   (b* ((funinfoenv? (funinfo+funenv-result-fix funinfoenv?)))
-    (if (resulterrp funinfoenv?)
+    (if (reserrp funinfoenv?)
         funinfoenv?
       (funinfo+funenv-dead funinfoenv?)))
   :hooks (:fix))
@@ -327,8 +327,8 @@
      discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (eoutcome-result-fix x))
        (y (eoutcome-result-fix y)))
-    (cond ((resulterrp x) (resulterrp y))
-          ((resulterrp y) (resulterrp x))
+    (cond ((reserrp x) (reserrp y))
+          ((reserrp y) (reserrp x))
           (t (equal x y))))
   :hooks (:fix)
   ///
@@ -346,8 +346,8 @@
      discussed in @(see dead-code-eliminator-execution)."))
   (b* ((x (soutcome-result-fix x))
        (y (soutcome-result-fix y)))
-    (cond ((resulterrp x) (resulterrp y))
-          ((resulterrp y) (resulterrp x))
+    (cond ((reserrp x) (reserrp y))
+          ((reserrp y) (reserrp x))
           (t (equal x y))))
   :hooks (:fix)
   ///
@@ -409,7 +409,7 @@
          (funscope-result-dead (funscope-for-fundefs fundefs)))
   :enable (funscope-for-fundefs
            funscope-result-dead
-           funscopep-when-funscope-resultp-and-not-resulterrp))
+           funscopep-when-funscope-resultp-and-not-reserrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,8 +434,8 @@
      :enable (add-funs
               funscope-result-dead
               funenv-result-dead
-              funscopep-when-funscope-resultp-and-not-resulterrp
-              not-resulterrp-when-funenvp))))
+              funscopep-when-funscope-resultp-and-not-reserrp
+              not-reserrp-when-funenvp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -556,7 +556,7 @@
                             fundef-nofunp
                             block-option-some->val
                             block-nofunp-of-funinfo->body
-                            not-resulterrp-when-funenvp)))
+                            not-reserrp-when-funenvp)))
 
   (set-induction-depth-limit 1)
 

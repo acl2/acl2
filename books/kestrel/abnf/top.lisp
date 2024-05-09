@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,20 +10,13 @@
 
 (in-package "ABNF")
 
-; the order of the following INCLUDE-BOOKs determines
-; the order of the subtopics of the ABNF topic below:
-(include-book "abstract-syntax")
-(include-book "semantics")
-(include-book "operations")
-(include-book "core-rules")
-(include-book "concrete-syntax")
-(include-book "parsing-primitives-seq")
-(include-book "parsing-primitives-defresult")
-(include-book "parser")
-(include-book "parser-verification")
-(include-book "abstractor")
-(include-book "parser-and-abstractor-validation")
-(include-book "parser-generators")
+(include-book "notation/top")
+(include-book "grammar-parser/top")
+(include-book "grammar-printer/top")
+(include-book "grammar-definer/top")
+(include-book "operations/top")
+(include-book "parsing-tools/top")
+(include-book "examples/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,20 +51,51 @@
     "This ACL2 library provides:")
    (xdoc::ul
     (xdoc::li
-     "A formalization of the syntax and semantics of the ABNF notation.")
+     "A "
+     (xdoc::seetopic "notation" "formalization")
+     " of the syntax and semantics of the ABNF notation.")
     (xdoc::li
-     "A verified parser that turns ABNF grammar text
+     "A "
+     (xdoc::seetopic "grammar-parser" "verified parser")
+     " that turns ABNF grammar text
       (e.g. from the HTTP RFC)
       into a formal representation suitable for formal specification
       (e.g. for HTTP parsing).")
     (xdoc::li
-     "An abstractor from ABNF concrete syntax to ABNF abstract syntax.")
-    (xdoc::li
-     "Executable operations on ABNF grammars,
+     "Executable @(see operations) on ABNF grammars,
       e.g. to check their well-formedness and to compose them.")
     (xdoc::li
-     "Examples of use of the parser, the abstractor, and some grammar operations
+     "A @(tsee defgrammar) tool
+      for building ACL2 representations of grammar from files,
+      using the aforementioned verified parser,
+      and for automatically proving
+      certain properties such as well-formedness.")
+    (xdoc::li
+     "Some basic "
+     (xdoc::seetopic "parsing-primitives-defresult" "parsing primitives")
+     ", also available in "
+     (xdoc::seetopic "parsing-primitives-seq" "another variant")
+     ", usable as part of larger parsers.")
+    (xdoc::li
+     "A @(tsee defdefparse) tool
+      for generating some very preliminary tools to generate
+      parsing functions from grammar rules.")
+    (xdoc::li
+     "Some @(see examples) of
+      use of @(tsee defgrammar) and some grammar @(see operations)
       on a few real-world ABNF grammars (e.g. for HTTP)."))
+
+   (xdoc::p
+    "Besides the aforementioned examples,
+     @(tsee defgrammar) and some grammar @(see operations) have been used on "
+    (xdoc::seetopic "java::grammar" "an ABNF grammar of Java")
+    ", "
+    (xdoc::seetopic "yul::concrete-syntax" "two ABNF grammars of Yul")
+    ", and "
+    (xdoc::seetopic "c::grammar" "an ABNF grammar of a subset of C")
+    ". The @(tsee defdefparse) tool has been used to generate part of "
+    (xdoc::seetopic "yul::lexer" "a Yul lexer")
+    ".")
 
    (xdoc::p
     "In the documentation of this library,
@@ -91,9 +115,12 @@
      "https://www.kestrel.edu/home/people/coglio/vstte18.pdf"
      "VSTTE 2018 paper")
     " provides an overview
-     of the formalization of the ABNF notation
+     of the ABNF notation formalization
      and of the verified parser
-     (but not of the operations on ABNF grammars).
+     (but not of the operations on ABNF grammars,
+     of the parsing primitives,
+     of the parsing generation tools,
+     or of the real-world examples).
      The differences between the paper and the ABNF library
      are described "
     (xdoc::seetopic "differences-with-paper" "here")
@@ -149,4 +176,4 @@
 
     (xdoc::li
      "The paper uses @('*abnf-grammar*')
-      as the name of the constant @(tsee *all-concrete-syntax-rules*)."))))
+      as the name of the constant @(tsee *grammar*)."))))

@@ -32,11 +32,11 @@
      and it suffices for that purpose,
      namely that ATJ generates this abstract syntax
      and then pretty-prints it to files.
-     This is why this abstract syntax is under @('[books]/kestrel/java/atj'),
-     not under @('[books]/kestrel/java/language').")
+     This is why this abstract syntax is under @('kestrel/java/atj'),
+     not under @('kestrel/java/language').")
    (xdoc::p
     "This abstract syntax may be eventually superseded
-     by a complete formalization under @('[books]/kestrel/java/language').
+     by a complete formalization under @('kestrel/java/language').
      In fact, we have already started replacing some of this abstract syntax
      with more complete counterparts from the language formalization,
      namely the abstract syntax for integer literals.")
@@ -113,7 +113,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jliteral
-  :short "Java literals [JLS:3.10]."
+  :short "Java literals [JLS14:3.10]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -163,7 +163,7 @@
   (xdoc::topstring-p
    "This is an integer decimal literal with the type suffix @('L').
     We use the uppercase type suffix, and not the lowercase one,
-    as recommended in [JLS:3.10.1].")
+    as recommended in [JLS14:3.10.1].")
   (b* ((codes (chars=>nats (str::nat-to-dec-chars value))))
     (jliteral-integer
      (integer-literal-dec
@@ -178,7 +178,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jtype
-  :short "Java types [JLS:4]."
+  :short "Java types [JLS14:4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -251,7 +251,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum junop
-  :short "Java unary operators [JLS:15.15]."
+  :short "Java unary operators [JLS14:15.15]."
   (:preinc ()) ; ++
   (:predec ()) ; --
   (:uplus ()) ; +
@@ -263,7 +263,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jbinop
-  :short "Java binary operators [JLS:15.17-24] [JLS:15.26]."
+  :short "Java binary operators [JLS14:15.17-24] [JLS14:15.26]."
   :long
   (xdoc::topstring-p
    "We do not include @('instanceof') here because
@@ -305,7 +305,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes jexprs
-  :short "Java expressions [JLS:15]."
+  :short "Java expressions [JLS14:15]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -314,7 +314,7 @@
      class literals, and
      method references.")
    (xdoc::p
-    "For expression names [JLS:6.5], we use ACL2 strings,
+    "For expression names [JLS14:6.5], we use ACL2 strings,
      which allow dot-separated identifiers,
      as well as @('this') and @('super').")
    (xdoc::p
@@ -467,7 +467,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jlocvar
-  :short "Local variable declarations [JLS:14.4]."
+  :short "Local variable declarations [JLS14:14.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -486,11 +486,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftypes jstatems+jblocks
-  :short "Java statements and blocks [JLS:14]."
+  :short "Java statements and blocks [JLS14:14]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Unlike [JLS:14.2],
+    "Unlike [JLS14:14.2],
      we do not distinguish between statements and block statements:
      we just have block statements, and call them statements.")
    (xdoc::p
@@ -659,7 +659,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jaccess
-  :short "Java access modifiers [JLS:8.1.1] [JLS:8.3.1] [JLS:8.4.3]."
+  :short "Java access modifiers [JLS14:8.1.1] [JLS14:8.3.1] [JLS14:8.4.3]."
   (:public ())
   (:protected ())
   (:private ())
@@ -669,7 +669,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jfield
-  :short "Java field declarations [JLS:8.3]."
+  :short "Java field declarations [JLS14:8.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -697,7 +697,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum jresult
-  :short "Result of a Java method [JLS:8.4.5]."
+  :short "Result of a Java method [JLS14:8.4.5]."
   (:type ((get jtype)))
   (:void ())
   :pred jresultp)
@@ -705,7 +705,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jparam
-  :short "Java formal parameter [JLS:8.4.1]."
+  :short "Java formal parameter [JLS14:8.4.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -752,7 +752,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jmethod
-  :short "Java method declarations [JLS:8.4]."
+  :short "Java method declarations [JLS14:8.4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -786,7 +786,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jcinitializer
-  :short "Java class initializer [JLS:8.6] [JLS:8.7]."
+  :short "Java class initializer [JLS14:8.6] [JLS14:8.7]."
   :long
   (xdoc::topstring-p
    "This captures both static and instance intializers.")
@@ -799,7 +799,7 @@
 (fty::deftypes jclasses+jcmembers
 
   (fty::deftagsum jcmember
-    :short "Java class member declarations [JLS:8.1.6]."
+    :short "Java class member declarations [JLS14:8.1.6]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -811,7 +811,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::deftagsum jcbody-element
-    :short "Java class body declarations [JLS:8.1.6]."
+    :short "Java class body declarations [JLS14:8.1.6]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -829,7 +829,7 @@
     :measure (two-nats-measure (acl2-count x) 0))
 
   (fty::defprod jclass
-    :short "Java class declarations [JLS:8.1]."
+    :short "Java class declarations [JLS14:8.1]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -886,7 +886,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jimport
-  :short "Java import declarations [JLS:7.5]."
+  :short "Java import declarations [JLS14:7.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -909,18 +909,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod jcunit
-  :short "Java compilation units [JLS:7.3]."
+  :short "Java compilation units [JLS14:7.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We only capture ordinary compilation units, not modular ones.
      Thus, we do not capture module declarations either.")
    (xdoc::p
-    "We capture the package declaration [JLS:7.4]
+    "We capture the package declaration [JLS14:7.4]
      as an ACL2 string for the name.
      This declaration is optional.")
    (xdoc::p
-    "We do not capture interfaces, so a type declaration [JLS:7.6]
+    "We do not capture interfaces, so a type declaration [JLS14:7.6]
      is always a class declaration."))
   ((package? maybe-string)
    (imports jimport-list)

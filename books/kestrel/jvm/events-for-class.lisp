@@ -1,7 +1,7 @@
 ; Creating ACL2 events to represent a Java classs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,25 +12,26 @@
 (in-package "ACL2")
 
 (include-book "classes")
+(include-book "global-class-alist")
+(include-book "kestrel/utilities/mydefconst" :dir :system)
 
-(defun class-info-constant-name (class-name  ;fully qualified?
+(defund class-info-constant-name (class-name  ;fully qualified?
                                  )
   (declare (xargs :guard (jvm::class-namep class-name)))
   (packn (list '* class-name '-class-info*)))
 
 ;; Returns a list events that load and register the given class.
-(defun events-to-load-class (class-name class-info)
+(defund events-to-define-and-register-class (class-name class-info)
   (declare (xargs :guard (and (jvm::class-namep class-name)
                               ;(jvm::class-infop class-info class-name)
                               (jvm::class-infop0 class-info))))
   (let ((class-info-constant-name (class-info-constant-name class-name)))
     `((mydefconst ,class-info-constant-name ',class-info)
-
-      ;; Register the class in the global-class-table (used in lifting):
-      (table global-class-table ,class-name ,class-info-constant-name))))
+      ;; Register the class in the global-class-alist (used in lifting):
+      (jvm::add-to-global-class-alist ,class-name ,class-info-constant-name))))
 
 ;; Returns a list of event forms.
-(defun events-for-class (class-name
+(defund events-for-class (class-name
                          class-info
                          field-defconsts ; do we always want these?
                          )
@@ -44,7 +45,7 @@
           ;;          (equal (get-class (heapref-for-class ,class-name s)
           ;;                            (jvm::heap s))
           ;;                 "java.lang.Class")
-          (events-to-load-class class-name class-info)))
+          (events-to-define-and-register-class class-name class-info)))
 
 
 ;; ;; Returns a list of event forms.
@@ -65,4 +66,4 @@
 ;;               ;;          (equal (get-class (heapref-for-class ,class-name s)
 ;;               ;;                            (jvm::heap s))
 ;;               ;;                 "java.lang.Class")
-;;               (events-to-load-class class-name class-info)))))
+;;               (events-to-define-and-register-class class-name class-info)))))

@@ -1,0 +1,123 @@
+language: common-lisp
+sudo: false # lets try new infrastructure
+os: linux
+dist: focal
+arch: amd64
+env:
+  global:
+    - PATH=~/.roswell/bin:$PATH
+    - ROSWELL_BRANCH=release
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+    - COVERAGE_EXCLUDE=test
+  matrix:
+    - LISP=sbcl-bin OPENSSL=openssl-0.9.8zh BITS=64
+    - LISP=sbcl-bin OPENSSL=openssl-1.0.0s BITS=64
+    - LISP=sbcl-bin OPENSSL=openssl-1.0.2q BITS=64
+    - LISP=sbcl-bin OPENSSL=openssl-1.1.0j BITS=64
+    # Coverals is disabled temprarily, until cl-coveralls issue is fixed: https://github.com/fukamachi/cl-coveralls/issues/14
+    # - LISP=sbcl-bin COVERALLS=true OPENSSL=openssl-1.1.1a BITS=64
+    - LISP=sbcl-bin OPENSSL=openssl-1.1.1a BITS=64
+    - LISP=sbcl-bin OPENSSL=libressl-2.2.7 BITS=64
+    - LISP=sbcl-bin OPENSSL=libressl-2.5.5 BITS=64
+    - LISP=sbcl-bin OPENSSL=libressl-2.6.5 BITS=64
+    - LISP=sbcl-bin OPENSSL=libressl-2.8.3 BITS=64
+    # - LISP=sbcl-bin COVERALLS=true OPENSSL=libressl-3.0.1 BITS=64
+    - LISP=sbcl-bin OPENSSL=libressl-3.0.1 BITS=64
+    - LISP=ccl-bin OPENSSL=openssl-0.9.8zh BITS=64
+    - LISP=ccl-bin OPENSSL=openssl-1.0.0s BITS=64
+    - LISP=ccl-bin OPENSSL=openssl-1.0.2q BITS=64
+    - LISP=ccl-bin OPENSSL=openssl-1.1.0j BITS=64
+    - LISP=ccl-bin OPENSSL=openssl-1.1.1a BITS=64
+    - LISP=ccl-bin OPENSSL=openssl-1.1.1a BITS=64 READTABLE_CASE_INVERT=1
+    - LISP=ccl-bin OPENSSL=libressl-2.2.7 BITS=64
+    - LISP=ccl-bin OPENSSL=libressl-2.5.5 BITS=64
+    - LISP=ccl-bin OPENSSL=libressl-2.6.5 BITS=64
+    - LISP=ccl-bin OPENSSL=libressl-2.8.3 BITS=64
+    - LISP=ccl-bin OPENSSL=libressl-3.0.1 BITS=64
+    # CLISP installation fails, https://github.com/roswell/roswell/issues/449
+    # - LISP=clisp OPENSSL=openssl-0.9.8zh BITS=64
+    # - LISP=clisp OPENSSL=openssl-1.0.0s BITS=64
+    # - LISP=clisp OPENSSL=openssl-1.0.2q BITS=64
+    # - LISP=clisp OPENSSL=openssl-1.1.0j BITS=64
+    # - LISP=clisp OPENSSL=openssl-1.1.1a BITS=64
+    # - LISP=clisp OPENSSL=libressl-2.2.7 BITS=64
+    # - LISP=clisp OPENSSL=libressl-2.5.5 BITS=64
+    # - LISP=clisp OPENSSL=libressl-2.6.5 BITS=64
+    # - LISP=clisp OPENSSL=libressl-2.8.3 BITS=64
+    # - LISP=clisp OPENSSL=libressl-3.0.1 BITS=64
+    # - LISP=clisp OPENSSL=libressl-2.2.7 BITS=64
+    - LISP=ecl OPENSSL=openssl-0.9.8zh BITS=64
+    - LISP=ecl OPENSSL=openssl-1.0.0s BITS=64
+    - LISP=ecl OPENSSL=openssl-1.0.2q BITS=64
+    - LISP=ecl OPENSSL=openssl-1.1.0j BITS=64
+    - LISP=ecl OPENSSL=openssl-1.1.1a BITS=64
+    - LISP=ecl OPENSSL=libressl-2.2.7 BITS=64
+    - LISP=ecl OPENSSL=libressl-2.5.5 BITS=64
+    - LISP=ecl OPENSSL=libressl-2.6.5 BITS=64
+    - LISP=ecl OPENSSL=libressl-2.8.3 BITS=64
+    - LISP=ecl OPENSSL=libressl-3.0.1 BITS=64
+    - LISP=ecl OPENSSL=libressl-2.2.7 BITS=64
+    - LISP=abcl OPENSSL=openssl-0.9.8zh BITS=64
+    - LISP=abcl OPENSSL=openssl-1.0.0s BITS=64
+    - LISP=abcl OPENSSL=openssl-1.0.2q BITS=64
+    - LISP=abcl OPENSSL=openssl-1.1.0j BITS=64
+    - LISP=abcl OPENSSL=openssl-1.1.1a BITS=64
+    - LISP=abcl OPENSSL=libressl-2.2.7 BITS=64
+    - LISP=abcl OPENSSL=libressl-2.5.5 BITS=64
+    - LISP=abcl OPENSSL=libressl-2.6.5 BITS=64
+    - LISP=abcl OPENSSL=libressl-2.8.3 BITS=64
+    - LISP=abcl OPENSSL=libressl-3.0.1 BITS=64
+    - LISP=cmu-bin OPENSSL=openssl-0.9.8zh BITS=32
+    - LISP=cmu-bin OPENSSL=openssl-1.0.0s BITS=32
+    - LISP=cmu-bin OPENSSL=openssl-1.0.2q BITS=32
+    - LISP=cmu-bin OPENSSL=openssl-1.1.0j BITS=32
+    - LISP=cmu-bin OPENSSL=openssl-1.1.1a BITS=32
+    - LISP=cmu-bin OPENSSL=libressl-2.2.7 BITS=32
+    - LISP=cmu-bin OPENSSL=libressl-2.5.5 BITS=32
+    - LISP=cmu-bin OPENSSL=libressl-2.6.5 BITS=32
+    - LISP=cmu-bin OPENSSL=libressl-2.8.3 BITS=32
+    - LISP=cmu-bin OPENSSL=libressl-3.0.1 BITS=32
+    - LISP=allegro OPENSSL=openssl-0.9.8zh BITS=32
+    - LISP=allegro OPENSSL=openssl-1.0.0s BITS=32
+    - LISP=allegro OPENSSL=openssl-1.0.2q BITS=32
+    - LISP=allegro OPENSSL=openssl-1.1.0j BITS=32
+    - LISP=allegro OPENSSL=openssl-1.1.1a BITS=32
+    - LISP=allegro OPENSSL=libressl-2.2.7 BITS=32
+    - LISP=allegro OPENSSL=libressl-2.5.5 BITS=32
+    - LISP=allegro OPENSSL=libressl-2.6.5 BITS=32
+    - LISP=allegro OPENSSL=libressl-2.8.3 BITS=32
+    - LISP=allegro OPENSSL=libressl-3.0.1 BITS=32
+install:
+  - if [ $LISP = abcl ]; then sudo apt-get install maven; fi
+  - curl -L https://raw.githubusercontent.com/snmsts/roswell/$ROSWELL_BRANCH/scripts/install-for-ci.sh | sh
+  # When the release version of roswell wasn't working, we used one of the previous release of roswell.
+  # Leaving it heare as an example for the future.
+  # - curl -L https://raw.githubusercontent.com/roswell/roswell/a8fd8a3c33078d6f06e6cda9d099dcba6fbefcb7/scripts/install-for-ci.sh | sh
+  # Build OpenSSL libraries, if not cached yet
+  - |
+    if [ ! -f "test/run-on-many-lisps-and-openssls/openssl-releases/bin/$OPENSSL-${BITS}bit/lib/libcrypto.so" ] || [ ! -f "test/run-on-many-lisps-and-openssls/openssl-releases/bin/$OPENSSL-${BITS}bit/lib/libssl.so" ]
+    then
+      echo Building OpenSSL binaries for "$OPENSSL" "$BITS"bit.
+      test/run-on-many-lisps-and-openssls/openssl-releases/fetch.sh "$OPENSSL"
+      if [ $BITS = 32 ]; then sudo apt-get install libc6-dev-i386 gcc-multilib; fi
+      rm -rf test/run-on-many-lisps-and-openssls/openssl-releases/bin/$OPENSSL-${BITS}bit/
+      test/run-on-many-lisps-and-openssls/openssl-releases/build.sh "$OPENSSL" "$BITS" > openssl-build.log
+    else
+      echo Found cached OpenSSL binaries
+    fi
+
+cache:
+  directories:
+    - test/run-on-many-lisps-and-openssls/openssl-releases/bin/
+#      - $HOME/.roswell
+#      - $HOME/.config/common-lisp
+
+script:
+  - LIB_LOAD_MODE=new ./.travis-run-tests.sh
+  - |
+    if [ "$LISP" != "abcl" ]
+    then
+      ls ~/.cache/common-lisp/
+      rm -rf ~/.cache/common-lisp/
+      LIB_LOAD_MODE=old ./.travis-run-tests.sh
+    fi

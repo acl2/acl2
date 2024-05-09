@@ -82,7 +82,7 @@
             ((> new-posn clrat-file-length)
 
 ; If new-posn is exactly clrat-file-length, then as per the discussion of the
-; "truncation case" in :doc read-file-into-string, we need to iterate.  But if
+; "truncation case" in :doc read-file-into-string, we iterate.  But if
 ; new-posn exceeds clrat-file-length, then we have a valid proof that does not
 ; include the empty clause.
 
@@ -144,8 +144,9 @@
                   :stobjs state
                   :guard-hints
                   (("Goal" :in-theory (disable sp-valid-proofp$-top-rec)))))
-  (let ((formula (ec-call (cnf-read-file cnf-file state)))
-        (ctx 'transform))
+  (let* ((formula (ec-call (cnf-read-file cnf-file state)))
+         (state (increment-file-clock state))
+         (ctx 'transform))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic

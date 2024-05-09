@@ -149,7 +149,7 @@ If KEY cannot be presented in keyword form, N will be NIL."
 
 (eval-when (load eval)
 
-(if (find-package "acl2")
+(if (find-package "ACL2")
     (progn (load-base "acl2-formatting.lisp"))
 
     (progn (defun acl2-parse-string (doc) (cons nil doc))
@@ -1141,7 +1141,7 @@ call princ and write-char on just one argument, the thing to be printed.
 (defparameter *do-not-index-calls-of*
   (list *infix-radix* *infix-comma* *infix-comma-atsign* *infix-backquote*))
 
-(defvar *user-package* (find-package "user"))
+(defvar *user-package* (find-package "USER"))
 
 (eval-when (load compile eval)
 

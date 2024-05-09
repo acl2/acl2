@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,13 @@
 (in-package "C")
 
 (include-book "../language/abstract-syntax")
+
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,119 +160,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-ident ()
-  :returns (id identp)
-  :short "An irrelevant identifier, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (ident-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-ident))))
+(defirrelevant irr-ident
+  :short "An irrelevant identifier."
+  :type identp
+  :body (ident "_"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-iconst-length ()
-  :returns (tysuff iconst-lengthp)
-  :short "An irrelevant length suffix, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (iconst-length-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-iconst-length))))
+(defirrelevant irr-iconst-length
+  :short "An irrelevant length suffix."
+  :type iconst-lengthp
+  :body (iconst-length-none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-iconst ()
-  :returns (iconst iconstp)
-  :short "An irrelevant integer constant, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (iconst-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-iconst))))
+(defirrelevant irr-iconst
+  :short "An irrelevant integer constant."
+  :type iconstp
+  :body (make-iconst :value 0
+                     :base (iconst-base-oct)
+                     :unsignedp nil
+                     :length (irr-iconst-length)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-tyspecseq ()
-  :returns (ty tyspecseqp)
-  :short "An irrelevant type specifier sequence,
-          usable as a dummy return value."
-  (with-guard-checking :none (ec-call (tyspecseq-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-tyspecseq))))
+(defirrelevant irr-tyspecseq
+  :short "An irrelevant type specifier sequence."
+  :type tyspecseqp
+  :body (tyspecseq-void))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-tyname ()
-  :returns (tyname tynamep)
-  :short "An irrelevant type name, usable as a dummy value."
-  (with-guard-checking :none (ec-call (tyname-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-tyname))))
+(defirrelevant irr-tyname
+  :short "An irrelevant type name."
+  :type tynamep
+  :body (make-tyname :tyspec (irr-tyspecseq)
+                     :declor (obj-adeclor-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-unop ()
-  :returns (op unopp)
-  :short "An irrelevant unary operator, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (unop-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-unop))))
+(defirrelevant irr-unop
+  :short "An irrelevant unary operator."
+  :type unopp
+  :body (unop-address))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-binop ()
-  :returns (op binopp)
-  :short "An irrelevant binary operator, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (binop-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-binop))))
+(defirrelevant irr-binop
+  :short "An irrelevant binary operator."
+  :type binopp
+  :body (binop-asg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-expr ()
-  :returns (expr exprp)
-  :short "An irrelevant expression, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (expr-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-expr))))
+(defirrelevant irr-expr
+  :short "An irrelevant expression."
+  :type exprp
+  :body (expr-const (const-int (irr-iconst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-tag-declon ()
-  :returns (declon tag-declonp)
-  :short "An irrelevant structure/union/enumeration declaration,
-          usable as a dummy return value."
-  (with-guard-checking :none (ec-call (tag-declon-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-tag-declon))))
+(defirrelevant irr-tag-declon
+  :short "An irrelevant structure/union/enumeration declaration."
+  :type tag-declonp
+  :body (make-tag-declon-struct :tag (irr-ident)
+                                :members nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-param-declon ()
-  :returns (param param-declonp)
-  :short "An irrelevant parameter declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (param-declon-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-param-declon))))
+(defirrelevant irr-param-declon
+  :short "An irrelevant parameter declaration."
+  :type param-declonp
+  :body (make-param-declon :tyspec (irr-tyspecseq)
+                           :declor (obj-declor-ident (irr-ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-stmt ()
-  :returns (stmt stmtp)
-  :short "An irrelevant statement, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (stmt-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-stmt))))
+(defirrelevant irr-initer
+  :short "An irrelevant initializer."
+  :type initerp
+  :body (initer-single (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-ext-declon ()
-  :returns (ext ext-declonp)
-  :short "An irrelevant external declaration, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (ext-declon-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-ext-declon))))
+(defirrelevant irr-stmt
+  :short "An irrelevant statement."
+  :type stmtp
+  :body (stmt-null))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define irr-transunit ()
-  :returns (tunit transunitp)
-  :short "An irrelevant translation unit, usable as a dummy return value."
-  (with-guard-checking :none (ec-call (transunit-fix :irrelevant)))
-  ///
-  (in-theory (disable (:e irr-transunit))))
+(defirrelevant irr-block-item
+  :short "An irrelevant block-item."
+  :type block-itemp
+  :body (block-item-stmt (irr-stmt)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fundef
+  :short "An irrelevant function definition."
+  :type fundefp
+  :body (make-fundef :tyspec (irr-tyspecseq)
+                     :declor (make-fun-declor-base :name (irr-ident)
+                                                   :params nil)
+                     :body nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-ext-declon
+  :short "An irrelevant external declaration."
+  :type ext-declonp
+  :body (ext-declon-fundef (irr-fundef)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-transunit
+  :short "An irrelevant translation unit."
+  :type transunitp
+  :body (transunit nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-file
+  :short "An irrelevant file."
+  :type filep
+  :body (file nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fileset
+  :short "An irrelevant file set."
+  :type filesetp
+  :body (make-fileset :path-wo-ext ""
+                      :dot-h nil
+                      :dot-c (irr-file)))

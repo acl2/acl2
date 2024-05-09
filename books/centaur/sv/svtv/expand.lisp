@@ -31,6 +31,7 @@
 
 (in-package "SV")
 (include-book "structure")
+(include-book "fsm-obj")
 (include-book "../mods/moddb")
 ;; (include-book "centaur/esim/stv/stv-util" :dir :system)
 (include-book "std/strings/strtok" :dir :system)
@@ -125,7 +126,7 @@
 
   (local (in-theory (disable len nthcdr (:d svtv-parse-path-indices) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-list*p
                              str::explode-when-not-stringp
                              ;; acl2::member-when-atom
                              )))
@@ -205,7 +206,7 @@
     :otf-flg t)
   (local (in-theory (disable len nthcdr (:d svtv-parse-path/select-aux) cons-equal
                              string-listp member-equal default-car default-cdr
-                             str::take-leading-dec-digit-chars-when-dec-digit-char-listp
+                             str::take-leading-dec-digit-chars-when-dec-digit-char-list*p
                              str::explode-when-not-stringp
                              acl2::lower-bound-of-len-when-sublistp
                              ;; acl2::member-when-atom
@@ -306,7 +307,7 @@
        ((mv errs rest) (svtv-concat->lhs (cdr x) modidx moddb aliases)))
     (if err1
         (mv (cons err1 errs) nil)
-      (mv nil (append first rest)))))
+      (mv errs (append first rest)))))
 
 (define svtv-wire->lhs! ((x stringp)
                          (modidx natp)
@@ -437,3 +438,60 @@
                :entries xf.entries)
               svtv-ovs)
         (cons ov lhs-ovs))))
+
+
+
+
+
+(define svtv-namemap->lhsmap ((x svtv-namemap-p
+                                 "User-provided mapping.  An alist where the keys
+                                  are arbitary names (svars, typically symbols)
+                                  and the values are SystemVerilog-syntax hierarchical
+                                  names (strings).")
+                              (modidx natp)
+                              (moddb moddb-ok)
+                              (aliases))
+  :parents (svtv-name-lhs-map)
+  :short "Processes a list of nicknames for SystemVerilog-syntax signals into an internal form."
+  :long "<p></p>"
+  :guard (svtv-mod-alias-guard modidx moddb aliases)
+  :returns (mv errs
+               (lhses svtv-name-lhs-map-p))
+  (b* (((when (atom x)) (mv nil nil))
+       ((unless (mbt (and (consp (car x))
+                          (svar-p (caar x)))))
+        (svtv-namemap->lhsmap (cdr x) modidx moddb aliases))
+       ((mv err1 first) (svtv-wire->lhs! (cdar x) modidx moddb aliases))
+       ((mv errs rest) (svtv-namemap->lhsmap (cdr x) modidx moddb aliases))
+       ((when err1) (mv (append-without-guard err1 errs) rest)))
+    (mv errs (cons (cons (caar x) first) rest)))
+  ///
+  (local (in-theory (enable svtv-namemap-fix))))
+
+(define svtv-fsm-mod-alias-guard ((top modname-p)
+                                  (moddb moddb-ok) aliases)
+  :enabled t
+  (b* ((modidx (moddb-modname-get-index top moddb)))
+    (and modidx
+         (svtv-mod-alias-guard modidx moddb aliases))))
+
+
+(define svtv-fsm-add-names ((names svtv-namemap-p)
+                            (x svtv-fsm-p)
+                            &key
+                            ((top modname-p) 'nil)
+                            ((moddb moddb-ok) 'moddb)
+                            (aliases 'aliases))
+  :guard (svtv-fsm-mod-alias-guard top moddb aliases)
+  :returns (mv err
+               (new-fsm (implies (not err) (svtv-fsm-p new-fsm))))
+  (b* (((svtv-fsm x))
+       ((mv errs lhsmap)
+        (svtv-namemap->lhsmap
+         names
+         (moddb-modname-get-index top moddb)
+         moddb aliases))
+       ((when errs)
+        (mv (msg-list errs) nil)))
+    (mv nil
+        (change-svtv-fsm x :namemap (append lhsmap x.namemap)))))

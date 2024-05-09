@@ -1,6 +1,6 @@
 ; A simple tool to support calculational-style proofs
 ;
-; Copyright (C) 2016-2021 Kestrel Institute
+; Copyright (C) 2016-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,7 +26,7 @@
   (if (endp steps)
       nil
     (let* ((step (first steps))
-           (term (cadr step)) ;strip off the equal (TODO: handle < and <=
+           (term (cadr step)) ;strip off the equal (TODO: handle < and <=)
            (keyword-alist (cddr step))
            (hints (assoc-keyword :hints keyword-alist))
            (this-step-num (+ 1 prev-step-count))
@@ -54,8 +54,6 @@
       (append thms
               (defcalculation-steps term (rest steps) base-name (+ 1 prev-step-count) orig assumptions)))))
 
-
-
 ;assumes all steps are equalities
 (defun defcalculation-fn (name args)
   (b* (;; Split the args into start, steps, and options:
@@ -77,5 +75,6 @@
 ;              :rule-classes nil
               :hints (("Goal" :use (:instance ,(pack$ name '-calculation '-chain- (len steps)))))))))
 
+;; (defcalculation <term1> (= <term2>) (= <term3>) ... :assumptions <assumptions>)
 (defmacro defcalculation (name &rest args)
   `(make-event (defcalculation-fn ',name ',args)))

@@ -1,11 +1,12 @@
 ; A lightweight book about the built-in function member-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,7 +27,7 @@
            nil))
   :hints (("Goal" :in-theory (enable member-equal))))
 
-(defthm member-equal-of-nil
+(defthm not-member-equal-of-nil
   (not (member-equal a nil))
   :hints (("Goal" :in-theory (enable member-equal))))
 
@@ -77,6 +78,13 @@
                     (member-equal a x)  )))
   :hints (("Goal" :in-theory (enable member-equal))))
 
+;; Enabled since we want this when b and x are constants.
+(defthm member-equal-of-cons-when-not-equal
+  (implies (not (equal a b))
+           (equal (member-equal a (cons b x))
+                  (member-equal a x)))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
 (defthmd member-equal-of-true-list-fix
   (equal (member-equal a (true-list-fix x))
          (true-list-fix (member-equal a (true-list-fix x))))
@@ -123,10 +131,26 @@
                 (member-equal a x)))
   :hints (("Goal" :in-theory (enable member-equal))))
 
+;; When there are at least two Bs in Y, removing one B doesn't affect membership in Y.
+;; (defthmd member-equal-of-remove1-equal-when-at-least-two
+;;   (implies (member-equal b (remove1-equal b y))
+;;            (iff (member-equal a (remove1-equal b y))
+;;                 (member-equal a y)))
+;;   :hints (("Goal" :in-theory (enable member-equal))))
+
+(defthm member-equal-of-remove1-equal-under-iff
+  (implies (syntaxp (not (equal a b))) ; prevent loops
+           (iff (member-equal b (remove1-equal a x))
+                (and (if (member-equal a (remove1-equal a x))
+                         t
+                       (not (equal a b)))
+                     (member-equal b x))))
+  :hints (("Goal" :in-theory (enable member-equal))))
+
 ;; Disabled since consp is so common.
 (defthmd consp-when-member-equal
   (implies (member-equal a x) ;note that a is a free var
-	   (consp x)))
+           (consp x)))
 
 (defthm true-listp-of-member-equal
   (implies (true-listp x)

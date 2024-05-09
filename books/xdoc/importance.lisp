@@ -185,8 +185,8 @@
    targets   ; string list, keys of the pages linked to from source
    links-fal ; the fal being constructed
    )
-  (declare (xargs :guard (and (stringp source)
-                              (symbol-listp targets))))
+  (declare (xargs :guard (and (symbolp source)
+                              (string-listp targets))))
   (b* (((when (atom targets))
         links-fal)
        (target1      (car targets))
@@ -430,18 +430,13 @@
        ;; (long-str (str::printtree->str long-printtree))
        ;; ((mv long-err long-tokens) (parse-xml long-str))
        ((mv long-err long-tokens) (parse-xml long))
-       (state
-        (if long-err
-            (pprogn
-             (prog2$ (note-xdoc-error) state)
+       (- (and long-err
+               (prog2$ (note-xdoc-error)
 ; See comment regarding the use of "; xdoc error" instead of "WARNING"
 ; in preprocess-topic (file prepare-topic.lisp).
-             (fms "~|~%; xdoc error: problem with :long in topic ~x0:~%"
-                  (list (cons #\0 name))
-                    *standard-co* state nil)
-             (princ$ long-err *standard-co* state)
-             (fms "~%~%" nil *standard-co* state nil))
-          state))
+                       (print-xdoc-error
+                        "~|~%; xdoc error: problem with :long in topic ~x0:~%~x1~%~%"
+                        (list name long-err)))))
        ;; ((when err)
        ;;  (mv nil state))
 
@@ -451,18 +446,13 @@
        ;; (short-str (str::printtree->str short-printtree))
        ;; ((mv short-err short-tokens) (parse-xml short-str))
        ((mv short-err short-tokens) (parse-xml short))
-       (state
-        (if short-err
-            (pprogn
-             (prog2$ (note-xdoc-error) state)
+       (- (and short-err
+               (prog2$ (note-xdoc-error)
 ; See comment regarding the use of "; xdoc error" instead of "WARNING"
 ; in preprocess-topic (file prepare-topic.lisp).
-             (fms "~|~%; xdoc error: problem with :short in topic ~x0:~%"
-                  (list (cons #\0 name))
-                  *standard-co* state nil)
-             (princ$ short-err *standard-co* state)
-             (fms "~%~%" nil *standard-co* state nil))
-          state))
+                       (print-xdoc-error
+                        "~|~%; xdoc error: problem with :short in topic ~x0:~%~x1~%~%"
+                        (list name short-err)))))
        ;; ((when short-err)
        ;;  (mv nil state))
 
@@ -676,7 +666,7 @@
                         (er hard? 'make-sitemap-aux "No score for ~x0?~%" key)))
        (- (or (and (<= 0 rank)
                    (<= rank 200))
-              (er hard? 'make-sitemap-aux "Expected rank for ~x0 to be in [0, 200].~%")))
+              (er hard? 'make-sitemap-aux "Expected rank for ~x0 to be in [0, 200].~%" key)))
        (priority-str (priority-float (/ rank 200)))
 
        (acc (str::printtree-rconcat " <url>" acc))

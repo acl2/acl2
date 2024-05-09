@@ -85,9 +85,9 @@
 
   (declare (xargs :stobjs state))
   (mv-let
-    (full-book-name directory-name familiar-name)
+    (full-book-string full-book-name directory-name familiar-name)
     (parse-book-name (cbd) book-name ".lisp" 'book-thms state)
-    (declare (ignore directory-name familiar-name))
+    (declare (ignore full-book-string directory-name familiar-name))
     (newly-defined-top-level-thms-rec
      (reversed-world-since-boot-strap (w state))
       nil

@@ -30,6 +30,7 @@
 
 (in-package "ACL2")
 (include-book "bytep")
+(include-book "maybe-natp")
 (include-book "nibblep")
 (include-book "pos-fix")
 (include-book "defs")

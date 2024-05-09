@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,14 @@
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +78,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defthm-disjoint-fn ((c symbolp) (ps symbol-listp))
-  :returns (event pseudo-event-formp)
+  :returns (event pseudo-event-formp
+                  :hints (("Goal" :in-theory (enable true-listp))))
   (b* (((mv thms names) (defthm-disjoint-outer-loop ps ps))
        (const `(defconst ,c ',names)))
     `(progn ,const ,@thms)))

@@ -14,8 +14,10 @@
 |#
 
 (in-package "ACL2S")
-(include-book "acl2s/custom" :dir :system :ttags :all)
+(include-book "acl2s/definec" :dir :system :ttags :all)
 (include-book "sorting/msort" :dir :system)
+(set-termination-method :ccg)
+(set-ccg-time-limit 300)
 
 (definec merge2 (x :integer-list y :integer-list) :integer-list
   (cond ((endp x) y)

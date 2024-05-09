@@ -1710,6 +1710,8 @@ false.</p>
                                    svex-eval-when-quote)))
           (and stable-under-simplificationp
                '(:in-theory (e/d (4vec-mask
+                                  4vec-1mask
+                                  4vec-bitmux
                                   3vec-fix
                                   4vec-bit?!
                                   4vec-<<=

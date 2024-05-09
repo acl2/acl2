@@ -507,7 +507,7 @@ these.</p>")
              "The delay or range part between the two sequences.  Note that
               SystemVerilog gives a rich syntax here which we always boil down
               to a range.  In particular, a single expression like @('##1') is
-              represented with the range #('[1:1]').  The SystemVerilog syntax
+              represented with the range @('[1:1]').  The SystemVerilog syntax
               @('##[*]') just means @('##[0:$]') and the syntax @('##[+]') just
               means @('##[1:$]').  Dollar signs are supposed to mean the end of
               simulation, or for formal tools are supposed to mean some finite
@@ -629,7 +629,7 @@ these.</p>")
      ((strongp booleanp :rule-classes :type-prescription
                "True for @('s_nexttime') operators, nil for ordinary @('nexttime').")
       (expr    vl-maybe-expr-p
-               "For instance, #('3') in case of @('nexttime [3] foo').")
+               "For instance, @('3') in case of @('nexttime [3] foo').")
       (prop    vl-propexpr-p
                "The property that must hold next time, e.g., @('foo') in
                 @('nexttime [3] foo').")))
@@ -2966,7 +2966,7 @@ contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>"
                   etc.")
      (deferral   vl-assertdeferral-p
                  "Indicates whether this assertion is a regular, non-deferred
-                  assertion, or a #('#0') or @('final') deferred assertion.")
+                  assertion, or a @('#0') or @('final') deferred assertion.")
      (condition  vl-expr-p
                  "The condition to assert.  Note that since this is an
                   immediate assertion, the condition is a simple expression,
@@ -3465,6 +3465,24 @@ flops, and to set up other simulation events.  A simple example would be:</p>
     :hints(("Goal" :induct (len x)))))
 
 
+
+(fty::deflist sv::maybe-4veclist :elt-type sv::maybe-4vec-p :true-listp t :elementp-of-nil t)
+(fty::defprod vl-function-specialization
+  ((function sv::svex-p
+             "Expression giving the return value of the function")
+   (body vl-stmt-p
+         "Elaborated body")
+   (constraints sv::constraintlist-p
+                "Constraints that must hold of the function inputs, or the result
+                 may be undefined; computed during elaboration")
+   (successp "Was the body elaboration and compilation successful"))
+  :layout :list)
+
+(fty::defalist vl-function-specialization-map
+  :key-type sv::maybe-4veclist
+  :val-type vl-function-specialization
+  :true-listp t)
+
 (defprod vl-fundecl
   :short "Representation of a single Verilog function."
   :tag :vl-fundecl
@@ -3502,13 +3520,15 @@ flops, and to set up other simulation events.  A simple example would be:</p>
                 have restrictions and can't be used in expressions like normal
                 functions.")
 
-   (function   sv::maybe-svex-p
-               "The svex expression for the value of the function, if it has been
-                computed, which happens during elaboration")
-
-   (constraints sv::constraintlist-p
-                "Constraints that must hold of the function inputs, or the result
-                 may be undefined; computed during elaboration")
+   (function-map vl-function-specialization-map-p
+                 "This field gives the SVEX compilation(s) of the
+                  function. More specifically, each key in this alist is a list
+                  of maybe-4vecs corresponding to the function arguments.  The
+                  non-nil elements denote constant arguments with the given
+                  values.  The value corresponding to each key is pair
+                  containing an svex representing the function assuming those
+                  constant values of the arguments, and a corresponding list of
+                  constraints.")
 
    (lifetime   vl-lifetime-p
                "Indicates whether an explicit @('automatic') or @('static')

@@ -55,7 +55,7 @@ sets (i.e., non-@('nil') atoms and lists that have duplicated or mis-ordered
 elements) as the empty set.  We adopt this convention throughout the library.
 It allows most of our rewrite rules to have no @(see setp) hypotheses.</p>
 
-<p>The primitive list functions do follow the non-set convention.  For
+<p>The primitive list functions do not follow the non-set convention.  For
 instance:</p>
 
 <ul>
@@ -78,7 +78,7 @@ convention.  These primitives are:</p>
  <li>@('(head X)') - the first element of a set, nil for non/empty sets</li>
  <li>@('(tail X)') - all rest of the set, nil for non/empty sets</li>
  <li>@('(insert a X)') - ordered insert of @('a') into @('X')</li>
- <li>@('(empty X)') - recognizer for non/empty sets.</li>
+ <li>@('(emptyp X)') - recognizer for non/empty sets.</li>
 </ul>
 
 <p>The general idea is that set operations should be written in terms of these
@@ -136,35 +136,35 @@ elements are in order.  Its cost is linear in the size of @('n').</p>"
               (true-listp X))
      :rule-classes ((:rewrite :backchain-limit-lst (1)))))
 
-(defsection empty
+(defsection emptyp
   :parents (primitives)
-  :short "@(call empty) recognizes empty sets."
+  :short "@(call emptyp) recognizes empty sets."
 
   :long "<p>This function is like @(see endp) for lists, but it respects the
 non-set convention and always returns true for ill-formed sets.</p>"
 
-  (defun empty (X)
+  (defun emptyp (X)
     (declare (xargs :guard (setp X)))
     (mbe :logic (or (null X)
                     (not (setp X)))
          :exec  (null X)))
 
-  (defthm empty-type
-    (or (equal (empty X) t)
-        (equal (empty X) nil))
+  (defthm emptyp-type
+    (or (equal (emptyp X) t)
+        (equal (emptyp X) nil))
     :rule-classes :type-prescription)
 
   (defthm nonempty-means-set
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (setp X))))
 
 (defthm empty-set-unique
-  ;; BOZO probably expensive.  We don't export this from sets.lisp, and we keep
+  ;; BOZO probably expensive.  We don't export this from top.lisp, and we keep
   ;; it out of the docs above.
   (implies (and (setp X)
                 (setp Y)
-                (empty X)
-                (empty Y))
+                (emptyp X)
+                (emptyp Y))
            (equal (equal X Y)
                   t)))
 
@@ -183,7 +183,7 @@ operation to ensure that an ordered set is always produced.</p>"
 
   (defun sfix (X)
     (declare (xargs :guard (setp X)))
-    (mbe :logic (if (empty X) nil X)
+    (mbe :logic (if (emptyp X) nil X)
          :exec  X))
 
   (defthm sfix-produces-set
@@ -198,22 +198,22 @@ operation to ensure that an ordered set is always produced.</p>"
   ;; rewriting it to NIL is a lot nicer.
   ;;
   ;; (defthm sfix-empty-same
-  ;;   (implies (and (empty X)
-  ;;                 (empty Y))
+  ;;   (implies (and (emptyp X)
+  ;;                 (emptyp Y))
   ;;            (equal (equal (sfix X) (sfix Y))
   ;;                   t)))
 
-  (defthm sfix-when-empty
-    (implies (empty X)
+  (defthm sfix-when-emptyp
+    (implies (emptyp X)
              (equal (sfix X)
                     nil))))
 
 
-(defthm empty-sfix-cancel
-  (equal (empty (sfix X))
-         (empty X)))
+(defthm emptyp-sfix-cancel
+  (equal (emptyp (sfix X))
+         (emptyp X)))
 
-(xdoc::xdoc-extend empty "@(def empty-sfix-cancel)")
+(xdoc::xdoc-extend emptyp "@(def emptyp-sfix-cancel)")
 
 
 
@@ -226,32 +226,32 @@ always returns @('nil') for ill-formed sets.</p>"
 
   (defun head (X)
     (declare (xargs :guard (and (setp X)
-                                (not (empty X)))))
+                                (not (emptyp X)))))
     (mbe :logic (car (sfix X))
          :exec  (car X)))
 
   (defthm head-count
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (< (acl2-count (head X)) (acl2-count X)))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm head-count-built-in
     ;; BOZO probably should remove this
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (o< (acl2-count (head X)) (acl2-count X)))
     :rule-classes :built-in-clause)
 
-  ;; I historically did this instead of head-when-empty, but now I think just
+  ;; I historically did this instead of head-when-emptyp, but now I think just
   ;; rewriting it to NIL is a lot nicer.
   ;;
-  ;; (defthm head-empty-same
-  ;;   (implies (and (empty X)
-  ;;                 (empty Y))
+  ;; (defthm head-emptyp-same
+  ;;   (implies (and (emptyp X)
+  ;;                 (emptyp Y))
   ;;            (equal (equal (head X) (head Y))
   ;;                   t)))
 
-  (defthm head-when-empty
-    (implies (empty X)
+  (defthm head-when-emptyp
+    (implies (emptyp X)
              (equal (head X)
                     nil)))
 
@@ -271,41 +271,41 @@ always returns @('nil') for ill-formed sets.</p>"
 
   (defun tail (X)
     (declare (xargs :guard (and (setp X)
-                                (not (empty X)))))
+                                (not (emptyp X)))))
     (mbe :logic (cdr (sfix X))
          :exec  (cdr X)))
 
   (defthm tail-count
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (< (acl2-count (tail X)) (acl2-count X)))
     :rule-classes ((:rewrite) (:linear)))
 
   (defthm tail-count-built-in
     ;; BOZO probably should remove this
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (o< (acl2-count (tail X)) (acl2-count X)))
     :rule-classes :built-in-clause)
 
   (defthm tail-produces-set
     (setp (tail X)))
 
-  ;; I historically did this instead of tail-when-empty, but now I think just
+  ;; I historically did this instead of tail-when-emptyp, but now I think just
   ;; rewriting it to NIL is a lot nicer.
   ;;
-  ;; (defthm tail-empty-same
-  ;;   (implies (and (empty X)
-  ;;                 (empty Y))
+  ;; (defthm tail-emptyp-same
+  ;;   (implies (and (emptyp X)
+  ;;                 (emptyp Y))
   ;;            (equal (equal (tail X) (tail Y))
   ;;                   t)))
 
-  ;; This was also subsumed by tail-when-empty:
+  ;; This was also subsumed by tail-when-emptyp:
   ;;
-  ;; (defthm tail-preserves-empty
-  ;;   (implies (empty X)
-  ;;            (empty (tail X))))
+  ;; (defthm tail-preserves-emptyp
+  ;;   (implies (emptyp X)
+  ;;            (emptyp (tail X))))
 
-  (defthm tail-when-empty
-    (implies (empty X)
+  (defthm tail-when-emptyp
+    (implies (emptyp X)
              (equal (tail X)
                     nil)))
 
@@ -318,8 +318,8 @@ always returns @('nil') for ill-formed sets.</p>"
   ;; BOZO probably expensive
   (implies (and (equal (head X) (head Y))
                 (equal (tail X) (tail Y))
-                (not (empty X))
-                (not (empty Y)))
+                (not (emptyp X))
+                (not (emptyp Y)))
            (equal (equal X Y)
                   t)))
 
@@ -349,9 +349,9 @@ following loop:</p>
 
   (local (in-theory (disable nonempty-means-set
                              empty-set-unique
-                             head-when-empty
-                             tail-when-empty
-                             sfix-when-empty
+                             head-when-emptyp
+                             tail-when-emptyp
+                             sfix-when-emptyp
                              default-car
                              default-cdr
                              )))
@@ -360,7 +360,7 @@ following loop:</p>
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
     (mbe :logic
-         (cond ((empty X) (list a))
+         (cond ((emptyp X) (list a))
                ((equal (head X) a) X)
                ((<< a (head X)) (cons a X))
                (t (cons (head X) (insert a (tail X)))))
@@ -386,34 +386,34 @@ following loop:</p>
            (insert a X)))
 
   (defthm insert-never-empty
-    (not (empty (insert a X))))
+    (not (emptyp (insert a X))))
 
   ;; I historically did this instead of insert-when-empty, but now I think that
   ;; canonicalizing bad inserts into (insert a NIL) seems nicer.
   ;;
   ;; (defthm insert-empty-same
-  ;;   (implies (and (empty X)
-  ;;                 (empty Y))
+  ;;   (implies (and (emptyp X)
+  ;;                 (emptyp Y))
   ;;            (equal (equal (insert a X) (insert a Y))
   ;;                   t)))
 
   ;; The following also became unnecessary after switching to (insert a NIL).
   ;;
   ;; (defthm head-insert-empty
-  ;;   (implies (empty X)
+  ;;   (implies (emptyp X)
   ;;            (equal (head (insert a X)) a)))
   ;;
   ;; (defthm tail-insert-empty
-  ;;   (implies (empty X)
-  ;;  	      (empty (tail (insert a X)))))
+  ;;   (implies (emptyp X)
+  ;;  	      (emptyp (tail (insert a X)))))
 
-  (defthm insert-when-empty
+  (defthm insert-when-emptyp
     (implies (and (syntaxp (not (equal X ''nil)))
-                  (empty X))
+                  (emptyp X))
              (equal (insert a X)
                     (insert a nil))))
 
-  ;; These special cases can come up after insert-when-empty applies, so it's
+  ;; These special cases can come up after insert-when-emptyp applies, so it's
   ;; nice to have rules to target them.
 
   (defthm head-of-insert-a-nil
@@ -426,37 +426,37 @@ following loop:</p>
 
   ;; Historic Note: We used to require that nil was "greater than" everything else
   ;; in our order.  This had the advantage that the following theorems could have
-  ;; a combined case for (empty X) and (<< a (head X)).  Starting in Version 0.9,
+  ;; a combined case for (emptyp X) and (<< a (head X)).  Starting in Version 0.9,
   ;; we remove this restriction in order to be more flexible about our order.
 
   (defthm head-insert
     (equal (head (insert a X))
-           (cond ((empty X) a)
+           (cond ((emptyp X) a)
                  ((<< a (head X)) a)
                  (t (head X)))))
 
   (defthm tail-insert
     (equal (tail (insert a X))
-           (cond ((empty X) (sfix X))
-                 ((<< a (head X)) (sfix X))
+           (cond ((emptyp X) nil)
+                 ((<< a (head X)) X)
                  ((equal a (head X)) (tail X))
                  (t (insert a (tail X))))))
 
   (encapsulate
     ()
     (local (defthm l0
-             (IMPLIES (AND (NOT (<< ACL2::Y ACL2::X))
-                           (NOT (EQUAL ACL2::X ACL2::Y)))
-                      (<< ACL2::X ACL2::Y))
+             (implies (and (not (<< acl2::y acl2::x))
+                           (not (equal acl2::x acl2::y)))
+                      (<< acl2::x acl2::y))
              :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
     (local (defthm l1
-             (IMPLIES (<< x y)
+             (implies (<< x y)
                       (not (<< y x)))
              :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
     (local (in-theory (disable sfix-set-identity
-                               insert-when-empty
+                               insert-when-emptyp
                                (:definition insert)
                                <<-trichotomy
                                <<-asymmetric)))
@@ -502,12 +502,12 @@ following loop:</p>
                        (:free (k1 k2 k3) (insert k1 (cons k2 k3))))))))
 
   (defthm insert-head
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (equal (insert (head X) X)
                     X)))
 
   (defthm insert-head-tail
-    (implies (not (empty X))
+    (implies (not (emptyp X))
              (equal (insert (head X) (tail X))
                     X)))
 
@@ -520,7 +520,7 @@ following loop:</p>
   (defthm insert-induction-case
     (implies (and (not (<< a (head X)))
                   (not (equal a (head X)))
-                  (not (empty X)))
+                  (not (emptyp X)))
              (equal (insert (head X) (insert a (tail X)))
                     (insert a X)))))
 
@@ -533,15 +533,15 @@ following loop:</p>
 ;; book, these are the only facts which membership.lisp will be able to use.
 
 (defthm head-tail-order
-  (implies (not (empty (tail X)))
+  (implies (not (emptyp (tail X)))
            (<< (head X) (head (tail X)))))
 
 (defthm head-tail-order-contrapositive
   (implies (not (<< (head X) (head (tail X))))
-           (empty (tail X))))
+           (emptyp (tail X))))
 
 (defthm head-not-head-tail
-  (implies (not (empty (tail X)))
+  (implies (not (emptyp (tail X)))
            (not (equal (head X) (head (tail X))))))
 
 
@@ -550,14 +550,14 @@ following loop:</p>
 ; Now we are interested in setting up theories and in disabling most of the
 ; potentially bad issues that might arise.
 ;
-; You should never need to use primitive-theory unless you are using non-set
+; You should never need to use primitive-rules unless you are using non-set
 ; functions, e.g. cons, to build sets.
 ;
-; The primitive order theory is intended to be disabled for typical reasoning,
-; but is needed for some theorems in the membership level.
+; The order-rules are intended to be disabled for typical reasoning,
+; but are needed for some theorems in the membership level.
 
 (def-ruleset primitive-rules
-  '(setp empty head tail sfix insert))
+  '(setp emptyp head tail sfix insert))
 
 (def-ruleset order-rules
   '(<<-irreflexive

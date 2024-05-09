@@ -15,7 +15,6 @@
 ;; The definitions below are compatible with books/ihs/basic-definitions.
 
 (local (include-book "../arithmetic-light/expt"))
-(local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/floor"))
 
 (defun expt2$inline (n)
@@ -43,9 +42,6 @@
 (defun logtail$inline (pos i)
   (declare (type unsigned-byte pos))
   (declare (xargs :guard (and (and (integerp pos) (<= 0 pos))
-                              (integerp i))))
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
                               (integerp i))))
   (declare (xargs :split-types t))
   (let ((__function__ 'logtail))

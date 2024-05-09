@@ -4006,7 +4006,7 @@
          (NFIX (BINARY-+ X Y)))))
    (RTL::G-C-D-NAT 2 :SYSTEM
                    .
-                   "projects/quadratic-reciprocity/support/euclid")))
+                   "projects/numbers/support/euclid")))
  ((JUSTIFICATION (X)
                  (NIL O-P . O<)
                  ((X86ISA::POWER-OF-2P-MEASURE X)
@@ -4171,7 +4171,7 @@
          (NFIX (BINARY-+ N (UNARY-- K))))))
    (RTL::LEAST-DIVISOR 2 :SYSTEM
                        .
-                       "projects/quadratic-reciprocity/support/euclid"))
+                       "projects/numbers/support/euclid"))
   ((JUSTIFICATION (I X86ISA::TABLE-BOUND)
                   (NIL O-P . O<)
                   ((NFIX (BINARY-+ X86ISA::TABLE-BOUND (UNARY-- I)))
@@ -5491,7 +5491,7 @@
          (LEN L))))
    (RTL::PIGEONHOLE-INDUCTION 1 :SYSTEM
                               .
-                              "projects/quadratic-reciprocity/support/fermat"))
+                              "projects/numbers/support/fermat"))
   ((JUSTIFICATION (X86ISA::ALST)
                   (NIL O-P . O<)
                   ((LEN X86ISA::ALST)

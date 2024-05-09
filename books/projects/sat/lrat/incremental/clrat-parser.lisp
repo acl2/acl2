@@ -1779,7 +1779,8 @@
        (final
         (and (= new-position file-length)
 
-             ;; Then close the stream:
+             ;; Then close the stream.  (As of 9/2022 we could use :close t,
+             ;; but the following still works.)
 
              (read-file-into-string
               filename
@@ -1907,6 +1908,7 @@
                   (("Goal" :in-theory (disable acl2::read-file-into-string2)))
                   :stobjs (state)))
   (b* ((str (read-file-into-string file-name))
+       (state (increment-file-clock state))
        ((unless (stringp str))
         (mv (er hard? 'clrat-read-file
                     "clrat-read-file: (read-file-into-string ~x0 .~%" file-name)
@@ -1960,7 +1962,7 @@
 (defun print-integers (lst end chan state)
 
 ; Lst is a list of integers.  Print each element of the list to the given
-; channel, followig each with a space.  If end is not nil, then print it with
+; channel, following each with a space.  If end is not nil, then print it with
 ; princ$ too.
 
   (cond ((endp lst)

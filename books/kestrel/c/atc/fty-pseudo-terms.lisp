@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,7 +20,6 @@
 (include-book "kestrel/std/system/check-lambda-call" :dir :system)
 (include-book "kestrel/std/system/check-list-call" :dir :system)
 (include-book "kestrel/std/system/check-mbt-call" :dir :system)
-(include-book "kestrel/std/system/check-mbt-dollar-call" :dir :system)
 (include-book "kestrel/std/system/check-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/check-not-call" :dir :system)
 (include-book "kestrel/std/system/check-or-call" :dir :system)
@@ -28,6 +27,11 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,7 +220,7 @@
            (len args))
     :hints (("Goal"
              :expand ((pseudo-term-fix term))
-             :in-theory (enable check-lambda-call))))
+             :in-theory (enable check-lambda-call nfix))))
 
   (defret len-of-fty-check-lambda-calls.args-is-formals
     (equal (len args)
@@ -243,7 +247,8 @@
     :rule-classes :linear
     :enable (check-lambda-call
              pseudo-term-kind
-             pseudo-term-lambda->body)
+             pseudo-term-lambda->body
+             default-cdr)
     :expand (pseudo-term-count term))
 
   (defret pseudo-term-count-of-fty-check-lambda-call.body
@@ -279,6 +284,7 @@
                            (pseudo-term-count term)))))
     :rule-classes :linear
     :enable (check-lambda-call
+             pseudo-termp
              pseudo-term-count
              pseudo-term-list-count
              pseudo-term-kind
@@ -339,6 +345,7 @@
                (<= (pseudo-term-list-count new-actuals)
                    (pseudo-term-list-count actuals))))
     :rule-classes :linear
+    :induct t
     :enable (remove-equal-formals-actuals
              pseudo-term-list-count))
 
@@ -495,7 +502,8 @@
                            (pseudo-term-count term)))))
     :rule-classes :linear
     :enable (check-mv-let-call
-             pseudo-term-kind)
+             pseudo-term-kind
+             pseudo-termp)
     :prep-lemmas
     ((defrule lemma
        (implies (and (pseudo-termp term)
@@ -505,7 +513,8 @@
        :rule-classes :linear
        :expand (pseudo-term-count term)
        :enable (pseudo-term-call->args
-                pseudo-term-kind))))
+                pseudo-term-kind
+                default-cdr))))
 
   (defret pseudo-term-count-of-fty-check-mv-let-call.mv-term
     (implies yes/no
@@ -520,7 +529,7 @@
                         (< (pseudo-term-count body-term)
                            (pseudo-term-count term)))))
     :rule-classes :linear
-    :enable check-mv-let-call
+    :enable (check-mv-let-call pseudo-termp)
     :prep-lemmas
     ((defrule lemma
        (implies (and (pseudo-termp term)
@@ -548,6 +557,7 @@
                            (pseudo-term-count term)))))
     :rule-classes :linear
     :enable (check-mv-let-call
+             pseudo-termp
              pseudo-term-kind
              pseudo-term-lambda->body
              pseudo-term-call->args
@@ -605,3 +615,40 @@
                    (pseudo-term-listp terms))
               (pseudo-term-listp (fsublis-var-lst subst terms)))
      :enable acl2::symbol-pseudoterm-alistp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines fty-if-to-if*
+  :short "Replace each @(tsee if) with @(tsee if*) in a term."
+
+  (define fty-if-to-if* ((term pseudo-termp))
+    :returns (term1 pseudo-termp)
+    (pseudo-term-case
+     term
+     :null (pseudo-term-fix term)
+     :quote (pseudo-term-fix term)
+     :var (pseudo-term-fix term)
+     :fncall (pseudo-term-fncall (if (eq term.fn 'if) 'if* term.fn)
+                                 (fty-if-to-if*-lst term.args))
+     :lambda (pseudo-term-lambda term.formals
+                                 (fty-if-to-if* term.body)
+                                 (fty-if-to-if*-lst term.args)))
+    :measure (pseudo-term-count term))
+
+  (define fty-if-to-if*-lst ((terms pseudo-term-listp))
+    :returns (terms1 pseudo-term-listp)
+    (cond ((endp terms) nil)
+          (t (cons (fty-if-to-if* (car terms))
+                   (fty-if-to-if*-lst (cdr terms)))))
+    :measure (pseudo-term-list-count terms)
+    ///
+    (defret len-of-fty-if-to-if*-lst
+      (equal (len terms1)
+             (len terms))
+      :hints (("Goal" :induct (len terms) :in-theory (enable len)))))
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  :verify-guards nil ; done below
+  ///
+  (verify-guards fty-if-to-if*))

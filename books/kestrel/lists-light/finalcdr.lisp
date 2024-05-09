@@ -34,7 +34,7 @@
          (finalcdr x)))
 
 ;where should this go?
-(defthm equal-of-append-same
+(defthm equal-of-append-same-arg1
   (equal (equal x (append x y))
          (equal y (finalcdr x)))
   :hints (("Goal" :in-theory (enable))))

@@ -1,0 +1,399 @@
+; Java Library
+;
+; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.3]
+
+unicode-input-character = unicode-escape
+                        / raw-input-character
+
+unicode-escape = "\" unicode-marker hex-digit hex-digit hex-digit hex-digit
+
+unicode-marker = 1*%s"u"
+
+hex-digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+          / "a" / "b" / "c" / "d" / "e" / "f" ; includes A B C D E F
+
+raw-input-character = %x0000-ffff ; any Unicode character
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.4]
+
+line-terminator = %d10 ; the ASCII LF character, also known as "newline"
+                / %d13 ; the ASCII CR character, also known as "return"
+                / %d13.10 ; the ASCII CR character followed by
+                          ; the ASCII LF character
+
+input-character = unicode-input-character ; but not CR or LF
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.5]
+
+input = *input-element [sub]
+
+input-element = white-space
+              / comment
+              / token
+
+token = identifier
+      / keyword
+      / literal
+      / separator
+      / operator
+
+sub = %d26 ; the ASCII SUB character, also known as "control-Z"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.6]
+
+white-space = %d32 ; the ASCII SP character, also known as "space"
+            / %d9  ; the ASCII HT character, also known as "horizontal tab"
+            / %d12 ; the ASCII FF character, also known as "form feed"
+            / line-terminator
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.7]
+
+comment = traditional-comment
+        / end-of-line-comment
+
+traditional-comment = "/" "*" comment-tail
+
+comment-tail = "*" comment-tail-star
+             / not-star comment-tail
+
+comment-tail-star = "/"
+                  / "*" comment-tail-star
+                  / not-star-not-slash comment-tail
+
+not-star = input-character ; but not *
+         / line-terminator
+
+not-star-not-slash = input-character ; but not * or /
+                   / line-terminator
+
+end-of-line-comment = "/" "/" *input-character
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.8]
+
+identifier =
+  identifier-chars ; but not a keyword or boolean-literal or null-literal
+
+identifier-chars = java-letter *java-letter-or-digit
+
+java-letter = raw-input-character ; that is a "java letter"
+
+java-letter-or-digit = raw-input-character ; that is a "java letter-or-digit"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+type-identifier = identifier ; but not var
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+unqualified-method-identifier = identifier ; but not yield
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.9]
+
+keyword = %s"abstract"
+        / %s"assert"
+        / %s"boolean"
+        / %s"break"
+        / %s"byte"
+        / %s"case"
+        / %s"catch"
+        / %s"char"
+        / %s"class"
+        / %s"const"
+        / %s"continue"
+        / %s"default"
+        / %s"do"
+        / %s"double"
+        / %s"else"
+        / %s"enum"
+        / %s"extends"
+        / %s"final"
+        / %s"finally"
+        / %s"float"
+        / %s"for"
+        / %s"if"
+        / %s"goto"
+        / %s"implements"
+        / %s"import"
+        / %s"instanceof"
+        / %s"int"
+        / %s"interface"
+        / %s"long"
+        / %s"native"
+        / %s"new"
+        / %s"package"
+        / %s"private"
+        / %s"protected"
+        / %s"public"
+        / %s"return"
+        / %s"short"
+        / %s"static"
+        / %s"strictfp"
+        / %s"super"
+        / %s"switch"
+        / %s"synchronized"
+        / %s"this"
+        / %s"throw"
+        / %s"throws"
+        / %s"transient"
+        / %s"try"
+        / %s"void"
+        / %s"volatile"
+        / %s"while"
+        / "_"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10]
+
+literal = integer-literal
+        / floating-point-literal
+        / boolean-literal
+        / character-literal
+        / string-literal
+        / null-literal
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.1]
+
+integer-literal = decimal-integer-literal
+                / hex-integer-literal
+                / octal-integer-literal
+                / binary-integer-literal
+
+decimal-integer-literal = decimal-numeral [integer-type-suffix]
+
+hex-integer-literal = hex-numeral [integer-type-suffix]
+
+octal-integer-literal = octal-numeral [integer-type-suffix]
+
+binary-integer-literal = binary-numeral [integer-type-suffix]
+
+integer-type-suffix = "l" ; includes L
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+decimal-numeral = "0"
+                / non-zero-digit [digits]
+                / non-zero-digit underscores digits
+
+non-zero-digit = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+
+digits = digit
+       / digit [digits-and-underscores] digit
+
+digit = "0"
+      / non-zero-digit
+
+digits-and-underscores = digit-or-underscore *digit-or-underscore
+
+digit-or-underscore = digit
+                    / "_"
+
+underscores = 1*"_"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+hex-numeral = "0x" hex-digits ; includes 0X
+
+hex-digits = hex-digit
+           / hex-digit [hex-digits-and-underscores] hex-digit
+
+hex-digits-and-underscores = 1*hex-digit-or-underscore
+
+hex-digit-or-underscore = hex-digit
+                        / "_"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+octal-numeral = "0" octal-digits
+              / "0" underscores octal-digits
+
+octal-digits = octal-digit
+             / octal-digit [octal-digits-and-underscores] octal-digit
+
+octal-digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7"
+
+octal-digits-and-underscores = 1*octal-digit-or-underscore
+
+octal-digit-or-underscore = octal-digit
+                          / "_"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+binary-numeral = "0b" binary-digits ; includes 0B
+
+binary-digits = binary-digit
+              / binary-digit [binary-digits-and-underscores] binary-digit
+
+binary-digit = "0" / "1"
+
+binary-digits-and-underscores = 1*binary-digit-or-underscore
+
+binary-digit-or-underscore = binary-digit
+                           / "_"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.2]
+
+floating-point-literal = decimal-floating-point-literal
+                       / hexadecimal-floating-point-literal
+
+decimal-floating-point-literal =
+    digits "." [digits] [exponent-part] [float-type-suffix]
+  / "." digits [exponent-part] [float-type-suffix]
+  / digits exponent-part [float-type-suffix]
+  / digits [exponent-part] float-type-suffix
+
+exponent-part = exponent-indicator signed-integer
+
+exponent-indicator = "e" ; includes E
+
+signed-integer = [sign] digits
+
+sign = "+" / "-"
+
+float-type-suffix = "f" / "d" ; includes F D
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+hexadecimal-floating-point-literal =
+  hex-significand binary-exponent [float-type-suffix]
+
+hex-significand = hex-numeral ["."]
+                / "0x" [hex-digits] "." hex-digits ; includes 0X
+
+binary-exponent = binary-exponent-indicator signed-integer
+
+binary-exponent-indicator = "p" ; includes P
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.3]
+
+boolean-literal = %s"true" / %s"false"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.4]
+
+character-literal = "'" single-character "'"
+                  / "'" escape-sequence "'"
+
+single-character = input-character ; but not ' or \
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.5]
+
+string-literal = %d34 *string-character %d34
+
+string-character = input-character ; but not " or \
+                 / escape-sequence
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.6]
+
+escape-sequence = %s"\b"       ; (backspace BS, Unicode \u0008)
+                / %s"\t"       ; (horizontal tab HT, Unicode \u0009)
+                / %s"\n"       ; (linefeed LF, Unicode \u000a)
+                / %s"\f"       ; (form feed FF, Unicode \u000c)
+                / %s"\r"       ; (carriage return CR, Unicode \u000d)
+                / "\" %d34     ; (double quote ", Unicode \u0022)
+                / "\'"         ; (single quote ', Unicode \u0027)
+                / "\\"         ; (backslash \, Unicode \u005c)
+                / octal-escape ; (octal value, Unicode \u0000 to \u00ff)
+
+octal-escape = "\" octal-digit
+             / "\" octal-digit octal-digit
+             / "\" zero-to-three octal-digit octal-digit
+
+zero-to-three = "0" / "1" / "2"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.7]
+
+null-literal = %s"null"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.8]
+
+separator = "("
+          / ")"
+          / "{"
+          / "}"
+          / "["
+          / "]"
+          / ";"
+          / ","
+          / "."
+          / "..."
+          / "@"
+          / "::"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [JLS:3.10.9]
+
+operator = "="
+         / ">"
+         / "<"
+         / "!"
+         / "~"
+         / "?"
+         / ":"
+         / "->"
+         / "=="
+         / ">="
+         / "<="
+         / "!="
+         / "&&"
+         / "||"
+         / "++"
+         / "--"
+         / "+"
+         / "-"
+         / "*"
+         / "/"
+         / "&"
+         / "|"
+         / "^"
+         / "%"
+         / "<<"
+         / ">>"
+         / ">>>"
+         / "+="
+         / "-="
+         / "*="
+         / "/="
+         / "&="
+         / "|="
+         / "^="
+         / "%="
+         / "<<="
+         / ">>="
+         / ">>>="

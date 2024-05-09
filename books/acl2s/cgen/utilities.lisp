@@ -556,36 +556,8 @@
         (get-all-keys-lst (cdr vals) alist)))))
 
 
-;from Matt ;TODO get rid of this
-(defun trans-eval2 (form ctx state)
-  (declare (xargs :mode :program :stobjs state))
-  (acl2::state-global-let*
-;   ((acl2::guard-checking-on :none))
-;; PETE: now controlled by the global cgen::cgen-guard-checking
-   ((acl2::guard-checking-on (@ cgen-guard-checking)))
-   (mv-let
-    (erp trans bindings state)
-    (acl2::translate1 form
-                      t nil
-                      t
-                      'top-level (w state) state)
-    (declare (ignore bindings))
-    (cond
-     (erp (mv t nil state))
-     (t
-      (let ((vars (all-vars trans)))
-        (cond
-         ((acl2::unknown-stobj-names vars t (w state)) ;;; known-stobjs = t
-          (er soft 'top-level
-              "Global variables, such as ~&0, are not allowed. See ~
-               :DOC ASSIGN and :DOC @."
-              (acl2::unknown-stobj-names vars t (w state)))) ;;; known-stobjs = t
-         (t (acl2::ev-for-trans-eval trans nil ctx state t
-
-; Matt K. mod: Added conservative value of new argument,
-; user-stobjs-modified-warning.
-
-                                     t)))))))))
+; Matt K. mod, 7/15/2022: Removed trans-eval2, which apparently isn't used,
+; since it called acl2::ev-for-trans-eval, which is now untouchable.
 
 ;returns (cdr (cons translated-term value)) == value of term under bindings
 (defun trans-eval-single-value-with-bindings (term bindings ctx state)
@@ -882,7 +854,8 @@ Mainly to be used for evaluating enum lists "
 
   (mv-let
    (erp term x)
-   (acl2::translate11 form nil nil nil nil nil nil
+; Matt K. mod for df additions: Added nil for known-dfs argument.
+   (acl2::translate11 form nil nil nil nil nil nil nil
                 ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp
@@ -1059,14 +1032,14 @@ Mainly to be used for evaluating enum lists "
 |#
 
 
-;; chose 29 bits, because ACL2 uses signed 29 bits in its code!
-(defun unsigned-29bits-p (x)
+;; chose 60 bits, because ACL2 uses signed 60 bits in its code!
+(defun unsigned-60bits-p (x)
   (declare (xargs :guard T))
-  (acl2::unsigned-byte-p 29 x))
+  (acl2::unsigned-byte-p 60 x))
 
 (defun fixnump (x)
   (declare (xargs :guard T))
-  (unsigned-29bits-p x))
+  (unsigned-60bits-p x))
 
 ;;; Style of accessing/changing defrec objects. The name of the object is
 ;;; always same as the name of the defrec, just like in stobjs. THis way we
@@ -1148,9 +1121,25 @@ Mainly to be used for evaluating enum lists "
         (t (append (cgen-dumb-negate-lit-lst hyps)
                    (list concl)))))
 
+(defun equiv-sym? (sym)
+  (declare (xargs :guard t))
+  (member-equal sym '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL acl2s::==)))
+
+(defun equiv-term? (term)
+  (declare (xargs :guard t))
+  (and (true-listp term)
+       (= 3 (len term))
+       (equiv-sym? (car term))))
+
 (defun is-var-equality-hyp (term)
-  (and (equal (len term) 3)
-       (member-equal (car term) '(EQUAL EQ EQL = INT= STRING-EQUAL ACL2::HONS-EQUAL acl2s::==))
+  (declare (xargs :guard t))
+  (and (equiv-term? term)
        (and (or (proper-symbolp (second term))
                 (proper-symbolp (third term)))
             (not (equal (second term) (third term))))))
+
+(defun equiv-hyp? (hyp)
+  (declare (xargs :guard t))
+  (and (equiv-term? hyp)
+       (proper-symbolp (second hyp))
+       (proper-symbolp (third hyp))))

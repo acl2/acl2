@@ -204,7 +204,7 @@
 
        (ifdef "OS_HAS_ABC"
               (include-book "centaur/glmc/glmc-test" :dir :system)
-              (include-book "centaur/glmc/counter" :dir :system)
+              ;; (include-book "centaur/glmc/counter" :dir :system)
               :endif)
 
        (ifdef "OS_HAS_IPASIR"
@@ -220,6 +220,11 @@
           :long "<p>This topic was omitted from the manual because it is in a
 book that depends on Glucose being installed.</p>")
         (defxdoc sv::stvs-and-testing
+          :parents (sv::sv-tutorial)
+          :short "Stub for missing topic"
+          :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
+        (defxdoc sv::decomposition-proofs
           :parents (sv::sv-tutorial)
           :short "Stub for missing topic"
           :long "<p>This topic was omitted from the manual because it is in a
@@ -265,35 +270,13 @@ book that depends on Glucose being installed.</p>")
 
 (include-book "ordinals/e0-ordinal" :dir :system)
 
-(include-book "tools/do-not" :dir :system)
-(include-book "tools/plev" :dir :system)
-(include-book "tools/plev-ccl" :dir :system)
-(include-book "tools/with-supporters" :dir :system)
-(include-book "tools/remove-hyps" :dir :system)
-(include-book "tools/removable-runes" :dir :system)
-(include-book "tools/oracle-time" :dir :system)
-(include-book "tools/oracle-timelimit" :dir :system)
-(include-book "tools/defthmg" :dir :system)
-(include-book "tools/trivial-ancestors-check" :dir :system)
-(include-book "tools/without-subsumption" :dir :system)
-(include-book "tools/rewrite-dollar" :dir :system)
-(include-book "tools/open-trace-file-bang" :dir :system)
-(include-book "tools/prove-dollar" :dir :system)
+(include-book "tools/top" :dir :system)
+
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
-;; This book memoizes several functions including translate11, translate11-lst,
-;; translate11-call, which end up taking a lot of space and causing us to spend
-;; a lot of time GCing.
-(include-book "tools/memoize-prover-fns" :dir :system)
-(unmemoize-lst (f-get-global 'memoized-prover-fns state))
-
-(include-book "tools/untranslate-for-exec" :dir :system)
-(include-book "tools/er-soft-logic" :dir :system)
-(include-book "tools/run-script" :dir :system)
 (include-book "clause-processors/doc" :dir :system)
-(include-book "system/event-names" :dir :system)
-(include-book "system/acl2-system-exports" :dir :system)
 (include-book "system/doc/developers-guide" :dir :system)
+; Probably included under system/top below:
 (include-book "system/pseudo-tests-and-calls-listp" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
@@ -371,6 +354,7 @@ book that depends on Glucose being installed.</p>")
 (include-book "projects/doc" :dir :system)
 
 ;(include-book "kestrel/top" :dir :system)
+(include-book "kestrel/alists-light/top" :dir :system)
 (include-book "kestrel/top-doc" :dir :system) ; for now
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
@@ -384,34 +368,42 @@ book that depends on Glucose being installed.</p>")
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
 (include-book "std/util/defretgen" :dir :system)
+
+(include-book "system/top" :dir :system)
+; Books from books/system/ that are not included by including books/system/top
+; (see comments near the top of books/system/top.lisp):
+(include-book "system/acl2-system-exports" :dir :system)
+(include-book "system/bigger-limits" :dir :system)
+; Name conflict (function sum) with
+; books/data-structures/number-list-defuns.lisp:
+; (include-book "system/cantor-pairing-bijective" :dir :system)
+; Testing file, perhaps not suitable for inclusion:
+; (include-book "system/check-system-guards" :dir :system)
+(include-book "system/compare-out-files" :dir :system)
+(include-book "system/dead-source-code" :dir :system)
+; Dependency scan stuff only:
+; (include-book "system/deps-pcert" :dir :system)
+; Probably redundant, but harmless:
+(include-book "system/devel-check" :dir :system)
+(include-book "system/event-names" :dir :system)
+(include-book "system/f-put-global" :dir :system)
+(include-book "system/fancy-string-reader-test" :dir :system)
+(include-book "system/hl-nat-combine-onto" :dir :system)
+(include-book "system/obviously-equiv-terms" :dir :system)
+; Testing files:
+; (include-book "system/optimize-check-aux" :dir :sysem)
+; (include-book "system/optimize-check" :dir :system)
+(include-book "system/origin" :dir :system)
+(include-book "system/pseudo-termp-lemmas" :dir :system)
+(include-book "system/random" :dir :system)
+(include-book "system/remove-guard-holders" :dir :system)
+(include-book "system/too-many-ifs" :dir :system)
+; Dependency scan stuff only:
+; (include-book "system/toothbrush-deps" :dir :system)
+; Name conflict (function rev) with books/std/lists/rev.lisp:
+; (include-book "system/untranslate-car-cdr" :dir :system)
+(include-book "system/update-state" :dir :system)
+; Probably ttag stuff would make the following fail:
+; (include-book "system/worldp-check" :dir :system)
+
 ) ;; end progn for including all the books
-
-#||
-
-;; This is a nice place to put include-book scanner hacks that trick cert.pl
-;; into certifying unit-testing books that don't actually need to be included
-;; anywhere.  This just tricks the dependency scanner into building
-;; these books.
-
-(include-book "xdoc/all" :dir :system)
-
-(include-book "xdoc/tests/preprocessor-tests" :dir :system)
-(include-book "xdoc/tests/unsound-eval-tests" :dir :system)
-(include-book "xdoc/tests/defsection-tests" :dir :system)
-(include-book "centaur/defrstobj/basic-tests" :dir :system)
-(include-book "std/util/tests/top" :dir :system)
-(include-book "std/util/extensions/assert-return-thms" :dir :system)
-(include-book "centaur/misc/tshell-tests" :dir :system)
-(include-book "centaur/misc/stobj-swap-test" :dir :system)
-(include-book "oslib/tests/top" :dir :system)
-
-(include-book "centaur/ubdds/sanity-check-macros" :dir :system)
-
-(include-book "centaur/memoize/old/case" :dir :system)
-(include-book "centaur/memoize/old/profile" :dir :system)
-(include-book "centaur/memoize/old/watch" :dir :system)
-(include-book "centaur/memoize/portcullis" :dir :system)
-(include-book "centaur/memoize/tests" :dir :system)
-(include-book "centaur/memoize/top" :dir :system)
-
-||#

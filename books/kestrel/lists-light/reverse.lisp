@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function reverse.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,4 +43,21 @@
 (defthm car-of-reverse
   (equal (car (reverse x))
          (car (last x)))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm <=-of-acl2-count-of-reverse-linear
+  (<= (acl2-count (reverse x))
+      (acl2-count x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm stringp-of-reverse
+  (equal (stringp (reverse x))
+         (stringp x))
+  :hints (("Goal" :in-theory (enable reverse))))
+
+(defthm stringp-of-reverse-type
+  (implies (stringp x)
+           (stringp (reverse x)))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable reverse))))

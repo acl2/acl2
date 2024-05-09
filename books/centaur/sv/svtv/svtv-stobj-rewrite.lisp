@@ -91,10 +91,10 @@
                  :expand ((append x y) (len x))
                  :induct (nthcdr n x)))))
 
-(define base-fsm-rewrite ((fsm base-fsm-p)
+(define fsm-rewrite ((fsm fsm-p)
                            &key ((count natp) '4) (verbosep 'nil))
-  :returns (new-fsm base-fsm-p)
-  (b* (((base-fsm fsm))
+  :returns (new-fsm fsm-p)
+  (b* (((fsm fsm))
        (svexes (append (svex-alist-vals fsm.values) (svex-alist-vals fsm.nextstate)))
        (svexes-rw (svexlist-rewrite-fixpoint svexes :count count :verbosep verbosep))
        (values-keys (svex-alist-keys fsm.values))
@@ -102,11 +102,14 @@
        (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
        (nextstate-keys (svex-alist-keys fsm.nextstate))
        (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
-    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+    (fast-alist-free fsm.values)
+    (fast-alist-free fsm.nextstate)
+    (make-fsm :values (make-fast-alist values-rw)
+                   :nextstate (make-fast-alist nextstate-rw)))
   ///
-  (defret base-fsm-eval-equiv-of-<fn>
-    (base-fsm-eval-equiv new-fsm fsm)
-    :hints(("Goal" :in-theory (enable base-fsm-eval-equiv)))))
+  (defret fsm-eval-equiv-of-<fn>
+    (fsm-eval-equiv new-fsm fsm)
+    :hints(("Goal" :in-theory (enable fsm-eval-equiv)))))
 
 
 (local (defthm len-of-svexlist-normalize-concats
@@ -119,10 +122,10 @@
                               x)
          :hints(("Goal" :in-theory (enable svexlist-eval-equiv)))))
 
-(define base-fsm-norm-concats ((fsm base-fsm-p)
+(define fsm-norm-concats ((fsm fsm-p)
                                &key (verbosep 'nil))
-  :returns (new-fsm base-fsm-p)
-  (b* (((base-fsm fsm))
+  :returns (new-fsm fsm-p)
+  (b* (((fsm fsm))
        (svexes (append (svex-alist-vals fsm.values) (svex-alist-vals fsm.nextstate)))
        (svexes-rw (svexlist-normalize-concats svexes :verbosep verbosep))
        (values-keys (svex-alist-keys fsm.values))
@@ -130,11 +133,14 @@
        (values-rw (pairlis$ values-keys (take values-len svexes-rw)))
        (nextstate-keys (svex-alist-keys fsm.nextstate))
        (nextstate-rw (pairlis$ nextstate-keys (nthcdr values-len svexes-rw))))
-    (make-base-fsm :values values-rw :nextstate nextstate-rw))
+    (fast-alist-free fsm.values)
+    (fast-alist-free fsm.nextstate)
+    (make-fsm :values (make-fast-alist values-rw)
+                   :nextstate (make-fast-alist nextstate-rw)))
   ///
-  (defret base-fsm-eval-equiv-of-<fn>
-    (base-fsm-eval-equiv new-fsm fsm)
-    :hints(("Goal" :in-theory (enable base-fsm-eval-equiv)))))
+  (defret fsm-eval-equiv-of-<fn>
+    (fsm-eval-equiv new-fsm fsm)
+    :hints(("Goal" :in-theory (enable fsm-eval-equiv)))))
 
 
 
@@ -148,7 +154,7 @@
   :returns new-svtv-data
   (time$
    (update-svtv-data->phase-fsm
-    (base-fsm-rewrite (svtv-data->phase-fsm svtv-data)
+    (fsm-rewrite (svtv-data->phase-fsm svtv-data)
                       :count count :verbosep verbosep)
     svtv-data)
    :msg "; Svtv-data rewrite phase: ~st seconds, ~sa bytes.~%")
@@ -169,7 +175,7 @@
   :returns new-svtv-data
   (time$
    (update-svtv-data->phase-fsm
-    (base-fsm-norm-concats (svtv-data->phase-fsm svtv-data)
+    (fsm-norm-concats (svtv-data->phase-fsm svtv-data)
                            :verbosep verbosep)
     svtv-data)
    :msg "; Svtv-data concatnorm phase: ~st seconds, ~sa bytes.~%")
@@ -224,7 +230,7 @@
   :returns new-svtv-data
   (time$
    (update-svtv-data->cycle-fsm
-    (base-fsm-rewrite (svtv-data->cycle-fsm svtv-data)
+    (fsm-rewrite (svtv-data->cycle-fsm svtv-data)
                       :count count :verbosep verbosep)
     svtv-data)
    :msg "; Svtv-data rewrite cycle: ~st seconds, ~sa bytes.~%")
@@ -246,7 +252,7 @@
   :returns new-svtv-data
   (time$
    (update-svtv-data->cycle-fsm
-    (base-fsm-norm-concats (svtv-data->cycle-fsm svtv-data)
+    (fsm-norm-concats (svtv-data->cycle-fsm svtv-data)
                            :verbosep verbosep)
     svtv-data)
    :msg "; Svtv-data concatnorm cycle: ~st seconds, ~sa bytes.~%")
@@ -307,6 +313,12 @@
                               x)
          :hints ((witness) (witness))))
 
+(local (include-book "std/lists/sets" :dir :system))
+
+(local (defthmd svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite
+         (implies (and (double-rewrite (svex-alist-eval-equiv x y))
+                       (equal (svex-alist-keys x) (svex-alist-keys y)))
+                  (equal (svex-alist-eval-equiv! x y) t))))
 
 (define svtv-data-rewrite-flatnorm (svtv-data &key ((count natp) '4) (verbosep 'nil))
   :guard ;; (or (svtv-data->flatnorm-validp svtv-data)
@@ -314,7 +326,9 @@
   (not (svtv-data->phase-fsm-validp svtv-data))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
+                     '(:in-theory (enable svtv-data$ap
+                                          acl2::subsetp-witness-rw
+                                          svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite)))
                 )
   :returns new-svtv-data
   (time$
@@ -339,7 +353,9 @@
   (not (svtv-data->phase-fsm-validp svtv-data))
   :guard-hints (("goal" :do-not-induct t)
                 (and stable-under-simplificationp
-                     '(:in-theory (enable svtv-data$ap)))
+                     '(:in-theory (enable svtv-data$ap
+                                          acl2::subsetp-witness-rw
+                                          svex-alist-eval-equiv!-when-svex-alist-eval-equiv-double-rewrite)))
                 )
   :returns new-svtv-data
   (time$

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nat-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,3 +93,65 @@
                 (consp x))
            (natp (car x)))
   :rule-classes :type-prescription)
+
+;; Avoids name clash with books/centaur/fty/baselists.
+(defthmd natp-of-car-when-nat-listp-better
+  (implies (nat-listp x)
+           (equal (natp (car x))
+                  (consp x))))
+
+;; Seems better than the one in STD (except perhaps for the double-rewrite).
+(defthm nat-listp-of-update-nth-better
+  (implies (nat-listp l)
+           (equal (nat-listp (update-nth n val l))
+                  (and (<= (nfix n) (len l)) ;might be adding to the end
+                       (natp val))))
+  :hints (("Goal" :in-theory (enable nat-listp update-nth))))
+
+(defthm nat-listp-of-revappend
+  (equal (nat-listp (revappend x y))
+         (and (nat-listp (true-list-fix x))
+              (nat-listp y)))
+  :hints (("Goal" :in-theory (enable nat-listp revappend))))
+
+(defthm natp-of-car-of-last-when-nat-listp
+  (implies (nat-listp x)
+           (equal (natp (car (last x)))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+;; Or use integerp-when-natp
+(defthmd integerp-of-car-of-last-when-nat-listp
+  (implies (nat-listp x)
+           (equal (integerp (car (last x)))
+                  (consp x)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+;; Or use <=-of-0-when-natp
+(defthmd <=-of-0-and-car-of-last-when-nat-listp
+  (implies (nat-listp x)
+           (<= 0 (car (last x))))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+; var names are to match std
+(defthm nat-listp-of-set-difference-equal
+  (implies (nat-listp x)
+           (nat-listp (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable set-difference-equal nat-listp))))
+
+(defthm nat-listp-when-not-consp-cheap
+  (implies (not (consp l))
+           (equal (nat-listp l)
+                  (equal nil l)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable nat-listp))))
+
+(defthmd integer-listp-when-nat-listp
+  (implies (nat-listp l)
+           (integer-listp l))
+  :hints (("Goal" :in-theory (enable integer-listp nat-listp))))
+
+(defthm nat-listp-of-remove1-equal
+  (implies (nat-listp nats)
+           (nat-listp (remove1-equal a nats)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))

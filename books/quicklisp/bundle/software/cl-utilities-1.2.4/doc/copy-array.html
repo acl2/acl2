@@ -1,0 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<HTML>
+<HEAD>
+  <TITLE>Function COPY-ARRAY</TITLE>
+  <LINK  REL="stylesheet" HREF="style.css" type="text/css">
+</HEAD>
+<BODY>
+
+<p><p><i>Function</i> <b>COPY-ARRAY</b></a></a> <p>
+<p><b>Syntax:</b><p>
+
+<p>
+
+<p><b>copy-array</b> <i>array <tt>&key</tt> undisplace</i> => <i>new-array</i>
+<p>
+<p><b>Arguments and Values:</b><p>
+<p>
+<i>array</i>---an <i>array</i>. <p>
+
+<i>undisplace</i>---a <i>generalized boolean</i>. The default is <i>false</i>.<p>
+
+<i>new-array</i>---an <i>array</i></a>. <p>
+
+<p>
+<p><b>Description:</b><p>
+
+<p>Shallow copies the contents of <i>array</i> into another array with
+equivalent properties.  If <i>array</i> is displaced, then this
+function will normally create another displaced array with similar
+properties, unless <i>undisplace</i> is <i>true</i>, in which case the
+contents of <i>array</i> will be copied into a completely new, not
+displaced, array.</p>
+
+<p><p><b>Examples:</b></p>
+<pre>
+(copy-array #(1 2 3)) => #(1 2 3)
+
+(let ((array #(1 2 3)))
+  (eq (copy-array array) array)) => NIL
+</pre>
+
+<p><p><b>Side Effects:</b> None.</p>
+
+<p><p><b>Affected By:</b> None.</p>
+
+<p class="footer"><hr><a href="index.html">Manual Index</a></p>
+
+</body></html>

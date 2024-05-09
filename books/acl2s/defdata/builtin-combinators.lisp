@@ -33,7 +33,7 @@ data last modified: [2017-06-22 Thu]
          ;; (:enum/acc-suffix . "/acc")
          (:pred-guard  .  (lambda (x) t))
          (:enum-guard  .  (lambda (x) (natp x)))
-         (:enum/acc-guard . (lambda (m seed) (and (natp m) (unsigned-byte-p 31 seed))))
+         (:enum/acc-guard . (lambda (m seed) (and (natp m) (unsigned-byte-p 63 seed))))
 
 
 ; The following 4 defaults shouldnt be overridden by user (of defdata
@@ -54,7 +54,7 @@ data last modified: [2017-06-22 Thu]
   (declare (ignorable i))
   `(mv-let (idx _SEED)
            (random-index-seed (len ,(cadr s)) _SEED)
-           (mv (nth idx ,(cadr s)) (the (unsigned-byte 31) _SEED))))
+           (mv (nth idx ,(cadr s)) (the (unsigned-byte 63) _SEED))))
 
 
 
@@ -233,7 +233,7 @@ data last modified: [2017-06-22 Thu]
 (defun test-weighted-switch-nat (wts n seed. acc)
   (if (zp n)
       (mv acc seed.)
-    (b* (((mv idx (the (unsigned-byte 31) seed.))
+    (b* (((mv idx (the (unsigned-byte 63) seed.))
           (defdata::random-index-seed 100 seed.))
          ((mv x &) (defdata::weighted-switch-nat wts idx))
          ((mv acc seed.) (test-weighted-switch-nat wts (1- n) seed. (update-nth x (1+ (nth x acc)) acc))))
@@ -317,7 +317,7 @@ data last modified: [2017-06-22 Thu]
                    geometric-rat-geq-bnd
                    geometric-rat-between
                    defdata::random-rational-between-seed))))
-    `(b* (((mv idx (the (unsigned-byte 31) ,seedvar))
+    `(b* (((mv idx (the (unsigned-byte 63) ,seedvar))
            (defdata::random-index-seed 100 ,seedvar))
           ((mv choice &) (defdata::weighted-switch-nat ',weights idx))
           (chosen (nth choice ',sampling-dist))
@@ -529,7 +529,8 @@ Mainly to be used for evaluating enum lists "
 
   (mv-let
    (erp term x)
-   (acl2::translate11 form nil nil nil nil nil nil
+; Matt K. mod for df additions: Added nil for known-dfs argument.
+   (acl2::translate11 form nil nil nil nil nil nil nil
                       ctx w (acl2::default-state-vars nil))
    (declare (ignore x))
    (if erp

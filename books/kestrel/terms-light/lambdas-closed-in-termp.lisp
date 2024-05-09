@@ -39,9 +39,25 @@
            (lambdas-closed-in-termsp (cdr terms)))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp))))
 
+(defthm lambdas-closed-in-termsp-of-take
+  (implies (lambdas-closed-in-termsp terms)
+           (lambdas-closed-in-termsp (take n terms)))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp))))
+
+(defthm lambdas-closed-in-termsp-of-remove1-equal
+  (implies (lambdas-closed-in-termsp terms)
+           (lambdas-closed-in-termsp (remove1-equal term terms)))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp))))
+
 (defthm lambdas-closed-in-termp-of-car
   (implies (lambdas-closed-in-termsp terms)
            (lambdas-closed-in-termp (car terms)))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp))))
+
+(defthm lambdas-closed-in-termsp-of-cons
+  (equal (lambdas-closed-in-termsp (cons term terms))
+         (and (lambdas-closed-in-termp term)
+              (lambdas-closed-in-termsp terms)))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp))))
 
 (defthm lambdas-closed-in-termsp-of-append
@@ -49,6 +65,12 @@
          (and (lambdas-closed-in-termsp terms1)
               (lambdas-closed-in-termsp terms2)))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp))))
+
+(defthm lambdas-closed-in-termsp-of-revappend
+  (equal (lambdas-closed-in-termsp (revappend terms1 terms2))
+         (and (lambdas-closed-in-termsp (true-list-fix terms1))
+              (lambdas-closed-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp revappend))))
 
 (defthm lambdas-closed-in-termsp-of-set-difference-equal
   (implies (lambdas-closed-in-termsp terms1)

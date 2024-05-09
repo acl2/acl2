@@ -1,18 +1,21 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C")
 
 (include-book "types")
-(include-book "errors")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,7 +51,8 @@
      This mirrors (the @(':struct') case of) @(tsee tag-declon).")
    (xdoc::p
     "The members must have unique names [C:6.2.3].
-     There must be at least one member [C:6.2.5/20].
+     There must be at least one member [C:6.2.5/20],
+     or two if the last one is a flexible array member [C:6.7.2.1/18].
      Currently we do not capture these requirements in this fixtype."))
   (:struct ((members member-type-list)))
   (:union ())
@@ -61,6 +65,30 @@
   tag-info
   :short "Fixtype of optional tag information."
   :pred tag-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tag-info-struct-flexiblep ((info tag-infop))
+  :guard (tag-info-case info :struct)
+  :returns (yes/no booleanp)
+  :short "Check if (the information for) a structure type
+          has a flexible array member."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee tag-info) for a description and a reference
+     to flexible array members.
+     If there are no member,
+     which cannot happen in well-formed structure types
+     (although we do not capture this invariant in @(tsee tag-info)),
+     we return @('nil')."))
+  (b* ((members (tag-info-struct->members info))
+       ((unless (consp members)) nil)
+       (member (car (last members)))
+       (type (member-type->type member)))
+    (and (type-case type :array)
+         (not (type-array->size type))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,7 +117,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult tag-env "tag environments")
+(fty::defresult tag-env-result
+  :short "Fixtype of errors and tag environments."
+  :ok tag-env
+  :pred tag-env-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +128,7 @@
   :returns (info tag-info-optionp
                  :hints (("Goal" :in-theory (enable tag-info-optionp))))
   :short "Look up a tag in a tag environment."
-  (cdr (omap::in (ident-fix tag) (tag-env-fix env)))
+  (cdr (omap::assoc (ident-fix tag) (tag-env-fix env)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,7 +155,7 @@
   (b* ((tag (ident-fix tag))
        (info (tag-info-fix info))
        (env (tag-env-fix env)))
-    (if (omap::in tag env)
+    (if (omap::assoc tag env)
         (tag-env-option-none)
       (tag-env-option-some (omap::update tag info env))))
   :hooks (:fix))

@@ -291,6 +291,40 @@
                                  (len (member rule lemmas)))))))))))
 
 
+(defthm mextract-linear-lemma-term
+  (implies (and (mextract-ev-global-facts)
+                (member rule (fgetprop fn 'linear-lemmas nil (w st)))
+                (equal (w st) (w state)))
+           (mextract-ev (linear-lemma-term rule)
+                      a))
+  :hints(("Goal"
+          :use ((:instance mextract-global-badguy-sufficient
+                 (obj (list :linear-lemma fn
+                            (let ((lemmas
+                                   (getprop fn 'linear-lemmas nil
+                                            'current-acl2-world (w state))))
+                              (- (len lemmas)
+                                 (len (member rule lemmas)))))))))))
+
+;; Assuming (mextract-ev-global-facts), each element of the lemmas property of a
+;; symbol in the world is a correct rewrite rule.
+(defthm mextract-linear-lemma
+  (implies (and (mextract-ev-global-facts)
+                (member rule (fgetprop fn 'linear-lemmas nil (w st)))
+                (mextract-ev (conjoin (access linear-lemma rule :hyps)) a)
+                (equal (w st) (w state)))
+           (mextract-ev (access linear-lemma rule :concl)
+                        a))
+  :hints(("Goal"
+          :use ((:instance mextract-global-badguy-sufficient
+                 (obj (list :linear-lemma fn
+                            (let ((lemmas
+                                   (getprop fn 'linear-lemmas nil
+                                            'current-acl2-world (w state))))
+                              (- (len lemmas)
+                                 (len (member rule lemmas)))))))))))
+
+
 (defthm plist-worldp-w-state
   (implies (state-p1 state)
            (plist-worldp (w state)))
@@ -348,7 +382,8 @@
                     ;; need pseudo-termp so that we know we don't look up
                     ;; non-symbol atoms
                     (pseudo-termp x)
-                    (logic-fnsp x (w st)))
+                    ;; (logic-fnsp x (w st))
+                    )
                (equal val
                       (mextract-ev x alist))))
     :flag magic-ev)
@@ -361,7 +396,8 @@
                     (equal hard-errp t)
                     (equal aokp nil)
                     (pseudo-term-listp x)
-                    (logic-fns-listp x (w st)))
+                    ;; (logic-fns-listp x (w st))
+                    )
                (equal val
                       (mextract-ev-lst x alist))))
     :flag magic-ev-lst)
@@ -796,6 +832,28 @@
      (def-functional-instance
        evfn-meta-extract-lemma
        mextract-lemma
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy))
+       :translate nil
+       :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
+                     (mextract-ev-contextual-facts evfn-meta-extract-contextual-facts)))
+
+          (def-functional-instance
+       evfn-meta-extract-linear-lemma-term
+       mextract-linear-lemma-term
+       ((mextract-ev evfn)
+        (mextract-ev-lst evlst-fn)
+        (mextract-ev-falsify evfn-falsify)
+        (mextract-global-badguy evfn-meta-extract-global-badguy))
+       :translate nil
+       :macro-subst ((mextract-ev-global-facts evfn-meta-extract-global-facts)
+                     (mextract-ev-contextual-facts evfn-meta-extract-contextual-facts)))
+
+     (def-functional-instance
+       evfn-meta-extract-linear-lemma
+       mextract-linear-lemma
        ((mextract-ev evfn)
         (mextract-ev-lst evlst-fn)
         (mextract-ev-falsify evfn-falsify)

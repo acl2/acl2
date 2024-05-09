@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,11 +22,23 @@
                           bool
                           char-fix
                           chars=>nats
+                          constant-namep
+                          constant-value
                           defmacro+
                           defxdoc+
+                          ensure-symbol-is-fresh-event-name$
+                          ensure-value-is-boolean$
+                          ensure-value-is-constant-name$
+                          ensure-value-is-string$
+                          ensure-value-is-symbol$
+                          er-soft+
+                          erp
                           explode
+                          fun
                           implode
                           integers-from-to
+                          keyword-listp
+                          known-packages+
                           legal-constantp
                           lnfix
                           maybe-msgp
@@ -45,20 +57,26 @@
                           nat-list-resultp
                           nats=>chars
                           nats=>string
+                          packn-pos
                           patbind-fun
                           pos-list
                           pos-listp
                           pseudo-event-formp
                           pseudo-event-form-listp
                           read-file-characters
+                          reterr
+                          retok
                           return-raw
                           seq
                           seq-backtrack
                           string=>nats
+                          string-symbol-alistp
+                          string-symbollist-alistp
+                          table-alist+
                           unsigned-byte-listp
-                          fty::err
-                          fty::err-push
-                          fty::resulterrp
+                          fty::reserrf
+                          fty::reserrf-push
+                          fty::reserrp
                           set::list-in
                           set::nat-setp
                           std::define-sk

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,8 +28,8 @@
      such that @('a1'), @('a2'), etc. are all distinct
      and that @('b1'), @('b2'), etc. are all distinct.
      Technically, it is an alist with unique keys and unique values,
-     but we treat is as a list of pairs,
-     i.e. we do not use alist operations on them;
+     but we treat it as a list of pairs,
+     i.e. we do not use alist operations on it;
      it is an injective alist, so its ``direction'' is unimportant.
      Each pair @('(ai . bi)') describes a renaming between
      the variable @('ai') in the old code
@@ -62,15 +62,10 @@
    (xdoc::p
     "These are alists from identifiers to identifiers
      that have unique keys and unique values,
-     which we treat as lists of pairs rather than as alist as such
-     (see discussion in @(see renaming-variables)).
+     which we treat as lists of pairs rather than as alists as such
+     (see discussion in @(see renamings)).
      We wrap the alist into a one-component product type
-     and we add constraints for key and value uniqueness.")
-   (xdoc::p
-    "We use this to capture variable renamings,
-     but it can be also used for function renamings.
-     We will put this into a more general place
-     and also use this for function renamings."))
+     and we add constraints for key and value uniqueness."))
   ((list identifier-identifier-alist
          :reqfix (if (and (no-duplicatesp-equal (strip-cars list))
                           (no-duplicatesp-equal (strip-cdrs list)))

@@ -14,7 +14,7 @@
 ;these are rules about lists of BVs
 
 (include-book "kestrel/bv/getbit" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
+;(include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "bvnth")
 (include-book "bvnot-list")
 
@@ -40,7 +40,7 @@
 ;; ;BBBOZO should this really byte-fix (etc.) its values?  if so, don't use it to phrase the postcond, or you'll be able to prove that the contents are something not quite true (but that byte-fixes) to the real values
 ;; ;this used to change the length
 ;; (defund store-array (ref contents len type heap)
-;;   (acl2::set-field ref
+;;   (set-field ref
 ;;                    (array-contents-pair) ;(array-contents-pair)
 ;;                    ;;bbozo handle other types
 ;;                    (if (equal type ':byte)
@@ -110,25 +110,7 @@
 ;define in terms of a map-bvnot?
 ;;(defmap bitnot-list (x) (bitnot x) :declares ((xargs :guard (all-integerp x))))
 
-;; Check whether each item of LST1 is the negation of the corresponding item in LST2.
-;this stops when the first list runs out
-(defun negated-elems-listp (width lst1 lst2)
-  (declare (xargs :guard (natp width)))
-  (if (atom lst1)
-      t
-    (and (consp lst2)
-         (let ((item1 (first lst1)))
-           (and (integerp item1)
-                (equal (bvnot width item1) (first lst2))
-                (negated-elems-listp width (rest lst1) (rest lst2)))))))
 
-(defthm negated-elems-listp-rewrite
-  (implies (true-listp lst1)
-           (iff (negated-elems-listp width lst1 lst2)
-                (and (all-integerp lst1)
-                     (equal (firstn (len lst1) lst2) (bvnot-list width lst1)))))
-  :hints (("Goal" :in-theory (disable ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
-                              ))))
 
 ;; ;do we still use this?
 ;; (defun push-bvchop-list (size lst)

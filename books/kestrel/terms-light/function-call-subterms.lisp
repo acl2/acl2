@@ -1,6 +1,6 @@
-; An assistant to help find simple proofs
+; A utility to find subterms that are function calls
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "non-trivial-formals")
 (include-book "free-vars-in-term")
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
+(local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
@@ -74,6 +75,14 @@
     :flag find-all-fn-call-subterms)
   (defthm true-listp-of-find-all-fn-call-subterms-lst
     (true-listp (find-all-fn-call-subterms-lst terms dead-vars))
+    :flag find-all-fn-call-subterms-lst))
+
+(defthm-flag-find-all-fn-call-subterms
+  (defthm no-duplicatesp-equal-of-find-all-fn-call-subterms
+    (no-duplicatesp-equal (find-all-fn-call-subterms term dead-vars))
+    :flag find-all-fn-call-subterms)
+  (defthm no-duplicatesp-equal-of-find-all-fn-call-subterms-lst
+    (no-duplicatesp-equal (find-all-fn-call-subterms-lst terms dead-vars))
     :flag find-all-fn-call-subterms-lst))
 
 (verify-guards find-all-fn-call-subterms)

@@ -26,9 +26,9 @@
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthm len-when-bv-arrayp
-  (implies (bv-arrayp bytesize numcols item1)
-           (equal (len item1)
-                  numcols))
+  (implies (bv-arrayp element-width length val)
+           (equal (len val)
+                  length))
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthm true-listp-when-bv-arrayp
@@ -61,15 +61,24 @@
   :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthmd integerp-of-nth-when-bv-arrayp
-  (implies (and (acl2::bv-arrayp freewidth freelen val)
+  (implies (and (bv-arrayp freewidth freelen val)
                 (natp n)
                 (< n freelen))
            (integerp (nth n val)))
-  :hints (("Goal" :in-theory (enable acl2::bv-arrayp))))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
 
 (defthmd <=-of-0-and-nth-when-bv-arrayp
-  (implies (and (acl2::bv-arrayp freewidth freelen val)
+  (implies (and (bv-arrayp freewidth freelen val)
                 (natp n)
                 (< n freelen))
            (<= 0 (nth n val)))
-  :hints (("Goal" :in-theory (enable acl2::bv-arrayp))))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))
+
+;; Do not remove: helps justify the correctness of intersect-types in Axe.
+(defthm bv-arrayp-when-bv-arrayp-narrower
+  (implies (and (bv-arrayp small-element-width length val)
+                (<= small-element-width element-width)
+                (natp small-element-width)
+                (natp element-width))
+           (bv-arrayp element-width length val))
+  :hints (("Goal" :in-theory (enable bv-arrayp))))

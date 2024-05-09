@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,11 +23,19 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/apply-term" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
+(include-book "kestrel/std/system/non-executablep" :dir :system)
+(include-book "kestrel/std/system/term-guard-obligation" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
+(include-book "kestrel/std/system/unwrapped-nonexec-body" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "utilities/defaults-table")
@@ -581,7 +589,9 @@
                (b* ((args (macro-required-args domain wrld))
                     (ulambda `(lambda ,args (,domain ,@args)))
                     ((mv tlambda stobjs-out) (check-user-lambda ulambda wrld))
-                    (stobjs-in (compute-stobj-flags args t wrld)))
+; Matt K. mod for df additions: Added nil below for df argument.
+; More work may be required here to handle dfs.
+                    (stobjs-in (compute-stobj-flags args t nil wrld)))
                  (value
                   (list tlambda
                         stobjs-in
@@ -611,7 +621,9 @@
                                  description domain tlambda/msg))
                       (tlambda tlambda/msg)
                       (stobjs-in
-                       (compute-stobj-flags (lambda-formals tlambda) t wrld)))
+; Matt K. mod for df additions: Added nil below for df argument.
+; More work may be required here to handle dfs.
+                       (compute-stobj-flags (lambda-formals tlambda) t nil wrld)))
                    (value (list tlambda
                                 stobjs-in
                                 stobjs-out
@@ -1056,13 +1068,17 @@
       :domain-guard
       (if (symbolp domain$)
           (guard domain$ nil wrld)
-        (term-guard-obligation (lambda-body domain$) state))
+        (term-guard-obligation (lambda-body domain$)
+                               :limited
+                               state))
       :when verify-guards$)
      (make-evmac-appcond?
       :combine-guard
       (implicate (conjoin2 (apply-term* domain$ q)
                            (apply-term* domain$ r))
-                 (term-guard-obligation combine state))
+                 (term-guard-obligation combine
+                                        :limited
+                                        state))
       :when verify-guards$)
      (make-evmac-appcond?
       :domain-of-base-when-guard
@@ -1402,7 +1418,8 @@
                                   :guard ,guard
                                   :verify-guards ,verify-guards$
                                   ,@(and verify-guards$
-                                         (list :guard-hints guard-hints))))
+                                         (list :guard-hints guard-hints))
+                                  :guard-simplify :limited))
                   ,body)))
        (exported-event
         `(,macro ,new-name$ (,@new-formals)
@@ -1904,7 +1921,9 @@
                                            names-to-avoid
                                            wrld))
        (formula (implicate (guard old$ nil wrld)
-                           (term-guard-obligation base state)))
+                           (term-guard-obligation base
+                                                  :limited
+                                                  state)))
        (formals (formals old$ wrld))
        (alpha-comps (tailrec-gen-alpha-component-terms alpha-name
                                                        old$
@@ -2149,6 +2168,7 @@
      :body body
      :verify-guards verify-guards$
      :guard-hints guard-hints
+     :guard-simplify :limited
      :enable wrapper-enable$)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

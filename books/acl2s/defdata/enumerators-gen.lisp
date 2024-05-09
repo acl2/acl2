@@ -230,16 +230,16 @@ data last modified: [2017-06-25 Sun]
       '()
     (if (car rec-p-lst) ;recursive case
         (cons (if (> k 1) 
-                  `((MV ,(car comp-svars) (THE (UNSIGNED-BYTE 31) _SEED))
+                  `((MV ,(car comp-svars) (THE (UNSIGNED-BYTE 63) _SEED))
                     (GENRANDOM-SEED (1+ (NFIX ,svar)) _SEED))
                 ;; only one recursive case left, then dont partition
-                `((MV ,(car comp-svars) (THE (UNSIGNED-BYTE 31) _SEED))
+                `((MV ,(car comp-svars) (THE (UNSIGNED-BYTE 63) _SEED))
                   (MV ,svar _SEED)))
               (uniformly-partition-size-binding-aux `(- ,svar ,(car comp-svars))
                                                     (cdr comp-svars) (1- k)
                                                     (cdr rec-p-lst) (cdr texps) M))
 
-      (cons `((MV ,(car comp-svars) (THE (UNSIGNED-BYTE 31) _SEED))
+      (cons `((MV ,(car comp-svars) (THE (UNSIGNED-BYTE 63) _SEED))
               ,(if (and (proper-symbolp (car texps))
                         (assoc-eq (car texps) M))
                    `(choose-size ,(get2 (car texps) :min-rec-depth M)
@@ -359,21 +359,21 @@ B is the builtin combinator table."
 #|
 (defun uniformly-partition-rec-size (size k seed.)
   "uniformly partition size into k components"
-  (declare (type (unsigned-byte 31) seed.)
-           (type (signed-byte 30) size)
-           (type (signed-byte 30) k))
+  (declare (type (unsigned-byte 63) seed.)
+           (type (signed-byte 62) size)
+           (type (signed-byte 62) k))
   (declare (xargs :verify-guards nil
-                  :guard (and (unsigned-byte-p 31 seed.)
+                  :guard (and (unsigned-byte-p 63 seed.)
                               (natp size)
                               (natp k)
-                              (signed-byte-p 30 size)
-                              (signed-byte-p 30 k)
+                              (signed-byte-p 62 size)
+                              (signed-byte-p 62 k)
                               )))
   (if (or (zp k) (<= k 1))
-      (mv (list size) (the (unsigned-byte 31) seed.))
-    (b* (((mv size1 (the (unsigned-byte 31) seed.)) (genrandom-seed (1+ (nfix size)) seed.))
-         ((mv rst (the (unsigned-byte 31) seed.)) (uniformly-partition-rec-size (- size size1) (1- k) seed.)))
-      (mv (cons size1 rst) (the (unsigned-byte 31) seed.)))))
+      (mv (list size) (the (unsigned-byte 63) seed.))
+    (b* (((mv size1 (the (unsigned-byte 63) seed.)) (genrandom-seed (1+ (nfix size)) seed.))
+         ((mv rst (the (unsigned-byte 63) seed.)) (uniformly-partition-rec-size (- size size1) (1- k) seed.)))
+      (mv (cons size1 rst) (the (unsigned-byte 63) seed.)))))
 
 |#
 

@@ -4,8 +4,8 @@
 # The parameters are predictable, but here are some sample
 # invocations:
 #
-# LISP=sbcl ACL2_HONS=h ACL2_PAR=no_p ACL2_REAL=r TARGET=std build-multi.sh
-# LISP=ccl ACL2_HONS=h ACL2_PAR=p ACL2_REAL=no_r TARGET=manual build-multi.sh
+# LISP=sbcl ACL2_PAR=no_p ACL2_REAL=r TARGET=std build-multi.sh
+# LISP=ccl ACL2_PAR=p ACL2_REAL=no_r TARGET=manual build-multi.sh
 
 # TODO: make it work with startjob, where startjob is a wrapper for
 # bash (really, the challenge in this is getting the definition of
@@ -18,6 +18,11 @@ echo "Starting build-multi.sh"
 echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
 echo " -- PATH is $PATH"
+
+# Print some vars that should be set for retried builds:
+echo "NAGINATOR_COUNT is $NAGINATOR_COUNT" # How many times the build was rescheduled.
+echo "NAGINATOR_MAXCOUNT is $NAGINATOR_MAXCOUNT" # How many times the build can be rescheduled. This can be 0 if manually rescheduled.
+echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of the failed build causing the reschedule.
 
 source $JENKINS_HOME/env.sh
 
@@ -49,6 +54,7 @@ echo "Using STARTJOB = $STARTJOB"
 echo "Using ACL2_PAR  = $ACL2_PAR"
 echo "Using ACL2_REAL    = $ACL2_REAL"
 echo "Making TARGET   = $TARGET"
+echo "Using MAKEOPTS = $MAKEOPTS"
 
 if [ "${LISP:0:3}" == "gcl" ]; then
   USE_QUICKLISP="";
@@ -86,7 +92,8 @@ cd books
 NICENESS=13
 OOM_KILLER_ADJUSTMENT=1000 # high value for the build-multi case
 # inherit USE_QUICKLISP for the following make call
-CMD="nice -n $NICENESS time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
+# We don't use --keep-going here, so that emails about failures get sent ASAP:
+CMD="nice -n $NICENESS time make $TARGET ACL2=$WORKSPACE/saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL -l $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
 CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo ${OOM_KILLER_ADJUSTMENT} > /proc/self/oom_score_adj && exec ${CMD})"
 $STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
 

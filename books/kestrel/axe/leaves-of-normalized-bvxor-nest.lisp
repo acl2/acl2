@@ -1,7 +1,7 @@
 ; Extract leaves from a nest of BVXORs in a DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -36,7 +36,8 @@
                  (bvxor size x y))))
 
 ;; This book deals with "normalized" BVXOR nests.  Such a nest contains nested
-;; calls of BVXOR, all with the same (quoted) size argument.  A normalized nest:
+;; calls of BVXOR, all with the same (quoted) size argument.  (For unnormalized
+;; nests, see bvxor-nest-leaves.)  A normalized nest:
 ;;
 ;; 1. is associated to the right.
 ;;

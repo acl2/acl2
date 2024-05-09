@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,7 +26,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This formalization covers a generic for of Yul
+    "This formalization covers a generic form of Yul
      that supports the types of the EVM dialect.
      The formalization consists of
      a concrete syntax,
@@ -34,9 +34,10 @@
      a static semantics, and
      a dynamic semantics.
      We plan to make this formalization more generic,
-     and in particular to also support types in othe Yul dialects."))
-  :order-subtopics nil)
-
-(xdoc::order-subtopics language
-  (concrete-syntax abstract-syntax static-semantics dynamic-semantics
-   static-soundness errors))
+     and in particular to also support types in other Yul dialects."))
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    static-semantics
+                    dynamic-semantics
+                    static-soundness
+                    errors))

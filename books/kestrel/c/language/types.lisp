@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,13 +12,20 @@
 (in-package "C")
 
 (include-book "abstract-syntax")
-(include-book "errors")
+(include-book "integer-formats")
 
 (include-book "../pack")
 
 (include-book "kestrel/fty/pos-option" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defval" :dir :system)
+
+(local (include-book "std/lists/butlast" :dir :system))
+(local (include-book "std/lists/last" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,7 +88,8 @@
   :elt-type type
   :true-listp t
   :elementp-of-nil nil
-  :pred type-listp)
+  :pred type-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,7 +113,8 @@
   :elt-type type-option
   :true-listp t
   :elementp-of-nil t
-  :pred type-option-listp)
+  :pred type-option-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,11 +126,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult type "types")
+(fty::defalist symbol-type-alist
+  :short "Fixtype of alists from symbols to types."
+  :key-type symbol
+  :val-type type
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  :pred symbol-type-alistp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult type-list "lists of types")
+(fty::defresult type-result
+  :short "Fixtype of errors and types."
+  :ok type
+  :pred type-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult type-list-result
+  :short "Fixtype of errors and lists of types."
+  :ok type-list
+  :pred type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,7 +178,8 @@
   :elt-type member-type
   :true-listp t
   :elementp-of-nil nil
-  :pred member-type-listp)
+  :pred member-type-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -175,7 +202,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defresult member-type-list "lists of member types")
+(fty::defresult member-type-list-result
+  :short "Fixtype of errors and lists of member types."
+  :ok member-type-list
+  :pred member-type-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +236,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the a member with the same name is not already in the list,
+    "We check that a member with the same name is not already in the list,
      to maintain the well-formedness of the list."))
   (b* ((found (member-type-lookup name members))
        ((when found) (member-type-list-option-none)))
@@ -225,7 +255,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We check that the a member with the same name is not already in the list,
+    "We check that a member with the same name is not already in the list,
      to maintain the well-formedness of the list."))
   (b* ((found (member-type-lookup name members))
        ((when found) (member-type-list-option-none)))
@@ -236,6 +266,32 @@
   ///
   (fty::deffixequiv member-type-add-last
     :hints (("Goal" :in-theory (enable rcons)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum init-type
+  :short "Fixtype of initializer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce a notion of types for "
+    (xdoc::seetopic "initer" "initializers")
+    ". An initializer type has the same structure as an initializer,
+     but expressions are replaced with (their) types.")
+   (xdoc::p
+    "As our model of initializers is extended,
+     our model of initializer types will be extended accordingly."))
+  (:single ((get type)))
+  (:list ((get type-list)))
+  :pred init-typep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult init-type-result
+  :short "Fixtype of errors and initializer types."
+  :ok init-type
+  :pred init-type-resultp
+  :prepwork ((local (in-theory (enable init-type-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -292,6 +348,15 @@
   (type-realp type)
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-arithmetic-listp (x)
+  :guard (type-listp x)
+  (type-arithmeticp x)
+  ///
+  (fty::deffixequiv type-arithmetic-listp
+    :args ((x type-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-scalarp ((type typep))
@@ -303,10 +368,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-integer-nonbool-nonchar-p ((type typep))
+(define type-promoted-arithmeticp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an integer type
-          but not @('_Bool') or the plain @('char') type."
+  :short "Check if a type is a promoted arithmetic type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, an arithmetic type that is promoted,
+     in the sense that applying integer promotions [C:6.3.1.1/2] to it
+     would leave the type unchanged.
+     This means that the type is not
+     a (signed, unsigned, or plain) @('char') type
+     or a (signed or unsigned) @('short') type."))
+  (and (type-arithmeticp type)
+       (not (type-case type :char))
+       (not (type-case type :schar))
+       (not (type-case type :uchar))
+       (not (type-case type :sshort))
+       (not (type-case type :ushort)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-nonchar-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a (supported) type is an integer type
+          except for the plain @('char') type."
   (or (type-case type :uchar)
       (type-case type :schar)
       (type-case type :ushort)
@@ -320,8 +407,8 @@
   :hooks (:fix)
   ///
 
-  (defrule type-integerp-when-type-integer-nonbool-nonchar-p
-    (implies (type-integer-nonbool-nonchar-p x)
+  (defrule type-integerp-when-type-nonchar-integerp
+    (implies (type-nonchar-integerp x)
              (type-integerp x))
     :enable (type-integerp
              type-unsigned-integerp
@@ -329,12 +416,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::deflist type-integer-nonbool-nonchar-listp (x)
+(std::deflist type-nonchar-integer-listp (x)
   :guard (type-listp x)
-  (type-integer-nonbool-nonchar-p x)
+  (type-nonchar-integerp x)
   ///
-  (fty::deffixequiv type-integer-nonbool-nonchar-listp
+  (fty::deffixequiv type-nonchar-integer-listp
     :args ((x type-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-completep ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is complete [C:6.2.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A type is complete when its size is determined,
+     otherwise it is incomplete.
+     While [C:6.2.5] cautions that the same type
+     may be complete or incomplete in different parts of a program,
+     for now we capture the completeness of a type
+     independently from where it occurs:
+     this is adequate for our C subset and for our use of this predicate.")
+   (xdoc::p
+    "The @('void') type is never complete [C:6.2.5/19].
+     The basic types, which are the integer types in our subset of C,
+     are always complete [C:6.2.5/14].
+     A structure type is complete as soon as its declaration ends [C:6.7.2.1/8];
+     it is incomplete inside the structure type,
+     but we do not use this predicate for the member types.
+     A pointer type is always complete [C:6.2.5/20]
+     (regardless of the pointed-to type).
+     An array type needs its element type to be complete [C:6.2.5/20],
+     as formalized in @(tsee check-tyname);
+     the array type itself is complete if the size is specified,
+     otherwise it is incomplete [C:6.2.5/22]."))
+  (cond ((type-case type :void) nil)
+        ((type-integerp type) t)
+        ((type-case type :struct) t)
+        ((type-case type :pointer) t)
+        ((type-case type :array) (not (eq (type-array->size type) nil)))
+        (t (impossible)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp
+                                           member-equal)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,34 +489,34 @@
                   :ullong (type-ullong)
                   :bool (prog2$
                          (raise "Internal error: ~
-                                            _Bool not supported yet.")
+                                 _Bool not supported yet.")
                          (ec-call (type-fix :irrelevant)))
                   :float (prog2$
                           (raise "Internal error: ~
-                                             float not supported yet.")
+                                  float not supported yet.")
                           (ec-call (type-fix :irrelevant)))
                   :double (prog2$
                            (raise "Internal error: ~
-                                              double not supported yet.")
+                                   double not supported yet.")
                            (ec-call (type-fix :irrelevant)))
                   :ldouble (prog2$
                             (raise "Internal error: ~
-                                               long double not supported yet.")
+                                    long double not supported yet.")
                             (ec-call (type-fix :irrelevant)))
                   :struct (type-struct tyspec.tag)
                   :union (prog2$
                           (raise "Internal error: ~
-                                             union ~x0 not supported yet."
+                                  union ~x0 not supported yet."
                                  tyspec.tag)
                           (ec-call (type-fix :irrelevant)))
                   :enum (prog2$
                          (raise "Internal error: ~
-                                            enum ~x0 not supported yet."
+                                 enum ~x0 not supported yet."
                                 tyspec.tag)
                          (ec-call (type-fix :irrelevant)))
                   :typedef (prog2$
                             (raise "Internal error: ~
-                                               typedef ~x0 not supported yet."
+                                    typedef ~x0 not supported yet."
                                    tyspec.name)
                             (ec-call (type-fix :irrelevant))))
   :hooks (:fix))
@@ -445,6 +572,7 @@
                                                         declor.decl)
                                 :size nil)))
      :measure (obj-adeclor-count declor)
+     :hints (("Goal" :in-theory (enable o< o-finp o-p)))
      :verify-guards :after-returns
      :hooks (:fix))))
 
@@ -459,8 +587,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *integer-nonbool-nonchar-types*
-  :short "List of the C integer types except @('_Bool') and plain @('char')."
+(defval *nonchar-integer-types*
+  :short "List of the (supported) C integer types except plain @('char')."
   (list (type-schar)
         (type-uchar)
         (type-sshort)
@@ -475,13 +603,14 @@
 
   (local (include-book "std/lists/len" :dir :system))
 
-  (defruled member-integer-nonbool-nonchar-types-as-pred
+  (defruled member-nonchar-integer-types-as-pred
     (implies (typep type)
-             (iff (member-equal type *integer-nonbool-nonchar-types*)
-                  (type-integer-nonbool-nonchar-p type)))
-    :enable (type-integer-nonbool-nonchar-p
+             (iff (member-equal type *nonchar-integer-types*)
+                  (type-nonchar-integerp type)))
+    :enable (type-nonchar-integerp
              type-kind
-             typep)))
+             typep
+             member-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -505,10 +634,17 @@
     (str::cat "type @('" core "')"))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
-                                           type-signed-integerp)))
+                                           type-signed-integerp
+                                           member-equal)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Matt K. mod, summer 2023 when removing good-atom-listp: The following local
+; include-book serves as a replacement.  But it is here instead of near the top
+; of this book, because otherwise the include-book phase of certify-book was
+; failing.
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 (define integer-type-bits-nulfun ((type typep))
   :guard (type-integerp type)
@@ -535,6 +671,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define integer-type-bits ((type typep))
+  :guard (type-integerp type)
+  :returns (bits posp :rule-classes :type-prescription)
+  :short "Number of bits that forms a value of a C integer type."
+  (case (type-kind type)
+    ((:char :schar :uchar) (char-bits))
+    ((:sshort :ushort) (short-bits))
+    ((:sint :uint) (int-bits))
+    ((:slong :ulong) (long-bits))
+    ((:sllong :ullong) (llong-bits))
+    (t (prog2$ (impossible) 1)))
+  :guard-hints (("Goal" :in-theory (enable type-integerp
+                                           type-unsigned-integerp
+                                           type-signed-integerp
+                                           member-equal)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define integer-type-minbits ((type typep))
   :guard (type-integerp type)
   :returns (minbits posp :rule-classes :type-prescription)
@@ -548,29 +703,6 @@
     (t (prog2$ (impossible) 1)))
   :guard-hints (("Goal" :in-theory (enable type-integerp
                                            type-unsigned-integerp
-                                           type-signed-integerp)))
+                                           type-signed-integerp
+                                           member-equal)))
   :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum init-type
-  :short "Fixtype of initializer types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We introduce a notion of types for "
-    (xdoc::seetopic "initer" "initializers")
-    ". An initializer type has the same structure as an initializer,
-     but expressions are replaced with (their) types.")
-   (xdoc::p
-    "As our model of initializers is extended,
-     our model of initializer types will be extended accordingly."))
-  (:single ((get type)))
-  (:list ((get type-list)))
-  :pred init-typep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(encapsulate ()
-  (local (in-theory (enable init-type-kind)))
-  (defresult init-type "initializer types"))

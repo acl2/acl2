@@ -59,6 +59,16 @@
 
 
 (xdoc::archive-matching-topics
- (or (str::strprefixp "[books]/centaur/aignet/" (cdr (assoc :from x)))
-     (str::strprefixp "[books]/centaur/truth/" (cdr (assoc :from x)))
-     (equal "[books]/centaur/misc/nth-nat-equiv.lisp" (cdr (assoc :from x)))))
+ (or (str::strprefixp "centaur/aignet/" (cdr (assoc :from x)))
+     (str::strprefixp "centaur/truth/" (cdr (assoc :from x)))
+     (equal "centaur/misc/nth-nat-equiv.lisp :DIR :SYSTEM" (cdr (assoc :from x)))))
+
+
+;; This should be redundant but occasionally turns out not to be due to directory relocation.
+;; Future solution: let xdoc resource directories use dirnames and the project-dir-alist like include-books.
+;; (xdoc::add-resource-directory "aignet" "images")
+(make-event
+ (b* ((aignet-resource-dir (cdr (assoc-equal "aignet"
+                                             (cdr (assoc-eq 'xdoc::resource-dirs (table-alist 'xdoc::xdoc (w state))))))))
+   (value `(table xdoc::xdoc 'xdoc::resource-dirs
+                  (xdoc::add-resource-directory-fn "aignet" ,aignet-resource-dir world)))))

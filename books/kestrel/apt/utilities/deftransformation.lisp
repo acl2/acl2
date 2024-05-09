@@ -16,8 +16,8 @@
 ;; exist called XXX-event, which takes the following arguments:
 ;; - the transformation's required args (in the order given in the call to deftransformation)
 ;; - and transformation's keyword args (in the order given in the call to deftransformation)
-;; - a verbose arg, if deftransformation is called with :pass-print t)
-;; - a ctx, if deftransformation is called with :pass-context t
+;; - a verbose arg, if deftransformation is called with :pass-print t
+;; - a ctx arg, if deftransformation is called with :pass-context t
 ;;
 ;; The XXX-event function must return an error triple including the generated
 ;; event (usually an encapsulate or progn).
@@ -36,19 +36,10 @@
 
 (include-book "kestrel/utilities/defmacrodoc" :dir :system) ; for xdoc-for-macro-general-form
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
+(include-book "kestrel/utilities/add-prefix" :dir :system)
 (include-book "transformation-table2")
 (include-book "generate-print-events")
 (include-book "print-specifiers")
-
-(defun add-prefix (str sym)
-
-; This is based on ACL2 source function add-suffix.
-
-  (declare (xargs :guard (and (symbolp sym)
-                              (stringp str))))
-  (intern-in-package-of-symbol
-   (concatenate 'string str (symbol-name sym))
-   sym))
 
 (defun maybe-wrap-with-revert-world (revert-world form)
   (if revert-world
@@ -103,22 +94,27 @@
        (short (if (eq :auto short)
                   "A transformation in the APT toolkit."
                 short))
+       (macro-args `(&whole whole-form
+                            ,@required-args
+                            &key
+                            ,@keyword-args-and-defaults
+                            (show-only 'nil)
+                            (print ':result) ;;This argument doesn't get evaluated?
+                            ))
        ;; TODO: maybe also a :preamble that comes before the general form.
        ;; TODO: maybe also have it generate xdoc for the programmatic variant, the show macro, etc.
        (xdoc-forms
         (and some-xdoc-arg-given
              (not suppress-xdoc)
-             (list `(defxdoc-for-macro
-                      ,name
-                      ,(append required-args
-                               '(&key)
-                               '((show-only 'nil) (print ':result)) ; keyword args that are always present
-                               keyword-args-and-defaults)
-                      ,parents
-                      ,short
+             (list `(defxdoc-for-macro ,name
+                      :macro-args ,macro-args
+                      :parents ,parents
+                      :short ,short
+                      :arg-descriptions
                       ,(append arg-descriptions
-                               '((show-only "Whether to simply show the result, not create it.")
-                                 (print "How much detail to print.")))
+                               '((show-only "Whether to simply show the result, without actually creating it.")
+                                 (print "How much detail to print, an @(tsee apt::print-specifier).")))
+                      :description
                       ,description)))))
 
     `(progn
@@ -226,13 +222,7 @@
                  state))))
 
        ;; This is the main macro for the transformation called NAME:
-       (defmacroq ,name (&whole whole-form
-                                ,@required-args
-                                &key
-                                ,@keyword-args-and-defaults
-                                (show-only 'nil)
-                                (print ':result) ;;This argument doesn't get evaluated?
-                                )
+       (defmacroq ,name ,macro-args
          (let ((form (cons ',(add-suffix name "-FN")
                            ,(make-cons-nest (append required-args
                                                     (strip-cars keyword-args-and-defaults)
@@ -331,7 +321,7 @@
 
        ,@xdoc-forms)))
 
-;; Expects there to be a function called <name>-event.  It's params should be:
+;; Expects there to be a function called <name>-event.  Its params should be:
 ;; ...required-args...
 ;; ...keyword-args...
 ;; verbose (if :pass-print is true)
@@ -339,7 +329,7 @@
 ;; state
 (defmacro deftransformation (name ; name of the transformation (e.g., expand-lets)
                              required-args ; a list of symbols, usually contains at least FN for the name of the function being transformed
-                             keyword-args-and-defaults ; a list of doublets (keyword arg names and their quoted default values)
+                             keyword-args-and-defaults ; a list of doublets (keyword arg names and their quoted default values), excluding :show-only and :print
                              &key
                              (pass-print 'nil) ;whether to pass the print arg to the -event function (will come after the keyword args)
                              (pass-context 'nil) ;whether to pass the context arg to the -event function (will come just before state)

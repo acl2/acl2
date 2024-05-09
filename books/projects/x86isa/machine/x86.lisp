@@ -97,6 +97,9 @@
   :returns
   (mv flg
 
+      ;; This is in fact a (unsigned-byte-p *prefixes-width*)
+      ;; (i.e. a prefixes-p, see (defbitstruct prefixes ...)),
+      ;; as proved later in this DEFINE form.
       (new-prefixes natp :rule-classes :type-prescription
                     :hyp (forced-and (natp prefixes)
                                      (canonical-address-p start-rip)
@@ -117,6 +120,8 @@
                             acl2::zip-open
                             bitops::unsigned-byte-p-incr)))))
 
+      ;; This is in fact an (unsigned-byte-p 8),
+      ;; as proved later in this DEFINE form.
       (new-rex-byte natp :rule-classes :type-prescription
                     :hyp (forced-and (natp rex-byte)
                                      (natp prefixes)
@@ -193,6 +198,8 @@
   --- <b>all but the last prefix from a single prefix group are ignored</b>.
   The only <b>exception</b> in this case is for <b>Group 1</b> prefixes --- see
   below for details.</p>
+
+  <p>Examples:</p>
 
   <ul>
   <li>@('0x64_88_00')    is @('mov byte ptr fs:[rax], al')</li>
@@ -1136,11 +1143,10 @@
        ;; modr/m? below).
        ((when (and vex-byte0?
                    (or 64-bit-modep
-                       (and (not 64-bit-modep)
-                            (equal (part-select
-                                    les/lds-distinguishing-byte
-                                    :low 6 :high 7)
-                                   #b11)))))
+                       (equal (part-select
+                               les/lds-distinguishing-byte
+                               :low 6 :high 7)
+                              #b11))))
         ;; Handle VEX-encoded instructions separately.
         (b* (((mv flg temp-rip)
               (add-to-*ip proc-mode temp-rip 1 x86))
@@ -1188,11 +1194,10 @@
        ;; modr/m? below).
        ((when (and evex-byte0?
                    (or 64-bit-modep
-                       (and (not 64-bit-modep)
-                            (equal (part-select
-                                    bound-distinguishing-byte
-                                    :low 6 :high 7)
-                                   #b11)))))
+                       (equal (part-select
+                               bound-distinguishing-byte
+                               :low 6 :high 7)
+                              #b11))))
         ;; Handle EVEX-encoded instructions separately.
         (b* (((mv flg temp-rip)
               (add-to-*ip proc-mode temp-rip 1 x86))

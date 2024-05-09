@@ -63,6 +63,16 @@
     (not ctx) ; ctx means an error occurred
     ))
 
+;; Checks whether all of the UNTRANSLATED-TERMS can be translated in world WRLD.
+(defun translatable-term-listp (untranslated-terms wrld)
+  (declare (xargs :mode :program
+                  :guard (and (true-listp untranslated-terms)
+                              (plist-worldp wrld))))
+  (if (endp untranslated-terms)
+      t
+    (and (translatable-termp (first untranslated-terms) wrld)
+         (translatable-term-listp (rest untranslated-terms) wrld))))
+
 ;; Returns the translation of TERM (or throws an error)
 (defun translate-term-allowing-ignored-vars (term ctx wrld)
   (declare (xargs :mode :program

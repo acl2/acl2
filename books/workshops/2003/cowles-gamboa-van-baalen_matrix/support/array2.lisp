@@ -23,6 +23,7 @@
 
 ; Summer and Fall 2002.
 ;  Last modified 19 May 2003
+; Matt K. mod, April 2024: Updated to use (array-maximum-length-bound).
 
 ; This book is based on a similar book about one-dimensional arrays
 ; Written by:  Bishop Brock
@@ -141,7 +142,7 @@ To use at UW:
      (<= (cadr (assoc-keyword
 		:maximum-length
 		(cdr (assoc-eq :header l))))
-	 *maximum-positive-32-bit-integer*)
+	 (array-maximum-length-bound))
      (bounded-integer-alistp2
       l
       (car (cadr (assoc-keyword
@@ -561,7 +562,7 @@ To use at UW:
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
 	(<= (maximum-length name l)
-	    *maximum-positive-32-bit-integer*)
+	    (array-maximum-length-bound))
 	(bounded-integer-alistp2 l
 				 (car (dimensions name l))
 				 (cadr (dimensions name l)))))
@@ -576,7 +577,7 @@ To use at UW:
 	      (cadr (dimensions name l)))
 	   (maximum-length name l))
 	(<= (maximum-length name l)
-	    *maximum-positive-32-bit-integer*)))
+	    (array-maximum-length-bound))))
   :rule-classes :linear)
 
 (deftheory

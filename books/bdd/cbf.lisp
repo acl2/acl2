@@ -27,16 +27,12 @@
 (defmacro rf (file-name &optional name)
   (if name
       `(mv-let (erp val state)
-	       (state-global-let*
-                ((infixp nil))
-                (read-file ,file-name state))
+	       (read-file ,file-name state)
 	       (if erp
 		   (er soft 'rf "File ~p0 does not seem to exist."
 		       ,file-name)
                  (assign ,name val)))
-    `(state-global-let*
-      ((infixp nil))
-      (read-file ,file-name state))))
+    `(read-file ,file-name state)))
 
 (defun trunc-lst (sym lst)
   (cond ((null lst) nil)
@@ -240,18 +236,16 @@
          (be-directory (if cbd
                            (extend-pathname cbd be-directory state)
                          be-directory)))
-    (state-global-let*
-     ((infixp nil))
-     (mv-let (channel state)
-       (open-output-channel (extend-pathname cbd "benchmarks.lisp" state)
-                            :object state)
-       (pprogn
-        (fms "(in-package \"ACL2\")~%" nil channel state nil)
-        (fms "(set-ignore-ok t)~%" nil channel state nil)
-        (fms "(include-book ~p0)~%"
-             (list (cons #\0 "bool-ops"))
-             channel state nil)
-        (mv-let (erp val state)
-          (cbf-list be-directory *benchmark-files* channel state)
-          (pprogn (close-output-channel channel state)
-                  (mv erp val state))))))))
+    (mv-let (channel state)
+      (open-output-channel (extend-pathname cbd "benchmarks.lisp" state)
+                           :object state)
+      (pprogn
+       (fms "(in-package \"ACL2\")~%" nil channel state nil)
+       (fms "(set-ignore-ok t)~%" nil channel state nil)
+       (fms "(include-book ~p0)~%"
+            (list (cons #\0 "bool-ops"))
+            channel state nil)
+       (mv-let (erp val state)
+         (cbf-list be-directory *benchmark-files* channel state)
+         (pprogn (close-output-channel channel state)
+                 (mv erp val state)))))))

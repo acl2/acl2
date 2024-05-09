@@ -29,11 +29,11 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 
 ;drop or move hyps?
 ;expensive?
-(defthm mod-equal-impossible-value
+(defthmd mod-equal-impossible-value
   (implies (and (<= j k) ; unusual
                 (natp i)
                 (natp j))
@@ -99,5 +99,5 @@
                   (if (equal 0 x)
                       0
                     (bvplus size (- (expt 2 size) (expt 2 free)) (bvuminus free x)))))
-  :hints (("Goal" :use (:instance bvuminus-when-smaller)
+  :hints (("Goal" :use bvuminus-when-smaller
            :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) ( bvuminus-when-smaller)))))

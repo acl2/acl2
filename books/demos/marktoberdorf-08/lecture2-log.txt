@@ -20,13 +20,13 @@ ACL2 >>(INCLUDE-BOOK "m1")
 Summary
 Form:  ( INCLUDE-BOOK "m1" ...)
 Rules: NIL
- "m1.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/m1.lisp")
 ACL2 >>(IN-PACKAGE "M1")
  "M1"
 M1 >>'(END OF SETUP)
 (END OF SETUP)
 M1 >>(DEFUN G (N A)
-            (IF (ZP N) A (G (- N 1) (* N A))))
+       (IF (ZP N) A (G (- N 1) (* N A))))
 
 The admission of G is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -39,31 +39,31 @@ Form:  ( DEFUN G ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  G
 M1 >>(DEFCONST *G*
-               '((PUSH 1)
-                 (STORE 1)
-                 (LOAD 0)
-                 (IFLE 10)
-                 (LOAD 0)
-                 (LOAD 1)
-                 (MUL)
-                 (STORE 1)
-                 (LOAD 0)
-                 (PUSH 1)
-                 (SUB)
-                 (STORE 0)
-                 (GOTO -10)
-                 (LOAD 1)
-                 (HALT)))
+       '((PUSH 1)
+         (STORE 1)
+         (LOAD 0)
+         (IFLE 10)
+         (LOAD 0)
+         (LOAD 1)
+         (MUL)
+         (STORE 1)
+         (LOAD 0)
+         (PUSH 1)
+         (SUB)
+         (STORE 0)
+         (GOTO -10)
+         (LOAD 1)
+         (HALT)))
 
 Summary
 Form:  ( DEFCONST *G* ...)
 Rules: NIL
  *G*
 M1 >>(DEFUN G-SCHED-LOOP (N)
-            (IF (ZP N)
-                (REPEAT 0 4)
-                (APPEND (REPEAT 0 11)
-                        (G-SCHED-LOOP (- N 1)))))
+       (IF (ZP N)
+           (REPEAT 0 4)
+         (APPEND (REPEAT 0 11)
+                 (G-SCHED-LOOP (- N 1)))))
 
 The admission of G-SCHED-LOOP is trivial, using the relation O< (which
 is known to be well-founded on the domain recognized by O-P) and the
@@ -78,7 +78,7 @@ Rules: ((:TYPE-PRESCRIPTION BINARY-APPEND)
         (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND))
  G-SCHED-LOOP
 M1 >>(DEFUN G-SCHED (N)
-            (APPEND (REPEAT 0 2) (G-SCHED-LOOP N)))
+       (APPEND (REPEAT 0 2) (G-SCHED-LOOP N)))
 
 Since G-SCHED is non-recursive, its admission is trivial.  We observe
 that the type of G-SCHED is described by the theorem 
@@ -91,8 +91,8 @@ Rules: ((:TYPE-PRESCRIPTION G-SCHED-LOOP)
         (:TYPE-PRESCRIPTION ACL2::TRUE-LISTP-APPEND))
  G-SCHED
 M1 >>(DEFUN RUN-G (N)
-            (TOP (STACK (RUN (G-SCHED N)
-                             (MAKE-STATE 0 (LIST N 0) NIL *G*)))))
+       (TOP (STACK (RUN (G-SCHED N)
+                        (MAKE-STATE 0 (LIST N 0) NIL *G*)))))
 
 Since RUN-G is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of RUN-G.
@@ -114,7 +114,7 @@ M1 >>(INCLUDE-BOOK "compile")
 Summary
 Form:  ( INCLUDE-BOOK "compile" ...)
 Rules: NIL
- "compile.lisp"
+ (:SYSTEM . "demos/marktoberdorf-08/compile.lisp")
 M1 >>(COMPILE '(N)
               '((A = 1)
                 (WHILE (N > 0)

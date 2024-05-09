@@ -47,6 +47,11 @@
 
   (make-event
    `(defprod svtv-data-obj
+      :parents (def-svtv-data-export)
+      :short "A non-stobj representation of a @(see svtv-data) stobj, as produced by @(see def-svtv-data-export)."
+      :long "<p>All fields are just as in the @(see svtv-data) stobj, except
+that the @('moddb') and @('aliases') fields are missing since they are stobjs
+themselves and can be fairly quickly regenerated.</p>"
       ,(svtv-data-obj-fields-from-decls *svtv-data-nonstobj-fields*)
       :layout :list)))
 
@@ -341,10 +346,11 @@
       (make-event
        (b* ((obj (svtv-data-to-obj <stobj>))
             (events
-             `(progn (define <name> ()
+             `(progn (defconst *<name>* ',obj)
+                     (define <name> ()
                        :no-function t
                        :returns (obj svtv-data-obj-p)
-                       ',obj)
+                       *<name>*)
                      (with-output :stack :pop
                        (progn
                          (defthm flatten-validp-of-<name>
@@ -417,7 +423,10 @@
                   ((flatnorm-res spec) (svtv-normalize-assigns res aliases
                                                                (svtv-data-obj->flatnorm-setup
                                                                 x))))
-               (and (svex-alist-eval-equiv flatnorm.assigns spec.assigns)
+               (and (svex-alist-eval-equiv! flatnorm.assigns spec.assigns)
+                    (subsetp-equal (svex-alist-vars flatnorm.assigns)
+                                   (svex-alist-vars spec.assigns))
+                    ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
                     (equal flatnorm.delays spec.delays)
                     (equal flatnorm.constraints spec.constraints))))
     :Hints(("Goal" :in-theory (enable svtv-data$ap
@@ -456,16 +465,16 @@
                   (svtv-data-obj->cycle-fsm-validp x)
                   (svtv-data-obj->flatten-validp x))
              (b* (((svtv-data-obj x))
-                  ((base-fsm x.phase-fsm))
+                  ((fsm x.phase-fsm))
                   (statevars (svex-alist-keys x.phase-fsm.nextstate))
                   (prev-st (svex-env-extract statevars env))
-                  ((base-fsm x.cycle-fsm)))
+                  ((fsm x.cycle-fsm)))
                (and (svex-envs-equivalent
                      (svex-alist-eval x.cycle-fsm.values env)
                      (svtv-cycle-eval-outs env prev-st x.cycle-phases x.phase-fsm))
                     (svex-envs-equivalent
                      (svex-alist-eval x.cycle-fsm.nextstate env)
-                     (svtv-cycle-eval-nextst env prev-st x.cycle-phases x.phase-fsm))
+                     (svtv-cycle-eval-nextst env prev-st x.cycle-phases x.phase-fsm.nextstate))
                     (equal (svex-alist-keys x.cycle-fsm.nextstate) statevars))))
     :hints (("goal" :in-theory (e/d (svtv-data$ap)
                                     (svtv-data$c-cycle-fsm-okp-necc))
@@ -478,17 +487,18 @@
                   (svtv-data-obj->pipeline-validp x)
                   (svtv-data-obj->flatten-validp x))
              (b* (((svtv-data-obj x))
-                  (rename-fsm (make-svtv-fsm :base-fsm x.cycle-fsm
+                  (rename-fsm (make-svtv-fsm :fsm x.cycle-fsm
                                              :namemap x.namemap))
                   ((pipeline-setup x.pipeline-setup))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval x.pipeline-setup.inputs env)
-                        (svex-alistlist-eval x.pipeline-setup.overrides env)
                         (svex-alist-eval x.pipeline-setup.initst env)
                         rename-fsm
-                        (svtv-probealist-outvars x.pipeline-setup.probes))))
+                        (svtv-probealist-outvars x.pipeline-setup.probes)
+                        :override-vals (svex-alistlist-eval x.pipeline-setup.override-vals env)
+                        :override-tests (svex-alistlist-eval x.pipeline-setup.override-tests env))))
                (and (equal (svex-alist-keys x.pipeline-setup.initst)
-                           (svex-alist-keys (base-fsm->nextstate x.cycle-fsm)))
+                           (svex-alist-keys (fsm->nextstate x.cycle-fsm)))
                     (svex-envs-equivalent
                      (svex-alist-eval x.pipeline env)
                      (svtv-probealist-extract x.pipeline-setup.probes run)))))
@@ -497,6 +507,22 @@
              :use ((:instance svtv-data$c-pipeline-okp-necc
                     (svtv-data$c (svtv-data-obj-to-stobj-logic x))
                     (results (svtv-data-obj->pipeline x)))))))
+
+  (defthm svtv-data-obj-ok-implies-svarlist-addr-p-of-flatnorm-assigns-keys
+    (implies (and (svtv-data$ap (svtv-data-obj-to-stobj-logic obj))
+                  (svtv-data-obj->flatnorm-validp obj)
+                  (svtv-data-obj->flatten-validp obj))
+             (svarlist-addr-p (svex-alist-keys (flatnorm-res->assigns (svtv-data-obj->flatnorm obj)))))
+    :hints (("Goal" :use ((:instance svtv-data$ap-implies-flatnorm-okp
+                           (x (svtv-data-obj-to-stobj-logic obj)) )
+                          (:instance svtv-data$ap-implies-flatten-okp
+                           (x (svtv-data-obj-to-stobj-logic obj)) ))
+             :in-theory (enable svtv-data$c-flatnorm-okp
+                                svtv-data$c-flatten-okp
+                                svtv-normalize-assigns
+                                svtv-design-flatten))))
+
+  
   )
 
 (defconst *svtv-data-import-template*

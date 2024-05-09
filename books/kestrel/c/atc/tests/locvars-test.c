@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "locvars.h"
+
 void f_test(int x, int y) {
   int r = f(x, y);
   printf("f(%d, %d) = %d\n", x, y, r);

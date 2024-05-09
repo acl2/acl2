@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -61,7 +61,7 @@
       which refers to them in some places.")
 
     (xdoc::p
-     "The file @('[books]/kestrel/apt/tailrec-examples.lisp')
+     "The community book @('kestrel/apt/tailrec-examples.lisp')
       contains some commented examples of use of @('tailrec')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,11 +143,11 @@
         If @('old') has form 2,
         let @('test<x1,...,xn>') be:
         either (i) the negation of @('ntest<x1,...,xn>'),
-        i.e. @('(not ntest<x1,...,xn>)')
+        i.e. @('(not ntest<x1,...,xn>)'),
         if @('ntest<x1,...,xn>') is not a call of @(tsee not);
         or (ii) the argument of @('ntest<x1,...,xn>')
         if @('ntest<x1,...,xn>') is a call of @(tsee not),
-        i.e. @('ntest<x1,...,xn>') is @('(not test<x1,...,xn>)').
+        i.e. if @('ntest<x1,...,xn>') is @('(not test<x1,...,xn>)').
         Thus, in the rest of this documentation,
         we can assume that @('old') has form 1 without loss of generality.
         In the " *tailrec-design-notes* ",
@@ -246,7 +246,7 @@
         for the combination operator.
         In the " *tailrec-design-notes* ",
         this variant is described in the section
-        `Associative-Only Variant,Extended outside the Domain'."))
+        `Associative-Only Variant, Extended outside the Domain'."))
      (xdoc::p
       "The associative variants of the transformation is more widely applicable,
        but the monoidal variants yield simpler new functions.
@@ -255,11 +255,12 @@
        so these two variants apply to different cases.
        Similarly,
        the applicability conditions for the alternative associative variant
-       are neither stronger nor weaker than the ones for the associative variant,
+       are neither stronger nor weaker
+       than the ones for the associative variant,
        so these two variants apply to different cases.")
      (xdoc::p
       "While the " *tailrec-design-notes*
-      "show how to handle variants in which, besides associativity,
+      " show how to handle variants in which, besides associativity,
        only either left or right identity holds,
        the current implementation does not handle them independently.
        They are either both absent
@@ -706,7 +707,7 @@
       "This is generated only if the @(':wrapper') input is @('t').")
      (xdoc::p
       "In the " *tailrec-design-notes* ",
-       @('new') is denoted by @($\\tilde{f}$)."))
+       @('wrapper') is denoted by @($\\tilde{f}$)."))
 
     (xdoc::desc
      "@('old-to-new')"

@@ -41,7 +41,6 @@
 (include-book "../rp-rewriter")
 (local (include-book "local-lemmas"))
 (local (include-book "aux-function-lemmas"))
-(include-book "proof-functions")
 (local (include-book "proof-function-lemmas"))
 (local (include-book "rp-equal-lemmas"))
 (local (include-book "apply-bindings-lemmas"))
@@ -53,38 +52,7 @@
 
 
 
-(progn
-
-  #|(defthm attach-sc-from-context-returns-context-syntaxp
-    (implies (context-syntaxp context)
-             (context-syntaxp (attach-sc-from-context context term)))
-    :hints (("Goal"
-             :do-not-induct t
-             :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))||#
-
-  
-
-  #|(defthm eval-of-context-from-attach-sc-from-context-returns
-    (implies (eval-and-all context a)
-             (eval-and-all (mv-nth 0 (attach-sc-from-context context term)) a))
-    :hints (("Goal"
-             :do-not-induct t
-             :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))||#
-
-  
-
-  #|(defthm VALID-SC-SUBTERMS-from-attach-sc-from-context-returns
-    (implies (VALID-SC-SUBTERMS context a)
-             (VALID-SC-SUBTERMS (mv-nth 0 (attach-sc-from-context context term)) a))
-    :hints (("Goal"
-             :do-not-induct t
-             :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ()))))||#
-
-  
-
+#|(progn
   (defthm eval-of-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a))
              (equal (rp-evlt (attach-sc-from-context context term) a)
@@ -121,17 +89,16 @@
   (defthm valid-sc-term-from-attach-sc-from-context-returns
     (implies (and (eval-and-all context a)
                   (rp-termp term)
-;(not (include-fnc-subterms context 'list))
-
                   (valid-sc term a))
              (valid-sc (attach-sc-from-context context term) a))
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
              :in-theory (e/d (attach-sc-from-context is-if
-                                                     RP-EVLt-OF-FNCALL-ARGS
-                                                     RP-EVL-OF-FNCALL-ARGS
-                                                     is-rp) ()))))
+                                                     rp-evlt-of-fncall-args
+                                                     rp-evl-of-fncall-args
+                                                     is-rp)
+                             ()))))
 
   (defthm rp-termp-attach-sc-from-context
     (implies (and (rp-termp term)
@@ -140,10 +107,10 @@
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context context term)
-             :in-theory (e/d (attach-sc-from-context) ())))))
+             :in-theory (e/d (attach-sc-from-context) ())))))|#
 
 
-(progn
+#|(progn
   (defthm attach-sc-from-context-lst-returns-context-syntaxp
     (implies (and (context-syntaxp context)
                   (context-syntaxp terms))
@@ -180,18 +147,18 @@
     :hints (("Goal"
              :do-not-induct t
              :induct (attach-sc-from-context-lst context terms)
-             :in-theory (e/d (attach-sc-from-context-lst) ())))))
+             :in-theory (e/d (attach-sc-from-context-lst) ())))))|#
 
 
 
-(defthm attach-sc-from-context-lst-returns-rp-term-listp
+#|(defthm attach-sc-from-context-lst-returns-rp-term-listp
   (implies (and (rp-term-listp context)
                 (rp-term-listp terms))
            (rp-term-listp (attach-sc-from-context-lst context terms)))
   :hints (("Goal"
            :do-not-induct t
            :induct (attach-sc-from-context-lst context terms)
-           :in-theory (e/d (attach-sc-from-context-lst) ()))))
+           :in-theory (e/d (attach-sc-from-context-lst) ()))))|#
 
 
 (local
@@ -255,11 +222,23 @@
 
 
 
-(local
+#|(local
  (defthmd nonnil-p-lemma
    (implies (nonnil-p term)
             (and (rp-evlt term a)
-                 (rp-evl term a)))))
+                 (rp-evl term a)))))|#
+
+(local
+ (defthmd nonnil-p-lemma
+   (iff (nonnil-p term)
+        (and (hide (nonnil-p term))
+             (rp-evlt term a)
+             (rp-evl term a)))
+   :hints (("Goal"
+            :expand (hide (nonnil-p term))
+            :in-theory (e/d () ())))))
+
+
 
 (local
  (defthm rp-evlt-of-CASESPLIT-FROM-CONTEXT-TRIG
@@ -304,28 +283,6 @@
                     (rp-termp term))
                (and (rp-termp (caddr term))
                     (rp-termp (cadr term))))))
-
-   #|(local
-   (defthm lemma2
-   (implies (and (consp term)
-   (consp (cdr term))
-   (consp (cddr term))
-   (not (equal (car term) 'quote))
-   (all-falist-consistent term))
-   (and (all-falist-consistent (caddr term))
-   (all-falist-consistent (cadr term))))))||#
-
-   #|(local
-   (defthm lemma3
-   (implies (and (consp term)
-   (consp (cdr term))
-   (consp (cddr term))
-   (not (equal (car term) 'quote))
-   (rp-syntaxp term))
-   (and (rp-syntaxp (caddr term))
-   (rp-syntaxp (cadr term))))
-   :hints (("Goal"
-   :in-theory (e/d (is-rp) ())))))||#
 
    (local
     (defthm lemma4
@@ -397,7 +354,7 @@
                                (:TYPE-PRESCRIPTION RP-EXTRACT-CONTEXT)
                                (:TYPE-PRESCRIPTION IS-RP$INLINE)
                                (:TYPE-PRESCRIPTION RP-TERM-LISTP)
-                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                               (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                                (:TYPE-PRESCRIPTION FALIST-CONSISTENT)
                                (:TYPE-PRESCRIPTION EX-FROM-SYNP)
                                (:TYPE-PRESCRIPTION VALID-RULES-ALISTP)
@@ -419,6 +376,17 @@
      :hints (("Goal"
               :expand (VALID-SC-SUBTERMS nil a)
               :in-theory (e/d () ()))))
+
+   (defthm rp-trans-of-CASESPLIT-FROM-CONTEXT-TRIG
+     (and (equal (rp-evlt `(CASESPLIT-FROM-CONTEXT-TRIG ,x) a)
+                 (rp-evlt x a))
+          (equal (rp-trans `(CASESPLIT-FROM-CONTEXT-TRIG ,x))
+                 `(CASESPLIT-FROM-CONTEXT-TRIG ,(rp-trans x))))
+     :hints (("Goal"
+              :in-theory (e/d (rp-trans
+                               RP-TRANS-LST
+                               IS-FALIST) ()))))
+          
     
 
    (defthm preprocess-then-rp-rw-is-correct-lemma
@@ -427,7 +395,8 @@
                    (not (include-fnc term 'rp))
                    (alistp a)
                    (rp-evl-meta-extract-global-facts :state state)
-                   (rp-formula-checks state)
+                   (rp-meta-fnc-formula-checks state)
+                   (rp-proc-formula-checks state)
                    (valid-rp-statep rp-state)
                    (rp-statep rp-state)
                    )
@@ -581,11 +550,13 @@
   (defthmd preprocess-then-rp-rw-is-correct
     (implies (and (rp-termp term)
                   (not (Include-fnc term 'rp))
+                  (not (Include-fnc term 'equals))
                   (valid-rp-statep rp-state)
                   (rp-statep rp-state)
                   (alistp a)
                   (rp-evl-meta-extract-global-facts :state state)
-                  (rp-formula-checks state)
+                  (rp-meta-fnc-formula-checks state)
+                   (rp-proc-formula-checks state)
                   )
              (iff (rp-evl (mv-nth 0 (preprocess-then-rp-rw term rp-state state)) a)
                   (rp-evl term a)))
@@ -663,8 +634,8 @@
                             (:DEFINITION RP-STATEP)
                             valid-rulesp
                             (:DEFINITION QUOTEP)
-                            (:DEFINITION INCLUDE-FNC)
-                            (:DEFINITION INCLUDE-FNC-SUBTERMS)
+                            (:DEFINITION INCLUDE-FNC-fn)
+                            (:DEFINITION INCLUDE-FNC-SUBTERMS-fn)
                             (:DEFINITION IS-FALIST)
                             (:DEFINITION MV-NTH)
                             (:DEFINITION RP-TRANS-LST)

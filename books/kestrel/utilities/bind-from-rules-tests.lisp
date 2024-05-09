@@ -24,7 +24,7 @@
      (integerp (foo x))))
 
   ;;Note the call of "bind-from-rules".
-  ;;Not that this rule doesn't mention foo or the size 16, so it's fairly general.
+  ;;Note that this rule doesn't mention foo or the size 16, so it's fairly general.
   (defthm integerp-when-unsigned-byte-p2
     (implies (bind-from-rules (unsigned-byte-p (:free freesize) x))
              (integerp x)))
@@ -68,7 +68,7 @@
   ;;   (integerp (foo2 (bar x))))
 
   ;;Note the call of "bind-from-rules".
-  ;;Not that this rule doesn't mention foo2 or bar.
+  ;;Note that this rule doesn't mention foo2 or bar.
   (defthm integerp-when-unsigned-byte-p2
     (implies (bind-from-rules (unsigned-byte-p (:free freesize) x))
              (integerp x)))

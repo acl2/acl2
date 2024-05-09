@@ -18,7 +18,7 @@
 (fty::deftagsum optional-integer-type-suffix
   :parents (integer-literals)
   :short "Fixtype of optional integer type suffixes
-          for integer literals [JLS:3.10.1]."
+          for integer literals [JLS14:3.10.1]."
   :long
   (xdoc::topstring
    (xdoc::p

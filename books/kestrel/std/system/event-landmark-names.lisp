@@ -27,7 +27,7 @@
   (xdoc::topstring-p
    "Each event landmark introduces zero or more names into the @(see world).
     See @('pseudo-event-landmarkp')
-    in @('[books]/system/pseudo-event-landmarkp.lisp'),
+    in @('system/pseudo-event-landmarkp.lisp'),
     and the description of event tuples in the ACL2 source code.")
   (let ((namex (access-event-tuple-namex event)))
     (cond ((equal namex 0) nil) ; no names

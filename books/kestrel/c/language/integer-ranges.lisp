@@ -1,11 +1,12 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Supporting author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -18,12 +19,18 @@
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about NTH:
 (local (include-book "std/lists/nth" :dir :system))
 
 ;; to have FTY::DEFLIST generate theorems about UPDATE-NTH:
 (local (include-book "std/lists/update-nth" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,7 +74,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-range ((type typep))
-  :guard (type-integer-nonbool-nonchar-p type)
+  :guard (type-nonchar-integerp type)
   :returns (event pseudo-event-formp)
   :short "Event to generate fixtypes, functions, and theorems
           for ranges of integer types."
@@ -171,12 +178,14 @@
                   ,<type>-max
                   ,@(and signedp `(,<type>-min))))))
 
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define def-integer-range-loop ((types type-listp))
-  :guard (type-integer-nonbool-nonchar-listp types)
+  :guard (type-nonchar-integer-listp types)
   :returns (events pseudo-event-form-listp)
   :short "Events to generate fixtypes, functions, and theorems
           for ranges of integer types."
@@ -188,12 +197,135 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(progn ,@(def-integer-range-loop *integer-nonbool-nonchar-types*)))
+ `(encapsulate ()
+    (local (in-theory (enable nfix
+                              not
+                              integer-range-p
+                              signed-byte-p
+                              unsigned-byte-p)))
+    ,@(def-integer-range-loop *nonchar-integer-types*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The following theorems hold for all bit width values consistent with [C].
+; They are therefore enabled.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule uchar-max-<=-ushort-max
+  :parents (uchar-max ushort-max)
+  :short "General relation between
+          @('unsigned char') and @('unsigned short') maxima."
+  (<= (uchar-max) (ushort-max))
+  :rule-classes :linear
+  :enable (uchar-max ushort-max char-bits-vs-short-bits))
+
+(defrule ushort-max-<=-uint-max
+  :parents (ushort-max uint-max)
+  :short "General relation between
+          @('unsigned short') and @('unsigned int') maxima."
+  (<= (ushort-max) (uint-max))
+  :rule-classes :linear
+  :enable (ushort-max uint-max short-bits-vs-int-bits))
+
+(defrule uint-max-<=-ulong-max
+  :parents (uint-max ulong-max)
+  :short "General relation between
+          @('unsigned int') and @('unsigned long') maxima."
+  (<= (uint-max) (ulong-max))
+  :rule-classes :linear
+  :enable (uint-max ulong-max int-bits-vs-long-bits))
+
+(defrule ulong-max-<=-ullong-max
+  :parents (ulong-max ullong-max)
+  :short "General relation between
+          @('unsigned long') and @('unsigned long long') maxima."
+  (<= (ulong-max) (ullong-max))
+  :rule-classes :linear
+  :enable (ulong-max ullong-max long-bits-vs-llong-bits))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule schar-max-<=-sshort-max
+  :parents (schar-max sshort-max)
+  :short "General relation between
+          @('signed char') and @('signed short') maxima."
+  (<= (schar-max) (sshort-max))
+  :rule-classes :linear
+  :enable (schar-max sshort-max char-bits-vs-short-bits))
+
+(defrule sshort-max-<=-sint-max
+  :parents (sshort-max sint-max)
+  :short "General relation between
+          @('signed short') and @('signed int') maxima."
+  (<= (sshort-max) (sint-max))
+  :rule-classes :linear
+  :enable (sshort-max sint-max short-bits-vs-int-bits))
+
+(defrule sint-max-<=-slong-max
+  :parents (sint-max slong-max)
+  :short "General relation between
+          @('signed int') and @('signed long') maxima."
+  (<= (sint-max) (slong-max))
+  :rule-classes :linear
+  :enable (sint-max slong-max int-bits-vs-long-bits))
+
+(defrule slong-max-<=-sllong-max
+  :parents (slong-max sllong-max)
+  :short "General relation between
+          @('signed long') and @('signed long long') maxima."
+  (<= (slong-max) (sllong-max))
+  :rule-classes :linear
+  :enable (slong-max sllong-max long-bits-vs-llong-bits))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule sshort-min-<=-schar-min
+  :parents (sshort-min schar-min)
+  :short "General relation between
+          @('signed short') and @('signed char') minima."
+  (<= (sshort-min) (schar-min))
+  :rule-classes :linear
+  :enable (sshort-min schar-min char-bits-vs-short-bits))
+
+(defrule sint-min-<=-sshort-min
+  :parents (sint-min sshort-min)
+  :short "General relation between
+          @('signed int') and @('signed short') minima."
+  (<= (sint-min) (sshort-min))
+  :rule-classes :linear
+  :enable (sint-min sshort-min short-bits-vs-int-bits))
+
+(defrule slong-min-<=-sint-min
+  :parents (slong-min sint-min)
+  :short "General relation between
+          @('signed long') and @('signed int') minima."
+  (<= (slong-min) (sint-min))
+  :rule-classes :linear
+  :enable (slong-min sint-min int-bits-vs-long-bits))
+
+(defrule sllong-min-<=-slong-min
+  :parents (sllong-min slong-min)
+  :short "General relation between
+          @('signed long long') and @('signed long') minima."
+  (<= (sllong-min) (slong-min))
+  :rule-classes :linear
+  :enable (sllong-min slong-min long-bits-vs-llong-bits))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The theorems generated by the following code are stronger than the ones above,
+; but they hold for some choices of bit width values consistent with [C].
+; The code to generate the rules is the same for all choices,
+; but the exact resulting rules depend on some choices.
+; The rules are disabled, so it is clear when they are used,
+; i.e. when there are dependencies on the choice of values.
+; They are collected in the theory 'bit-width-value-choices.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (make-event
- `(defrule uchar-max-vs-ushort-max
+ `(defruled uchar-max-vs-ushort-max
     :parents (uchar-max ushort-max)
     :short "Relation between
             @('unsigned char') and @('unsigned short') maxima."
@@ -209,10 +341,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (char-bits)) (n (short-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule ushort-max-vs-uint-max
+ `(defruled ushort-max-vs-uint-max
     :parents (ushort-max uint-max)
     :short "Relation between
             @('unsigned short') and @('unsigned int') maxima."
@@ -228,10 +358,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (short-bits)) (n (int-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule uint-max-vs-ulong-max
+ `(defruled uint-max-vs-ulong-max
     :parents (uint-max ulong-max)
     :short "Relation between
             @('unsigned int') and @('unsigned long') maxima."
@@ -247,10 +375,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (int-bits)) (n (long-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule ulong-max-vs-ullong-max
+ `(defruled ulong-max-vs-ullong-max
     :parents (ulong-max ullong-max)
     :short "Relation between
             @('unsigned long') and @('unsigned long long') maxima."
@@ -266,10 +392,10 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(defrule schar-min-vs-sshort-min
+ `(defruled schar-min-vs-sshort-min
     :parents (schar-min sshort-min)
     :short "Relation between
             @('signed char') and @('signed short') minima."
@@ -285,10 +411,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (char-bits)) (n (short-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule sshort-min-vs-sint-min
+ `(defruled sshort-min-vs-sint-min
     :parents (sshort-min sint-min)
     :short "Relation between
             @('signed short') and @('signed int') minima."
@@ -304,10 +428,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (short-bits)) (n (int-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule sint-min-vs-slong-min
+ `(defruled sint-min-vs-slong-min
     :parents (sint-min slong-min)
     :short "Relation between
             @('signed int') and @('signed long') minima."
@@ -323,10 +445,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (int-bits)) (n (long-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule slong-min-vs-sllong-min
+ `(defruled slong-min-vs-sllong-min
     :parents (slong-min sllong-min)
     :short "Relation between
             @('signed long') and @('signed long long') minima."
@@ -342,10 +462,10 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(defrule schar-max-vs-sshort-max
+ `(defruled schar-max-vs-sshort-max
     :parents (schar-max sshort-max)
     :short "Relation between
             @('signed char') and @('signed short') maxima."
@@ -361,10 +481,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (char-bits)) (n (short-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule sshort-max-vs-sint-max
+ `(defruled sshort-max-vs-sint-max
     :parents (sshort-max sint-max)
     :short "Relation between
             @('signed short') and @('signed int') maxima."
@@ -380,10 +498,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (short-bits)) (n (int-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule sint-max-vs-slong-max
+ `(defruled sint-max-vs-slong-max
     :parents (sint-max slong-max)
     :short "Relation between
             @('signed int') and @('signed long') maxima."
@@ -399,10 +515,8 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (int-bits)) (n (long-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule slong-max-vs-sllong-max
+ `(defruled slong-max-vs-sllong-max
     :parents (slong-max sllong-max)
     :short "Relation between
             @('signed long') and @('signed long long') maxima."
@@ -418,10 +532,10 @@
                 acl2::expt-is-increasing-for-base->-1
                 (m (long-bits)) (n (llong-bits)) (x 2))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-event
- `(defrule uchar-max-vs-sint-max
+ `(defruled uchar-max-vs-sint-max
     :parents (uchar-max sint-max)
     :short "Relation between
             @('unsigned char') and @('signed int') maxima."
@@ -434,10 +548,8 @@
              char-bits-vs-short-bits
              short-bits-vs-int-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule ushort-max-vs-sint-max
+ `(defruled ushort-max-vs-sint-max
     :parents (ushort-max sint-max)
     :short "Relation between
             @('unsigned short') and @('signed int') maxima."
@@ -449,10 +561,8 @@
              sint-max
              short-bits-vs-int-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule uchar-max-vs-slong-max
+ `(defruled uchar-max-vs-slong-max
     :parents (uchar-max slong-max)
     :short "Relation between
             @('unsigned char') and @('signed int') maxima."
@@ -466,10 +576,8 @@
              short-bits-vs-int-bits
              int-bits-vs-long-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule ushort-max-vs-slong-max
+ `(defruled ushort-max-vs-slong-max
     :parents (ushort-max slong-max)
     :short "Relation between
             @('unsigned char') and @('signed int') maxima."
@@ -482,10 +590,8 @@
              short-bits-vs-int-bits
              int-bits-vs-long-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule uint-max-vs-slong-max
+ `(defruled uint-max-vs-slong-max
     :parents (uint-max slong-max)
     :short "Relation between
             @('unsigned int') and @('signed long') maxima."
@@ -497,10 +603,8 @@
              slong-max
              int-bits-vs-long-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule uchar-max-vs-sllong-max
+ `(defruled uchar-max-vs-sllong-max
     :parents (uchar-max sllong-max)
     :short "Relation between
             @('unsigned int') and @('signed long long') maxima."
@@ -515,10 +619,8 @@
              int-bits-vs-long-bits
              long-bits-vs-llong-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule ushort-max-vs-sllong-max
+ `(defruled ushort-max-vs-sllong-max
     :parents (ushort-max sllong-max)
     :short "Relation between
             @('unsigned int') and @('signed long long') maxima."
@@ -532,10 +634,8 @@
              int-bits-vs-long-bits
              long-bits-vs-llong-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule uint-max-vs-sllong-max
+ `(defruled uint-max-vs-sllong-max
     :parents (uint-max sllong-max)
     :short "Relation between
             @('unsigned int') and @('signed long long') maxima."
@@ -548,10 +648,8 @@
              int-bits-vs-long-bits
              long-bits-vs-llong-bits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (make-event
- `(defrule ulong-max-vs-sllong-max
+ `(defruled ulong-max-vs-sllong-max
     :parents (ulong-max sllong-max)
     :short "Relation between
             @('unsigned long') and @('signed long long') maxima."
@@ -562,3 +660,140 @@
     :enable (ulong-max
              sllong-max
              long-bits-vs-llong-bits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftheory-static bit-width-value-choices
+  '(uchar-max-vs-ushort-max
+    ushort-max-vs-uint-max
+    uint-max-vs-ulong-max
+    ulong-max-vs-ullong-max
+    schar-min-vs-sshort-min
+    sshort-min-vs-sint-min
+    sint-min-vs-slong-min
+    slong-min-vs-sllong-min
+    schar-max-vs-sshort-max
+    sshort-max-vs-sint-max
+    sint-max-vs-slong-max
+    slong-max-vs-sllong-max
+    uchar-max-vs-sint-max
+    ushort-max-vs-sint-max
+    uchar-max-vs-slong-max
+    ushort-max-vs-slong-max
+    uint-max-vs-slong-max
+    uchar-max-vs-sllong-max
+    ushort-max-vs-sllong-max
+    uint-max-vs-sllong-max
+    ulong-max-vs-sllong-max))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-min ((type typep))
+  :guard (type-nonchar-integerp type)
+  :returns (min integerp)
+  :short "Minimum mathematical integer value of an integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we exclude the plain @('char') type, via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (cond ((type-case type :schar) (schar-min))
+        ((type-case type :uchar) 0)
+        ((type-case type :sshort) (sshort-min))
+        ((type-case type :ushort) 0)
+        ((type-case type :sint) (sint-min))
+        ((type-case type :uint) 0)
+        ((type-case type :slong) (slong-min))
+        ((type-case type :ulong) 0)
+        ((type-case type :sllong) (sllong-min))
+        ((type-case type :ullong) 0)
+        (t (prog2$ (impossible) 0)))
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-max ((type typep))
+  :guard (type-nonchar-integerp type)
+  :returns (min integerp)
+  :short "Maximum mathematical integer value of an integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we exclude the plain @('char') type, via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (cond ((type-case type :schar) (schar-max))
+        ((type-case type :uchar) (uchar-max))
+        ((type-case type :sshort) (sshort-max))
+        ((type-case type :ushort) (ushort-max))
+        ((type-case type :sint) (sint-max))
+        ((type-case type :uint) (uint-max))
+        ((type-case type :slong) (slong-max))
+        ((type-case type :ulong) (ulong-max))
+        ((type-case type :sllong) (sllong-max))
+        ((type-case type :ullong) (ullong-max))
+        (t (prog2$ (impossible) 0)))
+  :guard-hints (("Goal" :in-theory (enable type-nonchar-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-type-rangep ((mathint integerp) (type typep))
+  :guard (type-nonchar-integerp type)
+  :returns (yes/no booleanp)
+  :short "Check if a mathematical integer is in the range of an integer type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Fot now we exclude the plain @('char') type, via the guard.
+     However, we prefer to keep the name of this function more general,
+     in anticipation for extending it to those two types."))
+  (and (<= (integer-type-min type) (ifix mathint))
+       (<= (ifix mathint) (integer-type-max type)))
+  :hooks (:fix)
+  ///
+
+  (defruled integer-type-rangep-to-signed-byte-p
+    (implies (and (type-signed-integerp type)
+                  (integerp int))
+             (equal (integer-type-rangep int type)
+                    (signed-byte-p (integer-type-bits type) int)))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max
+             type-signed-integerp
+             integer-type-bits
+             schar-min
+             schar-max
+             sshort-min
+             sshort-max
+             sint-min
+             sint-max
+             slong-min
+             slong-max
+             sllong-min
+             sllong-max
+             ifix
+             signed-byte-p
+             integer-range-p))
+
+  (defruled integer-type-rangep-to-unsigned-byte-p
+    (implies (and (type-unsigned-integerp type)
+                  (integerp int))
+             (equal (integer-type-rangep int type)
+                    (unsigned-byte-p (integer-type-bits type) int)))
+    :enable (integer-type-rangep
+             integer-type-min
+             integer-type-max
+             type-unsigned-integerp
+             integer-type-bits
+             uchar-max
+             ushort-max
+             uint-max
+             ulong-max
+             ullong-max
+             ifix
+             unsigned-byte-p
+             integer-range-p)))

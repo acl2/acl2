@@ -114,6 +114,14 @@
     USELESS-RUNES
     WATERFALL
 
+; These are documented functions with system-attachments that are perhaps best
+; not to export from the "ACL2" package, since they are rather low-level.
+
+    ASSUME-TRUE-FALSE-AGGRESSIVE-P
+    HEAVY-LINEAR-P
+    REMOVE-TRIVIAL-EQUIVALENCES-ENABLED-P
+    REWRITE-IF-AVOID-SWAP
+
 ; Some of the following might be added to *acl2-exports*, but perhaps not; they
 ; come from defpointers to system-utilities.
 
@@ -202,6 +210,13 @@
     VARIABLEP
 
 ; Symbols below should probably be added to *acl2-exports*.
+
+    GET-DWP
+    SET-DWP
+    SET-DWP!
+    STATE-P+
+    TRANS*
+    TRANS*-
 
   ))
 

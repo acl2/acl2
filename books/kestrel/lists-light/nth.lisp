@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -148,3 +148,24 @@
 
 (defthm not-<-of-nth-of-0-and-car
   (not (< (nth 0 x) (car x))))
+
+(defthm nth-of-plus-of-cons-when-constant
+  (implies (and (syntaxp (quotep k))
+                (posp k)
+                (natp n))
+           (equal (nth (+ k n) (cons a rst))
+                  (nth (+ (+ -1 k) n) rst)))
+  :hints (("Goal" :in-theory (e/d (nth) (nth-of-cdr)))))
+
+(defthm <=-of-acl2-count-of-nth-linear
+  (<= (acl2-count (nth n l))
+      (acl2-count l))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable (:I nth)))))
+
+(defthm <-of-acl2-count-of-nth-linear
+  (implies (consp l)
+           (< (acl2-count (nth n l))
+              (acl2-count l)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable (:I nth)))))

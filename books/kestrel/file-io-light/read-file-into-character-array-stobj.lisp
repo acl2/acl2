@@ -1,6 +1,6 @@
 ; A lightweight function to read a file into a stobj array of characters
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,8 @@
 ;; (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "file-length-dollar"))
 (local (include-book "open-input-channel"))
-(local (include-book "kestrel/utilities/channels" :dir :system))
-(local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "close-input-channel"))
+(local (include-book "channels"))
 (local (include-book "read-char-dollar"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 
@@ -71,26 +71,34 @@
                                                       state)))))))
 
 (defthm state-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
-  (implies (and (symbolp channel)
-                ;; (open-input-channel-p channel :character state)
+  (implies (and ;; (open-input-channel-p channel :character state)
                 (state-p1 state))
            (state-p1 (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
   :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj-aux
                                      open-input-channel-p
                                      open-input-channel-p1))))
 
+(defthm state-p-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
+  (implies (and ;; (open-input-channel-p channel :character state)
+                (state-p state))
+           (state-p (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
+  :hints (("Goal" :in-theory (enable state-p))))
+
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
-  (implies (and (symbolp channel)
-                (open-input-channel-p1 channel typ state)
-                (state-p1 state))
-           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
+  (implies (and (open-input-channel-p1 channel typ state)
+                (state-p1 state)
+                )
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-file-into-character-array-stobj-aux
+                                                         channel ; gen to channel2?
+                                                         next-index character-array-stobj state))))
   :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj-aux))))
 
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-file-into-character-array-stobj-aux
-  (implies (and (symbolp channel)
-                (open-input-channel-any-p1 channel state)
+  (implies (and (open-input-channel-any-p1 channel state)
                 (state-p1 state))
-           (open-input-channel-any-p1 channel (mv-nth 1 (read-file-into-character-array-stobj-aux channel next-index character-array-stobj state))))
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-file-into-character-array-stobj-aux
+                                                         channel ; gen to channel2?
+                                                         next-index character-array-stobj state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
 
 ;; Returns (mv erp character-array-stobj state) where either ERP is non-nil (meaning an error
@@ -115,3 +123,15 @@
                 (mv nil ; no error
                     character-array-stobj
                     state)))))))))
+
+(defthm state-p1-of-mv-nth-2-of-read-file-into-character-array-stobj
+  (implies (and (stringp filename)
+                (state-p1 state))
+           (state-p1 (mv-nth 2 (read-file-into-character-array-stobj filename character-array-stobj state))))
+  :hints (("Goal" :in-theory (enable read-file-into-character-array-stobj))))
+
+(defthm state-p-of-mv-nth-2-of-read-file-into-character-array-stobj
+  (implies (and (stringp filename)
+                (state-p state))
+           (state-p (mv-nth 2 (read-file-into-character-array-stobj filename character-array-stobj state))))
+  :hints (("Goal" :in-theory (enable state-p))))

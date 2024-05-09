@@ -166,13 +166,15 @@
 
 (define binary-file-load-fn ((filename stringp)
                              exld::elf
-                             exld::mach-o x86 state
+                             exld::mach-o
+                             x86
+                             state
                              &key
                              ((elf booleanp) 't)
                              ((mach-o booleanp) 'nil))
   :parents (program-execution)
   :short "Function to read in an ELF or Mach-O binary and load text
-  and data sections into the x86 ISA model's memory"
+  and data sections into the x86 ISA model's memory."
   :long "<p>The following macro makes it convenient to call this
   function to load a program:</p>
 <code> (binary-file-load \"fib.o\" :elf t) ;; or :mach-o t</code>"
@@ -210,6 +212,12 @@
      (mv exld::elf exld::mach-o x86 state)))))
 
 (defmacro binary-file-load (filename &key (elf 't) (mach-o 'nil))
-  `(binary-file-load-fn ,filename exld::elf exld::mach-o x86 state :elf ,elf :mach-o ,mach-o))
+  `(binary-file-load-fn ,filename
+                        exld::elf
+                        exld::mach-o
+                        x86
+                        state
+                        :elf ,elf
+                        :mach-o ,mach-o))
 
 ;; ----------------------------------------------------------------------

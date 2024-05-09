@@ -32,6 +32,8 @@
 
 (include-book "arith-base")
 (include-book "syntax-bind")
+(include-book "std/alists/alist-defuns" :dir :system)
+
 
 (defxdoc fgl-syntactic-checker-binders
   :parents (fgl-rewrite-rules)
@@ -63,7 +65,7 @@ suffixed with @('!') and simply wraps the function invocation in @('(binder
   (and x ans t)
   ///
   (defthm check-true-implies-true
-    (implies (check-true ans x)
+     (implies (check-true ans x)
              x)
     :rule-classes :forward-chaining)
 
@@ -154,6 +156,36 @@ suffixed with @('!') and simply wraps the function invocation in @('(binder
   (defmacro check-unsigned-byte-p! (&rest args)
     `(binder (check-unsigned-byte-p . ,args))))
 
+(define check-int-sign (ans x)
+  :short "FGL binder that checks whether x is syntactically known to be either
+positive or negative when fixed to an integer; returns 0 or -1 (the tail of the integer) if it can be
+determined and NIL otherwise."
+  :long "<p>See @(see fgl-syntactic-checker-binders) and see @(see binder) for details.</p>"
+  (and ans
+       (if (< (ifix x) 0) -1 0))
+  ///
+  (defthm check-int-sign-implies-sign
+    (implies (acl2::rewriting-negative-literal `(check-int-sign ,ans ,x))
+             (iff (check-int-sign ans x)
+                  (and (or (and (< (ifix x) 0) (equal (check-int-sign ans x) -1))
+                           (and (<= 0 (ifix x)) (equal (check-int-sign ans x) 0)))
+                       (hide (check-int-sign ans x)))))
+    :hints(("Goal" :expand ((:free (x) (hide x))))))
+
+
+  (defthm check-int-sign-equals-val
+    (implies (and (syntaxp (and (quotep val)
+                                (or (acl2::rewriting-negative-literal-fn `(equal (check-int-sign ,ans ,x) ,val) mfc state)
+                                    (acl2::rewriting-negative-literal-fn `(equal ,val (check-int-sign ,ans ,x)) mfc state))))
+                  val)
+             (iff (equal (check-int-sign ans x) val)
+                  (and (or (and (equal val -1) (< (ifix x) 0))
+                           (and (equal val 0) (<= 0 (ifix x))))
+                       (hide (equal (check-int-sign ans x) val)))))
+    :hints(("Goal" :expand ((:free (x) (hide x))))))
+  
+  (defmacro check-int-sign! (&rest args)
+    `(binder (check-int-sign . ,args))))
 
 (define check-non-integerp (ans x)
   :short "FGL binder that checks whether X is syntactically a non-integer, i.e. known not to be an integer."
@@ -268,3 +300,18 @@ its symbolic bits.</p>"
 
   (defmacro check-equal! (&rest args)
     `(binder (check-equal . ,args))))
+
+
+(define symbolic-t () t)
+(define symbolic-nil () nil)
+
+
+
+(define alist-const-pairs (ans x)
+  :short "FGL binder that gets the constant-valued pairs from an alist."
+  (and (acl2::sub-alistp ans x) ans)
+  ///
+  (defthm sub-alistp-of-alist-const-pairs
+    (acl2::sub-alistp (alist-const-pairs ans x) x)
+    :hints(("Goal" :in-theory (enable acl2::sub-alistp
+                                      acl2::alists-agree)))))

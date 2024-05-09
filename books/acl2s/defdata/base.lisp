@@ -41,7 +41,7 @@
 (include-book "tools/rulesets" :dir :system)
 
 (include-book "var-book" :ttags :all)
-(include-book "ordinals/lexicographic-book" :dir :system)
+;(include-book "ordinals/lexicographic-book" :dir :system)
 
 ;; (make-event ;TODO make sure to get this working
 ;;  (er-progn
@@ -446,7 +446,13 @@ Same as neg-ratio
                       non-pos-ratiop)
 |#
 
-(defdata ratio (oneof pos-ratio neg-ratio)) 
+(defdata ratio (oneof pos-ratio neg-ratio))
+
+(defthm ratiop-compound-recognizer
+  (equal (ratiop x)
+         (and (rationalp x)
+              (not (integerp x))))
+  :rule-classes :compound-recognizer)
 
 (register-custom-type neg-rational
                       t
@@ -656,12 +662,12 @@ No longer needed.
 
 (defun nth-character-uniform-builtin (m seed)
     (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
+     (declare (type (unsigned-byte 63) seed))
      (declare (xargs :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
+                                 (unsigned-byte-p 63 seed))))
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
-             (mv (nth-character-builtin n) (the (unsigned-byte 31) seed))))
+             (mv (nth-character-builtin n) (the (unsigned-byte 63) seed))))
    
 (defdata::register-type character :domain-size 62 :enumerator nth-character-builtin :predicate characterp :enum/acc nth-character-uniform-builtin)
 
@@ -728,12 +734,12 @@ No longer needed.
 
 (defun nth-z-uniform-builtin (m seed)
     (declare (ignorable m))
-     (declare (type (unsigned-byte 31) seed))
+     (declare (type (unsigned-byte 63) seed))
      (declare (xargs :guard (and (natp m)
-                                 (unsigned-byte-p 31 seed))))
+                                 (unsigned-byte-p 63 seed))))
      (mv-let (n seed)
              (defdata::random-natural-seed seed)
-             (mv (nth-z-builtin n) (the (unsigned-byte 31) seed))))
+             (mv (nth-z-builtin n) (the (unsigned-byte 63) seed))))
 (defdata::register-type z :domain-size t :enumerator nth-z-builtin :predicate zp :enum/acc nth-z-uniform-builtin)
 
 ;Subtype relations betweem the above
@@ -826,10 +832,12 @@ No longer needed.
                    (acl2-count x))
                 (< (acl2-count (car x))
                    (acl2-count x)))))
+
 (defthm termination-tree-enum-dec
   (implies (< (acl2-count x1) (acl2-count x2))
            (and (< (acl2-count (car x1)) (acl2-count x2))
                 (< (acl2-count (cdr x1)) (acl2-count x2)))))
+
 (defthm terminination-tree-enum-nth
   (<= (acl2-count (nth i x))
       (acl2-count x))
@@ -936,8 +944,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-proper-cons-uniform-builtin (m seed.)
   (declare (xargs :mode :program))
-  (declare (ignorable m) (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed.))))
+  (declare (ignorable m) (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed.))))
 
   (b* (((mv n seed.) (defdata::random-natural-seed seed.))
        ((mv choice n)
@@ -978,8 +986,6 @@ The corresponding rules do not seem to help, at all.
                :enumerator nth-proper-cons-builtin
                :enum/acc nth-proper-cons-uniform-builtin
                :predicate proper-consp)
-
-
 
 (defdata nat-list (listof nat))
 (defdata non-empty-nat-list (cons nat nat-list))
@@ -1134,8 +1140,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-all-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
@@ -1198,8 +1204,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-quote-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
   (b* (((mv val seed)
         (nth-all-uniform-builtin m seed)))
     (mv `(quote ,val) seed)))
@@ -1290,10 +1296,10 @@ The corresponding rules do not seem to help, at all.
                        (nth-tl-builtin x))))))))
 
 (defun nth-tl/acc-builtin (i1 seed.)
-  (declare (type (unsigned-byte 31) seed.))
+  (declare (type (unsigned-byte 63) seed.))
   (declare (xargs :mode :program
                   :guard (and (natp i1)
-                              (unsigned-byte-p 31 seed.))))
+                              (unsigned-byte-p 63 seed.))))
   (b* (((mv _choice i1) (switch 2 i1)))
     (case _choice
       (0 (mv 'nil seed.))
@@ -1339,8 +1345,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-true-list-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
@@ -1460,8 +1466,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-all-but-zero-nil-t-uniform-builtin (m seed.)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed.))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed.))))
+  (declare (type (unsigned-byte 63) seed.))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed.))))
   (b* (((mv ans seed.) (nth-all-uniform-builtin m seed.)))
     (if (or (booleanp ans)
             (equal ans 0))
@@ -1475,13 +1481,30 @@ The corresponding rules do not seem to help, at all.
                :enumerator nth-all-but-zero-nil-t-builtin
                :predicate all-but-zero-nil-tp)
 
-            
+(defun all-but-nilp (x)
+  (declare (xargs :guard t))
+  (not (equal x 'nil)))
+
+#|
 (defun nth-wf-key-builtin (n) ;;since nth-all-but-zero-nil-t has strings of length less than 8, it cannot include the ill-formed-key
   (declare (xargs :guard (natp n)))
   (declare (xargs :mode :program))
   (nth-all-but-zero-nil-t n))
 
+(defun wf-keyp (x)
+  (declare (xargs :guard t))
+  (all-but-nilp x))
+
 (register-custom-type wf-key t nth-wf-key-builtin wf-keyp)
+|#
+
+(register-data-constructor
+ (acl2::recordp mset)
+ ((allp caar) (allp cdar) (acl2::recordp cdr))
+ :hints (("Goal" :in-theory
+          (enable acl2::recordp acl2::no-nil-val-alistp
+                  acl2::ordered-unique-key-alistp)))
+ :proper nil)
 
 ;; Same problem as in sets. A nil is also a good-map!
 ;; 3 April 2014
@@ -1491,20 +1514,6 @@ The corresponding rules do not seem to help, at all.
 ;;        (good-map x)))
 
 
-(defun all-but-nilp (x)
-  (declare (xargs :guard t))
-  (not (equal x 'nil)))
-
-; TODO: this is a major hiccup of our map and record implementation, disallowing nil explicitly!!
-;; (register-data-constructor (non-empty-good-map mset)
-;;                            ((wf-keyp caar) (all-but-nilp cdar) (good-map cdr))
-;;                            :proper nil)
-
-
-(register-data-constructor (good-map mset)
-                           ((wf-keyp caar) (allp cdar) (good-map cdr))
-                           :hints (("Goal" :in-theory (enable good-map)))
-                           :proper nil)
 
 (defun nth-all-but-nil-builtin (n)
   (declare (xargs :mode :program))
@@ -1568,8 +1577,8 @@ The corresponding rules do not seem to help, at all.
 
 (defun nth-improper-cons-uniform-builtin (m seed)
   (declare (xargs :mode :program))
-  (declare (type (unsigned-byte 31) seed))
-  (declare (xargs :guard (and (natp m) (unsigned-byte-p 31 seed))))
+  (declare (type (unsigned-byte 63) seed))
+  (declare (xargs :guard (and (natp m) (unsigned-byte-p 63 seed))))
 
   (b* (((mv n seed) (defdata::random-natural-seed seed))
        ((mv choice ?rest)
@@ -1805,4 +1814,5 @@ The corresponding rules do not seem to help, at all.
 (defthm eqlable-keyword-listp
   (implies (keyword-listp keywords)
            (eqlable-listp keywords)))
+
 

@@ -1432,7 +1432,7 @@
   (defret eval-of-<fn>
     (equal (neteval-ordering-eval new-ord network env)
            (svex-env-reduce vars (neteval-ordering-eval x network env)))
-    :hints(("Goal" :in-theory (enable svex-env-reduce-redef neteval-ordering-eval))))
+    :hints(("Goal" :in-theory (enable svex-env-reduce-redef neteval-ordering-eval neteval-ordering-fix))))
 
   (defret compile-of-<fn>
     (svex-alist-eval-equiv (neteval-ordering-compile new-ord network)
@@ -1463,7 +1463,7 @@
   (defret eval-of-<fn>
     (equal (neteval-ordering-eval new-ord network env)
            (svex-env-extract vars (append (neteval-ordering-eval x network env) env)))
-    :hints(("Goal" :in-theory (enable svex-env-extract neteval-ordering-eval)
+    :hints(("Goal" :in-theory (enable svex-env-extract neteval-ordering-eval neteval-ordering-fix)
             :expand ((:free (signal offset)
                       (neteval-sigordering-eval '(:remainder (:null)) signal offset network env))
                      (:free (signal)
@@ -1982,3 +1982,101 @@
 
 
 
+
+
+
+
+(defines neteval-ordering-xcompile
+  :flag-local nil
+  (define neteval-ordering-xcompile ((x neteval-ordering-p)
+                                    (network svex-alist-p))
+    :verify-guards nil
+    :measure (neteval-ordering-count x)
+    :returns (compose svex-alist-p)
+    ;; For each pair in the neteval-ordering, pair the signal to its
+    ;; composition according to its sigordering.
+    (b* ((x (neteval-ordering-fix x))
+         ((when (atom x))
+          nil)
+         ((cons signal ordering) (car x)))
+      (cons (cons signal
+                  (neteval-sigordering-xcompile ordering signal 0 network))
+            (neteval-ordering-xcompile (cdr x) network))))
+
+  (define neteval-sigordering-xcompile ((x neteval-sigordering-p)
+                                       (signal svar-p)
+                                       (offset natp)
+                                       (network svex-alist-p))
+    :measure (neteval-sigordering-count x)
+    :returns (compose svex-p)
+    ;; Concatenate together the compositions specified by the segments of the sigordering.
+    (neteval-sigordering-case x
+      :segment (svex-concat x.width
+                            (svex-rsh offset (neteval-ordering-or-null-xcompile x.ord signal network))
+                            (neteval-sigordering-xcompile x.rest signal (+ x.width (lnfix offset)) network))
+      :remainder (svex-rsh offset (neteval-ordering-or-null-xcompile x.ord signal network))))
+
+  (define neteval-ordering-or-null-xcompile ((x neteval-ordering-or-null-p)
+                                            (signal svar-p)
+                                            (network svex-alist-p))
+    :measure (neteval-ordering-or-null-count x)
+    :returns (compose svex-p)
+    ;; Produces either the signal itself or a composition of the signal's
+    ;; binding in the network with the given ordering.
+    (neteval-ordering-or-null-case x
+      :null (if (svex-lookup signal network) (svex-x) (svex-var signal))
+      :ordering (svex-compose
+                 (svex-compose-lookup signal network)
+                 (append (neteval-ordering-xcompile x.ord network)
+                         (svarlist-x-subst (svex-alist-keys network))))))
+  ///
+  
+  (std::defret-mutual eval-of-<fn>
+    (defret eval-of-<fn>
+      ;; (implies (not (intersectp-equal (alist-keys (svex-env-fix env))
+      ;;                                 (svex-alist-keys network)))
+      (equal (svex-alist-eval compose env)
+             (neteval-ordering-eval x network (svex-env-removekeys (svex-alist-keys network) env)))
+      :fn neteval-ordering-xcompile
+      :hints('(:in-theory (enable neteval-ordering-eval
+                                  svex-alist-eval)
+               :expand (<call>
+                        (:free (env) (neteval-ordering-eval x network env))
+                        (:free (var env) (svex-eval (svex-var var) env))))))
+    (defret eval-of-<fn>
+      ;; (implies (and (not (intersectp-equal (alist-keys (svex-env-fix env))
+      ;;                                      (svex-alist-keys network)))
+      ;;               (svex-lookup signal network))
+               (equal (svex-eval compose env)
+                      (neteval-sigordering-eval
+                       x signal offset
+                       network
+                       (svex-env-removekeys (svex-alist-keys network) env)))
+      :fn neteval-sigordering-xcompile
+      :hints('(:in-theory (enable svex-alist-eval svex-apply)
+               :expand (<call>
+                        (:free (signal offset env)
+                         (neteval-sigordering-eval x signal offset network env))))))
+    (defret eval-of-<fn>
+      ;; (implies (and (not (intersectp-equal (alist-keys (svex-env-fix env))
+      ;;                                      (svex-alist-keys network)))
+      ;;               (svex-lookup signal network))
+               (equal (svex-eval compose env)
+                      (neteval-ordering-or-null-eval
+                       x signal
+                       network
+                       (svex-env-removekeys (svex-alist-keys network) env)))
+      :fn neteval-ordering-or-null-xcompile
+      :hints('(:in-theory (enable svex-alist-eval svex-apply)
+               :expand (<call>
+                        (:free (signal offset env)
+                         (neteval-ordering-or-null-eval
+                          x signal network env))
+                        (:free (var env) (svex-eval (svex-var var) env)))))))
+
+  (defret svex-alist-eval-equiv-of-<fn>
+    (svex-alist-eval-equiv (neteval-ordering-xcompile ordering network)
+                           (svex-alist-compose
+                            (neteval-ordering-compile ordering network)
+                            (svarlist-x-subst (svex-alist-keys network))))
+    :hints(("Goal" :in-theory (enable svex-alist-eval-equiv-in-terms-of-envs-equivalent)))))

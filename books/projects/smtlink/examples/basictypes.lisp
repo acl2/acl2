@@ -8,6 +8,9 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/sv/tutorial/support" :dir :system)
 
+; Matt K. mod: Avoid ACL2(p) failure ("Exit code from ACL2 is 0")
+(set-waterfall-parallelism nil)
+
 ;; BOZO: All basic FTY type definitions in the examples directory should
 ;; eventually be moved to this file.
 

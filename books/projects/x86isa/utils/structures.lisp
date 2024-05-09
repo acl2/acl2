@@ -43,6 +43,7 @@
 
 (include-book "utilities")
 (include-book "basic-structs")
+
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (std::make-define-config
@@ -282,6 +283,20 @@
        (vex3-byte2->pp (vex-prefixes->byte2 vex-prefixes)))
       (otherwise -1)))
 
+  (define vex->r ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
+    :short "Get the @('R') field of @('vex-prefixes'); cognizant of the two- or
+    three-byte VEX prefixes form"
+    :guard (vex-prefixes-byte0-p vex-prefixes)
+    :returns (r (unsigned-byte-p 1 r)
+                :hyp (vex-prefixes-byte0-p vex-prefixes)
+                :hints (("Goal" :in-theory (e/d (vex-prefixes-byte0-p) ()))))
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex2-byte0*
+       (vex2-byte1->r (vex-prefixes->byte1 vex-prefixes)))
+      (#.*vex3-byte0*
+       (vex3-byte1->r (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise -1)))
+
   (define vex->w ((vex-prefixes :type (unsigned-byte #.*vex-width*)))
     :short "Get the @('W') field of @('vex-prefixes'); cognizant of the two- or
     three-byte VEX prefixes form"
@@ -304,7 +319,39 @@
 
     (defret if-not-vex3-byte0-then-vex-w=0
       (implies (not (equal (vex-prefixes->byte0 vex-prefixes) #.*vex3-byte0*))
-               (equal (vex->w vex-prefixes) 0)))))
+               (equal (vex->w vex-prefixes) 0))))
+
+  ;; Some convenient accessor functions for those fields of the VEX prefixes
+  ;; that only apply to the three-byte forms, but that can be extended to
+  ;; the two-byte forms:
+
+  (define vex->x ((vex-prefixes vex-prefixes-p))
+    :short "Get the @('X') field of @('vex-prefixes') for the three-byte form,
+            or 1 for the two-byte form"
+    :long "<p>Although the two-byte form has no @('X') bit,
+           as far as the VEX encoding of the REX byte is concerned,
+           the two-byte form can be regarded as encoding the value 0
+           for the @('X') bit of the REX byte.
+           Since the REX.X encoding in VEX is negated,
+           this function returns 1 for the two-byte form.</p>
+           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex3-byte0* (vex3-byte1->x (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise 1)))
+
+  (define vex->b ((vex-prefixes vex-prefixes-p))
+    :short "Get the @('B') field of @('vex-prefixes') for the three-byte form,
+            or 1 for the two-byte form"
+    :long "<p>Although the two-byte form has no @('B') bit,
+           as far as the VEX encoding of the REX byte is concerned,
+           the two-byte form can be regarded as encoding the value 0
+           for the @('B') bit of the REX byte.
+           Since the REX.B encoding in VEX is negated,
+           this function returns 1 for the two-byte form.</p>
+           <p>See Intel manual Volume 2 Figure 2-9 of Dec 2023.</p> "
+    (case (vex-prefixes->byte0 vex-prefixes)
+      (#.*vex3-byte0* (vex3-byte1->b (vex-prefixes->byte1 vex-prefixes)))
+      (otherwise 1))))
 
 (defsection evex-prefixes-layout-structures
 

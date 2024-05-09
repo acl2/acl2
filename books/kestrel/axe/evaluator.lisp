@@ -1,7 +1,7 @@
 ; The main (old-style) Axe evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,14 +21,19 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
-(include-book "kestrel/utilities/world" :dir :system) ;for fn-definedp
+(include-book "kestrel/world-light/function-symbolsp" :dir :system)
+(include-book "kestrel/world-light/fn-definedp" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
+(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
-(include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; reduce?
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, map-reverse-list, etc.
 (include-book "kestrel/bv-lists/bytes-to-bits" :dir :system)
@@ -36,7 +41,10 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
-(include-book "kestrel/bv-lists/list-patterns" :dir :system) ;why?
+(include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
+;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
+;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
+(include-book "kestrel/bv-lists/array-patterns" :dir :system) ; for every-nth
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
 (include-book "kestrel/lists-light/group" :dir :system) ;drop?
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
@@ -47,6 +55,7 @@
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
 (include-book "kestrel/maps/maps" :dir :system) ;for key-list
 (include-book "make-evaluator")
@@ -92,17 +101,17 @@
       (reverse-fast acc)
     (equal-lst-exec val (cdr lst) (cons (equal val (car lst)) acc))))
 
-;without the max call this loops when n=0
-(defund take-every-nth-aux (n lst acc)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp acc))))
-   (if (endp lst)
-       (reverse-fast acc) ;BOZO or is the built in reverse faster
-     (take-every-nth-aux n (nthcdr (max 1 (nfix n)) lst) (cons (car lst) acc))))
+;; ;without the max call this loops when n=0
+;; (defund take-every-nth-aux (n lst acc)
+;;   (declare (xargs :guard (and (true-listp lst)
+;;                               (true-listp acc))))
+;;    (if (endp lst)
+;;        (reverse-fast acc) ;BOZO or is the built in reverse faster
+;;      (take-every-nth-aux n (nthcdr (max 1 (nfix n)) lst) (cons (car lst) acc))))
 
-(defund take-every-nth (n lst)
-  (declare (xargs :guard (true-listp lst)))
-  (take-every-nth-aux n lst nil))
+;; (defund take-every-nth (n lst)
+;;   (declare (xargs :guard (true-listp lst)))
+;;   (take-every-nth-aux n lst nil))
 
 (defund bvplus-lst (size val lst)
   (declare (type (integer 0 *) size))
@@ -304,29 +313,29 @@
          (firstn n lst))
   :hints (("Goal" :in-theory (enable firstn-unguarded))))
 
-(defund getbit-is-always-0-unguarded (n items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      t
-      (and (equal 0 (getbit (nfix n) (ifix (car items))))
-           (getbit-is-always-0-unguarded n (cdr items)))))
+;; (defund getbit-is-always-0-unguarded (n items)
+;;   (declare (xargs :guard t))
+;;   (if (atom items)
+;;       t
+;;       (and (equal 0 (getbit (nfix n) (ifix (car items))))
+;;            (getbit-is-always-0-unguarded n (cdr items)))))
 
-(defthm getbit-is-always-0-unguarded-correct
-  (equal (getbit-is-always-0-unguarded n items)
-         (getbit-is-always-0 n items))
-  :hints (("Goal" :in-theory (enable getbit-is-always-0-unguarded getbit-is-always-0))))
+;; (defthm getbit-is-always-0-unguarded-correct
+;;   (equal (getbit-is-always-0-unguarded n items)
+;;          (getbit-is-always-0 n items))
+;;   :hints (("Goal" :in-theory (enable getbit-is-always-0-unguarded getbit-is-always-0))))
 
-(defund getbit-is-always-1-unguarded (n items)
-  (declare (xargs :guard t))
-  (if (atom items)
-      t
-      (and (equal 1 (getbit (nfix n) (ifix (car items))))
-           (getbit-is-always-1-unguarded n (cdr items)))))
+;; (defund getbit-is-always-1-unguarded (n items)
+;;   (declare (xargs :guard t))
+;;   (if (atom items)
+;;       t
+;;       (and (equal 1 (getbit (nfix n) (ifix (car items))))
+;;            (getbit-is-always-1-unguarded n (cdr items)))))
 
-(defthm getbit-is-always-1-unguarded-correct
-  (equal (getbit-is-always-1-unguarded n items)
-         (getbit-is-always-1 n items))
-  :hints (("Goal" :in-theory (enable getbit-is-always-1-unguarded getbit-is-always-1))))
+;; (defthm getbit-is-always-1-unguarded-correct
+;;   (equal (getbit-is-always-1-unguarded n items)
+;;          (getbit-is-always-1 n items))
+;;   :hints (("Goal" :in-theory (enable getbit-is-always-1-unguarded getbit-is-always-1))))
 
 
     ;; TODO: Consider having different evaluators for rewriting and for evaluating test cases when sweeping and merging
@@ -384,7 +393,7 @@
            (bitnot bitnot-unguarded arg1)   ;see bitnot-unguarded-correct
            (logmaskp logmaskp arg1)         ;drop?
            (integer-length integer-length-unguarded arg1) ;see INTEGER-LENGTH-UNGUARDED-CORRECT
-           (ceiling-of-lg ceiling-of-lg arg1)
+           (ceiling-of-lg ceiling-of-lg-unguarded arg1) ; see ceiling-of-lg-unguarded-correct
            (unary-/ unary-/-unguarded arg1) ;see unary-/-unguarded-correct
            (nfix nfix arg1)                 ;unguarded
            (ifix ifix arg1)                 ;unguarded
@@ -403,6 +412,8 @@
            (symbolp symbolp arg1) ;guard of t
            (characterp characterp arg1) ;guard of t
            (complex-rationalp complex-rationalp arg1) ;guard of t
+           (denominator denominator-unguarded arg1)
+           (numerator numerator-unguarded arg1)
            )
          (acons 2
                 '((mv-nth mv-nth-unguarded arg1 arg2)
@@ -427,7 +438,7 @@
                   (binary-+ binary-+-unguarded arg1 arg2) ;see binary-+-unguarded-correct
 
                   (all-items-less-than all-items-less-than arg1 arg2)
-                  (take-every-nth take-every-nth arg1 arg2)
+                  (every-nth every-nth arg1 arg2)
                   (intersection-equal intersection-equal arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
                   (all-equal$ all-equal$ arg1 arg2) ;unguarded
@@ -456,8 +467,8 @@
                   (take take-unguarded arg1 arg2) ;see take-unguarded-correct
                   (firstn firstn-unguarded arg1 arg2) ;see firstn-unguarded-correct
                   (binary-append binary-append-unguarded arg1 arg2) ;see binary-append-unguarded-correct
-                  (getbit-is-always-0 getbit-is-always-0-unguarded arg1 arg2) ;see getbit-is-always-0-unguarded-correct
-                  (getbit-is-always-1 getbit-is-always-1-unguarded arg1 arg2) ;see getbit-is-always-1-unguarded-correct
+                  ;; (getbit-is-always-0 getbit-is-always-0-unguarded arg1 arg2) ;see getbit-is-always-0-unguarded-correct
+                  ;; (getbit-is-always-1 getbit-is-always-1-unguarded arg1 arg2) ;see getbit-is-always-1-unguarded-correct
                   (signed-byte-p signed-byte-p arg1 arg2)     ;unguarded
                   (unsigned-byte-p unsigned-byte-p arg1 arg2) ;unguarded
 
@@ -475,7 +486,7 @@
                   (cons cons arg1 arg2)               ;primitive
                   (bvchop bvchop-unguarded arg1 arg2) ;see bvchop-unguarded-correct
                   (logtail$inline logtail-unguarded arg1 arg2) ;see logtail-unguarded-correct
-                  (logext logext arg1 (ifix arg2))
+                  (logext logext-unguarded arg1 arg2) ;see logext-unguarded-correct
                   (nth nth-unguarded arg1 arg2) ;see nth-unguarded-correct
                   (binary-* binary-*-unguarded arg1 arg2) ;see binary-*-unguarded-correct
                   (bvnot-list bvnot-list-unguarded arg1 arg2) ;see bvnot-list-unguarded-correct
@@ -505,7 +516,7 @@
 
                          ;many of these call bvchop, whose guard should be improved..
                          (bvplus-lst bvplus-lst arg1 arg2 arg3)
-
+                         (bvequal    bvequal-unguarded arg1 arg2 arg3)  ;see   bvequal-unguarded-correct
                          (bvlt      bvlt-unguarded arg1 arg2 arg3)  ;see    bvlt-unguarded-correct
                          (bvle      bvle-unguarded arg1 arg2 arg3)  ;see    bvle-unguarded-correct
                          (bvxor    bvxor-unguarded arg1 arg2 arg3)  ;see   bvxor-unguarded-correct
@@ -526,7 +537,7 @@
                          (sbvlt sbvlt arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
                          (sbvle sbvle arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
-                         (nth2 nth2 arg1 arg2 arg3)
+;;                         (nth2 nth2 arg1 arg2 arg3)
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
@@ -539,11 +550,11 @@
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))
                        (acons 4
                               '((update-subrange update-subrange arg1 arg2 arg3 arg4) ;new
-                                ;(bv-array-write-nest-with-val-at-index bv-array-write-nest-with-val-at-index arg1 arg2 arg3 arg4)
+                                ;(bv-array-write-nest-with-val-at-indexp-axe bv-array-write-nest-with-val-at-indexp-axe arg1 arg2 arg3 arg4)
                                 (update-nth2 update-nth2 arg1 arg2 arg3 arg4)
                                 (bv-array-clear bv-array-clear arg1 arg2 arg3 arg4)
                                 (bvcat bvcat-unguarded arg1 arg2 arg3 arg4)
-                                (bvnth bvnth arg1 arg2 (nfix arg3) arg4)
+                                ;; (bvnth bvnth arg1 arg2 (nfix arg3) arg4)
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
                               (acons 5 '((update-subrange2 update-subrange2 arg1 arg2 arg3 arg4 arg5) ;new
@@ -657,7 +668,8 @@
 ;TODO Would be nice to track the call chain so we can report it in the error message.
 (defund get-immediate-supporting-fns (fn-name throw-errorp wrld)
   (declare (xargs :guard (and (symbolp fn-name)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (function-symbolp fn-name wrld))))
   (if (member-eq fn-name *acl2-primitives*)
       (hard-error 'get-immediate-supporting-fns "Trying to get the body of the ACL2 primitive ~x0.  Consider adding it to the base evaluator.  Or investigate why a function that calls this function (transitively) is suddenly appearing."
                   (acons #\0 fn-name nil))
@@ -665,11 +677,19 @@
         ;; an undefined function has no supporters
         (prog2$ (cw "(Note: Undefined function ~x0 is present in DAG.)~%" fn-name)
                 nil)
-      (let* ((body (fn-body fn-name throw-errorp wrld)))
-        (get-called-fns body)))))
+      (let* ((body (fn-body fn-name throw-errorp wrld))
+             (called-fns (get-called-fns body)))
+        (if (not (function-symbolsp called-fns wrld))
+            (prog2$ (er hard? 'get-immediate-supporting-fns "Unknown function(s) among those returned by get-called-fns: ~x0." called-fns)
+                    nil)
+          called-fns)))))
 
 (defthm symbol-listp-of-get-immediate-supporting-fns
   (symbol-listp (get-immediate-supporting-fns fn-name throw-errorp wrld))
+  :hints (("Goal" :in-theory (enable get-immediate-supporting-fns))))
+
+(defthm function-symbolsp-of-get-immediate-supporting-fns
+  (function-symbolsp (get-immediate-supporting-fns fn-name throw-errorp wrld) wrld)
   :hints (("Goal" :in-theory (enable get-immediate-supporting-fns))))
 
 ;this is a worklist algorithm
@@ -681,6 +701,7 @@
                               (symbol-listp fns)
                               (symbol-listp done-list)
                               (plist-worldp wrld)
+                              (function-symbolsp fns wrld)
                               (symbol-listp acc))))
   (if (zp count)
       (er hard? 'get-all-supporting-fns-aux "limit reached.")
@@ -724,7 +745,8 @@
 ;todo: exclude the evaluator functions themselves?
 (defund get-non-built-in-supporting-fns-list (fn-names wrld)
   (declare (xargs :guard (and (symbol-listp fn-names)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld)
+                              (function-symbolsp fn-names wrld))))
   (get-all-supporting-fns-aux 1000000000
                               fn-names
                               *axe-evaluator-functions* ;(append *acl2-primitives* *axe-evaluator-functions*) ;stops when it hits one of these..
@@ -775,14 +797,6 @@
 ;;                                      )
 ;;            :expand ((hide (dag-val2-no-array dag alist))
 ;;                     (eval-dag2-no-array dag alist)))))
-
-;todo: rename to sound less general (make-alist-for-quoted-vars?)
-(defund make-acons-nest (vars)
-  (declare (xargs :guard (symbol-listp vars)))
-  (if (endp vars)
-      *nil*
-    `(acons ',(car vars) ,(car vars)
-            ,(make-acons-nest (cdr vars)))))
 
 (defthm equal-of-true-list-fix-and-list-of-car
   (equal (equal (true-list-fix l)
@@ -869,12 +883,13 @@
                               (plist-worldp wrld))))
   (if (quotep dag)
       dag
-    (let* ((dag-vars (dag-vars dag))
-           (dag-fns (dag-fns dag))
-           (supporting-fns (get-non-built-in-supporting-fns-list dag-fns wrld))
-           (supporting-interpreted-function-alist (make-interpreted-function-alist supporting-fns wrld))
-           )
-      `(dag-val-with-axe-evaluator ',dag
-                                   ,(make-acons-nest dag-vars)
-                                   ',supporting-interpreted-function-alist
-                                   '0))))
+    (let ((dag-vars (dag-vars dag))
+          (dag-fns (dag-fns dag)))
+      (if (not (function-symbolsp dag-fns wrld))
+          (er hard? 'embed-dag-in-term "Some functions are not in the world: ~X01." dag-fns nil)
+        (let* ((supporting-fns (get-non-built-in-supporting-fns-list dag-fns wrld))
+               (supporting-interpreted-function-alist (make-interpreted-function-alist supporting-fns wrld)))
+          `(dag-val-with-axe-evaluator ',dag
+                                       ,(make-acons-nest dag-vars)
+                                       ',supporting-interpreted-function-alist
+                                       '0))))))

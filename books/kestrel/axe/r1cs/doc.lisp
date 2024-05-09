@@ -1,6 +1,6 @@
 ; Documentation for R1CS verification with Axe
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,8 +55,8 @@ The formalization is based on our ACL2 formalization of prime
  the specification holds over the inputs and outputs, then there exist values
  for the intermediate variables such that the entire R1CS holds).  This requires
  exhibiting suitable expressions for the intermediate variables, but these can
- often be obtained automatically (see @('[books]/kestrel/zcash/gadgets/a-3-3-1-proof.lisp')
- for an example).
+ often be obtained automatically (see community book
+ @('kestrel/zcash/gadgets/a-3-3-1-proof.lisp') for an example).
 
  We always assume that all values are field elements.  If necessary, additional
  assumptions on the input variables (e.g., claims that some of them are single
@@ -136,7 +136,7 @@ core function."))
    (xdoc::p "3. Lift the R1CS into logic.  This is done by calling @('lift-r1cs') (or a specialized variant of it, like @('lift-semaphore-r1cs') or  @('lift-zcash-r1cs').  It is often largely automatic.")
 
    (xdoc::&&
-    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(see verify-r1cs) (or a variant of it, like @(see zksemaphore::verify-semaphore-r1cs) or @(see zcash::verify-zcash-r1cs).  You pass it:")
+    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(see verify-r1cs) (or a variant of it, like @(see zksemaphore::verify-semaphore-r1cs) or @(see zcash::verify-zcash-r1cs)).  You pass it:")
 
     (xdoc::ul-from-string
      "The R1CS

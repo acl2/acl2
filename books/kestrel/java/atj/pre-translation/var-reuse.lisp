@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,8 @@
 (include-book "std/util/defines" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,7 +226,7 @@
      Thus, in this case we return the union of the variables
      recursively computed for the argument terms.")
    (xdoc::p
-    "A call of a lamda expression is translated to
+    "A call of a lambda expression is translated to
      a Java block that assigns expressions to local variables
      that correspond to the formal parameters of the lambda expression,
      and to a Java expression obtained by translating
@@ -568,9 +570,7 @@
 
   :prepwork
 
-  ((local (include-book "std/typed-lists/symbol-listp" :dir :system))
-
-   (define atj-mark-lambda-formals ((formals symbol-listp)
+  ((define atj-mark-lambda-formals ((formals symbol-listp)
                                     (actuals pseudo-term-listp)
                                     (vars-in-scope symbol-listp)
                                     (vars-used-after symbol-listp)
@@ -615,13 +615,7 @@
               (len formals)))))
 
   :verify-guards nil ; done below
-
   ///
-
-  (defrulel true-listp-when-symbol-listp
-    (implies (symbol-listp x)
-             (true-listp x)))
-
   (verify-guards atj-mark-term))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

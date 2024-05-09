@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
 
   (xdoc::p
    "This tutorial is work in progress,
-    but it may be already useful in its current incomplete form.
+    but it should be already useful in its current incomplete form.
     This tutorial's goal is to provide user-level pedagogical information
     on how ATC works and how to use ATC effectively.
     See "
@@ -82,7 +82,7 @@
   (xdoc::p
    "In addition, as a specific motivation for generating C code,
     it should be noted that C is widely used in certain domains,
-    such as embedded systems.
+    such as embedded systems and device drivers.
     Some of these C applications are relatively small in size
     and have strong safety and security requirements,
     making them an attractive target for (ACL2-based) formal methods."))
@@ -99,12 +99,12 @@
   (xdoc::p
    "ATC is related to "
    (xdoc::seetopic "java::atj" "ATJ")
-   ", the Java code generator for ACL2.
+   ", a Java code generator for ACL2.
     Aside from the obvious difference in target languages,
     ATJ and ATC currently differ in their primary goals and emphases.")
 
   (xdoc::p
-   "ATJ was built to recognize, and translate to reasonable Java,
+   "ATJ is built to recognize, and translate to reasonable Java,
     essentially any ACL2 code
     (provided that it has side effects known to ATJ).
     ATJ also provides ways to exert finer-grained control
@@ -117,12 +117,12 @@
     ATJ currently does not generate proofs.")
 
   (xdoc::p
-   "In contrast, ATC is being built to recognize, and translate to C,
+   "In contrast, ATC is built to recognize, and translate to C,
     only certain ACL2 types and operations
     that represent C types and operations
     and that are translated to the corresponding Java constructs.
     ATC does not attempt to translate arbitrary ACL2 to C.
-    From the outset, ATC also generates ACL2 proofs
+    ATC also generates ACL2 proofs
     of the correctness of the generated C code.")
 
   (xdoc::p
@@ -200,8 +200,7 @@
      to the ACL2 code that represents it.
      In other words, it computes the same things as the ACL2 code.
      This is expressed via a "
-    (xdoc::seetopic "atc-dynamic-semantics"
-                    "formal dynamic semantics of C")
+    (xdoc::seetopic "dynamic-semantics" "formal dynamic semantics of C")
     ".")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,7 +237,7 @@
     consists of a sign bit, some value bits, and optionally some padding bits
     [C:6.2.6.2/2].
     The signed representation may be
-    two's complement, one's complement, or sign and magnitude
+    two's complement, ones' complement, or sign and magnitude
     [C:6.2.6.2/2].
     All these choices are implementation-dependent,
     and determine the range of @('int') values,
@@ -338,8 +337,8 @@
 
   (xdoc::p
    "The ACL2 representation of the C @('int') type and operations
-    is in the files @('[books]/kestrel/c/atc/integers.lisp')
-    and @('[books]/kestrel/c/atc/integer-operations.lisp').
+    is in the community books @('kestrel/c/atc/integers.lisp')
+    and @('kestrel/c/atc/integer-operations.lisp').
     These are automatically included when ATC is included,
     but one may want to include those file as part of an APT derivation
     that refines some specification to the ACL2 subset handled by ATC
@@ -434,8 +433,8 @@
     C includes @('int') constants [C:6.4.4.1]
     (more precisely, integer constants, some of which have type @('int')),
     which may be regarded as (a large number of nullary) @('int') operations.
-    Our ACL2 representation in @('[books]/kestrel/c/atc/integers.lisp')
-    provides functions
+    Our ACL2 representation in community book
+    @('kestrel/c/atc/integers.lisp') provides functions
     @(tsee sint-dec-const),
     @(tsee sint-oct-const), and
     @(tsee sint-hex-const)
@@ -571,7 +570,7 @@
     in the sense that they do not represent anything in the C code.
     However the functions @(tsee sint-dec-const), @(tsee add-sint-sint), etc.
     must be the ones in the @('\"C\"') package,
-    from the file @('[books]/kestrel/c/atc/integers.lisp').")
+    from the community book @('kestrel/c/atc/integers.lisp').")
 
   (xdoc::p
    "In the envisioned use of ATC,
@@ -699,14 +698,14 @@
    "                                (c::sintp |y|)"
    "                                (c::sintp |z|)"
    "                                ;; -10 <= x <= 10:"
-   "                                (<= -10 (c::sint->get |x|))"
-   "                                (<= (c::sint->get |x|) 10)"
+   "                                (<= -10 (c::integer-from-sint |x|))"
+   "                                (<= (c::integer-from-sint |x|) 10)"
    "                                ;; -10 <= y <= 10:"
-   "                                (<= -10 (c::sint->get |y|))"
-   "                                (<= (c::sint->get |y|) 10)"
+   "                                (<= -10 (c::integer-from-sint |y|))"
+   "                                (<= (c::integer-from-sint |y|) 10)"
    "                                ;; -10 <= z <= 10:"
-   "                                (<= -10 (c::sint->get |z|))"
-   "                                (<= (c::sint->get |z|) 10))"
+   "                                (<= -10 (c::integer-from-sint |z|))"
+   "                                (<= (c::integer-from-sint |z|) 10))"
    "                    :guard-hints ((\"Goal\""
    "                                   :in-theory"
    "                                   (enable c::sint-integerp-alt-def"
@@ -756,7 +755,7 @@
    "First, we must include ATC.
     To avoid certain trust tag messages,
     the @(tsee include-book) form could be augmented with a @(':ttags') option;
-    see the tests in @('[books]/kestrel/c/atc/tests') for examples.")
+    see the tests in community book @('kestrel/c/atc/tests') for examples.")
 
   (xdoc::p
    "The ATC tool is invoked on one or more ACL2 function symbols,
@@ -779,7 +778,8 @@
     but those are examined elsewhere, as mentioned above.")
 
   (xdoc::p
-   "This example can be found in @('[books]/kestrel/c/atc/tests/f.lisp').")
+   "This example can be found in community book
+    @('kestrel/c/atc/tests/f.lisp').")
 
   (atc-tutorial-section "Compilation and Execution")
 
@@ -809,7 +809,8 @@
     and prints inputs and output.
     The inclusion of @('stdio.h') is needed because of the use of @('printf').")
   (xdoc::p
-   "This file is found in @('[books]/kestrel/c/atc/tests/f-test.c').")
+   "This file is found in community book
+    @('kestrel/c/atc/tests/f-test.c').")
 
   (xdoc::p
    "The two files may be compiled as follows on macOS or Linux:")
@@ -1058,10 +1059,10 @@
   (xdoc::p
    "ATC generates a named constant whose value is
     the AST of the generated C program.
-    More precisely, it is the AST of the generated translation unit,
-    which is a value of the fixtype @(tsee transunit) in "
+    More precisely, it is the AST of the generated C file,
+    which is a value of the fixtype @(tsee file) in "
    (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
-   ". The translation unit is the content of the generated file:
+   ". More precisely, it is the content of the generated file on disk:
     the AST is "
    (xdoc::seetopic "atc-pretty-printer" "pretty-printed")
    " to the @('.c') file.
@@ -1089,10 +1090,10 @@
    "More precisely, ATC generates a theorem of the form")
   (xdoc::codeblock
    "(defthm <constant>-well-formed"
-   "  (equal (check-transunit <constant>) :wellformed))")
+   "  (equal (check-file <constant>) :wellformed))")
   (xdoc::p
    "This asserts that
-    when @(tsee check-transunit) is applied
+    when @(tsee check-fileset) is applied
     to the named constant described above
     (i.e. the abstract syntax of the generated C program),
     the result is the value @(':wellformed').
@@ -1103,7 +1104,7 @@
 
   (xdoc::p
    "Since the program AST is a constant
-    and @(tsee check-transunit) is executable,
+    and @(tsee check-fileset) is executable,
     the theorem is proved easily by execution.")
 
   (xdoc::p
@@ -1119,8 +1120,8 @@
   (xdoc::p
    "ATC generates theorems asserting that
     the generated C program is dynamically correct,
-    according to "
-   (xdoc::seetopic "atc-dynamic-semantics" "ATC's dynamic semantics of C")
+    according to the "
+   (xdoc::seetopic "dynamic-semantics" "C dynamic semantics")
    ".")
 
   (xdoc::p
@@ -1137,7 +1138,7 @@
    "           (equal (exec-fun (ident \"<fn>\")"
    "                            (list <x1> ... <xn>)"
    "                            compst"
-   "                            (init-fun-env <constant>)"
+   "                            (init-fun-env (preprocess <constant>))"
    "                            limit)"
    "                  (<fn> <x1> ... <xn>))))")
   (xdoc::p
@@ -1149,19 +1150,19 @@
   (xdoc::p
    "The variable @('compst') represents the C computation state,
     described in the "
-   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   (xdoc::seetopic "dynamic-semantics" "C dynamic semantics")
    ": the theorem applies to execution in every possible computation state.")
 
   (xdoc::p
-   "The term @('(init-fun-env <constant>)') constructs the "
-   (xdoc::seetopic "atc-function-environments" "C function environment")
+   "The term @('(init-fun-env (preprocess <constant>))') constructs the "
+   (xdoc::seetopic "function-environments" "C function environment")
    " of the generated translation unit.")
 
   (xdoc::p
    "The variable @('limit') and the @('<number>') that provides a lower bound
     are motivated by the fact that the big-step execution functions
     take a limit value, as explained in the "
-   (xdoc::seetopic "atc-dynamic-semantics" "C dynamic semantics")
+   (xdoc::seetopic "dynamic-semantics" "C dynamic semantics")
    ". The number is calculated by ATC as sufficient to execute the function.
     The theorem asserts that, for any limit value at or above that limit,
     execution terminates and yields the same result as @('fn').")
@@ -1220,7 +1221,7 @@
     export these theorems from the @(tsee encapsulate).")
 
   (xdoc::p
-   "See @(tsee atc-proof-support) and @(tsee atc-implementation) for details
+   "See @(tsee atc-implementation) for details
     on the generated theorems and their proofs.")
 
   (atc-tutorial-section "Code Generation after the Events")
@@ -1433,8 +1434,8 @@
    "  (declare (xargs :guard (and (c::sintp |a|)"
    "                              (c::sintp |b|)"
    "                              ;; 0 <= a <= 100:"
-   "                              (<= 0 (c::sint->get |a|))"
-   "                              (<= (c::sint->get |a|) 100))"
+   "                              (<= 0 (c::integer-from-sint |a|))"
+   "                              (<= (c::integer-from-sint |a|) 100))"
    "                  :guard-hints ((\"Goal\""
    "                                 :in-theory"
    "                                 (enable c::assign"
@@ -1489,7 +1490,7 @@
     Since @('nil') is different from the ACL2 model of any C scalar zero,
     and also @('t') is different from the ACL2 model of any C scalar non-zero,
     ACL2 @(tsee if) tests cannot directly represent C @('if') tests.
-    The file @('[books]/kestrel/c/atc/signed-ints.lisp'),
+    The community book @('kestrel/c/atc/signed-ints.lisp'),
     mentioned in @(see atc-tutorial-int-representation),
     provides a function @(tsee boolean-from-sint)
     the converts (the ACL2 representation of) a C @('int')
@@ -1590,13 +1591,13 @@
    "  (declare (xargs :guard (and (c::sintp |x|)"
    "                              (c::sintp |y|)"
    "                              ;; x > 0:"
-   "                              (> (c::sint->get |x|) 0))"
+   "                              (> (c::integer-from-sint |x|) 0))"
    "                  :guard-hints ((\"Goal\""
    "                                 :in-theory"
    "                                 (enable c::sub-sint-sint-okp"
    "                                         c::sint-integerp-alt-def"
    "                                         c::sint-integer-fix"
-   "                                         c::sint->get)))))"
+   "                                         c::integer-from-sint)))))"
    "  (c::sub-sint-sint"
    "   |x|"
    "   (c::condexpr"
@@ -1623,7 +1624,7 @@
    "                                         c::sint-integer-fix"
    "                                         c::gt-sint-sint"
    "                                         c::sub-sint-sint-okp"
-   "                                         c::sint->get)))))"
+   "                                         c::integer-from-sint)))))"
    "  (if (c::boolean-from-sint (c::gt-sint-sint |a| |b|))"
    "      (c::sub-sint-sint |a|"
    "                        (c::condexpr"
@@ -1667,7 +1668,7 @@
 
 (def-atc-tutorial-page conditionals-with-mbt
 
-  "Treatment of ACL2 conditionals with @(tsee mbt) or @(tsee mbt$)"
+  "Treatment of ACL2 conditionals with @(tsee mbt)"
 
   (xdoc::p
    "After describing how ACL2 conditionals
@@ -1679,17 +1680,15 @@
 
   (xdoc::p
    "These are ACL2 conditionals whose tests are
-    calls of @(tsee mbt) or @(tsee mbt$):
+    calls of @(tsee mbt) (or @(tsee mbt$), which expands to @(tsee mbt)):
     only their `then' branches represent (and are translated to) C code;
     tests and `else' branches are ignored.")
 
   (xdoc::p
    "The argument of the built-in macro @(tsee mbt)
     must be provably equal to @('t') for guard verification to succeed.
-    Similarly, the argument of the library macro @(tsee mbt$)
-    must be provably different from @('nil') for guard verification to succeed.
-    In fact, their execution is effectively skipped in guard-verified ACL2 code.
-    In particular, when they appear in an @(tsee if) test,
+    In fact, its execution is effectively skipped in guard-verified ACL2 code.
+    In particular, when it appears in an @(tsee if) test,
     the `then' branch is always executed and the `else' branch is ignored.")
 
   (xdoc::p
@@ -1711,13 +1710,13 @@
   (xdoc::p
    "Given the above, it should be clear why ATC ignores
     (i.e. does not generate any C code for)
-    @(tsee mbt) or @(tsee mbt$) tests of @(tsee if)s
+    @(tsee mbt) tests of @(tsee if)s
     and corresponding `else' branches,
     treating this kind of conditionals
     as if they were just their `then' branches.")
 
   (xdoc::p
-   "Conditionals with @(tsee mbt) or @(tsee mbt$) tests
+   "Conditionals with @(tsee mbt) tests
     are sometimes used in recursive ACL2 functions
     to ensure that termination can be proved.
     Recall that termination proofs ignore guards,
@@ -1727,7 +1726,7 @@
     expressed in the logic).")
 
   (xdoc::p
-   "Another circumstance in which @(tsee mbt) or @(tsee mbt$) may arise
+   "Another circumstance in which @(tsee mbt) may arise
     is via certain APT transformations.
     For instance, the @(tsee apt::restrict) transformation
     generates a new function whose body has the form
@@ -1737,7 +1736,7 @@
     namely by using APT to refine a specification into
     forms that represent C code as recognized by ATC.
     It is therefore quite possible that these APT transformations
-    produce @(tsee if)s with @(tsee mbt) or @(tsee mbt$) tests,
+    produce @(tsee if)s with @(tsee mbt) tests,
     which make their way to ATC.")
 
   (xdoc::p

@@ -1,6 +1,6 @@
 ; A version of mod-expt-fast with a guard of t
 ;
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "arithmetic-3/floor-mod/mod-expt-fast" :dir :system)
-(include-book "kestrel/axe/unguarded-built-ins" :dir :system) ;todo: reduce
+(include-book "unguarded-built-ins")
 
 ;; This can be useful in evaluators, such as the ones used in Axe.
 (defund mod-expt-fast-unguarded (a i n)

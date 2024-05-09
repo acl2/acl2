@@ -181,6 +181,7 @@
          :hints(("Goal" :in-theory (enable svex-env-fix alist-keys)))))
 
 (defsection svex-partial-monotonic
+  :parents (4vec-<<=)
   (defun-sk svex-partial-monotonic (param-keys x)
     (forall setting
             (implies (and (svex-alist-constantp setting)
@@ -193,6 +194,7 @@
 
   (defthm eval-when-svex-partial-monotonic
     (implies (and (svex-partial-monotonic param-keys x)
+                  ;; same as (svex-envs-agree param-keys env1 env2)
                   (equal (svex-env-extract param-keys env1)
                          (svex-env-extract param-keys env2))
                   (svex-env-<<= env1 env2))
@@ -278,6 +280,7 @@
 
 
 (defsection svexlist-partial-monotonic
+  :parents (4vec-<<=)
   (defun-sk svexlist-partial-monotonic (param-keys x)
     (forall setting
             (implies (and (svex-alist-constantp setting)
@@ -441,6 +444,7 @@
     :hints(("Goal" :in-theory (enable svex-compose-alist-const/selfbound-keys-p)))))
 
 (defsection svex-alist-partial-monotonic
+  :parents (4vec-<<=)
   (defun-sk svex-alist-partial-monotonic (param-keys x)
     (forall setting
             (implies (and (svex-alist-constantp setting)
@@ -556,11 +560,6 @@
                     (svex-alist-monotonic-p (append x y)))
            :hints (("goal" :expand ((:with svex-alist-monotonic-in-terms-of-lookup
                                      (svex-alist-monotonic-p (append x y))))))))
-
-  (local (defthm svex-alist-keys-of-svex-alist-extract
-           (equal (svex-alist-keys (svex-alist-extract keys x))
-                  (svarlist-fix keys))
-           :hints(("Goal" :in-theory (enable svex-alist-extract svex-alist-keys)))))
 
   (local (defthm len-of-svex-env-extract
            (equal (len (svex-env-extract keys x))
@@ -693,3 +692,46 @@
                     (param-keys param-keys) (x x-equiv)
                     (setting (svex-alist-partial-monotonic-witness param-keys x))))))))
                                   
+
+
+
+(defthm svex-alist-monotonic-p-of-append
+  (implies (and (svex-alist-monotonic-p a)
+                (svex-alist-monotonic-p b))
+           (svex-alist-monotonic-p (append a b)))
+  :hints (("goal" :expand ((svex-alist-monotonic-p (append a b))))))
+
+
+
+(defthm svex-alist-partial-monotonic-of-append
+  (implies (And (svex-alist-partial-monotonic params a)
+                (svex-alist-partial-monotonic params b))
+           (svex-alist-partial-monotonic params (append a b)))
+  :hints (("goal" :expand ((svex-alist-partial-monotonic params (append a b)))
+           :in-theory (enable svex-alist-partial-monotonic-necc))))
+
+
+(defthm svex-partial-monotonic-when-monotonic
+  (implies (svex-monotonic-p x)
+           (svex-partial-monotonic params x))
+  :hints(("Goal" :in-theory (enable svex-partial-monotonic))))
+
+(defthm svexlist-partial-monotonic-when-monotonic
+  (implies (svexlist-monotonic-p x)
+           (svexlist-partial-monotonic params x))
+  :hints(("Goal" :in-theory (enable svexlist-partial-monotonic))))
+
+(defthm svex-alist-partial-monotonic-when-monotonic
+  (implies (svex-alist-monotonic-p x)
+           (svex-alist-partial-monotonic params x))
+  :hints(("Goal" :in-theory (enable svex-alist-partial-monotonic))))
+
+
+(defthm svex-alist-compose-preserves-partial-monotonic-when-monotonic
+  (implies (and (svex-alist-partial-monotonic params a)
+                (svex-alist-monotonic-p x)
+                (svex-compose-alist-selfbound-keys-p params a))
+           (svex-alist-partial-monotonic params (svex-alist-compose x a)))
+  :hints (("goal" :use ((:instance svex-alist-compose-preserves-svex-alist-partial-monotonic
+                         (params2 params) (params nil)))
+           :expand ((svex-compose-alist-selfbound-keys-p nil a)))))

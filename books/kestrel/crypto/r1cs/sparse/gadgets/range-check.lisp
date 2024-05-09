@@ -35,17 +35,18 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/bit-listp-rules" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
-(in-theory (disable rtl::primep)) ;todo
+(in-theory (disable primep)) ;todo
 
 (in-theory (disable mv-nth)) ;todo
 
-(local (in-theory (enable acl2::natp-of-+-of-1-alt)))
+(local (in-theory (enable acl2::natp-of-+-of-1-alt acl2::slice-becomes-getbit)))
 
 (local
  (defthm symbolp-of-if
@@ -716,7 +717,7 @@
 (defthm bit-listp-of-lookup-eq-lst-of-pivars-for-1s-when-r1cs-constraints-holdp-of-make-range-check-pi-constraints-aux
   (implies (and (r1cs-constraints-holdp (mv-nth 0 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 ;; the constraints already in the accumulator must tell us
                 ;; that the higher-numbered pivars are bits (but note that
                 ;; p_n-1 is handled separately):
@@ -772,7 +773,7 @@
                            (bitp)))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-aux-type-1
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (integerp i)
                 (natp tvar)
                 (symbol-listp avars)
@@ -804,7 +805,7 @@
                            (bitp)))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-aux-type-2
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (integerp i)
                 (natp tvar)
                 (symbol-listp avars)
@@ -868,7 +869,7 @@
                                          (acons (+ -1 n) a_n-1 nil))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-type-1
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
@@ -890,7 +891,7 @@
            :in-theory (enable make-range-check-pi-constraints))))
 
 (defthm mv-nth-1-of-make-range-check-pi-constraints-type-2
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
@@ -907,7 +908,7 @@
 
 (defthm bit-listp-of-lookup-eq-lst-of-pivars-for-1s-when-r1cs-constraints-holdp-of-make-range-check-pi-constraints
   (implies (and (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (r1cs-constraints-holdp (mv-nth 0 (make-range-check-pi-constraints avars pivars c n)) valuation p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
@@ -968,7 +969,7 @@
 ;;                 (valuation-bindsp valuation c)
 ;;                 ;; (bitp (lookup-eq a valuation))
 ;;                 ;; (bitp (lookup-eq b valuation))
-;;                 (rtl::primep p)
+;;                 (primep p)
 ;;                 (< 2 p))
 ;;            (equal (r1cs-constraints-holdp (make-range-check-pi-constraints-aux i
 ;;                                                                avars
@@ -1007,7 +1008,7 @@
                 (force (valuation-bindsp valuation a_i))
                 (force (valuation-bindsp valuation pi_i+1))
                 (force (bitp (lookup-equal pi_i+1 valuation)))
-                (rtl::primep prime))
+                (primep prime))
            (equal (r1cs-constraint-holdsp (make-range-check-a-constraint a_i pi_i+1) valuation prime)
                   (if (equal 1 (lookup-equal pi_i+1 valuation))
                       (equal 0 (lookup-equal a_i valuation))
@@ -1078,7 +1079,7 @@
 ;; All of the avars that correspond to 1s in c are constrained to be boolean-valued.
 (defthm bit-listp-of-lookup-eq-lst-of-avars-for-1s-when-r1cs-constraints-holdp-of-make-range-check-a-constraints
   (implies (and (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 ;; Here we just make the "a" constraints:
                 (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
                 (integerp i)
@@ -1132,7 +1133,7 @@
 (defthm bit-listp-of-lookup-eq-lst-when-r1cs-constraints-holdp-of-make-range-check-a-constraints
   (implies (and (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 ;; this is implied by the pi constraints holding:
                 (acl2::bit-listp (acl2::lookup-eq-lst (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c) valuation))
                 (acl2::bitp (acl2::lookup-eq (nth (+ -1 n) avars) valuation)) ; since some pis may get renamed to this
@@ -1190,7 +1191,7 @@
 (defthm bit-listp-of-lookup-eq-lst-when-r1cs-constraints-holdp-of-make-range-check-a-constraints-instance
   (implies (and (r1cs-constraints-holdp (make-range-check-a-constraints (+ -1 n) avars pivars c pivar-renaming) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 ;; this is implied by the pi constraints holding:
                 (acl2::bit-listp (acl2::lookup-eq-lst (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c) valuation))
                 (acl2::bitp (acl2::lookup-eq (nth (+ -1 n) avars) valuation)) ; since some pis may get renamed to this
@@ -1260,7 +1261,7 @@
 (defthm bit-listp-of-lookup-eq-lst-when-r1cs-constraints-holdp-of-make-range-check-constraints
   (implies (and (r1cs-constraints-holdp (make-range-check-constraints avars pivars c n) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (equal n (len avars))
                 (equal n (len pivars))
                 (symbol-listp avars)
@@ -1311,7 +1312,7 @@
                               (equal n (len avars))
                               (integerp m)
                               ;; (< m n)
-                              (rtl::primep prime)
+                              (primep prime)
                               (r1cs-valuationp valuation prime)
                               (valuation-binds-allp valuation avars))
                   :verify-guards nil ; done below
@@ -1343,7 +1344,7 @@
                               (symbol-listp avars)
                               (symbol-listp pivars)
                               (equal n (len avars))
-                              (rtl::primep prime)
+                              (primep prime)
                               (r1cs-valuationp valuation prime)
                               (valuation-binds-allp valuation avars))))
   (if (endp indices)
@@ -1472,7 +1473,7 @@
                               (posp n)
                               (symbol-listp avars)
                               (equal n (len avars))
-                              (rtl::primep p)
+                              (primep p)
                               (r1cs-valuationp valuation p)
                               (valuation-binds-allp valuation avars))))
   (if (endp pivar-renaming)
@@ -1553,7 +1554,7 @@
 (defthm make-range-check-pi-constraints-aux-correct-1-forward
   (implies (and (r1cs-constraints-holdp (mv-nth 0 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (renaming-correctp pivar-renaming c n avars valuation p)
                 ;; the constraints already in the accumulator must be right (but note that
                 ;; p_n-1 is handled separately):
@@ -1611,7 +1612,7 @@
 (defthm make-range-check-pi-constraints-correct-1-forward
   (implies (and (r1cs-constraints-holdp (mv-nth 0 (make-range-check-pi-constraints avars pivars c n)) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
@@ -1645,10 +1646,24 @@
            :in-theory (e/d (make-range-check-pi-constraints pi INDICES-FOR-0S INDICES-FOR-1S)
                            (MAKE-RANGE-CHECK-PI-CONSTRAINTS-AUX-CORRECT-1-FORWARD)))))
 
+
+(local
+ (defthmd helper3
+   (iff (member-equal (cdr (assoc-equal key alist)) (strip-cdrs alist))
+        (if (assoc-equal key alist)
+            t
+          (member-equal nil (strip-cdrs alist))))
+   :hints (("Goal" :cases ((assoc-equal key alist))))))
+
+(local
+ (defthmd helper4
+   (implies (equal b (cons a c))
+            (member-equal a b))))
+
 (defthm make-range-check-pi-constraints-aux-correct-1-backward
   (implies (and (pivars-correctp (indices-for-1s (+ -2 n) tvar c) valuation avars pivars c n p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (renaming-correctp pivar-renaming c n avars valuation p)
                 ;; the constraints already in the accumulator must be right (but note that
                 ;; p_n-1 is handled separately):
@@ -1703,7 +1718,9 @@
                             <=-of-0-and-lookup-equal
                             indices-for-0s-of-when-low-bit-is-1
                             CONSTRAINTS-IMPLIED-BY-PIVARS-CORRECTP
-                            natp)
+                            natp
+                            helper3
+                            helper4)
                            (bitp
                             indices-for-0s-of-+-of-1 ;looped
                             ;acl2::equal-of-+-when-negative-constant ; why?
@@ -1712,7 +1729,7 @@
 (defthm make-range-check-pi-constraints-correct-1-backward
   (implies (and (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
@@ -1745,7 +1762,7 @@
 ;; Correctness of return value 0 of make-range-check-pi-constraints
 (defthm make-range-check-pi-constraints-correct-1
   (implies (and (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
@@ -1780,7 +1797,7 @@
 (defthm renaming-correctp-when-r1cs-constraints-holdp-of-make-range-check-pi-constraints-aux
   (implies (and (r1cs-constraints-holdp (mv-nth 0 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (renaming-correctp pivar-renaming c n avars valuation p)
                 ;; the constraints already in the accumulator must be right (but note that
                 ;; p_n-1 is handled separately):
@@ -1834,7 +1851,7 @@
 (defthm renaming-correctp-when-r1cs-constraints-holdp-of-make-range-check-pi-constraints
   (implies (and (r1cs-constraints-holdp (mv-nth 0 (make-range-check-pi-constraints avars pivars c n)) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (symbol-listp avars)
                 (symbol-listp pivars)
                 (no-duplicatesp-equal pivars)
@@ -1895,7 +1912,7 @@
            (equal (bvchop i c)
                   (+ -1 (expt 2 i))))
   :hints (("subGoal *1/5" :use (:instance acl2::split-bv
-                                          (y (BVCHOP I C))
+                                          (x (BVCHOP I C))
                                           (n i)
                                           (m (+ -1 i)))
            :in-theory (enable bvcat acl2::logapp))))
@@ -1935,7 +1952,7 @@
 (defthm make-range-check-a-constraints-correct-forward
   (implies (and (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 ;; All of the pivars are correct:
                 (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
                 ;; ;; this is implied by the pi constraints holding:
@@ -2020,7 +2037,7 @@
                 ;(natp c)
                 (valuation-binds-allp valuation avars)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (<= (+ 1 i) (len avars))
                 )
            (iff (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
@@ -2043,7 +2060,7 @@
 (defthm make-range-check-constraints-correct-forward
   (implies (and (r1cs-constraints-holdp (make-range-check-constraints avars pivars c n) valuation p)
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (equal n (len avars))
                 (equal n (len pivars))
                 (symbol-listp avars)
@@ -2085,7 +2102,7 @@
                         (nth (+ 1 i) pivars))
                       valuation))
             (r1cs-valuationp valuation p)
-            (rtl::primep p)
+            (primep p)
             ;; All of the pivars are correct:
             (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
             ;; ;; this is implied by the pi constraints holding:
@@ -2153,7 +2170,7 @@
   (implies (and (<= (acl2::packbv (+ 1 i) 1 (acl2::lookup-eq-lst (acl2::reverse-list (take (+ 1 i) avars)) valuation)) ;chops the avars, but we assume the avars are bits
                     (acl2::bvchop (+ 1 i) c))
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 ;; All of the pivars are correct:
                 (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
                 ;; ;; this is implied by the pi constraints holding:
@@ -2229,7 +2246,7 @@
                 (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
 
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (equal n (len avars))
                 (equal n (len pivars))
                 (symbol-listp avars)
@@ -2267,7 +2284,7 @@
                 (no-duplicatesp-equal pivars)
                 (not (intersection-equal avars pivars))
                 (r1cs-valuationp valuation p)
-                (rtl::primep p)
+                (primep p)
                 (valuation-binds-allp valuation avars)
                 ;; Not all pivars are used in constraints, so we only require some to be bound in the valuation:
                 (valuation-binds-allp valuation (pivars-for-1s pivars (+ -2 n) (index-of-lowest-0 c) c)))

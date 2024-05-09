@@ -1,22 +1,25 @@
-.PHONY: all clean veryclean
+all : install
 
-all: ../bin/rac ../bin/parse
+parse: parser.ll parser.yy parser.h expressions.cpp functions.cpp types.cpp output.cpp main.cpp
+	bison -d -v -o parser.tab.cpp parser.yy
+	flex -o lex.yy.cpp parser.ll
+	g++ -Wall -Wextra -pedantic -std=c++17 -o3 -o parse functions.cpp expressions.cpp statements.cpp parser.tab.cpp lex.yy.cpp types.cpp output.cpp main.cpp
 
-../bin/parse: parser.l parser.y parser.h output.c main.c
-	bison -d -v parser.y
-	flex parser.l
-	g++ -std=c++11 -g -o parse parser.tab.c lex.yy.c output.c main.c
-	install -m 775 parse ${RAC}/bin
-	/bin/rm parse
-
-../bin/rac: rac-skel
+#We should execute this rule every time, since it depends on some environment
+#variables.
+rac:
 	printf "#!/bin/bash\n\nRAC=${RAC}\nACL2=${ACL2}" | cat - rac-skel > rac
+
+install: parse rac
+	install -m 775 parse ${RAC}/bin
 	install -m 775 rac ${RAC}/bin
-	/bin/rm rac
+	rm rac parse
 
 clean:
-	/bin/rm -f rac parser.tab.c parser.tab.h parser.output lex.yy.c parser.c
-	/bin/rm -f -r parse.dSym
+	rm -f rac parser.tab.c parser.tab.h parser.output lex.yy.c parser.c
+	rm -f -r parse.dSym
 
-veryclean: clean
-	/bin/rm -f ../bin/rac ../bin/parse
+veryclean : clean
+	rm -f rac parse
+
+.PHONY : all clean veryclean install rac

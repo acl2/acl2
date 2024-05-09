@@ -1,0 +1,4271 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(INCLUDE-BOOK "projects/apply/top"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "projects/apply/top" ...)
+Rules: NIL
+ (:SYSTEM . "projects/apply/top.lisp")
+ACL2 !>>(DEFUN REV (X)
+          (IF (ENDP X)
+              NIL
+            (APPEND (REV (CDR X)) (LIST (CAR X)))))
+
+The admission of REV is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of REV is described by the
+theorem (TRUE-LISTP (REV X)).  We used primitive type reasoning and
+the :type-prescription rules BINARY-APPEND and TRUE-LISTP-APPEND.
+
+Summary
+Form:  ( DEFUN REV ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION BINARY-APPEND)
+        (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+ REV
+ACL2 !>>(DEFTHM ASSOC-OF-APPEND
+          (EQUAL (APPEND (APPEND A B) C)
+                 (APPEND A (APPEND B C))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to two.
+However, one of these is flawed and so we are left with one viable
+candidate.  
+
+We will induct according to a scheme suggested by (APPEND A B).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P A B C) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B C))
+              (:P A B C))
+     (IMPLIES (ENDP A) (:P A B C))).
+This induction is justified by the same argument used to admit BINARY-APPEND.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM ASSOC-OF-APPEND ...)
+Rules: ((:DEFINITION BINARY-APPEND)
+        (:DEFINITION ENDP)
+        (:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION BINARY-APPEND)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS))
+ ASSOC-OF-APPEND
+ACL2 !>>(THM
+            (IMPLIES (TRUE-LISTP LST)
+                     (EQUAL (LOOP$ WITH ANS = ANS0 WITH LST = XXX DO
+                                   (IF (CONSP LST)
+                                       (PROGN (SETQ ANS (CONS (CAR LST) ANS))
+                                              (SETQ LST (CDR LST)))
+                                     (RETURN ANS)))
+                            (APPEND (REV XXX) ANS0))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+     (TRUE-LISTP LST)
+     (EQUAL (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+                 (LIST (CONS 'ANS ANS0) (CONS 'LST XXX))
+                 (LAMBDA$ (ALIST)
+                   (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                       (LIST NIL NIL
+                             (LIST (LIST* 'ANS
+                                          (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'LST
+                                         (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))))
+                     (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                           (LIST (CONS 'ANS
+                                       (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'LST
+                                       (CDR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'LST
+                                     (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
+                 '(NIL)
+                 NIL NIL)
+            (APPEND (REV XXX) ANS0)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into two derived induction
+schemes.  By considering those suggested by the largest number of non-
+primitive recursive functions, we narrow the field to one.  
+
+We will induct according to a scheme suggested by (REV XXX), but modified
+to accommodate 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+     (LIST (CONS 'ANS ANS0) (CONS 'LST XXX))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+           (LIST NIL NIL
+                 (LIST (LIST* 'ANS
+                              (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                              (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'LST
+                             (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+               (LIST (CONS 'ANS
+                           (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                     (CONS 'LST
+                           (CDR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                   (CONS 'LST
+                         (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+These suggestions were produced using the :induction rules DO$ and
+REV.  If we let (:P ANS0 LST XXX) denote *1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP XXX))
+                   (:P (CONS (CAR XXX) ANS0)
+                       LST (CDR XXX)))
+              (:P ANS0 LST XXX))
+     (IMPLIES (ENDP XXX) (:P ANS0 LST XXX))).
+This induction is justified by the same argument used to admit REV.
+Note, however, that the unmeasured variable ANS0 is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION DO$)
+        (:DEFINITION ENDP)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REV)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION REV)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOC-OF-APPEND)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+
+Proof succeeded.
+ACL2 !>>(THM
+            (IMPLIES (TRUE-LISTP LST)
+                     (EQUAL (LOOP$ WITH ANS = ANS0 WITH LST = LST DO
+                                   (IF (CONSP LST)
+                                       (PROGN (SETQ ANS (CONS (CAR LST) ANS))
+                                              (SETQ LST (CDR LST)))
+                                     (RETURN ANS)))
+                            (APPEND (REV LST) ANS0)))
+            :HINTS (("Goal" :IN-THEORY (DISABLE (:INDUCTION REV)
+                                                (:INDUCTION TRUE-LISTP)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+     (TRUE-LISTP LST)
+     (EQUAL (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+                 (LIST (CONS 'ANS ANS0) (CONS 'LST LST))
+                 (LAMBDA$ (ALIST)
+                   (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                       (LIST NIL NIL
+                             (LIST (LIST* 'ANS
+                                          (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'LST
+                                         (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))))
+                     (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                           (LIST (CONS 'ANS
+                                       (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'LST
+                                       (CDR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'LST
+                                     (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
+                 '(NIL)
+                 NIL NIL)
+            (APPEND (REV LST) ANS0)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+     (LIST (CONS 'ANS ANS0) (CONS 'LST LST))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+           (LIST NIL NIL
+                 (LIST (LIST* 'ANS
+                              (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                              (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'LST
+                             (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+               (LIST (CONS 'ANS
+                           (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                     (CONS 'LST
+                           (CDR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                   (CONS 'LST
+                         (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P ANS0 LST) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (CONSP LST)) (TRUE-LISTP LST))
+              (:P ANS0 LST))
+     (IMPLIES (AND (CONSP LST)
+                   (:P (CONS (CAR LST) ANS0) (CDR LST))
+                   (TRUE-LISTP LST))
+              (:P ANS0 LST))
+     (IMPLIES (AND (CONSP LST)
+                   (NOT (TRUE-LISTP (CDR LST)))
+                   (TRUE-LISTP LST))
+              (:P ANS0 LST))
+     (IMPLIES (AND (TRUE-LISTP LST) (CONSP LST))
+              (L< (LEX-FIX (ACL2-COUNT (CDR LST)))
+                  (LEX-FIX (ACL2-COUNT LST))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces four nontautological
+subgoals.
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION DO$)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REV)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REV)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOC-OF-APPEND)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+
+Proof succeeded.
+ACL2 !>>(THM
+            (IMPLIES (TRUE-LISTP XXX)
+                     (EQUAL (LOOP$ WITH ANS = ANS0 WITH LST = XXX DO
+                                   (IF (CONSP LST)
+                                       (PROGN (SETQ ANS (CONS (CAR LST) ANS))
+                                              (SETQ LST (CDR LST)))
+                                     (RETURN ANS)))
+                            (APPEND (REV XXX) ANS0)))
+            :HINTS (("Goal" :IN-THEORY (DISABLE (:INDUCTION REV)
+                                                (:INDUCTION TRUE-LISTP)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+     (TRUE-LISTP XXX)
+     (EQUAL (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+                 (LIST (CONS 'ANS ANS0) (CONS 'LST XXX))
+                 (LAMBDA$ (ALIST)
+                   (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                       (LIST NIL NIL
+                             (LIST (LIST* 'ANS
+                                          (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'LST
+                                         (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))))
+                     (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                           (LIST (CONS 'ANS
+                                       (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'LST
+                                       (CDR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'LST
+                                     (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
+                 '(NIL)
+                 NIL NIL)
+            (APPEND (REV XXX) ANS0)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+     (LIST (CONS 'ANS ANS0) (CONS 'LST XXX))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+           (LIST NIL NIL
+                 (LIST (LIST* 'ANS
+                              (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                              (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'LST
+                             (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+               (LIST (CONS 'ANS
+                           (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                     (CONS 'LST
+                           (CDR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                   (CONS 'LST
+                         (CDR (ASSOC-EQ-SAFE 'LST ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P ANS0 XXX) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (NOT (CONSP XXX)) (TRUE-LISTP XXX))
+              (:P ANS0 XXX))
+     (IMPLIES (AND (CONSP XXX)
+                   (:P (CONS (CAR XXX) ANS0) (CDR XXX))
+                   (TRUE-LISTP XXX))
+              (:P ANS0 XXX))
+     (IMPLIES (AND (CONSP XXX)
+                   (NOT (TRUE-LISTP (CDR XXX)))
+                   (TRUE-LISTP XXX))
+              (:P ANS0 XXX))
+     (IMPLIES (AND (TRUE-LISTP XXX) (CONSP XXX))
+              (L< (LEX-FIX (ACL2-COUNT (CDR XXX)))
+                  (LEX-FIX (ACL2-COUNT XXX))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces four nontautological
+subgoals.
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION DO$)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REV)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REV)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOC-OF-APPEND)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (NATP III)
+                      (EQUAL (LOOP$ WITH III = III DO
+                                    (IF (EQUAL III 0)
+                                        (RETURN 'SILLY)
+                                      (SETQ III (- III 1))))
+                             'SILLY)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+  (AND (INTEGERP III) (<= 0 III))
+  (EQUAL (DO$ (LAMBDA$ (ALIST)
+                (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'III ALIST))))
+              (LIST (CONS 'III III))
+              (LAMBDA$ (ALIST)
+                (IF (EQUAL (CDR (ASSOC-EQ-SAFE 'III ALIST))
+                           0)
+                    '(:RETURN SILLY ((III . 0)))
+                  (LIST NIL NIL
+                        (LIST (CONS 'III
+                                    (+ -1
+                                       (CDR (ASSOC-EQ-SAFE 'III ALIST))))))))
+              (LAMBDA$ (ALIST)
+                (LIST NIL NIL
+                      (LIST (CONS 'III
+                                  (CDR (ASSOC-EQ-SAFE 'III ALIST))))))
+              '(NIL)
+              NIL NIL)
+         'SILLY))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'III ALIST))))
+     (LIST (CONS 'III III))
+     (LAMBDA$ (ALIST)
+       (IF (EQUAL (CDR (ASSOC-EQ-SAFE 'III ALIST))
+                  0)
+           '(:RETURN SILLY ((III . 0)))
+         (LIST NIL NIL
+               (LIST (CONS 'III
+                           (+ -1
+                              (CDR (ASSOC-EQ-SAFE 'III ALIST))))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'III
+                         (CDR (ASSOC-EQ-SAFE 'III ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P III) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (EQUAL III 0))
+                   (:P (+ -1 III))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (NOT (EQUAL III 0))
+                   (< (+ -1 III) 0)
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (NOT (EQUAL III 0))
+                   (NOT (INTEGERP (+ -1 III)))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (EQUAL III 0)
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (INTEGERP III)
+                   (<= 0 III)
+                   (NOT (EQUAL III 0)))
+              (L< (LEX-FIX (ACL2-COUNT (+ -1 III)))
+                  (LEX-FIX (ACL2-COUNT III))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  When applied to the goal
+at hand the above induction scheme produces five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART DO$)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (NATP III)
+                      (EQUAL (LOOP$ WITH III = III DO
+                                    (IF (EQUAL III 0)
+                                        (RETURN 'SILLY)
+                                      (SETQ III (- III 1))))
+                             'SILLY))
+             :HINTS (("Goal" :INDUCT (LOOP$ WITH III = III DO
+                                            (IF (NATP III)
+                                                (IF (EQUAL III 0)
+                                                    (RETURN 'SILLY)
+                                                  (SETQ III (- III 1)))
+                                              (RETURN 'DUMB))))))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+We have been told to use induction.  One induction scheme is suggested
+by the induction hint.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'III ALIST))))
+     (LIST (CONS 'III III))
+     (LAMBDA$ (ALIST)
+       (IF (NATP (CDR (ASSOC-EQ-SAFE 'III ALIST)))
+           (IF (EQUAL (CDR (ASSOC-EQ-SAFE 'III ALIST))
+                      0)
+               (LIST :RETURN 'SILLY
+                     (LIST (CONS 'III
+                                 (CDR (ASSOC-EQ-SAFE 'III ALIST)))))
+             (LIST NIL NIL
+                   (LIST (CONS 'III
+                               (+ -1 (CDR (ASSOC-EQ-SAFE 'III ALIST)))))))
+         (LIST :RETURN 'DUMB
+               (LIST (CONS 'III
+                           (CDR (ASSOC-EQ-SAFE 'III ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'III
+                         (CDR (ASSOC-EQ-SAFE 'III ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P III) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (NOT (NATP III))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (NATP III)
+                   (NOT (EQUAL III 0))
+                   (:P (+ -1 III))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (NATP III)
+                   (NOT (EQUAL III 0))
+                   (< (+ -1 III) 0)
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (NATP III)
+                   (NOT (EQUAL III 0))
+                   (NOT (INTEGERP (+ -1 III)))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (NATP III)
+                   (EQUAL III 0)
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (INTEGERP III)
+                   (<= 0 III)
+                   (NATP III)
+                   (NOT (EQUAL III 0)))
+              (L< (LEX-FIX (ACL2-COUNT (+ -1 III)))
+                  (LEX-FIX (ACL2-COUNT III))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  When applied to the goal
+at hand the above induction scheme produces six nontautological subgoals.
+Subgoal *1/6
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/5''
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION IMPLIES)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART DO$)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (AND (NATP III) (NATP NNN))
+                      (EQUAL (LOOP$ WITH I = III WITH N
+                                    = NNN DO :GUARD (AND (NATP I) (NATP N))
+                                    :MEASURE (NFIX (- N I))
+                                    (IF (< I N)
+                                        (SETQ I (+ I 1))
+                                      (RETURN T)))
+                             T))
+             :OTF-FLG T)
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+    (AND (INTEGERP III)
+         (<= 0 III)
+         (INTEGERP NNN)
+         (<= 0 NNN))
+    (EQUAL (DO$ (LAMBDA$ (ALIST)
+                  (IF (INTEGERP (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                   (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                      (IF (< (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                             0)
+                          0
+                        (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                           (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                    0))
+                (LIST (CONS 'I III) (CONS 'N NNN))
+                (LAMBDA$ (ALIST)
+                  (IF (< (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                         (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                      (LIST NIL NIL
+                            (LIST (CONS 'I
+                                        (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                  (CONS 'N
+                                        (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+                    (LIST :RETURN T
+                          (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                (CONS 'N
+                                      (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+                (LAMBDA$ (ALIST)
+                  (LIST NIL NIL
+                        (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                              (CONS 'N
+                                    (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+                '(NIL)
+                NIL NIL)
+           T))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (IF (INTEGERP (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                        (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+           (IF (< (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                  0)
+               0
+             (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+         0))
+     (LIST (CONS 'I III) (CONS 'N NNN))
+     (LAMBDA$ (ALIST)
+       (IF (< (CDR (ASSOC-EQ-SAFE 'I ALIST))
+              (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+           (LIST NIL NIL
+                 (LIST (CONS 'I
+                             (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                       (CONS 'N
+                             (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+         (LIST :RETURN T
+               (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CONS 'N
+                           (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                   (CONS 'N
+                         (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P III NNN) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (<= NNN III)
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (< III NNN)
+                   (:P (+ 1 III) NNN)
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (< III NNN)
+                   (< (+ 1 III) 0)
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (< III NNN)
+                   (NOT (INTEGERP (+ 1 III)))
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN)
+                   (< III NNN))
+              (L< (LEX-FIX (IF (INTEGERP (+ (- (+ 1 III)) NNN))
+                               (IF (< (+ (- (+ 1 III)) NNN) 0)
+                                   0
+                                 (+ (- (+ 1 III)) NNN))
+                             0))
+                  (LEX-FIX (IF (INTEGERP (+ (- III) NNN))
+                               (IF (< (+ (- III) NNN) 0)
+                                   0
+                                 (+ (- III) NNN))
+                             0))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  When applied to the goal
+at hand the above induction scheme produces five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/4
+
+Splitter note (see :DOC splitter) for Subgoal *1/4 (3 subgoals).
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/4.3
+Subgoal *1/4.2
+Subgoal *1/4.1
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1/1' (3 subgoals).
+  if-intro: ((:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/1.3
+Subgoal *1/1.2
+Subgoal *1/1.1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DO$)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (AND (NATP III) (NATP NNN))
+                      (EQUAL (LOOP$ WITH I = III WITH N
+                                    = NNN DO :GUARD (AND (NATP I) (NATP N))
+                                    :MEASURE (NFIX (- N I))
+                                    (IF (< I N)
+                                        (SETQ I (+ I 1))
+                                      (RETURN T)))
+                             T))
+             :HINTS (("Goal" :INDUCT T)))
+
+*1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
+
+We have been told to use induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$
+ (LAMBDA$ (ALIST)
+  (DECLARE
+   (XARGS
+        :GUARD
+        (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+  (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+        (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+    (DECLARE (IGNORABLE I N))
+    (NFIX (BINARY-+ N (UNARY-- I)))))
+ (LIST (CONS 'I III) (CONS 'N NNN))
+ (LAMBDA$ (ALIST)
+  (DECLARE
+   (XARGS
+        :GUARD
+        (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                    (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+  (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+        (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+    (DECLARE (IGNORABLE I N))
+    (IF (< I N)
+        (CONS 'NIL
+              (CONS 'NIL
+                    (CONS ((LAMBDA (I N)
+                             (CONS (CONS 'I I)
+                                   (CONS (CONS 'N N) 'NIL)))
+                           (BINARY-+ I '1)
+                           N)
+                          'NIL)))
+      (CONS ':RETURN
+            (CONS 'T
+                  (CONS (CONS (CONS 'I I)
+                              (CONS (CONS 'N N) 'NIL))
+                        'NIL))))))
+ (LAMBDA$ (ALIST)
+   (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
+   (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+         (N (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+     (DECLARE (IGNORABLE I N))
+     (CONS 'NIL
+           (CONS 'NIL
+                 (CONS (CONS (CONS 'I I)
+                             (CONS (CONS 'N N) 'NIL))
+                       'NIL)))))
+ '(NIL)
+ NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P III NNN) denote *1 above then the induction scheme we'll use
+is
+(AND (IMPLIES (AND (<= NNN III)
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (< III NNN)
+                   (:P (+ III 1) NNN)
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (< III NNN)
+                   (< (+ III 1) 0)
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (< III NNN)
+                   (NOT (INTEGERP (+ III 1)))
+                   (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN))
+              (:P III NNN))
+     (IMPLIES (AND (INTEGERP III)
+                   (<= 0 III)
+                   (INTEGERP NNN)
+                   (<= 0 NNN)
+                   (< III NNN))
+              (L< (LEX-FIX (NFIX (+ NNN (- (+ III 1)))))
+                  (LEX-FIX (NFIX (+ NNN (- III))))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  When applied to the goal
+at hand the above induction scheme produces five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/4'
+
+Splitter note (see :DOC splitter) for Subgoal *1/4' (3 subgoals).
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/4.3
+Subgoal *1/4.2
+Subgoal *1/4.1
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1/1' (3 subgoals).
+  if-intro: ((:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/1.3
+Subgoal *1/1.2
+Subgoal *1/1.1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DO$)
+        (:DEFINITION IMPLIES)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (NATP III)
+                      (EQUAL (LOOP$ WITH I = III WITH
+                                    N = 10 DO :GUARD (AND (NATP N) (NATP I))
+                                    :MEASURE (NFIX (- N I))
+                                    (IF (< I N)
+                                        (SETQ I (+ I 1))
+                                      (RETURN T)))
+                             T)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+    (AND (INTEGERP III) (<= 0 III))
+    (EQUAL (DO$ (LAMBDA$ (ALIST)
+                  (IF (INTEGERP (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                   (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                      (IF (< (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                             0)
+                          0
+                        (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                           (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                    0))
+                (CONS (CONS 'I III) '((N . 10)))
+                (LAMBDA$ (ALIST)
+                  (IF (< (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                         (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                      (LIST NIL NIL
+                            (LIST (CONS 'I
+                                        (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                  (CONS 'N
+                                        (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+                    (LIST :RETURN T
+                          (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                (CONS 'N
+                                      (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+                (LAMBDA$ (ALIST)
+                  (LIST NIL NIL
+                        (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                              (CONS 'N
+                                    (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+                '(NIL)
+                NIL NIL)
+           T))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (IF (INTEGERP (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                        (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+           (IF (< (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                  0)
+               0
+             (+ (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+         0))
+     (CONS (CONS 'I III) '((N . 10)))
+     (LAMBDA$ (ALIST)
+       (IF (< (CDR (ASSOC-EQ-SAFE 'I ALIST))
+              (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+           (LIST NIL NIL
+                 (LIST (CONS 'I
+                             (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                       (CONS 'N
+                             (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+         (LIST :RETURN T
+               (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CONS 'N
+                           (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                   (CONS 'N
+                         (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P III) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (<= 10 III)
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (< III 10)
+                   (:P (+ 1 III))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (< III 10)
+                   (< (+ 1 III) 0)
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (< III 10)
+                   (NOT (INTEGERP (+ 1 III)))
+                   (INTEGERP III)
+                   (<= 0 III))
+              (:P III))
+     (IMPLIES (AND (INTEGERP III)
+                   (<= 0 III)
+                   (< III 10))
+              (L< (LEX-FIX (IF (INTEGERP (+ (- (+ 1 III)) 10))
+                               (IF (< (+ (- (+ 1 III)) 10) 0)
+                                   0
+                                 (+ (- (+ 1 III)) 10))
+                             0))
+                  (LEX-FIX (IF (INTEGERP (+ (- III) 10))
+                               (IF (< (+ (- III) 10) 0)
+                                   0
+                                 (+ (- III) 10))
+                             0))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  When applied to the goal
+at hand the above induction scheme produces five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/4
+
+Splitter note (see :DOC splitter) for Subgoal *1/4 (3 subgoals).
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/4.3
+Subgoal *1/4.2
+Subgoal *1/4.1
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1/1' (3 subgoals).
+  if-intro: ((:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/1.3
+Subgoal *1/1.2
+Subgoal *1/1.1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DO$)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Proof succeeded.
+ACL2 !>>(THM
+         (IMPLIES
+          (AND (NATP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+               (NATP (CDR (ASSOC-EQ-SAFE 'M ALIST))))
+          (EQUAL
+             (DO$ (LAMBDA$ (ALIST)
+                    (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                  ALIST
+                  (LAMBDA$ (ALIST)
+                    (IF (ZP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                        (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                              ALIST)
+                      (LIST NIL NIL
+                            (LIST (CONS 'N
+                                        (- (CDR (ASSOC-EQ-SAFE 'N ALIST)) 1))
+                                  (CONS 'M
+                                        (+ (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                                           1))))))
+                  (LAMBDA$ (ALIST)
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+                  NIL NIL NIL)
+             (+ (CDR (ASSOC-EQ-SAFE 'N ALIST))
+                (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+      (<= 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+      (INTEGERP (CDR (ASSOC-EQ-SAFE 'M ALIST)))
+      (<= 0 (CDR (ASSOC-EQ-SAFE 'M ALIST))))
+ (EQUAL
+     (DO$ (LAMBDA$ (ALIST)
+            (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+          ALIST
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LAMBDA$ (ALIST)
+            (LIST NIL NIL
+                  (LIST (CONS 'N
+                              (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+          NIL NIL NIL)
+     (+ (CDR (ASSOC-EQ-SAFE 'M ALIST))
+        (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Seven induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to three.
+These merge into two derived induction schemes.  By considering those
+suggested by the largest number of non-primitive recursive functions,
+we narrow the field to one.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+     ALIST
+     (LAMBDA$ (ALIST)
+       (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+           (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+               (LIST NIL NIL
+                     (LIST (CONS 'N
+                                 (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                           (CONS 'M
+                                 (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+             (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                   ALIST))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+               ALIST)))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'N
+                         (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+     NIL NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P ALIST) denote *1 above then the induction scheme we'll use
+is
+(AND
+ (IMPLIES
+  (AND
+   (NOT
+    (EQ
+     (CAR
+      (TRUE-LIST-FIX
+       (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+     :RETURN))
+   (NOT
+    (EQ
+     (CAR
+      (TRUE-LIST-FIX
+       (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+     :LOOP-FINISH))
+   (NOT
+    (L<
+     (LEX-FIX
+      (APPLY$
+       (LAMBDA$ (ALIST)
+         (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+       (LIST
+        (CADDR
+         (TRUE-LIST-FIX
+          (APPLY$
+           (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+           (LIST ALIST)))))))
+     (LEX-FIX (APPLY$ (LAMBDA$ (ALIST)
+                        (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                      (LIST ALIST))))))
+  (:P ALIST))
+ (IMPLIES
+  (AND
+   (NOT
+    (EQ
+     (CAR
+      (TRUE-LIST-FIX
+       (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+     :RETURN))
+   (NOT
+    (EQ
+     (CAR
+      (TRUE-LIST-FIX
+       (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+     :LOOP-FINISH))
+   (L<
+    (LEX-FIX
+     (APPLY$
+      (LAMBDA$ (ALIST)
+        (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+      (LIST
+       (CADDR
+        (TRUE-LIST-FIX
+         (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST)))))))
+    (LEX-FIX (APPLY$ (LAMBDA$ (ALIST)
+                       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                     (LIST ALIST))))
+   (:P
+    (CADDR
+     (TRUE-LIST-FIX
+      (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))))
+  (:P ALIST))
+ (IMPLIES
+  (AND
+   (EQ
+    (CAR
+     (TRUE-LIST-FIX
+      (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+    :LOOP-FINISH)
+   (NOT
+    (EQ
+     (CAR
+      (TRUE-LIST-FIX
+       (APPLY$
+        (LAMBDA$ (ALIST)
+          (LIST NIL NIL
+                (LIST (CONS 'N
+                            (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+        (LIST
+         (CADDR
+          (TRUE-LIST-FIX
+           (APPLY$
+            (LAMBDA$ (ALIST)
+              (IF
+                (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+                (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                      ALIST)))
+            (LIST ALIST))))))))
+     :RETURN)))
+  (:P ALIST))
+ (IMPLIES
+  (AND
+   (EQ
+    (CAR
+     (TRUE-LIST-FIX
+      (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+    :LOOP-FINISH)
+   (EQ
+    (CAR
+     (TRUE-LIST-FIX
+      (APPLY$
+       (LAMBDA$ (ALIST)
+         (LIST NIL NIL
+               (LIST (CONS 'N
+                           (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+       (LIST
+        (CADDR
+         (TRUE-LIST-FIX
+          (APPLY$
+           (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+           (LIST ALIST))))))))
+    :RETURN))
+  (:P ALIST))
+ (IMPLIES
+  (EQ
+   (CAR
+    (TRUE-LIST-FIX
+     (APPLY$
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'N
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                                (CONS 'M
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'M ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                        ALIST))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'M ALIST))
+                    ALIST)))
+          (LIST ALIST))))
+   :RETURN)
+  (:P ALIST))).
+This induction is justified by the same argument used to admit DO$.
+When applied to the goal at hand the above induction scheme produces
+nine nontautological subgoals.
+Subgoal *1/9
+Subgoal *1/9'
+Subgoal *1/8
+Subgoal *1/8'
+Subgoal *1/7
+Subgoal *1/7'
+Subgoal *1/6
+Subgoal *1/6'
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+
+Splitter note (see :DOC splitter) for Subgoal *1/3' (2 subgoals).
+  if-intro: ((:DEFINITION DO$))
+
+Subgoal *1/3.2
+Subgoal *1/3.1
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1/1' (2 subgoals).
+  if-intro: ((:DEFINITION DO$))
+
+Subgoal *1/1.2
+Subgoal *1/1.1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION EQ)
+        (:DEFINITION FIX)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ACL2-COUNT)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART L<)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART LEX-FIX)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TRUE-LIST-FIX)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0)
+        (:REWRITE ZP-OPEN))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$))
+
+Proof succeeded.
+ACL2 !>>(DEFUN REV1 (X AC)
+          (IF (ENDP X)
+              AC
+            (REV1 (CDR X) (CONS (CAR X) AC))))
+
+The admission of REV1 is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of REV1 is described by the
+theorem (OR (CONSP (REV1 X AC)) (EQUAL (REV1 X AC) AC)).  We used primitive
+type reasoning.
+
+Summary
+Form:  ( DEFUN REV1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ REV1
+ACL2 !>>(THM (EQUAL (LOOP$ WITH X = LST WITH ANS = ANS0 DO
+                           (IF (CONSP X)
+                               (PROGN (SETQ ANS (CONS (CAR X) ANS))
+                                      (SETQ X (CDR X)))
+                             (RETURN ANS)))
+                    (REV1 LST ANS0)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (DO$ (LAMBDA$ (ALIST)
+              (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+            (LIST (CONS 'X LST) (CONS 'ANS ANS0))
+            (LAMBDA$ (ALIST)
+              (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                  (LIST NIL NIL
+                        (LIST (CONS 'X
+                                    (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                              (LIST* 'ANS
+                                     (CADR (ASSOC-EQ-SAFE 'X ALIST))
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))
+                (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                      (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                            (CONS 'ANS
+                                  (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+            (LAMBDA$ (ALIST)
+              (LIST NIL NIL
+                    (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                          (CONS 'ANS
+                                (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+            '(NIL)
+            NIL NIL)
+       (REV1 LST ANS0))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (REV1 LST ANS0).
+
+This suggestion was produced using the :induction rules DO$ and REV1.
+If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP LST))
+                   (:P (CONS (CAR LST) ANS0) (CDR LST)))
+              (:P ANS0 LST))
+     (IMPLIES (ENDP LST) (:P ANS0 LST))).
+This induction is justified by the same argument used to admit REV1.
+Note, however, that the unmeasured variable ANS0 is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+two nontautological subgoals.
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION ENDP)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REV1)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION REV1)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+
+Proof succeeded.
+ACL2 !>>(THM (EQUAL (LOOP$ WITH X = LST DO
+                           (IF (CONSP X)
+                               (IF (EQUAL (CAR X) E)
+                                   (RETURN X)
+                                 (SETQ X (CDR X)))
+                             (RETURN NIL)))
+                    (MEMBER E LST)))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL (DO$ (LAMBDA$ (ALIST)
+              (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+            (LIST (CONS 'X LST) (CONS 'E E))
+            (LAMBDA$ (ALIST)
+              (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                  (IF (EQUAL (CADR (ASSOC-EQ-SAFE 'X ALIST))
+                             (CDR (ASSOC-EQ-SAFE 'E ALIST)))
+                      (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'X ALIST))
+                            (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                                  (CONS 'E
+                                        (CDR (ASSOC-EQ-SAFE 'E ALIST)))))
+                    (LIST NIL NIL
+                          (LIST (CONS 'X
+                                      (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                                (CONS 'E
+                                      (CDR (ASSOC-EQ-SAFE 'E ALIST))))))
+                (LIST :RETURN NIL
+                      (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                            (CONS 'E
+                                  (CDR (ASSOC-EQ-SAFE 'E ALIST)))))))
+            (LAMBDA$ (ALIST)
+              (LIST NIL NIL
+                    (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                          (CONS 'E
+                                (CDR (ASSOC-EQ-SAFE 'E ALIST))))))
+            '(NIL)
+            NIL NIL)
+       (MEMBER-EQUAL E LST))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (MEMBER-EQUAL E LST).
+
+This suggestion was produced using the :induction rules DO$ and MEMBER-EQUAL.
+If we let (:P E LST) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP LST))
+                   (NOT (EQUAL E (CAR LST)))
+                   (:P E (CDR LST)))
+              (:P E LST))
+     (IMPLIES (AND (NOT (ENDP LST))
+                   (EQUAL E (CAR LST)))
+              (:P E LST))
+     (IMPLIES (ENDP LST) (:P E LST))).
+This induction is justified by the same argument used to admit MEMBER-EQUAL.
+When applied to the goal at hand the above induction scheme produces
+three nontautological subgoals.
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/3''
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION ENDP)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION MEMBER-EQL-EXEC$GUARD-CHECK)
+        (:DEFINITION MEMBER-EQUAL)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION MEMBER-EQUAL)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (NATP ANS0)
+                      (EQUAL (LOOP$ WITH X = LST WITH ANS = ANS0 DO
+                                    (IF (CONSP X)
+                                        (PROGN (SETQ ANS (+ 1 ANS))
+                                               (SETQ X (CDR X)))
+                                      (RETURN ANS)))
+                             (+ ANS0 (LEN LST)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+  (AND (INTEGERP ANS0) (<= 0 ANS0))
+  (EQUAL
+       (DO$ (LAMBDA$ (ALIST)
+              (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+            (LIST (CONS 'X LST) (CONS 'ANS ANS0))
+            (LAMBDA$ (ALIST)
+              (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                  (LIST NIL NIL
+                        (LIST (CONS 'X
+                                    (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                              (CONS 'ANS
+                                    (+ 1 (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+                (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                      (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                            (CONS 'ANS
+                                  (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+            (LAMBDA$ (ALIST)
+              (LIST NIL NIL
+                    (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                          (CONS 'ANS
+                                (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+            '(NIL)
+            NIL NIL)
+       (+ ANS0 (LEN LST))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to one.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+     (LIST (CONS 'X LST) (CONS 'ANS ANS0))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+           (LIST NIL NIL
+                 (LIST (CONS 'X
+                             (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                       (CONS 'ANS
+                             (+ 1 (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+               (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                     (CONS 'ANS
+                           (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rules DO$ and LEN.
+If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (NOT (CONSP LST))
+              (:P ANS0 LST))
+     (IMPLIES (AND (CONSP LST)
+                   (:P (+ 1 ANS0) (CDR LST)))
+              (:P ANS0 LST))
+     (IMPLIES (CONSP LST)
+              (L< (LEX-FIX (ACL2-COUNT (CDR LST)))
+                  (LEX-FIX (ACL2-COUNT LST))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces five nontautological
+subgoals.
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/4''
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DO$)
+        (:DEFINITION FIX)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION LEN)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION ACL2-COUNT))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (NATP N)
+                      (EQUAL (LOOP$ WITH X = LST WITH I = N DO
+                                    (COND ((ENDP X) (RETURN NIL))
+                                          ((EQUAL I 0) (RETURN (CAR X)))
+                                          (T (PROGN (SETQ I (- I 1))
+                                                    (SETQ X (CDR X))))))
+                             (NTH N LST))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (INTEGERP N) (<= 0 N))
+ (EQUAL
+     (DO$ (LAMBDA$ (ALIST)
+            (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+          (LIST (CONS 'X LST) (CONS 'I N))
+          (LAMBDA$ (ALIST)
+            (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                (IF (EQUAL (CDR (ASSOC-EQ-SAFE 'I ALIST)) 0)
+                    (LIST :RETURN (CADR (ASSOC-EQ-SAFE 'X ALIST))
+                          (CONS (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                                '((I . 0))))
+                  (LIST NIL NIL
+                        (LIST (CONS 'X
+                                    (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                              (CONS 'I
+                                    (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+              (LIST :RETURN NIL
+                    (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                          (CONS 'I
+                                (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+          (LAMBDA$ (ALIST)
+            (LIST NIL NIL
+                  (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                        (CONS 'I
+                              (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+          '(NIL)
+          NIL NIL)
+     (NTH N LST)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (NTH N LST).
+
+This suggestion was produced using the :induction rules DO$ and NTH.
+If we let (:P LST N) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (NOT (ENDP LST))
+                   (NOT (ZP N))
+                   (:P (CDR LST) (+ -1 N)))
+              (:P LST N))
+     (IMPLIES (AND (NOT (ENDP LST)) (ZP N))
+              (:P LST N))
+     (IMPLIES (ENDP LST) (:P LST N))).
+This induction is justified by the same argument used to admit NTH.
+Note, however, that the unmeasured variable LST is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/5''
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION ENDP)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION NTH)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQ-SAFE)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION NTH)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+
+Proof succeeded.
+ACL2 !>>(THM
+         (IMPLIES
+              (AND (TRUE-LISTP ANS0) (TRUE-LISTP LST))
+              (EQUAL (LOOP$ WITH X = LST WITH ANS = ANS0 DO
+                            (IF (CONSP X)
+                                (PROGN (SETQ ANS (APPEND ANS (LIST (CAR X))))
+                                       (SETQ X (CDR X)))
+                              (RETURN ANS)))
+                     (APPEND ANS0 LST)))
+         :HINTS (("Goal" :IN-THEORY (DISABLE (:INDUCTION BINARY-APPEND)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (TRUE-LISTP ANS0) (TRUE-LISTP LST))
+ (EQUAL
+  (DO$
+   (LAMBDA$ (ALIST)
+     (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+   (LIST (CONS 'X LST) (CONS 'ANS ANS0))
+   (LAMBDA$ (ALIST)
+     (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+         (LIST NIL NIL
+               (LIST (CONS 'X
+                           (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                     (CONS 'ANS
+                           (APPEND (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                                   (LIST (CADR (ASSOC-EQ-SAFE 'X ALIST)))))))
+       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+             (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+   (LAMBDA$ (ALIST)
+     (LIST NIL NIL
+           (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                 (CONS 'ANS
+                       (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+   '(NIL)
+   NIL NIL)
+  (APPEND ANS0 LST)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  Subsumption reduces that number to two.
+However, one of these is flawed and so we are left with one viable
+candidate.  
+
+We will induct according to a scheme suggested by 
+(DO$
+   (LAMBDA$ (ALIST)
+     (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'X ALIST))))
+   (LIST (CONS 'X LST) (CONS 'ANS ANS0))
+   (LAMBDA$ (ALIST)
+     (IF (CONSP (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+         (LIST NIL NIL
+               (LIST (CONS 'X
+                           (CDDR (ASSOC-EQ-SAFE 'X ALIST)))
+                     (CONS 'ANS
+                           (APPEND (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                                   (LIST (CADR (ASSOC-EQ-SAFE 'X ALIST)))))))
+       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+             (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+   (LAMBDA$ (ALIST)
+     (LIST NIL NIL
+           (LIST (CONS 'X (CDR (ASSOC-EQ-SAFE 'X ALIST)))
+                 (CONS 'ANS
+                       (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+   '(NIL)
+   NIL NIL).
+
+This suggestion was produced using the :induction rules DO$ and TRUE-LISTP.
+If we let (:P ANS0 LST) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (NOT (CONSP LST))
+              (:P ANS0 LST))
+     (IMPLIES (AND (CONSP LST)
+                   (:P (APPEND ANS0 (LIST (CAR LST)))
+                       (CDR LST)))
+              (:P ANS0 LST))
+     (IMPLIES (CONSP LST)
+              (L< (LEX-FIX (ACL2-COUNT (CDR LST)))
+                  (LEX-FIX (ACL2-COUNT LST))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces five nontautological
+subgoals.
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/4''
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION DO$)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:DEFINITION TRUE-LISTP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION TRUE-LISTP)
+        (:LINEAR ACL2-COUNT-CAR-CDR-LINEAR)
+        (:REWRITE APPEND-TO-NIL)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOC-OF-APPEND)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE CONS-CAR-CDR)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION BINARY-APPEND)
+        (:TYPE-PRESCRIPTION TRUE-LISTP-APPEND))
+
+Proof succeeded.
+ACL2 !>>(THM (IMPLIES (AND (NATP M) (NATP N))
+                      (EQUAL (LOOP$ WITH I = M WITH J = N DO
+                                    (IF (INTEGERP I)
+                                        (IF (< 0 I)
+                                            (PROGN (SETQ I (- I 1))
+                                                   (SETQ J (+ 1 J)))
+                                          (RETURN J))
+                                      (RETURN J)))
+                             (+ M N))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (INTEGERP M)
+      (<= 0 M)
+      (INTEGERP N)
+      (<= 0 N))
+ (EQUAL
+     (DO$ (LAMBDA$ (ALIST)
+            (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+          (LIST (CONS 'I M) (CONS 'J N))
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'I
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                (CONS 'J
+                                      (+ 1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'J ALIST))
+                        (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                              (CONS 'J
+                                    (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'J ALIST))
+                    (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                          (CONS 'J
+                                (CDR (ASSOC-EQ-SAFE 'J ALIST)))))))
+          (LAMBDA$ (ALIST)
+            (LIST NIL NIL
+                  (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                        (CONS 'J
+                              (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
+          '(NIL)
+          NIL NIL)
+     (+ M N)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  One induction scheme is suggested
+by this conjecture.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+     (LIST (CONS 'I M) (CONS 'J N))
+     (LAMBDA$ (ALIST)
+       (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+           (IF (< 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (LIST NIL NIL
+                     (LIST (CONS 'I
+                                 (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                           (CONS 'J
+                                 (+ 1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
+             (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'J ALIST))
+                   (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                         (CONS 'J
+                               (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'J ALIST))
+               (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CONS 'J
+                           (CDR (ASSOC-EQ-SAFE 'J ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                   (CONS 'J
+                         (CDR (ASSOC-EQ-SAFE 'J ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P M N) denote *1 above then the induction scheme we'll use is
+(AND (IMPLIES (AND (INTEGERP M) (<= M 0) (<= 0 M))
+              (:P M N))
+     (IMPLIES (AND (INTEGERP M)
+                   (< 0 M)
+                   (:P (+ -1 M) (+ 1 N))
+                   (<= 0 M))
+              (:P M N))
+     (IMPLIES (AND (INTEGERP M)
+                   (< 0 M)
+                   (< (+ -1 M) 0)
+                   (<= 0 M))
+              (:P M N))
+     (IMPLIES (AND (INTEGERP M)
+                   (< 0 M)
+                   (NOT (INTEGERP (+ -1 M)))
+                   (<= 0 M))
+              (:P M N))
+     (IMPLIES (AND (<= 0 M) (INTEGERP M) (< 0 M))
+              (L< (LEX-FIX (ACL2-COUNT (+ -1 M)))
+                  (LEX-FIX (ACL2-COUNT M))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable N is being instantiated.  When applied to the goal
+at hand the above induction scheme produces seven nontautological subgoals.
+Subgoal *1/7
+Subgoal *1/7'
+Subgoal *1/7''
+Subgoal *1/6
+Subgoal *1/6'
+Subgoal *1/6''
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION FIX)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0))
+
+Proof succeeded.
+ACL2 !>>(DEFUN FACT (N)
+          (IF (ZP N) 1 (* N (FACT (- N 1)))))
+
+The admission of FACT is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT N).  We observe that the type of FACT is described by the
+theorem (AND (INTEGERP (FACT N)) (< 0 (FACT N))).  We used the :compound-
+recognizer rule ZP-COMPOUND-RECOGNIZER and primitive type reasoning.
+
+Summary
+Form:  ( DEFUN FACT ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ FACT
+ACL2 !>>(DEFTHM COMMUTIVITY-2-OF-*
+          (EQUAL (* A (* B C)) (* B (* A C)))
+          :HINTS (("Goal" :USE ((:INSTANCE COMMUTATIVITY-OF-* (X A)
+                                           (Y (* B C)))))))
+
+ACL2 Warning [Subsume] in ( DEFTHM COMMUTIVITY-2-OF-* ...):  The previously
+added rule COMMUTATIVITY-OF-* subsumes a newly proposed :REWRITE rule
+generated from COMMUTIVITY-2-OF-*, in the sense that the old rule rewrites
+a more general target.  Because the new rule will be tried first, it
+may nonetheless find application.
+
+
+ACL2 Warning [Use] in ( DEFTHM COMMUTIVITY-2-OF-* ...):  It is unusual
+to :USE the formula of an enabled :REWRITE or :DEFINITION rule, so
+you may want to consider disabling (:REWRITE COMMUTATIVITY-OF-*) in
+the hint provided for Goal.  See :DOC using-enabled-rules.
+
+Goal'
+Goal''
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM COMMUTIVITY-2-OF-* ...)
+Rules: ((:DEFINITION NOT)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE ASSOCIATIVITY-OF-*)
+        (:REWRITE COMMUTATIVITY-OF-*))
+Hint-events: ((:USE COMMUTATIVITY-OF-*))
+Warnings:  Use and Subsume
+ COMMUTIVITY-2-OF-*
+ACL2 !>>(THM (IMPLIES (AND (NATP N) (NATP ANS0))
+                      (EQUAL (LOOP$ WITH I = N WITH ANS = ANS0 DO
+                                    (IF (INTEGERP I)
+                                        (IF (< 0 I)
+                                            (PROGN (SETQ ANS (* I ANS))
+                                                   (SETQ I (- I 1)))
+                                          (RETURN ANS))
+                                      (RETURN ANS)))
+                             (* ANS0 (FACT N)))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (INTEGERP N)
+      (<= 0 N)
+      (INTEGERP ANS0)
+      (<= 0 ANS0))
+ (EQUAL
+     (DO$ (LAMBDA$ (ALIST)
+            (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+          (LIST (CONS 'I N) (CONS 'ANS ANS0))
+          (LAMBDA$ (ALIST)
+            (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (IF (< 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                    (LIST NIL NIL
+                          (LIST (CONS 'I
+                                      (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                (CONS 'ANS
+                                      (* (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+                  (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                        (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                              (CONS 'ANS
+                                    (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+              (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                    (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                          (CONS 'ANS
+                                (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+          (LAMBDA$ (ALIST)
+            (LIST NIL NIL
+                  (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                        (CONS 'ANS
+                              (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+          '(NIL)
+          NIL NIL)
+     (* ANS0 (FACT N))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  These merge into one derived induction scheme.
+
+We will induct according to a scheme suggested by (FACT N), but modified
+to accommodate 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+     (LIST (CONS 'I N) (CONS 'ANS ANS0))
+     (LAMBDA$ (ALIST)
+       (IF (INTEGERP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+           (IF (< 0 (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (LIST NIL NIL
+                     (LIST (CONS 'I
+                                 (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                           (CONS 'ANS
+                                 (* (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                    (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+             (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                   (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                         (CONS 'ANS
+                               (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+         (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+               (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CONS 'ANS
+                           (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+These suggestions were produced using the :induction rules DO$ and
+FACT.  If we let (:P ANS0 N) denote *1 above then the induction scheme
+we'll use is
+(AND (IMPLIES (AND (NOT (ZP N))
+                   (:P (* N ANS0) (+ -1 N)))
+              (:P ANS0 N))
+     (IMPLIES (ZP N) (:P ANS0 N))).
+This induction is justified by the same argument used to admit FACT.
+Note, however, that the unmeasured variable ANS0 is being instantiated.
+When applied to the goal at hand the above induction scheme produces
+six nontautological subgoals.
+Subgoal *1/6
+Subgoal *1/6'
+
+Splitter note (see :DOC splitter) for Subgoal *1/6' (2 subgoals).
+  if-intro: ((:DEFINITION DO$))
+
+Subgoal *1/6.2
+Subgoal *1/6.1
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION FACT)
+        (:DEFINITION FIX)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART FACT)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART ZP)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION FACT)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-*)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-*)
+        (:REWRITE COMMUTIVITY-2-OF-*)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-1))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$))
+
+Proof succeeded.
+ACL2 !>>(DEFUN SQ (X) (* X X))
+
+Since SQ is non-recursive, its admission is trivial.  We observe that
+the type of SQ is described by the theorem (ACL2-NUMBERP (SQ X)). 
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN SQ ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ SQ
+ACL2 !>>(DEFWARRANT SQ)
+
+
+SQ is now warranted by APPLY$-WARRANT-SQ, with badge (APPLY$-BADGE 1 1 . T).
+
+ :WARRANTED
+ACL2 !>>(THM
+         (IMPLIES
+           (AND (WARRANT SQ)
+                (INTEGER-LISTP LST0)
+                (INTEGERP U0)
+                (INTEGERP V0))
+           (EQUAL (LOOP$ WITH
+                         LST = LST0 WITH U = U0 WITH V = V0 DO
+                         (COND ((CONSP LST)
+                                (PROGN (SETQ U (+ U (CAR LST)))
+                                       (SETQ V (+ V (* (CAR LST) (CAR LST))))
+                                       (SETQ LST (CDR LST))))
+                               (T (RETURN (CONS U V)))))
+                  (CONS (+ U0 (LOOP$ FOR E IN LST0 SUM E))
+                        (+ V0 (LOOP$ FOR E IN LST0 SUM (SQ E)))))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (APPLY$-WARRANT-SQ)
+      (INTEGER-LISTP LST0)
+      (INTEGERP U0)
+      (INTEGERP V0))
+ (EQUAL
+    (DO$ (LAMBDA$ (ALIST)
+           (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+         (LIST (CONS 'LST LST0)
+               (CONS 'U U0)
+               (CONS 'V V0))
+         (LAMBDA$ (ALIST)
+           (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+               (LIST NIL NIL
+                     (LIST (CONS 'LST
+                                 (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                           (CONS 'U
+                                 (+ (CDR (ASSOC-EQ-SAFE 'U ALIST))
+                                    (CADR (ASSOC-EQ-SAFE 'LST ALIST))))
+                           (CONS 'V
+                                 (+ (CDR (ASSOC-EQ-SAFE 'V ALIST))
+                                    (* (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                       (CADR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+             (LIST :RETURN
+                   (CONS (CDR (ASSOC-EQ-SAFE 'U ALIST))
+                         (CDR (ASSOC-EQ-SAFE 'V ALIST)))
+                   (LIST (CONS 'LST
+                               (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                         (CONS 'U (CDR (ASSOC-EQ-SAFE 'U ALIST)))
+                         (CONS 'V
+                               (CDR (ASSOC-EQ-SAFE 'V ALIST)))))))
+         (LAMBDA$ (ALIST)
+           (LIST NIL NIL
+                 (LIST (CONS 'LST
+                             (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                       (CONS 'U (CDR (ASSOC-EQ-SAFE 'U ALIST)))
+                       (CONS 'V
+                             (CDR (ASSOC-EQ-SAFE 'V ALIST))))))
+         '(NIL)
+         NIL NIL)
+    (CONS (+ U0
+             (SUM$ (LAMBDA$ (LOOP$-IVAR) LOOP$-IVAR)
+                   LST0))
+          (+ V0
+             (SUM$ (LAMBDA$ (LOOP$-IVAR)
+                     (* LOOP$-IVAR LOOP$-IVAR))
+                   LST0)))))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Four induction schemes are suggested
+by this conjecture.  Subsumption reduces that number to three.  These
+merge into one derived induction scheme.  
+
+We will induct according to a scheme suggested by 
+(SUM$ (LAMBDA$ (LOOP$-IVAR) (* LOOP$-IVAR LOOP$-IVAR)) LST0), but modified
+to accommodate 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+     (LIST (CONS 'LST LST0)
+           (CONS 'U U0)
+           (CONS 'V V0))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+           (LIST NIL NIL
+                 (LIST (CONS 'LST
+                             (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                       (CONS 'U
+                             (+ (CDR (ASSOC-EQ-SAFE 'U ALIST))
+                                (CADR (ASSOC-EQ-SAFE 'LST ALIST))))
+                       (CONS 'V
+                             (+ (CDR (ASSOC-EQ-SAFE 'V ALIST))
+                                (* (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                   (CADR (ASSOC-EQ-SAFE 'LST ALIST)))))))
+         (LIST :RETURN
+               (CONS (CDR (ASSOC-EQ-SAFE 'U ALIST))
+                     (CDR (ASSOC-EQ-SAFE 'V ALIST)))
+               (LIST (CONS 'LST
+                           (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                     (CONS 'U (CDR (ASSOC-EQ-SAFE 'U ALIST)))
+                     (CONS 'V
+                           (CDR (ASSOC-EQ-SAFE 'V ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'LST
+                         (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                   (CONS 'U (CDR (ASSOC-EQ-SAFE 'U ALIST)))
+                   (CONS 'V
+                         (CDR (ASSOC-EQ-SAFE 'V ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+These suggestions were produced using the :induction rules DO$, INTEGER-LISTP
+and SUM$.  If we let (:P LST0 U0 V0) denote *1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (AND (NOT (ENDP LST0))
+                   (:P (CDR LST0)
+                       (+ U0 (CAR LST0))
+                       (+ V0 (* (CAR LST0) (CAR LST0)))))
+              (:P LST0 U0 V0))
+     (IMPLIES (ENDP LST0) (:P LST0 U0 V0))).
+This induction is justified by the same argument used to admit SUM$.
+Note, however, that the unmeasured variables U0 and V0 are being instantiated.
+When applied to the goal at hand the above induction scheme produces
+five nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+
+Splitter note (see :DOC splitter) for Subgoal *1/5' (2 subgoals).
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION DO$)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION INTEGER-LISTP)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/5.2
+Subgoal *1/5.1
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION DO$)
+        (:DEFINITION ENDP)
+        (:DEFINITION FIX)
+        (:DEFINITION FORCE)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION INTEGER-LISTP)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SQ)
+        (:DEFINITION SUM$)
+        (:DEFINITION SYNP)
+        (:DEFINITION THE-NUMBER)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LAMBDA-OBJECT-FORMALS)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART SUM$)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION INTEGER-LISTP)
+        (:INDUCTION SUM$)
+        (:REWRITE APPLY$-CONSP-ARITY-1)
+        (:REWRITE APPLY$-SQ)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION NONNEGATIVE-PRODUCT))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION ACL2-COUNT)
+             (:DEFINITION DO$)
+             (:DEFINITION INTEGER-ABS)
+             (:DEFINITION INTEGER-LISTP)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Proof succeeded.
+ACL2 !>>(THM
+         (EQUAL
+          (LOOP$
+             WITH LST = LST WITH
+             SYMS = SYMS WITH NON-SYMS = NON-SYMS DO
+             (COND ((CONSP LST)
+                    (COND ((SYMBOLP (CAR LST))
+                           (PROGN (SETQ SYMS (CONS (CAR LST) SYMS))
+                                  (SETQ LST (CDR LST))))
+                          (T (PROGN (SETQ NON-SYMS (CONS (CAR LST) NON-SYMS))
+                                    (SETQ LST (CDR LST))))))
+                   (T (RETURN (CONS SYMS NON-SYMS)))))
+          (CONS (APPEND (REV (LOOP$ FOR E IN LST WHEN (SYMBOLP E)
+                                    COLLECT E))
+                        SYMS)
+                (APPEND (REV (LOOP$ FOR E IN LST WHEN (NOT (SYMBOLP E))
+                                    COLLECT E))
+                        NON-SYMS))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(EQUAL
+    (DO$ (LAMBDA$ (ALIST)
+           (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+         (LIST (CONS 'LST LST)
+               (CONS 'SYMS SYMS)
+               (CONS 'NON-SYMS NON-SYMS))
+         (LAMBDA$ (ALIST)
+           (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+               (IF (SYMBOLP (CADR (ASSOC-EQ-SAFE 'LST ALIST)))
+                   (LIST NIL NIL
+                         (LIST (CONS 'LST
+                                     (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                               (LIST* 'SYMS
+                                      (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                      (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                               (CONS 'NON-SYMS
+                                     (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST)))))
+                 (LIST NIL NIL
+                       (LIST (CONS 'LST
+                                   (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                             (CONS 'SYMS
+                                   (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                             (LIST* 'NON-SYMS
+                                    (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                    (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
+             (LIST :RETURN
+                   (CONS (CDR (ASSOC-EQ-SAFE 'SYMS ALIST))
+                         (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST)))
+                   (LIST (CONS 'LST
+                               (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                         (CONS 'SYMS
+                               (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                         (CONS 'NON-SYMS
+                               (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST)))))))
+         (LAMBDA$ (ALIST)
+           (LIST NIL NIL
+                 (LIST (CONS 'LST
+                             (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                       (CONS 'SYMS
+                             (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                       (CONS 'NON-SYMS
+                             (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
+         '(NIL)
+         NIL NIL)
+    (CONS (APPEND (REV (COLLECT$ (LAMBDA$ (LOOP$-IVAR) LOOP$-IVAR)
+                                 (WHEN$ (LAMBDA$ (LOOP$-IVAR)
+                                          (SYMBOLP LOOP$-IVAR))
+                                        LST)))
+                  SYMS)
+          (APPEND (REV (COLLECT$ (LAMBDA$ (LOOP$-IVAR) LOOP$-IVAR)
+                                 (WHEN$ (LAMBDA$ (LOOP$-IVAR)
+                                          (NOT (SYMBOLP LOOP$-IVAR)))
+                                        LST)))
+                  NON-SYMS)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Three induction schemes are
+suggested by this conjecture.  These merge into one derived induction
+scheme.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'LST ALIST))))
+     (LIST (CONS 'LST LST)
+           (CONS 'SYMS SYMS)
+           (CONS 'NON-SYMS NON-SYMS))
+     (LAMBDA$ (ALIST)
+       (IF (CONSP (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+           (IF (SYMBOLP (CADR (ASSOC-EQ-SAFE 'LST ALIST)))
+               (LIST NIL NIL
+                     (LIST (CONS 'LST
+                                 (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                           (LIST* 'SYMS
+                                  (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                  (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                           (CONS 'NON-SYMS
+                                 (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST)))))
+             (LIST NIL NIL
+                   (LIST (CONS 'LST
+                               (CDDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                         (CONS 'SYMS
+                               (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                         (LIST* 'NON-SYMS
+                                (CADR (ASSOC-EQ-SAFE 'LST ALIST))
+                                (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
+         (LIST :RETURN
+               (CONS (CDR (ASSOC-EQ-SAFE 'SYMS ALIST))
+                     (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST)))
+               (LIST (CONS 'LST
+                           (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                     (CONS 'SYMS
+                           (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                     (CONS 'NON-SYMS
+                           (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'LST
+                         (CDR (ASSOC-EQ-SAFE 'LST ALIST)))
+                   (CONS 'SYMS
+                         (CDR (ASSOC-EQ-SAFE 'SYMS ALIST)))
+                   (CONS 'NON-SYMS
+                         (CDR (ASSOC-EQ-SAFE 'NON-SYMS ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rules DO$ and WHEN$.
+If we let (:P LST NON-SYMS SYMS) denote *1 above then the induction
+scheme we'll use is
+(AND (IMPLIES (NOT (CONSP LST))
+              (:P LST NON-SYMS SYMS))
+     (IMPLIES (AND (CONSP LST)
+                   (NOT (SYMBOLP (CAR LST)))
+                   (:P (CDR LST)
+                       (CONS (CAR LST) NON-SYMS)
+                       SYMS))
+              (:P LST NON-SYMS SYMS))
+     (IMPLIES (AND (CONSP LST)
+                   (SYMBOLP (CAR LST))
+                   (:P (CDR LST)
+                       NON-SYMS (CONS (CAR LST) SYMS)))
+              (:P LST NON-SYMS SYMS))
+     (IMPLIES (AND (CONSP LST)
+                   (NOT (SYMBOLP (CAR LST))))
+              (L< (LEX-FIX (ACL2-COUNT (CDR LST)))
+                  (LEX-FIX (ACL2-COUNT LST))))
+     (IMPLIES (AND (CONSP LST) (SYMBOLP (CAR LST)))
+              (L< (LEX-FIX (ACL2-COUNT (CDR LST)))
+                  (LEX-FIX (ACL2-COUNT LST))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variables SYMS and NON-SYMS are being instantiated.  When
+applied to the goal at hand the above induction scheme produces five
+nontautological subgoals.
+Subgoal *1/5
+Subgoal *1/4
+Subgoal *1/4'
+Subgoal *1/3
+Subgoal *1/3'
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/2''
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION BINARY-APPEND)
+        (:DEFINITION COLLECT$)
+        (:DEFINITION DO$)
+        (:DEFINITION FIX)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REV)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:DEFINITION WHEN$)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART COLLECT$)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART LAMBDA-OBJECT-FORMALS)
+        (:EXECUTABLE-COUNTERPART LEN)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REV)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:INDUCTION WHEN$)
+        (:REWRITE APPLY$-CONSP-ARITY-1)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOC-OF-APPEND)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION ACL2-COUNT)
+        (:TYPE-PRESCRIPTION COLLECT$)
+        (:TYPE-PRESCRIPTION WHEN$))
+
+Proof succeeded.
+ACL2 !>>(DEFUN NATS-AC-UP (I N ANS)
+          (DECLARE (XARGS :MEASURE (NFIX (- (+ 1 (NFIX N)) (NFIX I)))))
+          (LET ((I (NFIX I)) (N (NFIX N)))
+            (IF (> I N)
+                ANS
+              (NATS-AC-UP (+ I 1) N (CONS I ANS)))))
+
+For the admission of NATS-AC-UP we will use the relation O< (which
+is known to be well-founded on the domain recognized by O-P) and the
+measure (NFIX (+ (+ 1 (NFIX N)) (- (NFIX I)))).  The non-trivial part
+of the measure conjecture is
+
+Goal
+(AND (O-P (NFIX (+ (+ 1 (NFIX N)) (- (NFIX I)))))
+     (IMPLIES (<= (NFIX I) (NFIX N))
+              (O< (NFIX (+ (+ 1 (NFIX (NFIX N)))
+                           (- (NFIX (+ (NFIX I) 1)))))
+                  (NFIX (+ (+ 1 (NFIX N)) (- (NFIX I))))))).
+Subgoal 2
+Subgoal 1
+
+Splitter note (see :DOC splitter) for Subgoal 1 (5 subgoals).
+  if-intro: ((:DEFINITION FIX)
+             (:DEFINITION NFIX)
+             (:DEFINITION O<))
+
+Subgoal 1.5
+Subgoal 1.4
+Subgoal 1.3
+Subgoal 1.3'
+Subgoal 1.2
+
+Splitter note (see :DOC splitter) for Subgoal 1.2 (3 subgoals).
+  if-intro: ((:DEFINITION NFIX))
+
+Subgoal 1.2.3
+Subgoal 1.2.2
+Subgoal 1.2.1
+Subgoal 1.1
+Subgoal 1.1'
+
+Q.E.D.
+
+That completes the proof of the measure theorem for NATS-AC-UP.  Thus,
+we admit this function under the principle of definition.  We observe
+that the type of NATS-AC-UP is described by the theorem 
+(OR (CONSP (NATS-AC-UP I N ANS)) (EQUAL (NATS-AC-UP I N ANS) ANS)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN NATS-AC-UP ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION FIX)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O-P)
+        (:DEFINITION O<)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART NFIX)
+        (:EXECUTABLE-COUNTERPART O<)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE UNICITY-OF-0)
+        (:TYPE-PRESCRIPTION NFIX))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION FIX)
+             (:DEFINITION NFIX)
+             (:DEFINITION O<))
+ NATS-AC-UP
+ACL2 !>>(THM (IMPLIES (AND (NATP N) (NATP I0))
+                      (EQUAL (LOOP$ WITH I = I0 WITH ANS
+                                    = ANS0 DO :MEASURE (NFIX (+ 1 (- I) N))
+                                    (IF (< N I)
+                                        (RETURN ANS)
+                                      (PROGN (SETQ ANS (CONS I ANS))
+                                             (SETQ I (+ 1 I)))))
+                             (NATS-AC-UP I0 N ANS0))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+     (AND (INTEGERP N)
+          (<= 0 N)
+          (INTEGERP I0)
+          (<= 0 I0))
+     (EQUAL (DO$ (LAMBDA$ (ALIST)
+                   (IF (INTEGERP (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                    (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                       (IF (< (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                 (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                              0)
+                           0
+                         (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                            (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+                     0))
+                 (LIST (CONS 'I I0)
+                       (CONS 'ANS ANS0)
+                       (CONS 'N N))
+                 (LAMBDA$ (ALIST)
+                   (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST))
+                          (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                                   (CONS 'ANS
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'N
+                                         (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+                     (LIST NIL NIL
+                           (LIST (CONS 'I
+                                       (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                                 (LIST* 'ANS
+                                        (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'N
+                                       (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                               (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'N
+                                     (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+                 '(NIL)
+                 NIL NIL)
+            (NATS-AC-UP I0 N ANS0)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  However, one of these is flawed and so we are
+left with one viable candidate.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (IF (INTEGERP (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                        (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+           (IF (< (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                     (CDR (ASSOC-EQ-SAFE 'N ALIST)))
+                  0)
+               0
+             (+ 1 (- (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                (CDR (ASSOC-EQ-SAFE 'N ALIST))))
+         0))
+     (LIST (CONS 'I I0)
+           (CONS 'ANS ANS0)
+           (CONS 'N N))
+     (LAMBDA$ (ALIST)
+       (IF (< (CDR (ASSOC-EQ-SAFE 'N ALIST))
+              (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+           (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                 (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                       (CONS 'ANS
+                             (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'N
+                             (CDR (ASSOC-EQ-SAFE 'N ALIST)))))
+         (LIST NIL NIL
+               (LIST (CONS 'I
+                           (+ 1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                     (LIST* 'ANS
+                            (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                            (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                     (CONS 'N
+                           (CDR (ASSOC-EQ-SAFE 'N ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                   (CONS 'N
+                         (CDR (ASSOC-EQ-SAFE 'N ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P ANS0 I0 N) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (<= I0 N)
+                   (:P (CONS I0 ANS0) (+ 1 I0) N)
+                   (INTEGERP N)
+                   (<= 0 N)
+                   (INTEGERP I0)
+                   (<= 0 I0))
+              (:P ANS0 I0 N))
+     (IMPLIES (AND (<= I0 N)
+                   (< (+ 1 I0) 0)
+                   (INTEGERP N)
+                   (<= 0 N)
+                   (INTEGERP I0)
+                   (<= 0 I0))
+              (:P ANS0 I0 N))
+     (IMPLIES (AND (<= I0 N)
+                   (NOT (INTEGERP (+ 1 I0)))
+                   (INTEGERP N)
+                   (<= 0 N)
+                   (INTEGERP I0)
+                   (<= 0 I0))
+              (:P ANS0 I0 N))
+     (IMPLIES (AND (< N I0)
+                   (INTEGERP N)
+                   (<= 0 N)
+                   (INTEGERP I0)
+                   (<= 0 I0))
+              (:P ANS0 I0 N))
+     (IMPLIES (AND (INTEGERP N)
+                   (<= 0 N)
+                   (INTEGERP I0)
+                   (<= 0 I0)
+                   (<= I0 N))
+              (L< (LEX-FIX (IF (INTEGERP (+ 1 (- (+ 1 I0)) N))
+                               (IF (< (+ 1 (- (+ 1 I0)) N) 0)
+                                   0
+                                 (+ 1 (- (+ 1 I0)) N))
+                             0))
+                  (LEX-FIX (IF (INTEGERP (+ 1 (- I0) N))
+                               (IF (< (+ 1 (- I0) N) 0)
+                                   0
+                                 (+ 1 (- I0) N))
+                             0))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces five nontautological
+subgoals.
+Subgoal *1/5
+
+Splitter note (see :DOC splitter) for Subgoal *1/5 (3 subgoals).
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/5.3
+Subgoal *1/5.2
+Subgoal *1/5.1
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/1'
+
+Splitter note (see :DOC splitter) for Subgoal *1/1' (3 subgoals).
+  if-intro: ((:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Subgoal *1/1.3
+Subgoal *1/1.2
+Subgoal *1/1.1
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION DO$)
+        (:DEFINITION FIX)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NATS-AC-UP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART BINARY-+)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE ASSOCIATIVITY-OF-+)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE COMMUTATIVITY-2-OF-+)
+        (:REWRITE COMMUTATIVITY-OF-+)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE FOLD-CONSTS-IN-+)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID)
+        (:REWRITE UNICITY-OF-0))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$)
+             (:DEFINITION L<)
+             (:DEFINITION LEX-FIX)
+             (:DEFINITION NFIX))
+
+Proof succeeded.
+ACL2 !>>(DEFUN MAKE-PAIR (I J)
+          (DECLARE (XARGS :GUARD T))
+          (CONS I J))
+
+Since MAKE-PAIR is non-recursive, its admission is trivial.  We observe
+that the type of MAKE-PAIR is described by the theorem 
+(CONSP (MAKE-PAIR I J)).  We used primitive type reasoning.
+
+Computing the guard conjecture for MAKE-PAIR....
+
+The guard conjecture for MAKE-PAIR is trivial to prove.  MAKE-PAIR
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN MAKE-PAIR ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ MAKE-PAIR
+ACL2 !>>(DEFWARRANT MAKE-PAIR)
+
+
+MAKE-PAIR is now warranted by APPLY$-WARRANT-MAKE-PAIR, with badge
+(APPLY$-BADGE 2 1 . T).
+
+ :WARRANTED
+ACL2 !>>(DEFUN APDH2 (I J ANS)
+          (COND ((NATP J)
+                 (COND ((< J 1) ANS)
+                       (T (APDH2 I (- J 1)
+                                 (CONS (MAKE-PAIR I J) ANS)))))
+                (T NIL)))
+
+For the admission of APDH2 we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT J).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (NATP J) (<= 1 J))
+         (O< (ACL2-COUNT (+ -1 J))
+             (ACL2-COUNT J))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the measure theorem for APDH2.  Thus, we
+admit this function under the principle of definition.  We observe
+that the type of APDH2 is described by the theorem 
+(OR (OR (CONSP (APDH2 I J ANS))
+        (EQUAL (APDH2 I J ANS) NIL))
+    (EQUAL (APDH2 I J ANS) ANS)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN APDH2 ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ APDH2
+ACL2 !>>(DEFUN APDH1 (I JMAX ANS)
+          (COND ((NATP I)
+                 (COND ((< I 1) ANS)
+                       (T (APDH1 (- I 1)
+                                 JMAX (APDH2 I JMAX ANS)))))
+                (T NIL)))
+
+For the admission of APDH1 we will use the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT I).  The non-trivial part of the measure conjecture is
+
+Goal
+(IMPLIES (AND (NATP I) (<= 1 I))
+         (O< (ACL2-COUNT (+ -1 I))
+             (ACL2-COUNT I))).
+Goal'
+Goal''
+
+Q.E.D.
+
+That completes the proof of the measure theorem for APDH1.  Thus, we
+admit this function under the principle of definition.  We could deduce
+no constraints on the type of APDH1.
+
+Summary
+Form:  ( DEFUN APDH1 ...)
+Rules: ((:DEFINITION ACL2-COUNT)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+ APDH1
+ACL2 !>>(DEFTHM LEMMA1
+          (IMPLIES
+               (NATP JMAX)
+               (EQUAL (LOOP$ WITH J =
+                             JMAX WITH ANS = ANS0 DO :GUARD (NATP J)
+                             (COND ((< J 1) (RETURN ANS))
+                                   (T (PROGN (SETQ ANS (CONS (CONS I J) ANS))
+                                             (SETQ J (- J 1))))))
+                      (APDH2 I JMAX ANS0))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+     (AND (INTEGERP JMAX) (<= 0 JMAX))
+     (EQUAL (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                 (LIST (CONS 'J JMAX)
+                       (CONS 'ANS ANS0)
+                       (CONS 'I I))
+                 (LAMBDA$ (ALIST)
+                   (IF (< (CDR (ASSOC-EQ-SAFE 'J ALIST)) 1)
+                       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                             (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                   (CONS 'ANS
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'I
+                                         (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+                     (LIST NIL NIL
+                           (LIST (CONS 'J
+                                       (+ -1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                                 (LIST* 'ANS
+                                        (CONS (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                              (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'I
+                                       (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                               (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'I
+                                     (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+                 '(NIL)
+                 NIL NIL)
+            (APDH2 I JMAX ANS0)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  However, one of these is flawed and so we are
+left with one viable candidate.  
+
+We will induct according to a scheme suggested by 
+(DO$ (LAMBDA$ (ALIST)
+       (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+     (LIST (CONS 'J JMAX)
+           (CONS 'ANS ANS0)
+           (CONS 'I I))
+     (LAMBDA$ (ALIST)
+       (IF (< (CDR (ASSOC-EQ-SAFE 'J ALIST)) 1)
+           (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                 (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                       (CONS 'ANS
+                             (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'I
+                             (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+         (LIST NIL NIL
+               (LIST (CONS 'J
+                           (+ -1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                     (LIST* 'ANS
+                            (CONS (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                  (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                            (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                     (CONS 'I
+                           (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+     (LAMBDA$ (ALIST)
+       (LIST NIL NIL
+             (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                   (CONS 'ANS
+                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                   (CONS 'I
+                         (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+     '(NIL)
+     NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P ANS0 I JMAX) denote *1 above then the induction scheme we'll
+use is
+(AND (IMPLIES (AND (<= 1 JMAX)
+                   (:P (CONS (CONS I JMAX) ANS0)
+                       I (+ -1 JMAX))
+                   (INTEGERP JMAX)
+                   (<= 0 JMAX))
+              (:P ANS0 I JMAX))
+     (IMPLIES (AND (<= 1 JMAX)
+                   (< (+ -1 JMAX) 0)
+                   (INTEGERP JMAX)
+                   (<= 0 JMAX))
+              (:P ANS0 I JMAX))
+     (IMPLIES (AND (<= 1 JMAX)
+                   (NOT (INTEGERP (+ -1 JMAX)))
+                   (INTEGERP JMAX)
+                   (<= 0 JMAX))
+              (:P ANS0 I JMAX))
+     (IMPLIES (AND (< JMAX 1)
+                   (INTEGERP JMAX)
+                   (<= 0 JMAX))
+              (:P ANS0 I JMAX))
+     (IMPLIES (AND (INTEGERP JMAX)
+                   (<= 0 JMAX)
+                   (<= 1 JMAX))
+              (L< (LEX-FIX (ACL2-COUNT (+ -1 JMAX)))
+                  (LEX-FIX (ACL2-COUNT JMAX))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces five nontautological
+subgoals.
+Subgoal *1/5
+Subgoal *1/5'
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM LEMMA1 ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION APDH2)
+        (:DEFINITION DO$)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION MAKE-PAIR)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+ LEMMA1
+ACL2 !>>(THM
+         (IMPLIES
+          (AND (WARRANT DO$)
+               (NATP IMAX)
+               (NATP JMAX))
+          (EQUAL
+           (LOOP$
+            WITH I = IMAX WITH ANS = ANS0
+            DO :GUARD (AND (NATP I) (NATP JMAX))
+            (COND
+             ((< I 1) (RETURN ANS))
+             (T
+              (PROGN
+                (SETQ ANS
+                      (LOOP$ WITH J
+                             = JMAX WITH ANS = ANS DO :GUARD (NATP J)
+                             (COND ((< J 1) (RETURN ANS))
+                                   (T (PROGN (SETQ ANS (CONS (CONS I J) ANS))
+                                             (SETQ J (- J 1)))))))
+                (SETQ I (- I 1))))))
+           (APDH1 IMAX JMAX ANS0))))
+Goal'
+Goal''
+
+([ A key checkpoint:
+
+Goal''
+(IMPLIES
+ (AND (APPLY$-WARRANT-DO$)
+      (INTEGERP IMAX)
+      (<= 0 IMAX)
+      (INTEGERP JMAX)
+      (<= 0 JMAX))
+ (EQUAL
+  (DO$
+   (LAMBDA$ (ALIST)
+     (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+   (LIST (CONS 'I IMAX)
+         (CONS 'ANS ANS0)
+         (CONS 'JMAX JMAX))
+   (LAMBDA$ (ALIST)
+    (IF (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) 1)
+        (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+              (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                    (CONS 'ANS
+                          (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                    (CONS 'JMAX
+                          (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))))
+     (LIST
+      NIL NIL
+      (LIST
+       (CONS 'I
+             (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+       (CONS
+            'ANS
+            (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                 (LIST (CONS 'J
+                             (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))
+                       (CONS 'ANS
+                             (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'I
+                             (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                 (LAMBDA$ (ALIST)
+                   (IF (< (CDR (ASSOC-EQ-SAFE 'J ALIST)) 1)
+                       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                             (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                   (CONS 'ANS
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'I
+                                         (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+                     (LIST NIL NIL
+                           (LIST (CONS 'J
+                                       (+ -1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                                 (LIST* 'ANS
+                                        (CONS (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                              (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'I
+                                       (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                               (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'I
+                                     (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+                 '(NIL)
+                 NIL NIL))
+       (CONS 'JMAX
+             (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))))))
+   (LAMBDA$ (ALIST)
+     (LIST NIL NIL
+           (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                 (CONS 'ANS
+                       (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                 (CONS 'JMAX
+                       (CDR (ASSOC-EQ-SAFE 'JMAX ALIST))))))
+   '(NIL)
+   NIL NIL)
+  (APDH1 IMAX JMAX ANS0)))
+
+*1 (Goal'') is pushed for proof by induction.
+
+])
+
+Perhaps we can prove *1 by induction.  Two induction schemes are suggested
+by this conjecture.  However, one of these is flawed and so we are
+left with one viable candidate.  
+
+We will induct according to a scheme suggested by 
+(DO$
+ (LAMBDA$ (ALIST)
+   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+ (LIST (CONS 'I IMAX)
+       (CONS 'ANS ANS0)
+       (CONS 'JMAX JMAX))
+ (LAMBDA$ (ALIST)
+  (IF (< (CDR (ASSOC-EQ-SAFE 'I ALIST)) 1)
+      (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+            (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                  (CONS 'ANS
+                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                  (CONS 'JMAX
+                        (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))))
+   (LIST
+    NIL NIL
+    (LIST
+      (CONS 'I
+            (+ -1 (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+      (CONS 'ANS
+            (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                 (LIST (CONS 'J
+                             (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))
+                       (CONS 'ANS
+                             (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                       (CONS 'I
+                             (CDR (ASSOC-EQ-SAFE 'I ALIST))))
+                 (LAMBDA$ (ALIST)
+                   (IF (< (CDR (ASSOC-EQ-SAFE 'J ALIST)) 1)
+                       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                             (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                   (CONS 'ANS
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'I
+                                         (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+                     (LIST NIL NIL
+                           (LIST (CONS 'J
+                                       (+ -1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                                 (LIST* 'ANS
+                                        (CONS (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                              (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'I
+                                       (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                               (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'I
+                                     (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+                 '(NIL)
+                 NIL NIL))
+      (CONS 'JMAX
+            (CDR (ASSOC-EQ-SAFE 'JMAX ALIST)))))))
+ (LAMBDA$ (ALIST)
+   (LIST NIL NIL
+         (LIST (CONS 'I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+               (CONS 'ANS
+                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+               (CONS 'JMAX
+                     (CDR (ASSOC-EQ-SAFE 'JMAX ALIST))))))
+ '(NIL)
+ NIL NIL).
+
+This suggestion was produced using the :induction rule DO$.  If we
+let (:P ANS0 IMAX JMAX) denote *1 above then the induction scheme we'll
+use is
+(AND
+ (IMPLIES
+   (AND (<= 1 IMAX)
+        (:P (DO$ (LAMBDA$ (ALIST)
+                   (ACL2-COUNT (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                 (LIST (CONS 'J JMAX)
+                       (CONS 'ANS ANS0)
+                       (CONS 'I IMAX))
+                 (LAMBDA$ (ALIST)
+                   (IF (< (CDR (ASSOC-EQ-SAFE 'J ALIST)) 1)
+                       (LIST :RETURN (CDR (ASSOC-EQ-SAFE 'ANS ALIST))
+                             (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                   (CONS 'ANS
+                                         (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                   (CONS 'I
+                                         (CDR (ASSOC-EQ-SAFE 'I ALIST)))))
+                     (LIST NIL NIL
+                           (LIST (CONS 'J
+                                       (+ -1 (CDR (ASSOC-EQ-SAFE 'J ALIST))))
+                                 (LIST* 'ANS
+                                        (CONS (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                              (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                                        (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                 (CONS 'I
+                                       (CDR (ASSOC-EQ-SAFE 'I ALIST)))))))
+                 (LAMBDA$ (ALIST)
+                   (LIST NIL NIL
+                         (LIST (CONS 'J (CDR (ASSOC-EQ-SAFE 'J ALIST)))
+                               (CONS 'ANS
+                                     (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                               (CONS 'I
+                                     (CDR (ASSOC-EQ-SAFE 'I ALIST))))))
+                 '(NIL)
+                 NIL NIL)
+            (+ -1 IMAX)
+            JMAX)
+        (APPLY$-WARRANT-DO$)
+        (INTEGERP IMAX)
+        (<= 0 IMAX))
+   (:P ANS0 IMAX JMAX))
+ (IMPLIES (AND (<= 1 IMAX)
+               (< (+ -1 IMAX) 0)
+               (APPLY$-WARRANT-DO$)
+               (INTEGERP IMAX)
+               (<= 0 IMAX))
+          (:P ANS0 IMAX JMAX))
+ (IMPLIES (AND (<= 1 IMAX)
+               (NOT (INTEGERP (+ -1 IMAX)))
+               (APPLY$-WARRANT-DO$)
+               (INTEGERP IMAX)
+               (<= 0 IMAX))
+          (:P ANS0 IMAX JMAX))
+ (IMPLIES (AND (< IMAX 1)
+               (APPLY$-WARRANT-DO$)
+               (INTEGERP IMAX)
+               (<= 0 IMAX))
+          (:P ANS0 IMAX JMAX))
+ (IMPLIES (AND (APPLY$-WARRANT-DO$)
+               (INTEGERP IMAX)
+               (<= 0 IMAX)
+               (<= 1 IMAX))
+          (L< (LEX-FIX (ACL2-COUNT (+ -1 IMAX)))
+              (LEX-FIX (ACL2-COUNT IMAX))))).
+Note that one or more measure conjectures included in the scheme above
+justify this induction if they are provable.  Note, however, that the
+unmeasured variable ANS0 is being instantiated.  When applied to the
+goal at hand the above induction scheme produces five nontautological
+subgoals.
+Subgoal *1/5
+
+Splitter note (see :DOC splitter) for Subgoal *1/5 (2 subgoals).
+  if-intro: ((:DEFINITION DO$))
+
+Subgoal *1/5.2
+Subgoal *1/5.1
+Subgoal *1/4
+Subgoal *1/3
+Subgoal *1/2
+Subgoal *1/2'
+Subgoal *1/1
+Subgoal *1/1'
+Subgoal *1/1''
+
+*1 is COMPLETED!
+Thus key checkpoint Goal'' is COMPLETED!
+
+Q.E.D.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION APDH1)
+        (:DEFINITION DO$)
+        (:DEFINITION FORCE)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION L<)
+        (:DEFINITION LEN)
+        (:DEFINITION LEX-FIX)
+        (:DEFINITION LOOP$-DEFAULT-VALUES)
+        (:DEFINITION LOOP$-DEFAULT-VALUES1)
+        (:DEFINITION NATP)
+        (:DEFINITION NFIX)
+        (:DEFINITION NOT)
+        (:DEFINITION PAIRLIS$)
+        (:DEFINITION RETURN-LAST)
+        (:DEFINITION REWRITE-LAMBDA-MODEP)
+        (:DEFINITION SYNP)
+        (:EXECUTABLE-COUNTERPART <)
+        (:EXECUTABLE-COUNTERPART CAR)
+        (:EXECUTABLE-COUNTERPART CDR)
+        (:EXECUTABLE-COUNTERPART CONS)
+        (:EXECUTABLE-COUNTERPART CONSP)
+        (:EXECUTABLE-COUNTERPART EQUAL)
+        (:EXECUTABLE-COUNTERPART INTEGERP)
+        (:EXECUTABLE-COUNTERPART NATP)
+        (:EXECUTABLE-COUNTERPART NOT)
+        (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:FAKE-RUNE-FOR-LINEAR NIL)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:INDUCTION DO$)
+        (:REWRITE APPLY$-DO$)
+        (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
+        (:REWRITE BETA-REDUCTION)
+        (:REWRITE CAR-CONS)
+        (:REWRITE CDR-CONS)
+        (:REWRITE EV$-OPENER)
+        (:REWRITE LEMMA1)
+        (:REWRITE TRUE-LISTP-TRUE-LIST-FIX-ID))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION DO$))
+
+Proof succeeded.
+ACL2 !>>Bye.

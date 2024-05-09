@@ -105,21 +105,34 @@ executed on the real ACL2 @(see state).</p>"
              (equal (file-measure channel (mv-nth 1 (read-char$ channel state)))
                     (1- (file-measure channel state)))))
 
+; Matt K. mod 5/8/2023: Due to adding a call of iprint-oracle-updates in the
+; definition of read-object, then for the proof of
+; file-measure-of-read-object-weak below, we locally enable put-global,
+; read-acl2-oracle, and update-acl2-oracle.
+
+  (local (in-theory (enable read-acl2-oracle update-acl2-oracle put-global
+; Matt K. mod for conversion of eviscerate-top to logic mode:
+                            iprint-oracle-updates)))
+
   (defthm file-measure-of-read-object-weak
     (<= (file-measure channel (mv-nth 2 (read-object channel state)))
         (file-measure channel state))
     :rule-classes (:rewrite :linear))
+
+; Matt K. mod: Switched the order of the following two, now that proofs may be
+; slower because iprint-oracle-updates is more complicated (see comment
+; above).
+
+  (defthm file-measure-of-read-object-rw
+    (implies (not (mv-nth 0 (read-object channel state)))
+             (equal (file-measure channel (mv-nth 2 (read-object channel state)))
+                    (1- (file-measure channel state)))))
 
   (defthm file-measure-of-read-object-strong
     (implies (not (mv-nth 0 (read-object channel state)))
              (< (file-measure channel (mv-nth 2 (read-object channel state)))
                 (file-measure channel state)))
     :rule-classes (:rewrite :linear))
-
-  (defthm file-measure-of-read-object-rw
-    (implies (not (mv-nth 0 (read-object channel state)))
-             (equal (file-measure channel (mv-nth 2 (read-object channel state)))
-                    (1- (file-measure channel state)))))
 
   (defthm file-measure-type
     (natp (file-measure channel state))

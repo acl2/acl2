@@ -24,7 +24,16 @@
  from the list @('*acl2-system-exports*'), which is a superset of
  @('*acl2-exports*') that includes the names of some useful system constants,
  functions, and macros; in particular, it includes the list of functions
- documented in @(see system-utilities).  Here are the symbols added to
- @('*acl2-exports*') to produce @('*acl2-system-exports*').</p>
+ documented in @(see system-utilities).</p>
+
+ <p><b>NOTE</b>To ensure that @('*acl2-system-exports*') is defined, include
+ the appropriate book, as follows.</p>
+
+ @({
+ (include-book \"system/acl2-system-exports\" :dir :system)
+ })
+
+ <p>Here are the symbols added to @('*acl2-exports*') to produce
+ @('*acl2-system-exports*').</p>
 
  @(`(:code *acl2-system-exports-additions*)`)")

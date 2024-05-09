@@ -121,153 +121,220 @@
       (<apply> fn (svexlist-<ev> args <env>)))))
 
 (defconst *svex-mono-eval-template*
-  '(defines svex-<ev>
-     :parents (evaluation)
-     :short <short>
-     :long <long>
-     :flag-local nil
-     (define svex-<ev> ((x svex-p "Expression to evaluate.")
-                        <env-formal>)
-       :returns (val <rettype>)
-       :measure (two-nats-measure (svex-count x) 1)
-       :verify-guards nil
-       (svex-case x
-         :quote x.val
-         :var <env-lookup>
-         :call (svex-call-<ev> x <env>)))
+  '(progn
+     (defines svex-<ev>
+       :parents (evaluation)
+       :short <short>
+       :long <long>
+       :flag-local nil
+       (define svex-<ev> ((x svex-p "Expression to evaluate.")
+                          <env-formal>)
+         :returns (val <rettype>)
+         :measure (two-nats-measure (svex-count x) 1)
+         :verify-guards nil
+         (svex-case x
+           :quote x.val
+           :var <env-lookup>
+           :call (svex-call-<ev> x <env>)))
 
-     (define svex-call-<ev> ((x svex-p)
-                             <env-formal>)
-       :guard (svex-case x :call)
-       :measure (two-nats-measure (svex-count x) 0)
-       :returns (val <rettype>)
-       (b* (((unless (mbt (svex-case x :call))) (4vec-x))
-            ((svex-call x)))
-         (mbe :logic (svex-fn/args-<ev> x.fn x.args <env>)
-              :exec (let* ((fn x.fn)
-                           (args x.args))
-                      <body>))))
+       (define svex-call-<ev> ((x svex-p)
+                               <env-formal>)
+         :guard (svex-case x :call)
+         :measure (two-nats-measure (svex-count x) 0)
+         :returns (val <rettype>)
+         (b* (((unless (mbt (svex-case x :call))) (4vec-x))
+              ((svex-call x)))
+           (mbe :logic (svex-fn/args-<ev> x.fn x.args <env>)
+                :exec (let* ((fn x.fn)
+                             (args x.args))
+                        <body>))))
 
-     (define svex-fn/args-<ev> ((fn fnsym-p)
-                                (args svexlist-p)
-                                <env-formal>)
-       :measure (two-nats-measure (svexlist-count args) 1)
-       :returns (val <rettype>)
-       <body>)
+       (define svex-fn/args-<ev> ((fn fnsym-p)
+                                  (args svexlist-p)
+                                  <env-formal>)
+         :measure (two-nats-measure (svexlist-count args) 1)
+         :returns (val <rettype>)
+         <body>)
 
-     (define svexlist-<ev> ((x svexlist-p)
-                            <env-formal>)
-       :measure (two-nats-measure (svexlist-count x) 0)
-       :returns (val 4veclist-p)
-       :short "Maps @(see svex-<ev>) over an @(see svex) list."
+       (define svexlist-<ev> ((x svexlist-p)
+                              <env-formal>)
+         :measure (two-nats-measure (svexlist-count x) 0)
+         :returns (val 4veclist-p)
+         :short "Maps @(see svex-<ev>) over an @(see svex) list."
+         (if (atom x)
+             nil
+           (cons (svex-<ev> (car x) <env>)
+                 (svexlist-<ev> (cdr x) <env>))))
+       ///
+       (local (in-theory (disable svex-<ev>
+                                  svex-call-<ev>
+                                  svexlist-<ev>)))
+
+       (local (defthm consp-of-svexlist-<ev>
+                (equal (consp (svexlist-<ev> x <env>))
+                       (consp x))
+                :hints (("goal" :expand ((svexlist-<ev> x <env>))))))
+
+       (local (defthm upper-lower-of-3vec-fix
+                (implies (and (3vec-p x)
+                              (not (equal (4vec->lower x) 0)))
+                         (not (equal (4vec->upper x) 0)))
+                :hints(("Goal" :in-theory (enable 3vec-p)))))
+
+       (local (defthm 4vec-?-cases
+                (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                              (equal (4vec-? test then else)
+                                     (4vec-fix else)))
+                     (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                              (equal (4vec-? test then else)
+                                     (4vec-fix then))))
+                :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
+
+       (local (defthm 4vec-?*-cases
+                (and (implies (equal (4vec->upper (3vec-fix test)) 0)
+                              (equal (4vec-?* test then else)
+                                     (4vec-fix else)))
+                     (implies (not (equal (4vec->lower (3vec-fix test)) 0))
+                              (equal (4vec-?* test then else)
+                                     (4vec-fix then))))
+                :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
+
+       (local (defthm 4vec-bit?-cases
+                (and (implies (equal test 0)
+                              (equal (4vec-bit? test then else)
+                                     (4vec-fix else)))
+                     (implies (equal test -1)
+                              (equal (4vec-bit? test then else)
+                                     (4vec-fix then))))
+                :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
+
+       (local (defthm 4vec-bitand-case
+                (implies (equal test 0)
+                         (equal (4vec-bitand test x)
+                                0))
+                :hints(("Goal" :in-theory (enable 4vec-bitand 3vec-bitand)))))
+
+       (local (defthm 4vec-bitor-case
+                (implies (equal test -1)
+                         (equal (4vec-bitor test x)
+                                -1))
+                :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor)))))
+
+       (defthmd svex-<ev>-of-quote
+         (implies (svex-case x :quote)
+                  (equal (svex-<ev> x <env>) (<quote-val> x)))
+         :hints(("Goal" :in-theory (enable svex-<ev>))))
+
+       (verify-guards svex-<ev>
+         :hints((and stable-under-simplificationp
+                     '(:in-theory (e/d (<apply> len 4veclist-nth-safe nth 4vec-?!
+                                                svex-<ev>-of-quote)
+                                       (svex-<ev>))
+                       :expand ((svexlist-<ev> (svex-call->args x) <env>)
+                                (svexlist-<ev> (cdr (svex-call->args x)) <env>)
+                                (svexlist-<ev> (cddr (svex-call->args x)) <env>)
+                                (svexlist-<ev> args <env>)
+                                (svexlist-<ev> (cdr args) <env>)
+                                (svexlist-<ev> (cddr args) <env>))))))
+
+       (memoize 'svex-call-<ev>)
+
+       (deffixequiv-mutual svex-<ev>)
+       ;; :hints (("goal" :expand ((svexlist-xev
+       ;;                          (svex-call-<ev> x)
+       ;;                          (svex-call-<ev> (svex-fix x))))))
+
+       (defthm svexlist-<ev>-nil
+         (equal (svexlist-<ev> nil <env>) nil)
+         :hints(("Goal" :in-theory (enable svexlist-<ev>))))
+
+       (defthm car-of-svexlist-<ev>
+         (4vec-equiv (car (svexlist-<ev> x <env>))
+                     (svex-<ev> (car x) <env>))
+         :hints(("Goal" :expand ((svexlist-<ev> x <env>))
+                 :in-theory (enable svex-<ev>-of-quote))))
+
+       (defthm cdr-of-svexlist-<ev>
+         (4veclist-equiv (cdr (svexlist-<ev> x <env>))
+                         (svexlist-<ev> (cdr x) <env>))
+         :hints(("Goal" :in-theory (enable svexlist-<ev>))))
+
+       (defthm len-of-svexlist-<ev>
+         (equal (len (svexlist-<ev> x <env>))
+                (len x))
+         :hints(("Goal" :in-theory (enable svexlist-<ev>))))
+
+       (defthm svexlist-<ev>-of-append
+         (equal (svexlist-<ev> (append a b) <env>)
+                (append (svexlist-<ev> a <env>)
+                        (svexlist-<ev> b <env>)))
+         :hints(("Goal" :in-theory (enable append svexlist-<ev>)))))
+
+     (define svex-alist-<ev>-aux ((x   svex-alist-p)
+                                  <env-formal>)
+       :parents (svex-alist-<ev>)
+       :prepwork ((local (in-theory (enable svex-alist-p svex-alist-fix svex-env-p))))
+       :returns (xx svex-env-p :hints(("Goal" :in-theory (enable svex-env-p))))
        (if (atom x)
            nil
-         (cons (svex-<ev> (car x) <env>)
-               (svexlist-<ev> (cdr x) <env>))))
-     ///
-     (local (in-theory (disable svex-<ev>
-                                svex-call-<ev>
-                                svexlist-<ev>)))
+         (if (mbt (and (consp (car x)) (svar-p (caar x))))
+             (cons (cons (caar x)
+                         (svex-<ev> (cdar x) <env>))
+                   (svex-alist-<ev>-aux (cdr x) <env>))
+           (svex-alist-<ev>-aux (cdr x) <env>))))
 
-     (local (defthm consp-of-svexlist-<ev>
-              (equal (consp (svexlist-<ev> x <env>))
-                     (consp x))
-              :hints (("goal" :expand ((svexlist-<ev> x <env>))))))
+     (define svex-alist-<ev>
+       ((x   svex-alist-p "Alist of variables to @(see svex) expressions to evaluate.
+                      Need not be fast.")
+        <env-formal>)
+       :prepwork ((local (in-theory (enable svex-alist-p svex-alist-fix svex-env-p))))
+       :returns (result svex-env-p
+                        "New (slow) alist, binds the variables to their expressions'
+                    values."
+                        :hints(("Goal" :in-theory (enable svex-env-p))))
+       :Verify-guards nil
+       (mbe :logic
+            (if (atom x)
+                nil
+              (if (mbt (and (consp (car x)) (svar-p (caar x))))
+                  (cons (cons (caar x)
+                              (svex-<ev> (cdar x) <env>))
+                        (svex-alist-<ev> (cdr x) <env>))
+                (svex-alist-<ev> (cdr x) <env>)))
+            :exec
+            (:@ :env (with-fast-alist env (svex-alist-<ev>-aux x <env>)))
+            (:@ (not :env) (svex-alist-<ev>-aux x <env>)))
+       ///
+       (deffixequiv svex-alist-<ev>)
 
-     (local (defthm upper-lower-of-3vec-fix
-              (implies (and (3vec-p x)
-                            (not (equal (4vec->lower x) 0)))
-                       (not (equal (4vec->upper x) 0)))
-              :hints(("Goal" :in-theory (enable 3vec-p)))))
+       (local (defthm svex-alist-<ev>-aux-elim
+                (equal (svex-alist-<ev>-aux x <env>)
+                       (svex-alist-<ev> x <env>))
+                :hints(("Goal" :in-theory (enable svex-alist-<ev>-aux)))))
 
-     (local (defthm 4vec-?-cases
-              (and (implies (equal (4vec->upper (3vec-fix test)) 0)
-                            (equal (4vec-? test then else)
-                                   (4vec-fix else)))
-                   (implies (not (equal (4vec->lower (3vec-fix test)) 0))
-                            (equal (4vec-? test then else)
-                                   (4vec-fix then))))
-              :hints(("Goal" :in-theory (enable 4vec-? 3vec-?)))))
+       (verify-guards svex-alist-<ev>)
 
-     (local (defthm 4vec-?*-cases
-              (and (implies (equal (4vec->upper (3vec-fix test)) 0)
-                            (equal (4vec-?* test then else)
-                                   (4vec-fix else)))
-                   (implies (not (equal (4vec->lower (3vec-fix test)) 0))
-                            (equal (4vec-?* test then else)
-                                   (4vec-fix then))))
-              :hints(("Goal" :in-theory (enable 4vec-?* 3vec-?*)))))
+       (defthm svex-env-lookup-of-svex-alist-<ev>
+         (equal (svex-env-lookup k (svex-alist-<ev> x <env>))
+                (let ((xk (svex-lookup k x)))
+                  (if xk (svex-<ev> xk <env>) (4vec-x))))
+         :hints(("Goal" :in-theory (enable svex-env-lookup svex-lookup))))
 
-     (local (defthm 4vec-bit?-cases
-              (and (implies (equal test 0)
-                            (equal (4vec-bit? test then else)
-                                   (4vec-fix else)))
-                   (implies (equal test -1)
-                            (equal (4vec-bit? test then else)
-                                   (4vec-fix then))))
-              :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit?)))))
+       (defthm svex-env-boundp-of-svex-alist-<ev>
+         (iff (svex-env-boundp k (svex-alist-<ev> x <env>))
+              (svex-lookup k x))
+         :hints(("Goal" :in-theory (enable svex-env-boundp svex-lookup))))
 
-     (local (defthm 4vec-bitand-case
-              (implies (equal test 0)
-                       (equal (4vec-bitand test x)
-                              0))
-              :hints(("Goal" :in-theory (enable 4vec-bitand 3vec-bitand)))))
+       (defthm svex-alist-<ev>-of-append
+         (equal (svex-alist-<ev> (append a b) <env>)
+                (append (svex-alist-<ev> a <env>)
+                        (svex-alist-<ev> b <env>)))
+         :hints(("Goal" :in-theory (enable svex-alist-<ev> append))))
 
-     (local (defthm 4vec-bitor-case
-              (implies (equal test -1)
-                       (equal (4vec-bitor test x)
-                              -1))
-              :hints(("Goal" :in-theory (enable 4vec-bitor 3vec-bitor)))))
-
-     (defthmd svex-<ev>-of-quote
-       (implies (svex-case x :quote)
-                (equal (svex-<ev> x <env>) (<quote-val> x)))
-       :hints(("Goal" :in-theory (enable svex-<ev>))))
-
-     (verify-guards svex-<ev>
-       :hints((and stable-under-simplificationp
-                   '(:in-theory (e/d (<apply> len 4veclist-nth-safe nth 4vec-?!
-                                                 svex-<ev>-of-quote)
-                                     (svex-<ev>))
-                     :expand ((svexlist-<ev> (svex-call->args x) <env>)
-                              (svexlist-<ev> (cdr (svex-call->args x)) <env>)
-                              (svexlist-<ev> (cddr (svex-call->args x)) <env>)
-                              (svexlist-<ev> args <env>)
-                              (svexlist-<ev> (cdr args) <env>)
-                              (svexlist-<ev> (cddr args) <env>))))))
-
-     (memoize 'svex-call-<ev>)
-
-     (deffixequiv-mutual svex-<ev>)
-     ;; :hints (("goal" :expand ((svexlist-xev
-     ;;                          (svex-call-<ev> x)
-     ;;                          (svex-call-<ev> (svex-fix x))))))
-
-     (defthm svexlist-<ev>-nil
-       (equal (svexlist-<ev> nil <env>) nil)
-       :hints(("Goal" :in-theory (enable svexlist-<ev>))))
-
-     (defthm car-of-svexlist-<ev>
-       (4vec-equiv (car (svexlist-<ev> x <env>))
-                   (svex-<ev> (car x) <env>))
-       :hints(("Goal" :expand ((svexlist-<ev> x <env>))
-               :in-theory (enable svex-<ev>-of-quote))))
-
-     (defthm cdr-of-svexlist-<ev>
-       (4veclist-equiv (cdr (svexlist-<ev> x <env>))
-                       (svexlist-<ev> (cdr x) <env>))
-       :hints(("Goal" :in-theory (enable svexlist-<ev>))))
-
-     (defthm len-of-svexlist-<ev>
-       (equal (len (svexlist-<ev> x <env>))
-              (len x))
-       :hints(("Goal" :in-theory (enable svexlist-<ev>))))
-
-     (defthm svexlist-<ev>-of-append
-       (equal (svexlist-<ev> (append a b) <env>)
-              (append (svexlist-<ev> a <env>)
-                      (svexlist-<ev> b <env>)))
-       :hints(("Goal" :in-theory (enable append svexlist-<ev>))))))
+       (defthm alist-keys-of-svex-alist-<ev>
+         (equal (alist-keys (svex-alist-<ev> x <env>))
+                (svex-alist-keys x))
+         :hints(("Goal" :in-theory (enable svex-alist-keys svex-alist-<ev> alist-keys)))))))
 
 
 #||
@@ -308,7 +375,8 @@
                                                  (<apply> . svex-apply)
                                                  (<quote-val> . svex-quote->val)
                                                  (<env-formal> . (env svex-env-p))
-                                                 (<env-lookup> . (svex-env-lookup x.name env))))))
+                                                 (<env-lookup> . (svex-env-lookup x.name env)))
+                                   :features '(:env))))
    event))
 
 #||

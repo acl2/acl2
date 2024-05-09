@@ -50,6 +50,8 @@
 
 (include-book "../meta-rule-macros")
 
+(include-book "centaur/meta/def-formula-checks" :dir :system)
+
 (defund fast-alist-free-meta (term)
   (declare (xargs :guard t))
   (case-match term

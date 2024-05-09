@@ -15,8 +15,8 @@
 
 (include-book "kestrel/error-checking/ensure-list-has-no-duplicates" :dir :system)
 (include-book "kestrel/error-checking/ensure-symbol-is-fresh-event-name" :dir :system)
+(include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/std/util/defmacro-plus" :dir :system)
-(include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

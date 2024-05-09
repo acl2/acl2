@@ -14,6 +14,9 @@
 (include-book "free-vars-in-term")
 (include-book "make-lambda-application-simple")
 
+;; TODO: Consider making a version specialized to replacing a variable and
+;; about which we can make stronger claims.
+
 ;; Replace occurrences of OLD with NEW in TERM.
 ;; This could be called "replace-term" but that name seems to already be used elsewhere.
 ;; Note that it's not clear how term replacement should deal with lambdas/lets, as they change the meaning of variables.

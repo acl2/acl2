@@ -289,42 +289,42 @@
 (encapsulate
   ()
 
-  (local (include-book "projects/quadratic-reciprocity/euclid" :dir :system))
+  (local (include-book "projects/numbers/euclid" :dir :system))
   (local (include-book "arithmetic-5/top" :dir :system))
 
   (local
    (defthm y^2=1modp-lemma1
      (implies (and (integerp a)
                    (integerp b)
-                   (rtl::primep p)
-                   (rtl::divides p (* a b))
-                   (not (rtl::divides p b)))
-              (rtl::divides p a))
+                   (primep p)
+                   (divides p (* a b))
+                   (not (divides p b)))
+              (divides p a))
      :hints (("Goal"
-              :use (:instance rtl::euclid (p p) (a a) (b b))
+              :use (:instance dm::euclid (p p) (a a) (b b))
               ))))
 
   (local
    (defthm y^2=1modp-1
-     (implies (and (rtl::primep p)
+     (implies (and (primep p)
                    (integerp y)
                    (< 2 p)
                    (equal (mod (* y y) p) 1))
               (or (equal (mod y p) 1)
                   (equal (mod y p) (mod -1 p))))
      :hints (("Goal"
-              :cases ((rtl::divides p (- y 1))
-                      (rtl::divides p (+ y 1)))
-              :use ((:instance rtl::divides-mod-equal (n p) (a (* y y)) (b 1))
+              :cases ((divides p (- y 1))
+                      (divides p (+ y 1)))
+              :use ((:instance dm::divides-mod-equal (n p) (a (* y y)) (b 1))
                     (:instance y^2=1modp-lemma1 (a (- y 1)) (b (+ y 1)))
-                    (:instance rtl::divides-mod-equal (n p) (a y) (b 1))
-                    (:instance rtl::divides-mod-equal (n p) (a y) (b -1)))
-              :in-theory (e/d (rtl::primep) ())
+                    (:instance dm::divides-mod-equal (n p) (a y) (b 1))
+                    (:instance dm::divides-mod-equal (n p) (a y) (b -1)))
+              :in-theory (e/d (primep) ())
               ))))
 
   (local
    (defthm y^2=1modp-2
-     (implies (and (rtl::primep p)
+     (implies (and (primep p)
                    (integerp y)
                    (< 2 p)
                    (or (equal (mod y p) 1)
@@ -340,7 +340,7 @@
               ))))
 
   (defthm y^2=1modp
-    (implies (and (rtl::primep p)
+    (implies (and (primep p)
                   (integerp y)
                   (< 2 p))
              (iff (equal (mod (* y y) p) 1)
@@ -354,7 +354,7 @@
   (defthm modx^2-y^2
     (implies (and (natp x)
                   (natp y)
-                  (rtl::primep p)
+                  (primep p)
                   (< 2 p)
                   (< x p)
                   (< y p)
@@ -362,10 +362,10 @@
              (or (equal x y)
                  (equal x (mod (- y) p))))
     :hints (("Goal"
-             :use ((:instance rtl::divides-mod-equal (n p) (a (* x x)) (b (* y y)))
+             :use ((:instance dm::divides-mod-equal (n p) (a (* x x)) (b (* y y)))
                    (:instance y^2=1modp-lemma1 (p p) (a (+ x y)) (b (- x y)))
-                   (:instance rtl::divides-mod-equal (n p) (a x) (b y))
-                   (:instance rtl::divides-mod-equal (n p) (a x) (b (- y))))
+                   (:instance dm::divides-mod-equal (n p) (a x) (b y))
+                   (:instance dm::divides-mod-equal (n p) (a x) (b (- y))))
              :in-theory (e/d () (mod-*a-b= mod-*mod-a*mod-b=))
              )))
   )
@@ -562,7 +562,7 @@
    (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 
    (defthm t-s-aux-euler-criterion
-     (implies (and (rtl::primep p)
+     (implies (and (primep p)
                    (> p 2)
                    (integerp n)
                    (< n p)
@@ -572,9 +572,9 @@
      :hints (("Goal"
               :use ((:instance mod-expt-fast-instance-meaning (m n) (p p))
                     (:instance residue-meaning (p p) (m n))
-                    (:instance rtl::euler-criterion (p p) (m n))
+                    (:instance dm::euler-criterion (p p) (m n))
                     )
-              :in-theory (enable acl2::mod-expt-fast rtl::primep)
+              :in-theory (enable acl2::mod-expt-fast primep)
               )))
 
    (local
@@ -586,7 +586,7 @@
                       (expt a (/ (* b (expt 2 c)) 2))))))
 
    (defthm t-s-aux-z-is-non-residue
-     (implies (and (rtl::primep p)
+     (implies (and (primep p)
                    (< 2 p)
                    (natp z)
                    (not (has-square-root? z p))
@@ -611,7 +611,7 @@
               )))
 
    (defthm t-s-aux-n-is-residue
-     (implies (and (rtl::primep p)
+     (implies (and (primep p)
                    (< 2 p)
                    (natp n)
                    (has-square-root? n p)
@@ -650,7 +650,7 @@
                    (not (has-square-root? z p))
                    (< 2 p)
                    (< z p)
-                   (rtl::primep p)
+                   (primep p)
                    (< n p)
                    (has-square-root? n p)
                    (< 0 n)
@@ -720,7 +720,7 @@
    (defthmd t-s-aux-invariant1
      (implies (and (posp n)
                    (< 2 p)
-                   (rtl::primep p)
+                   (primep p)
                    (< n p)
                    (has-square-root? n p)
                    (posp m)
@@ -780,7 +780,7 @@
         (implies (and (natp tt)
                       (posp m)
                       (natp c)
-                      (rtl::primep p)
+                      (primep p)
                       (< 2 p))
                  (natp (mod (* tt (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p)))))
                                (expt c (expt 2 (+ -1 m (- (least-repeated-square tt m p))))))
@@ -796,7 +796,7 @@
         (implies (and (natp tt)
                       (posp m)
                       (natp c)
-                      (rtl::primep p)
+                      (primep p)
                       (equal (mod (expt c (expt 2 (- m 1))) p) (mod -1 p))
                       (< 2 p))
                  (equal
@@ -851,7 +851,7 @@
     (defthmd t-s-aux-invariant2-lemma1
       (implies (and (posp n)
                     (< 2 p)
-                    (rtl::primep p)
+                    (primep p)
                     (< n p)
                     (has-square-root? n p)
                     (posp m)
@@ -915,7 +915,7 @@
       (defthmd t-s-aux-invariant2-lemma2
         (implies (and (posp n)
                       (< 2 p)
-                      (rtl::primep p)
+                      (primep p)
                       (< n p)
                       (has-square-root? n p)
                       (posp m)
@@ -957,7 +957,7 @@
    (defthmd t-s-aux-invariant2
      (implies (and (posp n)
                    (< 2 p)
-                   (rtl::primep p)
+                   (primep p)
                    (< n p)
                    (has-square-root? n p)
                    (posp m)
@@ -1004,7 +1004,7 @@
       (defthmd t-s-aux-invariant3-lemma1
         (implies (and (posp n)
                       (< 2 p)
-                      (rtl::primep p)
+                      (primep p)
                       (< n p)
                       (has-square-root? n p)
                       (posp m)
@@ -1043,7 +1043,7 @@
    (defthmd t-s-aux-invariant3
      (implies (and (posp n)
                    (< 2 p)
-                   (rtl::primep p)
+                   (primep p)
                    (< n p)
                    (has-square-root? n p)
                    (posp m)
@@ -1089,7 +1089,7 @@
                  (natp r)
                  (natp p)
                  (< n p)
-                 (rtl::primep p)
+                 (primep p)
                  (< 2 p)
                  (equal (mod (expt c (expt 2 (- m 1))) p) (mod -1 p))
                  (= (acl2::mod-expt-fast tt (expt 2 (least-repeated-square tt m p)) p) 1)
@@ -1125,7 +1125,7 @@
   (implies (and (equal (least-repeated-square tt m p) 0)
                 (integerp n)
                 (< 0 n)
-                (rtl::primep p)
+                (primep p)
                 (equal (acl2::mod-expt-fast n (+ -1/2 (* 1/2 p))
                                             p)
                        1)
@@ -1163,7 +1163,7 @@
                  (natp tt)
                  (natp r)
                  (< n p)
-                 (rtl::primep p)
+                 (primep p)
                  (< 2 p)
                  (equal (mod (expt c (expt 2 (- m 1))) p) (mod -1 p))
                  (= (acl2::mod-expt-fast tt (expt 2 (least-repeated-square tt m p)) p) 1)
@@ -1186,12 +1186,12 @@
                 (> p 2)
                 (< n p)
                 (< z p)
-                (rtl::primep p)
+                (primep p)
                 (not (has-square-root? z p))
                 (equal (tonelli-shanks-sqrt-aux n p z) y))
            (if (has-square-root? n p)
-	       (equal (mod (* y y) p) n)
-	     (equal y 0)))
+               (equal (mod (* y y) p) n)
+             (equal y 0)))
   :hints (("Goal"
            :use ((:instance hyps-true-t-s-aux
                             (n n)
@@ -1228,7 +1228,7 @@
     (implies (and (natp z)
                   (> p 2)
                   (< z p)
-                  (rtl::primep p)
+                  (primep p)
                   (not (has-square-root? z p))
                   (natp y)
                   (< y p)
@@ -1239,7 +1239,7 @@
              :use ((:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
                               (n n) (z z) (p p)
                               (y (tonelli-shanks-sqrt-aux n p z)))
-		   (:instance has-square-root?-suff (x n) (p p) (y y))
+                   (:instance has-square-root?-suff (x n) (p p) (y y))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt-aux n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z)
@@ -1274,16 +1274,16 @@
                   (> p 2)
                   (< n p)
                   (< z p)
-                  (rtl::primep p)
+                  (primep p)
                   (not (has-square-root? z p))
                   (equal (tonelli-shanks-sqrt n p z) y))
-	     (if (has-square-root? n p)
-		 (equal (mod (* y y) p) n)
-	       (equal y 0)))
+             (if (has-square-root? n p)
+                 (equal (mod (* y y) p) n)
+               (equal y 0)))
     :hints (("Goal"
              :use ((:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
-		   (:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
-			      (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z)))
+                   (:instance tonelli-shanks-sqrt-aux-is-sqrt-modp
+                              (n n) (p p) (z z) (y (tonelli-shanks-sqrt-aux n p z)))
                    (:instance mod-*mod-a*mod-b=
                               (a (- (tonelli-shanks-sqrt-aux n p z)))
                               (b (- (tonelli-shanks-sqrt-aux n p z)))
@@ -1304,7 +1304,7 @@
     (implies (and (natp z)
                   (> p 2)
                   (< z p)
-                  (rtl::primep p)
+                  (primep p)
                   (not (has-square-root? z p))
                   (natp y)
                   (< y p)
@@ -1314,7 +1314,7 @@
     :hints (("Goal"
              :use ((:instance tonelli-shanks-is-sqrt-modp (n n) (z z) (p p)
                               (y (tonelli-shanks-sqrt n p z)))
-		   (:instance has-square-root?-suff (x n) (p p) (y y))
+                   (:instance has-square-root?-suff (x n) (p p) (y y))
                    (:instance modx^2-y^2 (x (tonelli-shanks-sqrt n p z)) (y y) (p p))
                    (:instance tonelli-shanks-sqrt-aux (n 0) (p p) (z z))
                    (:instance tonelli-shanks-sqrt-aux-is-posp<p (n n) (p p) (z z)

@@ -208,6 +208,8 @@
 ;;            :in-theory (disable svtv-lines-fix-of-outputs-fix))))
 
 (defprod svtv
+  :parents (svex-stvs)
+  :short "A shorter name for @(see svex-stvs), i.e. SVEX Symbolic Test Vectors."
   ((name           symbolp)
    (outexprs       svex-alist-p)
    (nextstate      svex-alist-p "NIL if not defined with :state-machine t or :keep-final-state t")
@@ -221,7 +223,9 @@
    (orig-internals true-list-listp)
    (expanded-ins         svtv-lines-p)
    (expanded-overrides   svtv-lines-p)
-   (nphases        natp))
+   (nphases        natp)
+   (labels         symbol-listp)
+   (form           "Original form defining the defsvtv"))
   :layout :list)
 
 
@@ -229,4 +233,78 @@
 
 
 
+
+
+(defxdoc svtv-utilities
+  :parents (svex-stvs)
+  :short "Various utilities for interacting with SVTV structures.")
+
+;; Stv compatibility stuff
+
+(defmacro defalias (new old &key (macro-alias 't) (xdoc 't))
+  `(progn (defmacro ,new (&rest args) (cons ',old args))
+          ,@(and xdoc
+                 `((defxdoc ,new :parents (,old)
+                     :short ,(concatenate
+                              'string "Same as @(see " (symbol-name old) ")."))))
+          ,@(and macro-alias `((add-macro-alias ,new ,old)))))
+
+(define svtv->in-width (name (svtv svtv-p))
+  :parents (svtv-utilities)
+  :short "Given an input name and an SVTV, get the width of the part that is used."
+  :returns (width natp :rule-classes :type-prescription)
+  (b* ((look (hons-assoc-equal name (svtv->inmasks svtv)))
+       ((unless look)
+        (raise "Unknown input: ~x0~%" name)
+        0))
+    (integer-length (nfix (cdr look))))
+  ///
+  (defalias stv->in-width svtv->in-width))
+
+(define svtv->out-width (name (svtv svtv-p))
+  :parents (svtv-utilities)
+  :short "Given an output name and an SVTV, finds the width of that output."
+  :returns (width natp :rule-classes :type-prescription)
+  (b* ((look (hons-assoc-equal name (svtv->outmasks svtv)))
+       ((unless look)
+        (raise "Unknown output: ~x0~%" name)
+        0))
+    (integer-length (nfix (cdr look))))
+  ///
+  (defalias stv->out-width svtv->out-width))
+
+(defthm svarlist-p-alist-keys-of-svar-boolmasks
+  (implies (svar-boolmasks-p x)
+           (svarlist-p (alist-keys x)))
+  :hints(("Goal" :in-theory (enable svar-boolmasks-p svarlist-p alist-keys))))
+
+(defthm svarlist-p-alist-keys-of-svex-env
+  (implies (svex-env-p x)
+           (svarlist-p (alist-keys x)))
+  :hints(("Goal" :in-theory (enable svex-env-p svarlist-p alist-keys))))
+
+(define svtv->ins ((svtv svtv-p))
+  :parents (svtv-utilities)
+  :short "Get the list of input variables of an SVTV."
+  :returns (names svarlist-p :rule-classes (:rewrite :type-prescription))
+  (alist-keys (svtv->inmasks svtv))
+  ///
+  (defalias stv->ins svtv->ins))
+
+(define svtv->outs ((svtv svtv-p))
+  :parents (svtv-utilities)
+  :short "Get the list of output variables of an SVTV."
+  :returns (names svarlist-p :rule-classes (:rewrite :type-prescription))
+  (svex-alist-keys (svtv->outexprs svtv))
+  ///
+  (defalias stv->outs svtv->outs))
+
+(define svtv->vars ((svtv svtv-p))
+  :parents (svtv-utilities)
+  :short "Union of the input and output variables of an SVTV."
+  :returns (names svarlist-p :rule-classes (:rewrite :type-prescription))
+  (append (svtv->ins svtv)
+          (svtv->outs svtv))
+  ///
+  (defalias stv->vars svtv->vars))
 

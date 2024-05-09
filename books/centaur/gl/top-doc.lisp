@@ -49,13 +49,13 @@
    (acl2::ifdef "OS_HAS_GLUCOSE"
                 (acl2::ifdef "OS_HAS_ABC"
                              (include-book "centaur/glmc/glmc-test" :dir :system)
-                             (include-book "centaur/glmc/counter" :dir :system)
+                             ;; (include-book "centaur/glmc/counter" :dir :system)
                              :endif)
                 :endif)))
 
 
 (xdoc::archive-matching-topics
  (let* ((from (cdr (assoc :from x))))
-   (or (str::strprefixp "[books]/centaur/gl/" from)
-       (str::strprefixp "[books]/centaur/glmc/" from)
-       (str::strprefixp "[books]/centaur/misc/try-gl-concls" from))))
+   (or (str::strprefixp "centaur/gl/" from)
+       (str::strprefixp "centaur/glmc/" from)
+       (str::strprefixp "centaur/misc/try-gl-concls" from))))

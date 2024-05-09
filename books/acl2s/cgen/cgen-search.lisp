@@ -9,7 +9,11 @@
 
 (include-book "simple-search")
 (include-book "incremental-search")
-          
+(include-book "acl2s/check-equal" :dir :system)
+
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
 
 (set-state-ok t)
 
@@ -170,8 +174,9 @@ Why is ACL2 not good at this?
     (mv-sig-alist1 fns wrld)))
 
 (defloop var-var-eq-hyps (hyps)
-  (for ((h in hyps)) (append (and (equiv-hyp? h)
-                                  (list h)))))
+  (for ((h in hyps))
+       (append (and (equiv-hyp? h)
+                    (list h)))))
 
 ; B is a symbol-doublet-listp (let*/b* binding)
 ; purpose: replace all values in B equal to 'other' to 'rep'.
@@ -185,6 +190,13 @@ Why is ACL2 not good at this?
                   (second (car B))))
           (update-var-var-binding rep other (cdr B)))))
 
+#|
+
+; Pete [2023/1/16] 
+; The previous version, below, made no sense, eg
+; (var-var-cc '((= a b) (= c d) (= d b)) nil nil)
+; returned (((b a) (d c) (d b)) nil) 
+
 (defun var-var-cc (var-var-eq-hyps bindings hyps)
   (declare (xargs :mode :program))
   (if (endp var-var-eq-hyps)
@@ -195,8 +207,207 @@ Why is ACL2 not good at this?
       (var-var-cc rest
                   (update-var-var-binding x-rep x-other bindings)
                   (acl2::subst-var-lst x-other x-rep hyps)))))
+|#
 
+; Pete [2023/1/16]
+; The idea here is to determine equivalence classes for the variables 
+; in var-var-eq-hyps and to then update bindings and hyps using
+; the representative of the classes.
 
+#|
+(defun cons-no-dups (e x)
+  (declare (xargs :guard (true-listp x)))
+  (if (member-equal e x)
+      x
+    (cons e x)))
+
+(defthm cons-no-dups-tl
+  (implies (true-listp x)
+           (true-listp (cons-no-dups e x))))
+
+(defun append-no-dups (x y)
+  (declare (xargs :guard (and (true-listp x) (true-listp y))))
+  (if (endp x)
+      y
+    (cons-no-dups (car x) (append-no-dups (cdr x) y))))
+
+(defthm append-no-dups-tl
+  (implies (and (true-listp x)
+                (true-listp y))
+           (true-listp (append-no-dups x y))))
+
+(defun merge-class-into-classes (class classes)
+  (declare (xargs :guard (and (true-listp class)
+                              (true-list-listp classes))))
+  (cond ((endp classes)
+         (list class))
+        ((intersectp class (car classes) :test 'equal)
+         (merge-class-into-classes
+          (append-no-dups class (car classes))
+          (cdr classes)))
+        (t (cons (car classes)
+                 (merge-class-into-classes class (cdr classes))))))
+
+(defthm merge-class-into-classes-tll
+  (implies (and (true-listp class)
+                (true-list-listp classes))
+           (true-list-listp (merge-class-into-classes class classes))))
+
+(defun merge-bindings-into-classes (bindings classes)
+  (declare (xargs :guard (and (true-list-listp bindings)
+                              (true-list-listp classes))))
+  (if (endp bindings)
+      classes
+    (merge-bindings-into-classes
+     (cdr bindings)
+     (merge-class-into-classes (car bindings) classes))))
+
+(defun remove-list-dups (l)
+  (if (endp l)
+      nil
+    (cons (remove-duplicates-equal (car l))
+          (remove-list-dups (cdr l)))))
+
+(defun merge-bindings (bindings)
+  (remove-duplicates-equal
+   (remove-list-dups (merge-bindings-into-classes bindings nil))))
+
+(merge-bindings '((w w) (u v) (w x) (u x) (b u) (w w)))
+
+(defun make-bindings-from-class (rep class)
+  (if (endp class)
+         nil
+    (cons (list (car class) rep)
+          (make-bindings-from-class rep (cdr class)))))
+
+(make-bindings-from-class 'a '(b c d))
+
+(defun make-bindings-from-classes (classes)
+  (if (endp classes)
+      nil
+    (append (make-bindings-from-class (caar classes) (cdar classes))
+            (make-bindings-from-classes (cdr classes)))))
+
+(make-bindings-from-classes '((a b c d) (x y z)))
+
+(defun make-bindings (bindings)
+  (make-bindings-from-classes (merge-bindings bindings)))
+
+(make-bindings '((a b) (b c) (d c) (b a) (x z) (x y) (z y)))
+|#
+
+(defun insert-lexorder (e x)
+  (declare (xargs :guard (true-listp x)))
+  (cond ((endp x)
+         (list e))
+        ((equal e (car x))
+         x)
+        ((lexorder e (car x))
+         (cons e x))
+        (t (cons (car x) (insert-lexorder e (cdr x))))))
+
+(defthm insert-lexorder-tl
+  (implies (true-listp x)
+           (true-listp (insert-lexorder e x))))
+
+(defun append-lexorder (x y)
+  (declare (xargs :guard (and (true-listp x) (true-listp y))))
+  (if (endp x)
+      y
+    (insert-lexorder (car x) (append-lexorder (cdr x) y))))
+
+(defthm append-lexorder-tl
+  (implies (and (true-listp x)
+                (true-listp y))
+           (true-listp (append-lexorder x y))))
+
+(defun merge-class-into-classes (class classes)
+  (declare (xargs :guard (and (true-listp class)
+                              (true-list-listp classes))))
+  (cond ((endp classes)
+         (list (append-lexorder class nil))) ; make sure ordered and no dups
+        ((intersectp class (car classes) :test 'equal)
+         (merge-class-into-classes
+          (append-lexorder class (car classes))
+          (cdr classes)))
+        (t (cons (car classes)
+                 (merge-class-into-classes class (cdr classes))))))
+
+(defthm merge-class-into-classes-tll
+  (implies (and (true-listp class)
+                (true-list-listp classes))
+           (true-list-listp (merge-class-into-classes class classes))))
+
+(defun merge-bindings-into-classes (bindings classes)
+  (declare (xargs :guard (and (true-list-listp bindings)
+                              (true-list-listp classes))))
+  (if (endp bindings)
+      classes
+    (merge-bindings-into-classes
+     (cdr bindings)
+     (merge-class-into-classes (car bindings) classes))))
+
+(defun merge-bindings (bindings)
+  (merge-bindings-into-classes bindings nil))
+
+(acl2s::check=
+ (merge-bindings '((w w) (u v) (w x) (u x) (b u) (w w)))
+ '((b u v w x)))
+
+(defun make-bindings-from-class (rep class)
+  (if (endp class)
+         nil
+    (cons (list (car class) rep)
+          (make-bindings-from-class rep (cdr class)))))
+
+(acl2s::check=
+ (make-bindings-from-class 'a '(b c d))
+ '((b a) (c a) (d a)))
+
+(defun make-bindings-from-classes (classes)
+  (if (endp classes)
+      nil
+    (append (make-bindings-from-class (caar classes) (cdar classes))
+            (make-bindings-from-classes (cdr classes)))))
+
+(acl2s::check= 
+ (make-bindings-from-classes '((a b c d) (x y z)))
+ '((b a) (c a) (d a) (y x) (z x)))
+
+(defun make-bindings (bindings)
+  (make-bindings-from-classes (merge-bindings bindings)))
+
+(acl2s::check=
+ (make-bindings '((d d) (a b) (b c) (d c) (b a) (c c) (c d) (b b) (x z) (x y) (z y)))
+ '((b a) (c a) (d a) (y x) (z x)))
+
+(defun apply-bindings-to-hyps (bindings hyps)
+  (if (endp bindings)
+      hyps
+    (apply-bindings-to-hyps
+     (cdr bindings)
+     (acl2s::subst-var-lst (cadar bindings) (caar bindings) hyps))))
+
+(acl2s::check= 
+ (apply-bindings-to-hyps
+  '((b a) (c a) (d a) (y x) (z x))
+  '((f a b c d e y x z u v)
+    (g z b)
+    (b b)
+    ((lambda (b c) (list b c)) d y)))
+ '((f a a a a e x x x u v)
+   (g x a)
+   (b a)
+   ((lambda (b c) (list b c)) a x)))
+
+(defun var-var-cc (var-var-eq-hyps hyps)
+  (b* ((bindings (make-bindings (strip-cdrs var-var-eq-hyps))))
+    (mv bindings (apply-bindings-to-hyps bindings hyps))))
+
+(acl2s::check=
+ (var-var-cc '((= a b) (= c d) (= d b)) '((f a b c d) (b a b c d)))
+ (mv '((b a) (c a) (d a)) '((f a a a a) (b a a a a))))
+ 
 ;;; The Main counterexample/witness generation function           
 (def cgen-search-local (name H C
                           type-alist tau-interval-alist
@@ -261,7 +472,7 @@ Why is ACL2 not good at this?
 
        ;;take care of var-var equalities [2016-10-29 Sat]
        (var-var-eq-hyps (var-var-eq-hyps H))
-       ((mv elim-bindings H) (var-var-cc var-var-eq-hyps '() H))
+       ((mv elim-bindings H) (var-var-cc var-var-eq-hyps H))
        (- (cw? (and (consp elim-bindings)
                     (debug-flag vl))
                "Cgen/Debug : cgen-search:: elim-bindings:~x0  H:~x1~%" elim-bindings H))

@@ -268,12 +268,13 @@ endif # ifneq ($(EXCLUDED_PREFIXES), )
 # it's just easiest to stop at the root.  We also exclude
 # centaur/satlink/solvers because it depends on all kinds of extra SAT
 # solvers.  We exclude projects/milawa/ACL2 because of the large
-# amount of disk space otherwise consumed.
+# amount of disk space otherwise consumed.  We exclude some Axe examples
+# that verify code not included in this repo.
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
   time find . -name "*.lisp" \
-    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
+    | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|kestrel/axe/jvm/examples|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
     | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
@@ -408,13 +409,15 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
-
 ifeq ($(ACL2_HAS_REALS), )
-
 $(info Excluding ACL2(r)-only books: [$(CERT_PL_USES_ACL2R)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_ACL2R), $(OK_CERTS))
-
 endif # ifeq ($(ACL2_HAS_REALS), )
+
+CERT_PL_ACL2R_AND_NON_ACL2R := $(filter $(CERT_PL_USES_ACL2R), $(CERT_PL_NON_ACL2R))
+ifneq ($(CERT_PL_ACL2R_AND_NON_ACL2R), )
+${info Books appear that both require ACL2(r) but that do not work with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
+endif
 
 
 ifneq ($(ACL2_HAS_REALS), )
@@ -547,7 +550,7 @@ ifeq ($(filter CCL ALLEGRO SBCL, $(ACL2_HOST_LISP)), )
 
 # When the Lisp is not one of those mentioned on the line above, we
 # skip the models/y86/ books, even for the "all" target.  In
-# particular, we exclude GCL: in one ANSI GCL ACL2(h) regression,
+# particular, we exclude GCL: in one ANSI GCL ACL2 regression,
 # certification runs were still proceeding after more than 10 hours
 # for each of four books under models/y86/
 # (y86-basic/common/x86-state, y86-two-level/common/x86-state,
@@ -569,9 +572,14 @@ OK_CERTS := $(filter-out $(BROKEN_BOOKS), $(OK_CERTS))
 # idea to include targets here that are in ACL2_CUSTOM_TARGETS:
 # SLOW_BOOKS is removed from OK_CERTS just below, but later,
 # ACL2_CUSTOM_TARGETS adds its targets to OK_CERTS.
+# NOTE: kestrel/acl2data/gather/tests/run-tests.lisp isn't slow, but
+# we include it here so that it is not certified during ACL2(p)
+# regressions, since regression-everything is not generally run for
+# ACl2(p).  Its certification fails with ACL2(p), even with
+# waterfall-parallelism turned off, and it doesn't seem worthwhile to
+# investigate why.
 
 SLOW_BOOKS := \
-  books/misc/check-acl2-exports.cert \
   coi/defung/defung-stress-long.cert \
   models/jvm/m5/apprentice.cert \
   system/parallel/proofs/ideal-speedup.cert \
@@ -579,11 +587,12 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/va-to-pa-thm.cert \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
-  doc/top-slow.cert
+  demos/ppr1-experiments-thm-1-ppr1.cert \
+  kestrel/acl2data/gather/tests/run-tests.cert
 
 # The following could well be considered as slow books, too.
+# top.cert
 # doc/top.cert
-# doc/top-fast.cert
 # projects/include-doc.cert
 # projects/doc.cert
 # projects/top-doc.cert
@@ -593,6 +602,8 @@ SLOW_BOOKS := \
 
 X86ISA_BOOKS := $(filter projects/x86isa/%, $(OK_CERTS))
 SLOW_BOOKS += $(X86ISA_BOOKS)
+FILESYSTEM_BOOKS := $(filter projects/filesystems/%, $(OK_CERTS))
+SLOW_BOOKS += $(FILESYSTEM_BOOKS)
 
 SLOW_BOOK_TARGETS :=
 
@@ -649,7 +660,8 @@ MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
    system/doc/manual \
    system/doc/manual-fast \
-   doc/xdoc.sao
+   doc/xdoc.sao \
+   kestrel/acl2data/gather/tests/runs
 
 .PHONY: clean_books clean
 
@@ -1023,6 +1035,7 @@ BOOKS_SKIP_COMP += workshops/2006/kaufmann-moore/support/rhs1-iff.$(ACL2_COMP_EX
 # Has (include-raw "timer.lsp"):
 BOOKS_SKIP_COMP += centaur/memoize/top.$(ACL2_COMP_EXT)
 BOOKS_SKIP_COMP += $(patsubst %-raw.lsp, %.$(ACL2_COMP_EXT), $(shell find . -name '*-raw.lsp' -print))
+BOOKS_SKIP_COMP += system/doc/render-doc.$(ACL2_COMP_EXT)
 
 # Has readtime conditionals #+ccl and #-ccl ("not supported for this
 # host Lisp").
@@ -1153,7 +1166,7 @@ OK_CERTS := $(filter-out $(addsuffix %, $(EXCLUDED_PREFIXES)), $(OK_CERTS))
 #
 # Example (just remove "# " at the beginning of each line):
 #
-# make -k -j 4 NO_RESCAN=1 ACL2=acl2h \
+# make -k -j 4 NO_RESCAN=1 ACL2=acl2 \
 # ACL2_BOOK_CERTS=" \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed6a.cert \
 # workshops/2006/cowles-gamboa-euclid/Euclid/ed4bb.cert \
@@ -1342,7 +1355,6 @@ tau: $(filter tau/%, $(OK_CERTS))
 .PHONY: textbook
 textbook: $(filter textbook/%, $(OK_CERTS))
 
-OK_CERTS := $(CERT_PL_CERTS)
 TOOLS_BOOKS := $(filter tools/%, $(OK_CERTS))
 
 .PHONY: tools
@@ -1365,7 +1377,8 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
         workshop1999 workshop2000 workshop2001 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011 workshop2013 workshop2014 \
-        workshop2015 workshop2017 workshop2018 workshop2020
+        workshop2015 workshop2017 workshop2018 workshop2020 \
+        workshop2022
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1384,6 +1397,7 @@ workshop2015: $(filter workshops/2015/%, $(OK_CERTS))
 workshop2017: $(filter workshops/2017/%, $(OK_CERTS))
 workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 workshop2020: $(filter workshops/2020/%, $(OK_CERTS))
+workshop2022: $(filter workshops/2022/%, $(OK_CERTS))
 
 # Projects targets:
 
@@ -1491,25 +1505,40 @@ BOOKS_BKCHK_OUT := $(filter-out system/tests/cert-data/top.bkchk.out, $(BOOKS_BK
 # (included in system/pseudo-good-worldp.lisp) system book
 # std/portcullis.lisp:
 BOOKS_BKCHK_OUT := $(filter-out workshops/2004/davis/support/%, $(BOOKS_BKCHK_OUT))
+# Issues with raw-mode:
+BOOKS_BKCHK_OUT := $(filter-out centaur/memoize/tests.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out system/check-system-guards.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Weird error about type-prescription rules:
+BOOKS_BKCHK_OUT := $(filter-out std/util/tests/defprojection.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out std/util/tests/deflist.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Apparently this book adds property EXTEND-PROGN!; also excluding the
+# two from the same directory below it (probably similar or same
+# problem).
+BOOKS_BKCHK_OUT := $(filter-out workshops/2022/walter-manolios/acl2s-utils/itest-cgen.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2022/walter-manolios/acl2s-utils/itest-ithm.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out workshops/2022/walter-manolios/acl2s-utils/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 
 .PHONY: chk-include-book-worlds
 chk-include-book-worlds: $(BOOKS_BKCHK_OUT)
 
-%.bkchk.out: %.cert
-	@echo "Including $(@D)/$* on `date`"
-	@echo '(acl2::value :q)' > $(@D)/workxxx.bkchk.$(*F)
-	@echo '(in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(acl2::lp)' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(acl2::in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(include-book "$*")' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> $(@D)/workxxx.bkchk.$(*F)
-	@echo "Checking world created by including `pwd`/$* on `date`"
-	@echo '(chk-pseudo-good-worldp "$*")' >> $(@D)/workxxx.bkchk.$(*F)
-	@($(ACL2) < $(@D)/workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out
-	@(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
+%.bkchk.out:
+	@if [ ! -f "$*.cert" ] ; then echo "Skipping $(@D)/$*" ; \
+	  echo "Skipping $(@D)/$*" > $*.bkchk.out ; else \
+	echo "Including $(@D)/$* on `date`" ;\
+	echo '(acl2::value :q)' > $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(acl2::lp)' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(acl2::in-package "ACL2")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(include-book "$*")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo '(include-book "system/pseudo-good-worldp" :dir :system)' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	echo "Checking world created by including `pwd`/$* on `date`" ;\
+	echo '(chk-pseudo-good-worldp "$*")' >> $(@D)/workxxx.bkchk.$(*F) ;\
+	($(ACL2) < $(@D)/workxxx.bkchk.$(*F) 2>&1) > $*.bkchk.out ;\
+	(fgrep 'Pseudo-good-worldp check for including "$*" passed.' $@) || \
             (echo '** Pseudo-good-worldp check FAILED for including $*;' "see `pwd`/$@" '**' ;\
-             exit 1)
-	@rm -f $(@D)/workxxx.bkchk.$(*F)
+             exit 1) ;\
+	rm -f $(@D)/workxxx.bkchk.$(*F) ;\
+	fi
 
 # Next, we implement the target "special", which generalize the
 # approach for bkchk (above) to allow arbitrary code before and after
@@ -1543,10 +1572,10 @@ special: $(BOOKS_SPECIAL_OUT)
 # can be done from the ACL2 sources directory as follows.
 
 # ; uses Makefile
-# (time nice make -j 8 regression ACL2=acl2ch)
+# (time nice make -j 8 regression ACL2=acl2)
 
 # ; uses Makefile.legacy
-# (time nice make ACL2_JOBS=8 regression-legacy-hons ACL2=acl2ch)
+# (time nice make ACL2_JOBS=8 regression-legacy-hons ACL2=acl2)
 
 # The resulting of .cert files can be obtained by running the command
 
@@ -1726,7 +1755,7 @@ git_status:
 #
 #   - Sol Swords <sswords@cs.utexas.edu> has provided significant support for
 #     cert.pl, notably extending it to operate on Windows, and adding features
-#     such as automatically tracking books that rely on ACL2(h).
+#     such as automatically tracking books that rely on ACL2(r).
 #
 #   - David Rager <ragerdl@cs.utexas.edu> provided significant early beta
 #     testing and worked to ensure the Makefile works with ACL2(p) and in

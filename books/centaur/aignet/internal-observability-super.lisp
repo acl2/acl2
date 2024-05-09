@@ -43,7 +43,7 @@
 (include-book "prune") ;; for aignet-copy-dfs-outs, aignet-copy-dfs-nxsts
 
 (local (include-book "std/osets/under-set-equiv" :dir :system))
-  
+
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 ;; (local (include-book "data-structures/list-defthms" :dir :system))
@@ -80,7 +80,7 @@
   (if (eql (id->regp n aignet) 1)
       ;; xor
       (b* (((mv children ?limit)
-            (lit-collect-superxor (make-lit n 0) t 1000 nil refcounts aignet)))
+            (lit-collect-superxor (make-lit n 0) t 0 1000 nil refcounts aignet)))
         children)
     (b* (((mv children ?limit)
           (lit-collect-supergate (make-lit n 0) t nil 1000 nil refcounts aignet)))
@@ -107,7 +107,7 @@
   (defret lits-max-id-val-of-<fn>-weak
     (<= (lits-max-id-val super) (nfix n))
     :hints (("Goal" :use ((:instance lits-max-id-val-of-lit-collect-superxor
-                           (lit (make-lit n 0)) (top t) (limit 1000)
+                           (lit (make-lit n 0)) (top t) (negate 0) (limit 1000)
                            (superxor nil) (aignet-refcounts refcounts))
                           (:instance lits-max-id-val-of-supergate
                            (lit (make-lit n 0)) (top t) (use-muxes nil) (limit 1000)
@@ -165,7 +165,7 @@
   (defthm spath-existsp-of-atom
     (implies (not (consp path))
              (equal (spath-existsp sink path refcounts aignet) t)))
-  
+
   (defthm spath-existsp-of-nil
     (equal (spath-existsp sink nil refcounts aignet) t))
 
@@ -194,7 +194,7 @@
     (implies (not (consp path))
              (equal (spath-endpoint sink path refcounts aignet)
                     (nfix sink))))
-  
+
   (defthm spath-endpoint-of-nil
     (equal (spath-endpoint sink nil refcounts aignet)
            (nfix sink)))
@@ -244,7 +244,7 @@
            (equal (lits-max-id-val (append x y))
                   (max (lits-max-id-val x) (lits-max-id-val y)))
            :hints(("Goal" :in-theory (enable lits-max-id-val)))))
-  
+
   (defthm lits-max-id-val-of-spath-and-literals
     (<= (lits-max-id-val (spath-and-literals sink path refcounts aignet)) (nfix sink))
     :rule-classes :linear)
@@ -379,23 +379,30 @@
 
      (in-theory (disable acl2::nth-when-too-large-cheap))))
 
+  ;; (local (defthm b-xor-of-equal-b-not
+  ;;          (implies (equal x (b-not (b-xor b c)))
+  ;;                   (equal (b-xor a x)
+  ;;                          (b-not (b-xor a (b-xor b c)))))))
+
   (defret eval-parity-toggle-of-lit-collect-superxor
     (implies (and (ids-multiply-referenced toggles aignet-refcounts)
                   ;; (or (not top)
                   ;;     (not (member-equal (lit->var lit) (acl2::nat-list-fix toggles))))
                   )
              (equal (aignet-eval-parity-toggle res toggles invals regvals aignet)
-                    (acl2::b-xor 
-                     (bool->bit (and top
-                                     (equal (lit->neg lit) 0)
-                                     (posp limit)
-                                     (equal (stype (car (lookup-id (lit->var lit) aignet))) :xor)
-                                     (aignet-litp lit aignet)
-                                     (member-equal (lit->var lit)
-                                                   (acl2::nat-list-fix toggles))))
+                    (acl2::b-xor
+                     negate
                      (acl2::b-xor
-                      (lit-eval-toggle lit toggles invals regvals aignet)
-                      (aignet-eval-parity-toggle superxor toggles invals regvals aignet)))))
+                      (bool->bit (and top
+                                      ;; (equal (lit->neg lit) 0)
+                                      (posp limit)
+                                      (equal (stype (car (lookup-id (lit->var lit) aignet))) :xor)
+                                      (aignet-litp lit aignet)
+                                      (member-equal (lit->var lit)
+                                                    (acl2::nat-list-fix toggles))))
+                      (acl2::b-xor
+                       (lit-eval-toggle lit toggles invals regvals aignet)
+                       (aignet-eval-parity-toggle superxor toggles invals regvals aignet))))))
     :hints (("goal" :induct <call>
              :do-not-induct t
              :in-theory (e/d (eval-xor-of-lits-toggle
@@ -405,6 +412,7 @@
              :expand ((:free (top use-muxes) <call>)))
             (and stable-under-simplificationp
                  '(:expand ((lit-eval-toggle lit toggles invals regvals aignet)
+                            (lit-eval-toggle (lit-negate-cond lit negate) toggles invals regvals aignet)
                             (id-eval-toggle (lit-id lit) toggles invals regvals aignet)
                             (:free (a b)
                              (aignet-eval-parity-toggle (cons a b) toggles invals regvals aignet))))))
@@ -480,12 +488,12 @@
            (equal (b-xor (b-not a) b)
                   (b-not (b-xor a b)))
            :hints(("Goal" :in-theory (enable b-not)))))
-  
+
   (defthm lit-eval-toggle-of-lit-negate
     (equal (lit-eval-toggle (lit-negate x) toggles invals regvals aignet)
            (b-not (lit-eval-toggle x toggles invals regvals aignet)))
     :hints(("Goal" :expand ((:free (x) (lit-eval-toggle x toggles invals regvals aignet))))))
-  
+
   (defthm aignet-eval-conjunction-toggle-when-cube-contradictionp
     (implies (cube-contradictionp x)
              (equal (aignet-eval-conjunction-toggle x toggles invals regvals aignet) 0))
@@ -513,7 +521,7 @@
             :expand ((:free (a b) (ids-multiply-referenced (cons a b) refcounts))
                      (:free (toggles) (aignet-eval-conjunction-toggle nil toggles invals regvals aignet))
                      (:free (var neg toggles) (lit-eval-toggle (make-lit var neg) toggles invals regvals aignet)))))))
-                  
+
 
 (define has-toggling-lit ((x lit-listp) (toggle natp) (toggles nat-listp) invals regvals aignet)
   :guard (and (aignet-lit-listp x aignet)
@@ -527,7 +535,7 @@
 
   ///
   (fty::deffixequiv has-toggling-lit)
-  
+
   (local (Defthm b-xor-of-b-not-1
            (equal (b-xor (b-not a) b)
                   (b-not (b-xor a b)))
@@ -590,7 +598,7 @@
                                        lit-eval-toggle
                                        lit-eval)))))
 
-  
+
   (local (defthmd lit-eval-toggle-when-lit->var-equal-toggle
            (implies (equal (lit->var lit) (nfix toggle))
                     (equal (lit-eval-toggle lit (cons toggle toggles) invals regvals aignet)
@@ -607,7 +615,7 @@
   ;;                 (b-not (lit-eval lit invals regvals aignet)))
   ;;          :hints (("goal" :in-theory (enable lit-eval-toggle-when-lit->var-equal-toggle)))))
 
-  
+
   (local (defthm has-toggling-lit-when-member
            (implies (and (member-equal lit (lit-list-fix supergate))
                          (not (equal (lit-eval-toggle lit (cons toggle toggles) invals regvals aignet)
@@ -640,7 +648,7 @@
   ;;                             (lit-collect-supergate lit top use-muxes limit supergate refcounts aignet))
   ;;                            (lit-eval-toggle 0 toggles invals regvals aignet)
   ;;                            (id-eval-toggle 0 toggles invals regvals aignet))))))
-  
+
   ;; (local (defthm id-eval-toggle-in-terms-of-supergate
   ;;          (implies (and (not (equal (lit-eval lit invals regvals aignet)
   ;;                                    (lit-eval-toggle lit toggles invals regvals aignet)))
@@ -677,7 +685,7 @@
   ;;                             (lit-collect-superxor lit top limit supergate refcounts aignet))
   ;;                            (lit-eval-toggle 0 toggles invals regvals aignet)
   ;;                            (id-eval-toggle 0 toggles invals regvals aignet))))))
-  
+
   ;; (local (defthm id-eval-toggle-in-terms-of-superxor
   ;;          (implies (and (not (equal (lit-eval lit invals regvals aignet)
   ;;                                    (lit-eval-toggle lit toggles invals regvals aignet)))
@@ -700,7 +708,7 @@
   ;;                            (:free (a b) (eval-and-of-lits-toggle a b toggles invals regvals aignet))
   ;;                            (:free (a b) (eval-xor-of-lits-toggle a b toggles invals regvals aignet)))
   ;;                   :do-not-induct t))))
-  
+
   (local (defthm equal-of-b-xors
            (equal (equal (b-xor a b) (b-xor a c))
                   (equal (bfix b) (bfix c)))
@@ -710,7 +718,7 @@
     (implies (and (not (equal (id-eval-toggle sink (cons toggle toggles) invals regvals aignet)
                               (id-eval-toggle sink toggles invals regvals aignet)))
                   (< 1 (nfix (nth toggle refcounts)))
-                  (ids-multiply-referenced toggles refcounts) 
+                  (ids-multiply-referenced toggles refcounts)
                   (not (equal (nfix toggle) (nfix sink)))
                   ;; (not (member (nfix sink) (acl2::nat-list-fix toggles)))
                   )
@@ -792,7 +800,7 @@
                                      (lit-eval-toggle lit toggles invals regvals aignet))))
                     (has-toggling-lit supergate toggle toggles invals regvals aignet))
            :hints(("Goal" :in-theory (enable has-toggling-lit lit-list-fix member-equal)))))
-  
+
   (defret min-toggling-lit-is-minimum
     (implies (and (not (equal (lit-eval-toggle k (cons toggle toggles) invals regvals aignet)
                               (lit-eval-toggle k toggles invals regvals aignet)))
@@ -820,15 +828,15 @@
    ;; variables less than the minimum toggling literal of the supergate, so none
    ;; of them may be contradictory either.  Whew.
 
-   
-   
+
+
    (local (defthm member-equal-when-lits-max-id-val-less
             (implies (< (lits-max-id-val y) (lit->var x))
                      (not (member-equal x (lit-list-fix y))))
             :hints(("Goal" :in-theory (enable lit-list-fix lits-max-id-val member-equal)))))
 
 
-   
+
    (local (defthm not-two-cubes-contradictionp-when-no-toggling-lit
             (implies (and (two-cubes-contradictionp x y)
                           (not (lit-list-has-const0-under-toggle
@@ -840,7 +848,7 @@
                                               has-toggling-lit
                                               two-cubes-contradictionp
                                               lit-list-has-const0-under-toggle-when-member)))))
-   
+
    (defthmd not-two-cubes-contradictionp-lemma
      (implies (and (not (lit-list-has-const0-under-toggle
                          x toggle toggles invals regvals aignet))
@@ -896,7 +904,7 @@
                                         source toggles invals regvals refcounts aignet)))
   ///
   (local (in-theory (disable (:d toggle-witness-spath))))
-  
+
   (defret spath-existsp-of-<fn>
     (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
                               (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
@@ -926,8 +934,8 @@
                                            (member-equal toggle toggles)))
                            (id-eval-toggle x toggles invals regvals aignet))))
     :hints(("Goal" :in-theory (enable* id-eval-toggle acl2::arith-equiv-forwarding))))
-                        
-  
+
+
   (defret spath-endpoint-of-<fn>
     (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
                               (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
@@ -969,15 +977,15 @@
   (local (defthm lit->var-of-nth-single-0
            (equal (lit->var (nth n '(0))) 0)
            :hints (("goal" :expand ((nth n '(0)))))))
-  
-  (local (defthm spath-and-literals-of-zero 
+
+  (local (defthm spath-and-literals-of-zero
            (equal (spath-and-literals 0 path refcounts aignet) nil)
            :hints(("Goal" :in-theory (enable spath-and-literals
                                              gate-node-supergate)
                    :expand ((spath-and-literals 0 path refcounts aignet)
                             (LIT-COLLECT-SUPERGATE 0 T NIL 1000 NIL REFCOUNTS AIGNET))
                    :induct (len path)))))
-  
+
   (defret contradictionp-of-<fn>
     (implies (and (not (equal (id-eval-toggle sink toggles invals regvals aignet)
                               (id-eval-toggle sink (cons source toggles) invals regvals aignet)))
@@ -1059,7 +1067,7 @@
   ///
   (defret setp-of-<fn>
     (set::setp doms))
-  
+
   (defthm obs-sdom-info->doms-of-make-obs-sdom-info-reached
     (equal (obs-sdom-info->doms (make-obs-sdom-info-reached doms))
            (set::mergesort (lit-list-fix doms)))
@@ -1173,7 +1181,7 @@
 
 (local
  (defsection set-stuff-in-terms-of-list-stuff
-   
+
    (defthm head-when-setp
      (implies (set::setp x)
               (equal (set::head x) (car x)))
@@ -1184,10 +1192,10 @@
               (equal (set::tail x) (cdr x)))
      :hints(("Goal" :in-theory (enable set::tail))))
 
-   (defthm empty-when-setp
+   (defthm emptyp-when-setp
      (implies (set::setp x)
-              (equal (set::empty x) (atom x)))
-     :hints(("Goal" :in-theory (enable set::empty))))
+              (equal (set::emptyp x) (atom x)))
+     :hints(("Goal" :in-theory (enable set::emptyp))))
 
    (defthm setp-of-cdr
      (implies (set::setp x)
@@ -1244,7 +1252,7 @@
                   (not (cube-contradictionp (obs-sdom-info->doms y)))
                   (not (member-equal lit (obs-sdom-info->doms y))))
              (not (member lit (obs-sdom-info->doms x)))))
-  
+
   (defthmd obs-sdom-info-subsetp-transitive
     (implies (and (obs-sdom-info-subsetp a b)
                   (obs-sdom-info-subsetp b c))
@@ -1313,7 +1321,7 @@
     (implies (equal (stype (car (lookup-id fanout aignet))) :xor)
              (equal child-fanout-info
                     (obs-sdom-info-fix fanout-info))))
-  
+
   (defret <fn>-when-and
     (implies (equal (stype (car (lookup-id fanout aignet))) :and)
              (equal child-fanout-info
@@ -1383,7 +1391,7 @@
                                            cube-contradictionp-sorted)))
   (mbe :logic (cube-contradictionp x)
        :exec
-       (if (set::empty x)
+       (if (set::emptyp x)
            nil
          (or (set::in (lit-negate (set::head x)) (set::tail x))
              (cube-contradictionp-sorted (set::tail x))))))
@@ -1403,7 +1411,7 @@
   ;;                        (lit-listp cube))
   ;;                   (cube-contradictionp cube))
   ;;          :hints(("Goal" :in-theory (enable cube-contradictionp)))))
-  
+
   ;; (local (defthm cube-contradictionp-when-subsetp
   ;;          (implies (and (subsetp x y)
   ;;                        (cube-contradictionp x)
@@ -1411,7 +1419,7 @@
   ;;                   (cube-contradictionp y))
   ;;          :hints(("Goal" :in-theory (enable cube-contradictionp
   ;;                                            subsetp)))))
-  
+
   (defret subsetp-of-<fn>-1
     (iff (obs-sdom-info-subsetp new-x y)
          (obs-sdom-info-subsetp x y))
@@ -1437,7 +1445,7 @@
   ///
   (local (in-theory (enable obs-sdom-info-subsetp
                             obs-sdom-info-normalize)))
-  
+
   (local (defthm subsetp-of-intersect-1
            (subsetp (intersection$ x y) x)))
   (local (defthm subsetp-of-intersect-2
@@ -1464,7 +1472,7 @@
                     (not (cube-contradictionp x)))
            :hints (("goal" :use ((:instance cube-contradiction-by-subsetp))
                     :in-theory (disable cube-contradiction-by-subsetp)))))
-  
+
   (defret obs-sdom-info-subsetp-of-obs-sdom-info-intersect-1
     (obs-sdom-info-subsetp int x))
 
@@ -1474,7 +1482,7 @@
   (defret obs-sdom-info-intersect-preserves-obs-sdom-info-subsetp-1
     (implies (obs-sdom-info-subsetp x z)
              (obs-sdom-info-subsetp int z)))
-  
+
   (defret obs-sdom-info-intersect-preserves-obs-sdom-info-subsetp-2
     (implies (obs-sdom-info-subsetp y z)
              (obs-sdom-info-subsetp int z)))
@@ -1486,7 +1494,7 @@
            :hints(("Goal" :use ((:instance cube-contradictionp-when-subsetp
                                  (x (set::intersect x y))
                                  (y x)))))))
-  
+
   (defret obs-sdom-info-intersect-idempotent
     (equal (obs-sdom-info-intersect (obs-sdom-info-intersect x y) y)
            (obs-sdom-info-intersect x y)))
@@ -1577,7 +1585,7 @@
   (defret aignet-lit-listp-of-<fn>
     (implies (aignet-lit-listp x aignet)
              (aignet-lit-listp new-x aignet))))
-                                          
+
 
 (define obs-sdom-info-store-intersections ((super lit-listp)
                                            (sdominfo obs-sdom-info-p)
@@ -1672,7 +1680,7 @@
              (obs-sdom-fanins-ok lits fanout-sdominfo new-obs-sdom-array))
     :hints (("goal" :in-theory (enable obs-sdom-fanins-ok)
              :induct (obs-sdom-fanins-ok lits fanout-sdominfo obs-sdom-array))))
-  
+
   (defret obs-sdom-fanins-ok-of-obs-sdom-info-store-intersections-self
     (implies (subsetp-equal lits super)
              (obs-sdom-fanins-ok lits sdominfo new-obs-sdom-array))
@@ -1733,7 +1741,7 @@
            (implies (< (lits-max-id-val lits) i)
                     (not (member-equal i (lit-list-vars lits))))
            :hints(("Goal" :in-theory (enable lits-max-id-val lit-list-vars)))))
-  
+
   (defret <fn>-preserves-correct
     (implies (and (< (nfix n) (nfix i))
                   (obs-sdom-fanout-ok i obs-sdom-array refcounts aignet))
@@ -1754,7 +1762,7 @@
            (equal (set::intersect nil x) nil)
            :hints(("Goal" :use ((:instance set::double-containment
                                  (x (set::intersect nil x)) (y nil)))))))
-  
+
   (defret <fn>-preserves-empty-dominators
     (implies (equal (nth i obs-sdom-array)
                     (make-obs-sdom-info-reached nil))
@@ -1793,7 +1801,7 @@
   (defret <fn>-sets-correct
     (implies (< (nfix i) (nfix n))
              (obs-sdom-fanout-ok i new-obs-sdom-array refcounts aignet)))
-  
+
   (defret <fn>-preserves-empty-dominators
     (implies (equal (nth i obs-sdom-array)
                     (make-obs-sdom-info-reached nil))
@@ -1929,7 +1937,7 @@
 
 
 (defsection obs-sdom-array-correct
-  
+
   (defun-sk obs-sdom-array-correct (obs-sdom-array refcounts aignet)
     (forall fanout
             (obs-sdom-fanout-ok fanout obs-sdom-array refcounts aignet))
@@ -1946,7 +1954,7 @@
                                       obs-sdom-fanout-ok-out-of-bounds)
             :cases ((<= (nfix
                          (obs-sdom-array-correct-witness
-                          (obs-sdom-info-sweep-nodes (+ 1 (fanin-count aignet)) 
+                          (obs-sdom-info-sweep-nodes (+ 1 (fanin-count aignet))
                                                     obs-sdom-array refcounts aignet-levels aignet)
                           refcounts
                           aignet))
@@ -1979,7 +1987,7 @@
   (defret len-of-<fn>
     (implies (consp x)
              (equal (len prefix) (+ -1 (len x)))))
-  
+
   (defret spath-exists-of-spath-butlast
     (implies (spath-existsp sink x refcounts aignet)
              (spath-existsp sink prefix refcounts aignet))
@@ -2290,8 +2298,3 @@
         nil))
     (cons (get-sdominfo n obs-sdom-array)
           (obs-sdom-array-collect (1+ (lnfix n)) obs-sdom-array))))
-
-
-
-
-

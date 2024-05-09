@@ -1,6 +1,6 @@
 ; Prime fields library: Exponentiation
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,8 +27,7 @@
                               (natp n))
                   :verify-guards nil ;done below
                   ))
-  (mbe :logic (if (or (not (mbt (natp n)))
-                      (equal 0 n))
+  (mbe :logic (if (zp n)
                   1
                 (mul x (pow x (+ -1 n) p) p))
        :exec (mod-expt-fast x n p)))
@@ -155,16 +154,16 @@
 
 ;; Cherry-pick Fermat's Little Theorem
 (encapsulate ()
-  (local (include-book "../../projects/quadratic-reciprocity/fermat"))
+  (local (include-book "../../projects/numbers/fermat"))
   (local (include-book "../../arithmetic-3/top"))
 
   (defthm my-fermat-little
     (implies (and (fep a p)
                   (not (equal 0 a))
-                  (rtl::primep p))
+                  (primep p))
              (equal (pow a (minus1 p) p)
                     1))
-    :hints (("Goal" :use ((:instance rtl::fermat
+    :hints (("Goal" :use ((:instance dm::fermat
                                      (m a)
                                      (p p)))
              :cases ((equal 0 a))

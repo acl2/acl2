@@ -16,39 +16,13 @@
 (include-book "sublis-var-simple")
 (include-book "lambda-free-termp")
 (include-book "lambdas-closed-in-termp")
+(local (include-book "sublis-var-simple-proofs"))
 (local (include-book "../alists-light/pairlis-dollar"))
 (local (include-book "../alists-light/strip-cars"))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "../typed-lists-light/symbol-listp"))
 
 ;; Some of these could be moved to more general libraries:
-
-(local
- (defthm subsetp-equal-of-free-vars-in-term-of-assoc-equal-and-free-vars-in-terms-of-strip-cdrs
-   (implies (and (member-equal term (strip-cars alist))
-                 (assoc-equal term alist))
-            (subsetp-equal (free-vars-in-term (cdr (assoc-equal term alist)))
-                           (free-vars-in-terms (strip-cdrs alist))))
-   :hints (("Goal" :in-theory (enable subsetp-equal assoc-equal free-vars-in-terms)))))
-
-(defthm-flag-free-vars-in-term
-  ;; If we substitute all variables in the term, then the new free vars are limited to the free vars in the terms put in by substitution.
-  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-    (implies (subsetp-equal (free-vars-in-term term)
-                            (strip-cars alist))
-             (subsetp-equal (free-vars-in-term (sublis-var-simple alist term))
-                            (free-vars-in-terms (strip-cdrs alist))))
-    :flag free-vars-in-term)
-  (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-lst-and-free-vars-in-terms-of-strip-cdrs
-    (implies (subsetp-equal (free-vars-in-terms terms)
-                            (strip-cars alist))
-             (subsetp-equal (free-vars-in-terms (sublis-var-simple-lst alist terms))
-                            (free-vars-in-terms (strip-cdrs alist))))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :in-theory (enable sublis-var-simple
-                                     sublis-var-simple-lst
-                                     free-vars-in-term
-                                     free-vars-in-terms))))
 
 ;; Substitution doesn't introduce lambdas if there were none to start with and
 ;; there are none in the alist being used for substitution.

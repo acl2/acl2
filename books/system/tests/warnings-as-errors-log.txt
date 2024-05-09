@@ -1,0 +1,680 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(REDEF+)
+ T
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-CO*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-CO STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-CO* ...):  *STANDARD-CO*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-CO* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-CO* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-CO*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(SET-LD-ALWAYS-SKIP-TOP-LEVEL-LOCALS NIL STATE)
+ NIL
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+ACL2 Warning [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: ((:REWRITE CAR-CONS))
+Warnings:  Subsume
+ FOO
+ACL2 !>>(U)
+           4:x(REDEF-)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("Subsume")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+
+HARD ACL2 ERROR [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-INHIBIT-WARNINGS "Subsume")
+ ("Subsume")
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: ((:REWRITE CAR-CONS))
+ FOO
+ACL2 !>>(U)
+           5:x(SET-INHIBIT-WARNINGS "Subsume")
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("Theory" "SUBSUME")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+
+HARD ACL2 ERROR [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS
+                                :ALL STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+
+HARD ACL2 ERROR [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: ((:REWRITE CAR-CONS))
+ FOO
+ACL2 !>>(U)
+           5:x(SET-INHIBIT-WARNINGS "Subsume")
+ACL2 !>>(TOGGLE-INHIBIT-WARNING "Subsume")
+
+Summary
+Form:  ( TABLE INHIBIT-WARNINGS-TABLE ...)
+Rules: NIL
+ INHIBIT-WARNINGS-TABLE
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+
+HARD ACL2 ERROR [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL "Use" STATE)
+
+
+HARD ACL2 ERROR in SET-WARNINGS-AS-ERRORS:  Illegal second argument
+of SET-WARNINGS-AS-ERRORS, "Use": must be :ALL or a list of strings.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("Use")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+
+HARD ACL2 ERROR [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("subsume")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+ACL2 Warning [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: ((:REWRITE CAR-CONS))
+Warnings:  Subsume
+ FOO
+ACL2 !>>(U)
+           6:x(TOGGLE-INHIBIT-WARNING "Subsume")
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("Use")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+ACL2 Warning [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: ((:REWRITE CAR-CONS))
+Warnings:  Subsume
+ FOO
+ACL2 !>>(U)
+           6:x(TOGGLE-INHIBIT-WARNING "Subsume")
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("Subsume")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO (EQUAL (CAR (CONS X X)) X))
+
+
+HARD ACL2 ERROR [Subsume] in ( DEFTHM FOO ...):  The previously added
+rule CAR-CONS subsumes a newly proposed :REWRITE rule generated from
+FOO, in the sense that the old rule rewrites a more general target.
+Because the new rule will be tried first, it may nonetheless find application.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL :ALL STATE)
+<state>
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE))
+
+ACL2 Warning in SET-INHIBIT-OUTPUT-LST:  The printing of proof-trees
+is being enabled while the printing of proofs is being disabled.  You
+may want to execute :STOP-PROOF-TREE in order to inhibit proof-trees
+as well.
+
+ (PROVE)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
+<state>
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE))
+
+
+HARD ACL2 ERROR in SET-INHIBIT-OUTPUT-LST:  The printing of proof-
+trees is being enabled while the printing of proofs is being disabled.
+You may want to execute :STOP-PROOF-TREE in order to inhibit proof-
+trees as well.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL :ALL STATE)
+<state>
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE WARNING))
+ (PROOF-TREE WARNING)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE))
+ (PROVE)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE WARNING))
+ (PROOF-TREE WARNING)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
+<state>
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE))
+ (PROVE)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS
+                                :ALL STATE)
+<state>
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROVE))
+
+
+HARD ACL2 ERROR in SET-INHIBIT-OUTPUT-LST:  The printing of proof-
+trees is being enabled while the printing of proofs is being disabled.
+You may want to execute :STOP-PROOF-TREE in order to inhibit proof-
+trees as well.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(ASSERT-EVENT (EQUAL (@ INHIBIT-OUTPUT-LST)
+                             '(PROOF-TREE)))
+ :PASSED
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL :ALL STATE)
+<state>
+ACL2 !>>(DEFMACRO MAC (&KEY X) X)
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+ MAC
+ACL2 !>>(MAC :X 3 :X 4)
+
+
+ACL2 Error in macro expansion:  The keyword argument :X occurs twice
+in (MAC :X 3 :X 4).  This situation is explicitly allowed in Common
+Lisp (see CLTL2, page 80) but it often suggests a mistake was made.
+See :DOC set-duplicate-keys-action.
+
+ACL2 !>>(SET-DUPLICATE-KEYS-ACTION MAC :WARNING)
+ :WARNING
+ACL2 !>>(MAC :X 3 :X 4)
+
+ACL2 Warning [Duplicate-Keys] in macro expansion:  The keyword argument
+:X occurs twice in (MAC :X 3 :X 4).  This situation is explicitly allowed
+in Common Lisp (see CLTL2, page 80) but it often suggests a mistake
+was made.  The leftmost value for :X is used.  See :DOC set-duplicate-
+keys-action.
+
+3
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("Duplicate-Keys")
+                                STATE)
+<state>
+ACL2 !>>(MAC :X 3 :X 4)
+
+
+HARD ACL2 ERROR [Duplicate-Keys] in macro expansion:  The keyword argument
+:X occurs twice in (MAC :X 3 :X 4).  This situation is explicitly allowed
+in Common Lisp (see CLTL2, page 80) but it often suggests a mistake
+was made.  The leftmost value for :X is used.  See :DOC set-duplicate-
+keys-action.
+
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING))
+ (WARNING)
+ACL2 !>>(MAC :X 3 :X 4)
+3
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("Duplicate-Keys")
+                                STATE)
+<state>
+ACL2 !>>(MAC :X 3 :X 4)
+
+
+HARD ACL2 ERROR [Duplicate-Keys] in macro expansion:  The keyword argument
+:X occurs twice in (MAC :X 3 :X 4).  This situation is explicitly allowed
+in Common Lisp (see CLTL2, page 80) but it often suggests a mistake
+was made.  The leftmost value for :X is used.  See :DOC set-duplicate-
+keys-action.
+
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
+<state>
+ACL2 !>>(MAC :X 3 :X 4)
+3
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("Duplicate-Keys")
+                                STATE)
+<state>
+ACL2 !>>(MAC :X 3 :X 4)
+
+
+HARD ACL2 ERROR [Duplicate-Keys] in macro expansion:  The keyword argument
+:X occurs twice in (MAC :X 3 :X 4).  This situation is explicitly allowed
+in Common Lisp (see CLTL2, page 80) but it often suggests a mistake
+was made.  The leftmost value for :X is used.  See :DOC set-duplicate-
+keys-action.
+
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL :ALL STATE)
+<state>
+ACL2 !>>(DEFUN FN (X) X)
+
+Since FN is non-recursive, its admission is trivial.  We observe that
+the type of FN is described by the theorem (EQUAL (FN X) X).  
+
+Summary
+Form:  ( DEFUN FN ...)
+Rules: NIL
+ FN
+ACL2 !>>(MEMOIZE 'FN)
+
+
+ACL2 Error in ( TABLE MEMOIZE-TABLE ...):  Illegal attempt to set memoize-
+table:  The function symbol FN is in :logic mode but has not had its
+guards verified.  Either run VERIFY-GUARDS, or specify :IDEAL-OKP T
+in your MEMOIZE call, or else evaluate 
+(TABLE ACL2-DEFAULTS-TABLE :MEMOIZE-IDEAL-OKP T) or 
+(TABLE ACL2-DEFAULTS-TABLE :MEMOIZE-IDEAL-OKP :WARN).
+
+
+ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
+
+ACL2 Warning [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to be
+memoized is in :logic mode but has not had its guards verified.  Memoization
+might therefore not take place; see :DOC memoize.
+
+ FN
+ACL2 !>>(U)
+ L         9:x(DEFUN FN (X) ...)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
+<state>
+ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
+
+
+HARD ACL2 ERROR [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to
+be memoized is in :logic mode but has not had its guards verified.
+Memoization might therefore not take place; see :DOC memoize.
+
+
+
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
+aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
+wet.
+
+
+
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
+:guard for MEMOIZE-TABLE on the key FN and value 
+((:CONDITION-FN . T)
+ (:INLINE . T)
+ (:COMMUTATIVE)
+ (:FORGET)
+ (:MEMO-TABLE-INIT-SIZE . 60)
+ (:AOKP)
+ (:STATS . :DEFAULT)
+ ...)
+could not be evaluated.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING))
+ (WARNING)
+ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
+ FN
+ACL2 !>>(U)
+ L         9:x(DEFUN FN (X) ...)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("memoize")
+                                STATE)
+<state>
+ACL2 !>>(MEMOIZE 'FN :IDEAL-OKP :WARN)
+
+
+HARD ACL2 ERROR [Memoize] in MEMOIZE-TABLE-CHK:  The function FN to
+be memoized is in :logic mode but has not had its guards verified.
+Memoization might therefore not take place; see :DOC memoize.
+
+
+
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  Evaluation
+aborted.  To debug see :DOC print-gv, see :DOC trace, and see :DOC
+wet.
+
+
+
+ACL2 Error [Table-guard] in ( TABLE MEMOIZE-TABLE ...):  The TABLE
+:guard for MEMOIZE-TABLE on the key FN and value 
+((:CONDITION-FN . T)
+ (:INLINE . T)
+ (:COMMUTATIVE)
+ (:FORGET)
+ (:MEMO-TABLE-INIT-SIZE . 60)
+ (:AOKP)
+ (:STATS . :DEFAULT)
+ ...)
+could not be evaluated.
+(See :DOC set-iprint to be able to see elided values in this message.)
+
+
+ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T '("use")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+
+HARD ACL2 ERROR [Use] in ( DEFTHM FOO ...):  It is unusual to :USE
+the formula of an enabled :REWRITE or :DEFINITION rule, so you may
+want to consider disabling (:REWRITE CAR-CONS) in the hint provided
+for Goal.  See :DOC using-enabled-rules.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+*** Note: No checkpoints to print. ***
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(WARNING PROOF-TREE))
+ (WARNING PROOF-TREE)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+Hint-events: ((:USE CAR-CONS))
+ FOO
+ACL2 !>>(U)
+ L         9:x(DEFUN FN (X) ...)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS :ALWAYS '("use")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+
+HARD ACL2 ERROR [Use] in ( DEFTHM FOO ...):  It is unusual to :USE
+the formula of an enabled :REWRITE or :DEFINITION rule, so you may
+want to consider disabling (:REWRITE CAR-CONS) in the hint provided
+for Goal.  See :DOC using-enabled-rules.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+*** Note: No checkpoints to print. ***
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS T :ALL STATE)
+<state>
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+Hint-events: ((:USE CAR-CONS))
+ FOO
+ACL2 !>>(U)
+ L         9:x(DEFUN FN (X) ...)
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("xyz")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+Hint-events: ((:USE CAR-CONS))
+ FOO
+ACL2 !>>(U)
+ L         9:x(DEFUN FN (X) ...)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+
+HARD ACL2 ERROR [Use] in ( DEFTHM FOO ...):  It is unusual to :USE
+the formula of an enabled :REWRITE or :DEFINITION rule, so you may
+want to consider disabling (:REWRITE CAR-CONS) in the hint provided
+for Goal.  See :DOC using-enabled-rules.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+
+*** Note: No checkpoints to print. ***
+
+ACL2 Error [Failure] in ( DEFTHM FOO ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-WARNINGS-AS-ERRORS NIL '("USE")
+                                STATE)
+<state>
+ACL2 !>>(DEFTHM FOO
+          T
+          :HINTS (("Goal" :USE CAR-CONS))
+          :RULE-CLASSES NIL)
+
+ACL2 Warning [Use] in ( DEFTHM FOO ...):  It is unusual to :USE the
+formula of an enabled :REWRITE or :DEFINITION rule, so you may want
+to consider disabling (:REWRITE CAR-CONS) in the hint provided for
+Goal.  See :DOC using-enabled-rules.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM FOO ...)
+Rules: NIL
+Hint-events: ((:USE CAR-CONS))
+Warnings:  Use
+ FOO
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>Bye.

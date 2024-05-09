@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -19,6 +19,1386 @@
 ; Austin, TX 78712 U.S.A.
 
 (in-package "ACL2")
+
+; Section:  PREPROCESS-CLAUSE
+
+; The preprocessor is the first clause processor in the waterfall when
+; we enter from prove.  It contains a simple term rewriter that expands
+; certain "abbreviations" and a gentle clausifier.
+
+; We first develop the simple rewriter, called expand-abbreviations.
+
+; Rockwell Addition: We are now concerned with lambdas, where we
+; didn't used to treat them differently.  This extra argument will
+; show up in several places during a compare-windows.
+
+(mutual-recursion
+
+(defun abbreviationp1 (lambda-flg vars term2)
+
+; This function returns t if term2 is not an abbreviation of term1
+; (where vars is the bag of vars in term1).  Otherwise, it returns the
+; excess vars of vars.  If lambda-flg is t we look out for lambdas and
+; do not consider something an abbreviation if we see a lambda in it.
+; If lambda-flg is nil, we treat lambdas as though they were function
+; symbols.
+
+  (cond ((variablep term2)
+         (cond ((null vars) t) (t (cdr vars))))
+        ((fquotep term2) vars)
+        ((and lambda-flg
+              (flambda-applicationp term2))
+         t)
+        ((member-eq (ffn-symb term2) '(if not implies)) t)
+        (t (abbreviationp1-lst lambda-flg vars (fargs term2)))))
+
+(defun abbreviationp1-lst (lambda-flg vars lst)
+  (cond ((null lst) vars)
+        (t (let ((vars1 (abbreviationp1 lambda-flg vars (car lst))))
+             (cond ((eq vars1 t) t)
+                   (t (abbreviationp1-lst lambda-flg vars1 (cdr lst))))))))
+
+)
+
+(defun abbreviationp (lambda-flg vars term2)
+
+; Consider the :REWRITE rule generated from (equal term1 term2).  We
+; say such a rule is an "abbreviation" if term2 contains no more
+; variable occurrences than term1 and term2 does not call the
+; functions IF, NOT or IMPLIES or (if lambda-flg is t) any LAMBDA.
+; Vars, above, is the bag of vars from term1.  We return non-nil iff
+; (equal term1 term2) is an abbreviation.
+
+  (not (eq (abbreviationp1 lambda-flg vars term2) t)))
+
+(mutual-recursion
+
+(defun all-vars-bag (term ans)
+  (cond ((variablep term) (cons term ans))
+        ((fquotep term) ans)
+        (t (all-vars-bag-lst (fargs term) ans))))
+
+(defun all-vars-bag-lst (lst ans)
+  (cond ((null lst) ans)
+        (t (all-vars-bag-lst (cdr lst)
+                             (all-vars-bag (car lst) ans)))))
+)
+
+(defun find-abbreviation-lemma (term geneqv lemmas ens wrld)
+
+; Term is a function application, geneqv is a generated equivalence
+; relation and lemmas is the 'lemmas property of the function symbol
+; of term.  We find the first (enabled) abbreviation lemma that
+; rewrites term maintaining geneqv.  A lemma is an abbreviation if it
+; is not a meta-lemma, has no hypotheses, has no loop-stopper, and has
+; an abbreviationp for the conclusion.
+
+; If we win we return t, the rune of the :CONGRUENCE rule used, the
+; lemma, and the unify-subst.  Otherwise we return four nils.
+
+  (cond ((null lemmas) (mv nil nil nil nil))
+        ((and (enabled-numep (access rewrite-rule (car lemmas) :nume) ens)
+              (eq (access rewrite-rule (car lemmas) :subclass) 'abbreviation)
+              (geneqv-refinementp (access rewrite-rule (car lemmas) :equiv)
+                                 geneqv
+                                 wrld))
+         (mv-let
+             (wonp unify-subst)
+           (one-way-unify (access rewrite-rule (car lemmas) :lhs) term)
+           (cond (wonp (mv t
+                           (geneqv-refinementp
+                            (access rewrite-rule (car lemmas) :equiv)
+                            geneqv
+                            wrld)
+                           (car lemmas)
+                           unify-subst))
+                 (t (find-abbreviation-lemma term geneqv (cdr lemmas)
+                                             ens wrld)))))
+        (t (find-abbreviation-lemma term geneqv (cdr lemmas)
+                                    ens wrld))))
+
+(mutual-recursion
+
+(defun expand-abbreviations-with-lemma (term geneqv pequiv-info
+                                             fns-to-be-ignored-by-rewrite
+                                             rdepth step-limit ens wrld state
+                                             ttree)
+  (mv-let
+    (wonp cr-rune lemma unify-subst)
+    (find-abbreviation-lemma term geneqv
+                             (getpropc (ffn-symb term) 'lemmas nil wrld)
+                             ens
+                             wrld)
+    (cond
+     (wonp
+      (with-accumulated-persistence
+       (access rewrite-rule lemma :rune)
+       ((the #.*fixnum-type* step-limit) term ttree)
+       t
+       (expand-abbreviations
+        (access rewrite-rule lemma :rhs)
+        unify-subst
+        geneqv
+        pequiv-info
+        fns-to-be-ignored-by-rewrite
+        (adjust-rdepth rdepth) step-limit ens wrld state
+        (push-lemma cr-rune
+                    (push-lemma (access rewrite-rule lemma :rune)
+                                ttree)))))
+     (t (mv step-limit term ttree)))))
+
+(defun expand-abbreviations (term alist geneqv pequiv-info
+                                  fns-to-be-ignored-by-rewrite
+                                  rdepth step-limit ens wrld state ttree)
+
+; This function is essentially like rewrite but is more restrictive in its use
+; of rules.  We rewrite term/alist maintaining geneqv and pequiv-info, avoiding
+; the expansion or application of lemmas to terms whose fns are in
+; fns-to-be-ignored-by-rewrite.  We return a new term and a ttree (accumulated
+; onto our argument) describing the rewrite.  We only apply "abbreviations"
+; which means we expand lambda applications and non-rec fns provided they do
+; not duplicate arguments or introduce IFs, etc. (see abbreviationp), and we
+; apply those unconditional :REWRITE rules with the same property.
+
+; It used to be written:
+
+;  Note: In a break with Nqthm and the first four versions of ACL2, in
+;  Version 1.5 we also expand IMPLIES terms here.  In fact, we expand
+;  several members of *expandable-boot-strap-non-rec-fns* here, and
+;  IFF.  The impetus for this decision was the forcing of impossible
+;  goals by simplify-clause.  As of this writing, we have just added
+;  the idea of forcing rounds and the concomitant notion that forced
+;  hypotheses are proved under the type-alist extant at the time of the
+;  force.  But if the simplifier sees IMPLIES terms and rewrites their
+;  arguments, it does not augment the context, e.g., in (IMPLIES hyps
+;  concl) concl is rewritten without assuming hyps and thus assumptions
+;  forced in concl are context free and often impossible to prove.  Now
+;  while the user might hide propositional structure in other functions
+;  and thus still suffer this failure mode, IMPLIES is the most common
+;  one and by opening it now we make our context clearer.  See the note
+;  below for the reason we expand other
+;  *expandable-boot-strap-non-rec-fns*.
+
+; This is no longer true.  We now expand the IMPLIES from the original theorem
+; in preprocess-clause before expand-abbreviations is called, and do not expand
+; any others here.  These changes in the handling of IMPLIES (as well as
+; several others) are caused by the introduction of assume-true-false-if.  See
+; the mini-essay at assume-true-false-if.
+
+  (cond
+   ((zero-depthp rdepth)
+    (rdepth-error
+     (mv step-limit term ttree)
+     t))
+   ((time-limit5-reached-p ; nil, or throws
+     "Out of time in preprocess (expand-abbreviations).")
+    (mv step-limit nil nil))
+   (t
+    (let ((step-limit (decrement-step-limit step-limit)))
+      (cond
+       ((variablep term)
+        (let ((temp (assoc-eq term alist)))
+          (cond (temp (mv step-limit (cdr temp) ttree))
+                (t (mv step-limit term ttree)))))
+       ((fquotep term) (mv step-limit term ttree))
+       ((and (eq (ffn-symb term) 'return-last)
+
+; We avoid special treatment for return-last when the first argument is progn,
+; since the user may have intended the first argument to be rewritten in that
+; case; for example, the user might want to see a message printed when the term
+; (prog2$ (cw ...) ...) is encountered.  But it is useful in the other cases,
+; in particular for calls of return-last generated by calls of mbe, to avoid
+; spending time simplifying the next-to-last argument.
+
+             (not (equal (fargn term 1) ''progn)))
+        (expand-abbreviations (fargn term 3)
+                              alist geneqv pequiv-info
+                              fns-to-be-ignored-by-rewrite rdepth
+                              step-limit ens wrld state
+                              (push-lemma
+                               (fn-rune-nume 'return-last nil nil wrld)
+                               ttree)))
+       ((eq (ffn-symb term) 'hide)
+        (mv step-limit
+            (sublis-var alist term)
+            ttree))
+       (t
+        (mv-let
+         (deep-pequiv-lst shallow-pequiv-lst)
+         (pequivs-for-rewrite-args (ffn-symb term) geneqv pequiv-info wrld ens)
+         (sl-let
+          (expanded-args ttree)
+          (expand-abbreviations-lst (fargs term)
+                                    alist
+                                    1 nil deep-pequiv-lst shallow-pequiv-lst
+                                    geneqv (ffn-symb term)
+                                    (geneqv-lst (ffn-symb term) geneqv ens wrld)
+                                    fns-to-be-ignored-by-rewrite
+                                    (adjust-rdepth rdepth) step-limit
+                                    ens wrld state ttree)
+          (let* ((fn (ffn-symb term))
+                 (term (cons-term fn expanded-args)))
+
+; If term does not collapse to a constant, fn is still its ffn-symb.
+
+            (cond
+             ((fquotep term)
+
+; Term collapsed to a constant.  But it wasn't a constant before, and so
+; it collapsed because cons-term executed fn on constants.  So we record
+; a use of the executable-counterpart.
+
+              (mv step-limit
+                  term
+                  (push-lemma (fn-rune-nume fn nil t wrld) ttree)))
+             ((member-equal fn fns-to-be-ignored-by-rewrite)
+              (mv step-limit (cons-term fn expanded-args) ttree))
+             ((and (all-quoteps expanded-args)
+                   (enabled-xfnp fn ens wrld)
+                   (or (flambda-applicationp term)
+                       (not (getpropc fn 'constrainedp nil wrld))))
+              (cond ((flambda-applicationp term)
+                     (expand-abbreviations
+                      (lambda-body fn)
+                      (pairlis$ (lambda-formals fn) expanded-args)
+                      geneqv pequiv-info
+                      fns-to-be-ignored-by-rewrite
+                      (adjust-rdepth rdepth) step-limit ens wrld state ttree))
+                    ((programp fn wrld)
+
+; We formerly thought this case was possible during admission of recursive
+; definitions.  Best if it's not!  So we cause an error; if we ever hit this
+; case, we can think about whether allowing :program mode functions into the
+; prover processes is problematic.  Our concern about :program mode functions
+; in proofs has led us in May 2016 to change the application of meta functions
+; and clause-processors to insist that the result is free of :program mode
+; function symbols.
+
+                     (mv step-limit
+;                        (cons-term fn expanded-args)
+                         (er hard! 'expand-abbreviations
+                             "Implementation error: encountered :program mode ~
+                              function symbol, ~x0"
+                             fn)
+                         ttree))
+                    (t
+                     (mv-let
+                      (erp val bad-fn)
+                      (pstk
+                       (ev-fncall+ fn (strip-cadrs expanded-args) t state))
+                      (declare (ignore bad-fn))
+                      (cond
+                       (erp
+
+; We originally followed a suggestion from Matt Wilding and attempt to simplify
+; the term before applying HIDE.  Now, we partially follow an idea from Eric
+; Smith of avoiding the application of HIDE -- we do this only here in
+; expand-abbreviations, expecting that the rewriter will apply HIDE if
+; appropriate.
+
+                        (expand-abbreviations-with-lemma
+                         (cons-term fn expanded-args)
+                         geneqv pequiv-info
+                         fns-to-be-ignored-by-rewrite
+                         rdepth step-limit ens wrld state ttree))
+                       (t (mv step-limit
+                              (kwote val)
+                              (push-lemma (fn-rune-nume fn nil t wrld)
+                                          ttree))))))))
+             ((flambdap fn)
+              (cond ((abbreviationp nil
+                                    (lambda-formals fn)
+                                    (lambda-body fn))
+                     (expand-abbreviations
+                      (lambda-body fn)
+                      (pairlis$ (lambda-formals fn) expanded-args)
+                      geneqv pequiv-info
+                      fns-to-be-ignored-by-rewrite
+                      (adjust-rdepth rdepth) step-limit ens wrld state ttree))
+                    (t
+
+; Once upon a time (well into v1-9) we just returned (mv term ttree)
+; here.  But then Jun Sawada pointed out some problems with his proofs
+; of some theorems of the form (let (...) (implies (and ...)  ...)).
+; The problem was that the implies was not getting expanded (because
+; the let turns into a lambda and the implication in the body is not
+; an abbreviationp, as checked above).  So we decided that, in such
+; cases, we would actually expand the abbreviations in the body
+; without expanding the lambda itself, as we do below.  This in turn
+; often allows the lambda to expand via the following mechanism.
+; Preprocess-clause calls expand-abbreviations and it expands the
+; implies into IFs in the body without opening the lambda.  But then
+; preprocess-clause calls clausify-input which does another
+; expand-abbreviations and this time the expansion is allowed.  We do
+; not imagine that this change will adversely affect proofs, but if
+; so, well, the old code is shown on the first line of this comment.
+
+                     (sl-let (body ttree)
+                             (expand-abbreviations
+                              (lambda-body fn)
+                              nil
+                              geneqv
+                              nil ; pequiv-info
+                              fns-to-be-ignored-by-rewrite
+                              (adjust-rdepth rdepth) step-limit ens wrld state
+                              ttree)
+
+; Rockwell Addition:
+
+; Once upon another time (through v2-5) we returned the fcons-term
+; shown in the t clause below.  But Rockwell proofs indicate that it
+; is better to eagerly expand this lambda if the new body would make
+; it an abbreviation.
+
+                             (cond
+                              ((abbreviationp nil
+                                              (lambda-formals fn)
+                                              body)
+                               (expand-abbreviations
+                                body
+                                (pairlis$ (lambda-formals fn) expanded-args)
+                                geneqv pequiv-info
+                                fns-to-be-ignored-by-rewrite
+                                (adjust-rdepth rdepth) step-limit ens wrld state
+                                ttree))
+                              (t
+                               (mv step-limit
+                                   (mcons-term (list 'lambda (lambda-formals fn)
+                                                     body)
+                                               expanded-args)
+                                   ttree)))))))
+             ((member-eq fn '(iff synp mv-list cons-with-hint return-last
+                                  wormhole-eval force case-split
+                                  double-rewrite))
+
+; The list above is an arbitrary subset of *expandable-boot-strap-non-rec-fns*.
+; Once upon a time we used the entire list here, but Bishop Brock complained
+; that he did not want EQL opened.  So we have limited the list to just the
+; propositional function IFF and the no-ops.
+
+; Note: Once upon a time we did not expand any propositional functions
+; here.  Indeed, one might wonder why we do now?  The only place
+; expand-abbreviations was called was from within preprocess-clause.
+; And there, its output was run through clausify-input and then
+; remove-trivial-clauses.  The latter called tautologyp on each clause
+; and that, in turn, expanded all the functions above (but discarded
+; the expansion except for purposes of determining tautologyhood).
+; Thus, there is no real case to make against expanding these guys.
+; For sanity, one might wish to keep the list above in sync with
+; that in tautologyp, where we say about it: "The list is in fact
+; *expandable-boot-strap-non-rec-fns* with NOT deleted and IFF added.
+; The main idea here is to include non-rec functions that users
+; typically put into the elegant statements of theorems."  But now we
+; have deleted IMPLIES from this list, to support the assume-true-false-if
+; idea, but we still keep IMPLIES in the list for tautologyp because
+; if we can decide it's a tautology by expanding, all the better.
+
+              (with-accumulated-persistence
+               (fn-rune-nume fn nil nil wrld)
+               ((the #.*fixnum-type* step-limit) term ttree)
+               t
+               (expand-abbreviations (bbody fn)
+                                     (pairlis$ (formals fn wrld) expanded-args)
+                                     geneqv pequiv-info
+                                     fns-to-be-ignored-by-rewrite
+                                     (adjust-rdepth rdepth)
+                                     step-limit ens wrld state
+                                     (push-lemma (fn-rune-nume fn nil nil wrld)
+                                                 ttree))))
+
+; Rockwell Addition:  We are expanding abbreviations.  This is new treatment
+; of IF, which didn't used to receive any special notice.
+
+             ((eq fn 'if)
+
+; There are no abbreviation (or rewrite) rules hung on IF, so coming out
+; here is ok.
+
+              (let ((a (car expanded-args))
+                    (b (cadr expanded-args))
+                    (c (caddr expanded-args)))
+                (cond
+                 ((equal b c) (mv step-limit b ttree))
+                 ((quotep a)
+                  (mv step-limit
+                      (if (eq (cadr a) nil) c b)
+                      ttree))
+                 ((and (equal geneqv *geneqv-iff*)
+                       (equal b *t*)
+                       (or (equal c *nil*)
+                           (ffn-symb-p c 'HARD-ERROR)))
+
+; Some users keep HARD-ERROR disabled so that they can figure out
+; which guard proof case they are in.  HARD-ERROR is identically nil
+; and we would really like to eliminate the IF here.  So we use our
+; knowledge that HARD-ERROR is nil even if it is disabled.  We don't
+; even put it in the ttree, because for all the user knows this is
+; primitive type inference.
+
+                  (mv step-limit a ttree))
+                 (t (mv step-limit
+                        (mcons-term 'if expanded-args)
+                        ttree)))))
+
+; Rockwell Addition: New treatment of equal.
+
+             ((and (eq fn 'equal)
+                   (equal (car expanded-args) (cadr expanded-args)))
+              (mv step-limit *t* ttree))
+             (t
+              (expand-abbreviations-with-lemma
+               term geneqv pequiv-info
+               fns-to-be-ignored-by-rewrite rdepth step-limit ens
+               wrld state ttree))))))))))))
+
+(defun expand-abbreviations-lst (lst alist bkptr rewritten-args-rev
+                                     deep-pequiv-lst shallow-pequiv-lst
+                                     parent-geneqv parent-fn geneqv-lst
+                                     fns-to-be-ignored-by-rewrite rdepth
+                                     step-limit ens wrld state ttree)
+  (cond
+   ((null lst) (mv step-limit (reverse rewritten-args-rev) ttree))
+   (t (mv-let
+       (child-geneqv child-pequiv-info)
+       (geneqv-and-pequiv-info-for-rewrite
+        parent-fn bkptr rewritten-args-rev lst alist
+        parent-geneqv
+        (car geneqv-lst)
+        deep-pequiv-lst
+        shallow-pequiv-lst
+        wrld)
+       (sl-let (term1 new-ttree)
+               (expand-abbreviations (car lst) alist
+                                     child-geneqv child-pequiv-info
+                                     fns-to-be-ignored-by-rewrite
+                                     rdepth step-limit ens wrld state ttree)
+               (expand-abbreviations-lst (cdr lst) alist
+                                         (1+ bkptr)
+                                         (cons term1 rewritten-args-rev)
+                                         deep-pequiv-lst shallow-pequiv-lst
+                                         parent-geneqv parent-fn
+                                         (cdr geneqv-lst)
+                                         fns-to-be-ignored-by-rewrite
+                                         rdepth step-limit ens wrld
+                                         state new-ttree))))))
+
+)
+
+(defun and-orp (term bool lambda-okp)
+
+; We return t or nil according to whether term is a disjunction (if bool is t)
+; or conjunction (if bool is nil).
+
+; After v8-0 we made a change to preserve lambdas on right-hand sides of
+; rewrite rules.  At that time we added the clause for lambdas below, to
+; preserve the old behavior of find-and-or-lemma.  However, in general it seems
+; a good idea to open up lambdas slowly, so we keep the old behavior of and-orp
+; -- not diving into lambda bodies -- in other places, which also helps with
+; backward compatibility (one example is the proof of lemma
+; aignet-marked-copies-in-bounds-of-empty-bitarr in community book
+; books/centaur/aignet/rewrite.lisp).  Parameter lambda-okp is true when we
+; allow exploration of lambda bodies, else nil.  When we tried on 8/14/2018
+; calling and-orp with lambda-okp = t in the case (flambda-applicationp term)
+; of expand-and-or -- that is, to dive into lambda-bodies of lambda-bodies --
+; we got 19 failures when trying an "everything" regression, which (of course)
+; almost surely undercounts failures, since certification wasn't attempted for
+; books depending on failed books.
+
+  (case-match term
+              (('if & c2 c3)
+               (if bool
+                   (or (equal c2 *t*) (equal c3 *t*))
+                 (or (equal c2 *nil*) (equal c3 *nil*))))
+              ((('lambda & body) . &)
+               (and lambda-okp
+                    (and-orp body bool lambda-okp)))))
+
+(defun find-and-or-lemma (term bool lemmas ens wrld)
+
+; Term is a function application and lemmas is the 'lemmas property of
+; the function symbol of term.  We find the first enabled and-or
+; (wrt bool) lemma that rewrites term maintaining iff.
+
+; If we win we return t, the :CONGRUENCE rule name, the lemma, and the
+; unify-subst.  Otherwise we return four nils.
+
+  (cond ((null lemmas) (mv nil nil nil nil))
+        ((and (enabled-numep (access rewrite-rule (car lemmas) :nume) ens)
+              (or (eq (access rewrite-rule (car lemmas) :subclass) 'backchain)
+                  (eq (access rewrite-rule (car lemmas) :subclass) 'abbreviation))
+              (null (access rewrite-rule (car lemmas) :hyps))
+              (null (access rewrite-rule (car lemmas) :heuristic-info))
+              (geneqv-refinementp (access rewrite-rule (car lemmas) :equiv)
+                                 *geneqv-iff*
+                                 wrld)
+              (and-orp (access rewrite-rule (car lemmas) :rhs) bool t))
+         (mv-let
+             (wonp unify-subst)
+           (one-way-unify (access rewrite-rule (car lemmas) :lhs) term)
+           (cond (wonp (mv t
+                           (geneqv-refinementp
+                            (access rewrite-rule (car lemmas) :equiv)
+                            *geneqv-iff*
+                            wrld)
+                           (car lemmas)
+                           unify-subst))
+                 (t (find-and-or-lemma term bool (cdr lemmas) ens wrld)))))
+        (t (find-and-or-lemma term bool (cdr lemmas) ens wrld))))
+
+(defun expand-and-or (term bool fns-to-be-ignored-by-rewrite ens wrld state
+                           ttree step-limit)
+
+; We expand the top-level fn symbol of term provided the expansion produces a
+; conjunction -- when bool is nil -- or a disjunction -- when bool is t.  We
+; return four values: the new step-limit, wonp, the new term, and a new ttree.
+; This fn is a No-Change Loser.
+
+; Note that preprocess-clause calls expand-abbreviations; but also
+; preprocess-clause calls clausify-input, which calls expand-and-or, which
+; calls expand-abbreviations.  But this is not redundant, as expand-and-or
+; calls expand-abbreviations after expanding function definitions and using
+; rewrite rules when the result is a conjunction or disjunction (depending on
+; bool) -- even when the rule being applied is not an abbreviation rule.  Below
+; are event sequences that illustrate this extra work being done.  In both
+; cases, evaluation of (getpropc 'foo 'lemmas) shows that we are expanding with
+; a rewrite-rule structure that is not of subclass 'abbreviation.
+
+; (defstub bar (x) t)
+; (defun foo (x) (and (bar (car x)) (bar (cdr x))))
+; (trace$ expand-and-or expand-abbreviations clausify-input preprocess-clause)
+; (thm (foo x) :hints (("Goal" :do-not-induct :otf)))
+
+; (defstub bar (x) t)
+; (defstub foo (x) t)
+; (defaxiom foo-open (equal (foo x) (and (bar (car x)) (bar (cdr x)))))
+; (trace$ expand-and-or expand-abbreviations clausify-input preprocess-clause)
+; (thm (foo x) :hints (("Goal" :do-not-induct :otf)))
+
+  (cond ((variablep term) (mv step-limit nil term ttree))
+        ((fquotep term) (mv step-limit nil term ttree))
+        ((member-equal (ffn-symb term) fns-to-be-ignored-by-rewrite)
+         (mv step-limit nil term ttree))
+        ((flambda-applicationp term)
+         (cond ((and-orp (lambda-body (ffn-symb term)) bool nil)
+                (sl-let
+                 (term ttree)
+                 (expand-abbreviations
+                  (subcor-var (lambda-formals (ffn-symb term))
+                              (fargs term)
+                              (lambda-body (ffn-symb term)))
+                  nil
+                  *geneqv-iff*
+                  nil
+                  fns-to-be-ignored-by-rewrite
+                  (rewrite-stack-limit wrld) step-limit ens wrld state ttree)
+                 (mv step-limit t term ttree)))
+               (t (mv step-limit nil term ttree))))
+        (t
+         (let ((def-body (def-body (ffn-symb term) wrld)))
+           (cond
+            ((and def-body
+                  (null (access def-body def-body :recursivep))
+                  (null (access def-body def-body :hyp))
+                  (member-eq (access def-body def-body :equiv)
+                             '(equal iff))
+                  (enabled-numep (access def-body def-body :nume)
+                                 ens)
+                  (and-orp (access def-body def-body :concl) bool nil))
+             (sl-let
+              (term ttree)
+              (with-accumulated-persistence
+               (access def-body def-body :rune)
+               ((the #.*fixnum-type* step-limit) term ttree)
+               t
+               (expand-abbreviations
+                (subcor-var (access def-body def-body
+                                    :formals)
+                            (fargs term)
+                            (access def-body def-body :concl))
+                nil
+                *geneqv-iff*
+                nil
+                fns-to-be-ignored-by-rewrite
+                (rewrite-stack-limit wrld)
+                step-limit ens wrld state
+                (push-lemma? (access def-body def-body :rune)
+                             ttree)))
+              (mv step-limit t term ttree)))
+            (t (mv-let
+                (wonp cr-rune lemma unify-subst)
+                (find-and-or-lemma
+                 term bool
+                 (getpropc (ffn-symb term) 'lemmas nil wrld)
+                 ens wrld)
+                (cond
+                 (wonp
+                  (sl-let
+                   (term ttree)
+                   (with-accumulated-persistence
+                    (access rewrite-rule lemma :rune)
+                    ((the #.*fixnum-type* step-limit) term ttree)
+                    t
+                    (expand-abbreviations
+                     (sublis-var unify-subst
+                                 (access rewrite-rule lemma :rhs))
+                     nil
+                     *geneqv-iff*
+                     nil
+                     fns-to-be-ignored-by-rewrite
+                     (rewrite-stack-limit wrld)
+                     step-limit ens wrld state
+                     (push-lemma cr-rune
+                                 (push-lemma (access rewrite-rule lemma
+                                                     :rune)
+                                             ttree))))
+                   (mv step-limit t term ttree)))
+                 (t (mv step-limit nil term ttree))))))))))
+
+(defun clausify-input1 (term bool fns-to-be-ignored-by-rewrite ens wrld state
+                             ttree step-limit)
+
+; We return three things: a new step-limit, a clause, and a ttree.  If bool is
+; t, the (disjunction of the literals in the) clause is equivalent to term.  If
+; bool is nil, the clause is equivalent to the negation of term.  This function
+; opens up some nonrec fns and applies some rewrite rules.  The final ttree
+; contains the symbols and rules used.
+
+  (cond
+   ((equal term (if bool *nil* *t*)) (mv step-limit nil ttree))
+   ((ffn-symb-p term 'if)
+    (let ((t1 (fargn term 1))
+          (t2 (fargn term 2))
+          (t3 (fargn term 3)))
+      (cond
+       (bool
+        (cond
+         ((equal t3 *t*)
+          (sl-let (cl1 ttree)
+                  (clausify-input1 t1 nil
+                                   fns-to-be-ignored-by-rewrite
+                                   ens wrld state ttree step-limit)
+                  (sl-let (cl2 ttree)
+                          (clausify-input1 t2 t
+                                           fns-to-be-ignored-by-rewrite
+                                           ens wrld state ttree step-limit)
+                          (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
+         ((equal t2 *t*)
+          (sl-let (cl1 ttree)
+                  (clausify-input1 t1 t
+                                   fns-to-be-ignored-by-rewrite
+                                   ens wrld state ttree step-limit)
+                  (sl-let (cl2 ttree)
+                          (clausify-input1 t3 t
+                                           fns-to-be-ignored-by-rewrite
+                                           ens wrld state ttree step-limit)
+                          (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
+         (t (mv step-limit (list term) ttree))))
+       ((equal t3 *nil*)
+        (sl-let (cl1 ttree)
+                (clausify-input1 t1 nil
+                                 fns-to-be-ignored-by-rewrite
+                                 ens wrld state ttree step-limit)
+                (sl-let (cl2 ttree)
+                        (clausify-input1 t2 nil
+                                         fns-to-be-ignored-by-rewrite
+                                         ens wrld state ttree step-limit)
+                        (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
+       ((equal t2 *nil*)
+        (sl-let (cl1 ttree)
+                (clausify-input1 t1 t
+                                 fns-to-be-ignored-by-rewrite
+                                 ens wrld state ttree step-limit)
+                (sl-let (cl2 ttree)
+                        (clausify-input1 t3 nil
+                                         fns-to-be-ignored-by-rewrite
+                                         ens wrld state ttree step-limit)
+                        (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
+       (t (mv step-limit (list (dumb-negate-lit term)) ttree)))))
+   (t (sl-let (wonp term ttree)
+              (expand-and-or term bool fns-to-be-ignored-by-rewrite
+                             ens wrld state ttree step-limit)
+              (cond (wonp
+                     (clausify-input1 term bool fns-to-be-ignored-by-rewrite
+                                      ens wrld state ttree step-limit))
+                    (bool (mv step-limit (list term) ttree))
+                    (t (mv step-limit
+                           (list (dumb-negate-lit term))
+                           ttree)))))))
+
+(defun clausify-input1-lst (lst fns-to-be-ignored-by-rewrite ens wrld state
+                                ttree step-limit)
+
+; This function is really a subroutine of clausify-input.  It just
+; applies clausify-input1 to every element of lst, accumulating the ttrees.
+; It uses bool=t.
+
+  (cond ((null lst) (mv step-limit nil ttree))
+        (t (sl-let (clause ttree)
+                   (clausify-input1 (car lst) t fns-to-be-ignored-by-rewrite
+                                    ens wrld state ttree step-limit)
+                   (sl-let (clauses ttree)
+                           (clausify-input1-lst (cdr lst)
+                                                fns-to-be-ignored-by-rewrite
+                                                ens wrld state ttree
+                                                step-limit)
+                           (mv step-limit
+                               (conjoin-clause-to-clause-set clause clauses)
+                               ttree))))))
+
+(defun clausify-input (term fns-to-be-ignored-by-rewrite ens wrld state ttree
+                            step-limit)
+
+; This function converts term to a set of clauses, expanding some non-rec
+; functions when they produce results of the desired parity (i.e., we expand
+; AND-like functions in the hypotheses and OR-like functions in the
+; conclusion.)  AND and OR themselves are, of course, already expanded into
+; IFs, but we will expand other functions when they generate the desired IF
+; structure.  We also apply :REWRITE rules deemed appropriate.  We return three
+; results: a new step-limit, the set of clauses, and a ttree documenting the
+; expansions.
+
+  (sl-let (neg-clause ttree)
+          (clausify-input1 term nil fns-to-be-ignored-by-rewrite ens
+                           wrld state ttree step-limit)
+
+; Neg-clause is a clause that is equivalent to the negation of term.  That is,
+; if the literals of neg-clause are lit1, ..., litn, then (or lit1 ... litn)
+; <-> (not term).  Therefore, term is the negation of the clause, i.e., (and
+; (not lit1) ... (not litn)).  We will form a clause from each (not lit1) and
+; return the set of clauses, implicitly conjoined.
+
+          (clausify-input1-lst (dumb-negate-lit-lst neg-clause)
+                               fns-to-be-ignored-by-rewrite
+                               ens wrld state ttree step-limit)))
+
+(defun expand-some-non-rec-fns-in-clauses (fns clauses wrld)
+
+; Warning: fns should be a subset of functions that
+
+; This function expands the non-rec fns listed in fns in each of the clauses
+; in clauses.  It then throws out of the set any trivial clause, i.e.,
+; tautologies.  It does not normalize the expanded terms but just leaves
+; the expanded bodies in situ.  See the comment in preprocess-clause.
+
+  (cond
+   ((null clauses) nil)
+   (t (let ((cl (expand-some-non-rec-fns-lst fns (car clauses) wrld)))
+        (cond
+         ((trivial-clause-p cl wrld)
+          (expand-some-non-rec-fns-in-clauses fns (cdr clauses) wrld))
+         (t (cons cl
+                  (expand-some-non-rec-fns-in-clauses fns (cdr clauses)
+                                                      wrld))))))))
+
+(defun no-op-histp (hist)
+
+; We say a history, hist, is a "no-op history" if it is empty or its most
+; recent entry is a to-be-hidden preprocess-clause or apply-top-hints-clause
+; (possibly followed by a settled-down-clause).
+
+  (or (null hist)
+      (and hist
+           (member-eq (access history-entry (car hist) :processor)
+                      '(apply-top-hints-clause preprocess-clause))
+           (tag-tree-occur 'hidden-clause
+                           t
+                           (access history-entry (car hist) :ttree)))
+      (and hist
+           (eq (access history-entry (car hist) :processor)
+               'settled-down-clause)
+           (cdr hist)
+           (member-eq (access history-entry (cadr hist) :processor)
+                      '(apply-top-hints-clause preprocess-clause))
+           (tag-tree-occur 'hidden-clause
+                           t
+                           (access history-entry (cadr hist) :ttree)))))
+
+(mutual-recursion
+
+; This pair of functions is copied from expand-abbreviations and
+; heavily modified.  The idea implemented by the caller of this
+; function is to expand all the IMPLIES terms in the final literal of
+; the goal clause.  This pair of functions actually implements that
+; expansion.  One might think to use expand-some-non-rec-fns with
+; first argument '(IMPLIES).  But this function is different in two
+; respects.  First, it respects HIDE.  Second, it expands the IMPLIES
+; inside of lambda bodies.  The basic idea is to mimic what
+; expand-abbreviations used to do, before we added the
+; assume-true-false-if idea.
+
+(defun expand-any-final-implies1 (term wrld)
+  (cond
+   ((variablep term)
+    term)
+   ((fquotep term)
+    term)
+   ((eq (ffn-symb term) 'hide)
+    term)
+   (t
+    (let ((expanded-args (expand-any-final-implies1-lst (fargs term)
+                                                        wrld)))
+      (let* ((fn (ffn-symb term))
+             (term (cons-term fn expanded-args)))
+        (cond ((flambdap fn)
+               (let ((body (expand-any-final-implies1 (lambda-body fn)
+                                                      wrld)))
+
+; Note: We could use a make-lambda-application here, but if the
+; original lambda used all of its variables then so does the new one,
+; because IMPLIES uses all of its variables and we're not doing any
+; simplification.  This remark is not soundness related; there is no
+; danger of introducing new variables, only the inefficiency of
+; keeping a big actual which is actually not used.
+
+                 (fcons-term (make-lambda (lambda-formals fn) body)
+                             expanded-args)))
+              ((eq fn 'IMPLIES)
+               (subcor-var (formals 'implies wrld)
+                           expanded-args
+                           (bbody 'implies)))
+              (t term)))))))
+
+(defun expand-any-final-implies1-lst (term-lst wrld)
+  (cond ((null term-lst)
+         nil)
+        (t
+         (cons (expand-any-final-implies1 (car term-lst) wrld)
+               (expand-any-final-implies1-lst (cdr term-lst) wrld)))))
+
+ )
+
+(defun expand-any-final-implies (cl wrld)
+
+; Cl is a clause (a list of ACL2 terms representing a goal) about to
+; enter preprocessing.  If the final term contains an 'IMPLIES, we
+; expand those IMPLIES here.  This change in the handling of IMPLIES
+; (as well as several others) is caused by the introduction of
+; assume-true-false-if.  See the mini-essay at assume-true-false-if.
+
+; Note that we fail to report the fact that we used the definition
+; of IMPLIES.
+
+; Note also that we do not use expand-some-non-rec-fns here.  We want
+; to preserve the meaning of 'HIDE and expand an 'IMPLIES inside of
+; a lambda.
+
+  (cond ((null cl)  ; This should not happen.
+         nil)
+        ((null (cdr cl))
+         (list (expand-any-final-implies1 (car cl) wrld)))
+        (t
+         (cons (car cl)
+               (expand-any-final-implies (cdr cl) wrld)))))
+
+(defun rw-cache-state (wrld)
+  (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
+    (cond (pair (cdr pair))
+          (t *default-rw-cache-state*))))
+
+(defmacro make-rcnst (ens wrld state &rest args)
+
+; (Make-rcnst ens w state) will make a rewrite-constant that is the result of
+; filling in *empty-rewrite-constant* with a few obviously necessary values,
+; such as the global-enabled-structure as the :current-enabled-structure.  Then
+; it additionally loads user supplied values specified by alternating
+; keyword/value pairs to override what is otherwise created.  E.g.,
+
+; (make-rcnst ens w state :expand-lst lst)
+
+; will make a rewrite-constant that is like the default one except that it will
+; have lst as the :expand-lst.
+
+; Note: Wrld and ens are used in the "default" setting of certain fields.
+
+; Warning: wrld could be evaluated several times.  So it should be an
+; inexpensive expression, such as a variable or (w state).
+
+  `(change rewrite-constant
+           (change rewrite-constant
+                   *empty-rewrite-constant*
+                   :current-enabled-structure ,ens
+                   :oncep-override (match-free-override ,wrld)
+                   :case-split-limitations (case-split-limitations ,wrld)
+                   :forbidden-fns (forbidden-fns ,wrld ,state)
+                   :nonlinearp (non-linearp ,wrld)
+                   :backchain-limit-rw (backchain-limit ,wrld :rewrite)
+                   :rw-cache-state (rw-cache-state ,wrld)
+                   :heavy-linearp (if (heavy-linear-p) :heavy t))
+           ,@args))
+
+; We now finish the development of tau-clause...  To recap our story so far: In
+; the file tau.lisp we defined everything we need to implement tau-clause
+; except for its connection to type-alist and the linear pot-lst.  Now we can
+; define tau-clause.
+
+(defun cheap-type-alist-and-pot-lst (cl ens wrld state)
+
+; Given a clause cl, we build a type-alist and linear pot-lst with all of the
+; literals in cl assumed false.  The pot-lst is built with the heavy-linearp
+; flag onff, which means we do not rewrite terms before turning them into polys
+; and we add no linear lemmas.  We ensure that the type-alist has no
+; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
+; not ignoring assumptions and forced hypotheses, you will note that in
+; relieve-dependent-hyps, after calling type-set, we check that no such entries
+; are in the returned ttree.  We return (mv contradictionp type-alist pot-lst)
+
+  (mv-let (contradictionp type-alist ttree)
+          (type-alist-clause cl nil nil nil ens wrld nil nil)
+          (cond
+           ((or (tagged-objectsp 'assumption ttree)
+                (tagged-objectsp 'fc-derivation ttree))
+            (mv (er hard 'cheap-type-alist-and-pot-lst
+                    "Assumptions and/or fc-derivations were found in the ~
+                     ttree constructed by CHEAP-TYPE-ALIST-AND-POT-LST.  This ~
+                     is supposedly impossible!")
+                nil nil))
+           (contradictionp
+            (mv t nil nil))
+           (t (mv-let (new-step-limit provedp pot-lst)
+                      (setup-simplify-clause-pot-lst1
+                       cl nil type-alist
+                       (make-rcnst ens wrld state
+                                   :force-info 'weak
+                                   :heavy-linearp nil)
+                       wrld state *default-step-limit*)
+                      (declare (ignore new-step-limit))
+                      (cond
+                       (provedp
+                        (mv t nil nil))
+                       (t (mv nil type-alist pot-lst))))))))
+
+(defconst *tau-ttree*
+  (add-to-tag-tree 'lemma
+                   '(:executable-counterpart tau-system)
+                   nil))
+
+(defun tau-clausep (clause ens wrld state calist)
+
+; This function returns (mv flg ttree), where if flg is t then clause is true.
+; The ttree, when non-nil, is just the *tau-ttree*.
+
+; If the executable-counterpart of tau is disabled, this function is a no-op.
+
+  (cond
+   ((enabled-numep *tau-system-xnume* ens)
+    (mv-let
+     (contradictionp type-alist pot-lst)
+     (cheap-type-alist-and-pot-lst clause ens wrld state)
+     (cond
+      (contradictionp
+       (mv t *tau-ttree* calist))
+      (t
+       (let ((triples (merge-sort-car-<
+                       (annotate-clause-with-key-numbers clause
+                                                         (len clause)
+                                                         0 wrld))))
+         (mv-let
+          (flg calist)
+          (tau-clause1p triples nil type-alist pot-lst
+                        ens wrld calist)
+          (cond
+           ((eq flg t)
+            (mv t *tau-ttree* calist))
+           (t (mv nil nil calist)))))))))
+   (t (mv nil nil calist))))
+
+(defun tau-clausep-lst-rec (clauses ens wrld ans ttree state calist)
+
+; We return (mv clauses' ttree) where clauses' are provably equivalent to
+; clauses under the tau rules and ttree is either the tau ttree or nil
+; depending on whether anything changed.  Note that this function knows that if
+; tau-clause returns non-nil ttree it is *tau-ttree*: we just OR the ttrees
+; together, not CONS-TAG-TREES them!
+
+  (cond
+   ((endp clauses)
+    (mv (revappend ans nil) ttree calist))
+   (t (mv-let
+       (flg1 ttree1 calist)
+       (tau-clausep (car clauses) ens wrld state calist)
+       (prog2$
+
+; If the time-tracker call below is changed, update :doc time-tracker
+; accordingly.
+
+        (time-tracker :tau :print?)
+        (tau-clausep-lst-rec (cdr clauses) ens wrld
+                             (if flg1
+                                 ans
+                               (cons (car clauses) ans))
+                             (or ttree1 ttree)
+                             state calist))))))
+
+(defun tau-clausep-lst (clauses ens wrld ans ttree state calist)
+
+; If the time-tracker calls below are changed, update :doc time-tracker
+; accordingly.
+
+  (prog2$ (time-tracker :tau :start!)
+          (mv-let
+           (clauses ttree calist)
+           (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)
+           (prog2$ (time-tracker :tau :stop)
+                   (mv clauses ttree calist)))))
+
+(defun prettyify-clause-simple (cl)
+
+; This variant of prettyify-clause does not call untranslate.
+
+  (cond ((null cl) nil)
+        ((null (cdr cl)) cl)
+        ((null (cddr cl))
+         (fcons-term* 'implies
+                      (dumb-negate-lit (car cl))
+                      (cadr cl)))
+        (t (fcons-term* 'implies
+                        (conjoin (dumb-negate-lit-lst (butlast cl 1)))
+                        (car (last cl))))))
+
+(defun preprocess-clause (cl hist pspv wrld state step-limit)
+
+; This is the first "real" clause processor (after a little remembered
+; apply-top-hints-clause) in the waterfall.  Its arguments and values are the
+; standard ones, except that it takes a step-limit and returns a new step-limit
+; in the first position.  We expand abbreviations and clausify the clause cl.
+; For mainly historic reasons, expand-abbreviations and clausify-input operate
+; on terms.  Thus, our first move is to convert cl into a term.
+
+  (let ((rcnst (access prove-spec-var pspv :rewrite-constant)))
+    (mv-let
+      (built-in-clausep ttree)
+      (cond
+       ((or (eq (car (car hist)) 'simplify-clause)
+            (eq (car (car hist)) 'settled-down-clause))
+
+; If the hist shows that cl has just come from simplification, there is no
+; need to check that it is built in, because the simplifier does that.
+
+        (mv nil nil))
+       (t
+        (built-in-clausep 'preprocess-clause
+                          cl
+                          (access rewrite-constant
+                                  rcnst
+                                  :current-enabled-structure)
+                          (access rewrite-constant
+                                  rcnst
+                                  :oncep-override)
+                          wrld
+                          state)))
+
+; Ttree is known to be 'assumption free.
+
+      (cond
+       (built-in-clausep
+        (mv step-limit 'hit nil ttree pspv))
+       (t
+
+; Here is where we expand the "original" IMPLIES in the conclusion but
+; leave any IMPLIES in the hypotheses.  These IMPLIES are thought to
+; have been introduced by :USE hints.
+
+; Historical Note: We used to call possibly-clean-up-dirty-lambda-objects here
+; but that was wrong because we don't have hyps to establish warrants and
+; preprocess-clause shouldn't be applying conditional rewrite rules or forcing
+; things anyway.
+
+        (let ((term (disjoin (expand-any-final-implies cl wrld))))
+          (sl-let (term ttree)
+                  (expand-abbreviations term nil
+                                        *geneqv-iff* nil
+                                        (access rewrite-constant
+                                                rcnst
+                                                :fns-to-be-ignored-by-rewrite)
+                                        (rewrite-stack-limit wrld)
+                                        step-limit
+                                        (access rewrite-constant
+                                                rcnst
+                                                :current-enabled-structure)
+                                        wrld state nil)
+                  (sl-let (clauses ttree)
+                          (clausify-input term
+                                          (access rewrite-constant
+                                                  rcnst
+                                                  :fns-to-be-ignored-by-rewrite)
+                                          (access rewrite-constant
+                                                  rcnst
+                                                  :current-enabled-structure)
+                                          wrld
+                                          state
+                                          ttree
+                                          step-limit)
+;;;                         (let ((clauses
+;;;                                (expand-some-non-rec-fns-in-clauses
+;;;                                 '(iff implies)
+;;;                                 clauses
+;;;                                 wrld)))
+
+; Previous to Version_2.6 we had written:
+
+; ; Note: Once upon a time (in Version 1.5) we called "clausify-clause-set" here.
+; ; That function called clausify on each element of clauses and unioned the
+; ; results together, in the process naturally deleting tautologies as does
+; ; expand-some-non-rec-fns-in-clauses above.  But Version 1.5 caused Bishop a
+; ; lot of pain because many theorems would explode into case analyses, each of
+; ; which was then dispatched by simplification.  The reason we used a full-blown
+; ; clausify in Version 1.5 was that in was also into that version that we
+; ; introduced forcing rounds and the liberal use of force-flg = t.  But if we
+; ; are to force that way, we must really get all of our hypotheses out into the
+; ; open so that they can contribute to the type-alist stored in each assumption.
+; ; For example, in Version 1.4 the concl of (IMPLIES hyps concl) was rewritten
+; ; first without the hyps being manifest in the type-alist since IMPLIES is a
+; ; function.  Not until the IMPLIES was opened did the hyps become "governors"
+; ; in this sense.  In Version 1.5 we decided to throw caution to the wind and
+; ; just clausify the clausified input.  Well, it bit us as mentioned above and
+; ; we are now backing off to simply expanding the non-rec fns that might
+; ; contribute hyps.  But we leave the expansions in place rather than normalize
+; ; them out so that simplification has one shot on a small set (usually
+; ; singleton set) of clauses.
+
+; But the comment above is now irrelevant to the current situation.
+; Before commenting on the current situation, however, we point out that
+; in (admittedly light) testing the original call to
+; expand-some-non-rec-fns-in-clauses in its original context acted as
+; the identity.  This seems reasonable because 'iff and 'implies were
+; expanded in expand-abbreviations.
+
+; We now expand the 'implies from the original theorem (but not the
+; implies from a :use hint) in the call to expand-any-final-implies.
+; This performs the expansion whose motivations are mentioned in the
+; old comments above, but does not interfere with the conclusions
+; of a :use hint.  See the mini-essay
+
+; Mini-Essay on Assume-true-false-if and Implies
+; or
+; How Strengthening One Part of a Theorem Prover Can Weaken the Whole.
+
+; in type-set-b for more details on this latter criterion.
+
+                          (let ((tau-completion-alist
+                                 (access prove-spec-var pspv :tau-completion-alist)))
+                            (mv-let
+                              (clauses1 ttree1 new-tau-completion-alist)
+                              (if (or (null hist)
+
+; If (null (cdr hist)) and (null (cddr hist)) are tested in this disjunction,
+; then tau is tried during the first three simplifications and then again when
+; the clause settles down.  Call this the ``more aggressive'' approach.  If
+; they are not tested, tau is tried only on the first simplification and upon
+; settling down.  Call this ``less aggressive.''  There are, of course, proofs
+; where the more aggressive use of tau speeds things up.  But of course it
+; slows down many more proofs.  Overall, experiments on the regression suggest
+; that the more aggressive approach slows total reported book certification
+; time down by about 1.5% compared to the less aggressive approach.  However, we
+; think it might be worth it as more tau-based proofs scripts are developed.
+
+                                      (null (cdr hist))
+                                      (null (cddr hist))
+                                      (eq (car (car hist)) 'settled-down-clause))
+                                  (let ((ens (access rewrite-constant
+                                                     rcnst
+                                                     :current-enabled-structure)))
+                                    (if (enabled-numep *tau-system-xnume* ens)
+                                        (tau-clausep-lst clauses
+                                                         ens
+                                                         wrld
+                                                         nil
+                                                         nil
+                                                         state
+                                                         tau-completion-alist)
+                                        (mv clauses nil tau-completion-alist)))
+                                  (mv clauses nil tau-completion-alist))
+                              (let ((pspv (if (equal tau-completion-alist
+                                                     new-tau-completion-alist)
+                                              pspv
+                                              (change prove-spec-var pspv
+                                                      :tau-completion-alist
+                                                      new-tau-completion-alist))))
+                                (cond
+                                 ((equal clauses1 (list cl))
+
+; In this case, preprocess-clause has made no changes to the clause.
+
+                                  (mv step-limit 'miss nil nil nil))
+                                 ((and (consp clauses1)
+                                       (null (cdr clauses1))
+                                       (no-op-histp hist)
+                                       (equal (prettyify-clause-simple
+                                               (car clauses1))
+                                              (access prove-spec-var pspv
+                                                      :user-supplied-term)))
+
+; In this case preprocess-clause has produced a singleton set of clauses whose
+; only element is the translated user input.  For example, the user might have
+; invoked defthm on (implies p q) and preprocess has managed to to produce the
+; singleton set of clauses containing {(not p) q}.  This is a valuable step in
+; the proof of course.  However, users complain when we report that (IMPLIES P
+; Q) -- the displayed goal -- is reduced to (IMPLIES P Q) -- the
+; prettyification of the output.
+
+; We therefore take special steps to hide this transformation from the
+; user without changing the flow of control through the waterfall.  In
+; particular, we will insert into the ttree the tag
+; 'hidden-clause with (irrelevant) value t.  In subsequent places
+; where we print explanations and clauses to the user we will look for
+; this tag.
+
+; At one point we called prettyify-clause below instead of
+; prettyify-clause-simple, and compared the (untranslated) result to the
+; (untranslated) displayed-goal of the pspv.  But we have decided to avoid the
+; expense of untranslating, especially since often the potentially-confusing
+; printing will never take place!  Let's elaborate.  Suppose that the input
+; user-level term t1 translates to termp tt1, and suppose that the result of
+; preprocessing the clause set (list (list tt1)) is a single clause for which
+; prettyify-clause-simple returns the (translated) term tt1.  Then we are in
+; this case and we set 'hidden-clause in the returned ttree.  However, suppose
+; that instead prettyify-clause-simple returns tt2 not equal to tt1, although
+; tt2 nevertheless untranslates (perhaps surprisingly) to t1.  Then we are not
+; in this case, and Goal' will print exactly as goal.  This is unfortunate, but
+; we have seen (back in 2003!) that kind of invisible transformation happen for
+; other than Goal:
+
+;   Subgoal 3
+;   (IMPLIES (AND (< I -1)
+;                 (ACL2-NUMBERP J)
+;                 ...)
+;            ...)
+;
+;   By case analysis we reduce the conjecture to
+;
+;   Subgoal 3'
+;   (IMPLIES (AND (< I -1)
+;                 (ACL2-NUMBERP J)
+;                 ...)
+;            ...)
+
+; As of this writing we do not handle this sort of situation, not even -- after
+; Version_7.0, when we started using prettyify-clause-simple to avoid the cost
+; of untranslation, instead of prettyify-clause -- for the case considered
+; here, transitioning from Goal to Goal' by preprocess-clause.  Perhaps we will
+; do such a check for all preprocess-clause transformations, but only when
+; actually printing output (so as to avoid the overhead of untranslation).
+
+                                  (mv step-limit
+                                      'hit
+                                      clauses1
+                                      (add-to-tag-tree
+                                       'hidden-clause t
+                                       (cons-tag-trees ttree1 ttree))
+                                      pspv))
+                                 (t (mv step-limit
+                                        'hit
+                                        clauses1
+                                        (cons-tag-trees ttree1 ttree)
+                                        pspv))))))))))))))
+
+; And here is the function that reports on a successful preprocessing.
+
+(defun tilde-*-preprocess-phrase (ttree)
+
+; This function is like tilde-*-simp-phrase but knows that ttree was
+; constructed by preprocess-clause and hence is based on abbreviation
+; expansion rather than full-fledged rewriting.
+
+; Warning:  The function apply-top-hints-clause-msg1 knows
+; that if the (car (cddddr &)) of the result is nil then nothing but
+; case analysis was done!
+
+  (mv-let (message-lst char-alist)
+          (tilde-*-simp-phrase1
+           (extract-and-classify-lemmas ttree '(implies not iff) nil)
+
+; Note: The third argument to extract-and-classify-lemmas is the list
+; of forced runes, which we assume to be nil in preprocessing.  If
+; this changes, see the comment in fertilize-clause-msg1.
+
+           t)
+          (list* "case analysis"
+                 "~@*"
+                 "~@* and "
+                 "~@*, "
+                 message-lst
+                 char-alist)))
+
+(defun tilde-*-raw-preprocess-phrase (ttree punct)
+
+; See tilde-*-preprocess-phrase.  Here we print for a non-nil value of state
+; global 'raw-proof-format.
+
+  (let ((runes (all-runes-in-ttree ttree nil)))
+    (mv-let (message-lst char-alist)
+            (tilde-*-raw-simp-phrase1
+             runes
+             nil ; forced-runes
+             punct
+             '(implies not iff) ; ignore-lst
+             "" ; phrase
+             nil)
+            (list* (concatenate 'string "case analysis"
+                                (case punct
+                                  (#\, ",")
+                                  (#\. ".")
+                                  (otherwise "")))
+                   "~@*"
+                   "~@* and "
+                   "~@*, "
+                   message-lst
+                   char-alist))))
+
+(defun preprocess-clause-msg1 (signal clauses ttree pspv state)
+
+; This function is one of the waterfall-msg subroutines.  It has the
+; standard arguments of all such functions: the signal, clauses, ttree
+; and pspv produced by the given processor, in this case
+; preprocess-clause.  It produces the report for this step.
+
+  (declare (ignore signal pspv))
+  (let ((raw-proof-format (f-get-global 'raw-proof-format state)))
+    (cond ((tag-tree-occur 'hidden-clause t ttree)
+
+; If this preprocess clause is to be hidden, e.g., because it transforms
+; (IMPLIES P Q) to {(NOT P) Q}, we print no message.  Note that this is
+; just part of the hiding.  Later in the waterfall, when some other processor
+; has successfully hit our output, that output will be printed and we
+; need to stop that printing too.
+
+           state)
+          ((and raw-proof-format
+                (null clauses))
+           (fms "But preprocess reduces the conjecture to T, by ~*0~|"
+                (list (cons #\0 (tilde-*-raw-preprocess-phrase ttree #\.)))
+                (proofs-co state)
+                state
+                (term-evisc-tuple nil state)))
+          ((null clauses)
+           (fms "But we reduce the conjecture to T, by ~*0.~|"
+                (list (cons #\0 (tilde-*-preprocess-phrase ttree)))
+                (proofs-co state)
+                state
+                (term-evisc-tuple nil state)))
+          (raw-proof-format
+           (fms "Preprocess reduces the conjecture to ~#1~[~x2~/the ~
+                 following~/the following ~n3 conjectures~], by ~*0~|"
+                (list (cons #\0 (tilde-*-raw-preprocess-phrase ttree #\.))
+                      (cons #\1 (zero-one-or-more clauses))
+                      (cons #\2 t)
+                      (cons #\3 (length clauses)))
+                (proofs-co state)
+                state
+                (term-evisc-tuple nil state)))
+          (t
+           (fms "By ~*0 we reduce the conjecture to~#1~[~x2.~/~/ the ~
+                 following ~n3 conjectures.~]~|"
+                (list (cons #\0 (tilde-*-preprocess-phrase ttree))
+                      (cons #\1 (zero-one-or-more clauses))
+                      (cons #\2 t)
+                      (cons #\3 (length clauses)))
+                (proofs-co state)
+                state
+                (term-evisc-tuple nil state))))))
+
+
+; Section: Induction
 
 (defun select-x-cl-set (cl-set induct-hint-val)
 
@@ -361,7 +1741,319 @@
         :xancestry nil
         :ttree ttree))
 
-(defun intrinsic-suggested-induction-cand
+; Essay on DO$ Induction and the Selection of Q
+
+; Now we define the functions that analyze a ``semi-concrete do$'' to determine
+; whether and what induction it suggests and then applies that induction to
+; a clause set.
+
+; A semi-concrete do$ is a do whose measure and body lambdas are nice constants
+; (nice in the sense that we can parse them as though they came from a do
+; loop$) and whose alist is semi-concrete, e.g., (list (cons 'key1 val1)
+; ... (cons 'keyn valn)).  Typically we'd expect the vali, or at least some of
+; them, to be variables.
+
+; The basic idea is that we ``decompile'' the do body lambda into a pseudo
+; function definition, e.g.,
+
+; (defun hint-fn (val1 ... valn)
+;   (declare (xargs :measure <measure>))
+;   (if <base>
+;       <ans>
+;       (hint-fn val1' ... valn')))
+
+; and we construct the corresponding ``call,'' (hint-fn init-val1
+; ... init-valn).  By the way, throughout this discussion we act like we only
+; handle inductions with one base case and one induction hyp, but of course
+; we're fully general.
+
+; We don't actually admit this hint-fn.  Then we analyze it as though we had
+; admitted it to get an induction machine.  We then construct a candidate (or
+; not, according to whether the controllers are distinct variables, etc) from
+; the call using this machine.  We toss the candidate into the list of
+; suggestions as though it were the intrinsic candidate suggested by the do$
+; term.
+
+; Note however that the termination of hint-fn has not been proved.  We will
+; add some ``measure conjectures'' to the fleshed out induction scheme if we
+; end up choosing a do$ induction.  The reason we wait to add the measure
+; conjectures as we apply the suggested scheme to the clause-set is discussed
+; next.
+
+; The termination proof done for a do loop$ usually depends on guards and
+; guards have been eliminated by the prover as the do$ is rewritten.
+
+; Consider
+
+; (defun foo (i)
+;   (declare (xargs :guard (natp i)))
+;   (loop$ with i = i
+;          do
+;          :guard (natp i)
+;          (if (equal i 0) (return t) (setq i (- i 1)))))
+
+; This function can be guard verified (proving termination) and can be proved
+; to return t when (natp i).
+
+; The result of decompiling the loop$ is
+
+; (defun hint-fn (i)
+;   (if (equal i 0)
+;       t
+;       (hint-fn (- i 1))))
+
+; This is, of course, inadmissible because it can't be proved to terminate.
+; But do$ induction uses this to suggest the following scheme:
+
+; [Base] (implies (equal i 0) (p i))
+; [Step] (implies (and (not (equal i 0)) (p (- i 1))) (p i))
+; [Term] (implies (not (equal i 0)) (l< (lex-fix (- i 1)) (lex-fix i)))
+
+; Applying this scheme to (implies (natp i) (equal (loop$ with i ...) t)) gives
+; the obvious Base and Step (and since (natp i) is a hypothesis of (p i) it's
+; available in the Base and Step), but we modify [Term] by searching the clause
+; (set) being proved, in this case
+
+; ({(not (natp i)) (equal (loop$ with i ...) t)})
+
+; and choosing a ``q'' that is the conjunction of the negations of some
+; literals in (all of) the clause(s).  In this case we choose q to be (natp i).
+
+; When then augment [Term] by adding q as a hypothesis:
+
+; [Term'] (implies (and (natp i) (not (equal i 0)))
+;                  (l< (lex-fix (- i 1)) (lex-fix i)))
+
+; The soundness of this scheme is demonstrated in books/projects/apply/
+; justification-of-do-induction.lisp.  That book shows (in a simple but generic
+; setting) that if we can establish
+
+; (defthm [a] (implies (and (q x) (not (basep x)))
+;                      (l< (lex-fix (m (stp x)))
+;                          (lex-fix (m x)))))
+; (defthm [b] (implies (basep x) (p x)))
+; (defthm [c] (implies (and (not (basep x)) (p (stp x))) (p x)))
+; (defthm [d] (implies (not (q x)) (p x))))
+
+; Then we can prove (p x).  In our case, [a] is [Term'], [b] and [c] are [Base]
+; and [Step], and [d] is a new proof obligation requiring us to prove that our
+; goal conjecture holds when q is false.  But because of how we choose q -- as
+; a conjunction of hypotheses of p -- obligation [d] is always a tautology.
+
+; From a heuristic standpoint, it is important to choose q wisely!  Why not
+; just choose q to be the conjunction of the negations of ALL the literals of
+; p?  That works for [d], because for that q, (not q) is equivalent to p so [d]
+; becomes (implies p p).  (The negation of a conjunction of negations of lits
+; in cl is the disjunction of the lits in cl, which is the clause itself.)
+
+; But what about [a]?  If q is equivalent to (not p), then [a] becomes
+
+; (implies (and (not (p x)) (not (basep x)))
+;          (l< (lex-fix (m (stp x))) (lex-fix (m x))))
+
+; which is just
+
+; (or (p x)                                                  [i]
+;     (implies (not (basep x))                               [ii]
+;              (l< (lex-fix (m (stp x))) (lex-fix (m x))))
+
+; And if we know we can't prove the ``bare-bones'' measure conjecture, [ii],
+; then we're left with proving (p x).  So we really haven't gotten anywhere.
+
+; Thus, it behooves us, heuristically, to choose q by picking hypotheses of p
+; that are helpful in proving the measure conjecture without polluting it with
+; too much.
+
+; We've implemented two heuristics in the function select-do$-induction-q.
+
+; (1) choose only literals whose free vars are a subset of the variables of the
+;     measure, and
+
+; (2) do not choose a literal that mentions any term that suggested an
+;     induction.
+
+; The reason we include (2) is that often the do$ term that suggests the
+; induction satisfies (1) and makes [a] impractical (i.e., equivalent to
+; proving p).
+
+; Note that q is not chosen unless the winning candidate comes from a do$ (via
+; decompilation) and then it is chosen during the application of the do$ scheme
+; to the clause set.  So you have to understand the do$ candidates are only
+; partially correct schemes, awaiting the choice of q to fully realize.  That
+; selection of q occurs in the function induction-formula, where we have cl-set
+; and the candidate.
+
+; But there are two additional twists.  First, induction-formula is also used
+; in the output msg for induction.  It is used to produce the induction scheme,
+; phrased in terms of :P.  To do that we call induction-formula with the
+; clause-set (((:P ...))) -- a singleton set containing a unit clause with the
+; literal (:P ...).  But of course there's no way to find a q in that!  So we
+; provide induction-formula with a list of all the terms suggesting the winning
+; induction and we pick q with the original clause-set (not the generic :P
+; one).  We allow the ``list of all the terms suggesting'' this induction to be
+; :all, meaning all literals are excluded, and that has the effect that q is
+; empty (i.e., T).  That option is used when an :induct :hint is provided.  We
+; want the hint function to completely control the scheme used and not go
+; messing it up with automatic choices of q.
+
+; The second twist is that induct may be given the original (unclausified) term
+; in a pathological clause set, ({term}), for example because there was an
+; :induct t hint on "Goal" or because the simplifier abandoned its work on the
+; clauses and pushed the original goal for induction.  In this case, in order
+; to find q, we have to use clausify-input to convert this pathlogical
+; clause-set into a non-trivial one even though we form the instance of the do$
+; induction scheme with the unit clause set.
+
+(mutual-recursion
+
+(defun eliminate-cdr-assoc-eq-safe (term)
+  (cond ((variablep term) term)
+        ((fquotep term) term)
+        ((and (eq (ffn-symb term) 'cdr)
+              (consp (fargn term 1))
+              (eq (ffn-symb (fargn term 1)) 'assoc-eq-safe)
+              (quotep (fargn (fargn term 1) 1))
+              (equal (fargn (fargn term 1) 2) 'alist))
+         (unquote (fargn (fargn term 1) 1)))
+        (t (cons (ffn-symb term)
+                 (eliminate-cdr-assoc-eq-safe-lst (fargs term))))))
+
+(defun eliminate-cdr-assoc-eq-safe-lst (terms)
+  (cond ((endp terms) nil)
+        (t (cons (eliminate-cdr-assoc-eq-safe (car terms))
+                 (eliminate-cdr-assoc-eq-safe-lst (cdr terms))))))
+)
+
+(defun formal-alist-to-alist-on-vars (term)
+
+; If term is a ``formal symbol alist'', the translation of a term like (list
+; (cons 'key1 val1) ... (cons 'keyn valn)), where each vali is a term, we
+; return (mv t ((key1 . val1') ... (keyn . valn'))), where vali' is vali except
+; that each occurrence of (CDR (ASSOC-EQ-SAFE 'x ALIST)) is replaced by x.
+; Else we return (mv nil nil).  We actually expect each vali to be a term in
+; the single variable ALIST and we expect all the 'x to be quoted variable
+; names.  So we convert a term in the single variable ALIST to a term in the
+; various x's.  But we do not actually check these expectations!
+
+  (cond
+   ((variablep term) (mv nil nil))
+   ((equal term *nil*) (mv t nil))
+   (t (mv-let (flg pair rest)
+        (formal-cons-to-components term)
+        (cond
+         ((null flg) (mv nil nil))
+         (t (mv-let (flg key val)
+              (formal-cons-to-components pair)
+              (cond
+               ((null flg) (mv nil nil))
+               ((not (quotep key)) (mv nil nil))
+               (t (mv-let (flg alist)
+                    (formal-alist-to-alist-on-vars rest)
+                    (cond
+                     ((null flg) (mv nil nil))
+                     (t (mv t (cons (cons (unquote key)
+                                          (eliminate-cdr-assoc-eq-safe val))
+                                    alist))))))))))))))
+
+; Instead of using the genuine function name hint-fn for the decompiled
+; function definition, we use the keyword below.  When we see that the
+; induction was suggested by a call of this keyword, we know do$ induction is
+; being performed (and thus that measure clauses (augmented by a q) must be
+; added).
+
+(defconst *do$-induction-fn* :do$-induction-fn)
+
+(defun decompile-formal-do$-triple (formals term)
+
+; Term is a formal term that is supposed to represent a do$ triple of the form
+; (list exit-flg value alist).  We deconstruct it and either return (mv nil
+; nil) meaning it is not of the supposed form, or (mv t term') where term' is
+; the corresponding induction function body.  We check that every alist we
+; recover maps the formals.
+
+  (mv-let (flg formal-exit-flg term1)
+    (formal-cons-to-components term)
+    (cond
+     ((null flg) (mv nil nil))
+     (t (mv-let (flg formal-val term2)
+          (formal-cons-to-components term1)
+          (declare (ignore formal-val))
+          (cond
+           ((null flg) (mv nil nil))
+           (t (mv-let (flg formal-alist term3)
+                (formal-cons-to-components term2)
+                (cond
+                 ((null flg) (mv nil nil))
+                 ((not (equal term3 *nil*)) (mv nil nil))
+                 (t (mv-let (flg alist)
+                      (formal-alist-to-alist-on-vars formal-alist)
+                      (cond
+                       ((null flg) (mv nil nil))
+                       ((not (equal (strip-cars alist) formals))
+                        (mv nil nil))
+                       (t (cond
+                           ((eq (unquote formal-exit-flg) nil)
+                            (mv t (sublis-var alist (cons *do$-induction-fn* formals))))
+                           (t (mv t (cons 'list formals)))))))))))))))))
+
+(defun decompile-do$-body (formals term)
+  (cond
+   ((variablep term) (mv nil nil))
+   ((fquotep term)
+    (decompile-formal-do$-triple formals term))
+   ((eq (ffn-symb term) 'if)
+    (mv-let (flg tb)
+      (decompile-do$-body formals (fargn term 2))
+      (cond
+       ((null flg) (mv nil nil))
+       (t (mv-let (flg fb)
+            (decompile-do$-body formals (fargn term 3))
+            (cond
+             ((null flg) (mv nil nil))
+             (t (mv t (list 'if
+                            (eliminate-cdr-assoc-eq-safe (fargn term 1))
+                            tb fb)))))))))
+   (t (decompile-formal-do$-triple formals term))))
+
+(defun quoted-lambda-to-body (x)
+  (case-match x
+    (('quote ('lambda ('alist) body))
+     (mv t body))
+    (& (mv nil nil))))
+
+(defun decompile-do$ (term wrld)
+  (let ((cleaned-term
+         (possibly-clean-up-dirty-lambda-objects
+          :all
+          (remove-guard-holders-weak term
+                                     (remove-guard-holders-lamp))
+          wrld
+          (remove-guard-holders-lamp))))
+    (mv-let (flg formal-mterm)
+      (quoted-lambda-to-body (fargn cleaned-term 1))
+      (cond
+       ((null flg) nil)
+       (t (mv-let (flg alist)
+            (formal-alist-to-alist-on-vars (fargn cleaned-term 2))
+            (let* ((formals (strip-cars alist))
+                   (call (cons *do$-induction-fn* (strip-cdrs alist))))
+              (cond
+               ((null flg) nil)
+               (t (mv-let (flg formal-body)
+                    (quoted-lambda-to-body (fargn cleaned-term 3))
+                    (cond
+                     ((null flg) nil)
+                     (t (mv-let (flg body)
+                          (decompile-do$-body formals formal-body)
+                          (cond
+                           ((null flg) nil)
+                           (t (let ((mterm (eliminate-cdr-assoc-eq-safe formal-mterm)))
+                                (list formals
+                                      call
+                                      mterm
+                                      body)))))))))))))))))
+
+(defun intrinsic-suggested-induction-cand1
   (induction-rune term formals quick-block-info justification machine xterm
                   ttree)
 
@@ -369,11 +2061,7 @@
 ; suggested by a justification of a recursive function.  The rune controlling
 ; the intrinsic suggestion from the justification of fn is (:induction fn).  We
 ; distinguish between intrinsically suggested inductions and those suggested
-; via records of induction-rule type.  Intrinsic inductions have no embodiment
-; as induction-rules but are, instead, the basis of the semantics of such
-; rules.  That is, the inductions suggested by (fn x y) is the union of those
-; suggested by the terms to which it is linked via induction-rules together
-; with the intrinsic suggestion for (fn x y).
+; via records of induction-rule type.
 
 ; Term, above, is a call of some fn with the given formals, quick-block-info,
 ; justification and induction machine.  We return a list of induction
@@ -398,9 +2086,1741 @@
                                                        ttree))))
      (t nil))))
 
+; We next extend the notion of intrinsic induction scheme to a scheme suggested
+; by a semi-concrete do$ term.  But first we have to introduce the notion of
+; ruler-extenders because its needed when we try to create the machines
+
+(defconst *no-ruler-extenders*
+  :none)
+
+(defconst *basic-ruler-extenders*
+
+; We ensure that these are sorted, although this may no longer be important.
+
+  (let ((lst '(if mv-list return-last)))
+    (sort-symbol-listp lst)))
+
+(defconst *basic-ruler-extenders-plus-lambdas*
+
+; We ensure that these are sorted, although this may no longer be important.
+
+  (let ((lst (cons :lambdas *basic-ruler-extenders*)))
+    (sort-symbol-listp lst)))
+
+(defun get-ruler-extenders1 (r edcls default ctx wrld state)
+
+; This function is analogous to get-measures1, but for obtaining the
+; :ruler-extenders xarg.
+
+  (cond ((null edcls) (value (if (eq r *no-ruler-extenders*)
+                                 default
+                               r)))
+        ((eq (caar edcls) 'xargs)
+         (let ((temp (assoc-keyword :RULER-EXTENDERS (cdar edcls))))
+           (cond ((null temp)
+                  (get-ruler-extenders1 r (cdr edcls) default ctx wrld state))
+                 (t
+                  (let ((r0 (cadr temp)))
+                    (cond
+                     ((eq r *no-ruler-extenders*)
+                      (er-let*
+                       ((r1
+
+; If keywords other than :ALL, :BASIC, and :LAMBDAS are supported, then also
+; change set-ruler-extenders.
+
+                         (cond ((eq r0 :BASIC)
+                                (value *basic-ruler-extenders*))
+                               ((eq r0 :LAMBDAS)
+                                (value *basic-ruler-extenders-plus-lambdas*))
+                               ((eq r0 :ALL)
+                                (value :ALL))
+                               (t (er-progn
+                                   (chk-ruler-extenders r0 soft ctx wrld)
+                                   (value r0))))))
+                       (get-ruler-extenders1 r1 (cdr edcls) default ctx
+                                             wrld state)))
+                     ((equal r r0)
+                      (get-ruler-extenders1 r (cdr edcls) default ctx wrld
+                                            state))
+                     (t (er soft ctx
+                            "It is illegal to declare two different ~
+                             ruler-extenders for the admission of a single ~
+                             function.  But you have specified ~
+                             :RULER-EXTENDERS ~x0 and :RULER-EXTENDERS ~x1."
+                            r r0))))))))
+        (t (get-ruler-extenders1 r (cdr edcls) default ctx wrld state))))
+
+(defun get-ruler-extenders2 (lst default ctx wrld state)
+  (cond ((null lst) (value nil))
+        (t (er-let* ((r (get-ruler-extenders1
+                         *no-ruler-extenders* (fourth (car lst)) default ctx
+                         wrld state))
+                     (rst (get-ruler-extenders2 (cdr lst) default ctx wrld
+                                                state)))
+                    (value (cons r rst))))))
+
+(defmacro default-ruler-extenders-from-table (alist)
+  `(let ((pair (assoc-eq :ruler-extenders ,alist)))
+     (cond ((null pair)
+            *basic-ruler-extenders*)
+           (t (cdr pair)))))
+
+(defun default-ruler-extenders (wrld)
+  (default-ruler-extenders-from-table (table-alist 'acl2-defaults-table wrld)))
+
+(defun get-ruler-extenders-lst (symbol-class lst ctx wrld state)
+
+; This function returns a list in 1:1 correspondence with lst containing the
+; user's specified :RULER-EXTENDERS (or *no-ruler-extenders* if no
+; ruler-extenders is specified).  We cause an error if more than one
+; :RULER-EXTENDERS is specified within the edcls of a given element of lst.
+
+; If symbol-class is program, we ignore the contents of lst and simply return
+; all *no-ruler-extenders*.  See the comment in chk-acceptable-defuns where
+; get-ruler-extenders is called.
+
+  (cond
+   ((eq symbol-class :program)
+    (value (make-list (length lst) :initial-element *no-ruler-extenders*)))
+   (t (get-ruler-extenders2 lst (default-ruler-extenders wrld) ctx wrld
+                            state))))
+
+(defun member-eq-all (a lst)
+  (or (eq lst :all)
+      (member-eq a lst)))
+
+(defrec tests-and-call (tests call) nil)
+
+; In nqthm the record above was called TEST-AND-CASE and the second component
+; was the arglist of a recursive call of the function being analyzed.  Because
+; of the presence of mutual recursion, we have renamed it tests-and-call and
+; the second component is a "recursive" call (possibly mutually recursive).
+
+(defun termination-machine1 (tests calls ans)
+
+; This function makes a tests-and-call with tests tests for every call
+; in calls.  It accumulates them onto ans so that if called initially
+; with ans=nil the result is a list of tests-and-call in the reverse
+; order of the calls.
+
+  (cond ((null calls) ans)
+        (t (termination-machine1 tests
+                                 (cdr calls)
+                                 (cons (make tests-and-call
+                                             :tests tests
+                                             :call (car calls))
+                                       ans)))))
+
+(mutual-recursion
+
+(defun all-calls (names term alist ans)
+
+; Names is a list of defined function symbols.  We accumulate into ans all
+; terms u/alist such that for some f in names, u is a subterm of term that is a
+; call of f.  The algorithm just explores term looking for calls, and
+; instantiate them as they are found.
+
+; Our answer is in reverse print order (displaying lambda-applications
+; as LETs).  For example, if a, b and c are all calls of fns in names,
+; then if term is (foo a ((lambda (x) c) b)), which would be printed
+; as (foo a (let ((x b)) c)), the answer is (c b a).
+
+  (cond ((variablep term) ans)
+        ((fquotep term) ans)
+        ((flambda-applicationp term)
+         (all-calls names
+                    (lambda-body (ffn-symb term))
+                    (pairlis$ (lambda-formals (ffn-symb term))
+                              (sublis-var-lst alist (fargs term)))
+                    (all-calls-lst names (fargs term) alist ans)))
+        ((and (eq (ffn-symb term) 'return-last)
+              (quotep (fargn term 1))
+              (eq (unquote (fargn term 1)) 'mbe1-raw))
+         (all-calls names (fargn term 3) alist ans))
+        (t (all-calls-lst names
+                          (fargs term)
+                          alist
+                          (cond ((member-eq (ffn-symb term) names)
+                                 (add-to-set-equal
+                                  (sublis-var alist term)
+                                  ans))
+                                (t ans))))))
+
+(defun all-calls-lst (names lst alist ans)
+  (cond ((null lst) ans)
+        (t (all-calls-lst names
+                          (cdr lst)
+                          alist
+                          (all-calls names (car lst) alist ans)))))
+
+)
+
+(mutual-recursion
+
+(defun all-loop$-scion-quote-lambdas (term alist)
+
+; We collect every subterm of term/alist that is a call of a loop$ scion on a
+; quoted lambda and that is not within another such call.
+
+  (cond
+   ((variablep term) nil)
+   ((fquotep term) nil)
+   ((flambda-applicationp term)
+    (union-equal
+     (all-loop$-scion-quote-lambdas-lst (fargs term) alist)
+     (all-loop$-scion-quote-lambdas
+      (lambda-body (ffn-symb term))
+      (pairlis$ (lambda-formals (ffn-symb term))
+                (sublis-var-lst alist
+                                 (fargs term))))))
+   ((and (loop$-scion-style (ffn-symb term))
+         (quotep (fargn term 1))
+         (consp (unquote (fargn term 1)))
+         (eq (car (unquote (fargn term 1))) 'lambda))
+
+; We pay the price of instantiatiating the loop$ scion term now with the alist
+; even though it might not have any recursions in it.  C'est la vie.
+
+    (list (sublis-var alist term)))
+   (t (all-loop$-scion-quote-lambdas-lst (fargs term) alist))))
+
+(defun all-loop$-scion-quote-lambdas-lst (terms alist)
+  (cond ((endp terms) nil)
+        (t (union-equal
+            (all-loop$-scion-quote-lambdas (car terms) alist)
+            (all-loop$-scion-quote-lambdas-lst (cdr terms) alist)))))
+
+)
+
+(defconst *equality-aliases*
+
+; This constant should be a subset of *definition-minimal-theory*, since we do
+; not track the corresponding runes in simplify-tests and related code below.
+
+  '(eq eql =))
+
+(defun term-equated-to-constant (term)
+  (case-match term
+    ((rel x y)
+     (cond ((or (eq rel 'equal)
+                (member-eq rel *equality-aliases*))
+            (cond ((quotep x) (mv y x))
+                  ((quotep y) (mv x y))
+                  (t (mv nil nil))))
+           (t (mv nil nil))))
+    (& (mv nil nil))))
+
+; We now develop the code for eliminating needless tests in tests-and-calls
+; records, leading to function simplify-tests-and-calls-lst.  See the comment
+; there.  Term-equated-to-constant appears earlier, because it is used in
+; related function simplify-clause-for-term-equal-const-1.
+
+(defun term-equated-to-constant-in-termlist (lst)
+  (cond ((endp lst)
+         (mv nil nil))
+        (t (mv-let
+            (var const)
+            (term-equated-to-constant (car lst))
+            (cond (var (mv var const))
+                  (t (term-equated-to-constant-in-termlist (cdr lst))))))))
+
+(defun simplify-tests (var const tests)
+
+; For a related function, see simplify-clause-for-term-equal-const-1.
+
+  (cond ((endp tests)
+         (mv nil nil))
+        (t (mv-let (changedp rest)
+                   (simplify-tests var const (cdr tests))
+                   (mv-let (flg term)
+                           (strip-not (car tests))
+                           (mv-let (var2 const2)
+                                   (term-equated-to-constant term)
+                                   (cond ((and flg
+                                               (equal var var2)
+                                               (not (equal const const2)))
+                                          (mv t rest))
+                                         (changedp
+                                          (mv t (cons (car tests) rest)))
+                                         (t
+                                          (mv nil tests)))))))))
+
+(defun add-test-smart (test tests)
+; For a related function, see add-literal-smart.
+  (mv-let (term const)
+          (term-equated-to-constant test)
+          (cons test
+                (cond
+                 (term
+                  (mv-let (changedp new-tests)
+                          (simplify-tests term const tests)
+                          (if changedp
+                              new-tests
+                              tests)))
+                 (t tests)))))
+
+(mutual-recursion
+
+(defun termination-machine-rec (loop$-recursion
+                                names body alist tests
+                                ruler-extenders avoid-vars)
+
+; This function is only called if loop$-recursion-checkedp is t, i.e., we have
+; run well-formedness checks on body.  The first argument above, the similarly
+; named variable loop$-recursion, if t, means that names is a singleton list
+; and that body actually exhibits loop$ recursion somewhere.
+
+; It is admittedly odd that `names' is a plural noun (and when loop$-recursion
+; is t, is a singleton list of function names) whereas `body' is singular (and
+; is the body of the only function listed in names).  The reason is that when
+; loop$-recursion is nil names may be a list of all the functions in a
+; mutually-recursive clique with the one defined by body and a call of any of
+; the functions in names constitutes recursion.
+
+; This function builds a list of tests-and-call records for all calls in body
+; of functions in names, but substituting alist into every term in the result.
+; At the top level, body is the body of a function in names and alist is nil.
+; Note that we don't need to know the function symbol to which the body
+; belongs; all the functions in names are considered "recursive" calls.  Names
+; is a list of all the mutually recursive fns in the clique.  Alist maps
+; variables in body to actuals and is used in the exploration of lambda
+; applications.
+
+; For each recursive call in body a tests-and-call is returned whose tests are
+; all the tests that "rule" the call and whose call is the call.  If a rules b
+; then a governs b but not vice versa.  For example, in (if (g (if a b c)) d e)
+; a governs b but does not rule b.  The reason for taking this weaker notion of
+; governance is that we can show that the tests-and-calls are together
+; sufficient to imply the tests-and-calls generated by induction-machine.  The
+; notion of "rules" is extended by ruler-extenders; see :doc
+; acl2-defaults-table and see :doc ruler-extenders.
+
+; If loop$-recursion is non-nil and body is a loop$ scion call on a quoted
+; lambda (sum$ '(lambda ...) lst) then we know that the lambda is well-formed
+; (by the implicit loop$-recursion-checkedp = t mentioned above) and we look
+; for recursive calls inside the body of that lambda.  Furthermore, we generate
+; a new variable (i.e., not in avoid-vars), add it to avoid-vars, throw away
+; alist and replace it with one that binds the locals of the lambda to the new
+; variable, and add a ruling test that the value of this new variable is a
+; member of the target, lst.
+
+  (cond
+   ((or (variablep body)
+        (fquotep body))
+    nil)
+   ((flambda-applicationp body)
+    (let ((lambda-body-result
+           (termination-machine-rec loop$-recursion
+                                    names
+                                    (lambda-body (ffn-symb body))
+                                    (pairlis$ (lambda-formals (ffn-symb body))
+                                              (sublis-var-lst alist
+                                                              (fargs body)))
+                                    tests
+                                    ruler-extenders
+                                    avoid-vars)))
+      (cond
+       ((member-eq-all :lambdas ruler-extenders)
+        (union-equal (termination-machine-rec-for-list loop$-recursion
+                                                       names
+                                                       (fargs body)
+                                                       alist
+                                                       tests
+                                                       ruler-extenders
+                                                       avoid-vars)
+                     lambda-body-result))
+       (t
+        (append
+         (termination-machine1
+          (reverse tests)
+          (all-calls-lst names
+                         (fargs body)
+                         alist
+                         nil)
+          (termination-machine-rec-for-list
+           loop$-recursion
+           names
+           (all-loop$-scion-quote-lambdas-lst (fargs body) alist)
+           alist
+           tests
+           ruler-extenders
+           avoid-vars))
+         lambda-body-result)))))
+   ((eq (ffn-symb body) 'if)
+    (let* ((inst-test (sublis-var alist
+
+; Since (remove-guard-holders-weak x _) is provably equal to x, the machine we
+; generate using it below is equivalent to the machine generated without it.
+; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
+; to call remove-guard-holders instead of remove-guard-holders-weak) so that
+; guard holders are removed from quoted lambdas in argument positions with ilk
+; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
+; here and in induction-machine-for-fn1.
+
+                                  (remove-guard-holders-weak (fargn body 1)
+
+; Rather than pass (remove-guard-holders-lamp) to the following argument
+; through all the recursive calls of termination-machine-rec, or passing it
+; from the caller, we use nil.  That's simpler and it probably doesn't much
+; matter in practice.  We similarly use nil in other calls of
+; remove-guard-holders-weak in this function and in induction-machine-for-fn1.
+
+                                                             nil)))
+           (branch-result
+            (append (termination-machine-rec loop$-recursion
+                                             names
+                                             (fargn body 2)
+                                             alist
+                                             (add-test-smart inst-test tests)
+                                             ruler-extenders
+                                             avoid-vars)
+                    (termination-machine-rec loop$-recursion
+                                             names
+                                             (fargn body 3)
+                                             alist
+                                             (add-test-smart
+                                              (dumb-negate-lit inst-test)
+                                              tests)
+                                             ruler-extenders
+                                             avoid-vars))))
+      (cond
+       ((member-eq-all 'if ruler-extenders)
+        (append (termination-machine-rec loop$-recursion
+                                         names
+                                         (fargn body 1)
+                                         alist
+                                         tests
+                                         ruler-extenders
+                                         avoid-vars)
+                branch-result))
+       (t
+        (append
+         (termination-machine1
+          (reverse tests)
+          (all-calls names (fargn body 1) alist nil)
+          (termination-machine-rec-for-list
+           loop$-recursion
+           names
+           (all-loop$-scion-quote-lambdas (fargn body 1) alist)
+           alist
+           tests
+           ruler-extenders
+           avoid-vars))
+         branch-result)))))
+   ((and (eq (ffn-symb body) 'return-last)
+         (quotep (fargn body 1))
+         (eq (unquote (fargn body 1)) 'mbe1-raw))
+
+; It is sound to treat return-last as a macro for logic purposes.  We do so for
+; (return-last 'mbe1-raw exec logic) both for induction and for termination.
+; We could probably do this for any return-last call, but for legacy reasons
+; (before introduction of return-last after v4-1) we restrict to 'mbe1-raw.
+
+    (termination-machine-rec loop$-recursion
+                             names
+                             (fargn body 3) ; (return-last 'mbe1-raw exec logic)
+                             alist
+                             tests
+                             ruler-extenders
+                             avoid-vars))
+   ((member-eq-all (ffn-symb body) ruler-extenders)
+    (let ((rec-call (termination-machine-rec-for-list loop$-recursion
+                                                      names (fargs body) alist
+                                                      tests ruler-extenders
+                                                      avoid-vars)))
+      (if (member-eq (ffn-symb body) names)
+          (cons (make tests-and-call
+                      :tests (reverse tests)
+                      :call (sublis-var alist body))
+                rec-call)
+          rec-call)))
+   ((loop$-scion-style (ffn-symb body))
+    (let ((style (loop$-scion-style (ffn-symb body)))
+
+; Before we get too carried away with the possibility of loop$ recursion here,
+; we need to remember to deal with normal recursion in this term!  This
+; collects recursions in the globals and target expressions.
+
+          (normal-ans (termination-machine1 (reverse tests)
+                                            (all-calls names body alist nil)
+                                            nil)))
+      (cond
+       ((and loop$-recursion
+             (quotep (fargn body 1))
+             (consp (unquote (fargn body 1)))
+             (eq (car (unquote (fargn body 1))) 'lambda))
+
+; Loop$-recursion may be present in this call of a loop$ scion.  (We can't just
+; use ffnnamep to ask because it doesn't look inside of lambda objects that
+; might be in the body of this one; furthermore, that information alone
+; wouldn't help us since if a recursive call is buried several layers deep in
+; loop$ scions we need to generate the newvars and ruling member tests on the
+; way down.)  The well-formedness checks done by chk-acceptable-defuns1 ensures
+; that every quoted lambda is well-formed, and that every loop$ scion call is
+; on a quoted lambda of the right arity (1 or 2 depending on whether its a
+; :plain or :fancy loop$ scion).  We need give special attention to those loop$
+; scion calls whose quoted lambda contains a recursive call of the fn being
+; defined.  And this may be one!
+
+        (cond
+         ((eq style :plain)
+          (let* ((lamb (unquote (fargn body 1)))
+                 (v (car (lambda-object-formals lamb)))
+
+; While we generally follow the convention of calling
+; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
+; we do not do so here because we don't want to think about the effect on
+; termination machines, at least not until we see it hurt us.
+
+                 (lamb-body (remove-guard-holders-weak
+                             (lambda-object-body lamb)
+                             nil))
+                 (target (sublis-var alist (fargn body 2)))
+                 (newvar (genvar v "NV" 0 avoid-vars))
+                 (avoid-vars (cons newvar avoid-vars))
+                 (inst-test `(MEMBER-EQUAL
+                              ,newvar
+                              ,(remove-guard-holders-weak target nil))))
+            (append normal-ans
+                    (termination-machine-rec loop$-recursion
+                                             names
+                                             lamb-body
+; Note: The only free var in lamb-body is v, so we can ignore the subsitutions
+; in alist!
+                                             (list (cons v newvar))
+                                             (add-test-smart inst-test tests)
+                                             ruler-extenders
+                                             avoid-vars)
+                    (termination-machine-rec-for-list
+                     loop$-recursion
+                     names
+                     (all-loop$-scion-quote-lambdas target alist)
+                     alist
+                     tests
+                     ruler-extenders
+                     avoid-vars))))
+         ((eq style :fancy)
+          (let* ((lamb (unquote (fargn body 1)))
+                 (gvars (car (lambda-object-formals lamb)))
+                 (ivars (cadr (lambda-object-formals lamb)))
+                 (lamb-body (remove-guard-holders-weak
+                             (lambda-object-body lamb)
+                             nil))
+                 (globals (sublis-var alist (fargn body 2)))
+                 (target (sublis-var alist (fargn body 3)))
+                 (newvar (genvar ivars "NV" 0 avoid-vars))
+                 (avoid-vars (cons newvar avoid-vars))
+                 (inst-test `(MEMBER-EQUAL
+                              ,newvar
+                              ,(remove-guard-holders-weak target nil))))
+            (append normal-ans
+                    (termination-machine-rec loop$-recursion
+                                             names
+                                             lamb-body
+                                             (list (cons gvars globals)
+                                                   (cons ivars newvar))
+                                             (add-test-smart inst-test tests)
+                                             ruler-extenders
+                                             avoid-vars)
+                    (termination-machine-rec-for-list
+                     loop$-recursion
+                     names
+; The following collects the top-level loop$-scion calls on quoted lambdas in
+; the globals and the target of a fancy loop$.
+                     (all-loop$-scion-quote-lambdas-lst (cdr (fargs body)) alist)
+                     alist
+                     tests
+                     ruler-extenders
+                     avoid-vars))))
+         (t normal-ans)))
+       (t
+
+; This is a loop$ scion call but not one that could have loop$ recursion in it,
+; (except possibly in the non-:FN arguments) so we just return the normal
+; answer.
+
+        normal-ans))))
+   (t (termination-machine1
+       (reverse tests)
+       (all-calls names body alist nil)
+       (termination-machine-rec-for-list
+        loop$-recursion
+        names
+        (all-loop$-scion-quote-lambdas body alist)
+        alist
+        tests
+        ruler-extenders
+        avoid-vars)))))
+
+(defun termination-machine-rec-for-list
+  (loop$-recursion names bodies alist tests ruler-extenders avoid-vars)
+  (cond ((endp bodies) nil)
+        (t (append (termination-machine-rec loop$-recursion
+                                            names (car bodies) alist tests
+                                            ruler-extenders avoid-vars)
+                   (termination-machine-rec-for-list loop$-recursion
+                                                     names
+                                                     (cdr bodies)
+                                                     alist tests
+                                                     ruler-extenders
+                                                     avoid-vars)))))
+)
+
+; Essay on Choking on Loop$ Recursion
+
+; Several system functions, e.g., termination-machine, termination-machines,
+; termination-theorem-clauses, and putprop-recursivep-lst have changed so that
+; they anticipate the possibility of recursive calls inside quoted lambda
+; objects.  This is necessary to support recursion in loop$ statements.  But
+; these system functions are sometimes called directly in user-authored books.
+; We do not want to be responsible for correcting those books.  So our
+; functions that deal with loop$ recursion -- at least, those of our functions
+; that are sometimes used directly by users -- have been modified to check
+; whether loop$ recursion is present and to cause a hard error.  We call this
+; ``choking on loop$ recursion.''  However, a difficulty is that some of our
+; functions do not take world as an argument and so cannot actually implement
+; the check properly!  For example, loop$ recursion requires a singly-recursive
+; defun with an xargs declaration of loop$-recursion t, but the old definition
+; of termination-machine can't see the declarations.  Furthermore, if
+; loop$-recursion t is declared, every lambda in the body must be well-formed
+; and that is checked by chk-acceptable-defuns1 before termination-machine ever
+; sees the definition.  But termination-machine doesn't take the world and so
+; can't check well-formedness and thus it can't really explore the body of the
+; quoted lambda object looking for recursive calls.  So our choke detector is
+; conservative and does a tree-occur-eq looking for the fn symbol in the
+; ``body'' of the evg.
+
+; As a final twist, choke detection slows us down.  So functions outfitted with
+; the choke detection have been given a new argument, loop$-recursion-checkedp,
+; which if T means the choke detection is skipped because, supposedly, the
+; caller has done all the necessary well-formedness checks.  This extra
+; argument, of course, breaks books that call such system functions.  That's by
+; design.  The regression will fail and we'll find them.  But rather than fix
+; them properly -- i.e., rather than figuring out how that user's book ought to
+; handle loop$ recursion -- we just add the loop$-recursion-checkedp argument
+; and set it to NIL, meaning choke detection is run.
+
+; Loop$-recursion, a different but similarly named flag, has the value declared
+; in the :loop$-recursion xarg.  If non-nil it means loop$ recursion is
+; permitted and present!  If NIL it means loop$ recursion is prohibited and
+; doesn't occur.  But it is only valid if loop$ recursion has been checked.
+
+; Note that loop$-recursion-checkedp does not mean that loop$ recursion is
+; present!  It just means that the bodies have passed the tests in
+; chk-acceptable-defuns1.  What this really means is that the function being,
+; e.g., termination-machine, is being called from within our own source code,
+; where we know definitions have been checked thoroughly before other
+; processing occurs.  But a user might call these system functions and there we
+; advise the user to call them with loop$-recursion-checkedp nil.  That forces
+; the check.  Meanwhile, back in our own code, the choke check is never done
+; and we just proceed.  Note also that if the similarly named flag
+; loop$-recursion is t we know not only that loop$ recursion is allowed but
+; that it actually happens somewhere in the body.
+
+; Our convention is that any of our functions that involves loop$-recursion and
+; is called in a user's book must have a loop$-recursion-checkedp argument that
+; if nil means that the function must call the choke detector.  If a user book
+; calls one of these functions without the proper number of arguments we will
+; get a syntax error if the user's call is in a :program or :logic mode
+; function.  But if it is in a raw function, no compile error may be detected.
+; The result (at least in ccl) is often a runtime memory error and a print out
+; of the call stack.  That print out will show (somewhere) the offending
+; function which is called with insufficient arguments.
+
+(mutual-recursion
+
+(defun choke-on-loop$-recursion1 (fn term sysfn)
+  (cond
+   ((variablep term) nil)
+   ((fquotep term) nil)
+   ((flambdap (ffn-symb term))
+    (or (choke-on-loop$-recursion1 fn (lambda-body (ffn-symb term)) sysfn)
+        (choke-on-loop$-recursion1-lst fn (fargs term) sysfn)))
+   ((and (loop$-scion-style (ffn-symb term))
+         (quotep (fargn term 1))
+         (consp (unquote (fargn term 1))))
+; This is a loop$ scion call on a quoted cons.  So this might be a loop$ scion
+; call on a quoted lambda.  But the lambda may not be well-formed and because
+; we do not have access to world, we can't check.  So we just see whether fn
+; occurs anywhere in the ``body'' of the ``lambda.''
+
+    (cond ((tree-occur-eq fn (lambda-object-body (unquote (fargn term 1))))
+           (er hard 'choke-on-loop$-recursion
+               "It appears that the ACL2 system function ~x0 has been called ~
+                inappropriately on a function body that engages in loop$ ~
+                recursion.  In particular, ~x1 in the body of ~x2 looks like ~
+                a call of a translated LOOP$ statement that recursively calls ~
+                ~x2.  (We can't be sure because we do not have enough ~
+                contextual information so we have been conservative in our ~
+                defensive check!)  Recursion in quoted LAMBDA constants was ~
+                disallowed when LOOP$ was first introduced but has since been ~
+                allowed.  We suspect some user-managed book calls ~x0 without ~
+                having been updated to anticipate the possibility of ~
+                recursion inside quoted LAMBDA objects!"
+               sysfn term fn))
+          (t (choke-on-loop$-recursion1-lst fn (fargs term) sysfn))))
+   (t (choke-on-loop$-recursion1-lst fn (fargs term) sysfn))))
+
+(defun choke-on-loop$-recursion1-lst (fn terms sysfn)
+  (cond ((endp terms) nil)
+        (t (or (choke-on-loop$-recursion1 fn (car terms) sysfn)
+               (choke-on-loop$-recursion1-lst fn (cdr terms) sysfn)))))
+)
+
+(defun choke-on-loop$-recursion (loop$-recursion-checkedp names body sysfn)
+
+; See the Essay on Choking on Loop$ Recursion above.  We can skip the choke
+; detector if loop$ recursion has already been exposed (i.e., removed) or if
+; there is more than one fn in names (meaning this is a mutual-recursion which
+; disallows loop$-recursion).  This function either causes a hard error or
+; returns nil.
+
+  (cond ((or loop$-recursion-checkedp
+             (cdr names))
+         nil)
+        (t (choke-on-loop$-recursion1
+            (car names)
+            body
+            sysfn))))
+
+(defun termination-machine (loop$-recursion-checkedp
+                            loop$-recursion
+                            names formals body
+                            alist tests ruler-extenders)
+
+; See the Essay on Choking on Loop$ Recursion for an explanation of the first
+; argument.  See termination-machine-rec for the spec of what this function
+; does otherwise.
+
+; Names is the list of all the functions defined in a mutually recursive
+; clique, formals is the list of formals of one of those functions and body is
+; the body of one of those functions.  We are only interested in formals when
+; loop$-recursion-checkedp and loop$-recursion are t, in which case names is a
+; singleton containing the name of single function being defined.  In that
+; case, we use formals to initialize the list of all variables to avoid.  Note
+; that bound variables (e.g., from LET statements) occurring in body will be
+; eliminated by the on-the-fly beta reduction.
+
+; Note: formals is irrelevant (as described above) if loop$-recursion-checkedp
+; is nil.
+
+  (prog2$
+   (choke-on-loop$-recursion loop$-recursion-checkedp
+                             names
+                             body
+                             'termination-machine)
+   (termination-machine-rec loop$-recursion
+                            names body alist tests ruler-extenders
+                            (if (and loop$-recursion-checkedp
+                                     loop$-recursion)
+
+; We know names, formals-lst, and bodies are singleton lists and that loop$
+; recursion is present.  In this case, we compute the list of all formals and
+; all bound vars in the body of the fn being defined.  This is the initial list
+; of variable names to avoid when generating newvars for the member-equal hyps
+; implicitly ruling recursions hidden in quoted lambdas.
+
+                                formals
+                                nil))))
+
+(defun termination-machines (loop$-recursion-checkedp
+                             loop$-recursion
+                             names arglists bodies ruler-extenders-lst)
+
+; This function builds the termination machine for each function defined in
+; names with the corresponding formals in arglists and body in bodies.  A list
+; of machines is returned.
+
+; Note: arglists is irrelevant (as implied by the comment in
+; termination-machine) if loop$-recursion-checkedp is nil.  Otherwise, it
+; should be in 1:1 correspondence with names and bodies.  This function chokes
+; on unchecked loop$ recursion, but inherits the call of
+; (choke-on-loop$-recursion loop$-recursion-checkedp ...) from
+; termination-machine.
+
+  (cond ((null bodies) nil)
+        (t (cons (termination-machine loop$-recursion-checkedp
+                                      loop$-recursion
+                                      names (car arglists) (car bodies)
+                                      nil nil
+                                      (car ruler-extenders-lst))
+                 (termination-machines loop$-recursion-checkedp
+                                       loop$-recursion
+                                       names (cdr arglists) (cdr bodies)
+                                       (cdr ruler-extenders-lst))))))
+
+(defun quick-block-initial-settings (formals)
+  (cond ((null formals) nil)
+        (t (cons 'un-initialized
+                 (quick-block-initial-settings (cdr formals))))))
+
+(defun quick-block-info1 (var term)
+  (cond ((eq var term) 'unchanging)
+        ((dumb-occur var term) 'self-reflexive)
+        (t 'questionable)))
+
+(defun quick-block-info2 (setting info1)
+  (case setting
+        (questionable 'questionable)
+        (un-initialized info1)
+        (otherwise
+         (cond ((eq setting info1) setting)
+               (t 'questionable)))))
+
+(defun quick-block-settings (settings formals args)
+  (cond ((null settings) nil)
+        (t (cons (quick-block-info2 (car settings)
+                                    (quick-block-info1 (car formals)
+                                                       (car args)))
+                 (quick-block-settings (cdr settings)
+                                       (cdr formals)
+                                       (cdr args))))))
+
+(defun quick-block-down-t-machine (name settings formals t-machine)
+  (cond ((null t-machine) settings)
+        ((not (eq name
+                  (ffn-symb (access tests-and-call (car t-machine) :call))))
+         (er hard 'quick-block-down-t-machine
+             "When you add induction on mutually recursive functions don't ~
+              forget about QUICK-BLOCK-INFO!"))
+        (t (quick-block-down-t-machine
+            name
+            (quick-block-settings
+             settings
+             formals
+             (fargs (access tests-and-call (car t-machine) :call)))
+            formals
+            (cdr t-machine)))))
+
+(defun quick-block-info (name formals t-machine)
+
+; This function should be called a singly recursive function, name, and
+; its termination machine.  It should not be called on a function
+; in a non-trivial mutually recursive clique because the we don't know
+; how to analyze a call to a function other than name in the t-machine.
+
+; We return a list in 1:1 correspondence with the formals of name.
+; Each element of the list is either 'unchanging, 'self-reflexive,
+; or 'questionable.  The list is used to help quickly decide if a
+; blocked formal can be tolerated in induction.
+
+  (quick-block-down-t-machine name
+                              (quick-block-initial-settings formals)
+                              formals
+                              t-machine))
+
+(defun sublis-tests-rev (test-alist acc)
+
+; Each element of test-alist is a pair (test . alist) where test is a term and
+; alist is either an alist or the atom :no-calls, which we treat as nil.  Under
+; that interpretation, we return the list of all test/alist, in reverse order
+; from test-alist.
+
+  (cond ((endp test-alist) acc)
+        (t (sublis-tests-rev
+            (cdr test-alist)
+            (let* ((test (caar test-alist))
+                   (alist (cdar test-alist))
+                   (inst-test (cond ((or (eq alist :no-calls)
+                                         (null alist))
+                                     test)
+                                    (t (sublis-expr alist test)))))
+              (cons inst-test acc))))))
+
+(defun all-calls-test-alist (names test-alist acc)
+  (cond ((endp test-alist) acc)
+        (t (all-calls-test-alist
+            names
+            (cdr test-alist)
+            (let* ((test (caar test-alist))
+                   (alist (cdar test-alist)))
+              (cond ((eq alist :no-calls)
+                     acc)
+                    (t
+                     (all-calls names test alist acc))))))))
+
+(defun union-equal-to-end (x y)
+
+; This is like union-equal, but where a common element is removed from the
+; second argument instead of the first.
+
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
+  (cond ((intersectp-equal x y)
+         (append x (set-difference-equal y x)))
+        (t (append x y))))
+
+(defun cross-tests-and-calls3 (tacs tacs-lst)
+  (cond ((endp tacs-lst) nil)
+        (t
+         (let ((tests1 (access tests-and-calls tacs :tests))
+               (tests2 (access tests-and-calls (car tacs-lst) :tests)))
+           (cond ((some-element-member-complement-term tests1 tests2)
+                  (cross-tests-and-calls3 tacs (cdr tacs-lst)))
+                 (t (cons (make tests-and-calls
+                                :tests (union-equal-to-end tests1 tests2)
+                                :calls (union-equal
+                                        (access tests-and-calls tacs
+                                                :calls)
+                                        (access tests-and-calls (car tacs-lst)
+                                                :calls)))
+                          (cross-tests-and-calls3 tacs (cdr tacs-lst)))))))))
+
+(defun cross-tests-and-calls2 (tacs-lst1 tacs-lst2)
+
+; See cross-tests-and-calls.
+
+  (cond ((endp tacs-lst1) nil)
+        (t (append (cross-tests-and-calls3 (car tacs-lst1) tacs-lst2)
+                   (cross-tests-and-calls2 (cdr tacs-lst1) tacs-lst2)))))
+
+(defun cross-tests-and-calls1 (tacs-lst-lst acc)
+
+; See cross-tests-and-calls.
+
+  (cond ((endp tacs-lst-lst) acc)
+        (t (cross-tests-and-calls1 (cdr tacs-lst-lst)
+                                   (cross-tests-and-calls2 (car tacs-lst-lst)
+                                                           acc)))))
+
+(defun cross-tests-and-calls (names top-test-alist top-calls tacs-lst-lst)
+
+; We are given a list, tacs-lst-lst, of lists of non-empty lists of
+; tests-and-calls records.  Each such record represents a list of tests
+; together with a corresponding list of calls.  Each way of selecting elements
+; <testsi, callsi> in the ith member of tacs-lst-lst can be viewed as a "path"
+; through tacs-lst-lst (see also discussion of a matrix, below).  We return a
+; list containing a tests-and-calls record formed for each path: the tests, as
+; the union of the tests of top-test-alist (viewed as a list of entries
+; test/alist; see sublis-tests-rev) and the testsi; and the calls, as the union
+; of the top-calls and the callsi.
+
+; We can visualize the above discussion by forming a sort of matrix as follows.
+; The columns (which need not all have the same length) are the elements of
+; tacs-lst-lst; typically, for some call of a function in names, each column
+; contains the tests-and-calls records formed from an argument of that call
+; using induction-machine-for-fn1.  A "path", as discussed above, is formed by
+; picking one record from each column.  The order of records in the result is
+; probably not important, but it seems reasonable to give priority to the
+; records from the first argument by starting with all paths containing the
+; first record of the first argument; and so on.
+
+; Note that the records are in the desired order for each list in tacs-lst-lst,
+; but are in reverse order for top-test-alist, and also tacs-lst-lst is in
+; reverse order, i.e., it corresponds to the arguments of some function call
+; but in reverse argument order.
+
+; For any tests-and-calls record: we view the tests as their conjunction, we
+; view the calls as specifying substitutions, and we view the measure formula
+; as the implication specifying that the substitutions cause an implicit
+; measure to go down, assuming the tests.  Logically, we want the resulting
+; list of tests-and-calls records to have the following properties.
+
+; - Coverage: The disjunction of the tests is provably equivalent to the
+;   conjunction of the tests in top-test-alist.
+
+; - Disjointness: The conjunction of any two tests is provably equal to nil.
+
+; - Measure: Each measure formula is provable.
+
+; We assume that each list in tacs-lst-lst has the above three properties, but
+; with top-test-alist being the empty list (that is, with conjunction of T).
+
+; It's not clear as of this writing that Disjointness is necessary.  The others
+; are critical for justifying the induction schemes that will ultimately be
+; generated from the tests-and-calls records.
+
+; (One may imagine an alternate approach that avoids taking this sort of cross
+; product, by constructing induction schemes with inductive hypotheses of the
+; form (implies (and <conjoined_path_of_tests> <calls_for_that_path>)).  But
+; then the current tests-and-calls data structure and corresponding heuristics
+; would have to be revisited.)
+
+  (let ((full-tacs-lst-lst
+         (append tacs-lst-lst
+                 (list
+                  (list (make tests-and-calls
+                              :tests (sublis-tests-rev top-test-alist nil)
+                              :calls (all-calls-test-alist names
+                                                           top-test-alist
+                                                           top-calls)))))))
+    (cross-tests-and-calls1
+     (cdr full-tacs-lst-lst)
+     (car full-tacs-lst-lst))))
+
+; To generate the body of the inductor function for a loop$ recursive function
+; we will generate ``nuggets'' for certain loop$s in the original body and then
+; glue those nuggets onto the front of the original body using (return-last
+; 'progn <nugget> <orig-body>).  But in induction-machine-for-fn1 we need to
+; recognize when a (return-last 'progn ...)  contains a nugget and treat that
+; nugget a little differently than we would another term embedded in such a
+; (return-last 'progn ...) form.  So here is how we mark a nugget -- which
+; involves ANOTHER (return-last 'progn ...) -- and how we extract the nugget
+; from its marking.  The generation of nuggets and inductor functions will
+; eventually be implemented in a distributed book.  The only reason we're
+; defining these functions now is so that induction-machine-for-fn1 can
+; recognize when it's been presented with a nugget.
+
+(defun mark-loop$-recursion-nugget (nugget)
+  `(return-last 'progn
+                'loop$-recursion-nugget
+                ,nugget))
+
+(defun marked-loop$-recursion-nuggetp (term)
+; If term satisfies this predicate, then (fargn term 3) is the nugget.
+  (and (nvariablep term)
+       (not (fquotep term))
+       (eq (ffn-symb term) 'return-last)
+       (quotep (fargn term 1))
+       (eq (unquote (fargn term 1)) 'progn)
+       (quotep (fargn term 2))
+       (eq (unquote (fargn term 2)) 'loop$-recursion-nugget)))
+
+(mutual-recursion
+
+(defun induction-machine-for-fn1 (names body alist test-alist calls
+                                        ruler-extenders merge-p)
+
+; At the top level, this function builds a list of tests-and-calls for the
+; given body of a function in names, a list of all the mutually recursive fns
+; in a clique.  Note that we don't need to know the function symbol to which
+; the body belongs; all the functions in names are considered "recursive"
+; calls.  As we recur, we are considering body/alist, with accumulated tests
+; consisting of test/a for test (test . a) in test-alist (but see :no-calls
+; below, treated as the nil alist), and accumulated calls (already
+; instantiated).
+
+; To understand this algorithm, let us first consider the case that there are
+; no lambda applications in body, which guarantees that alist will be empty on
+; every recursive call, and ruler-extenders is nil.  We explore body,
+; accumulating into the list of tests (really, test-alist, but we defer
+; discussion of the alist aspect) as we dive: for (if x y z), we accumulate x
+; as we dive into y, and we accumulate the negation of x as we dive into z.
+; When we hit a term u for which we are blocked from diving further (because we
+; have encountered other than an if-term, or are diving into the first argument
+; of an if-term), we collect up all the tests, reversing them to restore them
+; to the order in which they were encountered from the top, and we collect up
+; all calls of functions in names that are subterms of u or of any of the
+; accumulated tests.  From the termination analysis we know that assuming the
+; collected tests, the arguments for each call are suitably smaller than the
+; formals of the function symbol of that call, where of course, for a test only
+; the tests superior to it are actually necessary.
+
+; There is a subtle aspect to the handling of the tests in the above algorithm.
+; To understand it, consider the following example.  Suppose names is (f), p is
+; a function symbol, 'if is in ruler-extenders, and body is:
+;  (if (consp x)
+;      (if (if (consp x)
+;              (p x)
+;            (p (f (cons x x))))
+;          x
+;        (f (cdr x)))
+;    x)
+; Since 'if is in ruler-extenders, termination analysis succeeds because the
+; tests leading to (f (cons x x)) are contradictory.  But with the naive
+; algorithm described above, when we encounter the term (f (cdr x)) we would
+; create a tests-and-calls record that collects up the call (f (cons x x)); yet
+; clearly (cons x x) is not smaller than the formal x under the default measure
+; (acl2-count x), even assuming (consp x) and (not (p (f (cons x x)))).
+
+; Thus it is unsound in general to collect all the calls of a ruling test when
+; 'if is among the ruler-extenders.  But we don't need to do so anyhow, because
+; we will collect suitable calls from the first argument of an 'if test as we
+; dive into it, relying on cross-tests-and-calls to incorporate those calls, as
+; described below.  We still have to note the test as we dive into the true and
+; false branches of an IF call, but that test should not contribute any calls
+; when the recursion bottoms out under one of those branches.
+
+; A somewhat similar issue arises with lambda applications in the case that
+; :lambdas is among the ruler-extenders.  Consider the term ((lambda (x) (if
+; <test> <tbr> <fbr>)) <arg>).  With :lambdas among the ruler-extenders, we
+; will be diving into <arg>, and not every call in <arg> may be assumed to be
+; "smaller" than the formals as we are exploring the body of the lambda.  So we
+; need to collect up the combination of <test> and an alist binding lambda
+; formals to actuals (in this example, binding x to <arg>, or more generally,
+; the instantiation of <arg> under the existing bindings).  That way, when the
+; recursion bottoms out we can collect calls explicitly in that test (unless
+; 'if is in ruler-extenders, as already described), instantiating them with the
+; associated alist.  If we instead had collected up the instantiated test, we
+; would also have collected all calls in <arg> above when bottoming out in the
+; lambda body, and that would be a mistake (as discussed above, since not every
+; call in arg is relevant).
+
+; So when the recursion bottoms out, some tests should not contribute any
+; calls, and some should be instantiated with a corresponding alist.  As we
+; collect a test when we recur into the true or false branch of an IF call, we
+; thus actually collect a pair consisting of the test and a corresponding
+; alist, signifying that for every recursive call c in the test, the actual
+; parameter list for c/a is known to be "smaller" than the formals.  If
+; ruler-extenders is the default, then all calls of the instantiated test are
+; known to be "smaller", so we pair the instantiated test with nil.  But if 'if
+; is in the ruler-extenders, then we do not want to collect any calls of the
+; test -- as discussed above, cross-tests-and-calls will take care of them --
+; so we pair the instantiated test with the special indicator :no-calls.
+
+; The merge-p argument concerns the question of whether exploration of a term
+; (if test tbr fbr) should create two tests-and-calls records even if there are
+; no recursive calls in tbr or fbr.  For backward compatibility, the answer is
+; "no" if we are exploring according to the conventional notion of "rulers".
+; But now imagine a function body that has many calls of 'if deep under
+; different arguments of some function call.  If we create separate records as
+; in the conventional case, the induction scheme may explode when we combine
+; these cases with cross-tests-and-calls -- it will be as though we clausified
+; even before starting the induction proof proper.  But if we avoid such a
+; priori case-splitting, then during the induction proof, it is conceivable
+; that many of these potential separate cases could be dispatched with
+; rewriting, thus avoiding so much case splitting.
+
+; So if merge-p is true, then we avoid creating tests-and-calls records when
+; both branches of an IF term have no recursive calls.  We return (mv flag
+; tests-and-calls-lst), where if merge-p is true, then flag is true exactly
+; when a call of a function in names has been encountered.  For backward
+; compatibility, merge-p is false except when we the analysis has taken
+; advantage of ruler-extenders.  If merge-p is false, then the first returned
+; value is irrelevant.
+
+; Here are some ideas we expressed about merge-p in the "to do" list, which we
+; may want to consider at some point:
+
+;   At the end of Oct. 2009 we modified induction-machine-for-fn1 by giving
+;   prog2$ and some other ruler-extenders special handling to avoid the
+;   merge-p=t heuristic when there is only one argument with recursive calls.
+;   It might be good to re-think the merge-p argument entirely -- maybe for
+;   example we could eliminate it, and simply do the merge-p on the fly when
+;   appropriate -- e.g., if there is only one argument with recursive calls,
+;   just throw out the tests-and-cases for the other arguments, and otherwise
+;   do the merging (either by recomputing or by merging on-the-fly) for all
+;   arguments before cross-tests-and-calls.
+;
+;   At any rate, maybe we should add a bit of documentation to the end of
+;   ruler-extenders about merge-p.
+
+; Note: Perhaps some calls of reverse can be omitted, though that might ruin
+; some regressions.  Our main concern for replayability has probably been the
+; order of the tests, not so much the order of the calls.
+
+  (cond
+   ((or (variablep body)
+        (fquotep body)
+        (and (not (flambda-applicationp body))
+             (not (eq (ffn-symb body) 'if))
+             (not (and (eq (ffn-symb body) 'return-last)
+                       (quotep (fargn body 1))
+                       (eq (unquote (fargn body 1)) 'mbe1-raw)))
+             (not (member-eq-all (ffn-symb body) ruler-extenders))))
+    (mv (and merge-p ; optimization
+             (ffnnamesp names body))
+        (list (make tests-and-calls
+                    :tests (sublis-tests-rev test-alist nil)
+                    :calls (reverse
+                            (all-calls names body alist
+                                       (all-calls-test-alist
+                                        names
+                                        (reverse test-alist)
+                                        calls)))))))
+   ((flambda-applicationp body)
+    (cond
+     ((member-eq-all :lambdas ruler-extenders) ; other case is easier to follow
+      (mv-let (flg1 temp1)
+              (induction-machine-for-fn1 names
+                                         (lambda-body (ffn-symb body))
+                                         (pairlis$
+                                          (lambda-formals (ffn-symb body))
+                                          (sublis-var-lst alist (fargs body)))
+                                         nil ; test-alist
+                                         nil ; calls
+                                         ruler-extenders
+
+; The following example shows why we use merge-p = t when ruler-extenders
+; includes :lambdas.
+
+; (defun app (x y)
+;   ((lambda (result)
+;      (if (our-test result)
+;          result
+;        0))
+;    (if (endp x)
+;        y
+;      (cons (car x)
+;            (app (cdr x) y)))))
+
+; If we do not use t, then we wind up crossing two base cases from the lambda
+; body with two from the arguments, which seems like needless explosion.
+
+                                         t)
+              (mv-let (flg2 temp2)
+                      (induction-machine-for-fn1-lst names
+                                                     (fargs body)
+                                                     alist
+                                                     ruler-extenders
+                                                     nil ; acc
+                                                     t   ; merge-p
+                                                     nil) ; flg
+                      (mv (or flg1 flg2)
+                          (cross-tests-and-calls
+                           names
+                           test-alist
+                           calls
+
+; We cons the lambda-body's contribution to the front, since we want its tests
+; to occur after those of the arguments to the lambda application (because the
+; lambda body occurs lexically last in a LET form, so this will make the most
+; sense to the user).  Note that induction-machine-for-fn1-lst returns its
+; result in reverse of the order of arguments.  Thus, the following cons will
+; be in the reverse order that is expected by cross-tests-and-calls.
+
+                           (cons temp1 temp2))))))
+     (t ; (not (member-eq-all :lambdas ruler-extenders))
+
+; We just go straight into the body of the lambda, with the appropriate alist.
+; But we modify calls, so that every tests-and-calls we build will contain all
+; of the calls occurring in the actuals to the lambda application.
+
+      (mv-let
+       (flg temp)
+       (induction-machine-for-fn1 names
+                                  (lambda-body (ffn-symb body))
+                                  (pairlis$
+                                   (lambda-formals (ffn-symb body))
+                                   (sublis-var-lst alist (fargs body)))
+                                  test-alist
+                                  (all-calls-lst names (fargs body) alist
+                                                 calls)
+                                  ruler-extenders
+                                  merge-p)
+       (mv (and merge-p ; optimization
+                (or flg
+                    (ffnnamesp-lst names (fargs body))))
+           temp)))))
+   ((and (eq (ffn-symb body) 'return-last)
+         (quotep (fargn body 1))
+         (eq (unquote (fargn body 1)) 'mbe1-raw))
+
+; See the comment in termination-machine about it being sound to treat
+; return-last as a macro.
+
+    (induction-machine-for-fn1 names
+                               (fargn body 3)
+                               alist
+                               test-alist
+                               calls
+                               ruler-extenders
+                               merge-p))
+   ((eq (ffn-symb body) 'if)
+    (let ((test
+
+; Since (remove-guard-holders-weak x _) is provably equal to x, the machine we
+; generate using it below is equivalent to the machine generated without it.
+; It might be sound also to call possibly-clean-up-dirty-lambda-objects (i.e.,
+; to call remove-guard-holders instead of remove-guard-holders-weak) so that
+; guard holders are removed from quoted lambdas in argument positions with ilk
+; :fn (or :fn?), but we don't expect to pay much of a price by playing it safe
+; here and in termination-machine.
+
+; For why we pass nil as the second argument of remove-guard-holders-weak,
+; below, see a comment about remove-guard-holders-weak in the definition of
+; termination-machine-rec.
+
+           (remove-guard-holders-weak (fargn body 1) nil)))
+      (cond
+       ((member-eq-all 'if ruler-extenders) ; other case is easier to follow
+        (mv-let
+         (tst-flg tst-result)
+         (induction-machine-for-fn1 names
+                                    (fargn body 1) ; keep guard-holders
+                                    alist
+                                    test-alist
+                                    calls
+                                    ruler-extenders
+                                    t)
+         (let ((inst-test (sublis-var alist test))
+               (merge-p (or merge-p
+
+; If the test contains a recursive call then we prefer to merge when computing
+; the induction machines for the true and false branches, to avoid possible
+; explosion in cases.
+
+                            tst-flg)))
+           (mv-let
+            (tbr-flg tbr-result)
+            (induction-machine-for-fn1 names
+                                       (fargn body 2)
+                                       alist
+                                       (cons (cons inst-test :no-calls)
+                                             nil) ; tst-result has the tests
+                                       nil ; calls, already in tst-result
+                                       ruler-extenders
+                                       merge-p)
+            (mv-let
+             (fbr-flg fbr-result)
+             (induction-machine-for-fn1 names
+                                        (fargn body 3)
+                                        alist
+                                        (cons (cons (dumb-negate-lit inst-test)
+                                                    :no-calls)
+                                              nil) ; tst-result has the tests
+                                        nil ; calls, already in tst-result
+                                        ruler-extenders
+                                        merge-p)
+             (cond ((and merge-p
+                         (not (or tbr-flg fbr-flg)))
+                    (mv tst-flg tst-result))
+                   (t
+                    (mv (or tbr-flg fbr-flg tst-flg)
+                        (cross-tests-and-calls
+                         names
+                         nil ; top-test-alist
+                         nil ; calls are already in tst-result
+
+; We put the branch contributions on the front, since their tests are to wind
+; up at the end, in analogy to putting the lambda body on the front as
+; described above.
+
+                         (list (append tbr-result fbr-result)
+                               tst-result))))))))))
+       (t ; (not (member-eq-all 'if ruler-extenders))
+        (mv-let
+         (tbr-flg tbr-result)
+         (induction-machine-for-fn1 names
+                                    (fargn body 2)
+                                    alist
+                                    (cons (cons test alist)
+                                          test-alist)
+                                    calls
+                                    ruler-extenders
+                                    merge-p)
+         (mv-let
+          (fbr-flg fbr-result)
+          (induction-machine-for-fn1 names
+                                     (fargn body 3)
+                                     alist
+                                     (cons (cons (dumb-negate-lit test)
+                                                 alist)
+                                           test-alist)
+                                     calls
+                                     ruler-extenders
+                                     merge-p)
+          (cond ((and merge-p
+                      (not (or tbr-flg fbr-flg)))
+                 (mv nil
+                     (list (make tests-and-calls
+                                 :tests
+                                 (sublis-tests-rev test-alist nil)
+                                 :calls
+                                 (all-calls names test alist
+                                            (reverse
+                                             (all-calls-test-alist
+                                              names
+                                              (reverse test-alist)
+                                              calls)))))))
+                (t
+                 (mv (or tbr-flg fbr-flg)
+                     (append tbr-result fbr-result))))))))))
+   (t ; (member-eq-all (ffn-symb body) ruler-extenders) and not lambda etc.
+    (mv-let (merge-p args)
+
+; The special cases just below could perhaps be nicely generalized to any call
+; in which at most one argument contains calls of any name in names.  We found
+; that we needed to avoid merge-p=t on the recursive call in the prog2$ case
+; (where no recursive call is in the first argument) when we introduced
+; defun-nx after Version_3.6.1, since the resulting prog2$ broke community book
+; books/tools/flag.lisp, specifically event (FLAG::make-flag flag-pseudo-termp
+; ...), because the :normalize nil kept the prog2$ around and merge-p=t then
+; changed the induction scheme.
+
+; Warning: Do not be tempted to skip the call of cross-tests-and-calls in the
+; special cases below for mv-list, prog2$ and arity 1.  It is needed in order
+; to handle :no-calls (used above).
+
+            (cond ((and (eq (ffn-symb body) 'mv-list)
+                        (not (ffnnamesp names (fargn body 1))))
+                   (mv merge-p (list (fargn body 2))))
+                  ((and (eq (ffn-symb body) 'return-last)
+                        (quotep (fargn body 1))
+                        (eq (unquote (fargn body 1)) 'progn)
+                        (marked-loop$-recursion-nuggetp (fargn body 2)))
+                   (mv merge-p (list (fargn (fargn body 2) 3) (fargn body 3))))
+                  ((and (eq (ffn-symb body) 'return-last)
+                        (quotep (fargn body 1))
+                        (eq (unquote (fargn body 1)) 'progn)
+                        (not (ffnnamesp names (fargn body 2))))
+                     (mv merge-p (list (fargn body 3))))
+                  ((null (cdr (fargs body)))
+                   (mv merge-p (list (fargn body 1))))
+                  (t (mv t (fargs body))))
+            (let* ((flg0 (member-eq (ffn-symb body) names))
+                   (calls (if flg0
+                              (cons (sublis-var alist body) calls)
+                            calls)))
+              (mv-let
+               (flg temp)
+               (induction-machine-for-fn1-lst names
+                                              args
+                                              alist
+                                              ruler-extenders
+                                              nil ; acc
+                                              merge-p
+                                              nil) ; flg
+               (mv (or flg0 flg)
+                   (cross-tests-and-calls
+                    names
+                    test-alist
+                    calls
+                    temp))))))))
+
+(defun induction-machine-for-fn1-lst (names bodies alist ruler-extenders acc
+                                            merge-p flg)
+
+; The resulting list corresponds to bodies in reverse order.
+
+  (cond ((endp bodies) (mv flg acc))
+        (t (mv-let (flg1 ans1)
+                   (induction-machine-for-fn1 names (car bodies) alist
+                                              nil ; tests
+                                              nil ; calls
+                                              ruler-extenders
+                                              merge-p)
+                   (induction-machine-for-fn1-lst
+                    names (cdr bodies) alist ruler-extenders
+                    (cons ans1 acc)
+                    merge-p
+                    (or flg1 flg))))))
+)
+
+(defun simplify-tests-and-calls (tc)
+
+; For an example of the utility of removing guard holders, note that lemma
+; STEP2-PRESERVES-DL->NOT2 in community book
+; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp has failed
+; when we did not do so.
+
+; While we generally follow the convention of calling
+; possibly-clean-up-dirty-lambda-objects anytime we're removing guard holders
+; we do not do so here and just play it safe until we get burned!
+
+; For why we pass nil as the second argument of remove-guard-holders-weak,
+; below, see a comment about remove-guard-holders-weak in the definition of
+; termination-machine-rec.
+
+  (let* ((tests0 (remove-guard-holders-weak-lst
+                  (access tests-and-calls tc :tests)
+                  nil)))
+    (mv-let
+     (var const)
+     (term-equated-to-constant-in-termlist tests0)
+     (let ((tests
+            (cond (var (mv-let (changedp tests)
+                               (simplify-tests var const tests0)
+                               (declare (ignore changedp))
+                               tests))
+                  (t tests0))))
+
+; Through Version_7.1 we returned nil when (null tests), with the comment:
+; "contradictory case".  However, that caused a bad error when a caller
+; expected a tests-and-calls record, as in the following example.
+
+;   (skip-proofs (defun foo (x)
+;                  (declare (xargs :measure (acl2-count x)))
+;                  (identity
+;                   (cond ((zp x) 17)
+;                         (t (foo (1- x)))))))
+
+; We now see no particular reason why special handling is necessary in this
+; case.  Of course, the ultimate induction scheme may allow a proof of nil; for
+; the example above, try (thm nil :hints (("Goal" :induct (foo x)))).  But
+; everything we are doing here is presumably sound, so we expect a skip-proofs
+; to be to blame for nil tests, as in the example above.
+
+       (make tests-and-calls
+             :tests tests
+             :calls (remove-guard-holders-weak-lst
+                     (access tests-and-calls tc :calls)
+                     nil))))))
+
+(defun simplify-tests-and-calls-lst (tc-list)
+
+; We eliminate needless tests (not (equal term (quote const))) that clutter the
+; induction machine.  To see this function in action:
+
+; (skip-proofs (defun foo (x)
+;                (if (consp x)
+;                    (case (car x)
+;                      (0 (foo (nth 0 x)))
+;                      (1 (foo (nth 1 x)))
+;                      (2 (foo (nth 2 x)))
+;                      (3 (foo (nth 3 x)))
+;                      (otherwise (foo (cdr x))))
+;                  x)))
+
+; (thm (equal (foo x) yyy))
+
+  (cond ((endp tc-list)
+         nil)
+        (t (cons (simplify-tests-and-calls (car tc-list))
+                 (simplify-tests-and-calls-lst (cdr tc-list))))))
+
+(mutual-recursion
+
+(defun loop$-recursion-ffnnamep (fn term)
+
+; Like ffnamep, we determine whether the function fn (possibly a
+; lambda-expression) is used as a function in term.  However, unlike ffnnamep,
+; we check every quoted lambda-like object in term looking for calls of fn.  We
+; know that every quoted lambda-like object in term is in fact a
+; well-formed-lambda-objectp.
+
+  (declare (xargs :guard (pseudo-termp term)))
+  (cond ((variablep term) nil)
+        ((fquotep term)
+         (cond ((and (consp (unquote term))
+                     (eq (car (unquote term)) 'LAMBDA))
+                (loop$-recursion-ffnnamep fn (lambda-object-body (unquote term))))
+               (t nil)))
+        ((flambda-applicationp term)
+         (or (equal fn (ffn-symb term))
+             (loop$-recursion-ffnnamep fn (lambda-body (ffn-symb term)))
+             (loop$-recursion-ffnnamep-lst fn (fargs term))))
+        ((eq (ffn-symb term) fn) t)
+        (t (loop$-recursion-ffnnamep-lst fn (fargs term)))))
+
+(defun loop$-recursion-ffnnamep-lst (fn l)
+  (declare (xargs :guard (pseudo-term-listp l)))
+  (if (endp l)
+      nil
+      (or (loop$-recursion-ffnnamep fn (car l))
+          (loop$-recursion-ffnnamep-lst fn (cdr l)))))
+
+ )
+
+(defun induction-machine-for-fn (names body ruler-extenders)
+
+; We build an induction machine for the function in names with the given body.
+; We claim the soundness of the induction schema suggested by this machine is
+; easily seen from the proof done by prove-termination.  See
+; termination-machine.
+
+; Note: The induction machine built for a clique of more than 1
+; mutually recursive functions is probably unusable.  We do not know
+; how to do inductions on such functions now.
+
+  (mv-let (flg ans)
+          (induction-machine-for-fn1 names
+                                     body
+                                     nil ; alist
+                                     nil ; tests
+                                     nil ; calls
+                                     ruler-extenders
+                                     nil); merge-p
+          (declare (ignore flg))
+          (simplify-tests-and-calls-lst ans)))
+
+(defun intrinsic-suggested-induction-cand-do$ (term wrld)
+
+; This function takes a do$ term and computes three properties that would have
+; been stored for the induction hint function, had that function been defined.
+; The three properties are QUICK-BLOCK-INFO, JUSTIFICATION, and
+; INDUCTION-MACHINE.  We then attempt to create an induction candidate from
+; those data structures, returning either a singleton list containing the
+; candidate or nil (if no induction is possible, e.g., a controller is occupied
+; by a non-variable term).
+
+  (let ((four-tuple (decompile-do$ term wrld)))
+    (case-match four-tuple
+      ((formals call measure body)
+
+; This and the next paragraph concern the call of termination-machine below.
+; We use the default-ruler-extenders for all do$ terms.  Changing this would be
+; hard.  Imagine allowing a DO$ term to carry around a :ruler-extenders
+; specification, but it would have to be a new argument and it would be awkward
+; since it wouldn't affect the value and so would be a good candidate for
+; ``nilifying'' to make matches work, but that would defeat the purpose of
+; having it there when we are looking for induction suggestions.  So we just
+; punt and leave it for some future extension.
+
+; We use loop$-recursion-checkedp = t because DO$ prohibits loop$ recursion.
+; Thus, we also know there was no loop$ recursion present, so we set
+; loop$-recursion to nil.
+
+       (let* ((ruler-extenders (default-ruler-extenders wrld))
+              (t-machine (termination-machine
+                          t   ; loop$-recursion-checkedp
+                          nil ; loop$-recursion
+                          (list *do$-induction-fn*)
+                          (list formals)
+                          body
+                          nil nil
+                          ruler-extenders))
+              (quick-block-info (quick-block-info *do$-induction-fn*
+                                                  formals
+                                                  t-machine))
+              (formals-to-actuals-alist (pairlis$ formals (fargs call)))
+
+; The justification constructed below will find its way into the candidate
+; record constructed by intrinsic-suggested-induction-cand1.  We regard the
+; justification record as merely a package carrying the measured variables,
+; well-founded domain and relation, and the measure.  This justification is not
+; stored on any property list.  Indeed, we don't actually know that the
+; termination proof obligations can even be proved.  They will be among the
+; clauses to be proved when the derived induction scheme is applied.
+
+              (justification (make justification
+                                   :subset
+                                   (all-vars
+                                    (sublis-var formals-to-actuals-alist
+                                                measure))
+                                   :subversive-p
+
+; To see why :subversive-p is nil here, we first recall the idea of subversive
+; justifications.  A justification is subversive if the corresponding induction
+; is not justified.  Generally that happens when the justification depends on
+; properties local to an enclosing non-trivial encapsulate.
+
+; In this case, unlike the termination proofs done for defun (where the
+; termination proof is done when the defun is admitted and then the induction
+; scheme is assumed legitimate in all future extensions), the legitimacy of the
+; induction scheme suggested by a do$ is in fact proved every time the scheme
+; is used.  Because of that proof, there is no reason to doubt the correctness
+; of the generated induction when used in a successful proof, so there is no
+; need to mark the justification as subversive.
+
+; The explanation above is sufficient, by itself, to explain why there is
+; nothing subversive here.  But here are two additional (though unnecessary)
+; reasons to feel secure that this :justification value of nil avoids
+; unsoundness.
+
+; First, it's actually really hard to even threaten subversion with a do$!  A
+; signature function may only be badged locally, because it is only during pass
+; 1 of the encapsulate that a signature function is defined and only defined
+; functions may be badged.  (Put another way, if a signature function is
+; non-locally badged, an error is caused on pass 2 because the function is not
+; defined.)  But any function used in the measure or body of a do$ must be
+; badged.  So any do$ statement inside an encapsulate and using a signature
+; function must be local.
+
+; Second, this :subversive-p field of a justification is never even consulted!
+; If you inspect all the places the :subversive-p field of a justification is
+; used you find only two: in termination-theorem and in get-subversives.  In
+; both cases, the justification accessed is first recovered from the property
+; list of a function symbol.  But no do$ justification record is ever stored
+; under a function symbol.  Indeed, the ``name'' of the decompiled do$ function
+; is the value of the constant *do$-induction-fn* which is not even a function
+; symbol, it is a keyword.  So if the only way the rest of the prover sees
+; :subversive-p is in connection with a function symbol, this :subversive-p
+; will never be seen.
+
+                                   nil
+                                   :mp 'lexp
+                                   :rel 'l<
+                                   :measure
+                                   `(lex-fix ,(sublis-var
+                                               formals-to-actuals-alist
+                                               measure))
+                                   :ruler-extenders ruler-extenders))
+              (induction-machine
+               (induction-machine-for-fn (list *do$-induction-fn*)
+                                         body
+                                         ruler-extenders)))
+; The call argument below finds its way into the :induction-term field of the
+; candidate constructed.  Calls are always function calls and the fn-symb of
+; any call produced by a do$ induction is *do$-induction-fn*, which is a
+; keyword.  So if you're looking at a candidate and want to know whether it was
+; suggested as the instrinsic induction of a particular do$, check to see if
+; (ffn-symb (access candidate cand :induction-term)) is *do$-induction-fn*.
+
+         (intrinsic-suggested-induction-cand1
+          '(:induction do$)  ; We always use the induction rune for DO$
+          call               ; The identifying mark -- see above
+          formals
+          quick-block-info
+          justification
+          induction-machine
+          term               ; the do$ term suggesting this induction
+          nil                ; ttree
+          )))
+      (& nil))))
+
+(defun intrinsic-suggested-induction-cand
+    (induction-rune term formals quick-block-info justification machine xterm
+                    ttree wrld)
+
+; Term, above, is a call of some fn with the given formals, quick-block-info,
+; justification and induction machine.  We return a list of induction
+; candidates, said list either being empty or the singleton list containing the
+; induction candidate intrinsically suggested by term.  Xterm is logically
+; unrelated to term and is the term appearing in the original conjecture from
+; which we (somehow) obtained term for consideration.
+
+; If term is a call of DO$ we first try to derive a do$ induction from it as
+; though it might be a semi-concrete do$.  If that fails, we try to get the
+; intrinsic induction from do$.  If term is not a call of do$, we just use the
+; intrinsic induction.
+
+  (cond
+   ((and (nvariablep term)
+         (not (fquotep term))
+         (eq (ffn-symb term) 'do$))
+
+; Intrinsic-suggested-induction-cand-do$ returns nil if term is not
+; a semi-concrete call that suggests an induction.
+
+    (or (intrinsic-suggested-induction-cand-do$ term wrld)
+        (intrinsic-suggested-induction-cand1
+         induction-rune term formals quick-block-info
+         justification machine xterm ttree)))
+   (t (intrinsic-suggested-induction-cand1
+       induction-rune term formals quick-block-info
+       justification machine xterm ttree))))
+
 ; The following is now defined in rewrite.lisp.
 
 ; (defrec induction-rule (nume (pattern . condition) scheme . rune) nil)
+
+(defun relieve-induction-condition-terms (rune pattern terms alist type-alist
+                                               ens wrld)
+  (cond
+   ((endp terms) t)
+   ((or (variablep (car terms))
+        (fquotep (car terms))
+        (not (eq (ffn-symb (car terms)) 'synp)))
+    (mv-let (ts ttree1)
+      (type-set (sublis-var alist (car terms))
+                t nil type-alist ens wrld nil nil nil)
+      (declare (ignore ttree1))
+      (cond
+       ((ts-intersectp *ts-nil* ts) nil)
+       (t (relieve-induction-condition-terms rune pattern
+                                             (cdr terms)
+                                             alist type-alist ens wrld)))))
+   (t
+
+; In this case, (car terms) is (SYNP 'NIL '(SYNTAXP ...) 'term), where term
+; is the translated term to be evaluated under alist.
+
+    (mv-let (erp val)
+      (ev-w (get-evg (fargn (car terms) 3) 'relieve-induction-condition-terms)
+            alist
+            wrld
+            nil ; user-stobj-alist
+            t   ; safe-mode
+            nil ; gc-off
+            nil ; hard-error-returns-nilp
+            nil ; aok
+            )
+      (cond
+       (erp (er hard 'relieve-induction-condition-terms
+                "The form ~x0 caused the error, ~@1.  That SYNTAXP form ~
+                 occurs as a :condition governing the :induction rule ~x2, ~
+                 which we tried to fire after matching the :pattern ~x3 using ~
+                 the unifying substitution ~x4."
+                (get-evg (fargn (car terms) 2) 'relieve-induction-condition-terms)
+                val
+                rune
+                pattern
+                alist))
+       (val (relieve-induction-condition-terms rune pattern
+                                               (cdr terms)
+                                               alist type-alist ens wrld)))))))
 
 (mutual-recursion
 
@@ -480,39 +3900,40 @@
      ((and (not (member nume seen))
            (enabled-numep nume ens))
       (mv-let
-       (ans alist)
-       (one-way-unify (access induction-rule rule :pattern)
-                      term)
-       (cond
-        (ans
-         (with-accumulated-persistence
-          (access induction-rule rule :rune)
-          (suggestions)
-          suggestions
-          (mv-let
-           (ts ttree1)
-           (type-set (sublis-var alist
-                                 (access induction-rule rule :condition))
-                     t nil type-alist ens wrld nil nil nil)
-           (declare (ignore ttree1))
+        (ans alist)
+        (one-way-unify (access induction-rule rule :pattern)
+                       term)
+        (cond
+         (ans
+          (with-accumulated-persistence
+           (access induction-rule rule :rune)
+           (suggestions)
+           suggestions
            (cond
-            ((ts-intersectp *ts-nil* ts) nil)
-            (t (let ((term1 (sublis-var alist
-                                        (access induction-rule rule :scheme))))
-                 (cond ((or (variablep term1)
-                            (fquotep term1))
-                        nil)
-                       (t (suggested-induction-cands term1 type-alist
-                                                     xterm
-                                                     (push-lemma
-                                                      (access induction-rule
-                                                              rule
-                                                              :rune)
-                                                      ttree)
-                                                     nil ; eflg
-                                                     (cons nume seen)
-                                                     ens wrld)))))))))
-        (t nil))))
+            ((relieve-induction-condition-terms (access induction-rule rule
+                                                        :rune)
+                                                (access induction-rule rule
+                                                        :pattern)
+                                                (access induction-rule rule
+                                                        :condition)
+                                                alist type-alist ens wrld)
+             (let ((term1 (sublis-var alist
+                                      (access induction-rule rule :scheme))))
+               (cond ((or (variablep term1)
+                          (fquotep term1))
+                      nil)
+                     (t (suggested-induction-cands term1 type-alist
+                                                   xterm
+                                                   (push-lemma
+                                                    (access induction-rule
+                                                            rule
+                                                            :rune)
+                                                    ttree)
+                                                   nil ; eflg
+                                                   (cons nume seen)
+                                                   ens wrld)))))
+            (t nil))))
+         (t nil))))
      (t nil))))
 
 (defun suggested-induction-cands1
@@ -571,7 +3992,8 @@
                           wrld)
                 machine
                 xterm
-                ttree)))))))
+                ttree
+                wrld)))))))
    (t (append (apply-induction-rule (car induction-rules)
                                     term type-alist
                                     xterm ttree seen ens wrld)
@@ -1302,7 +4724,7 @@
             (controller-variables
              (car lst)
              (access def-body
-                     (def-body (ffn-symb (car lst)) wrld)
+                     (original-def-body (ffn-symb (car lst)) wrld)
                      :controller-alist))
             (induct-vars1 (cdr lst) wrld)))))
 
@@ -1894,9 +5316,115 @@
     (declare (ignore stree))
     ans))
 
+; Now we work on the selection of q for the induction suggested by a
+; semi-concrete do$.
+
+(defun select-do$-induction-q-seedp1 (lit xterms)
+  (cond
+   ((endp xterms) t)
+   ((occur (car xterms) lit)
+    nil)
+   (t (select-do$-induction-q-seedp1 lit (cdr xterms)))))
+
+(defun select-do$-induction-q-seedp (lit xterms mvars)
+  (and (subsetp-eq (all-vars lit) mvars)
+       (if (eq xterms :DO$)
+           (not (ffnnamep 'DO$ lit))
+           (select-do$-induction-q-seedp1 lit xterms))))
+
+(defun select-do$-induction-q-seed (cl xterms mvars)
+  (cond
+   ((endp cl) nil)
+   ((select-do$-induction-q-seedp (car cl) xterms mvars)
+    (cons (car cl) (select-do$-induction-q-seed (cdr cl) xterms mvars)))
+   (t (select-do$-induction-q-seed (cdr cl) xterms mvars))))
+
+(defun select-do$-induction-q-filterp (lit cl-set)
+; Return t iff lit is in every element of cl-cset.
+  (cond
+   ((endp cl-set) t)
+   ((member-equal lit (car cl-set))
+    (select-do$-induction-q-filterp lit (cdr cl-set)))
+   (t nil)))
+
+(defun select-do$-induction-q-filter (seed cl-set)
+  (cond
+   ((endp seed) nil)
+   ((select-do$-induction-q-filterp (car seed) cl-set)
+    (cons (car seed)
+          (select-do$-induction-q-filter (cdr seed) cl-set)))
+   (t (select-do$-induction-q-filter (cdr seed) cl-set))))
+
+(defun select-do$-induction-q (cl-set xterms mterm)
+
+; Cl-set is a set of clauses we're proving by induction, a do$ induction has
+; been chosen and it was suggested by the terms in xterms (unless xterms is
+; :DO$).  Mterm is the measure term.  We return a list of literals that should
+; be unioned into the measure conjecture to be generated.  The :DO$ case is
+; explained below.
+
+; The conjunction of the negations of the literals returned is what we call Q
+; in our do$ induction scheme.  We describe its use and the choice of Q below.
+; But for example, a typical Q might be (AND (NATP I) (NATP J)) which is
+; represented here by the list ((NOT (NATP I)) (NOT (NATP J))).  Note that by
+; unioning the list of literals to a clause we're really adding the hypothesis
+; Q to the clause.
+
+; When we generate the measure clauses for a DO$ induction we augment the
+; clauses with a predicate, Q, extracted from the clauses, cl-set, being
+; proved.  We can choose any set of literals provided we obey the ``inclusion
+; rule:'' every literal is a member of each clause.  The consequences of
+; choosing poorly -- as long as we obey the inclusion rule -- is that we won't
+; be able to justify the induction (i.e., the proof attempt employing this
+; induction will fail).  C'est la vie.  Use a :hint!
+
+; The heuristic behind our choice is to restrict the types of the variables
+; mentioned in the measure.  The inclusion rule is necessary for the soundness
+; of our implementation: Technically, the induction scheme we're using requires
+; us to prove (implies (not q) p), but the inclusion rule guarantees that this
+; is a tautology.  So we don't even generate that proof obligation and thus we
+; must be careful to obey the rule!
+
+; Our algorithm is to collect from the first clause in cl-set all the literals
+; that mention only variables in the measure but that do not contain any of the
+; xterms.  If xterms is :DO$ it is interpreted to mean the list of every DO$
+; term in the conjecture.  That is, if xterms is :DO$ we exclude from Q any
+; term containing any call of DO$.  Note that we'll collect literals that
+; mention NO variables, e.g., warrants.  Call the resulting set of literals the
+; ``seed.''  Then we'll throw out of the seed any literal that is not mentioned
+; in all the other clauses.  We call this ``filtering'' the seed and it
+; guarantees the ``inclusion rule.''
+
+  (let* ((mvars (all-vars mterm))
+         (seed (select-do$-induction-q-seed (car cl-set) xterms mvars)))
+    (select-do$-induction-q-filter seed (cdr cl-set))))
+
+(defun do$-induction-measure-clauses1 (negated-tests alist-lst mterm)
+  (cond
+   ((endp alist-lst) nil)
+   (t (cons (append negated-tests
+                    (list (cons-term* 'L<
+                                      (sublis-var (car alist-lst) mterm)
+                                      mterm)))
+            (do$-induction-measure-clauses1 negated-tests (cdr alist-lst) mterm)))))
+
+(defun do$-induction-measure-clauses (ta-lst q-lst mterm)
+
+; Note: We considered using union-equal instead of append but all the tests are
+; distinct and so are the alists, so union-equal would find no duplications.
+
+  (cond
+   ((endp ta-lst) nil)
+   (t (append (do$-induction-measure-clauses1
+               (union-equal q-lst
+                            (dumb-negate-lit-lst
+                             (access tests-and-alists (car ta-lst) :tests)))
+               (access tests-and-alists (car ta-lst) :alists)
+               mterm)
+              (do$-induction-measure-clauses (cdr ta-lst) q-lst mterm)))))
+
 ; Ok, so now we have finished the selection process and we begin the
 ; construction of the induction formula itself.
-
 
 (defun all-picks2 (pocket pick ans)
 ; See all-picks.
@@ -2114,11 +5642,22 @@
                           (induction-formula2 (car lst)
                                               cl-set ta-lst ans)))))
 
-(defun induction-formula (cl-set ta-lst)
+(defun induction-formula (cl-set induction-term xterms measure-term ta-lst)
 
-; Cl-set is a set of clauses we are to try to prove by induction, applying
-; the inductive scheme described by the tests-and-alists-lst, ta-lst,
-; of some induction candidate.  The following historical plaque tells all.
+; Cl-set is a set of clauses we are to try to prove by induction, applying the
+; inductive scheme suggested by induction-term, said scheme being described by
+; the tests-and-alists-lst, ta-lst.  Measure-term is the measure term for the
+; function symbol of induction-term but is only relevant if that function
+; symbol is *do$-induction-fn*.  And no formal term has that function symbol!
+; So if you're calling induction-formula on a genuine formal term, you may use
+; nil for the measure-term.  The value of *do$-induction-fn* is in fact a
+; keyword and is used in the induction term when the actual term was a DO$ with
+; explicit quoted measures and body lambdas as explored by
+; intrinsic-suggested-induction-cand-do$.
+
+; The following historical plaque tells all, except for the fact that when the
+; induction-term is in fact a call of *do$-induction-term* we add to the proof
+; obligations the measure conjectures stemming from the DO$'s call.
 
 ; Historical Plaque from Nqthm:
 
@@ -2178,8 +5717,18 @@
 ; Note: The (ITERATE FOR PICK ...) expression mentioned above is the function
 ; induction-formula3 above.
 
-  (m&m (reverse (induction-formula1 cl-set cl-set ta-lst nil))
-       'subsetp-equal/smaller))
+  (let* ((ans1 (reverse
+                (induction-formula1 cl-set cl-set ta-lst nil)))
+         (ans2 (if (and (consp induction-term)
+                        (eq (ffn-symb induction-term) *do$-induction-fn*))
+                   (append
+                    (do$-induction-measure-clauses
+                     ta-lst
+                     (select-do$-induction-q cl-set xterms measure-term)
+                     measure-term)
+                    ans1)
+                   ans1)))
+    (m&m ans2 'subsetp-equal/smaller)))
 
 ; Because the preceding computation is potentially explosive we will
 ; sometimes reduce its complexity by shrinking the given clause set to
@@ -2411,14 +5960,31 @@
          mp)))
 
 (defun measured-variables (cand wrld)
-  (all-vars1-lst
-   (subcor-var-lst (formals (ffn-symb (access candidate cand :induction-term))
-                            wrld)
-                   (fargs (access candidate cand :induction-term))
-                   (access justification
-                           (access candidate cand :justification)
-                           :subset))
-   nil))
+  (if (eq (ffn-symb (access candidate cand :induction-term))
+          *do$-induction-fn*)
+
+; In the case of do$ induction, the measure in the justification is already
+; in terms of the ``formals'' of *do$-induction-fn*.  So we just get the vars
+; from the measure.
+
+      (all-vars
+       (access justification
+               (access candidate cand :justification)
+               :measure))
+
+; Otherwise, the measure (which was stored on the property list of the fn) is
+; in terms of the formals of the fn, but we need to substitue the actuals in
+; the call of the the fn in the conjecture.
+
+      (all-vars1-lst
+       (subcor-var-lst
+        (formals (ffn-symb (access candidate cand :induction-term))
+                 wrld)
+        (fargs (access candidate cand :induction-term))
+        (access justification
+                (access candidate cand :justification)
+                :subset))
+       nil)))
 
 (defun induct-msg/continue (pool-lst
                             forcing-round
@@ -2443,6 +6009,11 @@
 ; down others, etc.  Winning-candidate is the final selection.  Clauses is the
 ; clause set generated by applying winning-candidate to cl-set.  Wrld and state
 ; are the usual.
+
+; Estimated-size is either nil or a nat.  Nil indicates that induct did not
+; termify the cl-set to squeeze down the number of cases.  If it is non-nil, it
+; means induct did termify cl-set and estimated-size is just that: the
+; estimated size of the induction case analysis had we not squeezed it.
 
 ; This function increments timers.  Upon entry, the accumulated time is
 ; charged to 'prove-time.  The time spent in this function is charged
@@ -2505,18 +6076,20 @@
           ~#f~[~/We will choose arbitrarily among these.  ~]~
 
           ~|~%We will induct according to a scheme suggested by ~
-          ~#h~[~pg.~/~pg, but modified to accommodate ~*i.~]~
+          ~#h~[~xg.~/~xg, but modified to accommodate ~*i~]~
 
-          ~#w~[~/  ~#h~[This suggestion was~/These suggestions were~] ~
+          ~|~%~#w~[~/~#h~[This suggestion was~/These suggestions were~] ~
           produced using ~*x.~]  ~
 
-          If we let ~pp denote ~@n above then the induction scheme ~
+          If we let ~xp denote ~@n above then the induction scheme ~
           we'll use is~|~
 
           ~Qsy.~
 
-          This induction is justified by the same argument used ~
-          to admit ~xj.  ~
+          ~#J~[Note that one or more measure conjectures included in ~
+          the scheme above justify this induction if they are provable.  ~/~
+          This induction is justified by the same argument used to ~
+          admit ~xj.  ~]~
 
           ~#l~[~/Note, however, that the unmeasured ~
                  variable~#m~[ ~&m is~/s ~&m are~] being instantiated.  ~]~
@@ -2526,11 +6099,8 @@
           subgoal~/~no nontautological subgoals~].~
 
           ~#t~[~/  However, to achieve this relatively small number of ~
-          cases we had to fold ~@n into a single IF-expression.  Had we ~
-          left it as a set of clauses this induction would have produced ~
-          approximately ~nu cases!  Chances are that this proof attempt ~
-          is about to blow up in your face (and all over our memory ~
-          boards).~]~|"
+          cases we had to termify ~@n (see :DOC termify).  Otherwise, this ~
+          induction would have produced approximately ~nu cases!~]~|"
             (list (cons #\H (cond ((null induct-hint-val) 2)
                                   ((equal induct-hint-val *t*) 1)
                                   (t 0)))
@@ -2574,10 +6144,39 @@
                   (cons #\f (if (int= len-high-scoring-candidates 1) 0 1))
                   (cons #\p p)
                   (cons #\s (prettyify-clause-set
+
+; We create the induction scheme by using induction-formula on the clause set
+; consisting of the singleton clause ((:P x1 x2 ...)).  However, if this is do$
+; induction, we have to add the Q literals to the clause so that
+; induction-formula finds them and includes them in the termination theorem.
+
                              (induction-formula
-                              (list (list p))
-                              (access candidate
-                                      winning-candidate
+                              (list
+                               (cond
+                                ((eq (ffn-symb (access candidate winning-candidate
+                                                       :induction-term))
+                                     *do$-induction-fn*)
+                                 (append
+                                  (select-do$-induction-q ; compute actual Q
+                                   cl-set
+                                   (cons (access candidate winning-candidate
+                                                 :xinduction-term)
+                                         (access candidate winning-candidate
+                                                 :xother-terms))
+                                   (access justification
+                                           (access candidate winning-candidate
+                                                   :justification)
+                                           :measure))
+                                  (list p)))
+                                (t (list p))))
+                              (access candidate winning-candidate
+                                      :induction-term)
+                              (list p) ; ignore (:p x1 x2 ...)
+                              (access justification
+                                      (access candidate winning-candidate
+                                              :justification)
+                                      :measure)
+                              (access candidate winning-candidate
                                       :tests-and-alists-lst))
                              (let*-abstractionp state)
                              wrld))
@@ -2589,16 +6188,24 @@
                                 1 0))
                   (cons #\i (tilde-*-untranslate-lst-phrase
                              (access candidate winning-candidate :xancestry)
-                             nil wrld))
+                             #\. nil wrld))
+                  (cons #\J (if (eq (ffn-symb (access candidate winning-candidate
+                                                      :induction-term))
+                                    *do$-induction-fn*)
+                                0 1))
+
                   (cons #\j (ffn-symb
                              (access candidate winning-candidate
                                      :xinduction-term)))
                   (cons #\l (if unmeasured-variables 1 0))
                   (cons #\m unmeasured-variables)
                   (cons #\o (length clauses))
-                  (cons #\t (if (> estimated-size *maximum-induct-size*)
-                                1
-                              0))
+                  (cons #\t (if estimated-size 1 0))
+
+; Note: #\t and #\u are coordinated!  If estimated-size is nil, then #\u is
+; ignored by the fmt string above.  If estimated-size is non-nil, #\u is
+; treated as a natural by the ~nu directive in the fmt string.
+
                   (cons #\u estimated-size)
                   (cons #\v (if (null clauses) 0 (if (cdr clauses) 2 1)))
                   (cons #\w (if (nth 4 attribution-phrase) 1 0))
@@ -3070,7 +6677,7 @@
              :skip
              state)
             (declare (ignore erp))
-            (let* (
+            (let (
 
 ; First, we estimate the size of the answer if we persist in using cl-set.
 
@@ -3078,7 +6685,8 @@
                     (induction-formula-size cl-set
                                             (access candidate
                                                     winning-candidate
-                                                    :tests-and-alists-lst)))
+                                                    :tests-and-alists-lst))))
+              (mv-let (step-limit00 clauses00 ttree00)
 
 ; Next we create clauses, the set of clauses we wish to prove.
 ; Observe that if the estimated size is greater than
@@ -3093,56 +6701,110 @@
 ; containing thousands of cases had induct been allowed to compute
 ; them out.
 
-                   (clauses0
-                    (induction-formula
-                     (cond ((> estimated-size *maximum-induct-size*)
-                            (list (list (termify-clause-set cl-set))))
-                           (t cl-set))
-                     (access candidate winning-candidate
-                             :tests-and-alists-lst)))
-                   (clauses1
-                    #+:non-standard-analysis
-                    (trap-non-standard-vector cl-set
-                                              winning-candidate
-                                              clauses0
-                                              wrld)
-                    #-:non-standard-analysis
-                    clauses0)
-                   (clauses
-                    (cond ((> estimated-size *maximum-induct-size*)
-                           clauses1)
-                          (t (remove-trivial-clauses clauses1 wrld))))
+; Clausify-input, used in one branch below, returns (mv step-limit clauses
+; ttree), so we make all branches of this cond return those three.  But we
+; ignore step-limit.
 
-; Now we inform the simplifier of this induction and store the ttree of
-; the winning candidate into the tag-tree of the pspv.
+                (cond ((and (> estimated-size *maximum-induct-size*)
+                            (not (and (equal (len cl-set) 1)
+                                      (equal (len (car cl-set)) 1))))
+                       (mv nil (list (list (termify-clause-set cl-set))) nil))
+                      ((and (eq (ffn-symb (access candidate
+                                                  winning-candidate
+                                                  :induction-term))
+                                *do$-induction-fn*)
+                            (equal (len cl-set) 1)
+                            (equal (len (car cl-set)) 1))
 
-                   (newer-pspv
-                    (inform-simplify
-                     (access candidate winning-candidate :tests-and-alists-lst)
-                     (add-to-set-equal
-                      (access candidate winning-candidate
-                              :xinduction-term)
-                      (access candidate winning-candidate :xother-terms))
-                     (change prove-spec-var new-pspv
-                             :tag-tree
-                             (cons-tag-trees
-                              candidate-ttree
-                              (access prove-spec-var new-pspv :tag-tree))))))
+; We went into a do$ induction and the clause-set is {{term}}.  It's
+; possible that term is just the original input, e.g., because there was an
+; :induct t hint on Goal or because we reverted back to Goal after some
+; pre-induction case splits.  This makes it impossible to identify a q.  So in
+; this case we first clausify the term just for the purposes of finding a q.
+; (It is, of course, also possible that term is a much-simplified literal that
+; won't clausify to anything else.)
+
+                       (clausify-input
+                        (car (car cl-set))
+                        (access rewrite-constant
+                                (access prove-spec-var new-pspv
+                                        :rewrite-constant)
+                                :fns-to-be-ignored-by-rewrite)
+                        (ens-from-pspv new-pspv)
+                        wrld
+                        state
+                        nil
+                        (initial-step-limit wrld state)))
+                      (t (mv nil cl-set nil)))
+                (declare (ignore step-limit00))
+                (let* ((termifiedp (and (> estimated-size *maximum-induct-size*)
+                                        (not (and (equal (len cl-set) 1)
+                                                  (equal (len (car cl-set)) 1)))))
+                       (clauses0
+                        (induction-formula
+                         clauses00
+                         (access candidate winning-candidate :induction-term)
+                         (if (and induct-hint-val
+                                  (not (equal induct-hint-val *t*)))
+                             :DO$
+                             (cons (access candidate winning-candidate
+                                           :xinduction-term)
+                                   (access candidate winning-candidate
+                                           :xother-terms)))
+                         (access justification
+                                 (access candidate winning-candidate
+                                         :justification)
+                                 :measure)
+                         (access candidate winning-candidate
+                                 :tests-and-alists-lst)))
+                       (clauses1
+                        #+:non-standard-analysis
+                        (trap-non-standard-vector cl-set
+                                                  winning-candidate
+                                                  clauses0
+                                                  wrld)
+                        #-:non-standard-analysis
+                        clauses0)
+                       (clauses
+                        (cond ((> estimated-size *maximum-induct-size*)
+                               clauses1)
+                              (t (remove-trivial-clauses clauses1 wrld))))
+
+; Now we inform the simplifier of this induction and store the ttree of the
+; winning candidate (and the ttree produced by our extra clausify-input above)
+; into the tag-tree of the pspv.
+
+                       (newer-pspv
+                        (inform-simplify
+                         (access candidate winning-candidate :tests-and-alists-lst)
+                         (add-to-set-equal
+                          (access candidate winning-candidate
+                                  :xinduction-term)
+                          (access candidate winning-candidate :xother-terms))
+                         (change prove-spec-var new-pspv
+                                 :tag-tree
+                                 (cons-tag-trees
+                                  ttree00
+                                  (cons-tag-trees
+                                   candidate-ttree
+                                   (access prove-spec-var new-pspv :tag-tree)))))))
 
 ; Now we print out the induct message.
 
               (let ((state
                      (io? prove nil state
-                          (wrld clauses estimated-size winning-candidate
+                          (wrld clauses termifiedp estimated-size
+                                winning-candidate
                                 high-scoring-candidates complicated-candidates
                                 unvetoed-candidates merged-candidates
                                 flushed-candidates candidates induct-hint-val
-                                cl-set forcing-round pool-lst)
+                                ;cl-set
+                                forcing-round pool-lst)
 
                           (induct-msg/continue
                            pool-lst
                            forcing-round
-                           cl-set
+                           clauses ; cl-set
                            induct-hint-val
                            (length candidates)
                            (length flushed-candidates)
@@ -3151,14 +6813,16 @@
                            (length complicated-candidates)
                            (length high-scoring-candidates)
                            winning-candidate
-                           estimated-size
+                           (if termifiedp
+                               estimated-size
+                               nil)
                            clauses
                            wrld
                            state))))
                 (mv 'continue
                     clauses
                     newer-pspv
-                    state)))))
+                    state)))))))
           (t
 
 ; Otherwise, we report our failure to find an induction and return the
@@ -3492,8 +7156,10 @@
               will thus try to prove~|"
              (list
               (cons #\0 iterms)
-              (cons #\1 (tilde-*-untranslate-lst-phrase iterms t (w state))))
+              (cons #\1 (tilde-*-untranslate-lst-phrase iterms
+                                                        nil t (w state))))
              (proofs-co state)
              state
              (term-evisc-tuple nil state)))))))
+
 

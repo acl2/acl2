@@ -1,6 +1,6 @@
 ; Kestrel Utilities
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020-2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,8 @@
 (include-book "bits-and-bytes-as-digits")
 (include-book "bits-and-ubyte11s-as-digits")
 (include-book "book-runes-alist")
+(include-book "brr-data-all")
+(include-book "brr-data-failures")
 (include-book "bytes-as-digits")
 (include-book "checkpoints")
 (include-book "copy-def")
@@ -31,6 +33,8 @@
 (include-book "er-soft-plus")
 (include-book "error-checking/top")
 (include-book "event-tuples-between")
+; Skipping the following, because it requires a trust tag:
+; (include-book "forcert")
 (include-book "functions-in-world")
 (include-book "gen-xdoc-for-file")
 (include-book "include-book-paths")
@@ -39,6 +43,7 @@
 (include-book "integer-range-lists")
 (include-book "integers-from-to")
 (include-book "integers-from-to-as-set")
+(include-book "io/top")
 (include-book "keyword-value-lists")
 (include-book "lists/top")
 (include-book "magic-macroexpand")
@@ -54,7 +59,9 @@
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")
+(include-book "print-levels")
 (include-book "proof-builder-macros")
+(include-book "show-books")
 (include-book "signed-byte-fixing")
 (include-book "signed-byte-list-fixing")
 (include-book "skip-in-book")
@@ -79,11 +86,4 @@
 (defxdoc kestrel-utilities
   :parents (kestrel-books)
   :short "Utilities that are part of the
-          <see topic='@(url kestrel-books)'>Kestrel Books</see>.")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc theorems-about-non-kestrel-books
-  :parents (kestrel-utilities)
-  :short "Theorems about functions defined outside the
           <see topic='@(url kestrel-books)'>Kestrel Books</see>.")

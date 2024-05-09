@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -252,10 +252,10 @@
 (defun one-bit-type-setp (ts)
 
 ; Tests in AKCL (long before we added *ts-one* using one million iterations
-; show that this function, as coded, is roughly 75 times faster than one based
-; on logcount.  We do not currently use this function but it was once used in
-; the double whammy heuristics and because we spent some time finding the best
-; way to code it, we've left it for now.
+; showed that this function, as coded, is roughly 75 times faster than one
+; based on logcount.  We do not currently use this function but it was once
+; used in the double whammy heuristics and because we spent some time finding
+; the best way to code it, we've left it for now.
 
   (or (= (the-type-set ts) *ts-zero*)
       (= (the-type-set ts) *ts-one*)

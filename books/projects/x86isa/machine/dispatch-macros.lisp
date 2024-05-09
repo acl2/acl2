@@ -243,7 +243,7 @@
 		    x86)
 
   :guard (and (member-eq decode-context '(:legacy :vex :evex))
-	      (subset-equal feature-flags *supported-feature-flags*))
+	      (subsetp-equal feature-flags *supported-feature-flags*))
   :guard-hints (("Goal" :in-theory (e/d () (x86$ap xr ifix))))
   (declare (ignore opcode modr/m sib)) ;; don't use these yet, but include them anyways..
 

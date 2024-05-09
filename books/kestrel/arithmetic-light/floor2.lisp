@@ -17,7 +17,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "times"))
 (local (include-book "minus"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus"))
 (local (include-book "plus-and-minus"))
 (local (include-book "mod"))
@@ -251,8 +251,7 @@
                                           FLOOR-MINUS-ERIC-BETTER ;bozo looped!
                                           )))))
 
-(encapsulate
- ()
+(encapsulate ()
  (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
  (local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
  (defthm mod-of-floor-equal-rewrite
@@ -312,20 +311,20 @@
 ;; ;from arithmetic/mod-gcd.lisp
 ;; (defun nonneg-int-mod ( n d )
 ;;   (declare (xargs :guard (and (integerp n)
-;; 			      (>= n 0)
-;; 			      (integerp d)
-;; 			      (< 0 d))))
+;;                            (>= n 0)
+;;                            (integerp d)
+;;                            (< 0 d))))
 ;;   (if (zp d)
 ;;       (nfix n)
 ;;       (if (< (nfix n) d)
-;; 	  (nfix n)
-;; 	(nonneg-int-mod (- n d) d))))
+;;        (nfix n)
+;;      (nonneg-int-mod (- n d) d))))
 
 ;; (defun nonneg-int-gcd ( x y )
 ;;   (declare (xargs :guard (and (integerp x)
-;; 			      (>= x 0)
-;; 			      (integerp y)
-;; 			      (>= y 0))))
+;;                            (>= x 0)
+;;                            (integerp y)
+;;                            (>= y 0))))
 ;;   (if (zp y)
 ;;       (nfix x)
 ;;     (nonneg-int-gcd y (nonneg-int-mod x y))))

@@ -29,7 +29,8 @@
     (let ((expr (aref1 dag-array-name dag-array nodenum)))
       (pprogn (princ$ (newline-string) channel state)
               (princ$ " " channel state)
-              (pprint-object-or-string (cons nodenum expr) channel state) ;fixme call something faster? ;fixme save this cons?
+              ;; todo: call something faster (what else can print an object to a :character channel?)?
+              (pprint-object-or-string (cons nodenum expr) channel state) ; todo: save this cons?
               (print-dag-array-to-file-aux dag-array-name dag-array (+ -1 nodenum) channel state)))))
 
 ;returns state
@@ -40,7 +41,7 @@
                   :guard (stringp fname)
                   :stobjs state))
   (mv-let (channel state)
-	  (open-output-channel! fname :character state)
+          (open-output-channel! fname :character state)
           (if (not channel)
               (prog2$ (hard-error 'print-dag-array-to-file "Unable to open file ~s0 for :character output." (acons #\0 fname nil))
                       state)

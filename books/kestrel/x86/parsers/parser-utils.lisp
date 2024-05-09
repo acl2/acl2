@@ -1,7 +1,7 @@
 ; Utilities for parsing x86 binaries
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,9 +15,9 @@
 (include-book "kestrel/bv/bvcat-def" :dir :system)
 (include-book "kestrel/bv/slice-def" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
-(include-book "kestrel/utilities/file-existsp" :dir :system)
-(local (include-book "std/lists/take" :dir :system))
+(include-book "kestrel/lists-light/len-at-least" :dir :system)
+(include-book "kestrel/bv-lists/byte-listp" :dir :system)
+(local (include-book "kestrel/lists-light/take" :dir :system))
 
 ;; A version of TAKE that throws an error if there are not at least N
 ;; elements in the list.
@@ -64,6 +64,7 @@
 
 ;; Returns (mv uint32 bytes) where BYTES is the bytes that remain after parsing the value.
 ;; This is a little-endian operation, because the least significant byte comes first.
+;; TODO: Rename to have "little" in the name, and similarly for similar functions.
 (defun parse-u32 (bytes)
   (declare (xargs :guard (and (integer-listp bytes)
                               (<= 4 (len bytes)))))
@@ -139,3 +140,17 @@
 ;flags-alist maps masks to symbolic names of flags
 (defun decode-flags (val flags-alist)
   (decode-flags-aux val flags-alist nil))
+
+;; Tries to extract the first 4 bytes as a u32.
+;; Returns (mv erp magic-number).
+;move to a file of common utils
+(defun parse-executable-magic-number (bytes filename)
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (stringp filename))))
+  (if (not (acl2::len-at-least 4 bytes))
+      (prog2$ (er hard? 'parse-executable-magic-number "Not enough bytes in ~x0.  Result: ~x1" filename bytes)
+              (mv :not-enough-bytes-for-magic-number nil))
+    (mv-let (magic-number remaining-bytes)
+      (parse-u32 bytes)
+      (declare (ignore remaining-bytes))
+      (mv nil magic-number))))

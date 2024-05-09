@@ -3,7 +3,6 @@
  )
 (F2
  (1 1 (:TYPE-PRESCRIPTION F2))
- (1 1 (:TYPE-PRESCRIPTION F1))
  )
 (F3
  (1 1 (:TYPE-PRESCRIPTION F3))
@@ -20,3 +19,7 @@
 (H2
  (1 1 (:TYPE-PRESCRIPTION H2))
  )
+(H3)
+(H3)
+(H4)
+(H4)

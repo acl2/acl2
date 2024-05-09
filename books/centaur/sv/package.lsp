@@ -190,6 +190,7 @@
       defsvtv svtv-run svtv-debug svtv-easy-bindings svtv->ins svtv->vars svtv->outs svtv-p
       patbind-svtv
 
+      force-execute
 
       ;; stuff for nicer documentation
       sv

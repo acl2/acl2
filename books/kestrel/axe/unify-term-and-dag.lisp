@@ -25,15 +25,10 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/perm" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;dup
-(local
- (defthm assoc-equal-iff
-  (implies (alistp alist)
-           (iff (assoc-equal key alist)
-                (memberp key (strip-cars alist))))
-  :hints (("Goal" :in-theory (enable memberp strip-cars assoc-equal)))))
+(local (in-theory (enable assoc-equal-iff-member-equal-of-strip-cars)))
 
 (mutual-recursion
 
@@ -143,27 +138,27 @@
                            (unify-term-and-dag term (cdr (assoc-equal term alist)) dag-array dag-len alist)))))
 
 (defthm-flag-unify-term-and-dag
-  (defthm all-dargp-of-strip-cdrs-of-unify-term-and-dag
-    (implies (and (all-dargp (strip-cdrs alist))
+  (defthm darg-listp-of-strip-cdrs-of-unify-term-and-dag
+    (implies (and (darg-listp (strip-cdrs alist))
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (alistp alist)
                   ;;(pseudo-termp term)
                   (natp darg)
                   (< darg dag-len)
                   (not (equal :fail (unify-term-and-dag term darg dag-array dag-len alist))))
-             (all-dargp (strip-cdrs (unify-term-and-dag term darg dag-array dag-len alist))))
+             (darg-listp (strip-cdrs (unify-term-and-dag term darg dag-array dag-len alist))))
     :flag unify-term-and-dag)
-  (defthm all-dargp-of-strip-cdrs-of-unify-terms-and-dag
-    (implies (and (all-dargp (strip-cdrs alist))
+  (defthm darg-listp-of-strip-cdrs-of-unify-terms-and-dag
+    (implies (and (darg-listp (strip-cdrs alist))
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                   (alistp alist)
                   ;;(pseudo-term-listp terms)
                   (bounded-darg-listp dargs dag-len)
                   ;(equal (len dargs) (len terms))
                   (not (equal :fail (unify-terms-and-dag terms dargs dag-array dag-len alist))))
-             (all-dargp (strip-cdrs (unify-terms-and-dag terms dargs dag-array dag-len alist))))
+             (darg-listp (strip-cdrs (unify-terms-and-dag terms dargs dag-array dag-len alist))))
     :flag unify-terms-and-dag)
-  :hints (("Goal" :in-theory (enable INTEGERP-OF-CAR-WHEN-ALL-DARGP)
+  :hints (("Goal" :in-theory (enable INTEGERP-OF-CAR-WHEN-DARG-LISTP)
            :expand ((UNIFY-TERM-AND-DAG (CAR TERMS)
                                         (CAR DARGS)
                                         DAG-ARRAY DAG-LEN ALIST)
@@ -196,7 +191,7 @@
              (bounded-darg-listp (strip-cdrs (unify-terms-and-dag terms dargs dag-array dag-len alist))
                                               dag-len))
     :flag unify-terms-and-dag)
-  :hints (("Goal" :in-theory (enable INTEGERP-OF-CAR-WHEN-ALL-DARGP)
+  :hints (("Goal" :in-theory (enable INTEGERP-OF-CAR-WHEN-DARG-LISTP)
            :expand ((UNIFY-TERM-AND-DAG (CAR TERMS)
                                         (CAR DARGS)
                                         DAG-ARRAY DAG-LEN ALIST)

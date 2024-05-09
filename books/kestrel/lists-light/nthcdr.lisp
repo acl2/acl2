@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nthcdr.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -66,6 +66,20 @@
            (< (acl2-count (nthcdr n x))
               (acl2-count x)))
   :rule-classes ((:linear :trigger-terms ((acl2-count (nthcdr n x))))))
+
+(defthm <=-of-len-of-nthcdr-linear
+  (<= (len (nthcdr n x))
+      (len x))
+  :rule-classes ((:linear :trigger-terms ((len (nthcdr n x)))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
+
+(defthm <-of-len-of-nthcdr-linear
+  (implies (and (consp x)
+                (posp n))
+           (< (len (nthcdr n x))
+              (len x)))
+  :rule-classes ((:linear :trigger-terms ((len (nthcdr n x)))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
 
 (defthm nthcdr-iff
   (iff (nthcdr n x)
@@ -242,6 +256,16 @@
            (equal (nthcdr n x)
                   nil))
   :hints (("Goal" :in-theory (enable nthcdr))))
+
+;rename to nthcdr-when-<=-of-len
+;see LIST::NTHCDR-WHEN-<=
+;seemed quite slow!  do we need it?  maybe go to final-cdr instead?
+(defthmd nthcdr-is-nil
+  (implies (and (<= (len x) n)
+                (integerp n)
+                (true-listp x))
+           (equal (nthcdr n x)
+                  nil)))
 
 ;; Often we'll know (true-listp x) and no case split will occur.
 ;; Not quite the same as true-listp-of-nthcdr in std.

@@ -1,1 +1,0 @@
-; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!))

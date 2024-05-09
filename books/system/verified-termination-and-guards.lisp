@@ -17,6 +17,8 @@
 ;;; The following section was written by Matt Kaufmann.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable all-boundp-initial-global-table)))
+
 (verify-termination collect-by-position) ; and guards
 
 ; Copied exactly (11/18/2015) from ACL2 source file axioms.lisp, towards guard
@@ -88,17 +90,16 @@
                       (equal (assoc-equal-cdr key x) nil)))
          :rule-classes :type-prescription))
 (verify-termination runep) ; and guards
-(verify-termination clean-brr-stack1) ; and guards
-(verify-termination clean-brr-stack) ; and guards
 (verify-termination deref-macro-name) ; and guards
 (verify-termination write-for-read) ; and guards
 (verify-termination fnume) ; and guards
 (verify-termination translate-abbrev-rune) ; and guards
 (verify-termination logical-namep) ; and guards
 (verify-termination er-cmp-fn) ; and guards
-(verify-termination string-prefixp-1) ; and guards
-(verify-termination string-prefixp) ; and guards
-(verify-termination relativize-book-path) ; and guards
+(verify-termination macro-args-er-cmp) ; and guards
+(verify-termination project-dir-prefix-entry) ; and guards
+(verify-termination filename-to-book-name-1) ; and guards
+(verify-termination filename-to-book-name) ; and guards
 (verify-termination include-book-dir) ; and guards
 (verify-termination strip-non-hidden-package-names) ; and guards
 
@@ -118,6 +119,13 @@
            (or (natp (car (assoc-equal-cdr r x)))
                (equal (car (assoc-equal-cdr r x)) nil)))
   :rule-classes :type-prescription)
+
+(defthm enabled-runep-guard-helper-2
+  (implies (and (car (assoc-equal-cdr r x))
+                (fixnat-alistp x))
+           (<= (car (assoc-equal-cdr r x))
+               (fixnum-bound)))
+  :rule-classes :linear)
 
 (verify-termination enabled-runep) ; and guards
 
@@ -147,3 +155,4 @@
 (verify-termination saved-output-token-p) ; and guards
 (verify-termination push-io-record) ; and guards
 (verify-termination scan-to-cltl-command) ; and guards
+

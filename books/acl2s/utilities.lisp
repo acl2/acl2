@@ -43,6 +43,203 @@ This is a collection of utilities used in ACL2s, the ACL2 Sedan.
              ,@(append instrs
                        `((negate (when-not-proved fail))))))))
 
+(defxdoc acl2-pc::claim-simple
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) add a new hypothesis, without promotion"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::claim) except that in the
+newly created goal, no promotion is performed.
+</p>
+<p>We found this useful when automatically generating proof builder
+instructions.
+</p>
+")
+
+;; This is the same as claim except that it doesn't do a pro at the end.
+(define-pc-atomic-macro claim-simple (expr &rest rest-args)
+  (acl2::when-goals-trip
+   (value
+    (let ((rest-args-1 (if (and rest-args
+                                (car rest-args)
+                                (not (keywordp (car rest-args))))
+                           (list* :hints :none (cdr rest-args))
+                         rest-args)))
+      (mv-let (pairs remaining-rest-args)
+        (acl2::pair-keywords '(:do-not-flatten) rest-args-1)
+        (let ((do-not-flatten-flag (cdr (assoc-eq :do-not-flatten pairs)))
+              (temp (cadr (member-eq :hints rest-args-1))))
+          (if (and temp (atom temp))
+              `(protect
+                (casesplit ,expr nil ,do-not-flatten-flag)
+                change-goal
+                drop-conc
+                ;; the original claim definition does a pro here
+                change-goal)
+            `(protect
+              (casesplit ,expr nil ,do-not-flatten-flag)
+              change-goal
+              drop-conc
+              (prove ,@remaining-rest-args)))))))))
+
+(defxdoc acl2-pc::pro-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) repeatedly apply promote, if possible"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::pro) except that it
+``succeeds'' even when no promotion is possible (e.g. if the current
+goal does not contain an implication).
+</p>
+")
+
+(define-pc-macro pro-or-skip ()
+  (value `(:orelse :pro :skip)))
+
+(defxdoc acl2-pc::drop-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) drop top-level hypotheses"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::drop) except that it
+``succeeds'' when there are no top-level hypotheses and it is invoked
+with no arguments.
+</p>
+")
+
+(define-pc-atomic-macro drop-or-skip (&rest args)
+  (acl2::when-goals-trip
+   (if (and (not args) (null (acl2::hyps)))
+       (value :skip)
+     (value (if (consp args) `(:drop ,@args) :drop)))))
+
+(defxdoc acl2-pc::retain-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) drop all but the indicated top-level hypotheses"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::retain) except that it
+``succeeds'' even when all hypotheses are retained.
+</p>
+")
+
+(define-pc-atomic-macro retain-or-skip (&rest args)
+  (acl2::when-goals-trip
+   (if (not (acl2::set-difference-equal (acl2::fromto 1 (length (acl2::hyps t))) args))
+       (value :skip)
+     (value `(:retain ,@args)))))
+
+(defxdoc acl2-pc::instantiate
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "Instantiate a theorem"
+  :long "<p>
+@({
+ Example:
+ (instantiate car-cons (x (append a b)) (y nil))
+ ;; This will add the following hypothesis:
+ ;; (let ((x (append a b))
+ ;;       (y nil))
+ ;;   (equal (car (cons x y)) x))
+
+ General Form:
+ (instantiate thm-name subst1 ... substk)
+ })
+</p>
+<p>where each @('substi') is an assignment of a variable used in the
+formula associated with @('thm-name') to a term.
+</p>
+<p>Note that the variables used in the formula associated with
+@('thm-name') may be in a different package than the one you are
+currently in. In this case, explicitly specify the package when writing
+variable names in substitutions.
+</p>
+")
+
+(define-pc-macro instantiate (lemma-name &rest substitutions)
+  (b* ((wrld (w state))
+       (formula (acl2::formula lemma-name t wrld))
+       ((when (not formula))
+        (pprogn
+         (acl2::print-no-change "Bad lemma-name argument to INSTANTIATE, ~x0. The ~
+                          lemma-name argument should be a name associated with ~
+                          a formula." (list (cons #\0 lemma-name)))
+         (value :fail))))
+    (value `(:claim
+             (let ,substitutions ,formula)
+             :hints (("Goal" :instructions
+                      (:pro-or-skip
+                       :drop-or-skip
+                       (:expand nil)
+                       (:prove :hints (("Goal" :by (:instance ,lemma-name ,@substitutions)))))))))))
+
+(defxdoc acl2-pc::split-in-theory
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "Split using an optional theory"
+  :long "<p>
+@({
+ Examples:
+ (split-in-theory)
+ ;; Same as split, using the same theory split uses, namely
+ ;; acl2::minimal-theory
+
+ (split-in-theory thy)
+ ;; Same as split, but use thy instead of the default
+ ;; acl2::minimal-theory
+
+ General Form:
+ (split-in-theory thy)
+ })
+</p>
+<p>where @('thy') is an optional theory.
+</p>
+")
+
+(define-pc-atomic-macro split-in-theory (&optional thy)
+  (value `(:prove :hints
+                  (("Goal"
+                    :do-not-induct proof-builder
+                    :do-not '(generalize eliminate-destructors
+                                         fertilize eliminate-irrelevance)
+                    :in-theory (theory ',(or thy 'acl2::minimal-theory)))))))
+
+(defxdoc acl2-pc::by
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) prove using an existing theorem"
+  :long "<p>
+@({
+ Example:
+ (by car-cons (x (append a b)) (y nil))
+ ;; This will attempt to prove the current goal by applying
+ ;; the theorem car-cons with the given substitution.
+
+ General Form:
+ (by thm-name subst1 ... substk)
+ })
+</p>
+<p>Under the hood, this command simply calls @(tsee acl2-pc::prove)
+with the appropriate @(':by') hint.
+</p>
+")
+
+(define-pc-atomic-macro by (lemma-name &rest substitutions)
+  (value `(:prove :hints
+                  (("Goal"
+                    :by ,@(if substitutions
+                              `((:instance ,lemma-name ,@substitutions))
+                            `(,lemma-name)))))))
+
+(defxdoc acl2-pc::cg-or-skip
+  :parents (acl2::proof-builder-commands acl2s-utilities)
+  :short "(atomic macro) change goals when needed"
+  :long "<p>
+This command is exactly like @(tsee acl2-pc::cg) except that it
+``succeeds'' when the current goal is equal to the specified goal,
+where @('cg') would fail.
+</p>
+")
+
+(define-pc-atomic-macro cg-or-skip (&optional name)
+  (acl2::when-goals-trip
+   (if (and (acl2::goals t) (equal name (acl2::goal-name t)))
+       (value :skip)
+     (value `(:cg ,name)))))
+
 (defxdoc make-n-ary-macro
   :parents (acl2s-utilities)
   :short "A macro that
@@ -233,6 +430,19 @@ A macro that locally turns off @('cgen') testing and then calls @('defthm').
                     nil
                     ((defthm ,name ,@args))))
 
+(defxdoc defthmd-no-test
+  :parents (acl2s-utilities acl2::cgen)
+  :short "A version of @('defthmd') with testing disabled."
+  :long"<p>
+A macro that locally turns off @('cgen') testing and then calls @('defthmd').
+</p>
+")
+
+(defmacro defthmd-no-test (name &rest args)
+  `(gen-acl2s-local testing-enabled
+                    nil
+                    ((defthmd ,name ,@args))))
+
 ; :trans1 (defthm-no-test foo (equal (+ x y) (+ y x)))
 ; :u (defthm foo (equal (+ x y) (+ y x))) :u
 
@@ -281,7 +491,7 @@ A macro that locally turns off @('cgen') testing and then calls @('defthm').
     (if (< lx ly) x y)))
 
 (defun best-package-symbl-list (l s)
-  (declare (xargs :guard (and (good-atom-listp l) (stringp s))))
+  (declare (xargs :guard (and (atom-listp l) (stringp s))))
   (cond ((endp l) s)
         ((symbolp (car l))
          (best-package-symbl-list
@@ -290,11 +500,11 @@ A macro that locally turns off @('cgen') testing and then calls @('defthm').
         (t (best-package-symbl-list (cdr l) s))))
 
 (defthm best-package-symbl-list-stringp
-  (implies (and (good-atom-listp l) (stringp s))
+  (implies (and (atom-listp l) (stringp s))
            (stringp (best-package-symbl-list l s))))
 
 (defthm best-package-symbl-list-not-empty
-  (implies (and (good-atom-listp l) (pkgp s))
+  (implies (and (atom-listp l) (pkgp s))
            (not (equal (best-package-symbl-list l s) ""))))
 
 #|
@@ -315,7 +525,7 @@ Now in defthm.lisp
   `(intern-in-package-of-symbol ,string (fix-sym ,sym)))
 
 (defun pack-to-string (l)
-  (declare (xargs :guard (good-atom-listp l)))
+  (declare (xargs :guard (atom-listp l)))
   (coerce (packn1 l) 'string))
 
 (defun gen-sym-sym (l sym)
@@ -323,7 +533,7 @@ Now in defthm.lisp
 ; This is a version of packn-pos that fixes the package (so that it's not
 ; *main-lisp-package-name*).
 
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (symbolp sym))))
   (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
 
@@ -361,7 +571,7 @@ Now in defthm.lisp
 (verify-guards gen-sym-sym)
 
 (defun gen-sym-pkg (l pkg)
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l) pkg))
 
@@ -372,13 +582,13 @@ Now in defthm.lisp
 |#
 
 (defun make-symbl (l pkg)
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (or (null pkg) (pkgp pkg)))))
   (fix-intern$ (pack-to-string l)
                (if pkg pkg (best-package-symbl-list l "ACL2"))))
 
 (defun mk-acl2s-sym (l)
-  (declare (xargs :guard (good-atom-listp l)))
+  (declare (xargs :guard (atom-listp l)))
   (make-symbl l "ACL2S"))
 
 (defmacro make-sym (s suf &optional pkg)
@@ -752,3 +962,41 @@ functions over natural numbers.
        (ecw ,@rst)
      nil))
 
+(defun remove-dups-aux (l seen)
+  (declare (xargs :guard (and (true-listp l) (true-listp seen))))
+  (cond ((endp l) (revappend seen nil))
+        ((member-equal (car l) seen) (remove-dups-aux (cdr l) seen))
+        (t (remove-dups-aux (cdr l) (cons (car l) seen)))))
+
+(defthm remove-dups-aux-tp
+  (implies (and (true-listp l)
+                (true-listp seen))
+           (true-listp (remove-dups-aux l seen)))
+  :rule-classes :type-prescription)
+
+; Remove duplicates, but leave order of elements the same
+(defun remove-dups (l)
+  (declare (xargs :guard (true-listp l)))
+  (remove-dups-aux l nil))
+
+(defthm remove-dups-tp
+  (implies (true-listp l)
+           (true-listp (remove-dups l)))
+  :rule-classes :type-prescription)
+
+(defxdoc remove-dups
+  :parents (acl2s-utilities)
+  :short "Remove duplicates from a true list and maintain the order of elements."
+  :long "<p>
+If @('l') is a true list then @('(remove-dups l)') is a true list with
+no duplicates. In contrast with @(see? remove-duplicates), the order of
+elements is the same. That is, if @('x') and @('y') appear in @('l')
+and the first occurrence of @('x') appears before the first occurrence of
+@('y') in @('l'), then @('x') appears before @('y') in
+@('(remove-dups l)').
+</p>
+")
+
+; (sig remove-dups-aux ((listof :a) (listof :a)) => (listof :a))
+
+; (sig remove-dups ((listof :a)) => (listof :a))

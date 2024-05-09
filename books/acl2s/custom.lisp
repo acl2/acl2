@@ -9,10 +9,13 @@
 
 ; Common books to all modes.
 (include-book "cgen/top" :ttags :all)
-(include-book "defunc" :ttags :all)
 (include-book "definec" :ttags :all)
 (include-book "defintrange" :ttags :all)
 (include-book "acl2s-sigs" :ttags :all)
+
+(include-book "acl2s/installation" :dir :system :ttags :all)
+(include-book "acl2s/extra-doc" :dir :system :ttags :all)
+(include-book "acl2s/interface/top" :dir :system)
 
 ;; (defun allp (x)
 ;;   (declare (ignore x)

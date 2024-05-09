@@ -16,7 +16,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/arithmetic-light/divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 ;; TODO: Prove this is the same as map-packbv of group.

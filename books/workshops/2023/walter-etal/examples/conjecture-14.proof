@@ -1,0 +1,146 @@
+(definec aapp (a :tl b :tl) :tl
+  (if (endp a)
+      b
+    (cons (first a) (aapp (rest a) b))))
+
+(definec rrev (x :tl) :tl
+  (if (endp x)
+      nil
+    (aapp (rrev (rest x)) (list (first x)))))
+
+(definec myin (a :all X :tl) :bool
+  (and (consp X)
+       (or (equal a (first X))
+           (myin a (rest X)))))
+
+Conjecture 14-part-1:
+(implies (tlp x)
+         (implies (endp x)
+                  (implies (myin a x) 
+                           (myin a (aapp x y)))))
+Exportation:
+(implies (and (tlp x)
+              (endp x)
+              (myin a x)) 
+         (myin a (aapp x y)))
+
+Contract Completion:
+(implies (and (tlp x)
+              (tlp y)
+              (endp x)
+              (myin a x)) 
+         (myin a (aapp x y)))
+
+Context:
+C1. (tlp x)
+C2. (tlp y)
+C3. (endp x)
+C4. (myin a x)
+
+Derived Context:
+D1. (equal x nil) { C1, C3, Def tlp } 
+D2. nil { Def myin, C4, D1 }
+
+QED
+
+Conjecture 14-part-2:
+(implies (tlp x)
+         (implies (and (consp x)
+                       (equal a (first x)))
+                  (implies (myin a x) 
+                           (myin a (aapp x y)))))
+
+Exportation:
+(implies (and (tlp x)
+              (consp x)
+              (equal a (first x))
+              (myin a x)) 
+         (myin a (aapp x y)))
+
+Contract Completion:
+(implies (and (tlp x)
+              (tlp y)
+              (consp x)
+              (equal a (first x))
+              (myin a x)) 
+         (myin a (aapp x y)))
+
+Context:
+C1. (tlp x)
+C2. (tlp y)
+C3. (consp x)
+C4. (equal a (first x))
+C5. (myin a x)
+
+Goal: (myin a (aapp x y))
+
+Proof:
+
+(myin a (aapp x y))
+== { Def aapp, C1, C3 }
+(myin a (cons (first x) (aapp (rest x) y)))
+== { Def myin, car-cdr axioms, C3 }
+(or (equal a (first x)) (myin a (aapp (rest x) y)))
+== { C4, PL }
+t
+
+QED
+
+
+Conjecture 14-part-3:
+(implies (tlp x)
+         (implies (and (consp x)
+                       (not (equal a (first x)))
+                       (implies (tlp (rest x))
+                                (implies (myin a (rest x))
+                                         (myin a (aapp (rest x) y)))))
+                  (implies (myin a x)
+                           (myin a (aapp x y)))))
+
+Exportation:
+(implies (and (tlp x)
+              (consp x)
+              (not (equal a (first x)))
+              (implies (and (tlp (rest x))
+                            (myin a (rest x)))
+                       (myin a (aapp (rest x) y)))
+              (myin a x))
+         (myin a (aapp x y)))
+
+Contract Completion:
+(implies (and (tlp x)
+              (tlp y)
+              (consp x)
+              (not (equal a (first x)))
+              (implies (and (tlp (rest x))
+                            (myin a (rest x)))
+                       (myin a (aapp (rest x) y)))
+              (myin a x))
+         (myin a (aapp x y)))
+
+Context:
+C1. (tlp x)
+C2. (tlp y)
+C3. (consp x)
+C4. (not (equal a (first x)))
+C5. (implies (and (tlp (rest x)) (myin a (rest x)))
+             (myin a (aapp (rest x) y)))
+C6. (myin a x)
+
+Derived Context:
+D1. (tlp (rest x)) { Def tlp, C1, C3 }
+D2. (myin a (rest x)) { Def myin, C6, C3, C4 }
+D3. (myin a (aapp (rest x) y)) { C5, D1, D2, MP }
+
+Goal: (myin a (aapp x y))
+
+Proof:
+(myin a (aapp x y))
+== { Def aapp, C1, C3 }
+(myin a (cons (first x) (aapp (rest x) y)))
+== { Def myin, car-cdr axioms, C3 }
+(or (equal a (first x)) (myin a (aapp (rest x) y)))
+== { D3, PL }
+t
+
+QED

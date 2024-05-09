@@ -30,6 +30,7 @@
 
 (include-book "propagate-iso")
 (include-book "propagate-iso-doc")
+(include-book "lift-iso-doc")
 
 (include-book "restrict")
 (include-book "restrict-doc")
@@ -145,7 +146,7 @@
                             solve
                             tailrec
                             utilities
-                            wrap-output))
+                            acl2::wrap-output))
 
 (xdoc::add-resource-directory "kestrel-apt-images" "images")
 (xdoc::add-resource-directory "kestrel-apt-design-notes" "design-notes")

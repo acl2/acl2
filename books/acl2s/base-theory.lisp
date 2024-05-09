@@ -23,6 +23,7 @@
 (include-book "definec" :ttags :all)
 (include-book "cons-size")
 (include-book "properties")
+(include-book "base-properties")
 (include-book "check-equal")
 
 (include-book "std/strings/top" :dir :system)
@@ -36,6 +37,8 @@
 (include-book "base-lists" :ttags :all)
 (include-book "acl2s/cgen/base-cgen-rules" :dir :system)
 (include-book "match" :ttags :all)
+
+(include-book "kestrel/utilities/ubi" :dir :system)
 
 (set-termination-method :ccg)
 

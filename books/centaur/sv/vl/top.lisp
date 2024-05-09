@@ -51,6 +51,8 @@
 
 (local (xdoc::set-default-parents sv::vl-to-svex))
 
+(local (in-theory (disable (tau-system))))
+
 (define vl-simplify-sv
   :short "Core transformation sequence for using VL to generate SVEX modules."
   ((design vl-design-p)
@@ -182,24 +184,42 @@
   `(vl-simplify-sv . ,args))
 (add-macro-alias vl-simplify-svex vl-simplify-sv)
 
-(define vl-to-sv-main ((topmods string-listp)
-                         (x vl-design-p)
-                         (config vl-simpconfig-p)
-                         &key
-                         (allow-bad-topmods 'nil)
-                         (post-filter 't))
-  :short "Turn a VL design into an SVEX hierarchical design, with a list of top modules."
-  :guard-debug t
-  :returns (mv err
-               (modalist sv::modalist-p)
-               (good vl-design-p)
-               (bad vl-design-p))
+
+
+(define vl-user-paramsettings->modnames ((x vl-user-paramsettings-p))
+  :returns (modnames string-listp)
+  (if (atom x)
+      nil
+    (cons (vl-user-paramsetting->modname (car x))
+          (vl-user-paramsettings->modnames (cdr x)))))
+
+(define vl-user-paramsettings->unparam-names ((x vl-user-paramsettings-p))
+  :returns (unparam-names string-listp)
+  (if (atom x)
+      nil
+    (cons (vl-user-paramsetting->unparam-name (car x))
+          (vl-user-paramsettings->unparam-names (cdr x)))))
+
+(define vl-to-sv ((x vl-design-p)
+                  (config vl-simpconfig-p))
+  :returns (mv (err "An error message if any required modules had fatal errors after elaboration.")
+               (modalist sv::modalist-p
+                         "The SV @(see sv::modalist) translated from the input design.")
+               (good vl-design-p
+                     "The post-elaboration VL design, except those parts that had fatal warnings.")
+               (bad vl-design-p
+                    "The parts of the VL design that had fatal warnings after elaboration."))
   :prepwork ((local (in-theory (enable sv::modname-p))))
+
+  :short "Turn a VL design into an SVEX hierarchical design, with options given
+          by a @(see vl-simpconfig) object."
+
   (b* ((x (vl-design-fix x))
+       ((vl-simpconfig config))
        ;; Annotate and simplify the design, to some extent.  This does
        ;; unparametrization and expr sizing, but not e.g. expr splitting or
        ;; occforming.
-       (x (if (vl-simpconfig->already-annotated config)
+       (x (if config.already-annotated
               x
             (cwtime (vl-annotate-design x config))))
        ;; [Jared] I pulled addnames out of annotate because it interfered with
@@ -207,13 +227,20 @@
        ;; we don't really want to be adding names to unnamed blocks, etc.)
        (x (cwtime (vl-design-addnames x)))
 
-       (x (cwtime (vl-remove-unnecessary-elements topmods x)))
+       (pre-topmods  (append config.pre-elab-topmods
+                             (vl-user-paramsettings->modnames config.user-paramsettings)))
+       (post-topmods (append config.post-elab-topmods
+                             (vl-user-paramsettings->unparam-names config.user-paramsettings)))
+                              
+       (x (if config.pre-elab-filter
+              (cwtime (vl-remove-unnecessary-elements pre-topmods x))
+            x))
 
        ((mv good bad) (cwtime (vl-simplify-sv x config)))
        ((vl-design good) good)
-       (bad-mods (difference (mergesort topmods)
+       (bad-mods (difference (mergesort post-topmods)
                              (mergesort (vl-modulelist->names good.mods))))
-       ((when (and (not allow-bad-topmods)
+       ((when (and (not config.allow-bad-topmods)
                    bad-mods))
         (cw "Reportcard for good mods:~%")
         (cw-unformatted (vl-reportcard-to-string (vl-design-reportcard good)))
@@ -230,17 +257,17 @@
                  (duplicated-members (vl-modulelist->names good.mods)))
             nil
             good bad))
-       (good1 (if post-filter
-                  (vl-remove-unnecessary-elements topmods
-                                                  (change-vl-design good :mods
-                                                                    good.mods))
-                (change-vl-design good :mods good.mods)))
+       (good1 (change-vl-design good :mods good.mods))
+       (good2 (if config.post-elab-filter
+                  (vl-remove-unnecessary-elements post-topmods
+                                                  good1)
+                good1))
 
        ;; Translate the VL module hierarchy into an isomorphic SVEX module hierarchy.
-       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good1 :config config)))
+       ((mv reportcard modalist) (vl::xf-cwtime (vl-design->svex-modalist good2 :config config)))
        ;; The reportcard can't have any warnings about bad, because it's only being
        ;; generated from a subset of good.  So, just apply it to good.
-       (good (vl-apply-reportcard good1 reportcard)))
+       (good (vl-apply-reportcard good2 reportcard)))
     (cw "~%")
     (cw-unformatted "--- VL->SV Translation Report -------------------------------------------------")
     (cw "~%")
@@ -259,6 +286,29 @@
                   "-------------------------------------------------------------------------------")
                  (cw "~%~%")))
     (mv nil modalist good bad))
+  ///
+  (defret modalist-addr-p-of-vl-to-sv-core
+    (sv::svarlist-addr-p (sv::modalist-vars modalist))))
+
+  
+(define vl-to-sv-main ((topmods string-listp)
+                         (x vl-design-p)
+                         (config vl-simpconfig-p)
+                         &key
+                         ((allow-bad-topmods booleanp) 'nil)
+                         ((post-filter booleanp) 't))
+  :short "Turn a VL design into an SVEX hierarchical design, with a list of top modules."
+  :returns (mv err
+               (modalist sv::modalist-p)
+               (good vl-design-p)
+               (bad vl-design-p))
+  :prepwork ((local (in-theory (enable sv::modname-p))))
+  (vl-to-sv x
+            (change-vl-simpconfig config
+                                  :pre-elab-topmods topmods
+                                  :post-elab-topmods topmods
+                                  :post-elab-filter post-filter
+                                  :allow-bad-topmods allow-bad-topmods))
   ///
   (defret modalist-addr-p-of-vl-to-sv-main
     (sv::svarlist-addr-p (sv::modalist-vars modalist))))

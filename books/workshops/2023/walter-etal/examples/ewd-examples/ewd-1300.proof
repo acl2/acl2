@@ -1,0 +1,127 @@
+#|
+
+ Author: Ankit Kumar
+
+ I am writing up the following calculational proof in ACL2s, using the
+ proof checker.
+
+ From: https://www.cs.utexas.edu/users/EWD/transcriptions/EWD13xx/EWD1300.html
+
+
+  Another, purely editorial way of reducing duplication is declaring something,
+  once and for all, to hold for all intermediate results of a calculation
+  rather then repeating it each time. We do this for the type specification of
+  variables and the range of dummies. This is a special case of “embedding the
+  calculation in a context”. To illustrate some of these matters, let me show a
+  few ways of proving the following the following simple
+
+Theorem 0.   For associative  •  , we have for all  x, y, z
+x • y = y  ∧  y • z = z   ⇒    x • z = z
+
+Proof 0.    This proof uses Leibniz’s Principle in the form
+p = q   ∧   f. p    ⇒    f. q
+and has the structure of a weakening chain of boolean expressions.
+
+    We prove Theorem 0 by observing for any x, y, z and associative  •
+
+x • y  =  y   ∧   y • z  =  z
+≡   	     { predicate calculus }
+ y • z  =  z   ∧   x • y  =  y   ∧   y • z   =   z
+⇒	     { Leibniz }
+y • z  =  z   ∧   (x • y) • z   =   z
+≡	     { • associative }
+y • z  =  z   ∧   x • ( y • z)   =   z
+⇒	     { Leibniz }
+x • z  =  z
+(End of Proof 0).
+
+|#
+
+(defstub rel (* *) => *)
+
+(skip-proofs
+ (property rel-assoc (x y z :all)
+           (== (rel x (rel y z)) (rel (rel x y) z))
+           :rule-classes ((:rewrite))))
+
+Conjecture ewd-1300-rel-0:
+(=> (^ (== (rel x y) y)
+       (== (rel y z) z))
+    (== (rel x z) z))
+
+Context:
+C1. (== (rel x y) y)
+C2. (== (rel y z) z)
+
+Derived Context:
+;; p = q   ∧   f. p    ⇒    f. q
+;; I used context to avoid repetition, a point Dijkstra makes later on in the text.`
+D1. (== (rel (rel x y) z) z) {C1, C2}
+D2. (== (rel x (rel y z)) z) {D1, Lemma rel-assoc}
+D3. (== (rel x z) z) {D2, C2}
+
+Goal: (== (rel x z) z)
+
+Proof:
+(== (rel x z) z)
+== { D3 }
+t
+
+QED
+
+#|
+Proof 1   This proof uses Leibniz’s principle in the form
+p = q   ⇒   f. p = f. q
+We prove Theorem 0  by observing for associative • and x, y, z satisfying the antecedent
+x • z
+=   	    { y • z  =  z   from antecedent }
+x • ( y • z)
+=	    { • associative}
+(x • y) • z)
+=	    { x • y = y  from antecedent }
+y • z
+=	    { y • z = z  from antecedent }
+z
+|#
+
+Conjecture ewd-1300-rel-1:
+(=> (^ (== (rel x y) y)
+           (== (rel y z) z))
+    (== (rel x z) z))
+
+Context:
+C1. (== (rel x y) y)
+C2. (== (rel y z) z)
+
+Derived Context:
+D1. (== (rel (rel x y) z) z) {C2, C1}
+D2. (== (rel x (rel y z)) z) {D1, Lemma rel-assoc}
+D3. (== (rel x z) z) {D2, C2}
+
+Goal: (== (rel x z) z)
+
+Proof:
+(rel x z)
+== { Obvious }
+;; changed (rel y z) to (rel x z) for a counter-example, but did not get.
+(rel x 3)
+== { Lemma rel-assoc }
+(rel (rel x y) z)
+== { C1 }
+(rel y z)
+== { C2 }
+z
+
+QED
+
+
+
+#|
+
+(property (x y :all)
+          :proofs? nil
+          (== (rel x y) (rel 2 3)))
+
+|#
+
+

@@ -18,7 +18,7 @@
 
 (defsection theorems-about-true-list-lists
 
-  :parents (theorems-about-non-kestrel-books true-list-listp std/typed-lists)
+  :parents (kestrel-utilities true-list-listp std/typed-lists)
 
   :short "Theorems about true lists of true lists."
 

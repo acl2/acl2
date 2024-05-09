@@ -365,6 +365,10 @@ argument is set to @('t').</p>")
 (defmacro defruledl (name &rest rst)
   `(defruled ,name :local t ,@rst))
 
+(table acl2::ppr-special-syms 'defrule 1)
+(table acl2::ppr-special-syms 'defruled 1)
+(table acl2::ppr-special-syms 'defrulel 1)
+(table acl2::ppr-special-syms 'defruledl 1)
 
 (defxdoc rule
   :parents (defrule thm)

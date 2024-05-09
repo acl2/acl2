@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ceiling.
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,11 +12,14 @@
 
 (local (include-book "integerp"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "divide"))
+(local (include-book "times-and-divide"))
 (local (include-book "floor"))
 (local (include-book "numerator"))
 (local (include-book "denominator"))
 (local (include-book "minus"))
+(local (include-book "mod"))
+(local (include-book "nonnegative-integer-quotient"))
 
 (in-theory (disable ceiling))
 
@@ -30,8 +33,13 @@
    :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
             :in-theory (disable integerp-of--)))))
 
-(defthmd ceiling-of-0
+(defthm ceiling-of-0-arg1
   (equal (ceiling 0 j)
+         0)
+  :hints (("Goal" :in-theory (enable ceiling floor))))
+
+(defthm ceiling-of-0-arg2
+  (equal (ceiling i 0)
          0)
   :hints (("Goal" :in-theory (enable ceiling floor))))
 
@@ -40,6 +48,38 @@
          (- (floor (- i) j)))
   :hints (("Goal" :cases ((and (rationalp i) (rationalp j)))
            :in-theory (enable ceiling floor))))
+
+;introduces an IF
+(defthmd ceiling-in-terms-of-floor2
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)) ; todo
+                )
+           (equal (ceiling i j)
+                  (if (equal 0 (mod i j))
+                      (/ i j)
+                      (+ 1 (floor i j)))))
+  :hints (("Goal" :in-theory (enable ceiling floor equal-of-0-and-mod))))
+
+(defthmd ceiling-in-terms-of-floor-alt
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (ceiling i j)
+                  (if (integerp (/ i j))
+                      (/ i j)
+                    (+ 1 (floor i j)))))
+  :hints (("Goal" :in-theory (enable ceiling floor))))
+
+;introduces an IF
+(defthmd ceiling-in-terms-of-floor3
+  (implies (and (rationalp i)
+                (rationalp j)
+                (not (equal 0 j)))
+           (equal (ceiling i j)
+                  (if (equal 0 (mod i j))
+                      (floor i j)
+                    (+ 1 (floor i j)))))
+  :hints (("Goal" :in-theory (enable ceiling floor equal-of-0-and-mod))))
 
 (defthm ceiling-when-<=
   (implies (and (<= i j)
@@ -119,7 +159,7 @@
                 (< 0 j))
            (equal (< k (ceiling i j))
                   (< (* j k) i)))
-  :hints (("Goal" :use ((:instance my-floor-lower-bound)
+  :hints (("Goal" :use (my-floor-lower-bound
                         (:instance <-of-*-of-/-arg2-arg1
                                    (z k)
                                    (y i)
@@ -140,7 +180,7 @@
                 (rationalp j)
                 (< 0 j))
            (< (ceiling i j) k))
-  :hints (("Goal" :use (:instance ceiling-upper-bound)
+  :hints (("Goal" :use ceiling-upper-bound
            :in-theory (disable ceiling-upper-bound
                                <-*-/-left-with-addend-alt))))
 
@@ -214,4 +254,14 @@
          (if (equal (fix z) 0)
              0
            (ceiling x y)))
+  :hints (("Goal" :in-theory (enable ceiling))))
+
+(defthm <-of-ceiling-and-0
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (< (ceiling i j) 0)
+                  (if (< 0 j)
+                      (<= i (- j))
+                    (and (< j 0)
+                         (<= (- j) i)))))
   :hints (("Goal" :in-theory (enable ceiling))))

@@ -118,7 +118,7 @@
               (EQUAL (SUM-LIST4 LST)
                      (BINARY-+ (CAR LST) (SUM-LIST4 (CDR LST))))))))
 
-;test of the mutual recursion version
+;test on a function in a mutual-recursion
 (deftest
   (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
   (defopeners sublis-var-simple)

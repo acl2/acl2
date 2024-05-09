@@ -1,6 +1,6 @@
 ; A lightwright library about lists whose elements have particular types
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,16 +13,19 @@
 (include-book "character-listp")
 (include-book "rational-listp")
 (include-book "nat-listp")
+(include-book "nat-list-listp")
 (include-book "integer-listp")
 (include-book "pseudo-term-listp")
 (include-book "pseudo-term-list-listp")
 (include-book "string-listp")
 (include-book "symbol-listp")
 (include-book "symbol-listp2")
+(include-book "strict-symbol-less-than-sortedp")
 (include-book "keyword-listp")
 (include-book "true-list-listp")
 
 (include-book "character-list-listp")
+(include-book "string-list-listp")
 
 (include-book "all-true-listp")
 (include-book "all-natp")
@@ -51,15 +54,21 @@
 (include-book "all-less-than-or-equal")
 (include-book "less-than-or-equal-all")
 (include-book "all-less-than-or-equal-all")
+(include-book "rational-lists")
 
 (include-book "all-greater")
 
 (include-book "cons-listp-dollar")
 
 (include-book "append-all")
+(include-book "append-all-rules")
 
 ;; Stuff about lists of alists:
+(include-book "alist-listp")
 (include-book "all-alistp")
+(include-book "symbol-alist-listp")
+(include-book "symbol-term-alist-listp")
 (include-book "map-strip-cars")
+(include-book "map-strip-cdrs")
 
 (include-book "doc")

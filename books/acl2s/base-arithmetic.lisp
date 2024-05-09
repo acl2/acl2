@@ -3,6 +3,9 @@
  "portcullis")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2S")
 
 (include-book "defdata/top" :ttags :all)
@@ -13,7 +16,7 @@
 ; Pete 9/27/2018: Include utilities book
 (include-book "definec" :ttags :all)
 
-(include-book "acl2s/ccg/ccg" :dir :system 
+(include-book "acl2s/ccg/ccg" :dir :system
   :uncertified-okp nil :ttags ((:ccg))
   :load-compiled-file nil)
 
@@ -40,18 +43,18 @@ Decided to leave out for now because
   "rtl/rel11/lib/top" :dir :system)
 (in-theory
  (disable
-  acl2::|(mod (+ x y) z) where (<= 0 z)| 
+  acl2::|(mod (+ x y) z) where (<= 0 z)|
   acl2::|(mod (+ x (- (mod a b))) y)|
-  acl2::|(mod (mod x y) z)| 
-  acl2::|(mod (+ x (mod a b)) y)| 
+  acl2::|(mod (mod x y) z)|
+  acl2::|(mod (+ x (mod a b)) y)|
   acl2::cancel-mod-+
-  acl2::mod-cancel-*-const 
+  acl2::mod-cancel-*-const
   acl2::simplify-products-gather-exponents-equal
   acl2::simplify-products-gather-exponents-<
-  acl2::cancel-mod-+ 
-  acl2::reduce-additive-constant-< 
+  acl2::cancel-mod-+
+  acl2::reduce-additive-constant-<
   acl2::|(floor x 2)|
-  acl2::|(equal x (if a b c))| 
+  acl2::|(equal x (if a b c))|
   acl2::|(equal (if a b c) x)|))
 |#
 
@@ -306,7 +309,7 @@ I commented out some disabled theorems that seem fine to me.
         cancel-mod-+
         prefer-positive-addends-<
         prefer-positive-addends-equal
-        reduce-additive-constant-< 
+        reduce-additive-constant-<
         reduce-additive-constant-equal
         default-mod-ratio
         ash-to-floor
@@ -321,6 +324,7 @@ I commented out some disabled theorems that seem fine to me.
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
+        acl2::|(* 2 (floor x y))|
         )))
 
 (defthm acl2s-default-mod-ratio
@@ -518,7 +522,7 @@ I commented out some disabled theorems that seem fine to me.
                    :nonlinearp))
        (prog2$
         nil ;;harshrc 14Jan2012- The following gives a nasty error when run inside of ld
-        ;; (observation-cw 'my-nonlinearp-default-hint 
+        ;; (observation-cw 'my-nonlinearp-default-hint
         ;;                 "~%~%[Note: We now enable non-linear arithmetic.]~%~%")
         '(:computed-hint-replacement t
                      :nonlinearp t))
@@ -537,7 +541,7 @@ I commented out some disabled theorems that seem fine to me.
           (not (equal (caar hist) 'SETTLED-DOWN-CLAUSE)))
          (prog2$
           nil ;;The following gives a nasty error when run inside of ld
-          ;; (observation-cw 'my-nonlinearp-default-hint 
+          ;; (observation-cw 'my-nonlinearp-default-hint
           ;;                 "~%~%[Note: We now disable non-linear arithmetic.]~%~%")
            '(:computed-hint-replacement t
                         :nonlinearp nil))
@@ -547,21 +551,24 @@ I commented out some disabled theorems that seem fine to me.
 
 #!acl2
 (local
- (set-default-hints
-  '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
-    (acl2s::stage acl2s::negp)
-    (acl2s::stage acl2s::posp)
-    (acl2s::stage acl2s::natp)
-    (acl2s::stage acl2s::non-pos-integerp)
-    (acl2s::stage acl2s::neg-ratiop)
-    (acl2s::stage acl2s::pos-ratiop)
-    (acl2s::stage acl2s::non-neg-ratiop)
-    (acl2s::stage acl2s::non-pos-ratiop)
-    (acl2s::stage acl2s::ratiop)
-    (acl2s::stage acl2s::neg-rationalp)
-    (acl2s::stage acl2s::pos-rationalp)
-    (acl2s::stage acl2s::non-neg-rationalp)
-    (acl2s::stage acl2s::non-pos-rationalp))))
+  (set-default-hints
+   '((my-nonlinearp-default-hint stable-under-simplificationp hist pspv)
+     ;; Used compound-recognizer rules and I thought that may obviate the need
+     ;; for stage hints, but mod-plus-simplify-a<n-+b+n fails!
+     (acl2s::stage acl2s::negp)
+     (acl2s::stage acl2s::posp)
+     (acl2s::stage acl2s::natp)
+     (acl2s::stage acl2s::non-pos-integerp)
+     (acl2s::stage acl2s::neg-ratiop)
+     (acl2s::stage acl2s::pos-ratiop)
+     (acl2s::stage acl2s::non-neg-ratiop)
+     (acl2s::stage acl2s::non-pos-ratiop)
+     (acl2s::stage acl2s::ratiop)
+     (acl2s::stage acl2s::neg-rationalp)
+     (acl2s::stage acl2s::pos-rationalp)
+     (acl2s::stage acl2s::non-neg-rationalp)
+     (acl2s::stage acl2s::non-pos-rationalp)
+     )))
 
 (include-book "arithmetic-5/top" :dir :system)
 
@@ -642,7 +649,7 @@ I commented out some disabled theorems that seem fine to me.
            (equal (< a (* a b))
                   (< 1 b)))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
-     
+
 (defthm numerator-n-decreases
   (implies (and (rationalp r)
                 (<= n r)
@@ -664,6 +671,89 @@ I commented out some disabled theorems that seem fine to me.
   :hints (("goal" :in-theory (enable o<)))
   :rule-classes ((:rewrite :backchain-limit-lst 2)))
 
+(encapsulate
+ ()
+
+ (local
+   (defthm mul-frac-1
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (rationalp c)
+                   (pos-rationalp d)
+                   (< a (* b (/ c d))))
+              (< (* d a)
+                 (* d (* b (/ c d)))))))
+ 
+  (local
+    (defthm mul-frac-2
+      (implies (and (rationalp a)
+                    (rationalp c)
+                    (pos-rationalp b)
+                    (pos-rationalp d)
+                    (< a (/ (* c b) d)))
+               (< (/ a b)
+                  (/ (/ (* c b) d) b)))))
+    
+ (local
+   (defthm mul-frac-3
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (rationalp c)
+                   (neg-rationalp d)
+                   (< a (* b (/ c d))))
+              (> (* d a)
+                 (* d (* b (/ c d)))))))
+
+ (local
+   (defthm mul-frac-4
+     (implies (and (rationalp a)
+                   (rationalp c)
+                   (neg-rationalp b)
+                   (non-0-rationalp d)
+                   (< a (/ (* c b) d)))
+              (> (/ a b)
+                 (/ (/ (* c b) d) b)))))
+
+ (defthm multiply-<-fractions
+   (implies (and (rationalp a)
+                 (rationalp c)
+                 (non-0-rationalp b)
+                 (non-0-rationalp d)
+                 (< 0 (* b d)))
+            (equal (< (* a (/ b)) (* c (/ d)))
+                   (< (* a d) (* c b))))
+   :hints (("Goal" :use (mul-frac-1 mul-frac-2 mul-frac-3 mul-frac-4))))
+
+ (local
+   (defthm l1
+     (implies (and (rationalp a)
+                   (rationalp b)
+                   (non-0-rationalp x))
+              (equal (equal (* x a) (* x b))
+                     (equal a b)))))
+
+ (defthm multiply-=-fractions
+   (implies (and (rationalp a)
+                 (rationalp c)
+                 (non-0-rationalp b)
+                 (non-0-rationalp d))
+            (equal (equal (* a (/ b)) (* c (/ d)))
+                   (equal (* a d) (* c b))))
+   :hints (("Goal" :use (:instance l1 (x d) (b (* b (/ c d))))))))
+
+; The following is a proof of EWD-1297 and is included as a test
+(encapsulate
+ ()
+ (local (in-theory (disable acl2::|(* (+ x y) z)|)))
+
+ (local (defthm ewd-1297
+          (implies (and (rationalp a)
+                        (rationalp c)
+                        (pos-rationalp b)
+                        (pos-rationalp d)
+                        (< (/ a b) (/ c d)))
+                   (and (< (/ a b) (/ (+ a c) (+ b d)))
+                        (< (/ (+ a c) (+ b d)) (/ c d)))))))
 
 #|
 
@@ -683,7 +773,7 @@ I commented out some disabled theorems that seem fine to me.
          cancel-mod-+
          prefer-positive-addends-<
          prefer-positive-addends-equal
-         reduce-additive-constant-< 
+         reduce-additive-constant-<
          reduce-additive-constant-equal
          default-mod-ratio
          ash-to-floor
@@ -756,7 +846,7 @@ I commented out some disabled theorems that seem fine to me.
         cancel-mod-+
         prefer-positive-addends-<
         prefer-positive-addends-equal
-        reduce-additive-constant-< 
+        reduce-additive-constant-<
         reduce-additive-constant-equal
         default-mod-ratio
         ash-to-floor
@@ -771,4 +861,5 @@ I commented out some disabled theorems that seem fine to me.
         ;;  |(mod (- x) y)|
         ;;  mod-sums-cancel-1
         ;;  |(equal (mod a n) (mod b n))|
+        acl2::|(* 2 (floor x y))|
         ))

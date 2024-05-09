@@ -12,6 +12,7 @@
 
 (include-book "defarbrec")
 
+(include-book "kestrel/std/system/theorem-namep" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)

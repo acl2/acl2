@@ -1,0 +1,129 @@
+David M. Russinoff
+david@russinoff.com
+http://www.russinoff.com
+
+This directory contains ACL2 proof scripts for some results of elementary
+number theory.  It includes the following ACL2 books:
+
+  euclid
+     Divisibility, primes, and two theorems of Euclid:
+       (1) The infinitude of the set of primes
+       (2) If p is a prime and p divides a * b, then p divides either a or b.
+     Several corollaries of (2) are also proved, including the Fundamental 
+     Theorem of Arithmetic and the Chinese Remainder Theorem.
+
+  fermat
+     Fermat's Theorem: if p is a prime and p does not divide m, then
+     mod(m^(p-1),p) = 1.
+
+  euler
+     Quadratic residues and Euler's Criterion: if p is an odd prime and p does
+     not divide m, then
+
+          mod(m^((p-1)/2),p) = 1    if m is a quadratic residue mod p
+                               p-1  if not.
+
+     A by-product of the proof is Wilson's Theorem: mod((p-1)!, p) = p-1.
+     As a consequence, we also prove the First Supplement to the Law of Quadratic
+     Reciprocity: -1 is a quadratic residue mod p iff mod(p,4) = 1.
+
+  gauss
+      Gauss's Lemma:  Let p be an odd prime and let m be relatively prime to p.
+      Let mu be the number of elements of the sequence
+
+        (mod(m,p), mod(2*m,p), ..., mod(((p-1)/2)*m,p))
+
+      that exceed (p-1)/2.  Then m is a quadratic residue mod p iff mu is even.
+      As a corollary, we also prove the Second Supplement to the Law of Quadratic
+      Reciprocity: 2 is a quadratic residue mod p iff mod(p,8) is either 1 or -1.
+
+  eisenstein
+      A formalization of Eisenstein's proof of the law of quadratic reciprocity:
+        If p and q are distinct odd primes, then
+          (p is a quadratic residue mod q <=> q is a quadratic residue mod p)
+            <=>
+          ((p-1)/2) * ((q-1)/2) is even.
+
+  mersenne
+      An application to the Mersenne prime problem by way of a theorem of Euler:
+      if p and 2*p+1 are both prime and mod(p,4) = 3, then 2^p-1 is divisible by
+      2*p+1").
+
+  pratt
+      Vaughn Pratt's method of prime certification applied to the prime 2^255 - 19.
+
+  binomial
+      Ruben Gamboa's formalization of the binomial theorem imported into the DM 
+      package (see "books/arithmetic/binomial.lisp").
+
+
+The remaining books are motivated by the Web page http://www.cs.ru.nl/~freek/100/, 
+"Formalizing 100 Theorems":
+
+  subsets
+      The number of subsets of a set of order n is 2^n.  For 0 <= k <= n, the number
+      of subsets of order k is the binomial coefficient (choose n k) = n!/(k!(n - k)!).
+
+  sylvester
+      The inclusion-exclusion principle, a formula for the order of the union of a 
+      list of sets.
+
+  derangements
+      Formula for the number of permutations in (sym n) with no fixed points, derived
+      as a consequence of the inclusion-exclusion principle.
+
+  girard
+      An odd prime p is a sum of two squares iff (mod p 4) = 1.
+
+  sum4squares
+      Every natural number is a sum of 4 squares.
+
+  divisors
+      The number of positive divisors of a positive integer n and the sum of these
+      divisors are both multiplicative functions of n.  These results, in combination 
+      with the Fundamental Theorem of Arithmetic, provide formulas for both of these 
+      quantities.  As an application, we derive the Euclid-Euler characterization of
+      even perfect numbers.
+
+  triples
+      Given integers m and n with m > n > 0, let a = m^2 - n^2, b = 2mn, and 
+      c = m^2 + n^2.  Then a, b, and c form a Pythagorean triple, i.e., a^2 + b^2 = 
+      c^2.  In fact, for every Pythagorean triple a, b, c, there exist m and n that 
+      satisfy these relations, possibly with a and b interchanged.
+
+  partitions
+      A partition of a positive integer n is a list of positive integers that sum 
+      to n.  Two partitions are equivalent if one is a permutation of the other.  
+      Euler's partition theorem: The number of equivalence classes of partitions of
+      n consisting of odd integers is equal to the number of equivalence classes of 
+      partitions of n consisting of distinct integers.
+
+  ballot
+      Bertrand's ballot theorem:  In an election, Candidates A and B receive a and b 
+      votes, respectively.  The votes are counted sequentially.  If a > b, then the
+      probability that A maintains a strict lead throughout the count is (a-b)/(a+b).
+
+  subseq
+      If l is a list of distinct rationals of length greater than (a - 1)(b - 1), 
+      where a and b are positive integers, then l has either an ascending subsequence 
+      of length a or a descending subsequence of length b.
+
+  birthday
+      What is the probability that in a party of k people, at least 2 have the same
+      birthday?
+
+  konigsberg
+      The Seven Bridges of Konigsberg
+
+  triangular
+      The sum of the reciprocals of the triangular numbers is 2.
+
+  z2q
+      A bijection from the integers to the rationals.
+
+  harmonic
+      Divergence of the harmonic series.
+
+  div3
+      The sum of the digits in the decimal expansion of n is divisible by 3 iff n is
+      divisible by 3.

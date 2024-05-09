@@ -1,6 +1,6 @@
 ; Utilities for archiving xdoc resources
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,17 +60,37 @@
 ;; indicated subtree of books/.
 ;; TREE-PATH should not start or end in "/".
 (defun archive-topics-for-books-tree-fn (tree-path ; relative to "books/"
+                                         include-defxdoc-raw-topicsp
                                          )
-  (declare (xargs :guard (stringp tree-path)))
-  (let ((path-prefix (concatenate 'string "[books]/" tree-path "/")))
+  (declare (xargs :guard (and (stringp tree-path)
+                              (booleanp include-defxdoc-raw-topicsp))))
+; Matt K. mod, October 2022: In consultation with Sol Swords, :doc topic paths
+; are no longer displayed with the "[books]/" prefix; instead they have a
+; suffix, " :DIR :SYSTEM".  (This generalizes to other project directories
+; besides :SYSTEM.)  For completeness such a suffix should perhaps be
+; considered below, though it seems to me unlikely to matter in practice.
+;  (let ((path-prefix (concatenate 'string "[books]/" tree-path "/")))
+  (let ((path-prefix (concatenate 'string tree-path "/")))
     `(archive-matching-topics
-      ;; The test to apply to an arbitrary topic, X, to decide whether to archive
-      ;; it (a topic is an alist whose keys are :from, :name, :short, etc.):
-      (str::strprefixp ,path-prefix (cdr (assoc-eq :from x))))))
+       ;; The test to apply to an arbitrary topic, X, to decide whether to archive
+       ;; it (a topic is an alist whose keys are :from, :name, :short, etc.):
+       (let ((from (cdr (assoc-eq :from x))))
+         ,(if include-defxdoc-raw-topicsp
+              `(or (str::strprefixp "[defxdoc-raw]" from)
+                   (str::strprefixp ,path-prefix from))
+            `(str::strprefixp ,path-prefix from))))))
 
 ;; Archive all xdoc topics from the indicated subtree of the main books/ directory.
 ;; TREE-PATH should not start or end in "/".
 (defmacro archive-topics-for-books-tree (tree-path ; relative to "books/"
-                                         )
-  (declare (xargs :guard (stringp tree-path)))
-  (archive-topics-for-books-tree-fn tree-path))
+                                          &key
+                                          ;; This brings in *all* topics from
+                                          ;; defxdoc-raw (those topics have a
+                                          ;; :from field of just
+                                          ;; "[defxdoc-raw]" so we don't know
+                                          ;; whether they come from the
+                                          ;; indicated subtree):
+                                         (include-defxdoc-raw-topicsp 'nil))
+  (declare (xargs :guard (and (stringp tree-path)
+                              (booleanp include-defxdoc-raw-topicsp))))
+  (archive-topics-for-books-tree-fn tree-path include-defxdoc-raw-topicsp))

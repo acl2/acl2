@@ -12,4 +12,5 @@
 ;; load the user's acl2-customization.lsp, if any:
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (include-book "std/portcullis" :dir :system)
+(ld "package.lsp")
 (reset-prehistory)

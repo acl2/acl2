@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -212,9 +212,14 @@
                        (xargs :guard
                               ,(getpropc fn 'guard *t* wrld)
                               :verify-guards nil
-                              ,@(let ((stobjs (remove nil stobjs-in)))
+                              ,@(let ((stobjs (collect-non-nil-df stobjs-in)))
                                   (and stobjs
-                                       `(:stobjs ,stobjs)))))
+                                       `(:stobjs ,stobjs))))
+                       ,@(let ((dfs (collect-by-position '(:df)
+                                                         stobjs-in
+                                                         formals)))
+                           (and dfs
+                                `((type double-float ,@dfs)))))
                       ,condition)
                     (verify-guards ,condition-fn
                                    ,@(and hints `(:hints ,hints))
@@ -267,7 +272,7 @@
                       total
                       invoke
                       (ideal-okp ':default)
-                      (verbose 't))
+                      (verbose 'nil))
 
 ; WARNING: If you add a new argument here, consider making corresponding
 ; modifications to memoize-form, table-cltl-cmd, maybe-push-undo-stack, and

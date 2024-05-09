@@ -30,6 +30,7 @@
 
 (in-package "SV")
 (include-book "4vec-base")
+(include-book "svar")
 (include-book "std/lists/repeat" :dir :system)
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (local (include-book "std/lists/acl2-count" :dir :system))
@@ -53,131 +54,7 @@
 ;;                               :CONTROLLER-ALIST ((LOGBITP T nil))))))
 
 
-(defflexsum svar
-  :parents (svex)
-  :kind nil
-  (:svar
-   :short "A single variable in a symbolic vector expression."
-   :type-name svar
-   :cond t
-   :shape (if (atom x)
-              (or (stringp x)
-                  (and (symbolp x)
-                       (not (booleanp x))))
-            (and (eq (car x) :var)
-                 (consp (cdr x))
-                 (let* ((name (cadr x))
-                        (bits (cddr x)))
-                   (and (integerp bits)
-                        (implies (< bits 0)
-                                 (not (eql (loghead 3 bits) 0)))
-                        (not (and (or (stringp name)
-                                      (and (symbolp name)
-                                           (not (booleanp name))))
-                                  (eql bits 0)))))))
-   :fields
-   ((name :acc-body (if (atom x)
-                        x
-                      (cadr x))
-          :doc "The name of this variable.  This can be any ACL2 object at all,
-                but our representation is optimized for @(see stringp) or @(see
-                symbolp) names.")
-    (delay :type natp
-           :acc-body (if (atom x) 0 (if (< (cddr x) 0) (logtail 3 (lognot (cddr x))) (cddr x)))
-           :default 0
-           :doc "A natural valued index for this variable, used for instance
-                 to support the encoding of, e.g., previous versus current
-                 register values in FSMs.  The default delay (which enjoys an
-                 optimized representation) is 0.  See below for some motivation
-                 and explanation.")
-    (nonblocking :type booleanp
-                 :acc-body (if (atom x)
-                               nil
-                             (let ((bits (cddr x)))
-                               (and (< bits 0)
-                                    (logbitp 2 bits))))
-                 :doc "A flag used in statement processing to indicate a reference
-                     to a variable after nonblocking assignments have been done.
-                      Not used in other contexts.")
-    (override-test :type booleanp
-                   :acc-body (if (atom x)
-                                 nil
-                               (let ((bits (cddr x)))
-                                 (and (< bits 0)
-                                      (logbitp 0 bits)))))
-    (override-val :type booleanp
-                  :acc-body (if (atom x)
-                                nil
-                              (let ((bits (cddr x)))
-                                (and (< bits 0)
-                                     (logbitp 1 bits))))))
-   :ctor-body
-   (if (and (or (stringp name)
-                (and (symbolp name)
-                     (not (booleanp name))))
-            (not nonblocking)
-            (not override-test)
-            (not override-val)
-            (eql delay 0))
-       name
-     (hons :var (hons name (if (or nonblocking
-                                   override-test
-                                   override-val)
-                               (acl2::loglist*
-                                (bool->bit override-test)
-                                (bool->bit override-val)
-                                (bool->bit nonblocking)
-                                (lognot delay))
-                             delay))))
-   :long "<p>Each variable in an @(see svex) represents a @(see 4vec).</p>
 
-<p>In most s-expression formats, e.g., s-expressions in Lisp or in the @(see
-acl2::4v-sexprs) used in @(see acl2::esim), a variable is just a symbol, which
-is generally treated as if it were an atomic <b>name</b> with no further
-structure.</p>
-
-<p>In contrast, in @(see sv), our variables have both a name and also a natural
-numbered index (called @('delay')).  This index is mainly an implementation
-detail that allows us to cheaply (i.e., without @(see intern$)) construct new
-variables.</p>
-
-<p>In the semantics of expressions, e.g., in @(see svex-lookup), variables are
-distinct whenever they differ by name <b>or</b> by delay.  That is, as far as
-expression evaluation is concerned, the variable named \"v\" with delay 5 is
-completely distinct from \"v\" with delay 4.  Think of them as you would
-indexed variables like @($v_5$) versus @($v_4$) in some mathematics.</p>")
-  
-  :prepwork ((local (defthm logbitp-open
-                      (implies (syntaxp (quotep n))
-                               (equal (logbitp n x)
-                                      (cond ((zp n) (bit->bool (logcar x)))
-                                            (t (logbitp (1- n) (logcdr x))))))
-                      :hints(("Goal" :in-theory (enable bitops::logbitp**)))))
-
-             (local (defthm loghead-open
-                      (implies (syntaxp (quotep n))
-                               (equal (loghead n x)
-                                      (cond ((zp n) 0)
-                                            (t (logcons (logcar x) (loghead (1- n) (logcdr x)))))))
-                      :hints(("Goal" :in-theory (enable bitops::loghead**)))))
-
-             (local (defthm logtail-open
-                      (implies (syntaxp (quotep n))
-                               (equal (logtail n x)
-                                      (cond ((zp n) (ifix x))
-                                            (t (logtail (1- n) (logcdr x))))))
-                      :hints(("Goal" :in-theory (enable bitops::logtail**)))))
-
-             ;; (local (in-theory (enable bitops::equal-logcons-strong)))
-             ;; (local (defthm equal-of-cons
-             ;;          (equal (equal (cons a b) c)
-             ;;                 (and (consp c)
-             ;;                      (equal a (car c))
-             ;;                      (equal b (cdr c))))))
-             (local (in-theory (disable default-car default-cdr
-                                        bitops::logcons-posp-2
-                                        bitops::logcons-posp-1
-                                        acl2::natp-when-gte-0)))))
 
 (deflist svarlist
   :elt-type svar
@@ -276,47 +153,31 @@ single @(see 4vec) result.  The semantics are given by @(see svex-eval).</p>
 <p>Our @(see svex) expressions are always created with @(see hons) for
 automatic structure sharing.  Most operations over these expressions should
 typically be @(see memoize)d in some way or another.</p>"
-  :prepwork (;; (local (in-theory (enable svar-p svar-fix)))
-             (local (defthm car-of-svar-when-consp
+  :prepwork ((local (defthm car-when-svar-p
                       (implies (and (svar-p x)
-                                    (consp x)
-                                    (syntaxp (quotep v)))
-                               (equal (equal (car x) v)
-                                      (equal v :var)))
+                                    (consp x))
+                               (equal (car x) :var))
                       :hints(("Goal" :in-theory (enable svar-p)))))
-             (local (defthm 4vec-not-svar-p
-                      (implies (svar-p x)
-                               (not (4vec-p x)))
-                      :hints(("Goal" :in-theory (enable 4vec-p svar-p)))))
-             (local (defthm car-of-4vec-fix-type
-                      (or (integerp (car (4vec-fix x)))
-                          (not (car (4vec-fix x))))
-                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))
-                      :rule-classes ((:type-prescription :typed-term (car (4vec-fix x))))))
-             (local (defthm car-of-4vec-fix-integerp
-                      (implies (consp (4vec-fix x))
-                               (integerp (car (4vec-fix x))))
-                      :hints(("Goal" :in-theory (enable 4vec-fix 4vec)))))
-             (local (defthm cons-fnsym-not-svar-p
-                      (implies (not (eq x :var))
-                               (not (svar-p (cons x y))))
-                      :hints(("Goal" :in-theory (enable fnsym-p svar-p))))))
+             (local (defthm car-when-4vec-p
+                      (implies (and (4vec-p x)
+                                    (consp x))
+                               (integerp (car x)))
+                      :hints(("Goal" :in-theory (enable 4vec-p))))))
   (defflexsum svex
-    (:var
-     :short "A variable, which represents a @(see 4vec)."
-     :cond (if (atom x)
-               (or (stringp x)
-                   (and x (symbolp x)))
-             (eq (car x) :var))
-     :fields ((name :acc-body x :type svar-p))
-     :ctor-body name)
     (:quote
      :short "A ``quoted constant'' @(see 4vec), which represents itself."
-     :cond (or (atom x)
-               (integerp (car x)))
+     :cond (if (consp x)
+               (integerp (car x))
+             (or (integerp x) (not x)))
      :fields ((val :acc-body x
                    :type 4vec))
      :ctor-body val)
+    (:var
+     :short "A variable, which represents a @(see 4vec)."
+     :cond (or (atom x)
+               (eq (car x) :var))
+     :fields ((name :acc-body x :type svar-p))
+     :ctor-body name)
     (:call
      :short "A function applied to some expressions."
      :cond t

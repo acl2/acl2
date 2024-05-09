@@ -1,7 +1,7 @@
 ; An if-then-else function over bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,9 +12,10 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "kestrel/booleans/booleans" :dir :system) ;todo: reduce
-(include-book "trim")
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
+(include-book "kestrel/utilities/myif" :dir :system)
 (local (include-book "unsigned-byte-p"))
+(local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
 ;note that the test is a boolean, not a bit vector
 (defund bvif (size test thenpart elsepart)
@@ -62,7 +63,7 @@
          (bvif size test y x))
   :hints (("Goal" :in-theory (enable bvif))))
 
-;fixme what if there is just one constant?
+;todo: what if there is just one constant?
 (defthm equal-of-constant-and-bvif-of-constant-and-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
@@ -220,14 +221,6 @@
                   (not test)))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm trim-of-bvif
-  (implies (and (<= size1 size2)
-                (natp size1)
-                (natp size2))
-           (equal (trim size1 (bvif size2 test x y))
-                  (bvif size1 test x y)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
-
 (defthm bvif-of-myif-t-nil
   (equal (bvif size (myif test t nil) x y)
          (bvif size test x y))
@@ -247,25 +240,7 @@
                   (bvif size test y (bvif size test2 tp ep))))
     :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthmd bvif-trim-constant-arg1
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep size)))
-                (not (unsigned-byte-p size x))
-                (natp size) ; prevent loops
-                )
-           (equal (bvif size test x y)
-                  (bvif size test (bvchop size x) y)))
-  :hints (("Goal" :in-theory (enable bvif))))
 
-(defthmd bvif-trim-constant-arg2
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep size)))
-                (not (unsigned-byte-p size x))
-                (natp size) ; prevent loops
-                )
-           (equal (bvif size test y x)
-                  (bvif size test y (bvchop size x))))
-  :hints (("Goal" :in-theory (enable bvif))))
 
 ;dup
 (defthm unsigned-byte-p-of-bvif-gen2
@@ -348,22 +323,51 @@
          (bvif size test w (bvif size test2 z x)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
+; or we could turn the < into bvlt
+;todo: make this one like <-of-bvif-and-constant?
 (defthmd <-of-bvif-constants-false
-  (implies (and (syntaxp (quotep k1))
-                (syntaxp (quotep k2))
-                (syntaxp (quotep k3))
-                (<= (BVCHOP size K2) k1)
-                (<= (BVCHOP size K3) k1))
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep k3)))
+                (<= (bvchop size k2) k1)
+                (<= (bvchop size k3) k1))
            (not (< k1 (bvif size test k2 k3))))
   :hints (("Goal" :in-theory (enable bvif))))
 
+; or we could turn the < into bvlt
 (defthmd <-of-bvif-constants-true
-  (implies (and (syntaxp (quotep k1))
-                (syntaxp (quotep k2))
-                (syntaxp (quotep k3))
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep k3)))
                 (< k1 (bvchop size k2))
                 (< k1 (bvchop size k3)))
            (< k1 (bvif size test k2 k3)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+; or we could turn the < into bvlt
+(defthm <-of-constant-and-bvif-safe
+  (implies (syntaxp (and (quotep k1)
+                         (or (quotep k2)
+                             (quotep k3))
+                         (quotep size)))
+           (equal (< k1 (bvif size test k2 k3))
+                  ;; at least one branch should be resolved to a constant
+                  (if test
+                      (< k1 (bvchop size k2))
+                    (< k1 (bvchop size k3)))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+; or we could turn the < into bvlt
+(defthm <-of-bvif-and-constant-safe
+  (implies (syntaxp (and (quotep k1)
+                         (or (quotep k2)
+                             (quotep k3))
+                         (quotep size)))
+           (equal (< (bvif size test k2 k3) k1)
+                  ;; at least one branch should be resolved to a constant
+                  (if test
+                      (< (bvchop size k2) k1)
+                    (< (bvchop size k3) k1))))
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm bvif-of-bvif-same-1
@@ -470,3 +474,39 @@
            (equal (myif test x y)
                   (bvif ysize test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
+
+;; or we could rewrite the arg to the BVIF in an IFF context
+(defthmd bvif-of-if-constants-nil-nonnil
+  (implies (and (syntaxp (quotep k))
+                (not (equal nil k)))
+           (equal (bvif size (if test nil k) tp ep)
+                  (bvif size (not test) tp ep))))
+
+;; or we could rewrite the arg to the BVIF in an IFF context
+(defthmd bvif-of-if-constants-nonnil-nil
+  (implies (and (syntaxp (quotep k))
+                (not (equal nil k)))
+           (equal (bvif size (if test k nil) tp ep)
+                  (bvif size test tp ep))))
+
+(defthm bvif-when-not-integerp-arg3-cheap
+  (implies (not (integerp thenpart))
+           (equal (bvif size test thenpart elsepart)
+                  (bvif size test 0 elsepart)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-when-not-integerp-arg4-cheap
+  (implies (not (integerp elsepart))
+           (equal (bvif size test thenpart elsepart)
+                  (bvif size test thenpart 0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+;weird but showed up in the sha1 loop proof (during backchaining)
+(defthm bvif-of-equal-of-bvchop-same
+  (implies (and (syntaxp (and (quotep k)
+                              (not (quotep x)))))
+           (equal (bvif size (equal k (bvchop size x)) x y)
+                  (bvif size (equal k (bvchop size x)) k y)))
+  :hints (("Goal" :in-theory (enable bvif))))

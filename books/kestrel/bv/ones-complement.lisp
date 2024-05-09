@@ -1,10 +1,11 @@
 ; Formalization of one's complement arithmetic
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -260,17 +261,19 @@
            (equal (from-ones-complement size (bvplus1c size x y))
                   (+ (from-ones-complement size x)
                      (from-ones-complement size y))))
-  :hints (("Goal" :in-theory (enable bvplus1c
-                                     from-ones-complement
-                                     ones-complement
-                                     representable-as-ones-complementp
-                                     bvnot-becomes-bvplus-of--1-and-bvuminus
-                                     bvplus-of-+-of-1-split
-                                     bvuminus
-                                     bvminus
-                                     bvplus
-                                     bvchop-of-sum-cases
-                                     unsigned-byte-p))))
+  :hints (("Goal" :in-theory (e/d (bvplus1c
+                                   from-ones-complement
+                                   ones-complement
+                                   representable-as-ones-complementp
+                                   bvnot-becomes-bvplus-of--1-and-bvuminus
+                                   bvplus-of-+-of-1-split
+                                   bvuminus
+                                   bvminus
+                                   bvplus
+                                   bvchop-of-sum-cases
+                                   unsigned-byte-p)
+                                  ( ;; for speed:
+                                   distributivity-of-minus-over-+)))))
 
 ;; Check whether X is equal to positive 0 (all zeros) or negative 0 (all ones).
 (defund ones-complement-zerop (size x)
@@ -304,20 +307,25 @@
                                   (to-ones-complement size
                                                       (+ (from-ones-complement size x)
                                                          (from-ones-complement size y)))))
-  :hints (("Goal" :in-theory (enable bvplus1c
-                                     to-ones-complement
-                                     from-ones-complement
-                                     ones-complement
-                                     representable-as-ones-complementp
-                                     bvnot-becomes-bvplus-of--1-and-bvuminus
-                                     bvplus-of-+-of-1-split
-                                     bvuminus
-                                     bvminus
-                                     bvplus
-                                     bvchop-of-sum-cases
-                                     unsigned-byte-p
-                                     ONES-COMPLEMENT-EQUAL
-                                     ONES-COMPLEMENT-ZEROP))))
+  :hints (("Goal" :in-theory (e/d (bvplus1c
+                                   to-ones-complement
+                                   from-ones-complement
+                                   ones-complement
+                                   representable-as-ones-complementp
+                                   bvnot-becomes-bvplus-of--1-and-bvuminus
+                                   bvplus-of-+-of-1-split
+                                   bvuminus
+                                   bvminus
+                                   bvplus
+                                   bvchop-of-sum-cases
+                                   unsigned-byte-p
+                                   ONES-COMPLEMENT-EQUAL
+                                   ONES-COMPLEMENT-ZEROP)
+                                  (;; for speed:
+                                   associativity-of-+
+                                   unsigned-byte-p-of-if
+                                   usb-plus-from-bounds
+                                   distributivity-of-minus-over-+)))))
 
  ;; :hints (("Goal" :in-theory (e/d (from-ones-complement
  ;;                                  bvplus1c
@@ -334,5 +342,31 @@
  ;;                                  bvchop
  ;;                                  expt-of-+)
  ;;                                 (BVCHOP-1-BECOMES-GETBIT
- ;;                                  slice-BECOMES-GETBIT
  ;;                                  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+
+(defthm bvplus1c-of-0-arg2
+  (equal (bvplus1c size 0 y)
+         (bvchop size y))
+  :hints (("Goal" :in-theory (enable bvplus1c))))
+
+(defthm bvplus1c-of-0-arg3
+  (equal (bvplus1c size x 0)
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvplus1c))))
+
+(defthm bvplus1c-commutative
+  (equal (bvplus1c size y x)
+         (bvplus1c size x y))
+  :hints (("Goal" :in-theory (enable bvplus1c))))
+
+(defthm bvplus1c-associative
+  (equal (bvplus1c size (bvplus1c size x y) z)
+         (bvplus1c size x (bvplus1c size y z)))
+  :hints (("Goal"
+           :in-theory (e/d (bvplus1c
+                            bvchop-of-sum-cases)
+                           (;; Disables are for speed:
+                            ifix
+                            bvchop-shift
+                            natp
+                            commutativity-2-of-+)))))

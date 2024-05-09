@@ -35,7 +35,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
 (defthm group-becomes-group2
   (implies (and (equal 0 (mod (len x) n))
@@ -96,7 +96,6 @@
                             ;LIST::EQUAL-APPEND-REDUCTION!-ALT ;disable above
                             take-of-nthcdr-becomes-subrange
                             nthcdr-of-take-becomes-subrange
-                            cdr-of-take-becomes-subrange-better
                             TAKE-OF-CDR-BECOMES-SUBRANGE
                             nthcdr-of-take
                             ))
@@ -149,7 +148,6 @@
                             take-of-nthcdr-becomes-subrange
                             nthcdr-of-take-becomes-subrange
                             TAKE-OF-CDR-BECOMES-SUBRANGE
-                            cdr-of-take-becomes-subrange-better
                             nthcdr-of-take
                             ))
            :use ((:instance list-split (x x) (n n))
@@ -163,7 +161,7 @@
                 (natp free))
            (equal (equal (take n y) (take n x))
                   (equal x (take (+ 1 free) y))))
-  :hints (("Goal" :use (:instance equal-of-takes-extend2)
+  :hints (("Goal" :use equal-of-takes-extend2
            :in-theory (disable equal-of-takes-extend2))))
 
 (local (in-theory (disable NTHCDR-OF-TRUE-LIST-FIX)))
@@ -219,7 +217,7 @@
                   (and (equal (len x) (* n (floor (len y) n)))
                        (equal (take (len x) x)
                               (take (len x) y)))))
-  :hints (("Goal" :use (:instance equal-of-group-and-group2)
+  :hints (("Goal" :use equal-of-group-and-group2
            :in-theory (disable equal-of-group-and-group2))))
 
 
@@ -256,7 +254,6 @@
            (equal (subrange m m2 (group n x))
                   (group n (subrange (* n m) (+ (* n m) (+ -1 (* n (+ 1 (- m2 m))))) x))))
   :hints (("Goal" :in-theory (e/d (subrange) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE
-                                              CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER
                                               TAKE-OF-CDR-BECOMES-SUBRANGE
                                               NTHCDR-OF-TAKE-BECOMES-SUBRANGE)))))
 
@@ -278,8 +275,7 @@
                             len-of-cdr
                             consp-of-cdr
                             EQUAL-OF-0-AND-MOD)
-                           (DIVISIBILITY-IN-TERMS-OF-FLOOR
-                            TAKE-OF-CDR-BECOMES-SUBRANGE
+                           (TAKE-OF-CDR-BECOMES-SUBRANGE
                             NTH-OF-CDR
                             ;; list::NTH-OF-CDR
                             ;; LIST::EQUAL-APPEND-REDUCTION!

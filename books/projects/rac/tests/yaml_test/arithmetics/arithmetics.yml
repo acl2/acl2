@@ -1,0 +1,22 @@
+- name: int-arith
+- name: int-arith-assign
+
+- name: priority
+- name: commutativity-add
+
+- name: div-assign
+  has_failed: true
+  exit_code: 1
+  description: Not implemented yet !
+
+- name: int-bitwise
+- name: int-bitwise-assign
+
+- name: logical-bool
+- name: logical-int
+
+- name: compare-int
+
+- name: ternary
+
+- name: const-eval

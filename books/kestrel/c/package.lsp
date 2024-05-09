@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,10 +25,12 @@
                                   byte
                                   defstruct
                                   error
+                                  lexp
                                   member
                                   pi
                                   pointers
                                   pprint-indent
+                                  preprocess
                                   read-object
                                   schar
                                   type
@@ -52,6 +55,7 @@
                ctxp
                cw-event
                define-sk
+               defirrelevant
                defmacro+
                defopener
                defopeners
@@ -60,6 +64,7 @@
                defxdoc+
                doublet-listp
                doublets-to-alist
+               dumb-negate-lit
                e/d*
                enable*
                ensure-function-is-defined$
@@ -74,6 +79,7 @@
                ensure-value-is-string$
                ensure-value-is-symbol$
                er-soft+
+               erp
                evmac-appcond-listp
                evmac-appcond-theorem-list
                evmac-generate-defthm
@@ -94,32 +100,44 @@
                fquotep
                fresh-logical-name-with-$s-suffix
                fsubcor-var
+               fsublis-fn-simple
                fsublis-var
                fsublis-var-lst
                genvar
+               genvar$
                get-ruleset
                implode
                impossible
+               install-not-normalized-event
                irecursivep+
                keyword-listp
                keyword-symbol-alistp
                keyword-value-list-to-alist
                lnfix
+               logicp
                make-event-terse
                make-evmac-appcond
                maybe-natp
                maybe-pseudo-event-formp
+               maybe-stringp
                mbt$
                measure+
                msg-listp
                mv-nth-of-cons
                nat
+               nat-list-fix
+               nats=>string
                nvariablep
                one-way-unify
+               one-way-unify$
                packn
                packn-pos
+               pos
                pos-listp
                pos-option
+               pos-optionp
+               prefixp
+               pseudo-event-form-list
                pseudo-event-form-listp
                pseudo-event-formp
                pseudo-event-form
@@ -146,6 +164,7 @@
                pseudo-term-lambda->args
                pseudo-term-lambda->body
                pseudo-term-lambda->formals
+               pseudo-term-list
                pseudo-term-list-count
                pseudo-term-list-fix
                pseudo-term-null
@@ -158,19 +177,30 @@
                pseudo-var-p
                remove-equal-formals-actuals
                restore-output?
+               reterr
+               retok
                run-when
                str-fix
+               string=>nats
                symbol-fix
                symbol-list
                symbol-list-fix
+               symbol-pseudoterm-alist
                symbol-pseudoterm-alistp
                symbol-pseudoterm-alist-fix
                symbol-symbol-alistp
                table-alist+
+               termination-theorem$
+               theorem-symbolp
+               true-list
                tuple
                ubody+
                uguard+
+               untranslate$
                untranslate-lst
                variablep
                well-founded-relation+
+               fty::okf
+               fty::reserrf
+               fty::reserrp
                std::defret-mutual)))

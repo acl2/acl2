@@ -39,6 +39,7 @@
 (include-book "tools/symlet" :dir :system)
 (include-book "centaur/misc/sneaky-load" :dir :system)
 (include-book "compose-theory-base")
+(include-book "svar-key-alist")
 (local (include-book "centaur/misc/dfs-measure" :dir :system))
 (local (include-book "std/osets/under-set-equiv" :dir :system))
 (local (include-book "clause-processors/just-expand" :dir :system))
@@ -74,7 +75,7 @@
 ;; 
 
 
-(fty::defmap svar-key-alist :key-type svar :true-listp t)
+
 
 ;; Use this for an optimization: don't traverse subtrees containing no looping vars
 (defines svex-has-key
@@ -135,6 +136,7 @@
 (defprod svex-scc-consts
   ((final-masks svex-mask-alist-p "masks for looping vars")
    (loop-vars svar-key-alist-p "set of looping vars")
+   (compose-iter-limit maybe-natp "limit (or nil for no limit) on number of self-compositions of SCCs")
    (updates svex-alist-p "updates prior to bit-level loop-resolution"))
   :layout :tree)
 
@@ -356,8 +358,9 @@
   (b* (((unless (consp scc)) (mv nil (svex-alist-fix finalized-updates)))
        (- (and (< 1 (len scc))
                (cw "Finalizing SCC of ~x0 bits: ~x1~%"
-                   (len scc)
-                   (ec-call (take (min 10 (len scc)) scc)))))
+                   (len scc) scc
+                   ;; (ec-call (take (min 10 (len scc)) scc))
+                   )))
        (exprs (svex/indexlist-exprs scc))
        ((unless (svex-varlist-p exprs))
         (mv "Programming error -- SCC to finalize had non-variable expressions" nil))
@@ -366,7 +369,10 @@
        (var-updates (svex-alist-reduce vars params.updates))
        ((unless (eql (len var-updates) (len vars)))
         (mv "Programming error -- SCC contained variables without updates" nil))
-       (selfcomposed (svex-alist-selfcompose-n-times (1- (len vars)) var-updates))
+       (selfcomposed (svex-alist-selfcompose-n-times (if params.compose-iter-limit
+                                                         (min params.compose-iter-limit (1- (len vars)))
+                                                       (1- (len vars)))
+                                                     var-updates))
        (final (acl2::with-fast-alist finalized-updates
                 (svex-alist-compose selfcomposed finalized-updates)))
        ;; (xes (pairlis$ vars (repeat (len vars) (svex-x))))

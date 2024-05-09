@@ -20,6 +20,8 @@
                               (plist-worldp wrld))))
   (let* ((stobjs-in (getprop fn 'stobjs-in nil 'current-acl2-world wrld))
          (stobjs-in (true-list-fix stobjs-in)) ;todo: make a nicer accessor for stobjs-in that checks true-listp
+         ;; Remove all instances of :df from the stobjs in:
+         (stobjs-in (set-difference-eq stobjs-in '(:df)))
          (stobj-formals (remove nil stobjs-in))
          (declares (if stobj-formals
                        (replace-xarg-in-declares :stobjs stobj-formals declares)

@@ -79,6 +79,15 @@
   (sv::4vec-part-select start
                         size val))
 
+
+(define is-bits-p (term)
+  (case-match term (('bits & & &) t))
+  ///
+  (defthm is-bits-p-implies
+    (implies (is-bits-p term)
+             (case-match term (('bits & & &) t)))
+    :rule-classes :forward-chaining))
+
 #|(defund 4vec-lsh$ (size val)
   (declare (ignorable size val))
   (sv::4vec-lsh (nfix size) val))||#
@@ -214,3 +223,19 @@
 (defund ignore-and-return-t (x)
   (declare (ignorable x))
   t)
+
+
+(define bit-listp (lst)
+  (if (atom lst)
+      (equal lst nil)
+      (and (bitp (car lst))
+           (bit-listp (cdr lst)))))
+
+
+(defmacro if*-exec (x y z)
+  `(mbe :logic (if* ,x ,y ,z)
+        :exec (if ,x ,y ,z)))
+
+(defmacro and*-exec (&rest x)
+  `(mbe :logic (and* ,@x)
+        :exec (and ,@x)))

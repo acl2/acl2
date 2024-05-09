@@ -1,6 +1,6 @@
 ; Simple utilities about declares
 ;
-; Copyright (C) 2015-2022 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,10 +28,16 @@
 
 (local (in-theory (disable keywordp)))
 
+;move
+(local
+ (defthm keyword-listp-of-remove-duplicates-equal
+   (implies (keyword-listp x)
+            (keyword-listp (remove-duplicates-equal x)))))
+
 ;; Recognize the "arguments" of an xargs declare (a list of alternating keys
 ;; and values). TODO: Add checks for the values supplied for the various kinds
 ;; of keys.
-(defun xargsp (xargs)
+(defund xargsp (xargs)
   (declare (xargs :guard t))
   (keyword-value-listp xargs))
 
@@ -40,6 +46,19 @@
          (and (keywordp key)
               (xargsp lst)))
   :hints (("Goal" :in-theory (enable xargsp))))
+
+(defthm xargsp-and-consp-forward-to-consp-of-cdr
+  (implies (and (xargsp xargs)
+                (consp xargs))
+           (consp (cdr xargs)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable xargsp keyword-value-listp))))
+
+(defthm xargsp-forward-to-true-listp
+  (implies (xargsp xargs)
+           (true-listp xargs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable xargsp keyword-value-listp))))
 
 ;; Recognize an "argument" to a declare, such as (xargs ...) or (type ... ...).
 ;; TODO: Add more checks for the various kinds of declares.
@@ -225,12 +244,20 @@
       (append pair-for-key
               (combine-xargs-for-keys (rest keys) keyword-value-list1 keyword-value-list2)))))
 
+;make local?
 (defthm keyword-value-listp-of-combine-xargs-for-keys
   (implies (and ;; (keyword-listp keys)
                 (keyword-value-listp keyword-value-list1)
                 (keyword-value-listp keyword-value-list2))
            (keyword-value-listp (combine-xargs-for-keys keys keyword-value-list1 keyword-value-list2)))
   :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+(defthm xargsp-of-combine-xargs-for-keys
+  (implies (and ;; (keyword-listp keys)
+                (xargsp keyword-value-list1)
+                (xargsp keyword-value-list2))
+           (xargsp (combine-xargs-for-keys keys keyword-value-list1 keyword-value-list2)))
+  :hints (("Goal" :in-theory (enable xargsp))))
 
 (defun combine-keyword-value-lists-for-xargs (keyword-value-list1 keyword-value-list2)
   (declare (xargs :guard (and (keyword-value-listp keyword-value-list1)
@@ -284,10 +311,16 @@
        (get-xargs-from-declare declare)
        (get-xargs-from-declares (rest declares))))))
 
+;make local?
 (defthm keyword-value-listp-of-get-xargs-from-declares
   (implies (all-declarep declares)
            (keyword-value-listp (get-xargs-from-declares declares)))
   :hints (("Goal" :in-theory (disable len))))
+
+(defthm xargsp-of-get-xargs-from-declares
+  (implies (all-declarep declares)
+           (xargsp (get-xargs-from-declares declares)))
+  :hints (("Goal" :in-theory (disable xargsp))))
 
 (verify-guards get-xargs-from-declares)
 
@@ -621,10 +654,16 @@
         (remove-xarg xarg (cddr xargs))
       `(,(first xargs) ,(second xargs) ,@(remove-xarg xarg (cddr xargs))))))
 
+;make local?
 (defthm keyword-value-listp-of-remove-xarg
   (implies (keyword-value-listp xargs)
            (keyword-value-listp (remove-xarg xarg xargs)))
   :hints (("Goal" :in-theory (enable remove-xarg keyword-value-listp))))
+
+(defthm xargsp-of-remove-xarg
+  (implies (xargsp xargs)
+           (xargsp (remove-xarg xarg xargs)))
+  :hints (("Goal" :in-theory (enable xargsp))))
 
 (defun remove-xarg-in-declare-args (xarg declare-args)
   (declare (xargs :guard (and (keywordp xarg)
@@ -633,8 +672,12 @@
       nil
     (let ((arg (first declare-args)))
       (if (eq 'xargs (ffn-symb arg))
-          (cons `(xargs ,@(remove-xarg xarg (fargs arg)))
-                (remove-xarg-in-declare-args xarg (rest declare-args)))
+          (let ((new-xargs (remove-xarg xarg (fargs arg))))
+            (if (null new-xargs)
+                ;; Drop an empty xargs:
+                (remove-xarg-in-declare-args xarg (rest declare-args))
+              (cons `(xargs ,@new-xargs)
+                    (remove-xarg-in-declare-args xarg (rest declare-args)))))
         (cons arg (remove-xarg-in-declare-args xarg (rest declare-args)))))))
 
 (defthm all-declare-argp-of-remove-xarg-in-declare-args
@@ -657,8 +700,12 @@
                               (all-declarep declares))))
   (if (atom declares)
       nil
-    (cons (remove-xarg-in-declare xarg (first declares))
-          (remove-xarg-in-declares xarg (rest declares)))))
+    (let ((new-declare (remove-xarg-in-declare xarg (first declares))))
+      (if (equal new-declare '(declare))
+          ;; Drop an empty declare:
+          (remove-xarg-in-declares xarg (rest declares))
+        (cons new-declare
+              (remove-xarg-in-declares xarg (rest declares)))))))
 
 (defthm all-declare-argp-of-remove-xarg-in-declares
   (implies (all-declarep declares)

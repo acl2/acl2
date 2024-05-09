@@ -44,7 +44,7 @@
      (xdoc::seetopic "crypto::hmac-sha-512-interface" "@('hmac-sha-512')"))
     (xdoc::li
      (xdoc::seetopic "crypto::pbkdf2-hmac-sha-512-interface"
-		     "@('pbkdf2-hmac-sha-512')"))
+                     "@('pbkdf2-hmac-sha-512')"))
     (xdoc::li
      "@(tsee secp256k1-priv-to-pub),
       which corresponds to @($\\mathtt{ECDSAPUBKEY}$) [YP:F]

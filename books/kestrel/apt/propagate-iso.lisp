@@ -1,7 +1,7 @@
 ; propagate-iso: A transformation to propagate an isomorphism from supplied isomorphic translations
 ;  of interface functions of a data type to their direct and indirect callers
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,10 +33,10 @@
 ;todo: think about macro expansion (use Matt's translate-raw?)
 ;todo: print the names of the generated functions
 
-(include-book "../utilities/hints")
-(include-book "utilities/deftransformation")
+(include-book "lift-iso")
+(include-book "kestrel/hints/renaming" :dir :system)
+(include-book "../utilities/theory-hints")
 (include-book "kestrel/utilities/event-tuples-between" :dir :system)
-(include-book "utilities/names")
 ;(include-book "transformation-table")
 ;(include-book "simplify-defun-impl")    ; just for generalize-to-lambda and fn-ubody
 (include-book "../sequences/defmap")
@@ -44,15 +44,19 @@
 (include-book "../std/system/pseudo-event-landmark-listp")
 
 (include-book "misc/install-not-normalized" :dir :system)
-(include-book "kestrel/std/util/defiso" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system)
-(include-book "kestrel/utilities/negate-form" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/fake-worlds" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "tools/remove-hyps" :dir :system)
 (include-book "kestrel/utilities/make-and-nice" :dir :system)
+;(include-book "kestrel/untranslated-terms-old/untranslated-terms-apply" :dir :system)
 
+(include-book "kestrel/std/system/classes" :dir :system)
 (include-book "kestrel/std/system/defun-sk-queries" :dir :system)
+(include-book "kestrel/std/system/fundef-enabledp" :dir :system)
+(include-book "kestrel/std/system/rune-enabledp" :dir :system)
 
 (set-state-ok t)
 
@@ -125,41 +129,30 @@
       (verify-termination-boot-strap
        (cdr (cltl-def-from-name fn wrld)))
       (otherwise nil))))
-;; Temporarily renamed to avoid conflict with fn-ubody
-(defun fn-ubody1 (fn fn-body wrld ev)
-
-; Return a body of fn, preferably an untranslated body, else an unnormalized
-; body.  Fn-body may be nil; otherwise it is an unnormalized body of fn in
-; wrld, (body fn nil wrld).  Ev may be nil; otherwise it the value of (get-def
-; fn wrld nil).
-
-  (or (car (last (get-def fn wrld ev)))
-      fn-body
-      (body fn nil wrld)))
 
 (logic)
 
 ;; Temporary utility fns from make-axe-rules.lisp but generalized to untranslated-termp
 ;;  -- should be in in utilities dir
 (defines flatten-conj/s
-(define flatten-conj ((hyp untranslated-termp))
+  (define flatten-conj ((hyp untranslated-termp))
   ;:returns (conjuncts untranslated-term-listp)
-  (if (and hyp (symbolp hyp))
-      (list hyp)
-    (if (atom hyp)
+    (if (and hyp (symbolp hyp))
+        (list hyp)
+      (if (atom hyp)
+          ()
+        (if (and (eq 'if (car hyp))       ;(if x y nil) => (and x y)
+                 (equal *nil* (fourth hyp)))
+            (append (flatten-conj (second hyp))
+                    (flatten-conj (third hyp)))
+          (if (eq 'and (car hyp))
+              (flatten-conjuncts (cdr hyp))
+            (list hyp))))))
+  (define flatten-conjuncts ((conjuncts untranslated-term-listp))
+    (if (endp conjuncts)
         ()
-      (if (and (eq 'if (car hyp))       ;(if x y nil) => (and x y)
-               (equal *nil* (fourth hyp)))
-          (append (flatten-conj (second hyp))
-                  (flatten-conj (third hyp)))
-        (if (eq 'and (car hyp))
-            (flatten-conjuncts (cdr hyp))
-          (list hyp))))))
-(define flatten-conjuncts ((conjuncts untranslated-term-listp))
-  (if (endp conjuncts)
-      ()
-    (append (flatten-conj (car conjuncts))
-            (flatten-conjuncts (cdr conjuncts)))))
+      (append (flatten-conj (car conjuncts))
+              (flatten-conjuncts (cdr conjuncts)))))
 ) ; flatten-conj/s
 
 (defund rule-hyps-and-conc (theorem-body rule-symbol)
@@ -244,167 +237,7 @@
           (append good-eventups
                   (event-tuples-between-pairs (cdr event-regions) rest-eventups)))))))
 
-;; Remove troublesome __function__ binding!
-(define clean-body (body)
-  :mode :program
-  (case-match body
-    (('let (('__function__ &))
-       ('declare &)
-       real-body)
-     real-body)
-    ;; Temporarily removed until generalize-to-lambda put in community books
-    ;; ((('lambda formals body) . actuals)
-    ;;  (apt::generalize-to-lambda formals actuals body))
-    (& body)))
 
-
-;; Support fns
-
-(defun iso-info-elt-p (iso-info)
-  (declare (xargs :guard t))
-  (and (symbol-listp iso-info)
-       (> (len iso-info) 4)))
-
-(define iso-info-iso-name ((iso-info defmapping-infop))
-  (let ((iso-rec (acl2::defmapping-info->call$ iso-info)))
-    (case-match iso-rec
-      (('defiso iso-name . &)
-       iso-name))))
-
-(define iso-info-old ((iso-info defmapping-infop))
-  :returns (pred-name pseudo-termfnp :hyp :guard)
-  (acl2::defmapping-info->doma iso-info))
-
-(define iso-info-new ((iso-info defmapping-infop))
-  :returns (pred-name pseudo-termfnp :hyp :guard)
-  (acl2::defmapping-info->domb iso-info))
-
-(define iso-info-pred ((iso-info defmapping-infop)
-                       (new-p booleanp))
-  :returns (pred-name pseudo-termfnp :hyp :guard)
-  (if new-p
-      (iso-info-new iso-info)
-    (iso-info-old iso-info)))
-
-(define iso-info-new-to-old ((iso-info defmapping-infop))
-  :returns (pred-name pseudo-termfnp :hyp :guard)
-  (acl2::defmapping-info->beta iso-info))
-
-(define iso-info-old-to-new ((iso-info defmapping-infop))
-  :returns (pred-name pseudo-termfnp :hyp :guard)
-  (acl2::defmapping-info->alpha iso-info))
-
-(define iso-info-convert-fn ((iso-info defmapping-infop)
-                             (new-to-old-p booleanp))
-  :returns (pred-name pseudo-termfnp :hyp :guard)
-  (if new-to-old-p
-      (iso-info-new-to-old iso-info)
-    (iso-info-old-to-new iso-info)))
-
-(define iso-info-alist-p (iso-infos)
-  :guard t
-  (or (null iso-infos)
-      (and (consp iso-infos)
-           (consp (first iso-infos))
-           (symbolp (caar iso-infos))
-           (defmapping-infop (cdar iso-infos))
-           (iso-info-alist-p (rest iso-infos))))
-///
-(defthm true-listp-iso-info-alist-p
-  (implies (iso-info-alist-p l)
-           (true-listp l))
-  :rule-classes (:forward-chaining))
-(defthm iso-info-alist-p-car
-  (implies (and (iso-info-alist-p iso-infos)
-                (consp iso-infos))
-           (consp (car iso-infos))))
-(defthm iso-info-alist-p-caar
-  (implies (and (iso-info-alist-p iso-infos)
-                (consp iso-infos))
-           (symbolp (caar iso-infos))))
-(defthm iso-info-alist-p-cdar
-  (implies (and (iso-info-alist-p iso-infos)
-                (consp iso-infos))
-           (defmapping-infop (cdar iso-infos))))
-(defthm iso-info-alist-p-cdr
-  (implies (iso-info-alist-p iso-infos)
-           (iso-info-alist-p (cdr iso-infos))))
-(defthm iso-info-alist-p-alistp
-  (implies (iso-info-alist-p l)
-           (alistp l)))
-(defthm iso-info-alist-p-append
-  (implies (and (iso-info-alist-p iso-infos)
-                (symbolp s)
-                (defmapping-infop o))
-           (iso-info-alist-p (append iso-infos (list (cons s o))))))
-) ; iso-info-alist-p
-
-(define renaming-from-iso-infos ((iso-infos iso-info-alist-p))
-  :returns (subst alistp)
-  :verify-guards nil
-  (if (endp iso-infos)
-      ()
-    (acons (iso-info-old (cdar iso-infos))
-           (iso-info-new (cdar iso-infos))
-           (renaming-from-iso-infos (cdr iso-infos)))))
-
-(verify-guards renaming-from-iso-infos
-  :hints (("Goal" :in-theory (enable iso-info-alist-p))))
-
-(define iso-convert-theorems ((iso-infos iso-info-alist-p))
-  ;:returns (thms symbol-listp)
-  :mode :program
-  (if (endp iso-infos)
-      ()
-    (b* (((defmapping-info iso) (cdar iso-infos))
-         (r-thms (iso-convert-theorems (rest iso-infos))))
-      (list* iso.alpha-image
-             iso.beta-image
-             iso.beta-of-alpha
-             iso.alpha-of-beta
-             iso.alpha-injective
-             iso.beta-injective
-             (if iso.alpha-guard
-                 (list* iso.alpha-guard iso.beta-guard r-thms)
-               r-thms)))))
-
-(define lookup-iso-info ((f symbolp) (iso-infos iso-info-alist-p))
-  (cdr (assoc f iso-infos))
-///
-(defthm defmapping-infop-lookup-iso-info
-  (implies (and (iso-info-alist-p iso-infos)
-                (lookup-iso-info f iso-infos))
-           (defmapping-infop (lookup-iso-info f iso-infos))))
-)
-
-(define lookup-osi-info ((f symbolp) (iso-infos iso-info-alist-p))
-  (if (atom iso-infos)
-      nil
-    (if (equal f (iso-info-new (cdar iso-infos)))
-        (cdar iso-infos)
-      (lookup-osi-info f (rest iso-infos))))
-///
-(defthm defmapping-infop-lookup-osi-info
-  (implies (and (iso-info-alist-p iso-infos)
-                (lookup-osi-info f iso-infos))
-           (defmapping-infop (lookup-osi-info f iso-infos))))
-)
-
-(define source-of-iso-p ((f symbolp) (iso-infos iso-info-alist-p))
-  (assoc f iso-infos))
-
-(define target-of-iso-p ((f symbolp) (iso-infos iso-info-alist-p))
-  (and (consp iso-infos)
-       (or (equal f (iso-info-new (cdar iso-infos)))
-           (target-of-iso-p f (rest iso-infos)))))
-
-(define iso-info-f-pred ((f symbolp) (iso-infos iso-info-alist-p) (new-p booleanp))
-  (let ((iso-info (lookup-iso-info f iso-infos)))
-    (if iso-info
-        (if new-p
-            (iso-info-new iso-info)
-          (iso-info-old iso-info))
-      (raise "Shouldn't happen! ~x0 not in~%~x1" f iso-infos))))
 
 ;; Wraps tm in iso (osi) unless tm is a call to osi (iso) then it just returns the unwrapped tm
 (define iso-info-convert-term ((type-pred symbolp)
@@ -515,105 +348,39 @@
     (cons (arg-domain-for-var (first formals) guards iso-infos)
           (arg-signature (rest formals) guards iso-infos))))
 
-;; substitutes all occurrences of pat by repl in str
-(define string-subst ((str stringp) (pat stringp) (repl stringp))
-  ;:measure (length str)
-  ;:returns (s stringp :hyp :guard)
-  :mode :program
-  (let ((pos-i (search pat str)))
-    (if (or (null pos-i)
-            (equal str ""))
-        str
-      (concatenate 'string (subseq str 0 pos-i)
-                   repl
-                   (string-subst (subseq str (+ pos-i (length pat))
-                                         (length str))
-                                 pat repl)))))
 
-(define string-subst-remove-p ((str stringp) (pat stringp) (repl stringp))
-  :mode :program
-  (if (and (search "-P" pat :start2 (- (length pat) 2))
-           (search "-P" repl :start2 (- (length repl) 2)))
-      (string-subst str
-                    (subseq pat 0 (- (length pat) 2))
-                    (subseq repl 0 (- (length repl) 2)))
-    (string-subst str pat repl)))
+(define type-theorem-p (thm)
+  :returns (b booleanp)
+  :hints (("Goal" :in-theory (enable acl2-count)))
+  (case-match thm
+    (('implies & head)
+     (type-theorem-p head))
+    ((('lambda (x) (p x))
+      bod)
+     (declare (ignorable x))
+     (type-theorem-p `(,p ,bod)))
+    ((p &)
+     (symbolp p))))
 
-;; substitute iso domain name if it occurs and the result is not already used,
-;; else use the current transformation index for THM
-(define new-name-maybe-using-isos ((fun symbolp)
-                                   (iso-infos iso-info-alist-p)
-                                   (thmp booleanp)
-                                   (world plist-worldp))
-  ;:returns (nm symbolp)
-  :mode :program
-  (if (endp iso-infos)
-      (acl2::increment-name-suffix fun)
-    (or (b* ((iso-info (cdar iso-infos))
-             (new-fun-name
-              (string-subst-remove-p (symbol-name fun)
-                                     (symbol-name (acl2::defmapping-info->doma iso-info))
-                                     (symbol-name (acl2::defmapping-info->domb iso-info))))
-             ((when (equal new-fun-name (symbol-name fun)))
-              nil)
-             (new-sym (intern new-fun-name "ACL2")))
-          new-sym)
-        (new-name-maybe-using-isos fun (rest iso-infos) thmp world))))
-
-(define dependent-on-iso-types-p ((sig-list symbol-listp) (iso-infos iso-info-alist-p))
-  (and (consp sig-list)
-       (or (lookup-iso-info (first sig-list) iso-infos)
-           (dependent-on-iso-types-p (rest sig-list) iso-infos))))
-
-(std::defaggregate propiso-info
-                   ((iso-osi-ruleset-name symbolp)
-                    (iso-ruleset-name symbolp)
-                    (osi-ruleset-name symbolp)
-                    (hints-map symbol-alistp)
-                    (world plist-worldp)))
-
-(define lookup-hints ((sym symbolp) (propiso-info propiso-info-p))
-  (lookup-eq sym (propiso-info->hints-map propiso-info)))
-
-(define iso-osi-thm-ruleset-form ((propiso-info propiso-info-p))
-  `(expand-ruleset '(,(propiso-info->iso-osi-ruleset-name propiso-info)) world))
-
-(define iso-thm-ruleset-form ((propiso-info propiso-info-p))
-  `(expand-ruleset '(,(propiso-info->iso-ruleset-name propiso-info)) world))
-
-(define osi-thm-ruleset-form ((propiso-info propiso-info-p))
-  `(expand-ruleset '(,(propiso-info->osi-ruleset-name propiso-info)) world))
-
-(define add-iso-osi-theorem-event (thms (propiso-info propiso-info-p))
-  `(add-to-ruleset ,(propiso-info->iso-osi-ruleset-name propiso-info)
-                   ',thms))
-
-(define add-iso-theorem-event (thms (propiso-info propiso-info-p))
-  `(add-to-ruleset ,(propiso-info->iso-ruleset-name propiso-info)
-                   ',thms))
-
-(define add-osi-theorem-event (thms (propiso-info propiso-info-p))
-  `(add-to-ruleset ,(propiso-info->osi-ruleset-name propiso-info)
-                   ',thms))
 
 ;; fn-info fns
 
 (std::defaggregate fn-info-elt
-                   ((source-fn symbolp)
-                    (target-fn symbolp)
-                    (iso-thm symbolp)
-                    (osi-thm symbolp)
-                    (arg-types symbol-listp)
-                    (result-types symbol-listp)))
+  ((source-fn symbolp)
+   (target-fn symbolp-or-lambdap)
+   (iso-thm symbolp)
+   (osi-thm symbolp)
+   (arg-types symbol-listp)
+   (result-types symbol-listp)))
 
-(define merge-fn-info-elt-iso-fn-type (fn-info? (fun symbolp) (fun1 symbolp) arg-sig ret-sig)
+(define merge-fn-info-elt-iso-fn-type (fn-info? (fun symbolp) (fun1 symbolp-or-lambdap) arg-sig ret-sig)
   :mode :program
   (if (null fn-info?)
       (fn-info-elt fun fun1 nil nil arg-sig ret-sig)
     (change-fn-info-elt fn-info?
-                          :target-fn fun1
-                          :arg-types arg-sig
-                          :result-types ret-sig)))
+                        :target-fn fun1
+                        :arg-types arg-sig
+                        :result-types ret-sig)))
 
 (defforall fn-infos-list-p (el) (fn-info-elt-p el)
   :guard t
@@ -638,7 +405,8 @@
           (r-val (target-fns (rest fn-infos))))
       (if (null fn)
           r-val
-        (cons fn  r-val)))))
+        (cons fn r-val)))))
+
 (defun iso-thms (fn-infos)
   (if (endp fn-infos)
       ()
@@ -655,6 +423,33 @@
       (if (null thm)
           r-val
         (cons thm  r-val)))))
+
+(define iso-thmp ((thm symbolp) (fn-infos fn-infos-list-p))
+  (and (consp fn-infos)
+       (or (eq thm (fn-info-elt->iso-thm (car fn-infos)))
+           (iso-thmp thm (rest fn-infos)))))
+(define osi-thmp ((thm symbolp) (fn-infos fn-infos-list-p))
+  (and (consp fn-infos)
+       (or (eq thm (fn-info-elt->osi-thm (car fn-infos)))
+           (osi-thmp thm (rest fn-infos)))))
+
+(define iso-or-osi-thmp ((thm symbolp) (fn-infos fn-infos-list-p))
+  (or (iso-thmp thm fn-infos)
+      (osi-thmp thm fn-infos)
+      (let* ((nm (symbol-name thm))
+             (pos (position #\. nm))
+             (l (length nm)))
+        (and pos
+             (< pos l)
+             (member-equal (subseq nm (+ 1 pos) (length nm))
+                           '("ALPHA-IMAGE"
+                             "BETA-IMAGE"
+                             "BETA-OF-ALPHA"
+                             "ALPHA-OF-BETA"
+                             "ALPHA-GUARD"
+                             "BETA-GUARD"
+                             "ALPHA-INJECTIVE"
+                             "BETA-INJECTIVE"))))))
 
 
 (deffilter restrict-fn-infos-list (refd-funs fn-infos)
@@ -714,18 +509,6 @@
   (let ((fn-info (lookup-fn-info-elt f fn-infos)))
     (and fn-info (fn-info-elt->arg-types fn-info))))
 
-(define type-theorem-p (thm)
-  :returns (b booleanp)
-  :hints (("Goal" :in-theory (enable acl2-count)))
-  (case-match thm
-    (('implies & head)
-     (type-theorem-p head))
-    ((('lambda (x) (p x))
-      bod)
-     (declare (ignorable x))
-     (type-theorem-p `(,p ,bod)))
-    ((p &)
-     (symbolp p))))
 
 (define iso-type-theorem (head (fn-infos fn-infos-list-p) (iso-infos iso-info-alist-p))
   (case-match head
@@ -739,9 +522,10 @@
               (or (eq p 'booleanp)
                   (source-of-iso-p p iso-infos)
                   (lookup-fn-info-elt p fn-infos) ; ???
-                  ))
+              ))
          (mv f p)
        (mv nil nil)))
+    (('equal real-head ''t) (iso-type-theorem real-head fn-infos iso-infos))
     (& (mv nil nil))))
 
 (define osi-thms-for-source-fns ((src-fns symbol-listp) (fn-infos fn-infos-list-p))
@@ -763,92 +547,83 @@
            (fn-info-elt->target-fn (car fn-infos))
            (renaming-from-fn-infos (rest fn-infos)))))
 
-(define theorem-names (thms)
-  :returns (l symbol-listp)
-  (if (atom thms)
-      ()
-    (cons (and (true-listp (car thms))
-               (symbolp (second (car thms)))
-               (second (car thms)))
-          (theorem-names (cdr thms)))))
-
 (defines variable-types/list/binds
-(define variable-types ((term untranslated-termp)
-                        (fn-infos fn-infos-list-p)
-                        (iso-infos iso-info-alist-p)
-                        (var-ty-alist symbol-alistp))
-  :mode :program
-  (if (atom term)
-      var-ty-alist
-    (case-match term
-      (('cond (p e1) . r-cases)
-       (variable-types `(cond . ,r-cases) fn-infos iso-infos
-                       (variable-types e1 fn-infos iso-infos
-                                       (variable-types p fn-infos iso-infos var-ty-alist))))
-      ((('lambda vs . es) . args)
-       (remove-keys-from-alist
-        (variable-types (car (last es)) fn-infos iso-infos
-                        (variable-types-list args nil fn-infos iso-infos var-ty-alist))
-                               vs))
-      (('let binds . es)
-       (remove-keys-from-alist
-        (variable-types (car (last es)) fn-infos iso-infos
-                        (variable-types-binds binds fn-infos iso-infos var-ty-alist))
-                               (alist-keys binds)))
-      (('let* binds . es)
-       (remove-keys-from-alist
-        (variable-types (car (last es)) fn-infos iso-infos
-                        (variable-types-binds binds fn-infos iso-infos var-ty-alist))
-                               (alist-keys binds)))
-      (('b* binds . es)
-       ;; TODO: remove-keys-from-alist variables bound in b*
-       (variable-types (car (last es))
-                       fn-infos iso-infos
-                       (variable-types-binds binds fn-infos iso-infos var-ty-alist))) ; todo handle more cases
-      ((f . args)
-       (let ((fn-info (lookup-fn-info-elt f fn-infos))
-             (iso-info (lookup-iso-info f iso-infos)))
-         (variable-types-list args (if iso-info
-                                       (list f)
-                                     (and fn-info (fn-info-elt->arg-types fn-info)))
-                              fn-infos iso-infos var-ty-alist)))
-      (& var-ty-alist))))
-(define variable-type ((tm untranslated-termp)
-                       (type symbolp)
-                       (var-ty-alist symbol-alistp))
-  (case-match tm
-    (('force f-tm)
-     (variable-type f-tm type var-ty-alist))
-    (('cons & cdr-tm)                   ; what about car? Maybe typed elsewhere
-     (variable-type cdr-tm type var-ty-alist))
-    (& (if (and (symbolp tm)
-                (not (null tm))
-                (not (or (member type '(nil booleanp))
-                         (symbol-name-equal type "*")))
-                (not (assoc-eq tm var-ty-alist))) ; TODO: Check for best type?
-           (acons tm type var-ty-alist)
-         var-ty-alist))))
-(define variable-types-list ((tms untranslated-term-listp)
-                             (types symbol-alistp)
-                             (fn-infos fn-infos-list-p)
-                             (iso-infos iso-info-alist-p)
-                             (var-ty-alist symbol-alistp))
-  :mode :program
-  (if (endp tms)
-      var-ty-alist
-    (let* ((var-ty-alist (variable-type (car tms) (car types) var-ty-alist)))
-      (variable-types-list (cdr tms) (cdr types) fn-infos iso-infos
-                           (variable-types (car tms) fn-infos iso-infos var-ty-alist)))))
-(define variable-types-binds (tms
-                              (fn-infos fn-infos-list-p)
-                              (iso-infos iso-info-alist-p)
-                              (var-ty-alist symbol-alistp))
-  :mode :program
-  (if (endp tms)
-      var-ty-alist
-    (variable-types-binds (cdr tms)
-                          fn-infos iso-infos
-                          (variable-types (cadar tms) fn-infos iso-infos var-ty-alist))))
+  (define variable-types ((term untranslated-termp)
+                          (fn-infos fn-infos-list-p)
+                          (iso-infos iso-info-alist-p)
+                          (var-ty-alist symbol-alistp))
+    :mode :program
+    (if (atom term)
+        var-ty-alist
+      (case-match term
+        (('cond (p e1) . r-cases)
+         (variable-types `(cond . ,r-cases) fn-infos iso-infos
+                         (variable-types e1 fn-infos iso-infos
+                                         (variable-types p fn-infos iso-infos var-ty-alist))))
+        ((('lambda vs . es) . args)
+         (remove-keys-from-alist
+          (variable-types (car (last es)) fn-infos iso-infos
+                          (variable-types-list args nil fn-infos iso-infos var-ty-alist))
+          vs))
+        (('let binds . es)
+         (remove-keys-from-alist
+          (variable-types (car (last es)) fn-infos iso-infos
+                          (variable-types-binds binds fn-infos iso-infos var-ty-alist))
+          (alist-keys binds)))
+        (('let* binds . es)
+         (remove-keys-from-alist
+          (variable-types (car (last es)) fn-infos iso-infos
+                          (variable-types-binds binds fn-infos iso-infos var-ty-alist))
+          (alist-keys binds)))
+        (('b* binds . es)
+         ;; TODO: remove-keys-from-alist variables bound in b*
+         (variable-types (car (last es))
+                         fn-infos iso-infos
+                         (variable-types-binds binds fn-infos iso-infos var-ty-alist))) ; todo handle more cases
+        ((f . args)
+         (let ((fn-info (lookup-fn-info-elt f fn-infos))
+               (iso-info (lookup-iso-info f iso-infos)))
+           (variable-types-list args (if iso-info
+                                         (list f)
+                                       (and fn-info (fn-info-elt->arg-types fn-info)))
+                                fn-infos iso-infos var-ty-alist)))
+        (& var-ty-alist))))
+  (define variable-type ((tm untranslated-termp)
+                         (type symbolp)
+                         (var-ty-alist symbol-alistp))
+    (case-match tm
+      (('force f-tm)
+       (variable-type f-tm type var-ty-alist))
+      (('cons & cdr-tm)                   ; what about car? Maybe typed elsewhere
+       (variable-type cdr-tm type var-ty-alist))
+      (& (if (and (symbolp tm)
+                  (not (null tm))
+                  (not (or (member type '(nil booleanp))
+                           (symbol-name-equal type "*")))
+                  (not (assoc-eq tm var-ty-alist))) ; TODO: Check for best type?
+             (acons tm type var-ty-alist)
+           var-ty-alist))))
+  (define variable-types-list ((tms untranslated-term-listp)
+                               (types symbol-alistp)
+                               (fn-infos fn-infos-list-p)
+                               (iso-infos iso-info-alist-p)
+                               (var-ty-alist symbol-alistp))
+    :mode :program
+    (if (endp tms)
+        var-ty-alist
+      (let* ((var-ty-alist (variable-type (car tms) (car types) var-ty-alist)))
+        (variable-types-list (cdr tms) (cdr types) fn-infos iso-infos
+                             (variable-types (car tms) fn-infos iso-infos var-ty-alist)))))
+  (define variable-types-binds (tms
+                                (fn-infos fn-infos-list-p)
+                                (iso-infos iso-info-alist-p)
+                                (var-ty-alist symbol-alistp))
+    :mode :program
+    (if (endp tms)
+        var-ty-alist
+      (variable-types-binds (cdr tms)
+                            fn-infos iso-infos
+                            (variable-types (cadar tms) fn-infos iso-infos var-ty-alist))))
 ) ; variable-types/list/binds
 
 (define incorporate-iso-infos ((iso-infos iso-info-alist-p) (fn-infos fn-infos-list-p))
@@ -872,43 +647,43 @@
                                     (iso-infos iso-info-alist-p)
                                     (typing-thms symbol-listp)
                                     (world plist-worldp))
-    :mode :program
-    (if (endp eventups)
-        (mv fn-infos typing-thms)
-      ;; process event tuple according to type:
-      (let ((eventup (car eventups)))
-        (b* (((mv fn-infos typing-thms)
-               (case (acl2::access-event-tuple-type eventup)
-                 (defun (mv (let ((fun (acl2::access-event-tuple-namex eventup)))
-                              (if (lookup-fn-info-elt fun fn-infos)
-                                  fn-infos
-                                (cons (fn-info-elt fun nil nil nil nil '(*))
-                                      fn-infos)))
-                            typing-thms))
-                 ((defaxiom defthm)
-                  (b* ((thm (acl2::access-event-tuple-namex eventup))
-                       (formula (formula thm nil world))
-                       ((mv - head) (rule-hyps-and-conc formula thm))
-                       ((mv fun p) (iso-type-theorem head fn-infos iso-infos))
-                       (old-fn-info (and fun (lookup-fn-info-elt fun fn-infos)))
-                       (old-result-types (fn-info-elt->result-types old-fn-info)))
-                    (mv (if old-fn-info
-                            (cons (if (case-match old-result-types
-                                        (((quote~ *)) t) ; temporary
-                                        ((prev-type)
-                                         (and (not (source-of-iso-p prev-type iso-infos))
-                                              (source-of-iso-p p iso-infos)))
-                                        (& nil))
-                                      (change-fn-info-elt old-fn-info
-                                                          :result-types (list p))
-                                    old-fn-info)
-                                  (delete-fn-infos-for-fun fn-infos fun))
-                          fn-infos)
-                        (if fun
-                            (cons thm typing-thms)
-                          typing-thms))))
-                 (otherwise (mv fn-infos typing-thms)))))
-          (result-types-from-theorems (cdr eventups) fn-infos iso-infos typing-thms world)))))
+  :mode :program
+  (if (endp eventups)
+      (mv fn-infos typing-thms)
+    ;; process event tuple according to type:
+    (let ((eventup (car eventups)))
+      (b* (((mv fn-infos typing-thms)
+            (case (acl2::access-event-tuple-type eventup)
+              (defun (mv (let ((fun (acl2::access-event-tuple-namex eventup)))
+                           (if (lookup-fn-info-elt fun fn-infos)
+                               fn-infos
+                             (cons (fn-info-elt fun nil nil nil nil '(*))
+                                   fn-infos)))
+                         typing-thms))
+              ((defaxiom defthm)
+               (b* ((thm (acl2::access-event-tuple-namex eventup))
+                    (formula (formula thm nil world))
+                    ((mv - head) (rule-hyps-and-conc formula thm))
+                    ((mv fun p) (iso-type-theorem head fn-infos iso-infos))
+                    (old-fn-info (and fun (lookup-fn-info-elt fun fn-infos)))
+                    (old-result-types (fn-info-elt->result-types old-fn-info)))
+                 (mv (if old-fn-info
+                         (cons (if (case-match old-result-types
+                                     (((quote~ *)) t) ; temporary
+                                     ((prev-type)
+                                      (and (not (source-of-iso-p prev-type iso-infos))
+                                           (source-of-iso-p p iso-infos)))
+                                     (& nil))
+                                   (change-fn-info-elt old-fn-info
+                                                       :result-types (list p))
+                                 old-fn-info)
+                               (delete-fn-infos-for-fun fn-infos fun))
+                       fn-infos)
+                     (if fun
+                         (cons thm typing-thms)
+                       typing-thms))))
+              (otherwise (mv fn-infos typing-thms)))))
+        (result-types-from-theorems (cdr eventups) fn-infos iso-infos typing-thms world)))))
 
 ;; TODO: fix so that result types of nested mvs can be handled
 (define result-signature-aux ((term pseudo-termp)
@@ -950,9 +725,11 @@
                    (if (consp x-sig)
                        x-sig
                      (list x-sig)))
-               (if tms
-                   (result-signature-aux `(mv . ,tms) fn-infos arg-ty-alist)
-                 ()))))
+                 (if tms
+                     (result-signature-aux `(mv . ,tms) fn-infos arg-ty-alist)
+                   ()))))
+      (('mbe ':logic l-tm . &)
+       (result-signature-aux l-tm fn-infos arg-ty-alist))
       ((f . &)
        (let ((fn-info (lookup-fn-info-elt f fn-infos)))
          (and fn-info (fn-info-elt->result-types fn-info))))
@@ -980,7 +757,7 @@
   ;:returns (conds pseudo-term-listp)
   (if (or (endp formals)
           (endp arg-sig))
-    ()
+      ()
     (let ((rval (make-formal-conds (rest formals) (rest arg-sig) iso-infos new-to-old-p))
           (arg-sig1 (first arg-sig))
           (formal1 (first formals)))
@@ -999,7 +776,7 @@
    (new-to-old-p booleanp))
   ;:returns (conv-args untranslated-term-listp)
   (if (endp args)
-    ()
+      ()
     (if (endp arg-sig)
         (raise "Missing signature for (~x0 . ~x1)" f args )
       (let* ((arg-sig1 (first arg-sig))
@@ -1055,9 +832,9 @@
     (if (iso-pred-term? (car pred-tms) iso-infos new-to-old-p)
         (cons `(force ,(car pred-tms))
               (filter-iso-pred-terms (cdr pred-tms)
-                                      iso-infos new-to-old-p))
+                                     iso-infos new-to-old-p))
       (filter-iso-pred-terms (cdr pred-tms)
-                              iso-infos new-to-old-p))))
+                             iso-infos new-to-old-p))))
 
 (define iso-theorem-for-fns ((fun symbolp)
                              (fun1 symbolp)
@@ -1101,87 +878,87 @@
     conv-tm))
 
 (defines add-iso-conversions/list/binds
-(define add-iso-conversions ((tm untranslated-termp)
-                             (fn-infos fn-infos-list-p)
-                             (iso-infos iso-info-alist-p))
-  :mode :program
-  (case-match tm
-    (('let binds bod)
-     `(let ,(add-iso-conversions-binds binds fn-infos iso-infos)
-        ,(add-iso-conversions bod fn-infos iso-infos)))
-    (('let* binds bod)
-     `(let* ,(add-iso-conversions-binds binds fn-infos iso-infos)
-        ,(add-iso-conversions bod fn-infos iso-infos)))
-    ((('lambda vars bod) . args)
-     `((lambda ,vars ,(add-iso-conversions bod fn-infos iso-infos))
-       ,@(add-iso-conversions-list args fn-infos iso-infos)))
-    ((f . args)
-     (let ((converted-args (add-iso-conversions-list args fn-infos iso-infos))
-           (fn-info (lookup-fn-info-elt f fn-infos)))
-       (if fn-info
-           (make-iso-osi-term f converted-args
-                              (fn-info-elt->arg-types fn-info)
-                              (fn-info-elt->result-types fn-info)
-                              iso-infos t)
-         `(,f ,@converted-args))))
-    (& tm)))                       ; TODO: add more cases
-(define add-iso-conversions-list ((tms untranslated-term-listp)
-                                  (fn-infos fn-infos-list-p)
-                                  (iso-infos iso-info-alist-p))
-  :mode :program
-  (if (endp tms)
-      ()
-    (cons (add-iso-conversions (car tms) fn-infos iso-infos)
-          (add-iso-conversions-list (cdr tms) fn-infos iso-infos))))
-(define add-iso-conversions-binds (tms (fn-infos fn-infos-list-p) (iso-infos iso-info-alist-p))
-  :mode :program
-  (if (endp tms)
-      ()
-    (cons (list (caar tms) (add-iso-conversions (cadar tms) fn-infos iso-infos))
-          (add-iso-conversions-binds (cdr tms) fn-infos iso-infos)))))
+  (define add-iso-conversions ((tm untranslated-termp)
+                               (fn-infos fn-infos-list-p)
+                               (iso-infos iso-info-alist-p))
+    :mode :program
+    (case-match tm
+      (('let binds bod)
+       `(let ,(add-iso-conversions-binds binds fn-infos iso-infos)
+          ,(add-iso-conversions bod fn-infos iso-infos)))
+      (('let* binds bod)
+       `(let* ,(add-iso-conversions-binds binds fn-infos iso-infos)
+          ,(add-iso-conversions bod fn-infos iso-infos)))
+      ((('lambda vars bod) . args)
+       `((lambda ,vars ,(add-iso-conversions bod fn-infos iso-infos))
+         ,@(add-iso-conversions-list args fn-infos iso-infos)))
+      ((f . args)
+       (let ((converted-args (add-iso-conversions-list args fn-infos iso-infos))
+             (fn-info (lookup-fn-info-elt f fn-infos)))
+         (if fn-info
+             (make-iso-osi-term f converted-args
+                                (fn-info-elt->arg-types fn-info)
+                                (fn-info-elt->result-types fn-info)
+                                iso-infos t)
+           `(,f ,@converted-args))))
+      (& tm)))                       ; TODO: add more cases
+  (define add-iso-conversions-list ((tms untranslated-term-listp)
+                                    (fn-infos fn-infos-list-p)
+                                    (iso-infos iso-info-alist-p))
+    :mode :program
+    (if (endp tms)
+        ()
+      (cons (add-iso-conversions (car tms) fn-infos iso-infos)
+            (add-iso-conversions-list (cdr tms) fn-infos iso-infos))))
+  (define add-iso-conversions-binds (tms (fn-infos fn-infos-list-p) (iso-infos iso-info-alist-p))
+    :mode :program
+    (if (endp tms)
+        ()
+      (cons (list (caar tms) (add-iso-conversions (cadar tms) fn-infos iso-infos))
+            (add-iso-conversions-binds (cdr tms) fn-infos iso-infos)))))
 
 (defines add-iso-conversions-for-fun/list/binds
-(define add-iso-conversions-for-fun (body-tm
-                                     (fun symbolp)
-                                     (arg-sig symbol-listp)
-                                     (ret-sig symbol-listp)
-                                     (iso-infos iso-info-alist-p))
-  :mode :program
-  (case-match body-tm
-    ((!fun . args)
-     (make-iso-osi-term fun args arg-sig ret-sig iso-infos t))
-    (('let binds bod)
-     `(let ,(add-iso-conversions-for-fun-binds binds fun arg-sig ret-sig iso-infos)
-        ,(add-iso-conversions-for-fun bod fun arg-sig ret-sig iso-infos)))
-    (('let* binds bod)
-     `(let* ,(add-iso-conversions-for-fun-binds binds fun arg-sig ret-sig iso-infos)
-        ,(add-iso-conversions-for-fun bod fun arg-sig ret-sig iso-infos)))
-    ((('lambda vars bod) . args)
-     `((lambda ,vars ,(add-iso-conversions-for-fun bod fun arg-sig ret-sig iso-infos))
-       ,@(add-iso-conversions-for-fun-list args fun arg-sig ret-sig iso-infos)))
-    ((f . args)
-     `(,f ,@(add-iso-conversions-for-fun-list args fun arg-sig ret-sig iso-infos)))
-    (& body-tm)))                       ; TODO: add more cases
-(define add-iso-conversions-for-fun-list (tms
-                                          (fun symbolp)
-                                          (arg-sig symbol-listp)
-                                          (ret-sig symbol-listp)
-                                          (iso-infos iso-info-alist-p))
-  :mode :program
-  (if (endp tms)
-      ()
-    (cons (add-iso-conversions-for-fun (car tms) fun arg-sig ret-sig iso-infos)
-          (add-iso-conversions-for-fun-list (cdr tms) fun arg-sig ret-sig iso-infos))))
-(define add-iso-conversions-for-fun-binds (tms
-                                           (fun symbolp)
-                                           (arg-sig symbol-listp)
-                                           (ret-sig symbol-listp)
-                                           (iso-infos iso-info-alist-p))
-  :mode :program
-  (if (endp tms)
-      ()
-    (cons (list (caar tms) (add-iso-conversions-for-fun (cadar tms) fun arg-sig ret-sig iso-infos))
-          (add-iso-conversions-for-fun-binds (cdr tms) fun arg-sig ret-sig iso-infos)))))
+  (define add-iso-conversions-for-fun (body-tm
+                                       (fun symbolp)
+                                       (arg-sig symbol-listp)
+                                       (ret-sig symbol-listp)
+                                       (iso-infos iso-info-alist-p))
+    :mode :program
+    (case-match body-tm
+      ((!fun . args)
+       (make-iso-osi-term fun args arg-sig ret-sig iso-infos t))
+      (('let binds bod)
+       `(let ,(add-iso-conversions-for-fun-binds binds fun arg-sig ret-sig iso-infos)
+          ,(add-iso-conversions-for-fun bod fun arg-sig ret-sig iso-infos)))
+      (('let* binds bod)
+       `(let* ,(add-iso-conversions-for-fun-binds binds fun arg-sig ret-sig iso-infos)
+          ,(add-iso-conversions-for-fun bod fun arg-sig ret-sig iso-infos)))
+      ((('lambda vars bod) . args)
+       `((lambda ,vars ,(add-iso-conversions-for-fun bod fun arg-sig ret-sig iso-infos))
+         ,@(add-iso-conversions-for-fun-list args fun arg-sig ret-sig iso-infos)))
+      ((f . args)
+       `(,f ,@(add-iso-conversions-for-fun-list args fun arg-sig ret-sig iso-infos)))
+      (& body-tm)))                       ; TODO: add more cases
+  (define add-iso-conversions-for-fun-list (tms
+                                            (fun symbolp)
+                                            (arg-sig symbol-listp)
+                                            (ret-sig symbol-listp)
+                                            (iso-infos iso-info-alist-p))
+    :mode :program
+    (if (endp tms)
+        ()
+      (cons (add-iso-conversions-for-fun (car tms) fun arg-sig ret-sig iso-infos)
+            (add-iso-conversions-for-fun-list (cdr tms) fun arg-sig ret-sig iso-infos))))
+  (define add-iso-conversions-for-fun-binds (tms
+                                             (fun symbolp)
+                                             (arg-sig symbol-listp)
+                                             (ret-sig symbol-listp)
+                                             (iso-infos iso-info-alist-p))
+    :mode :program
+    (if (endp tms)
+        ()
+      (cons (list (caar tms) (add-iso-conversions-for-fun (cadar tms) fun arg-sig ret-sig iso-infos))
+            (add-iso-conversions-for-fun-binds (cdr tms) fun arg-sig ret-sig iso-infos)))))
 
 (define binds-to-equals ((binds symbol-alistp))
   (if (endp binds)
@@ -1203,6 +980,38 @@
                         thm-name))))
       (cons thm-name
             (local-names (rest local-thms))))))
+;;
+(std::defaggregate propiso-info
+  ((iso-osi-ruleset-name symbolp)
+   (iso-ruleset-name symbolp)
+   (osi-ruleset-name symbolp)
+   (hints-map symbol-alistp)
+   (world plist-worldp)))
+
+(define lookup-hints ((sym symbolp) (propiso-info propiso-info-p))
+  (lookup-eq sym (propiso-info->hints-map propiso-info)))
+
+(define iso-osi-thm-ruleset-form ((propiso-info propiso-info-p))
+  `(expand-ruleset '(,(propiso-info->iso-osi-ruleset-name propiso-info)) world))
+
+(define iso-thm-ruleset-form ((propiso-info propiso-info-p))
+  `(expand-ruleset '(,(propiso-info->iso-ruleset-name propiso-info)) world))
+
+(define osi-thm-ruleset-form ((propiso-info propiso-info-p))
+  `(expand-ruleset '(,(propiso-info->osi-ruleset-name propiso-info)) world))
+
+(define add-iso-osi-theorem-event (thms (propiso-info propiso-info-p))
+  `(add-to-ruleset ,(propiso-info->iso-osi-ruleset-name propiso-info)
+                   ',thms))
+
+(define add-iso-theorem-event (thms (propiso-info propiso-info-p))
+  `(add-to-ruleset ,(propiso-info->iso-ruleset-name propiso-info)
+                   ',thms))
+
+(define add-osi-theorem-event (thms (propiso-info propiso-info-p))
+  `(add-to-ruleset ,(propiso-info->osi-ruleset-name propiso-info)
+                   ',thms))
+;; end of propiso-info utilities
 
 (define support-thms-for-defun-aux (old-body-tm ; sub-term of function body
                                     (hyps true-listp) ; list of predicates that are true in context
@@ -1214,33 +1023,36 @@
                                     (fn-infos fn-infos-list-p)
                                     (iso-infos iso-info-alist-p)
                                     (propiso-info propiso-info-p))
-                                        ;:returns (events true-list-listp)
+  ;; :returns (events true-list-listp)
   :mode :program
   (case-match old-body-tm
-    (('if pred then-cl else-cl)
-     (let ((pred (rename-fns-in-untranslated-term pred fn-renaming)))
+    (('IF pred then-cl else-cl)
+     (let ((pred (rename-fns-and-expand-lambdas-in-untranslated-term pred fn-renaming)))
        (append (support-thms-for-defun-aux then-cl (cons pred hyps)
                                            (+ n 1)
                                            fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)
                (support-thms-for-defun-aux else-cl (cons `(not ,pred) hyps)
                                            (+ n 100)
                                            fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info))))
-    (('let binds let-body)
+    (('LET binds let-body)
      (let ((subst-let-body (sublis-var-untranslated-term (doublets-to-alist binds) let-body)))
-       (support-thms-for-defun-aux subst-let-body hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
-    (('let* () let-body)
-     (support-thms-for-defun-aux let-body hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info))
-    (('let* ((v val) . r-binds) let-body)
+       (support-thms-for-defun-aux subst-let-body hyps n fun fun1 head-tm fn-renaming fn-infos
+                                   iso-infos propiso-info)))
+    (('LET* () let-body)
+     (support-thms-for-defun-aux let-body hyps n fun fun1 head-tm fn-renaming fn-infos
+                                 iso-infos propiso-info))
+    (('LET* ((v val) . r-binds) let-body)
      (let ((new-let* (sublis-var-untranslated-term (acons v val ())
                                                    `(let* ,r-binds ,let-body))))
-       (support-thms-for-defun-aux new-let* hyps n fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
+       (support-thms-for-defun-aux new-let* hyps n fun fun1 head-tm fn-renaming fn-infos
+                                   iso-infos propiso-info)))
     ;; ((mv . mvs))  ;; ??
     (& (b* ((thm-name (pack$ fun1 "--" n))
-            (body-tm (rename-fns-in-untranslated-term old-body-tm fn-renaming))
+            (body-tm (rename-fns-and-expand-lambdas-in-untranslated-term old-body-tm fn-renaming))
             (body-tm (add-iso-conversions body-tm fn-infos iso-infos))
             (hyps (add-iso-conversions-list hyps fn-infos iso-infos))
             (thm-body (make-impl-nice hyps `(equal ,head-tm ,body-tm)))
-            ;; (refd-funs (all-ffn-symbs (rename-fns-in-untranslated-term thm-body fn-renaming) nil))
+            ;; (refd-funs (all-ffn-symbs (rename-fns-and-expand-lambdas-in-untranslated-term thm-body fn-renaming) nil))
             (user-hints (lookup-hints thm-name propiso-info))
             (skip-proofs-p (eq user-hints 'skip-proofs))
             (user-e/d (and (consp user-hints)
@@ -1296,7 +1108,8 @@
   ;;              (events true-list-listp))
   :mode :program
   (let* ((local-thms (and recursive
-                          (support-thms-for-defun-aux old-body-tm hyps 0 fun fun1 head-tm fn-renaming fn-infos iso-infos propiso-info)))
+                          (support-thms-for-defun-aux old-body-tm hyps 0 fun fun1 head-tm fn-renaming
+                                                      fn-infos iso-infos propiso-info)))
          (num-results (len ret-sig))
          (length-thm-name (and (> num-results 1)
                                (pack$ fun "--LEN")))
@@ -1310,524 +1123,34 @@
         (local-names local-thms)
         (append length-thm local-thms))))
 
-(defconst *unhandled-case* '*unhandled-case*)
-(defconst *unknown-value* '*unknown-value*)
-
-(defines merge-convert-exprs-for-and-n
-(define merge-convert-exprs-for-and (exprs)
-  (if (atom exprs)
-      *unknown-value*
-    (if (atom (cdr exprs))
-        (car exprs)
-      (merge-2-convert-exprs-for-and (car exprs) (merge-convert-exprs-for-and (cdr exprs))))))
-(define merge-2-convert-exprs-for-and (e1 e2)
-  (let* ((pr (list e1 e2)))
-    (case-match pr
-      ((('CONS c1a c2a)
-        ('CONS c1b c2b))
-       `(cons ,(merge-2-convert-exprs-for-and c1a c1b)
-              ,(merge-2-convert-exprs-for-and c2a c2b)))
-      ((!*unknown-value* e2)
-       e2)
-      ((e1 !*unknown-value*)
-       e1)
-      ((!*unhandled-case* e2)         ; These 2 cases require more thought
-       e2)
-      ((e1 !*unhandled-case*)
-       e1)
-      (& (if (equal e1 e2)
-             e1
-           *unhandled-case*)))))
-)  ; merge-convert-exprs-for-and-n
-
-(define merge-convert-exprs-for-or (t1 e1 e2)
-  (if (or (equal e1 *unhandled-case*)
-          (equal e2 *unhandled-case*))
-      *unhandled-case*
-    `(if ,t1 ,e1 ,e2)))
-
-(define fill-in-unknowns-by-old (tm old-val-tm)
-  (case-match tm
-    (!*unknown-value* old-val-tm)
-    (('CONS x y)
-     `(cons ,(fill-in-unknowns-by-old x `(car ,old-val-tm))
-            ,(fill-in-unknowns-by-old y `(cdr ,old-val-tm))))
-    (('IF p x y)
-     `(if ,p ,(fill-in-unknowns-by-old x old-val-tm)
-        ,(fill-in-unknowns-by-old y old-val-tm)))
-    (& tm)))
-
-;;; Derived isomorphism functions
-(defines convert-fn/s-for-new-iso-fn
-(define convert-fn-for-new-iso-fn (old-body
-                                   (pred-name symbolp)
-                                   (formal variablep)
-                                   (convert-fn-name symbolp)
-                                   (new-to-old-p booleanp) ; return convert from old to new, otherwise new to old
-                                   (iso-infos iso-info-alist-p))
-  (case-match old-body
-    (T formal)
-    (('NULL !formal)
-     'nil)
-    (('NOT !formal)
-     'nil)
-    ((f !formal)
-     (let ((iso-info (and (symbolp f)
-                          (lookup-osi-info f iso-infos))))
-       (if (not (null iso-info))
-           `(,(iso-info-convert-fn iso-info new-to-old-p) ,formal)
-         *unhandled-case*)))
-    ((iso-p? ('CAR !formal))
-     (let ((iso-info (and (symbolp iso-p?)
-                          (lookup-osi-info iso-p? iso-infos))))
-       (if (not (null iso-info))
-           `(cons (,(iso-info-convert-fn iso-info new-to-old-p) (car ,formal))
-                  ,*unknown-value*)
-         *unhandled-case*)))
-    ((iso-p? ('FIRST !formal))          ; same as CAR: keep consistent
-     (let ((iso-info (and (symbolp iso-p?)
-                          (lookup-osi-info iso-p? iso-infos))))
-       (if (not (null iso-info))
-           `(cons (,(iso-info-convert-fn iso-info new-to-old-p) (first ,formal))
-                  ,*unknown-value*)
-         *unhandled-case*)))
-    ((iso-p? ('HEAD !formal))           ; same as CAR: keep consistent
-     (let ((iso-info (and (symbolp iso-p?)
-                          (lookup-osi-info iso-p? iso-infos))))
-       (if (not (null iso-info))
-           `(cons (,(iso-info-convert-fn iso-info new-to-old-p) (head ,formal))
-                  ,*unknown-value*)
-         *unhandled-case*)))
-    ((iso-p? ('CAAR !formal))
-     (let ((iso-info (and (symbolp iso-p?)
-                          (lookup-osi-info iso-p? iso-infos))))
-       (if (not (null iso-info))
-           `(cons (cons (,(iso-info-convert-fn iso-info new-to-old-p) (caar ,formal))
-                        ,*unknown-value*)
-                  ,*unknown-value*)
-         *unhandled-case*)))
-    ((iso-p? ('CDAR !formal))
-     (let ((iso-info (and (symbolp iso-p?)
-                          (lookup-osi-info iso-p? iso-infos))))
-       (if (not (null iso-info))
-           `(cons (cons ,*unknown-value*
-                        (,(iso-info-convert-fn iso-info new-to-old-p) (cdar ,formal)))
-                  ,*unknown-value*)
-         *unhandled-case*)))
-    ((!pred-name ('CDR !formal))
-     `(cons *unknown-value* (,convert-fn-name (cdr ,formal))))
-    ((!pred-name ('REST !formal))
-     `(cons *unknown-value* (,convert-fn-name (rest ,formal))))
-    (('OR t1 t2)
-     (merge-convert-exprs-for-or t1
-                                 (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-                                 (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos)))
-    (('AND . r-tms)
-     (merge-convert-exprs-for-and
-      (convert-fns-for-new-iso-fn r-tms pred-name formal convert-fn-name new-to-old-p iso-infos)))
-    (('IF t1 'T t2)
-     (if (eq t2 'NIL)
-         (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-       (merge-convert-exprs-for-or t1
-                                   (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-                                   (convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos))))
-    (('IF t1 t2 'NIL)                   ; TODO: check if this is sufficient for n-ary AND. E.g. ('IF t1 ('IF t2 t3 'NIL) 'NIL)
-     (if (eq t2 'T)
-         (convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-       (merge-convert-exprs-for-and
-        (convert-fns-for-new-iso-fn (list t1 t2) pred-name formal convert-fn-name new-to-old-p iso-infos))))
-    (('IF p t1 t2)
-     `(if ,p
-          ,(convert-fn-for-new-iso-fn t1 pred-name formal convert-fn-name new-to-old-p iso-infos)
-        ,(convert-fn-for-new-iso-fn t2 pred-name formal convert-fn-name new-to-old-p iso-infos)))
-    (& *unhandled-case*)))
-
-(define convert-fns-for-new-iso-fn (old-body-tms
-                                    (pred-name symbolp)
-                                    (formal variablep)
-                                    (convert-fn-name symbolp)
-                                    (new-to-old-p booleanp) ; return convert from old to new, otherwise new to old
-                                    (iso-infos iso-info-alist-p))
-  (if (atom old-body-tms)
-      *unhandled-case*                  ; shouldn't happen
-    (if (atom (cdr old-body-tms))
-        (list (convert-fn-for-new-iso-fn (car old-body-tms)
-                                         pred-name formal convert-fn-name new-to-old-p iso-infos))
-      (cons (convert-fn-for-new-iso-fn (car old-body-tms)
-                                       pred-name formal convert-fn-name new-to-old-p iso-infos)
-            (convert-fns-for-new-iso-fn (cdr old-body-tms)
-                                        pred-name formal convert-fn-name new-to-old-p iso-infos)))))
-) ; convert-fn/s-for-new-iso-fn
-
-(define convert-fn-for-new-iso-fn0 (old-body
-                                    (pred-name symbolp)
-                                    (formal variablep)
-                                    (convert-fn-name symbolp)
-                                    (new-to-old-p booleanp) ; return convert from old to new, otherwise new to old
-                                    (iso-infos iso-info-alist-p))
-  (let ((raw-body (convert-fn-for-new-iso-fn old-body pred-name formal convert-fn-name new-to-old-p iso-infos)))
-    (fill-in-unknowns-by-old raw-body formal)))
-
-;; Returns type theorems for new conversion function based on the predicate that generated it
-#|
-Example: int10-map-p-->-int20-map-p
-(define int20-map-p (m)
-  (if (atom m)
-      (null m)
-    (and (consp (car m))
-         (int20 (caar m))
-         (int20 (cdar m))
-         (int20-map-p (cdr m)))))
-(defthm int10-map-p-->-int20-map-p-atom
-  (implies (and (int10-map-p m) (atom p))
-           (null (int10-map-p-->-int20-map-p m))))
-(defthm int10-map-p-->-int20-map-p-not-atom
-  (implies (and (int10-map-p m) (not (atom p)))
-           (consp (int10-map-p-->-int20-map-p m))))
-(defthm int10-map-p-->-int20-map-p-not-atom-caar
-  (implies (and (int10-map-p m) (not (atom p)))
-           (int20 (caar (int10-map-p-->-int20-map-p m)))))
-(defthm int10-map-p-->-int20-map-p-not-atom-cdar
-  (implies (and (int10-map-p m) (not (atom p)))
-           (int20 (cdar (int10-map-p-->-int20-map-p m)))))
-(defthm int10-map-p-->-int20-map-p-not-atom-cdr
-  (implies (and (int10-map-p m) (not (atom p)))
-           (int20 (cdar (int10-map-p-->-int20-map-p m)))))
-|#
-
-(define name-from-term (tm)
-  :returns (tm symbolp)
-  (if (symbolp tm)
-      tm
-    (if (consp tm)
-        (name-from-term (car tm))
-      'strange-term)))
-
-(define implicit-theorems-for-new-iso (rhs-condns condn (thm-name symbolp) enable)
-  (if (atom rhs-condns)
-      ()
-    (cons `(defthm ,(pack$ thm-name "--" (name-from-term (car rhs-condns)))
-             (implies ,condn
-                      ,(car rhs-condns))
-             :hints (("Goal" :in-theory (enable ,enable))))
-          (implicit-theorems-for-new-iso (cdr rhs-condns) condn thm-name enable))))
-
-(defines term/s-with-subst-and-name
-(define term-with-subst-and-name (tm (formal variablep)
-                                     (convert-fn-name symbolp)
-                                     (thm-name stringp))
-  (if (equal tm formal)
-      (mv `(,convert-fn-name ,formal)
-          thm-name
-          nil)
-    (if (and (consp tm)
-             (symbolp (car tm)))
-        (mv-let (tms nm condns)
-            (terms-with-subst-and-name (cdr tm) formal convert-fn-name
-                                       (concatenate 'string thm-name "-"
-                                                    (symbol-name (car tm))))
-          (mv `(,(car tm) ,@tms)
-              nm
-              (if (member-eq (car tm) '(car first))
-                  (cons `(consp ,@tms)
-                        condns)
-                condns)))
-      (mv tm nil nil))))
-(define terms-with-subst-and-name (tms (formal variablep)
-                                       (convert-fn-name symbolp)
-                                       (thm-name stringp))
-  (if (atom tms)
-      (mv nil nil nil)
-    (b* (((mv car-tm car-nm car-condns)
-          (term-with-subst-and-name (car tms) formal convert-fn-name thm-name))
-         ((mv cdr-tms cdr-nm cdr-conds)
-          (terms-with-subst-and-name (cdr tms) formal convert-fn-name thm-name))
-         ((unless (and (true-listp car-condns) ; temporary heavy-hand
-                       (true-listp cdr-conds)))
-          (mv (cons car-tm cdr-tms)
-              (if car-nm
-                  car-nm
-                cdr-nm)
-              ())))
-      (mv (cons car-tm cdr-tms)
-          (if car-nm
-              car-nm
-            cdr-nm)
-          (append car-condns cdr-conds)))))
-)  ; term/s-with-subst-and-name
-
-
-(defines type-theorems-for-new-iso-fn/-lst
-(define type-theorems-for-new-iso-fn (old-body
-                                      (formal variablep)
-                                      (convert-fn-name symbolp)
-                                      (renaming-pred symbolp) ; only non-nil if there it is a renaming predicate
-                                      condns
-                                      (thm-name stringp)
-                                      (new-to-old-p booleanp) ; return convert from old to new, otherwise new to old
-                                      (iso-infos iso-info-alist-p))
-  (case-match old-body
-    (('OR . &) ())  ; Not sure if this needs anything else
-    (('AND . r-tms)
-     (type-theorems-for-new-iso-fn-lst r-tms formal convert-fn-name renaming-pred condns
-                                       thm-name new-to-old-p iso-infos))
-    (('IF p t1 t2)
-     (append (type-theorems-for-new-iso-fn t2 formal convert-fn-name renaming-pred
-                                           (cons (acl2::negate-form p) condns)
-                                           thm-name new-to-old-p iso-infos)
-             (type-theorems-for-new-iso-fn t1 formal convert-fn-name renaming-pred (cons p condns)
-                                           thm-name new-to-old-p iso-infos)))
-    ((p . args)
-     (if (symbolp p)
-         (b* ((iso-info (lookup-osi-info p iso-infos))
-              (new-p (if iso-info
-                         (iso-info-pred iso-info new-to-old-p)
-                       p))
-              ((mv new-args thm-nm rhs-condns)
-               (terms-with-subst-and-name args formal convert-fn-name thm-name))
-              (condn `(and ,@(rev condns)))
-              (enabled (or renaming-pred convert-fn-name))
-              (thm-base-nm (if renaming-pred
-                            (pack$ renaming-pred "-" convert-fn-name "-" new-p)
-                          (pack$ convert-fn-name "-" new-p))))
-           (list* `(defthm ,(pack$ thm-base-nm thm-nm)
-                     (implies ,condn
-                              (,new-p ,@new-args))
-                     :hints (("Goal" :in-theory (enable ,enabled))))
-                  (implicit-theorems-for-new-iso rhs-condns condn thm-base-nm enabled)))
-       ()))
-    (& ())))
-(define type-theorems-for-new-iso-fn-lst (old-body-tms
-                                          (formal variablep)
-                                          (convert-fn-name symbolp)
-                                          (renaming-pred symbolp) ; only non-nil if there it is a renaming predicate
-                                          condns
-                                          (thm-name stringp)
-                                          (new-to-old-p booleanp) ; return convert from old to new, otherwise new to old
-                                          (iso-infos iso-info-alist-p))
-  (if (atom old-body-tms)
-      ()
-    (append (type-theorems-for-new-iso-fn-lst (cdr old-body-tms)
-                                              formal convert-fn-name renaming-pred condns thm-name new-to-old-p iso-infos)
-            (type-theorems-for-new-iso-fn (car old-body-tms)
-                                          formal convert-fn-name renaming-pred condns thm-name new-to-old-p iso-infos))))
-) ; type-theorems-for-new-iso-fn/-lst
-
-(define find-definition-in-events ((fn symbolp) (events true-listp))
-  (if (endp events)
-      nil
-    (let ((this-event (car events)))
-      (case-match this-event
-        (('defun !fn (v) & body)        ; Has to be unary with a single declare unless make-new-iso-pred-events changes
-         (cons v body))
-        (('encapsulate & . encap-events)
-         (and (true-listp encap-events)
-              (or (find-definition-in-events fn encap-events)
-                  (find-definition-in-events fn (cdr events)))))
-        (& (find-definition-in-events fn (cdr events)))))))
-
-(define find-previous-iso-with-equivalent-definition ((convert-old-to-new-fn symbolp)
-                                                      (convert-new-to-old-fn symbolp)
-                                                      (formal symbolp)
-                                                      convert-old-to-new-fn-body
-                                                      (iso-infos iso-info-alist-p)
-                                                      (events true-list-listp))
-  :returns (mv (use-old-convert-fns-p booleanp)
-               (ret-convert-old-to-new-fn symbolp :hyp (symbolp convert-old-to-new-fn))
-               (ret-convert-new-to-old-fn symbolp :hyp (symbolp convert-new-to-old-fn)))
-  (if (endp iso-infos)
-      (mv nil convert-old-to-new-fn convert-new-to-old-fn)
-    (b* ((iso (cdar iso-infos))
-         (alpha (acl2::defmapping-info->alpha iso))
-         (beta  (acl2::defmapping-info->beta  iso))
-         ((unless (and (symbolp alpha)
-                       (symbolp beta)))
-          (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
-                                                        formal convert-old-to-new-fn-body
-                                                        (cdr iso-infos) events))
-         (found-def (find-definition-in-events alpha events))
-         ((unless (and (consp found-def)
-                       (symbolp (car found-def))))
-          (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
-                                                        formal convert-old-to-new-fn-body
-                                                        (cdr iso-infos) events))
-         ((cons new-formal body) found-def))
-      (if (equal convert-old-to-new-fn-body
-                 (sublis (list (cons new-formal formal)
-                               (cons alpha convert-old-to-new-fn))
-                         body))
-          (mv t
-              (acl2::defmapping-info->alpha iso)
-              (acl2::defmapping-info->beta iso))
-        (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
-                                                      formal convert-old-to-new-fn-body
-                                                      (cdr iso-infos) events)))))
-
-;;; Try to reuse existing function either if body is just a fn call or iso fn defined in events
-(define maybe-use-old-definitions ((convert-old-to-new-fn symbolp)
-                                   (convert-new-to-old-fn symbolp)
-                                   (formal symbolp)
-                                   convert-old-to-new-fn-body
-                                   convert-new-to-old-fn-body
-                                   (iso-infos iso-info-alist-p)
-                                   (events true-list-listp))
-  :returns (mv (use-old-convert-fns-p booleanp)
-               (existing-convert-old-to-new-fn symbolp :hyp (symbolp convert-old-to-new-fn))
-               (existing-convert-new-to-old-fn symbolp :hyp (symbolp convert-new-to-old-fn)))
-  (let ((bodies (list convert-old-to-new-fn-body convert-new-to-old-fn-body)))
-    (case-match bodies
-      (((f1 !formal) (f2 !formal))
-       (if (and (symbolp f1) (symbolp f2))
-           (mv t f1 f2)
-         (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
-                                                       formal convert-old-to-new-fn-body
-                                                       iso-infos events)))
-      (& (find-previous-iso-with-equivalent-definition convert-old-to-new-fn convert-new-to-old-fn
-                                                       formal convert-old-to-new-fn-body
-                                                       iso-infos events)))))
-
-;;; Tries to create an isomorphism for from iso-source-pred given iso-target-pred iso-target-pred-defun.
-;;; Does this by constructing the forward and backward isomorphism functions and creating a defiso event.
-;;; Returns new events and the augmented iso-infos
-(define make-new-iso-pred-events ((iso-source-pred symbolp)
-                                  (iso-target-pred symbolp)
-                                  (formals symbol-listp)
-                                  old-pred-body
-                                  new-pred-body
-                                  (fn-infos fn-infos-list-p)
-                                  (iso-infos iso-info-alist-p)
-                                  (propiso-info propiso-info-p)
-                                  (events true-list-listp))
+(define make-new-iso-pred-events-1 ((iso-source-pred symbolp)
+                                    (iso-target-pred symbolp)
+                                    (formals symbol-listp)
+                                    old-pred-body
+                                    new-pred-body
+                                    (recursivep booleanp)
+                                    (fn-infos fn-infos-list-p)
+                                    (iso-infos iso-info-alist-p)
+                                    (propiso-info propiso-info-p)
+                                    (events true-list-listp))
   :guard-hints (("Goal" :in-theory (enable iso-info-alist-p defmapping-infop)))
-  (b* (((unless (equal (length formals) 1))
-        (cw "Warning: Can't handle generation of isomorphism for ~x0 (not a single formal)" iso-source-pred)
-        (mv nil fn-infos iso-infos))
-       (formal (first formals))
-       (convert-old-to-new-fn (pack$ iso-source-pred "-->-" iso-target-pred))
-       (convert-new-to-old-fn (pack$ iso-target-pred  "-->-" iso-source-pred))
-       (convert-old-to-new-fn-body
-        (convert-fn-for-new-iso-fn0 new-pred-body iso-target-pred formal convert-old-to-new-fn nil iso-infos))
-       (convert-new-to-old-fn-body
-        (convert-fn-for-new-iso-fn0 new-pred-body iso-target-pred formal convert-new-to-old-fn t iso-infos))
-       ((when (or (null convert-new-to-old-fn-body) ; if 1 is null they both should be
-                  (null convert-old-to-new-fn-body)))
-        (cw "Warning: Can't handle generation of isomorphism for ~x0" iso-source-pred)
-        (mv nil fn-infos iso-infos))
-       ((mv use-old-convert-fns-p convert-old-to-new-fn convert-new-to-old-fn)
-        (maybe-use-old-definitions convert-old-to-new-fn convert-new-to-old-fn
-                                   formal convert-old-to-new-fn-body convert-new-to-old-fn-body
-                                   iso-infos events))
-       (convert-fn-defs (if use-old-convert-fns-p
-                            ()
-                          `((defun ,convert-new-to-old-fn ,formals ; enable ??
-                              (declare (xargs :guard (,iso-target-pred ,formal)))
-                              ,convert-new-to-old-fn-body)
-                            (defun ,convert-old-to-new-fn ,formals ; enable ??
-                              (declare (xargs :guard (,iso-source-pred ,formal)))
-                              ,convert-old-to-new-fn-body))))
-       (defiso-name (pack$ iso-source-pred "-ISO-" iso-target-pred))
-       (defiso-form `(defiso ,defiso-name
-                       ,iso-source-pred ,iso-target-pred ,convert-old-to-new-fn ,convert-new-to-old-fn
-                       :thm-enable :all-nonguard
-                       :hints (:beta-of-alpha
-                               (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
-                                                           ,convert-old-to-new-fn ,convert-new-to-old-fn)))
-                               :alpha-of-beta (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
-                                                                          ,convert-old-to-new-fn ,convert-new-to-old-fn)))
-                               :alpha-image (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
-                                                                        ,convert-old-to-new-fn)))
-                               :beta-image (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred
-                                                                       ,convert-new-to-old-fn)))
-                               ,@(and use-old-convert-fns-p
-                                      `(:alpha-guard
-                                        (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred)))
-                                        :beta-guard
-                                         (("Goal" :in-theory (enable ,iso-source-pred ,iso-target-pred))))))))
-       ((unless (and (acl2::pseudo-event-formp defiso-form) ; Just so guards check!
-                     (acl2::pseudo-termfnp iso-source-pred)
-                     (acl2::pseudo-termfnp iso-target-pred)
-                     (acl2::pseudo-termfnp convert-old-to-new-fn)
-                     (acl2::pseudo-termfnp convert-new-to-old-fn)))
-        (cw "Warning: Not pseudo* \n ~x0: ~x1 \n ~x2: ~x3 \n ~x4: ~x5 \n ~x6: ~x7 \n ~x8: ~x9 \n"
-            (acl2::pseudo-event-formp defiso-form) defiso-form
-            (acl2::pseudo-termfnp iso-source-pred) iso-source-pred
-            (acl2::pseudo-termfnp iso-target-pred) iso-target-pred
-            (acl2::pseudo-termfnp convert-old-to-new-fn) convert-old-to-new-fn
-            (acl2::pseudo-termfnp convert-new-to-old-fn) convert-new-to-old-fn)
-        (mv nil fn-infos iso-infos))
-       (alpha-image (pack$ defiso-name ".ALPHA-IMAGE"))
-       (beta-image (pack$ defiso-name ".BETA-IMAGE"))
-       (beta-of-alpha (pack$ defiso-name ".BETA-OF-ALPHA"))
-       (alpha-of-beta (pack$ defiso-name ".ALPHA-OF-BETA"))
-       (alpha-injective (pack$ defiso-name ".ALPHA-INJECTIVE"))
-       (beta-injective (pack$ defiso-name ".BETA-INJECTIVE"))
-       (doma-guard (pack$ defiso-name ".DOMA-GUARD"))
-       (domb-guard (pack$ defiso-name ".DOMB-GUARD"))
-       (alpha-guard (pack$ defiso-name ".ALPHA-GUARD"))
-       (beta-guard (pack$ defiso-name ".BETA-GUARD"))
-       ;; Not all make-defmapping-info fields are necessary for this purpose. The defiso event will create the real one
-       (new-iso-info (acl2::make-defmapping-info :call$ defiso-form
-                                                 :expansion defiso-form ; place-holder to avoid guard error
-                                                 :doma iso-source-pred
-                                                 :domb iso-target-pred
-                                                 :alpha convert-old-to-new-fn
-                                                 :beta convert-new-to-old-fn
-                                                 :alpha-image alpha-image
-                                                 :beta-image beta-image
-                                                 :beta-of-alpha beta-of-alpha
-                                                 :alpha-of-beta alpha-of-beta
-                                                 :alpha-injective alpha-injective
-                                                 :beta-injective beta-injective
-                                                 :doma-guard doma-guard
-                                                 :domb-guard domb-guard
-                                                 :alpha-guard alpha-guard
-                                                 :beta-guard beta-guard
-                                                 :unconditional nil))
-       ;; Want to keep in order for new-name-maybe-using-isos
-       (new-iso-infos (append iso-infos (list (cons iso-source-pred new-iso-info))))
-       (convert-old-to-new-fn-type-thms (type-theorems-for-new-iso-fn new-pred-body
-                                                                      formal ;; iso-source-pred
-                                                                      convert-old-to-new-fn
-                                                                      (and use-old-convert-fns-p iso-source-pred)
-                                                                      (list `(,iso-source-pred ,formal))
-                                                                      "" t new-iso-infos))
-       (convert-old-to-new-fn-thm-names (theorem-names convert-old-to-new-fn-type-thms))
-       (convert-new-to-old-fn-type-thms (type-theorems-for-new-iso-fn old-pred-body
-                                                                      formal ;; iso-target-pred
-                                                                      convert-new-to-old-fn
-                                                                      (and use-old-convert-fns-p iso-target-pred)
-                                                                      (list `(,iso-target-pred ,formal))
-                                                                      "" nil new-iso-infos))
-       (convert-new-to-old-fn-thm-names (theorem-names convert-new-to-old-fn-type-thms))
-       (add-to-iso-osi-ruleset-form (add-iso-osi-theorem-event (list* alpha-image
-                                                                      beta-image
-                                                                      beta-of-alpha
-                                                                      alpha-of-beta
-                                                                      alpha-injective
-                                                                      beta-injective
-                                                                      ;; !! TODO: If these are trivial (normal case?) then this gives an error
-                                                                      ;; doma-guard
-                                                                      ;; domb-guard
-                                                                      alpha-guard
-                                                                      beta-guard
-                                                                      (append convert-old-to-new-fn-thm-names
-                                                                              convert-new-to-old-fn-thm-names))
-                                                               propiso-info))
-       (new-fn-infos (list* (fn-info-elt convert-old-to-new-fn nil nil nil
-                                         (list iso-source-pred)
-                                         (list iso-target-pred))
-                            (fn-info-elt convert-new-to-old-fn nil nil nil
-                                         (list iso-target-pred)
-                                         (list iso-source-pred))
-                            fn-infos)))
-    (mv `(,add-to-iso-osi-ruleset-form ; order will be reversed
-          ,@convert-new-to-old-fn-type-thms
-          ,@convert-old-to-new-fn-type-thms
-          ,defiso-form
-          ,@convert-fn-defs)
-        new-fn-infos
-        new-iso-infos))
-) ; make-new-iso-pred-events
+  (b* (((mv new-iso-pred-events convert-old-to-new-fn convert-new-to-old-fn new-iso-osi-theorems iso-infos)
+        (make-new-iso-pred-events iso-source-pred iso-target-pred formals old-pred-body new-pred-body
+                                  recursivep iso-infos events))
+       ((unless new-iso-pred-events)
+        (mv nil nil iso-infos))
+       (add-to-iso-osi-ruleset-form (add-iso-osi-theorem-event new-iso-osi-theorems propiso-info)))
+    (mv (cons add-to-iso-osi-ruleset-form new-iso-pred-events)
+        (list* (fn-info-elt convert-old-to-new-fn
+                            nil nil nil
+                            (list iso-source-pred)
+                            (list iso-target-pred))
+               (fn-info-elt convert-new-to-old-fn
+                            nil nil nil
+                            (list iso-target-pred)
+                            (list iso-source-pred))
+               fn-infos)
+        iso-infos)))
 
 ; Generate events for propagating the iso refinement
 ; to a function introduced via DEFUN and not via DEFINE-SK.
@@ -1838,19 +1161,23 @@ Example: int10-map-p-->-int20-map-p
                              (renaming symbol-alistp)      ; mapping of old fn and thm names to new
                              (fn-infos fn-infos-list-p)    ; mapping of old fns to new plus domain signature
                              (iso-infos iso-info-alist-p)  ; list of isomorphism 4-tuples
+                             (world acl2::plist-worldp)
                              (propiso-info propiso-info-p) ; Map from theorem name to hints lists
+                             (dont-verify-guards booleanp)
                              (events true-list-listp)      ; events generated so far
                              (eventup acl2::pseudo-event-landmarkp)
                              state)
-  ;; returns updated (mv fn-renaming renaming fn-infos iso-infos events)
+  ;; returns updated (mv last-defuned-fn? fn-renaming renaming fn-infos iso-infos world events)
   :mode :program
-  (b* ((world (propiso-info->world propiso-info))
+  (b* (;(world (propiso-info->world propiso-info))
+       (fun-arity (acl2::fn-arity fun world))
        (fun1 (new-name-maybe-using-isos fun iso-infos nil world))
+       (world (acl2::add-fake-fns-to-world (list (cons fun1 fun-arity)) world))
        (fn-renaming1 (acons fun fun1 fn-renaming))
        (renaming (acons fun fun1 renaming))
        (events (if last-defuned-fn?  ; attempt to mimic define /// behavior
                    (cons `(in-theory (disable ,(lookup-eq last-defuned-fn? fn-renaming)))
-                       events)
+                         events)
                  events))
        (recursivep (acl2::irecursivep+ fun world))
        (enabledp (fundef-enabledp fun state))
@@ -1861,13 +1188,14 @@ Example: int10-map-p-->-int20-map-p
        (body (fn-ubody1 fun body0 world event-defun))
        (body (clean-body body))
        (measure (and recursivep (acl2::measure+ fun world)))
-       (guard-verifiedp (acl2::event-demands-guard-verificationp event-defun))
+       (guard-verifiedp (and (not dont-verify-guards)
+                             (acl2::event-demands-guard-verificationp event-defun)))
        (old-guard (guard fun nil world))
        (old-guard (untranslate old-guard nil world))
        (old-guard-list (flatten-conj old-guard))
-       (body1 (rename-fns-in-untranslated-term body fn-renaming1))
-       (measure1 (rename-fns-in-untranslated-term measure fn-renaming1))
-       (new-guard (rename-fns-in-untranslated-term old-guard fn-renaming1))
+       (body1 (rename-fns-and-expand-lambdas-in-untranslated-term body fn-renaming1))
+       (measure1 (rename-fns-and-expand-lambdas-in-untranslated-term measure fn-renaming1))
+       (new-guard (rename-fns-and-expand-lambdas-in-untranslated-term old-guard fn-renaming1))
        ;; make body, measure, and guard of FUN' more readable: -- now just use untranslated body
        ;; (body1 (untranslate body1 nil world))
        (measure1 (untranslate measure1 nil world))
@@ -1970,8 +1298,8 @@ Example: int10-map-p-->-int20-map-p
                                   t)
                   (if (and user-hints (not user-enabled))
                       `(defthmd ,fun1-is-iso-fun
-                       ,conv-thm-formula
-                       :hints ,hints)
+                         ,conv-thm-formula
+                         :hints ,hints)
                     `(defthmd ,fun1-is-iso-fun
                        ,conv-thm-formula
                        :instructions
@@ -1980,8 +1308,8 @@ Example: int10-map-p-->-int20-map-p
                         (succeed (bash ,@hints))
                         ;; (when-not-proved (print "fn osi: bash failed!"))
                         (succeed (bash ("Goal" :in-theory
-                                       (e/d* (,(propiso-info->osi-ruleset-name propiso-info))
-                                             (,(propiso-info->iso-ruleset-name propiso-info))))))
+                                        (e/d* (,(propiso-info->osi-ruleset-name propiso-info))
+                                              (,(propiso-info->iso-ruleset-name propiso-info))))))
                         (repeat (bash))))))))
        (local-events (if new-iso-pred-p local-events (cons event local-events)))
        ;; Add main thm fun iso fun1 proved from fun1-is-iso-fun
@@ -1992,9 +1320,10 @@ Example: int10-map-p-->-int20-map-p
        (hints (if (and user-hints (not user-enabled))
                   user-hints
                 (enable-disable-runes-in-hints
-                 `(("Goal" :in-theory (append '(,fun1-is-iso-fun
-                                                (:type-prescription ,fun)
-                                                ,@aux-iso-thms)
+                  `(("Goal" :in-theory (append '(,fun1-is-iso-fun
+                                                 ;; ,fun ; Can cause looping
+                                                 (:type-prescription ,fun)
+                                                 ,@aux-iso-thms)
                                               ,(iso-thm-ruleset-form propiso-info)
                                               ,(iso-osi-thm-ruleset-form propiso-info)
                                               (theory 'minimal-theory))
@@ -2018,7 +1347,9 @@ Example: int10-map-p-->-int20-map-p
                                       ;; (when-not-proved (print "fn iso: prove failed!"))
                                       (succeed (bash ,@hints))
                                       ;; (when-not-proved (print "fn iso: bash failed!"))
-                                      (repeat (bash ("Goal" :in-theory (disable* ,(propiso-info->osi-ruleset-name propiso-info)))))))))))
+                                      (repeat
+                                        (bash ("Goal" :in-theory
+                                                      (disable* ,(propiso-info->osi-ruleset-name propiso-info)))))))))))
        (local-events (if new-iso-pred-p local-events (cons event local-events)))
        ;; add theory invariant to prevent the two theorems
        ;; from being enabled at the same time:
@@ -2030,7 +1361,13 @@ Example: int10-map-p-->-int20-map-p
        (local-events (if new-iso-pred-p local-events (list* new-iso-thm-event new-osi-thm-event local-events)))
        ((mv new-iso-pred-events fn-infos iso-infos)
         (if new-iso-pred-p
-            (make-new-iso-pred-events fun fun1 formals body body1 fn-infos iso-infos propiso-info events)
+            (let* ((body (nice-body body0 world))
+                   (body1 (rename-fns-and-expand-lambdas-in-untranslated-term body fn-renaming1)))
+              (make-new-iso-pred-events-1 fun fun1 formals
+                                          body  ;(acl2::expand-lets-untranslated-term body world t)
+                                          body1  ;(acl2::expand-lets-untranslated-term body1 world t)
+                                          recursivep
+                                          fn-infos iso-infos propiso-info events))
           (mv nil fn-infos iso-infos)))
        (local-events (append new-iso-pred-events local-events))
        (events (cons `(encapsulate ()
@@ -2039,8 +1376,8 @@ Example: int10-map-p-->-int20-map-p
        ;; Add decl info for fun
        (fn-infos (if new-iso-pred-p fn-infos
                    (add-fn-info-iso-thms fun fun-is-iso-fun1 fun1-is-iso-fun fn-infos))))
-      (mv (and (not enabledp) fun)      ; returning fun here will mean that it gets disabled later
-          fn-renaming1 renaming fn-infos iso-infos events))
+    (mv (and (not enabledp) fun)      ; returning fun here will mean that it gets disabled later
+        fn-renaming1 renaming fn-infos iso-infos world events))
 ) ; propagate-iso-defun
 
 ;; TODO: fix this for isomorphisms instead of equalities
@@ -2112,15 +1449,18 @@ Example: int10-map-p-->-int20-map-p
    (renaming symbol-alistp)        ; mapping of old fn and thm names to new
    (fn-infos fn-infos-list-p)      ; mapping of old fns to new plus domain signature
    (iso-infos iso-info-alist-p)    ; list of isomorphism tuples
+   (world acl2::plist-worldp)
    (propiso-info propiso-info-p)   ; Map from theorem name to hints lists
    (events true-list-listp)        ; events generated so far
    ;; state   ; not currently needed
-   )
+  )
   ;; returns updated (mv fn-renaming renaming fn-infos iso-infos events)
   :mode :program
-  (b* ((world (propiso-info->world propiso-info))
+  (b* (;; (world (propiso-info->world propiso-info))
        ;; use the current transformation index for FUN':
+       (fun-arity (acl2::fn-arity fun world))
        (fun1 (new-name-maybe-using-isos fun iso-infos nil world))
+       (world (acl2::add-fake-fns-to-world (list (cons fun1 fun-arity)) world))
        ;; add FUN and FUN' to the accumulators:
        (fn-renaming (acons fun fun1 fn-renaming))
        (renaming (acons fun fun1 renaming))
@@ -2132,7 +1472,7 @@ Example: int10-map-p-->-int20-map-p
        (matrix (defun-sk-matrix fun world))
        ;; substitute function names in the matrix of FUN:
        (matrix1 (untranslate matrix nil world))
-       (matrix1 (rename-fns-in-untranslated-term matrix1 fn-renaming))
+       (matrix1 (rename-fns-and-expand-lambdas-in-untranslated-term matrix1 fn-renaming))
        ;; add DEFINE-SK for FUN' to events:
        (event `(define-sk ,fun1 ,formals
                  (,quantifier ,bound-vars ,matrix1)))
@@ -2161,11 +1501,11 @@ Example: int10-map-p-->-int20-map-p
        ;; plus the relevant theorems above and the definition of FUN and FUN':
        (hints (or (lookup-hints fun-is-iso-fun1 propiso-info)
                   `(("Goal"
-                    :use ((:instance ,suff/necc ,@pairs)
-                          (:instance ,suff/necc1 ,@pairs1))
-                    :in-theory (append '(,fun
-                                         ,fun1)
-                                       (theory 'minimal-theory))))))
+                     :use ((:instance ,suff/necc ,@pairs)
+                           (:instance ,suff/necc1 ,@pairs1))
+                     :in-theory (append '(,fun
+                                          ,fun1)
+                                        (theory 'minimal-theory))))))
        (event
         `(defthm ,fun-is-iso-fun1
            (equal (,fun ,@formals) (,fun1 ,@formals))
@@ -2176,7 +1516,7 @@ Example: int10-map-p-->-int20-map-p
        ;; and disabled:
        (hints (or (lookup-hints fun1-is-iso-fun propiso-info)
                   `(("Goal" :in-theory (cons ',fun-is-iso-fun1
-                                                  (theory 'minimal-theory))))))
+                                             (theory 'minimal-theory))))))
        (event `(defthmd ,fun1-is-iso-fun
                  (equal (,fun1 ,@formals) (,fun ,@formals))
                  :hints ,hints))
@@ -2188,7 +1528,7 @@ Example: int10-map-p-->-int20-map-p
        (events (cons event events))
        ;; add FUN = FUN' to accumulator:
        (fn-infos (acons fun fun-is-iso-fun1 fn-infos)))
-      (mv fun fn-renaming renaming fn-infos iso-infos events)))
+    (mv fun fn-renaming renaming fn-infos iso-infos world events)))
 
 (defun references-in-tree-p (items tree)
   (or (member-equal tree items)
@@ -2209,21 +1549,22 @@ Example: int10-map-p-->-int20-map-p
    (renaming symbol-alistp)             ; mapping of old fn and thm names to new
    (fn-infos fn-infos-list-p)           ; mapping of old fns to new plus domain signature
    (iso-infos iso-info-alist-p)         ; list of isomorphism 4-tuples
+   (world acl2::plist-worldp)
    (propiso-info propiso-info-p)            ; Map from theorem name to hints lists
    (eventup acl2::pseudo-event-landmarkp)
    (events true-list-listp)            ; events generated so far
    state)
-  ;; returns updated (mv last-defuned-fn? fn-renaming renaming fn-infos iso-infos events)
+  ;; returns updated (mv last-defuned-fn? fn-renaming renaming fn-infos world iso-infos events)
   ;; todo: also return old name to new name mapping
   :mode :program
-  (b* ((world (propiso-info->world propiso-info))
+  (b* (;; (world (propiso-info->world propiso-info))
        (formula0 (formula thm nil world))
        (formula (untranslate formula0 nil world))
        (used-old-fns (filter-assoc (get-called-fns-in-untranslated-term formula)
                                    fn-renaming))
        ((when (null used-old-fns))
         ;; ?? Ignore theorems just on domain predicates; alt prove with translated hints
-        (mv last-defuned-fn? fn-renaming renaming fn-infos iso-infos events))
+        (mv last-defuned-fn? fn-renaming renaming fn-infos iso-infos world events))
 
        (old-hints (second (member-eq ':hints eventup)))
        (thm-enabledp (acl2::rune-enabledp `(:rewrite ,thm) state))
@@ -2236,14 +1577,14 @@ Example: int10-map-p-->-int20-map-p
        ;;        (cw "thm event:~%~x0~%" (my-get-event thm world))
        ;;      ()))
        ;; substitute function names in the formula of THM:
-       (formula1 (rename-fns-in-untranslated-term formula fn-renaming))
+       (formula1 (rename-fns-and-expand-lambdas-in-untranslated-term formula fn-renaming))
        ;; get all the iso theorems for functions referenced by THM
        ;; (these are the ones relevant to proving THM'):
        ((mv & head) (rule-hyps-and-conc formula thm))                       ; hyps
        (disable-last-defuned-fn (and last-defuned-fn? (not (member-equal last-defuned-fn? used-old-fns))))
        (events (if disable-last-defuned-fn
                    (cons `(in-theory (disable ,(lookup-eq last-defuned-fn? fn-renaming))) ; attempt to recapitulate define behavior
-                       events)
+                         events)
                  events))
        (bindings (variable-osi-subst (variable-types formula fn-infos iso-infos ())
                                      iso-infos))
@@ -2256,11 +1597,11 @@ Example: int10-map-p-->-int20-map-p
        (new-hints (if (and user-hints (not user-enabledp))
                       user-hints
                     `(("Goal"
-                         :use (:instance ,thm ,@bindings)
-                         :in-theory (append ',user-enabled
-                                            ,(osi-thm-ruleset-form propiso-info)
-                                            ,(iso-osi-thm-ruleset-form propiso-info)
-                                            (theory 'minimal-theory))))))
+                       :use (:instance ,thm ,@bindings)
+                       :in-theory (append ',user-enabled
+                                          ,(osi-thm-ruleset-form propiso-info)
+                                          ,(iso-osi-thm-ruleset-form propiso-info)
+                                          (theory 'minimal-theory))))))
        ;; add DEFTHM for THM' to events,
        ;; proving it using THM with argument reverse iso translation
        ;; and in the minimal theory plus the relevant theorems above:
@@ -2269,21 +1610,23 @@ Example: int10-map-p-->-int20-map-p
                   `(skip-proofs (,defthm-d? ,thm1
                                   ,formula1
                                   :rule-classes ,classes))
-               (if (and user-hints (not user-enabledp))
-                   `(,defthm-d? ,thm1
-                      ,formula1
-                      :rule-classes ,classes
-                      :hints ,new-hints)
-                 `(,defthm-d? ,thm1
-                    ,formula1
-                    :rule-classes ,classes
-                    :instructions ((succeed (prove :hints ,(apply-renaming-to-hints old-hints renaming)))
-                                   ;; (when-not-proved (print "thm: reprove failed!"))
-                                   ;(succeed (prove :hints ,new-hints))
-                                   ;; (when-not-proved (print "thm: prove failed!"))
-                                   (succeed (bash ,@new-hints))
-                                   ;; (when-not-proved (print "thm: bash failed!"))
-                                   (repeat (bash ("Goal" :in-theory (disable* ,(propiso-info->iso-ruleset-name propiso-info)))))
+                (if (and user-hints (not user-enabledp))
+                    `(,defthm-d? ,thm1
+                       ,formula1
+                       :rule-classes ,classes
+                       :hints ,new-hints)
+                  `(,defthm-d? ,thm1
+                     ,formula1
+                     :rule-classes ,classes
+                     :instructions ((succeed (prove :hints ,(apply-renaming-to-hints old-hints renaming)))
+                                    ;; (when-not-proved (print "thm: reprove failed!"))
+;(succeed (prove :hints ,new-hints))
+                                    ;; (when-not-proved (print "thm: prove failed!"))
+                                    (succeed (bash ,@new-hints))
+                                    ;; (when-not-proved (print "thm: bash failed!"))
+                                    (repeat
+                                      (bash ("Goal" :in-theory
+                                                    (disable* ,(propiso-info->iso-ruleset-name propiso-info)))))
                                    )))))
        (events (cons event events))
        (typed-fn (type-theorem-p head))
@@ -2295,7 +1638,8 @@ Example: int10-map-p-->-int20-map-p
                  events)))
     (mv (and (not disable-last-defuned-fn)
              last-defuned-fn?)
-        fn-renaming renaming fn-infos iso-infos events))
+        fn-renaming renaming fn-infos iso-infos world
+        events))
 ) ; propagate-iso-defaxiom/defthm
 
 ;; Generate events for propagating the iso refinement to a VERIFY-GUARDS.
@@ -2306,11 +1650,12 @@ Example: int10-map-p-->-int20-map-p
    (renaming symbol-alistp)      ; mapping of old fn and thm names to new
    (fn-infos fn-infos-list-p)    ; mapping of old fns to new plus rewrite thm and domain signature
    (iso-infos iso-info-alist-p)  ; map of domain to isomorphism info
+   (world acl2::plist-worldp)
    (events true-list-listp)) ; events generated so far
   ;; returns updated (mv nil fn-renaming renaming fn-infos iso-infos events)
   :mode :program
   (b* (;; replace H with its refinement H', if there is one:
-       (new-fun (rename-fns-in-untranslated-term old-fun fn-renaming))
+       (new-fun (rename-fns-and-expand-lambdas-in-untranslated-term old-fun fn-renaming))
        ;; if H' is the same as H, then H does not depend on F1
        ;; and thus no VERIFY-GUARDS event needs to be generated;
        ;; otherwise we generate a VERIFY-GUARDS event for H':
@@ -2318,7 +1663,7 @@ Example: int10-map-p-->-int20-map-p
        (events (if (eq old-fun new-fun)
                    events
                  (cons `(verify-guards ,new-fun) events))))
-      (mv nil fn-renaming renaming fn-infos iso-infos events)))
+    (mv nil fn-renaming renaming fn-infos iso-infos world events)))
 
 
 ;; Scan events and generate refinement events.
@@ -2330,7 +1675,9 @@ Example: int10-map-p-->-int20-map-p
    (renaming symbol-alistp)             ; mapping of old fn and thm names to new
    (fn-infos fn-infos-list-p)           ; mapping of old fns to new plus rewrite thm and domain signature
    (iso-infos iso-info-alist-p)         ; mapping from isomorphism names to isomorphism records
-   (propiso-info propiso-info-p) ; Map from theorem name to hints lists
+   (world acl2::plist-worldp)
+   (propiso-info propiso-info-p)        ; Map from theorem name to hints lists
+   (dont-verify-guards booleanp)
    (events true-listp)                  ; generated events, reverse chronological order
    state)
   ;; returns list of events and final iso-infos and fn-infos
@@ -2338,34 +1685,41 @@ Example: int10-map-p-->-int20-map-p
   (if (endp eventups)
       (mv events iso-infos fn-infos)
     ;; process event tuple according to type:
-    (let ((eventup (car eventups))
-          (world (propiso-info->world propiso-info)))
-      (mv-let (last-defuned-fn fn-renaming+ renaming+ fn-infos+ iso-infos+ events+)
+    (let ((eventup (car eventups)))
+      (mv-let (last-defuned-fn fn-renaming+ renaming+ fn-infos+ iso-infos+ world events+)
           (case (acl2::access-event-tuple-type eventup)
             (defun
                 (let ((fun (acl2::access-event-tuple-namex eventup)))
-                  (if (assoc fun fn-renaming)
-                      (mv last-defuned-fn fn-renaming renaming fn-infos iso-infos events) ; ignore functions that are part of propagate-iso form
+                  (if (or (assoc fun fn-renaming)
+                          (iso-info-fnp fun iso-infos))
+                      ;; ignore functions that are part of propagate-iso form or involved in a morphism
+                      (mv last-defuned-fn fn-renaming renaming fn-infos iso-infos world events)
                     (if (std::find-define-sk-guts fun world)
-                        (propagate-iso-define-sk fun fn-renaming renaming fn-infos iso-infos propiso-info events ;; state
-                                                 )
-                      (propagate-iso-defun fun last-defuned-fn fn-renaming renaming fn-infos iso-infos propiso-info events eventup state)))))
+                        (propagate-iso-define-sk fun fn-renaming renaming fn-infos
+                                                 iso-infos world propiso-info events ;; state
+                        )
+                      (propagate-iso-defun fun last-defuned-fn fn-renaming renaming fn-infos iso-infos
+                                           world propiso-info dont-verify-guards events eventup state)))))
             (defuns
               (prog2$ (raise "Event tuple ~x0 not supported." eventup)
-                      (mv nil nil nil nil nil nil)))
+                      (mv nil nil nil nil nil nil nil)))
             ((defaxiom defthm)
              (let ((thm (acl2::access-event-tuple-namex eventup)))
-               (propagate-iso-defaxiom/defthm thm last-defuned-fn fn-renaming renaming fn-infos iso-infos propiso-info eventup events state)))
+               (if (iso-or-osi-thmp thm fn-infos)
+                   (mv last-defuned-fn fn-renaming renaming fn-infos iso-infos world events)
+                 (propagate-iso-defaxiom/defthm thm last-defuned-fn fn-renaming renaming fn-infos iso-infos
+                                                world propiso-info eventup events state))))
             (verify-guards
               (let* ((form (acl2::access-event-tuple-form eventup))
                      (fun (cadr form)))
-                (propagate-iso-verify-guards fun fn-renaming renaming fn-infos iso-infos events)))
+                (propagate-iso-verify-guards fun fn-renaming renaming fn-infos iso-infos world events)))
             (otherwise
              (prog2$ (raise "Unexpected event tuple ~x0." eventup)
-                     (mv nil nil nil nil nil nil))))
+                     (mv nil nil nil nil nil nil nil))))
         ;; process remaining event tuples, with updated accumulators:
         (propagate-iso-loop
-         (cdr eventups) last-defuned-fn fn-renaming+ renaming+ fn-infos+ iso-infos+ propiso-info events+ state)))))
+          (cdr eventups) last-defuned-fn fn-renaming+ renaming+ fn-infos+ iso-infos+ world propiso-info
+          dont-verify-guards events+ state)))))
 
 
 ;; Propagate isomorphisms
@@ -2376,23 +1730,21 @@ Example: int10-map-p-->-int20-map-p
    (event-regions symbol-alistp)
    (dont-verify-guards booleanp)
    (result-type-map symbol-alistp)
+   (world acl2::plist-worldp)
    (propiso-info propiso-info-p)            ; Map from theorem name to hints lists
    (extra-seed-fns symbol-listp)
    state)
   ;; returns list of events
   :mode :program
-  :ignore-ok t ; TODO: delete
-  (b* ((world (propiso-info->world propiso-info))
+  ;:ignore-ok t ; TODO: delete
+  (b* (;; (world (propiso-info->world propiso-info))
        ;; take event tuples from iso sources to last-event:
        (eventups (acl2::event-tuples-between (append extra-seed-fns (source-fns fn-infos) (strip-cars iso-infos))
-                                       (list (cdar (last event-regions))) world))
+                                             (list (cdar (last event-regions))) world))
        ;; if there are no event tuples, G1 does not depend on F1:
        ((if (eq eventups nil))
         (raise "~x0 does not depend on isomorphisms." (cdar (last event-regions)))
         (mv nil nil nil))
-       ;; since the first event tuple introduces F1,
-       ;; for which we already have the refinement F2,
-       ;; we skip the first event tuple and start with the next one:
        (eventups (event-tuples-between-pairs event-regions eventups))
        (fn-renaming (append (pairlis$ (strip-cars iso-infos) (map-iso-domb iso-infos))
                             (pairlis$ (source-fns fn-infos) (target-fns fn-infos))))
@@ -2404,24 +1756,15 @@ Example: int10-map-p-->-int20-map-p
        (typing-thm-event (add-iso-osi-theorem-event typing-thms propiso-info))
        ;; propagate the refinement to all event tuples:
        ((mv events iso-infos fn-infos)
-        (propagate-iso-loop eventups nil fn-renaming renaming fn-infos iso-infos propiso-info (list typing-thm-event) state)))
-      ;; arrange in chronological order:
-      (mv (reverse events) iso-infos fn-infos)))
+        (propagate-iso-loop eventups nil fn-renaming renaming fn-infos iso-infos world propiso-info
+                            dont-verify-guards (list typing-thm-event) state)))
+    ;; arrange in chronological order:
+    (mv (reverse events) iso-infos fn-infos)))
 
 
 ;; Input-checking/processing functions
 
-(define check-isos ((isos symbol-listp) (world plist-worldp))
-  :mode :program
-  (if (endp isos)
-      ()
-    (let* ((iso-name (first isos))
-           (iso-info (defiso-lookup iso-name world)))
-      (if (null iso-info)
-          (raise "~x0 must be an isomorphism name." (first isos))
-        (acons (acl2::defmapping-info->doma iso-info)
-               iso-info
-               (check-isos (rest isos) world))))))
+
 
 (defmap iso-names-from-iso-info-alist-p (info-elts)
   (and (iso-info-iso-name (cdr info-elts)))
@@ -2441,10 +1784,13 @@ Example: int10-map-p-->-int20-map-p
                       (or (function-symbolp fn-i world)
                           (acl2::macro-symbolp fn-i world))))
             (raise-mv-t "~x0 must be a function." fn-i))
-           ((not (and (symbolp t-fn-i)  ; Todo: Check arities are the same!
-                      (or (function-symbolp t-fn-i world)
-                          (acl2::macro-symbolp t-fn-i world))))
-            (raise-mv-t "~x0 must be a function." t-fn-i))
+           ((not (or (and (symbolp t-fn-i) ; Todo: Check arities are the same!
+                          (or (function-symbolp t-fn-i world)
+                              (acl2::macro-symbolp t-fn-i world)))
+                     (and (consp t-fn-i)
+                          (equal (car t-fn-i) 'lambda)
+                          (equal (len t-fn-i) 3))))
+            (raise-mv-t "~x0 must be a function symbol or lambda term." t-fn-i))
            ((not (and (symbolp iso-thm)
                       (acl2::theorem-symbolp iso-thm world)))
             (raise-mv-t "~x0 must be a theorem." iso-thm))
@@ -2552,7 +1898,13 @@ Example: int10-map-p-->-int20-map-p
        (initial-iso-rules (append (iso-thms fn-infos) iso-rules))
        (osi-ruleset-name (pack$ main-iso-name "-OSI-THMS"))
        (initial-osi-rules (append (osi-thms fn-infos) osi-rules))
-       (propiso-info (propiso-info iso-osi-ruleset-name iso-ruleset-name osi-ruleset-name (doublets-to-alist hints-map)
+       (propiso-info (propiso-info iso-osi-ruleset-name iso-ruleset-name osi-ruleset-name
+                                   (doublets-to-alist (if (and (listp hints-map)
+                                                               (eql (len hints-map) 2)
+                                                               (symbolp (car hints-map)))
+                                                          ;; If just one allow extra parens to be omitted
+                                                          (list hints-map)
+                                                        hints-map))
                                    world))
        (event-regions (doublets-to-alist event-regions))
        (event-regions (if first-event
@@ -2561,7 +1913,7 @@ Example: int10-map-p-->-int20-map-p
        ;; generate events to propagate F1 = F2 to G1:
        ((mv events iso-infos fn-infos)
         (propagate-iso-events iso-infos fn-infos event-regions dont-verify-guards result-type-map
-                              propiso-info extra-seed-fns state))
+                              world propiso-info extra-seed-fns state))
        ((when print-tables)
         (print-iso-infos iso-infos)
         (print-fn-infos fn-infos)

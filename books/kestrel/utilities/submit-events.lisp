@@ -1,7 +1,7 @@
 ; Utilities for submitting events to ACL2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -74,52 +74,100 @@
     (prog2$ (print-event-with-elision (first events))
             (print-events-with-elision (rest events)))))
 
-;Returns (mv erp state) where erp is non-nil if the event failed
-;throws an error if the event fails
-;TODO: Consider using PSO to print proof output only upon failure.
-(defun submit-event-helper (event print throw-errorp state)
-  (declare (xargs :mode :program ;; because we call trans-eval-error-triple
-                  :guard (member-eq print '(nil :brief :verbose))
+;; Returns (mv erp state) where erp is non-nil if the event failed.
+;; TODO: Consider using PSO to print proof output only upon failure.
+(defun submit-event-core (event print state)
+  (declare (xargs :guard (member-eq print '(nil :brief t :verbose))
+                  :mode :program ; because this calls trans-eval-error-triple
                   :stobjs state))
   (progn$ (and print (cw "(Submitting event:~%")) ;todo: it would be nice print the event name (if there is one) or to say "event 3 of 9" or whatever
           (and print
                (if (eq :verbose print)
-                   (cw "~x0" event)
+                   (cw "~X01" event nil)
                  (print-event-with-elision event)))
-          (let ( ;; TODO: Think about this:
-                ;; todo: inhibit more output if print is nil?
-                (additional-output-types-to-inhibit (if (eq print :verbose)
-                                                        nil
-                                                      '(prove warning event summary observation))))
+          (let ((additional-output-types-to-inhibit
+                 (if (eq print :verbose)
+                     nil ; don't inhibit anything
+                   (if (eq print t)
+                       '(observation prove proof-builder proof-tree) ; inhibit unneeded stuff
+                     (if (eq print :brief)
+                         ;; inhibit all but important output:
+                         '( ;; error
+                           warning
+                           ;; warning!
+                           observation prove proof-builder event history summary proof-tree comment)
+                       ;; print must be nil, so inhibit everything:
+                       '(error warning warning! observation prove proof-builder event history summary proof-tree comment)))))
+                (inhibited-output-types-to-remove (if (eq print :verbose) '(prove) nil))
+                )
             (mv-let (erp result state)
               ;;this magic incantation comes from :doc with-output:
+              ;; These globals get unset after the call of trans-eval-error-triple
               (state-global-let*
                ((inhibit-output-lst
-                 (union-eq (f-get-global 'inhibit-output-lst state)
-                           additional-output-types-to-inhibit))
+                 (set-difference-eq
+                  (union-eq (f-get-global 'inhibit-output-lst state)
+                            additional-output-types-to-inhibit)
+                  inhibited-output-types-to-remove))
+                (inhibit-er-hard (if print nil t)) ; suppress even hard errors
                 (print-clause-ids (if print t nil)) ; compare to what set-gag-mode-fn does
                 (gag-mode (if print nil t)) ; compare to what set-gag-mode-fn does
                 (saved-output-token-lst (if print nil :all)) ; compare to what set-gag-mode-fn does
                 )
                (trans-eval-error-triple event
-                                        'submit-event-helper ;todo: pass in a better context
+                                        'submit-event ;todo: pass in a better context
                                         state))
               (if erp
-                  (if throw-errorp
-                      (prog2$ (er hard? 'submit-event-helper "Failed to submit event: ~X01" event nil)
-                              (mv erp state))
-                    (prog2$ (and print (cw "EVENT FAILED!)~%"))
-                            (mv erp state)))
-                ;; Success:
+                  (prog2$ (and print (cw "Error.)~%"))
+                          (mv erp state))
+                ;; No error:
                 (prog2$ (and print (cw "~x0)~%" result))
                         (mv nil state)))))))
+
+;; Returns (mv erp state) where erp is non-nil if the event failed.
+;; Throws an error if the event fails and THROW-ERRORP is non-nil.
+;; TODO: Consider using PSO to print proof output only upon failure.
+;; TODO: If throw-error is t, consider using submit-event-handle-error.
+(defun submit-event (event print throw-error state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (member-eq throw-error '(t nil :warn)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (mv-let (erp state)
+    (submit-event-core event print state)
+    (prog2$ (and erp
+                 (if (eq t throw-error)
+                     (er hard? 'submit-event "Failed to submit event: ~X01" event nil)
+                   (if (eq :warn throw-error)
+                       (cw "WARNING: Error submitting ~X01.~%" event nil)
+                     nil)))
+            (mv erp state))))
+
+;; Returns state.  Does not return an error but may throw an error or print a warning.
+(defun submit-event-handle-error (event print throw-error state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief t :verbose))
+                              (member-eq throw-error '(t nil :warn)))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (mv-let (erp state)
+    (submit-event-core event print state)
+    (prog2$ (and erp
+                 (if (eq t throw-error)
+                     (er hard? 'submit-event-handle-error "Failed to submit event: ~X01" event nil)
+                   (if (eq :warn throw-error)
+                       (cw "WARNING: Error submitting ~X01.~%" event nil)
+                     ;; Completely suppress the error:
+                     nil)))
+            state)))
+
+;; TODO: Deprecate these?:
 
 ;returns state
 ;throws an error if the event fails
 (defun submit-event-quiet (event state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event nil t state)
+    (submit-event event nil t state)
     (declare (ignore erp))
     state))
 
@@ -128,7 +176,7 @@
 (defun submit-event-verbose (event state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event :verbose t state)
+    (submit-event event :verbose t state)
     (declare (ignore erp))
     state))
 
@@ -137,35 +185,37 @@
 (defun submit-event-brief (event state)
   (declare (xargs :mode :program :stobjs state))
   (mv-let (erp state)
-    (submit-event-helper event :brief t state)
+    (submit-event event :brief t state)
     (declare (ignore erp))
     state))
 
-;deprecate?  or improve to take a :print argument (will have to make it a macro) and replace the 3 versions above
-;returns state
-;throws an error if the event fails
-(defun submit-event (event state)
-  (declare (xargs :mode :program :stobjs state))
-  (submit-event-brief event state))
+;; ;deprecate?  or improve to take a :print argument (will have to make it a macro) and replace the 3 versions above
+;; ;returns state
+;; ;throws an error if the event fails
+;; (defun submit-event (event state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (submit-event-brief event state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns state
 ;throws an error if any event fails
+;; todo: maybe rename to submit-events
 (defun submit-events-aux (events print state)
-  (declare (xargs :mode :program
-                  :guard (member-eq print '(nil :brief :verbose))
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
+                  :mode :program
                   :stobjs state))
   (if (endp events)
       state
-    (let* ((event (first events)))
-      (mv-let (erp state)
-        (submit-event-helper event print t state)
-        (declare (ignore erp))
-        (submit-events-aux (rest events) print state)))))
+    (mv-let (erp state)
+      (submit-event (first events) print t state)
+      (declare (ignore erp))
+      (submit-events-aux (rest events) print state))))
 
 ;returns state
 ;throws an error if any event fails
 ; This uses :brief printing.
-(defun submit-events (events state)
+(defun submit-events-brief (events state)
   (declare (xargs :mode :program :stobjs state))
   (let ((more-than-one-eventp (and (consp events) (consp (cdr events)))))
     (progn$ (and more-than-one-eventp (cw "(Submitting ~x0 events:~%" (len events)))

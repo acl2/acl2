@@ -163,8 +163,8 @@
   (if (endp class-names)
       nil
     (append (gen-init-bindings-for-class (jvm::class-decl-non-static-fields (jvm::get-class-info (car class-names) class-table))
-					 (car class-names))
-	    (gen-init-bindings (cdr class-names) class-table))))
+                                         (car class-names))
+            (gen-init-bindings (cdr class-names) class-table))))
 
 (defthm true-listp-gen-init-bindings
   (true-listp (gen-init-bindings class-name class-table))
@@ -207,8 +207,8 @@
                                                            )))))
   ;; set the class:
   (set-class ad
-	     class-name
-	     (set-fields ad
+             class-name
+             (set-fields ad
                          ;; initialize all the (non-static) fields in the class and its superclasses:
                          (gen-init-bindings (cons class-name
                                                   (jvm::get-superclasses class-name class-table))
@@ -228,25 +228,25 @@
 
 (defthm get-field-of-init-ref-in-heap-diff-ref
   (implies (not (equal adr1 adr2))
-	   (equal (get-field adr1 pair1 (init-ref-in-heap adr2 class-name class-table heap))
-		  (get-field adr1 pair1 heap)))
+           (equal (get-field adr1 pair1 (init-ref-in-heap adr2 class-name class-table heap))
+                  (get-field adr1 pair1 heap)))
   :hints (("Goal" :in-theory (enable init-ref-in-heap))))
 
 ;; (defthm strip-cars-gen-init-bindings-for-class
 ;;   (implies (not (equal adr1 adr2))
-;; 	   (not (memberp adr1 (strip-cars
-;; 			      (gen-init-bindings-for-class
-;; 			       adr2
-;; 			       class-name
-;; 			       class-table)))))
+;;         (not (memberp adr1 (strip-cars
+;;                            (gen-init-bindings-for-class
+;;                             adr2
+;;                             class-name
+;;                             class-table)))))
 ;;   :hints (("Goal" :in-theory (enable gen-init-bindings-for-class memberp))))
 
 ;; (defthm strip-cars-gen-init-bindings
 ;;   (implies (not (equal adr1 adr2))
-;; 	   (not (memberp adr1 (strip-cars
-;; 			      (gen-init-bindings adr2
-;; 						 class-names
-;; 						 class-table)))))
+;;         (not (memberp adr1 (strip-cars
+;;                            (gen-init-bindings adr2
+;;                                               class-names
+;;                                               class-table)))))
 ;;   :hints (("Goal" :in-theory (enable gen-init-bindings))))
 
 ;; ;was called build-a-class-instance
@@ -255,9 +255,9 @@
 ;; (defun init-class-ref-in-heap (adr sfields class-table heap)
 ;;   (set-fields adr
 ;;    (append (gen-init-bindings-for-class "java.lang.Class" (cons "<name>" sfields))
-;; 	   (gen-init-bindings-for-class
-;; 					"java.lang.Object"
-;; 					(class-decl-fields (jvm::get-class-info ;bound?
+;;         (gen-init-bindings-for-class
+;;                                      "java.lang.Object"
+;;                                      (class-decl-fields (jvm::get-class-info ;bound?
 ;;                                                             "java.lang.Object" class-table))))
 ;;    heap))
 ;BOZO do the bindings used for gen-init-bindings-for-class have, etc. the same form as the ones for set-field?
@@ -278,45 +278,45 @@
 ;; ;why did i have to open up so much?
 ;; (defthm get-class-of-init-class-of-ref-in-heap
 ;;   (implies (not (equal 'special-data class-name))
-;; 	   (equal (get-field adr 'special-data 'class
-;; 			     (init-class-of-ref-in-heap adr class-name field-ids heap))
-;; 		  (get-field adr 'special-data 'class
-;; 			     heap)))
+;;         (equal (get-field adr 'special-data 'class
+;;                           (init-class-of-ref-in-heap adr class-name field-ids heap))
+;;                (get-field adr 'special-data 'class
+;;                           heap)))
 ;;   :hints (("goal" :in-theory (enable init-class-of-ref-in-heap set-field get-field))))
 
 
 ;; (defthm get-class-of-INIT-REF-IN-HEAP-aux
 ;;   (implies (not (memberp 'special-data class-names))
-;; 	   (EQUAL
-;; 	    (GET-FIELD
-;; 	     ADR
-;; 	     'SPECIAL-DATA
-;; 	     'CLASS
-;; 	     (INIT-REF-IN-HEAP-AUX ADR class-names CLASS-TABLE heap))
-;; 	    (GET-FIELD
-;; 	     ADR
-;; 	     'SPECIAL-DATA
-;; 	     'CLASS
-;; 	     heap)
-;; 	    ))
-;; 	   :hints (("Goal" :in-theory (enable INIT-REF-IN-HEAP-AUX)))
+;;         (EQUAL
+;;          (GET-FIELD
+;;           ADR
+;;           'SPECIAL-DATA
+;;           'CLASS
+;;           (INIT-REF-IN-HEAP-AUX ADR class-names CLASS-TABLE heap))
+;;          (GET-FIELD
+;;           ADR
+;;           'SPECIAL-DATA
+;;           'CLASS
+;;           heap)
+;;          ))
+;;         :hints (("Goal" :in-theory (enable INIT-REF-IN-HEAP-AUX)))
 ;;  )
 
 
 ;; (defthm get-class-of-INIT-REF-IN-HEAP
 ;;   (implies (not (memberp 'special-data (cons class-name
-;; 					    (jvm::class-decl-superclasses
-;; 					     (bound? class-name class-table)))))
-;; 	   (equal
-;; 	    (GET-FIELD
-;; 	     adr
-;; 	     'SPECIAL-DATA
-;; 	     'CLASS
-;; 	     (INIT-REF-IN-HEAP adr
-;; 			       class-name
-;; 			       CLASS-TABLE
-;; 			       heap))
-;; 	    class-name))
+;;                                          (jvm::class-decl-superclasses
+;;                                           (bound? class-name class-table)))))
+;;         (equal
+;;          (GET-FIELD
+;;           adr
+;;           'SPECIAL-DATA
+;;           'CLASS
+;;           (INIT-REF-IN-HEAP adr
+;;                             class-name
+;;                             CLASS-TABLE
+;;                             heap))
+;;          class-name))
 ;;   :hints (("Goal" :in-theory (enable INIT-REF-IN-HEAP)))
 ;;   )
 
@@ -482,7 +482,7 @@
   (implies (not (equal pair (CLASS-PAIR)))
            (equal (GET-CLASS REF (set-FIELD REF2 pair val HEAP))
                   (GET-CLASS REF HEAP)))
-  :hints (("Goal" :in-theory (e/d (get-class) ()))))
+  :hints (("Goal" :in-theory (enable get-class))))
 
 (defthm in-rkeys-when-get-field-non-nil-two
   (implies (get-field ad pair heap)

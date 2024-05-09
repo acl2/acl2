@@ -40,6 +40,7 @@
 
                   (thm-fn 't
                           state
+                          nil
                           (list
                            (list "Goal"
                                  :use
@@ -47,7 +48,8 @@
                                   (list* :functional-instance
                                          (list :theorem form)
                                          ',subst))))
-                          'nil))
+                          'nil
+                          nil))
                 (value '(value-triple nil)))))
 
 ; Examples

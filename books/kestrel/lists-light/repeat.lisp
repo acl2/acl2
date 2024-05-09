@@ -1,6 +1,6 @@
 ; A lightweight book about repeat.
 ;
-; Copyright (C) 2018-2019 Kestrel Institute
+; Copyright (C) 2018-2022 Kestrel Institute
 ; See books/std/lists/list-defuns.lisp for the copyright on repeat itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,20 +14,11 @@
 ;; This book provides the repeat function from std/lists without bringing in
 ;; anything else from std/lists.  It also provides some theorems about repeat.
 
+(include-book "repeat-def")
 (local (include-book "cons"))
 (local (include-book "nthcdr"))
 (local (include-book "len"))
 (local (include-book "take"))
-
-;; From books/std/lists/list-defuns.lisp:
-(defund repeat (n x)
-  (declare (xargs :guard (natp n)
-                  :verify-guards nil ;; done below
-                  ))
-  (mbe :logic (if (zp n)
-                  nil
-                (cons x (repeat (- n 1) x)))
-       :exec (make-list n :initial-element x)))
 
 ;; See also |(repeat 0 x)| in std/lists/repeat
 (defthm repeat-of-0
@@ -79,8 +70,6 @@
   :hints (("subGoal *1/2" :use (:instance repeat-alt-def)
            :in-theory (disable repeat-alt-def))))
 
-(verify-guards repeat :hints (("Goal" :in-theory (enable repeat))))
-
 (defthm len-of-repeat
   (equal (len (repeat n x))
          (nfix n))
@@ -118,15 +107,6 @@
            nil))
   :hints (("Goal" :induct (sub1-sub1-induct m n)
            :in-theory (enable repeat nth))))
-
-(defthmd repeat-opener-end
-  (implies (posp n)
-           (equal (repeat n v)
-                  (append (repeat (+ -1 n) v) (list v))))
-  :hints (("Goal" :in-theory (e/d (repeat append
-                                   ) (CONS-ONTO-REPEAT
-                                   zp-open
-                                   )))))
 
 ;see the one in std/lists/repeat.lisp
 (defthm my-nthcdr-of-repeat

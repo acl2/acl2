@@ -45,6 +45,7 @@
 (include-book "cl-correct")
 (include-book "tools/templates" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
+(include-book "centaur/meta/def-formula-checks" :dir :system)
 
 (defthm rp-state-preservedp-of-the-same-rp-state
   (implies (rp-statep rp-state)
@@ -195,6 +196,7 @@ but instead you passed ~p0~%"
    valid-syntaxp ;; if meta rule returns valid-syntax (rp-valid-termp)
    args
    correctness-lemma
+   returns
    priority)
   t)
 
@@ -271,10 +273,14 @@ but instead you passed ~p0~%"
                    (and (true-listp returns)
                         (member-equal 'rp-state returns)
                         `((implies (rp-statep rp-state)
-                                   (b* ((rp-state-input rp-state)
-                                        (,returns (,meta-fnc . ,args)))
-                                     (rp-state-preservedp rp-state-input
-                                                          rp-state)))))))
+                                   (b* ((,returns (,meta-fnc . ,args)))
+                                     (rp-statep rp-state)))
+                          (implies (valid-rp-statep rp-state)
+                                   (b* ((,returns (,meta-fnc . ,args)))
+                                     (valid-rp-statep rp-state)))
+                          (implies (valid-rp-state-syntaxp rp-state)
+                                    (b* ((,returns (,meta-fnc . ,args)))
+                                      (valid-rp-state-syntaxp rp-state)))))))
         :hints ,hints)
 
        ,@(and cl-name-prefix
@@ -286,7 +292,7 @@ but instead you passed ~p0~%"
                               (returns 'term)
                               (rw-direction 'nil)
                               (valid-syntaxp 't)
-                              (disabledp 'nil)
+                              (disabled 'nil)
                               hints
                               (cl-name-prefix 'nil))
   `(make-event
@@ -298,7 +304,7 @@ but instead you passed ~p0~%"
                       ',valid-syntaxp
                       ',hints
                       ',cl-name-prefix
-                      ',disabledp
+                      ',disabled
                       state)))
 
 
@@ -347,14 +353,19 @@ with RP-Rewriter. ~%"
               t))))
 
 (defund add-processor-fn (processor-fnc formula-checks  
-                                   valid-syntaxp hints cl-name-prefix disabledp
-                                   processor-type
-                                   state)
+                                        valid-syntaxp hints cl-name-prefix disabledp
+                                        returns processor-type 
+                                        state)
   (declare (xargs :guard (add-processor-guard processor-fnc formula-checks 
                                               valid-syntaxp
                                               cl-name-prefix state)
                   :stobjs (state)))
   (b* ((rune `(,processor-type ,processor-fnc))
+
+       (returns (if (symbolp returns) (list returns) returns))
+       (returns (fix-args/returns-package returns))
+       (returns (if (equal (len returns) 1) (car returns) returns))
+       
        (args (true-list-fix (fix-args/returns-package (acl2::formals processor-fnc (w state)))))
        (correctness-lemma (sa processor-fnc 'valid))
        (entry (make pre-post-processor-table-rec
@@ -362,7 +373,8 @@ with RP-Rewriter. ~%"
                     :processor-fnc processor-fnc
                     :valid-syntaxp valid-syntaxp
                     :correctness-lemma correctness-lemma
-                    :args args)))
+                    :args args
+                    :returns returns)))
     `(encapsulate
        nil
        (set-ignore-ok t)
@@ -374,37 +386,54 @@ with RP-Rewriter. ~%"
           `(table rp-rw-all-postprocessors ',processor-fnc ',entry))
 
        (defthmd ,correctness-lemma
-        (and
-         (implies (and (rp-evl-meta-extract-global-facts)
-                       (rp-termp term)
-                       (valid-sc term a)
-                       ,@(append (and formula-checks
-                                      `((,formula-checks state)))
-                                 (and (member-equal 'context args)
-                                      `((valid-sc-subterms context a)
-                                        (eval-and-all context a)
-                                        (rp-term-listp context)))
-                                 (and (member-equal 'rp-state args)
-                                      `((rp-statep rp-state)))))
-                  (b* ((term-input term)
-                       (term
-                        (,processor-fnc . ,args)))
-                    (and (equal (rp-evlt term a)
-                                (rp-evlt term-input a))
-                         (valid-sc term a))))
+         (and
+          (implies (and (rp-evl-meta-extract-global-facts)
+                        (rp-termp term)
+                        (valid-sc term a)
 
-         ,@(append (and valid-syntaxp
-                        `((implies (and (rp-termp term)
-                                        ,@(append (and (member-equal 'context args)
-                                                       `((rp-term-listp context)))
-                                                  (and (member-equal 'rp-state args)
-                                                       `((rp-statep rp-state)))))
-                                   (b* ((term-input term)
-                                        (term
-                                         (,processor-fnc . ,args)))
-                                     (rp-termp term)))))
-                   ))
-        :hints ,hints)
+                        (alistp a)
+                       
+                       
+                        ,@(append (and formula-checks
+                                       `((,formula-checks state)))
+                                  (and (member-equal 'context args)
+                                       `((valid-sc-subterms context a)
+                                         (eval-and-all context a)
+                                         (rp-term-listp context)))
+                                  (and (member-equal 'rp-state args)
+                                       `((valid-rp-statep rp-state)
+                                         (rp-statep rp-state)))))
+                   (b* ((term-input term)
+                        (,returns
+                         (,processor-fnc . ,args)))
+                     (and (iff (rp-evlt term a)
+                               (rp-evlt term-input a))
+                          (valid-sc term a))))
+
+          ,@(append (and valid-syntaxp
+                         `((implies (and (rp-termp term)
+                                         ,@(append (and (member-equal 'context args)
+                                                        `((rp-term-listp context)))
+                                                   (and (member-equal 'rp-state args)
+                                                        `((valid-rp-state-syntaxp rp-state)))))
+                                    (b* ((term-input term)
+                                         (,returns
+                                          (,processor-fnc . ,args)))
+                                      (rp-termp term)))))
+                    (and (true-listp returns)
+                         (member-equal 'rp-state returns)
+                         `((implies (rp-statep rp-state)
+                                    (b* ((,returns (,processor-fnc . ,args)))
+                                      (rp-statep rp-state)))
+                           (implies (and (rp-statep rp-state)
+                                         (valid-rp-statep rp-state))
+                                    (b* ((,returns (,processor-fnc . ,args)))
+                                      (valid-rp-statep rp-state)))
+                           (implies (valid-rp-state-syntaxp rp-state)
+                                    (b* ((,returns (,processor-fnc . ,args)))
+                                      (valid-rp-state-syntaxp rp-state)))))
+                    ))
+         :hints ,hints)
 
        ,@(and cl-name-prefix
               `((attach-meta-fncs ,cl-name-prefix))))))
@@ -414,6 +443,7 @@ with RP-Rewriter. ~%"
                                  (valid-syntaxp 't)
                                  (disabledp 'nil)
                                  hints
+                                 (returns 'term)
                                  (cl-name-prefix 'nil))
   `(make-event
     (add-processor-fn ',processor-fnc
@@ -422,6 +452,7 @@ with RP-Rewriter. ~%"
                       ',hints
                       ',cl-name-prefix
                       ',disabledp
+                      ',returns
                       :preprocessor
                       state)))
 
@@ -430,6 +461,7 @@ with RP-Rewriter. ~%"
                                   (valid-syntaxp 't)
                                   (disabledp 'nil)
                                   hints
+                                  (returns 'term)
                                   (cl-name-prefix 'nil))
   `(make-event
     (add-processor-fn ',processor-fnc
@@ -438,6 +470,7 @@ with RP-Rewriter. ~%"
                       ',hints
                       ',cl-name-prefix
                       ',disabledp
+                      ',returns
                       :postprocessor
                       state)))
 
@@ -520,19 +553,18 @@ with RP-Rewriter. ~%"
 
 (xdoc::defxdoc
  add-meta-rule
- :parents (rp-rewriter/meta-rules)
+ :parents (rp-rewriter/meta-rules rp-ruleset)
  :short "A macro to add created meta rules to RP-Rewriter"
  :long "<p>
 <code>
 @('
 (add-meta-rule :meta-fnc <meta-fnc-name> ;; mandatory
                :trig-fnc <trig-fnc-name> ;; mandatory
-               :formula-checks <formula-check-fnc-name> ;; nil by default,
- necessary for most cases.
+               :formula-checks <formula-check-fnc-name> ;; nil by default, necessary in most cases.
                :returns <return-signature>   ;; optional
-               :outside-in <nil-t-or-:both>  ;; optional, nil by default
+               :rw-directuon <:inside-out, :outside-in, or :both>  ;; optional, :inside-out by default
                :valid-syntaxp <t-or-nil>     ;; optional, t by default
-               :disabledp <t-or-nil>         ;; optional, t by default
+               :disabled <t-or-nil>          ;; optional, t by default
                :hints    <regular-ACL2-hints> ;; optional
                :cl-name-prefix <nil-or-a-unqiue-prefix> ;; optional, nil by default
                )
@@ -567,12 +599,10 @@ it accordingly. </li>
 <li> :valid-syntaxp  if you proved that your meta function returns rp-termp,
 then set this to t. Otherwise, RP-Rewriter will have to call rp-termp everytime
 the meta runction changes the term. </li>
-<li> :disabledp This macro will prove the necessary lemma to make sure that the
-meta function can be registered soundly (even though this lemma might be
-redundant). If you choose to keep this lemma disabled, then set this to t. It
-is, by default, set to t. </li>
-<li>:hints regular ACL2 hints passed to the defthm event of the aforementioned
-lemma to be proved.</li>
+<li> :disabled will cause the registered meta rule to be disabled by default,
+but it can be later enabled by the user. </li>
+<li>:hints regular ACL2 hints passed to the internal defthm event that checks
+the correctness of necessary lemmas mentioned in @(see Rp-rewriter/meta-rules).</li>
 <li> :cl-name-prefix Meta functions are attached to RP-Rewriter using a
 defattach mechanism. By default, add-meta-rule will not trigger this mechanism,
 and the user needs to call @(see attach-meta-fncs) once all the necessary meta
@@ -643,18 +673,22 @@ attach-meta-fncs) from being executed. </li>
          (proc-fnc (access pre-post-processor-table-rec cur :processor-fnc))
          (valid-syntaxp (access pre-post-processor-table-rec cur :valid-syntaxp))
          (args (access pre-post-processor-table-rec cur :args))
-
+         (returns (access pre-post-processor-table-rec cur :returns))
+         
+         
          (body
-          `(term
+          `(,returns
             (if (is-proc-enabled ',proc-fnc ',type state)
                 ,(if valid-syntaxp
                      `(,proc-fnc . ,args)
                    `(b* ((input-term term)
-                         (term (,proc-fnc . ,args)))
-                      (if (rp-termp term)
-                          term
-                        input-term)))
-              term)))
+                         (,returns (,proc-fnc . ,args))
+                         (term 
+                          (if (rp-termp term)
+                              term
+                            input-term)))
+                      ,returns))
+              ,returns)))
          )
       (cons body rest))))
 
@@ -691,19 +725,26 @@ attach-meta-fncs) from being executed. </li>
   (b* ((meta-fnc-name (sa prefix 'rp-rw-meta-rule))
        (preprocessor-fnc-name (sa prefix 'rp-rw-preprocessor))
        (postprocessor-fnc-name (sa prefix 'rp-rw-postprocessor))
-       (formula-checks-fnc-name (sa prefix 'rp-formula-checks))
+       (meta-formula-checks-fnc-name 
+        (sa prefix 'rp-meta-fnc-formula-checks))
+       (proc-formula-checks-fnc-name 
+        (sa prefix 'rp-proc-formula-checks))
 
        (rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules world))
        (rp-rw-all-preprocessors (table-alist 'rp-rw-all-preprocessors world))
        (rp-rw-all-postprocessors (table-alist 'rp-rw-all-postprocessors world))
 
-       (formula-checks-fns (create-rp-rw-meta-rule-fn-aux1
-                            (append rp-rw-all-meta-rules
-                                    rp-rw-all-preprocessors
-                                    rp-rw-all-postprocessors)))
-       (formula-checks-fn-body
-        (cons 'and (pairlis$ formula-checks-fns (pairlis$ (repeat (len
-                                                                   formula-checks-fns) 'state) nil))))
+       (meta-fnc-formula-checks-fns (create-rp-rw-meta-rule-fn-aux1
+                                     rp-rw-all-meta-rules))
+       (proc-formula-checks-fns (create-rp-rw-meta-rule-fn-aux1
+                                 (append  rp-rw-all-preprocessors
+                                          rp-rw-all-postprocessors)))
+       (meta-formula-checks-fn-body
+        (cons 'and (pairlis$ meta-fnc-formula-checks-fns
+                             (pairlis$ (repeat (len meta-fnc-formula-checks-fns) 'state) nil))))
+       (proc-formula-checks-fn-body
+        (cons 'and (pairlis$ proc-formula-checks-fns
+                             (pairlis$ (repeat (len proc-formula-checks-fns) 'state) nil))))
 
        ((mv & new-meta-rule-fnc-body)
         (create-rp-rw-meta-rule-fn-aux2 rp-rw-all-meta-rules))
@@ -717,9 +758,15 @@ attach-meta-fncs) from being executed. </li>
        )
     `(
 
-      (defun ,formula-checks-fnc-name (state)
+      (defun ,meta-formula-checks-fnc-name (state)
         (declare (xargs :stobjs (state)))
-        ,formula-checks-fn-body)
+        (declare (ignorable state))
+        ,meta-formula-checks-fn-body)
+
+      (defun ,proc-formula-checks-fnc-name (state)
+        (declare (xargs :stobjs (state)))
+        (declare (ignorable state))
+        ,proc-formula-checks-fn-body)
 
       (defun ,meta-fnc-name (term meta-fnc-name dont-rw context limit rp-state state )
         (declare (xargs :guard (and (rp-termp term)
@@ -739,7 +786,7 @@ attach-meta-fncs) from being executed. </li>
         (declare (ignorable term context rp-state state))
         (b* (
              ,@new-preprocessor-body)
-          term))
+          (mv term rp-state)))
 
       (defun ,postprocessor-fnc-name (term context rp-state state )
         (declare (xargs :guard (and (rp-termp term)
@@ -748,9 +795,11 @@ attach-meta-fncs) from being executed. </li>
         (declare (ignorable term context rp-state state))
         (b* (
              ,@new-postprocessor-body)
-          term))
+          (mv term rp-state)))
 
-      (table rp-rw 'main-formula-checks-fnc-name ',formula-checks-fnc-name)
+      (table rp-rw 'main-meta-formula-checks-fnc-name
+             ',meta-formula-checks-fnc-name)
+      (table rp-rw 'main-proc-formula-checks-fnc-name ',proc-formula-checks-fnc-name)
       (table rp-rw 'meta-rule-caller-fnc-name ',meta-fnc-name)
       (table rp-rw 'preprocessor-caller-fnc-name ',preprocessor-fnc-name)
       (table rp-rw 'postprocessor-caller-fnc-name ',postprocessor-fnc-name)
@@ -763,14 +812,12 @@ attach-meta-fncs) from being executed. </li>
              ',(table-alist 'rp-rw-all-postprocessors world))
 
       ,@(and skip-cycle-checks `((defttag :skip-defattach-cycles-check)))
-      
+
       (defattach
-        (rp-formula-checks ,formula-checks-fnc-name)
+        (rp-meta-fnc-formula-checks ,meta-formula-checks-fnc-name)
         (rp-rw-meta-rule ,meta-fnc-name)
-        (rp-rw-preprocessor ,preprocessor-fnc-name)
-        (rp-rw-postprocessor ,postprocessor-fnc-name)
         :hints (("Goal"
-                 :in-theory '(,formula-checks-fnc-name
+                 :in-theory '(,meta-formula-checks-fnc-name
                               ,meta-fnc-name
                               ,preprocessor-fnc-name
                               ,postprocessor-fnc-name
@@ -781,7 +828,30 @@ attach-meta-fncs) from being executed. </li>
                                  rp-rw-all-preprocessors)
                               ,@(create-rp-rw-meta-rule-fn-aux3
                                  rp-rw-all-postprocessors)
-                              (:e dont-rw-syntaxp))))
+                              (:e dont-rw-syntaxp)
+                              valid-rp-statep-and-rp-statep-implies-valid-rp-state-syntaxp
+                              valid-rp-state-syntaxp-implies)))
+        ,@(and skip-cycle-checks `(:skip-checks :cycles)))
+      
+      (defattach
+        (rp-proc-formula-checks ,proc-formula-checks-fnc-name)
+        (rp-rw-preprocessor ,preprocessor-fnc-name)
+        (rp-rw-postprocessor ,postprocessor-fnc-name)
+        :hints (("Goal"
+                 :in-theory '(,proc-formula-checks-fnc-name
+                              ,meta-fnc-name
+                              ,preprocessor-fnc-name
+                              ,postprocessor-fnc-name
+                              rp-state-preservedp-of-the-same-rp-state
+                              ,@(create-rp-rw-meta-rule-fn-aux3
+                                 rp-rw-all-meta-rules)
+                              ,@(create-rp-rw-meta-rule-fn-aux3
+                                 rp-rw-all-preprocessors)
+                              ,@(create-rp-rw-meta-rule-fn-aux3
+                                 rp-rw-all-postprocessors)
+                              (:e dont-rw-syntaxp)
+                              valid-rp-statep-and-rp-statep-implies-valid-rp-state-syntaxp
+                              valid-rp-state-syntaxp-implies)))
         ,@(and skip-cycle-checks `(:skip-checks :cycles)))
 
       ,@(and skip-cycle-checks `((defttag nil))))))
@@ -897,21 +967,29 @@ symbol for the updated meta-rule caller function. ~%"
            (meta-rules (strip-cars rp-rw-all-meta-rules)))
         `(enable-rules ',meta-rules))))
 
-  (defmacro disable-meta-rules (&rest args)
-    (if (not args)
-        `(value-triple :none)
-      `(make-event
-        (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
-          `(progn
-             ,@(disable-meta-rules-fnc rp-rw-all-meta-rules ',args))))))
+  (defsection disable-meta-rules
+    :short "Disable meta rules with given meta function name list."
+    :long "See @(see rp-ruleset) for description."
+    :parents (rp-ruleset)
+    (defmacro disable-meta-rules (&rest args)
+      (if (not args)
+          `(value-triple :none)
+        `(make-event
+          (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
+            `(progn
+               ,@(disable-meta-rules-fnc rp-rw-all-meta-rules ',args)))))))
 
-  (defmacro enable-meta-rules (&rest args)
-    (if (not args)
-        `(value-triple :none)
-      `(make-event
-        (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
-          `(progn
-             ,@(enable-meta-rules-fnc rp-rw-all-meta-rules ',args))))))
+  (defsection enable-meta-rules
+    :short "Enable meta rules with given meta function name list."
+    :long "See @(see rp-ruleset) for description."
+    :parents (rp-ruleset)
+    (defmacro enable-meta-rules (&rest args)
+      (if (not args)
+          `(value-triple :none)
+        `(make-event
+          (b* ((rp-rw-all-meta-rules (table-alist 'rp-rw-all-meta-rules (w state))))
+            `(progn
+               ,@(enable-meta-rules-fnc rp-rw-all-meta-rules ',args)))))))
 
   (defmacro bump-all-meta-rules ()
     `(make-event
@@ -1049,8 +1127,8 @@ discussions for @(see valid-sc) and @(see rp-termp).
 </p>
 
 <p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))').
+If the meta function returns dont-rw, then you need to prove this lemma for
+@('(mv-nth 0 (<meta-fnc> term))') instead.
 </p>
 
 <p>
@@ -1070,8 +1148,8 @@ conditions are maintained.
 </p>
 
 <p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))').
+If the meta function returns dont-rw, then you need to prove this lemma for
+@('(mv-nth 0 (<meta-fnc> term))') instead.
 </p>
 
 <p>
@@ -1087,28 +1165,19 @@ your meta function. It prevents syntactic check on every term returned from
 meta function.
 </p>
 <p>
-If the meta function returns dont-rw, then you need to prove the same lemma for
-@('(mv-nth 0 (<meta-fnc> term))').
+If the meta function returns dont-rw, then you need to prove this lemma for
+@('(mv-nth 0 (<meta-fnc> term))') instead.
 </p>
 
 <p>
-6. If your function returns @(see rp::dont-rw), then you also need to prove
-that it is syntactically correct. Otherwise skip this step.
-<code>
-@('(defthm dont-rw-syntaxp-of-meta-fnc
-   (dont-rw-syntaxp (mv-nth 1 (<meta-fnc> term))))')
-</code>
-</p>
-
-<p>
-7. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
+6. Save the meta rule in the rule-set of RP-Rewriter for meta rules.
 <code>
 @('
 (rp::add-meta-rule
  :meta-fnc <meta-fnc>
  :trig-fnc <trig-fnc>
  :returns <return-signature>
- :outside-in <t-if-the-meta-rule-should-apply-from-outside-in>
+ :rw-direction <:inside-out, :outside-in, or :both>
  :valid-syntaxp <t-if-rp-termp-of-meta-fnc-is-proved>)
 ')
 </code>
@@ -1118,7 +1187,7 @@ See @(see add-meta-rule) for further discussion of the options.
 </p>
 
 <p>
-8. Attach these newly created meta functions.
+7. Attach these newly created meta functions.
 <code>
 @('(rp::attach-meta-fncs <a-unique-name-for-updated-clause-processor>)')
 </code>

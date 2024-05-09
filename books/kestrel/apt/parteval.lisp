@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,8 +26,14 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/fsublis-var" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
+(include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
+(include-book "kestrel/std/system/recursive-calls" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)

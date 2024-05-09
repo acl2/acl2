@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,7 +24,7 @@
   (xdoc::topstring
    (xdoc::p
     "The " (xdoc::seetopic "acl2::primitive" "ACL2 primitive functions")
-    "have no definitions.
+    " have no definitions.
      Their evaluation semantics is described in the ACL2 documentation.")
    (xdoc::p
     "In order to formalize the evaluation semantics of ACL2,
@@ -35,7 +35,7 @@
    (xdoc::p
     "Since our formalization of the ACL2 primitive functions
      is written in the ACL2 logical language,
-     we make use the executable ACL2 primitive functions of the logical language
+     we use the executable ACL2 primitive functions of the logical language
      to formalize the ACL2 primitive functions of the ACL2 programming language.
      However, note that the latter operate on our model of ACL2 values,
      i.e. on the @(tsee value) fixtype,
@@ -306,7 +306,7 @@
 (define eval-intern-in-package-of-symbol ((x valuep)
                                           (y valuep)
                                           (packages package-listp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Evaluation semantics of @(tsee intern-in-package-of-symbol)."
   :long
   (xdoc::topstring
@@ -385,7 +385,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-pkg-imports ((x valuep) (packages package-listp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Evaluation semantics of @(tsee pkg-imports)."
   :long
   (xdoc::topstring
@@ -417,7 +417,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-pkg-witness ((x valuep) (packages package-listp))
-  :returns (result maybe-valuep)
+  :returns (result value-optionp)
   :short "Evaluation semantics of @(tsee pkg-witness)."
   :long
   (xdoc::topstring

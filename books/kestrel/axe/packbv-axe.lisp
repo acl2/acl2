@@ -20,6 +20,7 @@
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
 ;defforall could do this?

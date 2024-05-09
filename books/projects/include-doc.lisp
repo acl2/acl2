@@ -12,7 +12,7 @@
      (include-book "milawa/doc")
      (include-book "regex/regex-ui")
      (include-book "leftist-trees/top")
-     (include-book "quadratic-reciprocity/euler")
+     (include-book "numbers/euler")
      (include-book "sidekick/server")
      (include-book "x86isa/doc")
      (include-book "execloader/top")
@@ -22,9 +22,8 @@
      (include-book "sat/dimacs-reader/reader")
      (include-book "irv/top")
      (include-book "rp-rewriter/top")
-     (include-book "rp-rewriter/lib/mult/doc")
-     (include-book "rp-rewriter/lib/mult2/doc")
-     (include-book "rp-rewriter/lib/mult3/doc")
+     (include-book "vescmul/doc")
+     (include-book "vwsim/vwsim-doc")
 
      (include-book "smtlink/doc")
      (ifdef "OS_HAS_SMTLINK"
@@ -33,8 +32,8 @@
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/examples/ringosc")
             :endif)
-
-
+     (include-book "pfcs/top")
+     (include-book "poseidon/top")
 
      (defxdoc projects
        :parents (top)

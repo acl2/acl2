@@ -16,7 +16,8 @@
 
 (include-book "declares0")
 (include-book "translate")
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
+(include-book "kestrel/untranslated-terms/free-vars" :dir :system)
 (include-book "terms") ;for replace-in-term
 (include-book "make-and-nice")
 
@@ -135,43 +136,49 @@
 ;;     (true-listp (get-conjuncts-of-untranslated-terms terms))
 ;;     :flag get-conjuncts-of-untranslated-terms))
 
-(defun drop-untranslated-terms-that-mention-vars (terms vars)
-  (declare (xargs :guard (and ;(pseudo-term-listp terms)
-                          (true-listp terms)
-                          (untranslated-term-listp terms)
-                          (symbol-listp vars))))
+(defun drop-untranslated-terms-that-mention-vars (terms vars wrld)
+  (declare (xargs :guard (and (untranslated-term-listp terms)
+                              (symbol-listp vars)
+                              (plist-worldp wrld))
+                  :mode :program ; because getting free vars requires translation
+                  ))
   (if (endp terms)
       nil
     (let ((term (first terms)))
-      (if (intersection-eq (get-vars-in-untranslated-term term)
+      (if (intersection-eq (free-vars-in-untranslated-term$ term wrld)
                            vars)
           (drop-untranslated-terms-that-mention-vars (rest terms)
-                                                     vars)
+                                                     vars
+                                                     wrld)
         (cons term
               (drop-untranslated-terms-that-mention-vars (rest terms)
-                                                         vars))))))
+                                                         vars
+                                                         wrld))))))
 
 
 ;; TERM is an untranslated term
-(defun drop-guard-conjuncts-that-mention-vars (term vars)
+(defun drop-conjuncts-that-mention-vars (term vars wrld)
   (declare (xargs :guard (and ;(pseudo-termp term)
-                          (symbol-listp vars))))
+                          (symbol-listp vars))
+                  :mode :program))
   (let* ((conjuncts (get-conjuncts-of-untranslated-term term)))
     (if (not (untranslated-term-listp conjuncts)) ;todo, for guards
-        (er hard? 'drop-guard-conjuncts-that-mention-vars "Unsupported conjuncts: ~x0" conjuncts)
-      (make-and-nice (drop-untranslated-terms-that-mention-vars conjuncts vars)))))
+        (er hard? 'drop-conjuncts-that-mention-vars "Unsupported conjuncts: ~x0" conjuncts)
+      (make-and-nice (drop-untranslated-terms-that-mention-vars conjuncts vars wrld)))))
 
-(defun drop-guard-conjuncts-that-mention-vars-in-xargs (xargs vars)
+(defun drop-guard-conjuncts-that-mention-vars-in-xargs (xargs vars wrld)
   (declare (xargs :guard (and (symbol-listp vars)
-                              (xargsp xargs)))) ;TODO: need to know that guards are pseudo-terms?  switch to untranslated-term utilities
+                              (xargsp xargs))
+                  :mode :program))
   (if (endp xargs)
       nil
     (if (eq :guard (first xargs))
-        `(:guard ,(drop-guard-conjuncts-that-mention-vars (second xargs) vars) ,@(drop-guard-conjuncts-that-mention-vars-in-xargs (cddr xargs) vars)) ;there may be more guards
-      `(,(first xargs) ,(second xargs) ,@(drop-guard-conjuncts-that-mention-vars-in-xargs (cddr xargs) vars)))))
+        `(:guard ,(drop-conjuncts-that-mention-vars (second xargs) vars wrld) ,@(drop-guard-conjuncts-that-mention-vars-in-xargs (cddr xargs) vars wrld)) ;there may be more guards
+      `(,(first xargs) ,(second xargs) ,@(drop-guard-conjuncts-that-mention-vars-in-xargs (cddr xargs) vars wrld)))))
 
 ;returns a list of new declare-args
-(defun drop-guard-conjuncts-that-mention-vars-in-declare-args (declare-args vars)
+(defun drop-guard-conjuncts-that-mention-vars-in-declare-args (declare-args vars wrld)
+  (declare (xargs :mode :program))
   ; (declare (xargs :guard (and (all-declare-argp declare-args)
   ;;                             (symbol-listp vars))))
   (if (atom declare-args)
@@ -179,18 +186,19 @@
     (let* ((arg (first declare-args))
            ;;args has to be a list because it may be nil:
            (args (if (eq 'xargs (ffn-symb arg))
-                     `((xargs ,@(drop-guard-conjuncts-that-mention-vars-in-xargs (fargs arg) vars)))
+                     `((xargs ,@(drop-guard-conjuncts-that-mention-vars-in-xargs (fargs arg) vars wrld)))
                    (if (eq 'type (ffn-symb arg)) ;(type <type-spec> term)
                        (if (eq vars (farg2 arg))
                            nil ;drop this declare because it is about vars
                          `((type ,(farg1 arg) ,(replace-in-term (farg2 arg) vars))))
                      (list arg)))))
       (append args
-              (drop-guard-conjuncts-that-mention-vars-in-declare-args (rest declare-args) vars)))))
+              (drop-guard-conjuncts-that-mention-vars-in-declare-args (rest declare-args) vars wrld)))))
 
-(defun drop-guard-conjuncts-that-mention-vars-in-declares (declares vars)
+(defun drop-guard-conjuncts-that-mention-vars-in-declares (declares vars wrld)
+  (declare (xargs :mode :program))
   ;; (declare (xargs :guard (all-declarep declares)))
   (if (atom declares)
       nil
-    (cons `(declare ,@(drop-guard-conjuncts-that-mention-vars-in-declare-args (fargs (first declares)) vars))
-          (drop-guard-conjuncts-that-mention-vars-in-declares (rest declares) vars))))
+    (cons `(declare ,@(drop-guard-conjuncts-that-mention-vars-in-declare-args (fargs (first declares)) vars wrld))
+          (drop-guard-conjuncts-that-mention-vars-in-declares (rest declares) vars wrld))))

@@ -40,6 +40,13 @@
 (progn!
  (set-raw-mode t)
 
+;;; Matt K. comment 10/2022: The following definition was already out of date
+;;; as of ACL2 Version 8.5 (maybe sooner): its argument list isn't even of the
+;;; same length as the original.  That didn't seem to interfere with
+;;; pre-release testing, so I'm not going to fix it now.  If this needs to be
+;;; fixed then I suggest that someone copy the current definition of
+;;; chk-acceptable-certify-book and show, with comments, exactly what has been
+;;; changed.
  (defun chk-acceptable-certify-book (book-name full-book-name k ctx state
                                                suspect-book-action-alist)
 

@@ -30,13 +30,11 @@
 (include-book "centaur/fgl/portcullis" :dir :system)
 (include-book "centaur/meta/let-abs" :dir :system)
 
-
 ;; (local
 ;;  (include-book "centaur/gl/bfr-satlink" :dir :system))
 
 ;; (local
 ;;  (value-triple (acl2::tshell-ensure)))
-
 
 
 (defevaluator letabs-ev2 letabs-ev2-list
@@ -68,7 +66,7 @@
       (&
        (list (list (cmr::let-abstract-term term var))))))
   ///
-  
+
   (defthm cmr::let-abstract-full-clause-proc-exclude-hyps-correct
     (implies (and (pseudo-term-listp clause)
                   (alistp a)
@@ -81,88 +79,139 @@
     :rule-classes :clause-processor
     :hints (("Goal"
              :do-not-induct t
-             :in-theory (e/d (ACL2::DISJOIN) ()))))) 
+             :in-theory (e/d (ACL2::DISJOIN) ())))))
 
+(defmacro defthmrp-then-fgl (name term &rest args)
+  `(make-event
+    (b* ((name ',name)
+         (term ',term)
+         (args ',args)
+         (__FUNCTION__ 'defthmrp-then-fgl)
+         ((std::extract-keyword-args
+           :allowed-keys #!keyword'(rule-classes
+                                    new-synps
+                                    vacuity-check
+                                    disable-meta-rules
+                                    enable-meta-rules
+                                    enable-rules
+                                    disable-rules
+                                    runes runes-outside-in cases
+                                    lambda-opt disabled
+                                    disabled-for-rp
+                                    disabled-for-ACL2
+                                    rw-direction
+                                    supress-warnings
+                                    add-rp-rule
+                                    ruleset)
+           (new-synps 'nil)
+           (runes 'nil)
+           (runes-outside-in 'nil)
+           (cases 'nil))
+          args)
+         (world (w state))
+         ((acl2::er cases)
+          (translate-lst cases t t nil 'defthmrp-then-fgl world state))
+         ((acl2::er new-synps-vals) ;; new-synps is an alist...
+          (translate-lst (strip-cdrs new-synps) t t nil 'defthmrp-then-fgl world state))
+         (new-synps (pairlis$ (strip-cars new-synps) new-synps-vals))
+       
+         (override-hints `(:hints
+                           ('(:clause-processor
+                              (rp-cl :runes ,runes
+                                     :runes-outside-in ,runes-outside-in
+                                     :new-synps ,new-synps
+                                     :cases ,cases
+                                     :suppress-not-simplified-error t))
+                            '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
+                                                 clause 'var))
+                            '(:clause-processor fgl::expand-an-implies-cp)
+                            '(:clause-processor (fgl::fgl-interp-cp clause (fgl::default-fgl-config)
+                                                                    fgl::interp-st
+                                                                    state))
+                            ))))
+      (value
+       `(defthmrp ,name ,term
+          :override-cl-hints ,override-hints)))))
 
-(defmacro defthmrp-then-fgl (name term
-                                  &key
-                                  (rule-classes ':rewrite)
-                                  ;; (use-opener-error-rules 't)
-                                  (new-synps 'nil)
-                                  (disable-meta-rules 'nil)
-                                  (enable-meta-rules 'nil)
-                                  (enable-rules 'nil)
-                                  (disable-rules 'nil)
-                                  (runes 'nil)
-                                  (runes-outside-in 'nil) ;; when nil, runes will be read from
-                                  ;; rp-rules table
-                                  (not-simplified-action ':none)
-                                  (cases 'nil)
-                                  )
-  `(encapsulate
-     nil
-     (make-event
-      (b* ((- (check-if-clause-processor-up-to-date (w state)))
-           ;;(?old-not-simplified-action (not-simplified-action rp-state))
-           (rp-state (update-not-simplified-action ,not-simplified-action rp-state))
-           (body `(with-output
-                    :stack :pop
-                    :on (acl2::summary acl2::event acl2::error)
-                    :gag-mode :goals
-                    :summary-off (:other-than acl2::time acl2::rules)
-                    (def-rp-rule ,',name ,',term
-                      :rule-classes ,',rule-classes
-                      :hints
-                      ('(:clause-processor
-                         (rp-cl :runes ,,runes
-                                :runes-outside-in ,,runes-outside-in
-                                :new-synps ,',new-synps
-                                :cases ',',cases))
-                       '(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
-                                            clause 'var))
-                       '(:clause-processor fgl::expand-an-implies-cp)
-                       '(:clause-processor (fgl::fgl-interp-cp clause (fgl::default-fgl-config)
-                                                               fgl::interp-st
-                                                               state))
-                       )
+#|(defmacro defthmrp-then-fgl (name term
+&key
+(rule-classes ':rewrite)
+;; (use-opener-error-rules 't)
+(new-synps 'nil)
+(disable-meta-rules 'nil)
+(enable-meta-rules 'nil)
+(enable-rules 'nil)
+(disable-rules 'nil)
+(runes 'nil)
+(runes-outside-in 'nil) ;; when nil, runes will be read from
+;; rp-rules table
+(cases 'nil)
+)
+`(encapsulate
+nil
+(make-event
+(b* ((- (check-if-clause-processor-up-to-date (w state)))
+;;(?old-not-simplified-action (not-simplified-action rp-state))
 
-                      )))
-           (event 
-            ,(if (or disable-meta-rules
-                     enable-meta-rules
-                     enable-rules
-                     disable-rules)
-                 ``(with-output
-                     :off :all
-                     :stack :push
-                     (encapsulate
-                       nil
+(body `(with-output
+:stack :pop
+:on (acl2::summary acl2::event acl2::error)
+:gag-mode :goals
+:summary-off (:other-than acl2::time acl2::rules)
+(def-rp-rule ,',name ,',term
+:rule-classes ,',rule-classes
+:hints
+('(:clause-processor
+(rp-cl :runes ,,runes
+:runes-outside-in ,,runes-outside-in
+:new-synps ,',new-synps
+:cases ,',cases
+:suppress-not-simplified-error t))
+'(:clause-processor (cmr::let-abstract-full-clause-proc-exclude-hyps
+clause 'var))
+'(:clause-processor fgl::expand-an-implies-cp)
+'(:clause-processor (fgl::fgl-interp-cp clause (fgl::default-fgl-config)
+fgl::interp-st
+state))
+)
 
-                       ,@(if ',enable-meta-rules
-                             `((local
-                                (enable-meta-rules ,@',enable-meta-rules)))
-                           'nil)
+)))
+(event
+,(if (or disable-meta-rules
+enable-meta-rules
+enable-rules
+disable-rules)
+``(with-output
+:off :all
+:stack :push
+(encapsulate
+nil
 
-                       ,@(if ',disable-meta-rules
-                             `((local
-                                (disable-meta-rules ,@',disable-meta-rules)))
-                           'nil)
+,@(if ',enable-meta-rules
+`((local
+(enable-meta-rules ,@',enable-meta-rules)))
+'nil)
 
-                       ,@(if ',enable-rules
-                             `((local
-                                (enable-rules ,',enable-rules)))
-                           'nil)
+,@(if ',disable-meta-rules
+`((local
+(disable-meta-rules ,@',disable-meta-rules)))
+'nil)
 
-                       ,@(if ',disable-rules
-                             `((local
-                                (disable-rules ,',disable-rules)))
-                           'nil)
-                       ,body))
-               `body)))
-        (mv nil event state rp-state)))
+,@(if ',enable-rules
+`((local
+(enable-rules ,',enable-rules)))
+'nil)
 
-     (make-event
-      (b* ((rp-state (update-not-simplified-action :error rp-state)))
-        (mv nil `(value-triple :none) state rp-state)))
-     
-     ))
+,@(if ',disable-rules
+`((local
+(disable-rules ,',disable-rules)))
+'nil)
+,body))
+`body)))
+(mv nil event state rp-state)))
+
+#|(make-event
+(b* ((rp-state (update-not-simplified-action :error rp-state)))
+(mv nil `(value-triple :none) state rp-state)))|#
+
+))|#

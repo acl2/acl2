@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,10 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,3 +45,12 @@
      The meaning of this is explained in more detail
      in the user documentation and in the pretty-printer."))
   ((parenthesize-nested-conditionals bool)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define irr-pprint-options ()
+  :returns (irr pprint-options-p)
+  :short "An irrelevant value of pretty-printing options."
+  (make-pprint-options :parenthesize-nested-conditionals nil)
+  ///
+  (in-theory (disable (:e irr-pprint-options))))

@@ -1,6 +1,6 @@
-; An assistant to help find simple proofs
+; A simple function to append a list of lists all together
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,8 +10,10 @@
 
 (in-package "ACL2")
 
-;; Similar to flatten but simpler and with a stronger guard
-(defun append-all (xs)
+;; See also community book std/lists/flatten.lisp
+
+;; Similar to flatten but more lightweight and has a stronger guard
+(defund append-all (xs)
   (declare (xargs :guard (true-list-listp xs)))
   (if (endp xs)
       nil

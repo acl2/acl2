@@ -21,7 +21,8 @@
 (include-book "utilities/verify-guards-for-defun")
 (include-book "utilities/names")
 (include-book "utilities/option-parsing")
-(include-book "kestrel/utilities/declares" :dir :system)
+(include-book "kestrel/utilities/fixup-ignores0" :dir :system)
+;(include-book "kestrel/utilities/declares" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system)
 (include-book "kestrel/utilities/declares1" :dir :system)
@@ -232,9 +233,8 @@
        (declares (add-verify-guards-nil declares)) ;we will later verify the guards if needed
        ;; TODO: This can cause problems when we generate hints for the guard proof (need to instantiate dropped params somehow): Perhaps the user
        ;; could supply such instances (in general, in terms of the other params) with the guard hints.  Or we try to find values of the right type, at least.
-       (declares (drop-guard-conjuncts-that-mention-vars-in-declares declares (assoc-eq fn params-to-drop-alist)))
+       (declares (drop-guard-conjuncts-that-mention-vars-in-declares declares (assoc-eq fn params-to-drop-alist) (w state)))
 ;         (declares (replace-mode-with-program-in-declares declares))
-       (declares (fixup-ignores declares new-formals body))
        (measure (and rec (fn-measure fn state)))
        (formals-in-measure (and rec (free-vars-in-term measure)))
        (dropped-params-in-measure (and rec (intersection-eq formals-in-measure params-to-drop))) ;these are bad!
@@ -269,10 +269,13 @@
        (defun-variant (defun-variant fn nil ;non-executable
                         function-disabled state))
 
-       (declares (clean-up-declares declares))
        ;;todo: try to do this without translating:
        (new-body (drop-irrelevant-params-in-term body params-to-drop-alist params-to-drop fn-formals-alist))
-       (new-body (rename-fns new-body function-renaming))
+       (new-body (rename-fns new-body function-renaming)) ; translated
+       ;; Ensure the IGNORE declares are correct:
+       (declares (fixup-ignores-for-translated-body declares new-formals new-body))
+       (declares (clean-up-declares declares))
+       ;; Maybe untranslate:
        (new-body (if (not untranslate)
                      new-body
                    (if (eq :macros untranslate)

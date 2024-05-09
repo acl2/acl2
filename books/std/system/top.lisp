@@ -32,4 +32,5 @@
   (xdoc::topstring
    (xdoc::p
     "This is just a start towards a comprehensive library.
-     Some candidate utilities are under @('[books]/kestrel/std').")))
+     Some candidate utilities are under @(see community-book)
+     @('kestrel/std').")))

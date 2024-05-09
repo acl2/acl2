@@ -331,7 +331,7 @@
                          ;;hyp rewrote to *nil*:
                          (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                  (and (member-eq rule-symbol monitored-symbols)
-                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol)
+                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol)
                                               ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
                                               ;;     alist
                                               ;;     refined-assumption-alist
@@ -415,12 +415,14 @@
                                        (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1 (work-hardp: ~x2, work-hard-when-instructedp: ~x3).~%" hyp rule-symbol work-hardp work-hard-when-instructedp)
                                                (cw "Reason: Rewrote to:~%")
                                                (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
-                                               (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
+                                               ;; These can be very big (elide big ones?):
+                                               ;; (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
                                                ;;print these better?:
-                                               (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
-                                               (cw "(DAG:~%")
-                                               (print-array2 'dag-array dag-array dag-len)
-                                               (cw "))~%")))
+                                               ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
+                                               ;; (cw "(DAG:~%")
+                                               ;; (print-array2 'dag-array dag-array dag-len)
+                                               ;; (cw ")")
+                                               (cw ")~%")))
                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))))))))))))))
 
  ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
@@ -1090,7 +1092,7 @@
 
 ;; For each node in REV-DAG, fix up its args (if any) according to the renaming-array, then add its simplified form to the dag-array and add its new nodenum or quotep to the renaming.
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array info tries limits state).
-;ffixme for speed, could keep track the lowest node renamed (anything lower renames to itself)?
+;; TODO: For speed, we could keep track the lowest node renamed (anything lower renames to itself).
 (defun add-simplified-dag-to-dag-array (rev-dag ;low nodes come first; can there be gaps in the numbering?
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         renaming-array ;;maps nodenums in rev-dag to the nodenums or quoteps they rewrote to in dag-array
@@ -1148,7 +1150,7 @@
                        monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))
             (b* ((node-replacement-alist-for-this-node (node-replacement-alist-for-context full-context dag-array known-booleans print)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  ;; This is an attempt to include the context information in the assumptions used for free var matching:
-                 (context-exprs-for-this-node (context-to-exprs full-context dag-array)) ;fffixme this gets redone over and over for context-for-all-nodes?
+                 (context-exprs-for-this-node (context-to-exprs full-context dag-array dag-len)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  (refined-assumption-alist-for-this-node (extend-refined-assumption-alist context-exprs-for-this-node refined-assumption-alist))
                  ;;(context-assumptions (get-extra-assumptions full-context predicate-nodenum-term-alist))
                  ;;(dummy (and context-assumptions (cw "Using ~x0 context assumption(s) for node ~x1.~%" (len context-assumptions) nodenum)))
@@ -1194,15 +1196,15 @@
 ;; Returns (mv erp simplified-dag-or-quotep limits state) where SIMPLIFIED-DAG-OR-QUOTEP is equivalent to DAG, given the REFINED-ASSUMPTION-ALIST, EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the bindings in INTERPRETED-FUNCTION-ALIST.
 ;;does one simplification pass (NO, now does 2 if contexts are to be used) -- is the result then completely simplified? - what if one of the context assumptions (a pred in an if-test governing a term) gets simplified on this pass?  that might let us do better at simplifying nodes guarded by that node.
 ;does not simplify the refined-assumptions or equality-assumption-alist (or context nodes?) passed in
-;fffixme stay in the world of arrays, instead of going back and forth between arrays and dags?
+;; TODO: Stay in the world of arrays, instead of going back and forth between arrays and dags?
 ;If both memoizep and use-internal-contextsp are non-nil, this will NOT memoize on the second pass (that would be unsound!), unless we change the memoization machinery to track contexts - fffixme can that lead to exponential behavior?!
-;fffixme consider having this return an array...
+;; TODO: Consider having this return an array.
 ;change this to load the dag into the array first and to use assumptions that refer to that array (instead of possibly being huge terms)??
-;ffixme consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
+;; TODO: consider doing a top-down pass using a worklist to determine which nodes actually need to be simplified (making use of ifs, etc.)
 ;ffffixme include only the necesary nodes in the context?!
-;ffixme external contexts could allow us to drop whole subdags and not waste time simplifying them..
-;;smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
-(defun simplify-dag (dag ;; must not be a quotep, should have no gaps in the numbering? (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
+;; TODO: external contexts could allow us to drop whole subdags and not waste time simplifying them..
+;; Smashes 'dag-array, 'dag-parent-array, and 'renaming-array (fixme anything else?)
+(defun simplify-dag (dag ;; must not be a quotep, (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?),
                      rewriter-rule-alist
                      slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
                      refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
@@ -1229,6 +1231,8 @@
                   :guard (and (pseudo-dagp dag)
                               (natp external-context-array-len)
                               (natp slack-amount)
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               (rule-limitsp limits))))
   ;;Even if use-internal-contextsp is non-nil, we first simplify without internal contexts, to make sure that the contexts themselves are simplified (fixme might that take several passes? when we use them on the second pass (otherwise when using a term that came from a context we might have to simplify it before using it, which might be awkward (a whole subdag would be involved, and simplifying the context might cause other terms from context to be simplified)... and what about something like (if x (foo x) (bar x)) where the test x guards an appearance of itself? rethink this?
 ;in many cases the contexts will equate terms with constants..
@@ -1239,12 +1243,14 @@
        (max-external-context-nodenum (+ -1 external-context-array-len))
        (initial-array-size (+ original-dag-len external-context-array-len slack-amount))
        (dag-array (make-empty-array 'dag-array initial-array-size))
+       ;; Copy the context nodes into the newly created dag-array:
        (dag-array (copy-array-vals max-external-context-nodenum external-context-array-name external-context-array 'dag-array dag-array)) ;make a version that also updates the aux data structures? maybe add-array-nodes-to-dag? for speed, make sure we take advantage of the fact that there are no dups in the context-array?
        (dag-len external-context-array-len)
+       ;; Also copy the aux data structures for the context nodes:
        (dag-parent-array (make-empty-array 'dag-parent-array initial-array-size))
        (dag-parent-array (copy-array-vals max-external-context-nodenum external-context-parent-array-name external-context-parent-array 'dag-parent-array dag-parent-array))
        (dag-constant-alist external-context-dag-constant-alist) ;inline?
-       (dag-variable-alist external-context-dag-variable-alist) ;inline?
+       (dag-variable-alist (make-fast-alist external-context-dag-variable-alist)) ; to avoid stealing the hash-table of external-context-dag-variable-alist, which is a fast alist
        (- (and print (cw "(Simplifying without using contexts (memoize ~x0):~%" memoizep)))
        ;; Work hard on the first rewrite if there won't be a second one:
        (work-hard-on-first-rewrite (not use-internal-contextsp) ;nil ;work-hard-when-instructedp ;Mon Sep 20 09:54:39 2010 since we are not using contexts, working hard can be a big waste.  on the other hand, we are memoizing on this rewrite (but can't on the one with contexts), so work-hards would be memoized here but not there
@@ -1290,47 +1296,52 @@
         (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
-             (dag-len (+ 1 (top-nodenum dag)))
+             ((when (not (dag-fns-include-any dag '(if myif boolif bvif)))) ; no benefit from using contexts
+              (mv (erp-nil) dag limits state))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
+             (dag-len (+ 1 (top-nodenum dag)))
              (initial-array-size (+ (* 2 dag-len) external-context-array-len slack-amount)) ;the array starts out containing the dag; we leave space for another copy, plus the external context nodes, plus some slack
-             ;;Load all the nodes into the dag-array (fixme only include nodes that support internal contexts?!):
-;ffixme should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
+             ;;Load all the nodes into the dag-array (todo: could only include nodes that support internal contexts):
+             ;; todo: should we start by pre-loading the context array into the dag-array, like we do above?  that might make it harder to figure out what contexts to use?
+             ;; It's important that this not change the node numbering, since the internal contexts refer to these nodes:
              (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
              ;; Make the auxiliary data structures for the DAG:
              ((mv dag-parent-array dag-constant-alist dag-variable-alist)
               (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
              ;; Now figure out the context we can use for each node
              ;; TODO: If this doesn't contain any information, consider skipping the rewrite below (see below):
+             ;; No fixup needed, because the node numbers in dag-array are the same as in dag:
              (internal-context-array (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array))
              ;; ((when ...) ; could check here whether there is any context information to use
              ;;  (and print (cw ")~%"))
              ;;  (mv (erp-nil) dag limits state))
              ;; TODO: Consider using the context array here to prune if branches (maybe even repeatedly in a loop).
              ;; Add nodes that support the external context:
-             ((mv erp
-                  dag-array dag-len-with-external-context-nodes dag-parent-array dag-constant-alist dag-variable-alist
-                  renaming-array ;maps context nodes to nodes in dag-array
-                  )
+             (dag-len-without-assumption-nodes dag-len)
+             ;; will map external-context nodes to nodes in dag-array:
+             (renaming-array (make-empty-array 'renaming-array (max 1 (+ 1 max-external-context-nodenum)))) ; avoids 0-length array
+             ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array)
               (add-array-nodes-to-dag 0 max-external-context-nodenum
                                       external-context-array-name external-context-array external-context-array-len
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      (make-empty-array 'renaming-array (max 1 (+ 1 max-external-context-nodenum) ;fixme the max of 1 is new
-                                                                             ))))
+                                      renaming-array))
              ((when erp) (mv erp nil nil state))
-             ;;fix-up the external-context to refer to nodes in dag-array:
+             ;; Fixup the external-context to refer to nodes in dag-array:
              (external-context (fixup-possibly-negated-nodenums external-context 'renaming-array renaming-array))
-             ;;ffixme handle (false-context)?!  can that happen?  what would it mean?!  that the assumptions contradict?!
+             ((when (false-contextp external-context)) ; todo: can this happen?  handle it better. we can rewrite the dag to anything we want.
+              (er hard? 'simplify-dag "Rewriting in false context!")
+              (mv erp :false-context limits state))
+             ;; Fixup the refined-assumption-alist to refer to nodes in dag-array:
              (refined-assumption-alist (fixup-refined-assumption-alist refined-assumption-alist 'renaming-array renaming-array nil))
              ;; Simplify all the nodes:
              ((mv erp dag-array & & & & renaming-array info tries limits state) ;use the ignored things ?!
               (add-simplified-dag-to-dag-array (reverse dag)
-                                               dag-array
-                                               dag-len-with-external-context-nodes
-                                               dag-parent-array dag-constant-alist dag-variable-alist
-                                               (make-empty-array 'renaming-array dag-len) ;reuse this? does the default value need to be in every slot?
+                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                               (make-empty-array 'renaming-array dag-len-without-assumption-nodes) ;reuse this? does the default value need to be in every slot?
                                                rewriter-rule-alist
-                                               refined-assumption-alist ;mentions nodenums in dag-array
-                                               equality-assumption-alist print-interval print
+                                               refined-assumption-alist ; now mentions nodenums in dag-array
+                                               equality-assumption-alist ; pairs of terms, so no nodenums to fix up (todo: optimize the representation?)
+                                               print-interval print
                                                nil ;memoization (not sound to memoize between nodes when using internal contexts)  :TODO: Print a warning if this turns off memoization.
                                                (and print (empty-info-world)) ;used to track the number of rule hits
                                                (and print (zero-tries)) ;fixme think about this (if rewriter-rule-alist (zero-tries) nil)
@@ -1339,12 +1350,12 @@
                                                internal-context-array
                                                external-context known-booleans work-hard-when-instructedp tag limits state))
              ((when erp) (mv erp nil nil state))
-             (- (and print (cw "(~x0 tries.)~%" tries)))
-             (- (and print (maybe-print-hit-counts print info)))
-             (- (and print (cw ")")))
+             (- (and print
+                     (progn$ (cw "(~x0 tries.)~%" tries)
+                             (maybe-print-hit-counts print info)
+                             (cw ")"))))
              (top-nodenum (top-nodenum dag))
-             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum))
-             )
+             (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
           (if (quotep renamed-top-node)
               (prog2$ (and print (cw ")~%"))
                       (mv (erp-nil) renamed-top-node limits state))
@@ -1368,10 +1379,11 @@
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
 ;; bindings in INTERPRETED-FUNCTION-ALIST
-(defun repeat-simplify-dag (dag ;; must not be a quotep, should have no gaps in the numbering? (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
+;; todo: do we want exhaustivep iff use-internal-contextsp is true?
+(defun repeat-simplify-dag (dag ;; must not be a quotep,  (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                             rewriter-rule-alist
                             slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
-                            refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
+                            refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
                             equality-assumption-alist ;these represent a subset of REFINED-ASSUMPTION-ALIST?
                             print-interval print
                             interpreted-function-alist monitored-symbols memoizep
@@ -1391,61 +1403,37 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
                               )
                   :stobjs state))
   (mv-let (erp result-dag limits state)
-    (simplify-dag dag
-                  rewriter-rule-alist
-                  slack-amount
-                  refined-assumption-alist
-                  equality-assumption-alist
-                  print-interval print
-                  interpreted-function-alist monitored-symbols memoizep
+    (simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                   use-internal-contextsp
-                  external-context-array-name
-                  external-context-array
-                  external-context
-                  external-context-array-len
-                  external-context-parent-array-name
-                  external-context-parent-array
-                  external-context-dag-constant-alist
-                  external-context-dag-variable-alist
-                  work-hard-when-instructedp tag limits state)
+                  external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array
+                  external-context-dag-constant-alist external-context-dag-variable-alist work-hard-when-instructedp tag limits state)
     (if erp
         (mv erp nil nil state)
       (if (quotep result-dag)
           (mv (erp-nil) result-dag limits state)
-        (if (equivalent-dags dag result-dag)
+        (if (equivalent-dagsp dag result-dag) ; nothing changed (except perhaps node numbering)
             (mv (erp-nil) dag limits state)
-          (progn$ (cw "(Something changed, so simplify again.)~%")
-                  (print-list result-dag)
-                  (repeat-simplify-dag result-dag
-                                       rewriter-rule-alist
-                                       slack-amount
-                                       refined-assumption-alist
-                                       equality-assumption-alist
-                                       print-interval print
-                                       interpreted-function-alist monitored-symbols memoizep
+          (progn$ (cw "(Something changed, so continue.)~%")
+                  ;; (print-list result-dag) ; consider printing here if in verbose mode
+                  (repeat-simplify-dag result-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                                        use-internal-contextsp
-                                       external-context-array-name
-                                       external-context-array
-                                       external-context
-                                       external-context-array-len
-                                       external-context-parent-array-name
-                                       external-context-parent-array
-                                       external-context-dag-constant-alist
-                                       external-context-dag-variable-alist
-                                       work-hard-when-instructedp tag limits state)))))))
+                                       external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name external-context-parent-array
+                                       external-context-dag-constant-alist external-context-dag-variable-alist work-hard-when-instructedp tag limits state)))))))
 
-;call simplify-dag either once or repeatedly, according to exhaustivep
+;; Calls simplify-dag either once or repeatedly, according to EXHAUSTIVEP.
 ;; Returns (mv erp result limits state) where RESULT is a
 ;; dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST,
 ;; EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the
 ;; bindings in INTERPRETED-FUNCTION-ALIST
-(defun maybe-repeat-simplify-dag (dag ;; must not be a quotep, should have no gaps in the numbering? (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
+(defun maybe-repeat-simplify-dag (dag ;; must not be a quotep (should have no duplicate entries? maybe okay if we are doing the first phase with no contexts?), dag can't be empty (btw, does weak-dagp require that?)
                                   rewriter-rule-alist
                                   slack-amount ;amount of extra space to allocate (slack before the arrays have to be expanded; does not affect soundness)
-                                  refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums in external-context-array) (this function may find more assumptions from the context of each node)
+                                  refined-assumption-alist ;maps fns to lists of arg-lists (quoteps/nodenums) in external-context-array (this function may find more assumptions from the context of each node)
                                   equality-assumption-alist ; these represent a subset of REFINED-ASSUMPTION-ALIST?
                                   print-interval print
                                   interpreted-function-alist monitored-symbols memoizep
@@ -1464,45 +1452,23 @@
                                   work-hard-when-instructedp tag
                                   exhaustivep
                                   limits state)
-  (declare (xargs :mode :program
-                  :guard (and (rule-limitsp limits)
+  (declare (xargs :guard (and (rule-limitsp limits)
                               ;;todo
-                              )
+                              (dag-constant-alistp external-context-dag-constant-alist)
+                              (dag-variable-alistp external-context-dag-variable-alist)
+                              (booleanp exhaustivep))
+                  :mode :program
                   :stobjs state))
   (if exhaustivep
-      (repeat-simplify-dag dag
-                           rewriter-rule-alist
-                           slack-amount
-                           refined-assumption-alist
-                           equality-assumption-alist
-                           print-interval print
-                           interpreted-function-alist monitored-symbols memoizep
+      (repeat-simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                            use-internal-contextsp
-                           external-context-array-name
-                           external-context-array
-                           external-context
-                           external-context-array-len
-                           external-context-parent-array-name
-                           external-context-parent-array
-                           external-context-dag-constant-alist
-                           external-context-dag-variable-alist
+                           external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name
+                           external-context-parent-array external-context-dag-constant-alist external-context-dag-variable-alist
                            work-hard-when-instructedp tag limits state)
-    (simplify-dag dag
-                  rewriter-rule-alist
-                  slack-amount
-                  refined-assumption-alist
-                  equality-assumption-alist
-                  print-interval print
-                  interpreted-function-alist monitored-symbols memoizep
+    (simplify-dag dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print interpreted-function-alist monitored-symbols memoizep
                   use-internal-contextsp
-                  external-context-array-name
-                  external-context-array
-                  external-context
-                  external-context-array-len
-                  external-context-parent-array-name
-                  external-context-parent-array
-                  external-context-dag-constant-alist
-                  external-context-dag-variable-alist
+                  external-context-array-name external-context-array external-context external-context-array-len external-context-parent-array-name
+                  external-context-parent-array external-context-dag-constant-alist external-context-dag-variable-alist
                   work-hard-when-instructedp tag limits state)))
 
 ;; Returns (mv erp result limits state) where RESULT is a dag-or-quotep equivalent to DAG, given the REFINED-ASSUMPTION-ALIST, EQUALITY-ASSUMPTION-ALIST, context stuff, the rules in REWRITER-RULE-ALIST, and the bindings in INTERPRETED-FUNCTION-ALIST.
@@ -1523,6 +1489,9 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist)
+                              (booleanp exhaustivep)
                               )
                   :stobjs state))
   (b* (((mv erp normalized-dag changep) (normalize-xors dag print)) ;now does both bitxors and bvxors (seemed important to do them both at the same time?)
@@ -1547,7 +1516,7 @@
             (if (quotep simplified-dag)
                 (mv (erp-nil) simplified-dag limits state)
               ;; normalizing xors did nothing, so we are done (we already rewrote until stable, so doing it again won't help)
-              (if (equivalent-dags simplified-dag normalized-dag)
+              (if (equivalent-dagsp simplified-dag normalized-dag)
                   (mv (erp-nil) normalized-dag limits state)
                 (normalize-xors-and-simplify-until-stable
                  simplified-dag rewriter-rule-alist slack-amount refined-assumption-alist equality-assumption-alist print-interval print
@@ -1576,6 +1545,9 @@
   (declare (xargs :mode :program
                   :guard (and (rule-limitsp limits)
                               ;;todo
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist)
+                              (booleanp exhaustivep)
                               )
                   :stobjs state))
   (mv-let (erp simplified-dag-or-quotep limits state)
@@ -1600,34 +1572,42 @@
                                                   context-dag-constant-alist context-dag-variable-alist
                                                   work-hard-when-instructedp tag exhaustivep limits state)))))
 
+;; Simplifies DAG using each of the TAGGED-RULE-SETS in turn.
 ;; is it okay for dag to have irrelevant nodes?
 ;; or have the same expression at two different nodenums?
-;; can the numbering have gaps?  be out of order?
 ;; Returns (mv erp simplified-dag-or-quotep limits state) where simplified-dag-or-quotep is equivalent to dag, given the assumptions (fixme what exactly is the story with ifns?).
 ;;change this to print out the list of rules all at once?
 (defun simplify-with-rule-sets-aux (dag ;; must not be a quotep
                                     tagged-rule-sets ;; the tag of each rule set indicates whether it's a list of rules or a rule-alist
-                                    slack-amount normalize-xors
+                                    slack-amount
+                                    normalize-xors
                                     refined-assumption-alist ;mentions nodenums in the context-array
                                     equality-assumption-alist ; use the context array for this?
-                                    print-interval print
+                                    print-interval
+                                    warn-missingp print ; whether to warn about missing monitored rules
                                     priorities ;ignored for rule-alists
                                     interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                     rule-set-number total-rule-set-count
+                                    context ;(list of items of the form <nodenum> or (not <nodenum>)
                                     context-array-name
                                     context-array
-                                    context ;(list of items of the form <nodenum> or (not <nodenum>)
                                     context-array-len context-parent-array-name context-parent-array
                                     context-dag-constant-alist context-dag-variable-alist
                                     work-hard-when-instructedp tag exhaustivep limits state)
   (declare (xargs :mode :program :stobjs state
                   :measure (len tagged-rule-sets)
-                  :guard (and (tagged-rule-setsp tagged-rule-sets)
+                  :guard (and (pseudo-dagp dag)
+                              (tagged-rule-setsp tagged-rule-sets)
                               ;;guard for equality-assumption-alist?
                               (rationalp total-rule-set-count)
+                              (non-false-contextp context)
                               (acl2-numberp rule-set-number)
                               (alistp priorities)
-                              (rule-limitsp limits))))
+                              (booleanp warn-missingp)
+                              (booleanp exhaustivep)
+                              (rule-limitsp limits)
+                              (dag-constant-alistp context-dag-constant-alist)
+                              (dag-variable-alistp context-dag-variable-alist))))
   (if (endp tagged-rule-sets)
       (mv (erp-nil) dag limits state)
     (b* ((- (and (> total-rule-set-count 1) (cw "(Applying rule set ~x0 of ~x1.~%" rule-set-number total-rule-set-count)))
@@ -1648,35 +1628,29 @@
                 (prog2$ (er hard? 'simplify-with-rule-sets-aux "Unknown tag!  tagged-rule-set: ~x0" tagged-rule-set)
                         (mv :unknown-tag nil))))))
          ((when erp) (mv erp nil nil state))
-         (- (print-missing-rules monitored-symbols rule-alist)) ;todo: think about where to put this printing
-         )
-      (mv-let (erp dag-or-quotep limits state)
-        ;;apply the first rule set:
-        (simplify-and-normalize-xors-until-stable dag
-                                                     rule-alist
-                                                     slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
-                                                     print-interval print interpreted-function-alist monitored-symbols memoizep use-internal-contextsp
-                                                     context-array-name
-                                                     context-array
-                                                     context
-                                                     context-array-len context-parent-array-name context-parent-array
-                                                     context-dag-constant-alist context-dag-variable-alist
-                                                     work-hard-when-instructedp tag exhaustivep limits state)
-        (if erp
-            (mv erp nil nil state)
-          (prog2$ (and (> total-rule-set-count 1) (cw ")~%"))
-                  (if (quotep dag-or-quotep)
-                      (mv (erp-nil) dag-or-quotep limits state)
-                    (prog2$ (and (member-eq print '(t :verbose :verbose!))
-                                 (print-list dag-or-quotep))
-                            ;;apply the rest of the rule sets:
-                            (simplify-with-rule-sets-aux dag-or-quotep (rest tagged-rule-sets) slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
-                                                         print-interval print priorities
-                                                         interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
-                                                         (+ 1 rule-set-number) total-rule-set-count
-                                                         context-array-name context-array context context-array-len context-parent-array-name context-parent-array
-                                                         context-dag-constant-alist context-dag-variable-alist
-                                                         work-hard-when-instructedp tag exhaustivep limits state)))))))))
+         (- (and warn-missingp (print-missing-rules monitored-symbols rule-alist))) ;todo: think about where to put this printing
+         ;; Apply the first rule set:
+         ((mv erp dag-or-quotep limits state)
+          (simplify-and-normalize-xors-until-stable dag
+                                                    rule-alist
+                                                    slack-amount normalize-xors refined-assumption-alist equality-assumption-alist
+                                                    print-interval print interpreted-function-alist monitored-symbols memoizep use-internal-contextsp
+                                                    context-array-name context-array context context-array-len context-parent-array-name context-parent-array context-dag-constant-alist context-dag-variable-alist
+                                                    work-hard-when-instructedp tag exhaustivep limits state))
+         ((when erp) (mv erp nil nil state))
+         (- (and (> total-rule-set-count 1) (cw ")~%"))) ; balances "(Applying rule set..." above
+         ;; If it's a constant, we are done:
+         ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep limits state))
+         (- (and (member-eq print '(t :verbose :verbose!)) (print-list dag-or-quotep))))
+      ;; Apply the rest of the rule sets:
+      (simplify-with-rule-sets-aux dag-or-quotep
+                                   (rest tagged-rule-sets)
+                                   slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval warn-missingp print priorities
+                                   interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
+                                   (+ 1 rule-set-number) total-rule-set-count
+                                    context context-array-name context-array context-array-len context-parent-array-name context-parent-array
+                                   context-dag-constant-alist context-dag-variable-alist
+                                   work-hard-when-instructedp tag exhaustivep limits state))))
 
 ;; Simplifies the given DAG to produce a new DAG. This function is the main
 ;; entry point for the Axe rewriter (all the wrapper macros should call this
@@ -1690,6 +1664,7 @@
                                 normalize-xors
                                 assumptions ;terms to be assumed non-nil (probably share most vars with the dag but may contain new vars?) - merge the handling of this with the context-array?
                                 print-interval
+                                warn-missingp
                                 print
                                 priorities ;the priorities to use, or :default, ignored for rule-alists ;todo: drop this arg?
                                 interpreted-function-alist
@@ -1701,9 +1676,9 @@
                                 ;; fixme rename to something other than "context"?
                                 ;; CONTEXT mentions nodenums in CONTEXT-ARRAY, whose name is CONTEXT-ARRAY-NAME.  The variables in CONTEXT-ARRAY have the same meanings as vars with the
                                 ;; same names in DAG.  We use a dag representation because the context terms might be big.  Currently, the context is rarely used.
+                                context ;a non-false-context (nil means "true" context) over nodes in context-array; fixme can these be the nodenums of constants?!
                                 context-array-name ; meaningful iff context is non-nil
                                 context-array ; meaningful iff context is non-nil
-                                context ;a possibly-negated-nodenumsp (nil means "true" context) over nodes in context-array; fixme can these be the nodenums of constants?!
                                 ;; fixme refine the context entries for matching?!?
                                 ;; fixme what if the context is contradictory?
                                 context-array-len ; meaningful iff context is non-nil
@@ -1727,7 +1702,7 @@
                               (booleanp use-internal-contextsp)
                               (symbolp context-array-name)
                               ;; context-array
-                              (possibly-negated-nodenumsp context)
+                              (non-false-contextp context)
                               (if context (natp context-array-len) t)
                               (booleanp work-hard-when-instructedp)
                               (symbolp tag)
@@ -1779,13 +1754,13 @@
               & ;limits
               state)
           (simplify-with-rule-sets-aux dag-or-quotep
-                                       tagged-rule-sets slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval print priorities
+                                       tagged-rule-sets slack-amount normalize-xors refined-assumption-alist equality-assumption-alist print-interval warn-missingp print priorities
                                        interpreted-function-alist monitored-symbols remove-duplicate-rulesp memoizep use-internal-contextsp
                                        1 ;;rule-set-number; starts at 1 (saying rule set "0 of 3" looked odd)
                                        (len tagged-rule-sets)
+                                       context ;okay since the nodes in the new context are the same as those in the old context
                                        new-context-array-name
                                        new-context-array
-                                       context ;okay since the nodes in the new context are the same as those in the old context
                                        new-context-array-len
                                        new-context-parent-array-name new-context-parent-array new-context-dag-constant-alist new-context-dag-variable-alist
                                        work-hard-when-instructedp tag exhaustivep limits state))
@@ -1810,16 +1785,17 @@
                     normalize-xors
                     assumptions
                     print-interval
+                    warn-missingp
                     print
                     interpreted-function-alist
                     monitored-symbols
                     remove-duplicate-rulesp
                     memoizep
                     use-internal-contextsp
-                    context-array-name
-                    context-array
-                    context
-                    context-array-len
+                    context ; a non-false-context
+                    context-array-name ; meaningful iff context is non-nil
+                    context-array ; meaningful iff context is non-nil
+                    context-array-len ; meaningful iff context is non-nil
                     work-hard-when-instructedp
                     tag
                     exhaustivep
@@ -1836,6 +1812,7 @@
                                      (or (eq :none rule-alist) (rule-alistp rule-alist))
                                      (or (eq :none rule-alists) (and (true-listp rule-alists)
                                                                      (all-rule-alistp rule-alists)))
+                                     (non-false-contextp context)
                                      ;;todo: add more checks
                                      (rule-limitsp limits)
                                      )))))
@@ -1850,6 +1827,10 @@
        ((when (and check-inputs
                    (not (rule-limitsp limits))))
         (er hard? 'simp-dag-fn "Bad rule limits: ~x0." limits)
+        (mv :bad-input nil state))
+       ((when (and check-inputs
+                   (not (non-false-contextp context))))
+        (er hard? 'simp-dag-fn "Bad context: ~x0." context)
         (mv :bad-input nil state))
        ;; TODO: Check more inputs here, if check-inputs is true
 
@@ -1872,6 +1853,7 @@
                              normalize-xors
                              assumptions
                              print-interval
+                             warn-missingp
                              print
                              :default
                              interpreted-function-alist
@@ -1879,9 +1861,9 @@
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
+                             context
                              context-array-name
                              context-array
-                             context
                              context-array-len
                              work-hard-when-instructedp
                              tag
@@ -1899,16 +1881,18 @@
                     (normalize-xors 't)
                     (assumptions 'nil)
                     (print-interval 'nil)
+                    (warn-missingp 't)
                     (print 'nil)
                     (interpreted-function-alist 'nil)
                     (monitor 'nil)
                     (remove-duplicate-rulesp 't)
                     (memoizep 't)
                     (use-internal-contextsp 'nil) ;should t be the default instead?
-                    (context-array-name 'nil)
-                    (context-array 'nil)
-                    (context 'nil) ;(list of items of the form <nodenum> or (not <nodenum>)
-                    (context-array-len 'nil)
+                    ;; This non-internal context stuff is only used twice, in the equivalence-checker:
+                    (context 'nil) ; a non-false context (list of items of the form <nodenum> or (not <nodenum>)) where the nodenums are wrt the context-array
+                    (context-array-name 'nil) ; meaningful iff context is non-nil
+                    (context-array 'nil) ; meaningful iff context is non-nil
+                    (context-array-len 'nil) ; meaningful iff context is non-nil
                     (work-hard-when-instructedp 't)
                     (tag ''unknown)
                     (exhaustivep 'nil) ;TODO: deprecate once issues with loops (due to nodenum comparisons) are worked out
@@ -1922,15 +1906,16 @@
                 ,normalize-xors
                 ,assumptions
                 ,print-interval
+                ,warn-missingp
                 ,print
                 ,interpreted-function-alist
                 ,monitor
                 ,remove-duplicate-rulesp
                 ,memoizep
                 ,use-internal-contextsp
+                ,context
                 ,context-array-name
                 ,context-array
-                ,context
                 ,context-array-len
                 ,work-hard-when-instructedp
                 ,tag
@@ -1952,16 +1937,17 @@
                      normalize-xors
                      assumptions
                      print-interval
+                     warn-missingp
                      print
                      interpreted-function-alist
                      monitored-symbols
                      remove-duplicate-rulesp
                      memoizep
                      use-internal-contextsp
-                     context-array-name
-                     context-array
-                     context
-                     context-array-len
+                     ;;context-array-name
+                     ;;context-array
+                     ;;context
+                     ;;context-array-len
                      work-hard-when-instructedp
                      tag
                      exhaustivep
@@ -2024,6 +2010,7 @@
                              normalize-xors
                              assumptions
                              print-interval
+                             warn-missingp
                              print
                              :default
                              interpreted-function-alist
@@ -2031,10 +2018,10 @@
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
-                             context-array-name
-                             context-array
-                             context
-                             context-array-len
+                             nil ;context
+                             nil ;context-array-name
+                             nil ;context-array
+                             nil ;context-array-len
                              work-hard-when-instructedp
                              tag
                              exhaustivep
@@ -2055,16 +2042,17 @@
                      (normalize-xors 't)
                      (assumptions 'nil)
                      (print-interval 'nil)
+                     (warn-missingp 't)
                      (print 'nil)
                      (interpreted-function-alist 'nil)
                      (monitor 'nil)
                      (remove-duplicate-rulesp 't)
                      (memoizep 't)
                      (use-internal-contextsp 'nil) ;should t be the default instead?
-                     (context-array-name 'nil)
-                     (context-array 'nil)
-                     (context 'nil) ;(list of items of the form <nodenum> or (not <nodenum>)
-                     (context-array-len 'nil)
+                     ;; (context-array-name 'nil)
+                     ;; (context-array 'nil)
+                     ;; (context 'nil) ;(list of items of the form <nodenum> or (not <nodenum>)
+                     ;; (context-array-len 'nil)
                      (work-hard-when-instructedp 't)
                      (tag ''unknown)
                      (exhaustivep 'nil) ;TODO: deprecate once issues with loops (due to nodenum comparisons) are worked out
@@ -2075,16 +2063,16 @@
                  ,rules
                  ,rule-alist
                  ,rule-alists
-                 ,slack-amount ,normalize-xors ,assumptions ,print-interval ,print
+                 ,slack-amount ,normalize-xors ,assumptions ,print-interval ,warn-missingp ,print
                  ,interpreted-function-alist
                  ,monitor
                  ,remove-duplicate-rulesp
                  ,memoizep
                  ,use-internal-contextsp
-                 ,context-array-name
-                 ,context-array
-                 ,context ;(list of items of the form <nodenum> or (not <nodenum>)
-                 ,context-array-len
+                 ;;nil ;,context-array-name
+                 ;;nil ;,context-array
+                 ;;nil ;,context ;(list of items of the form <nodenum> or (not <nodenum>)
+                 ;;nil ;,context-array-len
                  ,work-hard-when-instructedp
                  ,tag ,exhaustivep ,limits ,check-inputs state))
 
@@ -2138,8 +2126,8 @@
 ;; (defmacro simplify-terms-to-new-terms (terms rule-alist &key (monitor 'nil))
 ;;   `(simplify-terms-to-new-terms-fn ,terms ,rule-alist ,monitor state))
 
-
 ;;Returns (mv erp old-term new-term state) where old-term is nil if nothing simplified.
+;; TODO: Deprecate
 (defun find-a-term-to-simplify (terms-to-simplify rule-alist monitored-rules all-terms state)
   (declare (xargs :mode :program :stobjs state))
   (if (endp terms-to-simplify)
@@ -2149,7 +2137,8 @@
         ;; could instead call rewrite-term...
         (simp-term term :rule-alist rule-alist
                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
-                   :monitor monitored-rules)
+                   :monitor monitored-rules
+                   :check-inputs nil)
         (if erp
             (mv erp nil nil state)
           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
@@ -2159,57 +2148,133 @@
               ;;term was simplified, so stop this pass:
               (mv nil term result-term state))))))))
 
-;fixme compare to improve-invars
-;fixme handle boolands?
-;; Returns (mv erp new-terms state) where new-terms is a set of terms whose conjunction is equal to the conjunction of terms.
-(defun simplify-terms (terms ;hyps
-                       ;;print
-                       rule-alist
-                       monitored-rules
-                       state)
-  (declare (xargs :mode :program :stobjs state))
-  (mv-let (erp old-term new-term state)
-    (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
-    (if erp
-        (mv erp nil state)
-      (if (not old-term)
-          ;; Nothing more could be done:
-          (mv nil terms state)
-        (if (equal *t* new-term) ;todo: also check for *nil*?
-            ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
-            (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
-          (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
+;; ;; See also improve-invars.
+;; ;fixme handle boolands?
+;; ;; Returns (mv erp new-terms state) where new-terms is a set of terms whose conjunction is equal to the conjunction of terms.
+;; ;; TODO: Deprecate
+;; (defun simplify-terms (terms
+;;                        ;;print
+;;                        rule-alist
+;;                        monitored-rules
+;;                        state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (mv-let (erp old-term new-term state)
+;;     (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
+;;     (if erp
+;;         (mv erp nil state)
+;;       (if (not old-term)
+;;           ;; Nothing more could be done:
+;;           (mv (erp-nil) terms state)
+;;         (if (equal *t* new-term) ;todo: also check for *nil*?
+;;             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
+;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
+;;           (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
 
-;; Simplify all the terms, which are implicitly conjoined, assuming all the
-;; others (being careful not to let two terms each simplify the other to true).
-;todo: maybe translate the terms
-;; Returns (mv erp new-terms state).
-(defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+
+;; ;; TODO: Deprecate in favor of simplify-terms-repeatedly
+;; ;; Simplify all the terms, which are implicitly conjoined, each assuming all the
+;; ;; others (being careful not to let two terms each simplify the other to true).
+;; ;todo: maybe translate the terms
+;; ;; Returns (mv erp new-terms state).
+;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+;;   (declare (xargs :guard (and (pseudo-term-listp terms)
+;;                               (rule-alistp rule-alist)
+;;                               (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+;;                   :stobjs state
+;;                   :mode :program))
+;;   (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
+;;     (simplify-terms terms rule-alist monitored-rules state)))
+
+;; ;; TODO: Deprecate
+;; ;; Returns (mv erp new-terms state).
+;; (defmacro simplify-terms-using-each-other (terms rule-alist &key (monitor 'nil))
+;;   `(simplify-terms-using-each-other-fn ,terms ,rule-alist ,monitor state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp new-terms againp state) where NEW-TERMS is a set of terms
+;; whose conjunction is equal to the conjunction of the TERMS and the
+;; DONE-TERMS.
+(defun simplify-terms-once (terms
+                            done-terms ; an accumulator, also used as assumptions
+                            ;;print
+                            rule-alist
+                            monitored-rules
+                            memoizep
+                            warn-missingp
+                            againp
+                            state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (pseudo-term-listp done-terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+                              (symbol-listp monitored-rules)
+                              (booleanp memoizep)
+                              (booleanp warn-missingp)
+                              (booleanp againp))
                   :stobjs state
                   :mode :program))
-  (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
-    (simplify-terms terms rule-alist monitored-rules state)))
+  (if (endp terms)
+      (mv (erp-nil) (reverse-list done-terms) againp state)
+    (b* ((term (first terms))
+         ((mv erp result-dag state) ;; could instead call rewrite-term...
+          (simp-term term
+                     :rule-alist rule-alist
+                     ;; Can assume all the other terms, because, if any is false, the whole conjunction is false:
+                     :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
+                     :monitor monitored-rules
+                     :memoizep memoizep
+                     :warn-missingp warn-missingp
+                     :check-inputs nil))
+         ((when erp) (mv erp nil nil state))
+         (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
+      (if (equal result-term term) ;; no change:
+          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules memoizep warn-missingp againp state)
+        (if (equal *t* result-term) ;todo: also check for *nil*?
+            ;; if the term became t, drop it:
+            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules memoizep warn-missingp againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
+          (let ((conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
+            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules memoizep warn-missingp t state)))))))
 
-;; Returns (mv erp new-terms state).
-(defmacro simplify-terms-using-each-other (terms rule-alist &key (monitor 'nil))
-  `(simplify-terms-using-each-other-fn ,terms ,rule-alist ,monitor state))
+;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
+;; whose conjunction is equal to the conjunction of the TERMS.
+(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules memoizep warn-missingp state)
+  (declare (xargs :guard (and (natp passes-left)
+                              (pseudo-term-listp terms)
+                              (rule-alistp rule-alist)
+                              (symbol-listp monitored-rules)
+                              (booleanp memoizep)
+                              (booleanp warn-missingp))
+                  :stobjs state
+                  :mode :program))
+  (if (zp passes-left)
+      (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
+              (mv (erp-nil) terms state))
+    (b* (((mv erp new-terms againp state)
+          (simplify-terms-once terms nil rule-alist monitored-rules memoizep warn-missingp nil state))
+         ((when erp) (mv erp nil state)))
+      (if againp
+          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules memoizep warn-missingp state)
+        (mv (erp-nil) new-terms state)))))
 
-;; todo: make these into proper tests:
+;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
+;; whose conjunction is equal to the conjunction of the TERMS.
+(defun simplify-terms-repeatedly (terms rule-alist monitored-rules memoizep warn-missingp state)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (rule-alistp rule-alist)
+                              (symbol-listp monitored-rules)
+                              (booleanp memoizep)
+                              (booleanp warn-missingp))
+                  :stobjs state
+                  :mode :program))
+  (prog2$ (and warn-missingp (print-missing-rules monitored-rules rule-alist)) ; do this just once, here
+          (let ((len (len terms)))
+            ;; We add 1 so that if len=1 we get at least 2 passes:
+            (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules memoizep
+                                           nil ; don't warn again about missing monitored rules
+                                           state))))
 
-;gives (Y (EQUAL X '3)):
-;;(simplify-terms-using-each-other '((if (equal x '3) y z)  (equal x '3)) nil)
-
-;; gives ('NIL (EQUAL X '4))
-;;(simplify-terms-using-each-other '((equal (car (cons x y)) '3) (equal x '4)) (make-axe-rules '(car-cons) (w state)))
-
-;; (defun foo (x) x)
-;; ;gives (W (EQUAL X '3) Y)
-;; ; foo opens, then the result is flattened, giving conjuncts of (equal x '3) and y, then (equal x '3) is used to simplify (if (equal x '3) w v)
-;; (simplify-terms-using-each-other '((foo (if (equal x '3) y 'nil)) (if (equal x '3) w v)) (make-axe-rules '(foo) (w state)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This version translates the term it is given
 ;; Returns (mv erp dag).
@@ -2231,16 +2296,17 @@
                           normalize-xors
                           assumptions
                           print-interval
+                          warn-missingp
                           print
                           interpreted-function-alist
                           monitored-symbols
                           remove-duplicate-rulesp
                           memoizep
-                          use-internal-contextsp
-                          context-array-name
-                          context-array
-                          context
-                          context-array-len
+                          ;; use-internal-contextsp
+                          ;; context-array-name
+                          ;; context-array
+                          ;; context
+                          ;; context-array-len
                           work-hard-when-instructedp
                           tag
                           exhaustivep
@@ -2283,17 +2349,18 @@
                              normalize-xors
                              assumptions
                              print-interval
+                             warn-missingp
                              print
                              :default
                              interpreted-function-alist
                              monitored-symbols
                              remove-duplicate-rulesp
                              memoizep
-                             use-internal-contextsp
-                             context-array-name
-                             context-array
-                             context
-                             context-array-len
+                             nil ;use-internal-contextsp
+                             nil ;context
+                             nil ;context-array-name
+                             nil ;context-array
+                             nil ;context-array-len
                              work-hard-when-instructedp
                              tag
                              exhaustivep
@@ -2312,6 +2379,7 @@
                           (normalize-xors 'nil)
                           (assumptions 'nil)
                           (print-interval 'nil)
+                          (warn-missingp 't)
                           (print 'nil)
                           (interpreted-function-alist 'nil)
                           (monitor 'nil)
@@ -2335,16 +2403,17 @@
                       ,normalize-xors
                       ,assumptions
                       ,print-interval
+                      ,warn-missingp
                       ,print
                       ,interpreted-function-alist
                       ,monitor
                       ,remove-duplicate-rulesp
                       ,memoizep
-                      nil ;;use-internal-contextsp
-                      nil ;;context-array-name
-                      nil ;;context-array
-                      nil ;;context
-                      nil ;; context-array-len
+                      ;; nil ;;use-internal-contextsp
+                      ;; nil ;;context-array-name
+                      ;; nil ;;context-array
+                      ;; nil ;;context
+                      ;; nil ;; context-array-len
                       ,work-hard-when-instructedp
                       ,tag
                       ,exhaustivep
@@ -2367,16 +2436,17 @@
                                             normalize-xors
                                             assumptions
                                             print-interval
+                                            warn-missingp
                                             print
                                             interpreted-function-alist
                                             monitored-symbols
                                             remove-duplicate-rulesp
                                             memoizep
-                                            use-internal-contextsp
-                                            context-array-name
-                                            context-array
-                                            context
-                                            context-array-len
+                                            ;; use-internal-contextsp
+                                            ;; context-array-name
+                                            ;; context-array
+                                            ;; context
+                                            ;; context-array-len
                                             work-hard-when-instructedp
                                             tag
                                             exhaustivep
@@ -2395,16 +2465,17 @@
                        normalize-xors
                        assumptions
                        print-interval
+                       warn-missingp
                        print
                        interpreted-function-alist
                        monitored-symbols
                        remove-duplicate-rulesp
                        memoizep
-                       use-internal-contextsp
-                       context-array-name
-                       context-array
-                       context
-                       context-array-len
+                       ;; nil ;use-internal-contextsp
+                       ;; nil ;context-array-name
+                       ;; nil ;context-array
+                       ;; nil ;context
+                       ;; nil ;context-array-len
                        work-hard-when-instructedp
                        tag
                        exhaustivep
@@ -2424,6 +2495,7 @@
                                             (normalize-xors 'nil)
                                             (assumptions 'nil)
                                             (print-interval 'nil)
+                                            (warn-missingp 't)
                                             (print 'nil)
                                             (interpreted-function-alist 'nil)
                                             (monitor 'nil)
@@ -2449,16 +2521,17 @@
                                         ,normalize-xors
                                         ,assumptions
                                         ,print-interval
+                                        ,warn-missingp
                                         ,print
                                         ,interpreted-function-alist
                                         ,monitor
                                         ,remove-duplicate-rulesp
                                         ,memoizep
-                                        nil ;;use-internal-contextsp
-                                        nil ;;context-array-name
-                                        nil ;;context-array
-                                        nil ;;context
-                                        nil ;; context-array-len
+                                        ;;nil ;;use-internal-contextsp
+                                        ;;nil ;;context-array-name
+                                        ;;nil ;;context-array
+                                        ;;nil ;;context
+                                        ;;nil ;; context-array-len
                                         ,work-hard-when-instructedp
                                         ,tag
                                         ,exhaustivep

@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -182,12 +182,12 @@
      (xdoc::ul
       (xdoc::li
        "@(':acl2-rewriter'), to use the ACL2 rewriter.
-        This method is made available by including
-        @('[books]/kestrel/apt/solve-method-acl2-rewriter.lisp').")
+        This method is made available by including community book
+        @('kestrel/apt/solve-method-acl2-rewriter.lisp').")
       (xdoc::li
        "@(':axe-rewriter'), to use the Axe rewriter.
-        This method is available by including
-        @('[books]/kestrel/apt/solve-method-axe-rewriter.lisp').")
+        This method is available by including community book
+        @('kestrel/apt/solve-method-axe-rewriter.lisp').")
       (xdoc::li
        "@(':manual'), to manually supply a solution."))
      (xdoc::p
@@ -341,7 +341,7 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::evmac-section
+   (xdoc::section
     "Solution Determination"
 
     (xdoc::p
@@ -351,7 +351,7 @@
       If no solution is found, the transformation fails
       with an informative error message.")
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Rewriting"
 
      (xdoc::p
@@ -471,7 +471,7 @@
        but the formulation used is more convenient
        for generating the proof of @('old-if-new')."))
 
-    (xdoc::evmac-subsection
+    (xdoc::subsection
      "Manual"
 
      (xdoc::p

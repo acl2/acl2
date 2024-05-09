@@ -22,7 +22,7 @@ ACL2 !>>(INCLUDE-BOOK "models/jvm/m1/m1"
 Summary
 Form:  ( INCLUDE-BOOK "models/jvm/m1/m1" ...)
 Rules: NIL
- "[books]/models/jvm/m1/m1.lisp"
+ (:SYSTEM . "models/jvm/m1/m1.lisp")
 ACL2 !>>(IN-PACKAGE "M1")
  "M1"
 M1 !>>(DEFUN SQ (X) (* X X))
@@ -38,7 +38,7 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 M1 !>>(SQ 7)
 49
 M1 !>>(DEFUN ^ (I J)
-             (IF (ZP J) 1 (* I (^ I (- J 1)))))
+        (IF (ZP J) 1 (* I (^ I (- J 1)))))
 
 The admission of ^ is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -72,9 +72,10 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (^ I J).  This suggestion
-was produced using the :induction rule ^.  If we let (:P I J K) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (^ I J).
+
+This suggestion was produced using the :induction rule ^.  If we let
+(:P I J K) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ZP J)) (:P I (+ -1 J) K))
               (:P I J K))
      (IMPLIES (ZP J) (:P I J K))).
@@ -204,26 +205,26 @@ Proof succeeded.
 M1 !>>'(END OF DEMO 1)
 (END OF DEMO 1)
 M1 !>>(DEFCONST *P*
-                '((ILOAD 1)
-                  (IFEQ 10)
-                  (ILOAD 0)
-                  (ILOAD 2)
-                  (IMUL)
-                  (ISTORE 2)
-                  (ILOAD 1)
-                  (ICONST -1)
-                  (IADD)
-                  (ISTORE 1)
-                  (GOTO -10)
-                  (ILOAD 2)
-                  (HALT)))
+        '((ILOAD 1)
+          (IFEQ 10)
+          (ILOAD 0)
+          (ILOAD 2)
+          (IMUL)
+          (ISTORE 2)
+          (ILOAD 1)
+          (ICONST -1)
+          (IADD)
+          (ISTORE 1)
+          (GOTO -10)
+          (ILOAD 2)
+          (HALT)))
 
 Summary
 Form:  ( DEFCONST *P* ...)
 Rules: NIL
  *P*
 M1 !>>(DEFUN MS (I J K)
-             (MAKE-STATE 0 (LIST I J K) NIL *P*))
+        (MAKE-STATE 0 (LIST I J K) NIL *P*))
 
 Since MS is non-recursive, its admission is trivial.  We observe that
 the type of MS is described by the theorem 
@@ -241,8 +242,9 @@ M1 !>>(TOP (STACK (M1 (MS 2 64 1) 1000)))
 M1 !>>(^ 2 64)
 18446744073709551616
 M1 !>>(DEFUN CLK (I J K)
-             (IF (ZP J)
-                 3 (CLK+ 11 (CLK I (- J 1) (* I K)))))
+        (IF (ZP J)
+            3
+          (CLK+ 11 (CLK I (- J 1) (* I K)))))
 
 The admission of CLK is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -261,11 +263,11 @@ M1 !>>(CLK 2 1000 1)
 M1 !>>(TOP (STACK (M1 (MS 2 1000 1) (CLK 2 1000 1))))
 10715086071862673209484250490600018105614048117055336074437503883703510511249361224931983788156958581275946729175531468251871452856923140435984577574698574803934567774824230985421074605062371141877954182153046474983581941267398767559165543946077062914571196477686542167660429831652624386837205668069376
 M1 !>>(DEFTHM CODE-IS-CORRECT
-              (IMPLIES (AND (NATP I) (NATP J) (NATP K))
-                       (EQUAL (M1 (MS I J K) (CLK I J K))
-                              (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
-                                          (PUSH (* K (^ I J)) NIL)
-                                          *P*))))
+        (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                 (EQUAL (M1 (MS I J K) (CLK I J K))
+                        (MAKE-STATE 12 (LIST I 0 (* K (^ I J)))
+                                    (PUSH (* K (^ I J)) NIL)
+                                    *P*))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM CODE-IS-CORRECT ...):  A :REWRITE
 rule generated from CODE-IS-CORRECT will be triggered only by terms
@@ -320,10 +322,11 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (CLK I J K).  This
-suggestion was produced using the :induction rules CLK and ^.  If we
-let (:P I J K) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (CLK I J K).
+
+This suggestion was produced using the :induction rules CLK and ^.
+If we let (:P I J K) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ZP J))
                    (:P I (+ -1 J) (* I K)))
               (:P I J K))
@@ -807,11 +810,11 @@ Rules: ((:COMPOUND-RECOGNIZER ACL2::NATP-COMPOUND-RECOGNIZER)
 Warnings:  Non-rec
  CODE-IS-CORRECT
 M1 !>>(DEFTHM CORR
-              (IMPLIES (AND (NATP I) (NATP J) (NATP K))
-                       (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
-                            (AND (HALTEDP FIN-ST)
-                                 (EQUAL (TOP (STACK FIN-ST))
-                                        (* K (^ I J)))))))
+        (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                 (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
+                   (AND (HALTEDP FIN-ST)
+                        (EQUAL (TOP (STACK FIN-ST))
+                               (* K (^ I J)))))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM CORR ...):  A :REWRITE rule generated
 from CORR will be triggered only by terms containing the function symbols
@@ -857,9 +860,9 @@ Goal'
                                          (ILOAD 2)
                                          (HALT)))
                            (CLK I J K))))
-              (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
-                   (EQUAL (TOP (STACK FIN-ST))
-                          (* K (^ I J)))))).
+           (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                (EQUAL (TOP (STACK FIN-ST))
+                       (* K (^ I J)))))).
 
 This simplifies, using the :definition NEXT-INST, to the following
 two conjectures.
@@ -941,9 +944,11 @@ conjecture.  (See :DOC otf-flg.)
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (CLK I J K).  This
-suggestion was produced using the :induction rule CLK.  If we let (:P I J K)
-denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (CLK I J K).
+
+This suggestion was produced using the :induction rule CLK.  If we
+let (:P I J K) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ZP J))
                    (:P I (+ -1 J) (* I K)))
               (:P I J K))
@@ -962,14 +967,14 @@ Subgoal *1/2
                                          (CLK I (+ -1 J) (* I K))))
                              (J (+ -1 J))
                              (K (* I K)))
-                            (AND (HALTEDP FIN-ST)
-                                 (EQUAL (TOP (STACK FIN-ST))
-                                        (* K (^ I J)))))))
+                         (AND (HALTEDP FIN-ST)
+                              (EQUAL (TOP (STACK FIN-ST))
+                                     (* K (^ I J)))))))
          (IMPLIES (AND (NATP I) (NATP J) (NATP K))
                   (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
-                       (AND (HALTEDP FIN-ST)
-                            (EQUAL (TOP (STACK FIN-ST))
-                                   (* K (^ I J))))))).
+                    (AND (HALTEDP FIN-ST)
+                         (EQUAL (TOP (STACK FIN-ST))
+                                (* K (^ I J))))))).
 
 By the simple :definitions HALTEDP, MS and NATP we reduce the conjecture
 to
@@ -998,9 +1003,9 @@ Subgoal *1/2'
                                      (CLK I (+ -1 J) (* I K))))
                          (J (+ -1 J))
                          (K (* I K)))
-                        (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
-                             (EQUAL (TOP (STACK FIN-ST))
-                                    (* K (^ I J))))))
+                     (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                          (EQUAL (TOP (STACK FIN-ST))
+                                 (* K (^ I J))))))
           (INTEGERP I)
           (<= 0 I)
           (INTEGERP J)
@@ -1023,9 +1028,9 @@ Subgoal *1/2'
                                      (ILOAD 2)
                                      (HALT)))
                        (CLK I J K))))
-          (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
-               (EQUAL (TOP (STACK FIN-ST))
-                      (* K (^ I J)))))).
+       (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+            (EQUAL (TOP (STACK FIN-ST))
+                   (* K (^ I J)))))).
 
 But simplification reduces this to T, using the :compound-recognizer
 rules ACL2::NATP-COMPOUND-RECOGNIZER and ACL2::ZP-COMPOUND-RECOGNIZER,
@@ -1041,9 +1046,9 @@ Subgoal *1/1
 (IMPLIES (ZP J)
          (IMPLIES (AND (NATP I) (NATP J) (NATP K))
                   (LET ((FIN-ST (M1 (MS I J K) (CLK I J K))))
-                       (AND (HALTEDP FIN-ST)
-                            (EQUAL (TOP (STACK FIN-ST))
-                                   (* K (^ I J))))))).
+                    (AND (HALTEDP FIN-ST)
+                         (EQUAL (TOP (STACK FIN-ST))
+                                (* K (^ I J))))))).
 
 By the simple :definitions HALTEDP, MS and NATP we reduce the conjecture
 to
@@ -1072,9 +1077,9 @@ Subgoal *1/1'
                                          (ILOAD 2)
                                          (HALT)))
                            (CLK I J K))))
-              (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
-                   (EQUAL (TOP (STACK FIN-ST))
-                          (* K (^ I J)))))).
+           (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                (EQUAL (TOP (STACK FIN-ST))
+                       (* K (^ I J)))))).
 
 This simplifies, using the :compound-recognizer rule 
 ACL2::ZP-COMPOUND-RECOGNIZER, the :executable-counterparts of <, INTEGERP,
@@ -1102,9 +1107,9 @@ Subgoal *1/1''
                                          (HALT)))
                            (CLK I 0 K)))
                (J 0))
-              (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
-                   (EQUAL (TOP (STACK FIN-ST))
-                          (* K (^ I J)))))).
+           (AND (EQUAL (NEXT-INST FIN-ST) '(HALT))
+                (EQUAL (TOP (STACK FIN-ST))
+                       (* K (^ I J)))))).
 
 But simplification reduces this to T, using the :compound-recognizer
 rule ACL2::NATP-COMPOUND-RECOGNIZER, the :definitions CLK, DO-INST,
@@ -1175,8 +1180,8 @@ Warnings:  Subsume and Non-rec
 M1 !>>'(DEMO OF SYMBOLIC EXECUATION)
 (DEMO OF SYMBOLIC EXECUATION)
 M1 !>>(DEFTHM THIS-IS-NOT-A-THEOREM
-              (IMPLIES (AND (NATP I) (NATP J) (NATP K))
-                       (EQUAL (M1 (MS I J K) 11) XXX)))
+        (IMPLIES (AND (NATP I) (NATP J) (NATP K))
+                 (EQUAL (M1 (MS I J K) 11) XXX)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE
 rule generated from THIS-IS-NOT-A-THEOREM will be triggered only by
@@ -1186,7 +1191,7 @@ ever to be used.
 
 
 ACL2 Warning [Free] in ( DEFTHM THIS-IS-NOT-A-THEOREM ...):  A :REWRITE
-rule generated from THIS-IS-NOT-A-THEOREM contains the the free variable
+rule generated from THIS-IS-NOT-A-THEOREM contains the free variable
 XXX on the right-hand side of the rule, which is not bound on the left-
 hand side or in any hypothesis.  This can cause new variables to be
 introduced into the proof, which may surprise you.

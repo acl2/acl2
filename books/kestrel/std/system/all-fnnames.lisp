@@ -28,7 +28,7 @@
      is a macro that abbreviates @(tsee all-fnnames1).")
    (xdoc::p
     "We also include the following theorem
-     from @('[books]/system/all-fnnames.lisp'):")
+     from @('system/all-fnnames.lisp'):")
    (xdoc::@def "true-listp-all-fnnames"))
 
   (defthm true-listp-of-all-fnnames1-type

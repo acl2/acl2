@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -97,6 +97,7 @@
 (assert-event (equal (symbol-package-name 'nonnegative-integer-quotient) "ACL2"))
 (assert-event (equal (symbol-package-name 'string-append) "ACL2"))
 (assert-event (equal (symbol-package-name 'len) "ACL2"))
+(assert-event (equal (symbol-package-name 'hard-error) "ACL2"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

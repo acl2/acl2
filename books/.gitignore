@@ -45,6 +45,7 @@ Makefile-tmp.lsp
 *.sao
 .acl2rc
 *.log
+*.summ
 TMP*.*
 *.tem
 temp-emacs-file*
@@ -54,3 +55,5 @@ Makefile-sources
 startjob.*.wrap
 .#*
 \#*.*\#
+*@event-data.lsp
+*@event-data.lsp.temp

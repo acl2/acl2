@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -19,1383 +19,6 @@
 ; Austin, TX 78712 U.S.A.
 
 (in-package "ACL2")
-
-; Section:  PREPROCESS-CLAUSE
-
-; The preprocessor is the first clause processor in the waterfall when
-; we enter from prove.  It contains a simple term rewriter that expands
-; certain "abbreviations" and a gentle clausifier.
-
-; We first develop the simple rewriter, called expand-abbreviations.
-
-; Rockwell Addition: We are now concerned with lambdas, where we
-; didn't used to treat them differently.  This extra argument will
-; show up in several places during a compare-windows.
-
-(mutual-recursion
-
-(defun abbreviationp1 (lambda-flg vars term2)
-
-; This function returns t if term2 is not an abbreviation of term1
-; (where vars is the bag of vars in term1).  Otherwise, it returns the
-; excess vars of vars.  If lambda-flg is t we look out for lambdas and
-; do not consider something an abbreviation if we see a lambda in it.
-; If lambda-flg is nil, we treat lambdas as though they were function
-; symbols.
-
-  (cond ((variablep term2)
-         (cond ((null vars) t) (t (cdr vars))))
-        ((fquotep term2) vars)
-        ((and lambda-flg
-              (flambda-applicationp term2))
-         t)
-        ((member-eq (ffn-symb term2) '(if not implies)) t)
-        (t (abbreviationp1-lst lambda-flg vars (fargs term2)))))
-
-(defun abbreviationp1-lst (lambda-flg vars lst)
-  (cond ((null lst) vars)
-        (t (let ((vars1 (abbreviationp1 lambda-flg vars (car lst))))
-             (cond ((eq vars1 t) t)
-                   (t (abbreviationp1-lst lambda-flg vars1 (cdr lst))))))))
-
-)
-
-(defun abbreviationp (lambda-flg vars term2)
-
-; Consider the :REWRITE rule generated from (equal term1 term2).  We
-; say such a rule is an "abbreviation" if term2 contains no more
-; variable occurrences than term1 and term2 does not call the
-; functions IF, NOT or IMPLIES or (if lambda-flg is t) any LAMBDA.
-; Vars, above, is the bag of vars from term1.  We return non-nil iff
-; (equal term1 term2) is an abbreviation.
-
-  (not (eq (abbreviationp1 lambda-flg vars term2) t)))
-
-(mutual-recursion
-
-(defun all-vars-bag (term ans)
-  (cond ((variablep term) (cons term ans))
-        ((fquotep term) ans)
-        (t (all-vars-bag-lst (fargs term) ans))))
-
-(defun all-vars-bag-lst (lst ans)
-  (cond ((null lst) ans)
-        (t (all-vars-bag-lst (cdr lst)
-                             (all-vars-bag (car lst) ans)))))
-)
-
-(defun find-abbreviation-lemma (term geneqv lemmas ens wrld)
-
-; Term is a function application, geneqv is a generated equivalence
-; relation and lemmas is the 'lemmas property of the function symbol
-; of term.  We find the first (enabled) abbreviation lemma that
-; rewrites term maintaining geneqv.  A lemma is an abbreviation if it
-; is not a meta-lemma, has no hypotheses, has no loop-stopper, and has
-; an abbreviationp for the conclusion.
-
-; If we win we return t, the rune of the :CONGRUENCE rule used, the
-; lemma, and the unify-subst.  Otherwise we return four nils.
-
-  (cond ((null lemmas) (mv nil nil nil nil))
-        ((and (enabled-numep (access rewrite-rule (car lemmas) :nume) ens)
-              (eq (access rewrite-rule (car lemmas) :subclass) 'abbreviation)
-              (geneqv-refinementp (access rewrite-rule (car lemmas) :equiv)
-                                 geneqv
-                                 wrld))
-         (mv-let
-             (wonp unify-subst)
-           (one-way-unify (access rewrite-rule (car lemmas) :lhs) term)
-           (cond (wonp (mv t
-                           (geneqv-refinementp
-                            (access rewrite-rule (car lemmas) :equiv)
-                            geneqv
-                            wrld)
-                           (car lemmas)
-                           unify-subst))
-                 (t (find-abbreviation-lemma term geneqv (cdr lemmas)
-                                             ens wrld)))))
-        (t (find-abbreviation-lemma term geneqv (cdr lemmas)
-                                    ens wrld))))
-
-(mutual-recursion
-
-(defun expand-abbreviations-with-lemma (term geneqv pequiv-info
-                                             fns-to-be-ignored-by-rewrite
-                                             rdepth step-limit ens wrld state
-                                             ttree)
-  (mv-let
-    (wonp cr-rune lemma unify-subst)
-    (find-abbreviation-lemma term geneqv
-                             (getpropc (ffn-symb term) 'lemmas nil wrld)
-                             ens
-                             wrld)
-    (cond
-     (wonp
-      (with-accumulated-persistence
-       (access rewrite-rule lemma :rune)
-       ((the (signed-byte 30) step-limit) term ttree)
-       t
-       (expand-abbreviations
-        (access rewrite-rule lemma :rhs)
-        unify-subst
-        geneqv
-        pequiv-info
-        fns-to-be-ignored-by-rewrite
-        (adjust-rdepth rdepth) step-limit ens wrld state
-        (push-lemma cr-rune
-                    (push-lemma (access rewrite-rule lemma :rune)
-                                ttree)))))
-     (t (mv step-limit term ttree)))))
-
-(defun expand-abbreviations (term alist geneqv pequiv-info
-                                  fns-to-be-ignored-by-rewrite
-                                  rdepth step-limit ens wrld state ttree)
-
-; This function is essentially like rewrite but is more restrictive in its use
-; of rules.  We rewrite term/alist maintaining geneqv and pequiv-info, avoiding
-; the expansion or application of lemmas to terms whose fns are in
-; fns-to-be-ignored-by-rewrite.  We return a new term and a ttree (accumulated
-; onto our argument) describing the rewrite.  We only apply "abbreviations"
-; which means we expand lambda applications and non-rec fns provided they do
-; not duplicate arguments or introduce IFs, etc. (see abbreviationp), and we
-; apply those unconditional :REWRITE rules with the same property.
-
-; It used to be written:
-
-;  Note: In a break with Nqthm and the first four versions of ACL2, in
-;  Version 1.5 we also expand IMPLIES terms here.  In fact, we expand
-;  several members of *expandable-boot-strap-non-rec-fns* here, and
-;  IFF.  The impetus for this decision was the forcing of impossible
-;  goals by simplify-clause.  As of this writing, we have just added
-;  the idea of forcing rounds and the concomitant notion that forced
-;  hypotheses are proved under the type-alist extant at the time of the
-;  force.  But if the simplifier sees IMPLIES terms and rewrites their
-;  arguments, it does not augment the context, e.g., in (IMPLIES hyps
-;  concl) concl is rewritten without assuming hyps and thus assumptions
-;  forced in concl are context free and often impossible to prove.  Now
-;  while the user might hide propositional structure in other functions
-;  and thus still suffer this failure mode, IMPLIES is the most common
-;  one and by opening it now we make our context clearer.  See the note
-;  below for the reason we expand other
-;  *expandable-boot-strap-non-rec-fns*.
-
-; This is no longer true.  We now expand the IMPLIES from the original theorem
-; in preprocess-clause before expand-abbreviations is called, and do not expand
-; any others here.  These changes in the handling of IMPLIES (as well as
-; several others) are caused by the introduction of assume-true-false-if.  See
-; the mini-essay at assume-true-false-if.
-
-  (cond
-   ((zero-depthp rdepth)
-    (rdepth-error
-     (mv step-limit term ttree)
-     t))
-   ((time-limit5-reached-p ; nil, or throws
-     "Out of time in preprocess (expand-abbreviations).")
-    (mv step-limit nil nil))
-   (t
-    (let ((step-limit (decrement-step-limit step-limit)))
-      (cond
-       ((variablep term)
-        (let ((temp (assoc-eq term alist)))
-          (cond (temp (mv step-limit (cdr temp) ttree))
-                (t (mv step-limit term ttree)))))
-       ((fquotep term) (mv step-limit term ttree))
-       ((and (eq (ffn-symb term) 'return-last)
-
-; We avoid special treatment for return-last when the first argument is progn,
-; since the user may have intended the first argument to be rewritten in that
-; case; for example, the user might want to see a message printed when the term
-; (prog2$ (cw ...) ...) is encountered.  But it is useful in the other cases,
-; in particular for calls of return-last generated by calls of mbe, to avoid
-; spending time simplifying the next-to-last argument.
-
-             (not (equal (fargn term 1) ''progn)))
-        (expand-abbreviations (fargn term 3)
-                              alist geneqv pequiv-info
-                              fns-to-be-ignored-by-rewrite rdepth
-                              step-limit ens wrld state
-                              (push-lemma
-                               (fn-rune-nume 'return-last nil nil wrld)
-                               ttree)))
-       ((eq (ffn-symb term) 'hide)
-        (mv step-limit
-            (sublis-var alist term)
-            ttree))
-       (t
-        (mv-let
-         (deep-pequiv-lst shallow-pequiv-lst)
-         (pequivs-for-rewrite-args (ffn-symb term) geneqv pequiv-info wrld ens)
-         (sl-let
-          (expanded-args ttree)
-          (expand-abbreviations-lst (fargs term)
-                                    alist
-                                    1 nil deep-pequiv-lst shallow-pequiv-lst
-                                    geneqv (ffn-symb term)
-                                    (geneqv-lst (ffn-symb term) geneqv ens wrld)
-                                    fns-to-be-ignored-by-rewrite
-                                    (adjust-rdepth rdepth) step-limit
-                                    ens wrld state ttree)
-          (let* ((fn (ffn-symb term))
-                 (term (cons-term fn expanded-args)))
-
-; If term does not collapse to a constant, fn is still its ffn-symb.
-
-            (cond
-             ((fquotep term)
-
-; Term collapsed to a constant.  But it wasn't a constant before, and so
-; it collapsed because cons-term executed fn on constants.  So we record
-; a use of the executable-counterpart.
-
-              (mv step-limit
-                  term
-                  (push-lemma (fn-rune-nume fn nil t wrld) ttree)))
-             ((member-equal fn fns-to-be-ignored-by-rewrite)
-              (mv step-limit (cons-term fn expanded-args) ttree))
-             ((and (all-quoteps expanded-args)
-                   (enabled-xfnp fn ens wrld)
-                   (or (flambda-applicationp term)
-                       (not (getpropc fn 'constrainedp nil wrld))))
-              (cond ((flambda-applicationp term)
-                     (expand-abbreviations
-                      (lambda-body fn)
-                      (pairlis$ (lambda-formals fn) expanded-args)
-                      geneqv pequiv-info
-                      fns-to-be-ignored-by-rewrite
-                      (adjust-rdepth rdepth) step-limit ens wrld state ttree))
-                    ((programp fn wrld)
-
-; We formerly thought this case was possible during admission of recursive
-; definitions.  Best if it's not!  So we cause an error; if we ever hit this
-; case, we can think about whether allowing :program mode functions into the
-; prover processes is problematic.  Our concern about :program mode functions
-; in proofs has led us in May 2016 to change the application of meta functions
-; and clause-processors to insist that the result is free of :program mode
-; function symbols.
-
-                     (mv step-limit
-;                        (cons-term fn expanded-args)
-                         (er hard! 'expand-abbreviations
-                             "Implementation error: encountered :program mode ~
-                              function symbol, ~x0"
-                             fn)
-                         ttree))
-                    (t
-                     (mv-let
-                      (erp val bad-fn)
-                      (pstk
-                       (ev-fncall+ fn (strip-cadrs expanded-args) t state))
-                      (declare (ignore bad-fn))
-                      (cond
-                       (erp
-
-; We originally followed a suggestion from Matt Wilding and attempt to simplify
-; the term before applying HIDE.  Now, we partially follow an idea from Eric
-; Smith of avoiding the application of HIDE -- we do this only here in
-; expand-abbreviations, expecting that the rewriter will apply HIDE if
-; appropriate.
-
-                        (expand-abbreviations-with-lemma
-                         (cons-term fn expanded-args)
-                         geneqv pequiv-info
-                         fns-to-be-ignored-by-rewrite
-                         rdepth step-limit ens wrld state ttree))
-                       (t (mv step-limit
-                              (kwote val)
-                              (push-lemma (fn-rune-nume fn nil t wrld)
-                                          ttree))))))))
-             ((flambdap fn)
-              (cond ((abbreviationp nil
-                                    (lambda-formals fn)
-                                    (lambda-body fn))
-                     (expand-abbreviations
-                      (lambda-body fn)
-                      (pairlis$ (lambda-formals fn) expanded-args)
-                      geneqv pequiv-info
-                      fns-to-be-ignored-by-rewrite
-                      (adjust-rdepth rdepth) step-limit ens wrld state ttree))
-                    (t
-
-; Once upon a time (well into v1-9) we just returned (mv term ttree)
-; here.  But then Jun Sawada pointed out some problems with his proofs
-; of some theorems of the form (let (...) (implies (and ...)  ...)).
-; The problem was that the implies was not getting expanded (because
-; the let turns into a lambda and the implication in the body is not
-; an abbreviationp, as checked above).  So we decided that, in such
-; cases, we would actually expand the abbreviations in the body
-; without expanding the lambda itself, as we do below.  This in turn
-; often allows the lambda to expand via the following mechanism.
-; Preprocess-clause calls expand-abbreviations and it expands the
-; implies into IFs in the body without opening the lambda.  But then
-; preprocess-clause calls clausify-input which does another
-; expand-abbreviations and this time the expansion is allowed.  We do
-; not imagine that this change will adversely affect proofs, but if
-; so, well, the old code is shown on the first line of this comment.
-
-                     (sl-let (body ttree)
-                             (expand-abbreviations
-                              (lambda-body fn)
-                              nil
-                              geneqv
-                              nil ; pequiv-info
-                              fns-to-be-ignored-by-rewrite
-                              (adjust-rdepth rdepth) step-limit ens wrld state
-                              ttree)
-
-; Rockwell Addition:
-
-; Once upon another time (through v2-5) we returned the fcons-term
-; shown in the t clause below.  But Rockwell proofs indicate that it
-; is better to eagerly expand this lambda if the new body would make
-; it an abbreviation.
-
-                             (cond
-                              ((abbreviationp nil
-                                              (lambda-formals fn)
-                                              body)
-                               (expand-abbreviations
-                                body
-                                (pairlis$ (lambda-formals fn) expanded-args)
-                                geneqv pequiv-info
-                                fns-to-be-ignored-by-rewrite
-                                (adjust-rdepth rdepth) step-limit ens wrld state
-                                ttree))
-                              (t
-                               (mv step-limit
-                                   (mcons-term (list 'lambda (lambda-formals fn)
-                                                     body)
-                                               expanded-args)
-                                   ttree)))))))
-             ((member-eq fn '(iff synp mv-list cons-with-hint return-last
-                                  wormhole-eval force case-split
-                                  double-rewrite))
-
-; The list above is an arbitrary subset of *expandable-boot-strap-non-rec-fns*.
-; Once upon a time we used the entire list here, but Bishop Brock complained
-; that he did not want EQL opened.  So we have limited the list to just the
-; propositional function IFF and the no-ops.
-
-; Note: Once upon a time we did not expand any propositional functions
-; here.  Indeed, one might wonder why we do now?  The only place
-; expand-abbreviations was called was from within preprocess-clause.
-; And there, its output was run through clausify-input and then
-; remove-trivial-clauses.  The latter called tautologyp on each clause
-; and that, in turn, expanded all the functions above (but discarded
-; the expansion except for purposes of determining tautologyhood).
-; Thus, there is no real case to make against expanding these guys.
-; For sanity, one might wish to keep the list above in sync with
-; that in tautologyp, where we say about it: "The list is in fact
-; *expandable-boot-strap-non-rec-fns* with NOT deleted and IFF added.
-; The main idea here is to include non-rec functions that users
-; typically put into the elegant statements of theorems."  But now we
-; have deleted IMPLIES from this list, to support the assume-true-false-if
-; idea, but we still keep IMPLIES in the list for tautologyp because
-; if we can decide it's a tautology by expanding, all the better.
-
-              (with-accumulated-persistence
-               (fn-rune-nume fn nil nil wrld)
-               ((the (signed-byte 30) step-limit) term ttree)
-               t
-               (expand-abbreviations (bbody fn)
-                                     (pairlis$ (formals fn wrld) expanded-args)
-                                     geneqv pequiv-info
-                                     fns-to-be-ignored-by-rewrite
-                                     (adjust-rdepth rdepth)
-                                     step-limit ens wrld state
-                                     (push-lemma (fn-rune-nume fn nil nil wrld)
-                                                 ttree))))
-
-; Rockwell Addition:  We are expanding abbreviations.  This is new treatment
-; of IF, which didn't used to receive any special notice.
-
-             ((eq fn 'if)
-
-; There are no abbreviation (or rewrite) rules hung on IF, so coming out
-; here is ok.
-
-              (let ((a (car expanded-args))
-                    (b (cadr expanded-args))
-                    (c (caddr expanded-args)))
-                (cond
-                 ((equal b c) (mv step-limit b ttree))
-                 ((quotep a)
-                  (mv step-limit
-                      (if (eq (cadr a) nil) c b)
-                      ttree))
-                 ((and (equal geneqv *geneqv-iff*)
-                       (equal b *t*)
-                       (or (equal c *nil*)
-                           (ffn-symb-p c 'HARD-ERROR)))
-
-; Some users keep HARD-ERROR disabled so that they can figure out
-; which guard proof case they are in.  HARD-ERROR is identically nil
-; and we would really like to eliminate the IF here.  So we use our
-; knowledge that HARD-ERROR is nil even if it is disabled.  We don't
-; even put it in the ttree, because for all the user knows this is
-; primitive type inference.
-
-                  (mv step-limit a ttree))
-                 (t (mv step-limit
-                        (mcons-term 'if expanded-args)
-                        ttree)))))
-
-; Rockwell Addition: New treatment of equal.
-
-             ((and (eq fn 'equal)
-                   (equal (car expanded-args) (cadr expanded-args)))
-              (mv step-limit *t* ttree))
-             (t
-              (expand-abbreviations-with-lemma
-               term geneqv pequiv-info
-               fns-to-be-ignored-by-rewrite rdepth step-limit ens
-               wrld state ttree))))))))))))
-
-(defun expand-abbreviations-lst (lst alist bkptr rewritten-args-rev
-                                     deep-pequiv-lst shallow-pequiv-lst
-                                     parent-geneqv parent-fn geneqv-lst
-                                     fns-to-be-ignored-by-rewrite rdepth
-                                     step-limit ens wrld state ttree)
-  (cond
-   ((null lst) (mv step-limit (reverse rewritten-args-rev) ttree))
-   (t (mv-let
-       (child-geneqv child-pequiv-info)
-       (geneqv-and-pequiv-info-for-rewrite
-        parent-fn bkptr rewritten-args-rev lst alist
-        parent-geneqv
-        (car geneqv-lst)
-        deep-pequiv-lst
-        shallow-pequiv-lst
-        wrld)
-       (sl-let (term1 new-ttree)
-               (expand-abbreviations (car lst) alist
-                                     child-geneqv child-pequiv-info
-                                     fns-to-be-ignored-by-rewrite
-                                     rdepth step-limit ens wrld state ttree)
-               (expand-abbreviations-lst (cdr lst) alist
-                                         (1+ bkptr)
-                                         (cons term1 rewritten-args-rev)
-                                         deep-pequiv-lst shallow-pequiv-lst
-                                         parent-geneqv parent-fn
-                                         (cdr geneqv-lst)
-                                         fns-to-be-ignored-by-rewrite
-                                         rdepth step-limit ens wrld
-                                         state new-ttree))))))
-
-)
-
-(defun and-orp (term bool lambda-okp)
-
-; We return t or nil according to whether term is a disjunction (if bool is t)
-; or conjunction (if bool is nil).
-
-; After v8-0 we made a change to preserve lambdas on right-hand sides of
-; rewrite rules.  At that time we added the clause for lambdas below, to
-; preserve the old behavior of find-and-or-lemma.  However, in general it seems
-; a good idea to open up lambdas slowly, so we keep the old behavior of and-orp
-; -- not diving into lambda bodies -- in other places, which also helps with
-; backward compatibility (one example is the proof of lemma
-; aignet-marked-copies-in-bounds-of-empty-bitarr in community book
-; books/centaur/aignet/rewrite.lisp).  Parameter lambda-okp is true when we
-; allow exploration of lambda bodies, else nil.  When we tried on 8/14/2018
-; calling and-orp with lambda-okp = t in the case (flambda-applicationp term)
-; of expand-and-or -- that is, to dive into lambda-bodies of lambda-bodies --
-; we got 19 failures when trying an "everything" regression, which (of course)
-; almost surely undercounts failures, since certification wasn't attempted for
-; books depending on failed books.
-
-  (case-match term
-              (('if & c2 c3)
-               (if bool
-                   (or (equal c2 *t*) (equal c3 *t*))
-                 (or (equal c2 *nil*) (equal c3 *nil*))))
-              ((('lambda & body) . &)
-               (and lambda-okp
-                    (and-orp body bool lambda-okp)))))
-
-(defun find-and-or-lemma (term bool lemmas ens wrld)
-
-; Term is a function application and lemmas is the 'lemmas property of
-; the function symbol of term.  We find the first enabled and-or
-; (wrt bool) lemma that rewrites term maintaining iff.
-
-; If we win we return t, the :CONGRUENCE rule name, the lemma, and the
-; unify-subst.  Otherwise we return four nils.
-
-  (cond ((null lemmas) (mv nil nil nil nil))
-        ((and (enabled-numep (access rewrite-rule (car lemmas) :nume) ens)
-              (or (eq (access rewrite-rule (car lemmas) :subclass) 'backchain)
-                  (eq (access rewrite-rule (car lemmas) :subclass) 'abbreviation))
-              (null (access rewrite-rule (car lemmas) :hyps))
-              (null (access rewrite-rule (car lemmas) :heuristic-info))
-              (geneqv-refinementp (access rewrite-rule (car lemmas) :equiv)
-                                 *geneqv-iff*
-                                 wrld)
-              (and-orp (access rewrite-rule (car lemmas) :rhs) bool t))
-         (mv-let
-             (wonp unify-subst)
-           (one-way-unify (access rewrite-rule (car lemmas) :lhs) term)
-           (cond (wonp (mv t
-                           (geneqv-refinementp
-                            (access rewrite-rule (car lemmas) :equiv)
-                            *geneqv-iff*
-                            wrld)
-                           (car lemmas)
-                           unify-subst))
-                 (t (find-and-or-lemma term bool (cdr lemmas) ens wrld)))))
-        (t (find-and-or-lemma term bool (cdr lemmas) ens wrld))))
-
-(defun expand-and-or (term bool fns-to-be-ignored-by-rewrite ens wrld state
-                           ttree step-limit)
-
-; We expand the top-level fn symbol of term provided the expansion produces a
-; conjunction -- when bool is nil -- or a disjunction -- when bool is t.  We
-; return four values: the new step-limit, wonp, the new term, and a new ttree.
-; This fn is a No-Change Loser.
-
-; Note that preprocess-clause calls expand-abbreviations; but also
-; preprocess-clause calls clausify-input, which calls expand-and-or, which
-; calls expand-abbreviations.  But this is not redundant, as expand-and-or
-; calls expand-abbreviations after expanding function definitions and using
-; rewrite rules when the result is a conjunction or disjunction (depending on
-; bool) -- even when the rule being applied is not an abbreviation rule.  Below
-; are event sequences that illustrate this extra work being done.  In both
-; cases, evaluation of (getpropc 'foo 'lemmas) shows that we are expanding with
-; a rewrite-rule structure that is not of subclass 'abbreviation.
-
-; (defstub bar (x) t)
-; (defun foo (x) (and (bar (car x)) (bar (cdr x))))
-; (trace$ expand-and-or expand-abbreviations clausify-input preprocess-clause)
-; (thm (foo x) :hints (("Goal" :do-not-induct :otf)))
-
-; (defstub bar (x) t)
-; (defstub foo (x) t)
-; (defaxiom foo-open (equal (foo x) (and (bar (car x)) (bar (cdr x)))))
-; (trace$ expand-and-or expand-abbreviations clausify-input preprocess-clause)
-; (thm (foo x) :hints (("Goal" :do-not-induct :otf)))
-
-  (cond ((variablep term) (mv step-limit nil term ttree))
-        ((fquotep term) (mv step-limit nil term ttree))
-        ((member-equal (ffn-symb term) fns-to-be-ignored-by-rewrite)
-         (mv step-limit nil term ttree))
-        ((flambda-applicationp term)
-         (cond ((and-orp (lambda-body (ffn-symb term)) bool nil)
-                (sl-let
-                 (term ttree)
-                 (expand-abbreviations
-                  (subcor-var (lambda-formals (ffn-symb term))
-                              (fargs term)
-                              (lambda-body (ffn-symb term)))
-                  nil
-                  *geneqv-iff*
-                  nil
-                  fns-to-be-ignored-by-rewrite
-                  (rewrite-stack-limit wrld) step-limit ens wrld state ttree)
-                 (mv step-limit t term ttree)))
-               (t (mv step-limit nil term ttree))))
-        (t
-         (let ((def-body (def-body (ffn-symb term) wrld)))
-           (cond
-            ((and def-body
-                  (null (access def-body def-body :recursivep))
-                  (null (access def-body def-body :hyp))
-                  (member-eq (access def-body def-body :equiv)
-                             '(equal iff))
-                  (enabled-numep (access def-body def-body :nume)
-                                 ens)
-                  (and-orp (access def-body def-body :concl) bool nil))
-             (sl-let
-              (term ttree)
-              (with-accumulated-persistence
-               (access def-body def-body :rune)
-               ((the (signed-byte 30) step-limit) term ttree)
-               t
-               (expand-abbreviations
-                (subcor-var (access def-body def-body
-                                    :formals)
-                            (fargs term)
-                            (access def-body def-body :concl))
-                nil
-                *geneqv-iff*
-                nil
-                fns-to-be-ignored-by-rewrite
-                (rewrite-stack-limit wrld)
-                step-limit ens wrld state
-                (push-lemma? (access def-body def-body :rune)
-                             ttree)))
-              (mv step-limit t term ttree)))
-            (t (mv-let
-                (wonp cr-rune lemma unify-subst)
-                (find-and-or-lemma
-                 term bool
-                 (getpropc (ffn-symb term) 'lemmas nil wrld)
-                 ens wrld)
-                (cond
-                 (wonp
-                  (sl-let
-                   (term ttree)
-                   (with-accumulated-persistence
-                    (access rewrite-rule lemma :rune)
-                    ((the (signed-byte 30) step-limit) term ttree)
-                    t
-                    (expand-abbreviations
-                     (sublis-var unify-subst
-                                 (access rewrite-rule lemma :rhs))
-                     nil
-                     *geneqv-iff*
-                     nil
-                     fns-to-be-ignored-by-rewrite
-                     (rewrite-stack-limit wrld)
-                     step-limit ens wrld state
-                     (push-lemma cr-rune
-                                 (push-lemma (access rewrite-rule lemma
-                                                     :rune)
-                                             ttree))))
-                   (mv step-limit t term ttree)))
-                 (t (mv step-limit nil term ttree))))))))))
-
-(defun clausify-input1 (term bool fns-to-be-ignored-by-rewrite ens wrld state
-                             ttree step-limit)
-
-; We return three things: a new step-limit, a clause, and a ttree.  If bool is
-; t, the (disjunction of the literals in the) clause is equivalent to term.  If
-; bool is nil, the clause is equivalent to the negation of term.  This function
-; opens up some nonrec fns and applies some rewrite rules.  The final ttree
-; contains the symbols and rules used.
-
-  (cond
-   ((equal term (if bool *nil* *t*)) (mv step-limit nil ttree))
-   ((ffn-symb-p term 'if)
-    (let ((t1 (fargn term 1))
-          (t2 (fargn term 2))
-          (t3 (fargn term 3)))
-      (cond
-       (bool
-        (cond
-         ((equal t3 *t*)
-          (sl-let (cl1 ttree)
-                  (clausify-input1 t1 nil
-                                   fns-to-be-ignored-by-rewrite
-                                   ens wrld state ttree step-limit)
-                  (sl-let (cl2 ttree)
-                          (clausify-input1 t2 t
-                                           fns-to-be-ignored-by-rewrite
-                                           ens wrld state ttree step-limit)
-                          (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
-         ((equal t2 *t*)
-          (sl-let (cl1 ttree)
-                  (clausify-input1 t1 t
-                                   fns-to-be-ignored-by-rewrite
-                                   ens wrld state ttree step-limit)
-                  (sl-let (cl2 ttree)
-                          (clausify-input1 t3 t
-                                           fns-to-be-ignored-by-rewrite
-                                           ens wrld state ttree step-limit)
-                          (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
-         (t (mv step-limit (list term) ttree))))
-       ((equal t3 *nil*)
-        (sl-let (cl1 ttree)
-                (clausify-input1 t1 nil
-                                 fns-to-be-ignored-by-rewrite
-                                 ens wrld state ttree step-limit)
-                (sl-let (cl2 ttree)
-                        (clausify-input1 t2 nil
-                                         fns-to-be-ignored-by-rewrite
-                                         ens wrld state ttree step-limit)
-                        (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
-       ((equal t2 *nil*)
-        (sl-let (cl1 ttree)
-                (clausify-input1 t1 t
-                                 fns-to-be-ignored-by-rewrite
-                                 ens wrld state ttree step-limit)
-                (sl-let (cl2 ttree)
-                        (clausify-input1 t3 nil
-                                         fns-to-be-ignored-by-rewrite
-                                         ens wrld state ttree step-limit)
-                        (mv step-limit (disjoin-clauses cl1 cl2) ttree))))
-       (t (mv step-limit (list (dumb-negate-lit term)) ttree)))))
-   (t (sl-let (wonp term ttree)
-              (expand-and-or term bool fns-to-be-ignored-by-rewrite
-                             ens wrld state ttree step-limit)
-              (cond (wonp
-                     (clausify-input1 term bool fns-to-be-ignored-by-rewrite
-                                      ens wrld state ttree step-limit))
-                    (bool (mv step-limit (list term) ttree))
-                    (t (mv step-limit
-                           (list (dumb-negate-lit term))
-                           ttree)))))))
-
-(defun clausify-input1-lst (lst fns-to-be-ignored-by-rewrite ens wrld state
-                                ttree step-limit)
-
-; This function is really a subroutine of clausify-input.  It just
-; applies clausify-input1 to every element of lst, accumulating the ttrees.
-; It uses bool=t.
-
-  (cond ((null lst) (mv step-limit nil ttree))
-        (t (sl-let (clause ttree)
-                   (clausify-input1 (car lst) t fns-to-be-ignored-by-rewrite
-                                    ens wrld state ttree step-limit)
-                   (sl-let (clauses ttree)
-                           (clausify-input1-lst (cdr lst)
-                                                fns-to-be-ignored-by-rewrite
-                                                ens wrld state ttree
-                                                step-limit)
-                           (mv step-limit
-                               (conjoin-clause-to-clause-set clause clauses)
-                               ttree))))))
-
-(defun clausify-input (term fns-to-be-ignored-by-rewrite ens wrld state ttree
-                            step-limit)
-
-; This function converts term to a set of clauses, expanding some non-rec
-; functions when they produce results of the desired parity (i.e., we expand
-; AND-like functions in the hypotheses and OR-like functions in the
-; conclusion.)  AND and OR themselves are, of course, already expanded into
-; IFs, but we will expand other functions when they generate the desired IF
-; structure.  We also apply :REWRITE rules deemed appropriate.  We return three
-; results: a new step-limit, the set of clauses, and a ttree documenting the
-; expansions.
-
-  (sl-let (neg-clause ttree)
-          (clausify-input1 term nil fns-to-be-ignored-by-rewrite ens
-                           wrld state ttree step-limit)
-
-; Neg-clause is a clause that is equivalent to the negation of term.  That is,
-; if the literals of neg-clause are lit1, ..., litn, then (or lit1 ... litn)
-; <-> (not term).  Therefore, term is the negation of the clause, i.e., (and
-; (not lit1) ... (not litn)).  We will form a clause from each (not lit1) and
-; return the set of clauses, implicitly conjoined.
-
-          (clausify-input1-lst (dumb-negate-lit-lst neg-clause)
-                               fns-to-be-ignored-by-rewrite
-                               ens wrld state ttree step-limit)))
-
-(defun expand-some-non-rec-fns-in-clauses (fns clauses wrld)
-
-; Warning: fns should be a subset of functions that
-
-; This function expands the non-rec fns listed in fns in each of the clauses
-; in clauses.  It then throws out of the set any trivial clause, i.e.,
-; tautologies.  It does not normalize the expanded terms but just leaves
-; the expanded bodies in situ.  See the comment in preprocess-clause.
-
-  (cond
-   ((null clauses) nil)
-   (t (let ((cl (expand-some-non-rec-fns-lst fns (car clauses) wrld)))
-        (cond
-         ((trivial-clause-p cl wrld)
-          (expand-some-non-rec-fns-in-clauses fns (cdr clauses) wrld))
-         (t (cons cl
-                  (expand-some-non-rec-fns-in-clauses fns (cdr clauses)
-                                                      wrld))))))))
-
-(defun no-op-histp (hist)
-
-; We say a history, hist, is a "no-op history" if it is empty or its most
-; recent entry is a to-be-hidden preprocess-clause or apply-top-hints-clause
-; (possibly followed by a settled-down-clause).
-
-  (or (null hist)
-      (and hist
-           (member-eq (access history-entry (car hist) :processor)
-                      '(apply-top-hints-clause preprocess-clause))
-           (tag-tree-occur 'hidden-clause
-                           t
-                           (access history-entry (car hist) :ttree)))
-      (and hist
-           (eq (access history-entry (car hist) :processor)
-               'settled-down-clause)
-           (cdr hist)
-           (member-eq (access history-entry (cadr hist) :processor)
-                      '(apply-top-hints-clause preprocess-clause))
-           (tag-tree-occur 'hidden-clause
-                           t
-                           (access history-entry (cadr hist) :ttree)))))
-
-(mutual-recursion
-
-; This pair of functions is copied from expand-abbreviations and
-; heavily modified.  The idea implemented by the caller of this
-; function is to expand all the IMPLIES terms in the final literal of
-; the goal clause.  This pair of functions actually implements that
-; expansion.  One might think to use expand-some-non-rec-fns with
-; first argument '(IMPLIES).  But this function is different in two
-; respects.  First, it respects HIDE.  Second, it expands the IMPLIES
-; inside of lambda bodies.  The basic idea is to mimic what
-; expand-abbreviations used to do, before we added the
-; assume-true-false-if idea.
-
-(defun expand-any-final-implies1 (term wrld)
-  (cond
-   ((variablep term)
-    term)
-   ((fquotep term)
-    term)
-   ((eq (ffn-symb term) 'hide)
-    term)
-   (t
-    (let ((expanded-args (expand-any-final-implies1-lst (fargs term)
-                                                        wrld)))
-      (let* ((fn (ffn-symb term))
-             (term (cons-term fn expanded-args)))
-        (cond ((flambdap fn)
-               (let ((body (expand-any-final-implies1 (lambda-body fn)
-                                                      wrld)))
-
-; Note: We could use a make-lambda-application here, but if the
-; original lambda used all of its variables then so does the new one,
-; because IMPLIES uses all of its variables and we're not doing any
-; simplification.  This remark is not soundness related; there is no
-; danger of introducing new variables, only the inefficiency of
-; keeping a big actual which is actually not used.
-
-                 (fcons-term (make-lambda (lambda-formals fn) body)
-                             expanded-args)))
-              ((eq fn 'IMPLIES)
-               (subcor-var (formals 'implies wrld)
-                           expanded-args
-                           (bbody 'implies)))
-              (t term)))))))
-
-(defun expand-any-final-implies1-lst (term-lst wrld)
-  (cond ((null term-lst)
-         nil)
-        (t
-         (cons (expand-any-final-implies1 (car term-lst) wrld)
-               (expand-any-final-implies1-lst (cdr term-lst) wrld)))))
-
- )
-
-(defun expand-any-final-implies (cl wrld)
-
-; Cl is a clause (a list of ACL2 terms representing a goal) about to
-; enter preprocessing.  If the final term contains an 'IMPLIES, we
-; expand those IMPLIES here.  This change in the handling of IMPLIES
-; (as well as several others) is caused by the introduction of
-; assume-true-false-if.  See the mini-essay at assume-true-false-if.
-
-; Note that we fail to report the fact that we used the definition
-; of IMPLIES.
-
-; Note also that we do not use expand-some-non-rec-fns here.  We want
-; to preserve the meaning of 'HIDE and expand an 'IMPLIES inside of
-; a lambda.
-
-  (cond ((null cl)  ; This should not happen.
-         nil)
-        ((null (cdr cl))
-         (list (expand-any-final-implies1 (car cl) wrld)))
-        (t
-         (cons (car cl)
-               (expand-any-final-implies (cdr cl) wrld)))))
-
-(defun rw-cache-state (wrld)
-  (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
-    (cond (pair (cdr pair))
-          (t *default-rw-cache-state*))))
-
-(defmacro make-rcnst (ens wrld state &rest args)
-
-; (Make-rcnst ens w state) will make a rewrite-constant that is the result of
-; filling in *empty-rewrite-constant* with a few obviously necessary values,
-; such as the global-enabled-structure as the :current-enabled-structure.  Then
-; it additionally loads user supplied values specified by alternating
-; keyword/value pairs to override what is otherwise created.  E.g.,
-
-; (make-rcnst ens w state :expand-lst lst)
-
-; will make a rewrite-constant that is like the default one except that it will
-; have lst as the :expand-lst.
-
-; Note: Wrld and ens are used in the "default" setting of certain fields.
-
-; Warning: wrld could be evaluated several times.  So it should be an
-; inexpensive expression, such as a variable or (w state).
-
-  `(change rewrite-constant
-           (change rewrite-constant
-                   *empty-rewrite-constant*
-                   :current-enabled-structure ,ens
-                   :oncep-override (match-free-override ,wrld)
-                   :case-split-limitations (case-split-limitations ,wrld)
-                   :forbidden-fns (forbidden-fns ,wrld ,state)
-                   :nonlinearp (non-linearp ,wrld)
-                   :backchain-limit-rw (backchain-limit ,wrld :rewrite)
-                   :rw-cache-state (rw-cache-state ,wrld))
-           ,@args))
-
-; We now finish the development of tau-clause...  To recap our story so far: In
-; the file tau.lisp we defined everything we need to implement tau-clause
-; except for its connection to type-alist and the linear pot-lst.  Now we can
-; define tau-clause.
-
-(defun cheap-type-alist-and-pot-lst (cl ens wrld state)
-
-; Given a clause cl, we build a type-alist and linear pot-lst with all of the
-; literals in cl assumed false.  The pot-lst is built with the cheap-linearp
-; flag on, which means we do not rewrite terms before turning them into polys
-; and we add no linear lemmas.  We ensure that the type-alist has no
-; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
-; not ignoring assumptions and forced hypotheses, you will note that in
-; relieve-dependent-hyps, after calling type-set, we check that no such entries
-; are in the returned ttree.  We return (mv contradictionp type-alist pot-lst)
-
-  (mv-let (contradictionp type-alist ttree)
-          (type-alist-clause cl nil nil nil ens wrld nil nil)
-          (cond
-           ((or (tagged-objectsp 'assumption ttree)
-                (tagged-objectsp 'fc-derivation ttree))
-            (mv (er hard 'cheap-type-alist-and-pot-lst
-                    "Assumptions and/or fc-derivations were found in the ~
-                     ttree constructed by CHEAP-TYPE-ALIST-AND-POT-LST.  This ~
-                     is supposedly impossible!")
-                nil nil))
-           (contradictionp
-            (mv t nil nil))
-           (t (mv-let (new-step-limit provedp pot-lst)
-                      (setup-simplify-clause-pot-lst1
-                       cl nil type-alist
-                       (make-rcnst ens wrld state
-                                   :force-info 'weak
-                                   :cheap-linearp t)
-                       wrld state *default-step-limit*)
-                      (declare (ignore new-step-limit))
-                      (cond
-                       (provedp
-                        (mv t nil nil))
-                       (t (mv nil type-alist pot-lst))))))))
-
-(defconst *tau-ttree*
-  (add-to-tag-tree 'lemma
-                   '(:executable-counterpart tau-system)
-                   nil))
-
-(defun tau-clausep (clause ens wrld state calist)
-
-; This function returns (mv flg ttree), where if flg is t then clause is true.
-; The ttree, when non-nil, is just the *tau-ttree*.
-
-; If the executable-counterpart of tau is disabled, this function is a no-op.
-
-  (cond
-   ((enabled-numep *tau-system-xnume* ens)
-    (mv-let
-     (contradictionp type-alist pot-lst)
-     (cheap-type-alist-and-pot-lst clause ens wrld state)
-     (cond
-      (contradictionp
-       (mv t *tau-ttree* calist))
-      (t
-       (let ((triples (merge-sort-car-<
-                       (annotate-clause-with-key-numbers clause
-                                                         (len clause)
-                                                         0 wrld))))
-         (mv-let
-          (flg calist)
-          (tau-clause1p triples nil type-alist pot-lst
-                        ens wrld calist)
-          (cond
-           ((eq flg t)
-            (mv t *tau-ttree* calist))
-           (t (mv nil nil calist)))))))))
-   (t (mv nil nil calist))))
-
-(defun tau-clausep-lst-rec (clauses ens wrld ans ttree state calist)
-
-; We return (mv clauses' ttree) where clauses' are provably equivalent to
-; clauses under the tau rules and ttree is either the tau ttree or nil
-; depending on whether anything changed.  Note that this function knows that if
-; tau-clause returns non-nil ttree it is *tau-ttree*: we just OR the ttrees
-; together, not CONS-TAG-TREES them!
-
-  (cond
-   ((endp clauses)
-    (mv (revappend ans nil) ttree calist))
-   (t (mv-let
-       (flg1 ttree1 calist)
-       (tau-clausep (car clauses) ens wrld state calist)
-       (prog2$
-
-; If the time-tracker call below is changed, update :doc time-tracker
-; accordingly.
-
-        (time-tracker :tau :print?)
-        (tau-clausep-lst-rec (cdr clauses) ens wrld
-                             (if flg1
-                                 ans
-                               (cons (car clauses) ans))
-                             (or ttree1 ttree)
-                             state calist))))))
-
-(defun tau-clausep-lst (clauses ens wrld ans ttree state calist)
-
-; If the time-tracker calls below are changed, update :doc time-tracker
-; accordingly.
-
-  (prog2$ (time-tracker :tau :start!)
-          (mv-let
-           (clauses ttree calist)
-           (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)
-           (prog2$ (time-tracker :tau :stop)
-                   (mv clauses ttree calist)))))
-
-(defun prettyify-clause-simple (cl)
-
-; This variant of prettyify-clause does not call untranslate.
-
-  (cond ((null cl) nil)
-        ((null (cdr cl)) cl)
-        ((null (cddr cl))
-         (fcons-term* 'implies
-                      (dumb-negate-lit (car cl))
-                      (cadr cl)))
-        (t (fcons-term* 'implies
-                        (conjoin (dumb-negate-lit-lst (butlast cl 1)))
-                        (car (last cl))))))
-
-(defun preprocess-clause (cl hist pspv wrld state step-limit)
-
-; This is the first "real" clause processor (after a little remembered
-; apply-top-hints-clause) in the waterfall.  Its arguments and values are the
-; standard ones, except that it takes a step-limit and returns a new step-limit
-; in the first position.  We expand abbreviations and clausify the clause cl.
-; For mainly historic reasons, expand-abbreviations and clausify-input operate
-; on terms.  Thus, our first move is to convert cl into a term.
-
-  (let ((rcnst (access prove-spec-var pspv :rewrite-constant)))
-    (mv-let
-      (built-in-clausep ttree)
-      (cond
-       ((or (eq (car (car hist)) 'simplify-clause)
-            (eq (car (car hist)) 'settled-down-clause))
-
-; If the hist shows that cl has just come from simplification, there is no
-; need to check that it is built in, because the simplifier does that.
-
-        (mv nil nil))
-       (t
-        (built-in-clausep 'preprocess-clause
-                          cl
-                          (access rewrite-constant
-                                  rcnst
-                                  :current-enabled-structure)
-                          (access rewrite-constant
-                                  rcnst
-                                  :oncep-override)
-                          wrld
-                          state)))
-
-; Ttree is known to be 'assumption free.
-
-      (cond
-       (built-in-clausep
-        (mv step-limit 'hit nil ttree pspv))
-       (t
-
-; Here is where we expand the "original" IMPLIES in the conclusion but
-; leave any IMPLIES in the hypotheses.  These IMPLIES are thought to
-; have been introduced by :USE hints.
-
-; Historical Note: We used to call possibly-clean-up-dirty-lambda-objects here
-; but that was wrong because we don't have hyps to establish warrants and
-; preprocess-clause shouldn't be applying conditional rewrite rules or forcing
-; things anyway.
-
-        (let ((term (disjoin (expand-any-final-implies cl wrld))))
-          (sl-let (term ttree)
-                  (expand-abbreviations term nil
-                                        *geneqv-iff* nil
-                                        (access rewrite-constant
-                                                rcnst
-                                                :fns-to-be-ignored-by-rewrite)
-                                        (rewrite-stack-limit wrld)
-                                        step-limit
-                                        (access rewrite-constant
-                                                rcnst
-                                                :current-enabled-structure)
-                                        wrld state nil)
-                  (sl-let (clauses ttree)
-                          (clausify-input term
-                                          (access rewrite-constant
-                                                  rcnst
-                                                  :fns-to-be-ignored-by-rewrite)
-                                          (access rewrite-constant
-                                                  rcnst
-                                                  :current-enabled-structure)
-                                          wrld
-                                          state
-                                          ttree
-                                          step-limit)
-;;;                         (let ((clauses
-;;;                                (expand-some-non-rec-fns-in-clauses
-;;;                                 '(iff implies)
-;;;                                 clauses
-;;;                                 wrld)))
-
-; Previous to Version_2.6 we had written:
-
-; ; Note: Once upon a time (in Version 1.5) we called "clausify-clause-set" here.
-; ; That function called clausify on each element of clauses and unioned the
-; ; results together, in the process naturally deleting tautologies as does
-; ; expand-some-non-rec-fns-in-clauses above.  But Version 1.5 caused Bishop a
-; ; lot of pain because many theorems would explode into case analyses, each of
-; ; which was then dispatched by simplification.  The reason we used a full-blown
-; ; clausify in Version 1.5 was that in was also into that version that we
-; ; introduced forcing rounds and the liberal use of force-flg = t.  But if we
-; ; are to force that way, we must really get all of our hypotheses out into the
-; ; open so that they can contribute to the type-alist stored in each assumption.
-; ; For example, in Version 1.4 the concl of (IMPLIES hyps concl) was rewritten
-; ; first without the hyps being manifest in the type-alist since IMPLIES is a
-; ; function.  Not until the IMPLIES was opened did the hyps become "governors"
-; ; in this sense.  In Version 1.5 we decided to throw caution to the wind and
-; ; just clausify the clausified input.  Well, it bit us as mentioned above and
-; ; we are now backing off to simply expanding the non-rec fns that might
-; ; contribute hyps.  But we leave the expansions in place rather than normalize
-; ; them out so that simplification has one shot on a small set (usually
-; ; singleton set) of clauses.
-
-; But the comment above is now irrelevant to the current situation.
-; Before commenting on the current situation, however, we point out that
-; in (admittedly light) testing the original call to
-; expand-some-non-rec-fns-in-clauses in its original context acted as
-; the identity.  This seems reasonable because 'iff and 'implies were
-; expanded in expand-abbreviations.
-
-; We now expand the 'implies from the original theorem (but not the
-; implies from a :use hint) in the call to expand-any-final-implies.
-; This performs the expansion whose motivations are mentioned in the
-; old comments above, but does not interfere with the conclusions
-; of a :use hint.  See the mini-essay
-
-; Mini-Essay on Assume-true-false-if and Implies
-; or
-; How Strengthening One Part of a Theorem Prover Can Weaken the Whole.
-
-; in type-set-b for more details on this latter criterion.
-
-                          (let ((tau-completion-alist
-                                 (access prove-spec-var pspv :tau-completion-alist)))
-                            (mv-let
-                              (clauses1 ttree1 new-tau-completion-alist)
-                              (if (or (null hist)
-
-; If (null (cdr hist)) and (null (cddr hist)) are tested in this disjunction,
-; then tau is tried during the first three simplifications and then again when
-; the clause settles down.  Call this the ``more aggressive'' approach.  If
-; they are not tested, tau is tried only on the first simplification and upon
-; settling down.  Call this ``less aggressive.''  There are, of course, proofs
-; where the more aggressive use of tau speeds things up.  But of course it
-; slows down many more proofs.  Overall, experiments on the regression suggest
-; that the more aggressive approach slows total reported book certification
-; time down by about 1.5% compared to the less aggressive approach.  However, we
-; think it might be worth it as more tau-based proofs scripts are developed.
-
-                                      (null (cdr hist))
-                                      (null (cddr hist))
-                                      (eq (car (car hist)) 'settled-down-clause))
-                                  (let ((ens (access rewrite-constant
-                                                     rcnst
-                                                     :current-enabled-structure)))
-                                    (if (enabled-numep *tau-system-xnume* ens)
-                                        (tau-clausep-lst clauses
-                                                         ens
-                                                         wrld
-                                                         nil
-                                                         nil
-                                                         state
-                                                         tau-completion-alist)
-                                        (mv clauses nil tau-completion-alist)))
-                                  (mv clauses nil tau-completion-alist))
-                              (let ((pspv (if (equal tau-completion-alist
-                                                     new-tau-completion-alist)
-                                              pspv
-                                              (change prove-spec-var pspv
-                                                      :tau-completion-alist
-                                                      new-tau-completion-alist))))
-                                (cond
-                                 ((equal clauses1 (list cl))
-
-; In this case, preprocess-clause has made no changes to the clause.
-
-                                  (mv step-limit 'miss nil nil nil))
-                                 ((and (consp clauses1)
-                                       (null (cdr clauses1))
-                                       (no-op-histp hist)
-                                       (equal (prettyify-clause-simple
-                                               (car clauses1))
-                                              (access prove-spec-var pspv
-                                                      :user-supplied-term)))
-
-; In this case preprocess-clause has produced a singleton set of clauses whose
-; only element is the translated user input.  For example, the user might have
-; invoked defthm on (implies p q) and preprocess has managed to to produce the
-; singleton set of clauses containing {(not p) q}.  This is a valuable step in
-; the proof of course.  However, users complain when we report that (IMPLIES P
-; Q) -- the displayed goal -- is reduced to (IMPLIES P Q) -- the
-; prettyification of the output.
-
-; We therefore take special steps to hide this transformation from the
-; user without changing the flow of control through the waterfall.  In
-; particular, we will insert into the ttree the tag
-; 'hidden-clause with (irrelevant) value t.  In subsequent places
-; where we print explanations and clauses to the user we will look for
-; this tag.
-
-; At one point we called prettyify-clause below instead of
-; prettyify-clause-simple, and compared the (untranslated) result to the
-; (untranslated) displayed-goal of the pspv.  But we have decided to avoid the
-; expense of untranslating, especially since often the potentially-confusing
-; printing will never take place!  Let's elaborate.  Suppose that the input
-; user-level term t1 translates to termp tt1, and suppose that the result of
-; preprocessing the clause set (list (list tt1)) is a single clause for which
-; prettyify-clause-simple returns the (translated) term tt1.  Then we are in
-; this case and we set 'hidden-clause in the returned ttree.  However, suppose
-; that instead prettyify-clause-simple returns tt2 not equal to tt1, although
-; tt2 nevertheless untranslates (perhaps surprisingly) to t1.  Then we are not
-; in this case, and Goal' will print exactly as goal.  This is unfortunate, but
-; we have seen (back in 2003!) that kind of invisible transformation happen for
-; other than Goal:
-
-;   Subgoal 3
-;   (IMPLIES (AND (< I -1)
-;                 (ACL2-NUMBERP J)
-;                 ...)
-;            ...)
-;
-;   By case analysis we reduce the conjecture to
-;
-;   Subgoal 3'
-;   (IMPLIES (AND (< I -1)
-;                 (ACL2-NUMBERP J)
-;                 ...)
-;            ...)
-
-; As of this writing we do not handle this sort of situation, not even -- after
-; Version_7.0, when we started using prettyify-clause-simple to avoid the cost
-; of untranslation, instead of prettyify-clause -- for the case considered
-; here, transitioning from Goal to Goal' by preprocess-clause.  Perhaps we will
-; do such a check for all preprocess-clause transformations, but only when
-; actually printing output (so as to avoid the overhead of untranslation).
-
-                                  (mv step-limit
-                                      'hit
-                                      clauses1
-                                      (add-to-tag-tree
-                                       'hidden-clause t
-                                       (cons-tag-trees ttree1 ttree))
-                                      pspv))
-                                 (t (mv step-limit
-                                        'hit
-                                        clauses1
-                                        (cons-tag-trees ttree1 ttree)
-                                        pspv))))))))))))))
-
-; And here is the function that reports on a successful preprocessing.
-
-(defun tilde-*-preprocess-phrase (ttree)
-
-; This function is like tilde-*-simp-phrase but knows that ttree was
-; constructed by preprocess-clause and hence is based on abbreviation
-; expansion rather than full-fledged rewriting.
-
-; Warning:  The function apply-top-hints-clause-msg1 knows
-; that if the (car (cddddr &)) of the result is nil then nothing but
-; case analysis was done!
-
-  (mv-let (message-lst char-alist)
-          (tilde-*-simp-phrase1
-           (extract-and-classify-lemmas ttree '(implies not iff) nil)
-
-; Note: The third argument to extract-and-classify-lemmas is the list
-; of forced runes, which we assume to be nil in preprocessing.  If
-; this changes, see the comment in fertilize-clause-msg1.
-
-           t)
-          (list* "case analysis"
-                 "~@*"
-                 "~@* and "
-                 "~@*, "
-                 message-lst
-                 char-alist)))
-
-(defun tilde-*-raw-preprocess-phrase (ttree punct)
-
-; See tilde-*-preprocess-phrase.  Here we print for a non-nil value of state
-; global 'raw-proof-format.
-
-  (let ((runes (all-runes-in-ttree ttree nil)))
-    (mv-let (message-lst char-alist)
-            (tilde-*-raw-simp-phrase1
-             runes
-             nil ; forced-runes
-             punct
-             '(implies not iff) ; ignore-lst
-             "" ; phrase
-             nil)
-            (list* (concatenate 'string "case analysis"
-                                (case punct
-                                  (#\, ",")
-                                  (#\. ".")
-                                  (otherwise "")))
-                   "~@*"
-                   "~@* and "
-                   "~@*, "
-                   message-lst
-                   char-alist))))
-
-(defun preprocess-clause-msg1 (signal clauses ttree pspv state)
-
-; This function is one of the waterfall-msg subroutines.  It has the
-; standard arguments of all such functions: the signal, clauses, ttree
-; and pspv produced by the given processor, in this case
-; preprocess-clause.  It produces the report for this step.
-
-  (declare (ignore signal pspv))
-  (let ((raw-proof-format (f-get-global 'raw-proof-format state)))
-    (cond ((tag-tree-occur 'hidden-clause t ttree)
-
-; If this preprocess clause is to be hidden, e.g., because it transforms
-; (IMPLIES P Q) to {(NOT P) Q}, we print no message.  Note that this is
-; just part of the hiding.  Later in the waterfall, when some other processor
-; has successfully hit our output, that output will be printed and we
-; need to stop that printing too.
-
-           state)
-          ((and raw-proof-format
-                (null clauses))
-           (fms "But preprocess reduces the conjecture to T, by ~*0~|"
-                (list (cons #\0 (tilde-*-raw-preprocess-phrase ttree #\.)))
-                (proofs-co state)
-                state
-                (term-evisc-tuple nil state)))
-          ((null clauses)
-           (fms "But we reduce the conjecture to T, by ~*0.~|"
-                (list (cons #\0 (tilde-*-preprocess-phrase ttree)))
-                (proofs-co state)
-                state
-                (term-evisc-tuple nil state)))
-          (raw-proof-format
-           (fms "Preprocess reduces the conjecture to ~#1~[~x2~/the ~
-                 following~/the following ~n3 conjectures~], by ~*0~|"
-                (list (cons #\0 (tilde-*-raw-preprocess-phrase ttree #\.))
-                      (cons #\1 (zero-one-or-more clauses))
-                      (cons #\2 t)
-                      (cons #\3 (length clauses)))
-                (proofs-co state)
-                state
-                (term-evisc-tuple nil state)))
-          (t
-           (fms "By ~*0 we reduce the conjecture to~#1~[~x2.~/~/ the ~
-                 following ~n3 conjectures.~]~|"
-                (list (cons #\0 (tilde-*-preprocess-phrase ttree))
-                      (cons #\1 (zero-one-or-more clauses))
-                      (cons #\2 t)
-                      (cons #\3 (length clauses)))
-                (proofs-co state)
-                state
-                (term-evisc-tuple nil state))))))
-
 
 ; Section:  PUSH-CLAUSE and The Pool
 
@@ -2553,7 +1176,7 @@
 ; are not stobjs and the st_ik are all stobjs.  Since we want to rule out
 ; stobjs, we therefore check that stobjs-out is (nil) or (nil nil).
 
-     (not (all-nils stobjs-out))
+     (not (all-nils-or-dfs stobjs-out))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table
                                       (w state))))))
@@ -3567,9 +2190,8 @@
 ; (defun show-gag-state (cl-id gag-state state)
 ;   (let* ((top-stack (access gag-state gag-state :top-stack))
 ;          (sub-stack (access gag-state gag-state :sub-stack))
-;          (clause-id (access gag-state gag-state :active-cl-id))
-;          (printed-p (access gag-state gag-state
-;                             :active-printed-p)))
+;          (abort-stack (abort-info-stack (access gag-state gag-state :abort-info)))
+;          (clause-id (access gag-state gag-state :active-cl-id)))
 ;     (pprogn (fms "********** Gag state from handling ~@0 (active ~
 ;                   clause id: ~#1~[<none>~/~@2~])~%"
 ;                  (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
@@ -3581,6 +2203,8 @@
 ;             (show-gag-stack top-stack state)
 ;             (fms "****** Sub-stack:~%" nil *standard-co* state nil)
 ;             (show-gag-stack sub-stack state)
+;             (fms "****** Abort-stack:~%" nil *standard-co* state nil)
+;             (show-gag-stack abort-stack state)
 ;             (fms "****** Active-printed-p: ~x0"
 ;                  (list (cons #\0 (access gag-state gag-state
 ;                                          :active-printed-p)))
@@ -3588,6 +2212,9 @@
 ;             (fms "****** Forcep: ~x0"
 ;                  (list (cons #\0 (access gag-state gag-state
 ;                                          :forcep)))
+;                  *standard-co* state nil)
+;             (fms "****** Abort-cause: ~x0"
+;                  (list (cons #\0 (abort-info-cause gag-state)))
 ;                  *standard-co* state nil)
 ;             (fms "******************************~|" nil *standard-co* state
 ;                  nil))))
@@ -3600,6 +2227,28 @@
 ;                       state)
 ;     state))
 ; )
+
+(defun rune-names-from-assumptions-1 (assumnotes names)
+  (cond ((endp assumnotes) names)
+        (t (rune-names-from-assumptions-1
+            (cdr assumnotes)
+            (let* ((rune (access assumnote (car assumnotes) :rune))
+                   (name (and (consp rune)
+                              (base-symbol rune))))
+              (cond ((and (consp rune)
+                          name
+                          (not (member-eq name names)))
+                     (cons name names))
+                    (t names)))))))
+
+(defun rune-names-from-assumptions (assumptions names)
+  (cond ((endp assumptions)
+         names)
+        (t (rune-names-from-assumptions
+            (cdr assumptions)
+            (rune-names-from-assumptions-1
+             (access assumption (car assumptions) :assumnotes)
+             names)))))
 
 (defun waterfall-update-gag-state (cl-id clause proc signal ttree pspv
                                          state)
@@ -3630,7 +2279,7 @@
          (new-active-p ; true if we are to push a new gag-info frame
           (and (null active-cl-id)
                (null (cdr pool-lst)) ; not in a sub-induction
-               (or push-or-bye-p ; even if the next test fails
+               (or push-or-bye-p     ; even if the next test fails
                    (member-eq proc (f-get-global 'checkpoint-processors
                                                  state)))))
          (new-frame (and new-active-p
@@ -3656,10 +2305,16 @@
                       (t gagst)))
          (forcep-msg (and new-forcep
                           msg-p
-                          (msg "Forcing Round ~x0 is pending (caused first by ~
-                                ~@1)."
-                               (1+ (access clause-id cl-id :forcing-round))
-                               (tilde-@-clause-id-phrase cl-id)))))
+                          (let ((names
+                                 (rune-names-from-assumptions
+                                  (tagged-objects 'assumption ttree)
+                                  nil)))
+                            (msg "Forcing Round ~x0 is pending (caused first ~
+                                  by ~#1~[~/applying ~&2 to ~]~@3)."
+                                 (1+ (access clause-id cl-id :forcing-round))
+                                 (if names 1 0)
+                                 names
+                                 (tilde-@-clause-id-phrase cl-id))))))
     (cond
      (push-or-bye-p
       (let* ((top-ci (assert$ (consp new-stack)
@@ -3706,18 +2361,18 @@
          (abort-p
           (mv (cond ((equal (tagged-objects 'abort-cause ttree)
                             '(revert))
-                     (change gag-state gagst :abort-stack new-stack))
+                     (change gag-state gagst :abort-info new-stack))
                     ((equal (tagged-objects 'abort-cause ttree)
                             '(empty-clause))
-                     (change gag-state gagst :abort-stack 'empty-clause))
+                     (update-gag-info-for-abort 'empty-clause gagst))
                     ((member-equal (tagged-objects 'abort-cause ttree)
                                    '((do-not-induct)
                                      (do-not-induct-otf-flg-override)))
-                     (change gag-state gagst :abort-stack 'do-not-induct))
+                     (update-gag-info-for-abort 'do-not-induct gagst))
                     ((equal (tagged-objects 'abort-cause ttree)
                             '(induction-depth-limit-exceeded))
-                     (change gag-state gagst :abort-stack
-                             'induction-depth-limit-exceeded))
+                     (update-gag-info-for-abort 'induction-depth-limit-exceeded
+                                                gagst))
                     (t gagst))
               (and msg-p
                    (msg "~@0~@1"
@@ -4074,10 +2729,13 @@
     (increment-timer 'prove-time state)
     (fms "~@0~|~q1.~|"
          (list (cons #\0 (tilde-@-clause-id-phrase cl-id))
-               (cons #\1 (prettyify-clause
-                          clause
-                          (let*-abstractionp state)
-                          (w state))))
+               (cons #\1 (if (eq (f-get-global 'raw-proof-format state)
+                                 :clause)
+                             clause
+                           (prettyify-clause
+                            clause
+                            (let*-abstractionp state)
+                            (w state)))))
          (proofs-co state)
          state
          (term-evisc-tuple nil state))
@@ -5445,76 +4103,6 @@
                                             (erase-rw-cache-from-pspv new-pspv)))))
                     state))))))))
 
-#-acl2-loop-only
-(defvar *iprint-read-state*
-
-; Possible values are:
-
-; nil      - no requirement on current iprint index
-; t        - either all indices must exceed iprint-last-index, or none does
-; (n . <=) - n, already read, is <= iprint-last-index; index must be too
-; (n .  >) - n, already read, is  > iprint-last-index; index must be too
-
-; The value is initially nil.  At a top-level read, it is set to nil if
-; iprint-fal is nil, else to t.  For the first index i that is read when the
-; value is t, we set the value to <= if (<= i iprint-last-index) and to >
-; otherwise.
-
-  nil)
-
-#-acl2-loop-only
-(defun iprint-oracle-updates-raw (state)
-
-; Warning: Keep in sync with iprint-oracle-updates.
-
-  (let* ((ar *wormhole-iprint-ar*))
-    (when ar
-      (f-put-global 'iprint-ar (compress1 'iprint-ar ar) state)
-      (f-put-global 'iprint-fal *wormhole-iprint-fal* state)
-      (f-put-global 'iprint-hard-bound *wormhole-iprint-hard-bound* state)
-      (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
-      (setq *wormhole-iprint-ar* nil))
-    (setq *iprint-read-state*
-          (if (f-get-global 'iprint-fal state)
-              t
-            nil)))
-  state)
-
-(defun iprint-oracle-updates (state)
-
-; Warning: Keep in sync with iprint-oracle-updates-raw.
-
-  #+acl2-loop-only
-  (mv-let (erp val state)
-    (read-acl2-oracle state)
-    (declare (ignore erp))
-
-; If we intend to reason about this function, then we might want to check that
-; val is a reasonable value.  But that seems not to be important, since very
-; little reasoning would be possible anyhow for this function.
-
-    (let ((val (fix-true-list val)))
-      (pprogn (f-put-global 'iprint-ar
-                            (nth 0 val)
-                            state)
-              (f-put-global 'iprint-hard-bound
-                            (nfix (nth 1 val))
-                            state)
-              (f-put-global 'iprint-soft-bound
-                            (nfix (nth 2 val))
-                            state)
-              (f-put-global 'iprint-fal
-                            (nth 3 val)
-                            state)
-              state)))
-  #-acl2-loop-only
-  (iprint-oracle-updates-raw state))
-
-(defun iprint-oracle-updates@par ()
-  #-acl2-loop-only
-  (iprint-oracle-updates-raw *the-live-state*)
-  nil)
-
 (defun@par waterfall-step (processor cl-id clause hist pspv wrld ctx state
                                      step-limit)
 
@@ -5605,36 +4193,65 @@
                                  step-limit)
             (mv@par step-limit signal clauses ttree new-pspv state)))))
    (pprogn@par
-
-; Since wormholes (in particular, brr wormholes) don't change the global values
-; of the iprint structures, we make such changes here so that iprinting done
-; in brr is reflected in the global state.
-
     (serial-first-form-parallel-second-form@par
-     (iprint-oracle-updates state)
-     (iprint-oracle-updates@par))
+
+; Since wormholes (in particular, brr wormholes) don't change the values of the
+; state globals that implement iprinting, we formerly called
+; iprint-oracle-updates as shown in a comment below, so that iprinting done in
+; brr is reflected in the global state.  However, this is not necessary.  To
+; see why, first note that printing with evisceration always goes through
+; eviscerate-top or eviscerate-stobjs-top, and these invoke
+; iprint-oracle-updates when necessary.  So the only other reason to consider
+; calling iprint-oracle-updates here is for the reading of forms #@n# printed
+; in the brr wormhole.  But such reads would presumably take place by way of
+; read-object, which has its own call of iprint-oracle-updates.
+
+; We leave a version of iprint-oracle-updates for ACL(p), however; perhaps it
+; could be omitted too, at least when waterfall-parallelism is not enabled, but
+; we haven't thought that through.
+
+; We do however invoke brr-evisc-tuple-oracle-update, which is necessary either
+; here or in ld-read-command, or both, to avoid failures for certification of
+; community book books/demos/brr-test-book.
+
+     (brr-evisc-tuple-oracle-update state)
+     (prog2$ (iprint-oracle-updates@par)
+             (brr-evisc-tuple-oracle-update@par)))
     (cond
-     (erp ; from out-of-time or clause-processor failure; treat as 'error signal
-      (mv-let@par (erp2 val state)
-                  (er@par soft ctx "~@0" erp)
-                  (declare (ignore erp2 val))
-                  (pprogn@par
-                   (assert$
-                    (null ttree)
-                    (mv-let@par
-                     (erp3 val state)
-                     (accumulate-ttree-and-step-limit-into-state@par
-                      (add-to-tag-tree! 'abort-cause
-                                        (if (equal erp *interrupt-string*)
-                                            'interrupt
-                                          'time-limit-reached)
-                                        nil)
-                      step-limit
-                      state)
-                     (declare (ignore val))
-                     (assert$ (null erp3)
-                              (state-mac@par))))
-                   (mv@par step-limit 'error nil nil nil nil state))))
+     (erp ; from out-of-time or clause-processor fail; treat as 'error signal
+      (let ((time-limit-reached-p
+
+; As noted in comments above the definition of *acl2-time-limit*, the variable
+; *acl2-time-limit* is nil by default, but is set to a positive time limit (in
+; units of internal-time-units-per-second) by with-prover-time-limit, and is
+; set to 0 to indicate that a proof has been interrupted (see our-abort).
+
+             (not (equal erp *interrupt-string*))))
+        (mv-let@par (erp2 val state)
+                    (er-soft@par ctx
+                                 (if time-limit-reached-p
+                                     "Time-limit"
+                                   "Interrupt")
+                                 "~@0"
+                                 erp)
+                    (declare (ignore erp2 val))
+                    (pprogn@par
+                     (assert$
+                      (null ttree)
+                      (mv-let@par
+                       (erp3 val state)
+                       (accumulate-ttree-and-step-limit-into-state@par
+                        (add-to-tag-tree! 'abort-cause
+                                          (if time-limit-reached-p
+                                              'time-limit-reached
+                                            'interrupt)
+                                          nil)
+                        step-limit
+                        state)
+                       (declare (ignore val))
+                       (assert$ (null erp3)
+                                (state-mac@par))))
+                     (mv@par step-limit 'error nil nil nil nil state)))))
      (t
       (pprogn@par ; account for bddnote in case we do not have a hit
        (cond ((and (eq processor 'apply-top-hints-clause)
@@ -5937,7 +4554,7 @@
            (t
             (io?-prove@par
              (goal-already-printed-p)
-             (fms "[Note:  A hint was supplied for our processing of the goal ~
+             (fms "[Note:  A hint was supplied for the goal ~
                    ~#0~[above~/below~/above, provided by a :backtrack hint ~
                    superseding ~@1~].  Thanks!]~%"
                   (list
@@ -6282,7 +4899,7 @@
         ((fquotep term) n)
         ((flambda-applicationp term)
          (term-difficulty1-lst (fargs term) wrld
-                               (term-difficulty1 (lambda-body term)
+                               (term-difficulty1 (lambda-body (ffn-symb term))
                                                  wrld (1+ n))))
         ((eq (ffn-symb term) 'not)
          (term-difficulty1 (fargn term 1) wrld n))
@@ -6975,7 +5592,7 @@
   form)
 
 #+(and acl2-par (not acl2-loop-only))
-(defparameter *acl2p-starting-proof-time* 0.0d0)
+(defparameter *acl2p-starting-proof-time* 0.0D0)
 
 #+acl2-par
 (defun waterfall1-wrapper@par-before (cl-id state)
@@ -9354,89 +7971,16 @@
    (pprogn (f-put-global 'last-step-limit step-limit state)
            (mv erp val state))))
 
-(defun print-summary-on-error (state)
-
-; This function is called only when a proof attempt causes an error rather than
-; merely returning (mv non-nil val state); see prove-loop0.  We formerly called
-; this function pstack-and-gag-state, but now we also print the runes, and
-; perhaps we will print additional information in the future.
-
-; An alternative approach, which might avoid the need for this function, is
-; represented by the handling of *acl2-time-limit* in our-abort.  The idea
-; would be to continue automatically from the interrupt, but with a flag saying
-; that the proof should terminate immediately.  Then any proof procedure that
-; checks for this flag would return with some sort of error.  If no such proof
-; procedure is invoked, then a second interrupt would immediately take effect.
-; An advantage of such an alternative approach is that it would use a normal
-; control flow, updating suitable state globals so that a normal call of
-; print-summary could be made.  We choose, however, not to pursue this
-; approach, since it might risk annoying users who find that they need to
-; provide two interrupts, and because it seems inherently a bit tricky and
-; perhaps easy to get wrong.
-
-; We conclude with remarks for the case that waterfall parallelism is enabled.
-
-; When the user has to interrupt a proof twice before it quits, the prover will
-; call this function.  Based on observation by Rager, the pstack tends to be
-; long and irrelevant in this case.  So, we disable the printing of the pstack
-; when waterfall parallelism is enabled and waterfall-printing is something
-; other than :full.  We considered not involving the current value for
-; waterfall-printing, but using the :full setting is a strange thing to begin
-; with.  So, we make the decision that if a user goes to the effort to use the
-; :full waterfall-printing mode, that maybe they'd like to see the pstack after
-; all.
-
-; The below #+acl2-par change in definition also results in not printing
-; gag-state under these conditions.  However, this is effectively a no-op,
-; because the parallel waterfall does not save anything to gag-state anyway.
-
-  (let ((chan (proofs-co state))
-        (acc-ttree (f-get-global 'accumulated-ttree state)))
-    (pprogn
-     (clear-event-data state)
-     (io? summary nil state (chan acc-ttree)
-          (pprogn
-           (newline chan state)
-           (print-rules-and-hint-events-summary acc-ttree state)
-           (print-system-attachments-summary state)))
-     (cond
-      #+acl2-par
-      ((and (f-get-global 'waterfall-parallelism state)
-            (not (eql (f-get-global 'waterfall-printing state) :full)))
-       state)
-      (t
-       (pprogn
-        (newline chan state)
-        (princ$ "Here is the current pstack [see :DOC pstack]:" chan state)
-        (mv-let (erp val state)
-                (pstack)
-                (declare (ignore erp val))
-                (save-and-print-gag-state state))))))))
-
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
 ; Warning: This function assumes that *acl2-time-limit* has already been
 ; let-bound in raw Lisp by bind-acl2-time-limit.
 
-; The perhaps unusual structure below is intended to invoke
-; print-summary-on-error only when there is a hard error such as an interrupt.
-; In the normal failure case, the pstack is not printed and the key checkpoint
-; summary (from the gag-state) is printed after the summary.
-
   (state-global-let*
    ((guard-checking-on nil) ; see the Essay on Guard Checking
     (in-prove-flg t))
-   (mv-let (interrupted-p erp-val state)
-           (acl2-unwind-protect
-            "prove-loop"
-            (mv-let (erp val state)
-                    (prove-loop1 0 nil clauses pspv hints ens wrld ctx
-                                 state)
-                    (mv nil (cons erp val) state))
-            (print-summary-on-error state)
-            state)
-           (cond (interrupted-p (mv t nil state))
-                 (t (mv (car erp-val) (cdr erp-val) state))))))
+   (prove-loop1 0 nil clauses pspv hints ens wrld ctx
+                state)))
 
 (defun prove-loop (clauses pspv hints ens wrld ctx state)
 
@@ -9539,7 +8083,6 @@
 
 (defun push-current-acl2-world (name state)
   (declare (xargs :guard (and (symbolp name)
-                              (f-boundp-global 'acl2-world-alist state)
                               (alistp (f-get-global 'acl2-world-alist state)))))
   (prog2$ (or (symbolp name) ; always true if guard is checked
               (er hard 'push-current-acl2-world
@@ -9554,7 +8097,6 @@
 
 (defun pop-current-acl2-world (name state)
   (declare (xargs :guard (and (symbolp name)
-                              (f-boundp-global 'acl2-world-alist state)
                               (alistp (f-get-global 'acl2-world-alist state))
                               (assoc-eq name (f-get-global 'acl2-world-alist
                                                            state)))))
@@ -9625,7 +8167,7 @@
 ; might have been two or three where an 8 hour day was put in.  We
 ; worked separately, "contracting" with one another to do the various
 ; parts and meeting to go over the code.  Bill Schelter was extremely
-; helpful in tuning akcl for us.  Several times we did massive
+; helpful in tuning akcl (later gcl) for us.  Several times we did massive
 ; rewrites as we changed the subset or discovered new programming
 ; styles.  During that period Moore went to the beach at Rockport one
 ; weekend, to Carlsbad Caverns for Labor Day, to the University of
@@ -9684,8 +8226,7 @@
           (prin1 term str)
           (terpri str)
           (force-output str))))
-    (progn$
-     (initialize-brr-stack state)
+    (prog2$
      (initialize-fc-wormhole-sites)
      (pprogn
       (f-put-global 'saved-output-reversed nil state)

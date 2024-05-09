@@ -162,9 +162,7 @@ clause-processors. They help ensure the soundness of Smtlink.</p>
     (declare (xargs :guard t))
     (change-smtlink-config (default-smt-cnf)
                            :smt-module    "RewriteExpt"
-                           :smt-class     "to_smt_w_expt"
-                           :smt-cmd       "python"
-                           :pythonpath    "")))
+                           :smt-class     "to_smt_w_expt")))
 
 (def-saved-event smtconf-expt-defattach-tutorial
   (defattach custom-smt-cnf my-smtlink-expt-config))

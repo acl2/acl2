@@ -1,4 +1,4 @@
-; Proof of correctness of expand-lambdas-in-term
+; Checking that NIL never appears as a variable in a term or list of terms
 ;
 ; Copyright (C) 2021-2022 Kestrel Institute
 ;
@@ -39,30 +39,32 @@
 
 (defthm-flag-free-vars-in-term
   (defthm not-member-equal-of-nil-and-free-vars-in-term
-    (implies (and (pseudo-termp term)
+    (implies (and ;(pseudo-termp term)
                   (no-nils-in-termp term))
              ;; This is weaker than (no-nils-in-termp term) because it doesn't
              ;; check lambda bodies:
              (not (member-equal nil (free-vars-in-term term))))
     :flag free-vars-in-term)
   (defthm not-member-equal-of-nil-and-free-vars-in-terms
-    (implies (and (pseudo-term-listp terms)
+    (implies (and ;(pseudo-term-listp terms)
                   (no-nils-in-termsp terms))
              (not (member-equal nil (free-vars-in-terms terms))))
     :flag free-vars-in-terms)
   :hints (("Goal" :expand ((FREE-VARS-IN-TERM TERM))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (
-
-                            free-vars-in-terms
-                            )
-                           ()))))
+           :in-theory (enable free-vars-in-terms))))
 
 (defthm no-nils-in-termp-when-symbolp
   (implies (symbolp term)
            (equal (no-nils-in-termp term)
                   (not (equal term nil))))
   :hints (("Goal" :in-theory (enable no-nils-in-termp))))
+
+(defthm no-nils-in-termsp-when-symbol-listp
+  (implies (symbol-listp terms)
+           (equal (no-nils-in-termsp terms)
+                  (not (member-equal nil terms))))
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp))))
 
 (defthm no-nils-in-termsp-of-remove-equal
   (implies (no-nils-in-termsp terms)
@@ -83,3 +85,29 @@
            (no-nils-in-termsp (intersection-equal terms1 terms2)))
   :hints (("Goal" :in-theory (enable no-nils-in-termsp
                                      intersection-equal))))
+
+(defthm no-nils-in-termsp-of-set-difference-equal
+  (implies (no-nils-in-termsp terms)
+           (no-nils-in-termsp (set-difference-equal terms terms2)))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
+
+(defthm no-nils-in-termsp-of-append
+  (equal (no-nils-in-termsp (append terms1 terms2))
+         (and (no-nils-in-termsp terms1)
+              (no-nils-in-termsp terms2)))
+  :hints (("Goal" :in-theory (enable append))))
+
+(make-flag no-nils-in-termp)
+
+;; Just use no-nils-in-termsp-when-symbol-listp
+;; (defthm-flag-no-nils-in-termp
+;;   (defthm no-nils-in-termsp-of-free-vars-in-term
+;;     (implies (no-nils-in-termp term)
+;;              (no-nils-in-termsp (free-vars-in-term term)))
+;;     :flag no-nils-in-termp)
+;;   (defthm no-nils-in-termsp-of-free-vars-in-terms
+;;     (implies (no-nils-in-termsp terms)
+;;              (no-nils-in-termsp (free-vars-in-terms terms)))
+;;     :flag no-nils-in-termsp)
+;;   :hints (("Goal" :expand (free-vars-in-terms terms)
+;;            :in-theory (enable free-vars-in-term no-nils-in-termsp))))

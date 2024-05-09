@@ -1,7 +1,7 @@
 ; Making Axe rules and rule-alists from formulas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -45,6 +45,7 @@
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 
 (in-theory (disable ilks-plist-worldp
                     plist-worldp)) ;move
@@ -130,55 +131,56 @@
 ;; Returns (mv erp processed-argument).
 ;;sample inputs: (QUOTEP SHIFT-AMOUNT), (NOT (QUOTEP X)), (IF (QUOTEP K) (QUOTEP SIZE) 'NIL)
 ;;handles a nest of IFs and NOTs with constants and calls to quotep at the leaves
-(defund process-syntaxp-argument (term rule-symbol)
+(defund convert-syntaxp-argument-for-axe (term rule-symbol)
   (declare (xargs :guard (pseudo-termp term)))
   (if (not (consp term)) ;;maybe it's okay to allow a variable here?
-      (prog2$ (er hard? 'process-syntaxp-argument "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
+      (prog2$ (er hard? 'convert-syntaxp-argument-for-axe "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
               (mv (erp-t) nil))
-    (if (myquotep term) ;quoted constant
+    (if (myquotep term) ;quoted constant (may arise from the translation of an IF)
         (mv (erp-nil) term)
       (let ((fn (ffn-symb term)))
-        (if (and (eq 'quotep fn) ; (quotep <var>), convert to axe-quotep (why?)
+        (if (and (eq 'quotep fn) ; (quotep <var>)
                  (= 1 (len (fargs term)))
                  (symbolp (first (fargs term)))
                  ;; (not (eq 'dag-array (first (fargs term)))) ;todo: think about this?
                  )
+            ;; Converts quotep to axe-quotep (faster):
             (mv (erp-nil) `(axe-quotep ,(first (fargs term))))
           (if (eq fn 'if)
-              (b* (((mv erp processed-test) (process-syntaxp-argument (farg1 term) rule-symbol))
+              (b* (((mv erp processed-test) (convert-syntaxp-argument-for-axe (farg1 term) rule-symbol))
                    ((when erp) (mv erp nil))
-                   ((mv erp processed-then) (process-syntaxp-argument (farg2 term) rule-symbol))
+                   ((mv erp processed-then) (convert-syntaxp-argument-for-axe (farg2 term) rule-symbol))
                    ((when erp) (mv erp nil))
-                   ((mv erp processed-else) (process-syntaxp-argument (farg3 term) rule-symbol))
+                   ((mv erp processed-else) (convert-syntaxp-argument-for-axe (farg3 term) rule-symbol))
                    ((when erp) (mv erp nil)))
                 (mv (erp-nil) `(if ,processed-test ,processed-then ,processed-else)))
             (if (eq fn 'not)
-                (b* (((mv erp processed-arg) (process-syntaxp-argument (farg1 term) rule-symbol))
+                (b* (((mv erp processed-arg) (convert-syntaxp-argument-for-axe (farg1 term) rule-symbol))
                      ((when erp) (mv erp nil)))
                   (mv (erp-nil) `(not ,processed-arg)))
-              (prog2$ (er hard? 'process-syntaxp-argument "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
+              (prog2$ (er hard? 'convert-syntaxp-argument-for-axe "unexpected term, ~x0, in syntaxp hyp in rule ~x1." term rule-symbol)
                       (mv (erp-t) nil)))))))))
 
-(defthm pseudo-termp-of-mv-nth-1-of-process-syntaxp-argument
+(defthm pseudo-termp-of-mv-nth-1-of-convert-syntaxp-argument-for-axe
   (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (process-syntaxp-argument term rule-symbol))))
-  :hints (("Goal" :in-theory (enable process-syntaxp-argument))))
+           (pseudo-termp (mv-nth 1 (convert-syntaxp-argument-for-axe term rule-symbol))))
+  :hints (("Goal" :in-theory (enable convert-syntaxp-argument-for-axe))))
 
-(defthm axe-syntaxp-exprp-of-mv-nth-1-of-process-syntaxp-argument
+(defthm axe-syntaxp-exprp-of-mv-nth-1-of-convert-syntaxp-argument-for-axe
   (implies (and (pseudo-termp conjunct)
-                (not (mv-nth 0 (process-syntaxp-argument conjunct rule-symbol))))
-           (axe-syntaxp-exprp (mv-nth 1 (process-syntaxp-argument conjunct rule-symbol))))
-  :hints (("Goal" :in-theory (enable process-syntaxp-argument axe-syntaxp-exprp axe-syntaxp-function-applicationp list-of-variables-and-constantsp))))
+                (not (mv-nth 0 (convert-syntaxp-argument-for-axe conjunct rule-symbol))))
+           (axe-syntaxp-exprp (mv-nth 1 (convert-syntaxp-argument-for-axe conjunct rule-symbol))))
+  :hints (("Goal" :in-theory (enable convert-syntaxp-argument-for-axe axe-syntaxp-exprp axe-syntaxp-function-applicationp list-of-variables-and-constantsp))))
 
 ;; Returns (mv erp hyp).
-;; process-syntaxp-argument helps catch errors if the rule has unsupported stuff in a syntaxp hyp
+;; convert-syntaxp-argument-for-axe helps catch errors if the rule has unsupported stuff in a syntaxp hyp
 (defund make-axe-syntaxp-hyp-for-synp-expr (expr bound-vars rule-symbol hyp)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (symbol-listp bound-vars)
                               (symbolp rule-symbol))))
   (b* (;; Remove dag-array args from axe-syntaxp functions ('dag-array might remain as an argument to quotep):
        ((mv erp expr)
-        (process-syntaxp-argument expr rule-symbol))
+        (convert-syntaxp-argument-for-axe expr rule-symbol))
        ((when erp)
         (er hard? 'make-axe-syntaxp-hyp-for-synp-expr "Error processing synp hyp ~x0 in rule ~x1." hyp rule-symbol)
         (mv erp nil))
@@ -300,16 +302,15 @@
            (axe-bind-free-function-applicationp (process-axe-bind-free-function-application expr wrld)))
   :hints (("Goal" :in-theory (enable process-axe-bind-free-function-application axe-bind-free-function-applicationp))))
 
-;zz
-;; (defthm subsetp-equal-of-free-vars-in-term-of-mv-nth-1-of-process-syntaxp-argument
-;;   (implies (and (not (mv-nth 0 (process-syntaxp-argument term rule-symbol)))
+;; (defthm subsetp-equal-of-free-vars-in-term-of-mv-nth-1-of-convert-syntaxp-argument-for-axe
+;;   (implies (and (not (mv-nth 0 (convert-syntaxp-argument-for-axe term rule-symbol)))
 ;;                 (subsetp-equal (free-vars-in-term term)
 ;;                                (cons 'dag-array bound-vars))
 ;;                 (pseudo-termp term))
-;;            (subsetp-equal (free-vars-in-term (mv-nth 1 (process-syntaxp-argument term rule-symbol)))
+;;            (subsetp-equal (free-vars-in-term (mv-nth 1 (convert-syntaxp-argument-for-axe term rule-symbol)))
 ;;                           bound-vars))
 ;;   :hints (("Goal" :expand (free-vars-in-terms (cdr term))
-;;            :in-theory (enable process-syntaxp-argument
+;;            :in-theory (enable convert-syntaxp-argument-for-axe
 ;;                               myquotep
 ;;                               free-vars-in-term))))
 
@@ -367,9 +368,9 @@
                     (mv :unsupported-synp *unrelievable-hyps* bound-vars)))
         (if (call-of 'axe-syntaxp hyp)
             (b* (((when (not (and (true-listp (fargs hyp))
-                                  (eql 1 (len (fargs hyp))))))
+                                  (= 1 (len (fargs hyp))))))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp hyp ~x0 in rule ~x1." hyp rule-symbol)
-                  (mv :bad-syntaxp-hyps *unrelievable-hyps* bound-vars))
+                  (mv :bad-syntaxp-hyp *unrelievable-hyps* bound-vars))
                  ;; drop this?:
                  ;; ((when (member-eq 'dag-array bound-vars))
                  ;;  (er hard? 'make-axe-rule-hyps-for-hyp "The variable dag-array is bound in rule ~x0, but that variable has a special meaning in axe-syntaxp hyps and cannot appear in such rules."
@@ -379,7 +380,7 @@
                  ((when (not (axe-syntaxp-exprp axe-syntaxp-expr)))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." axe-syntaxp-expr rule-symbol)
                   (mv :bad-syntaxp-argument *unrelievable-hyps* bound-vars))
-                 ;; Drops dag-array formals passed a last args to functions:
+                 ;; Drops dag-array formals passed as last args to functions:
                  (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
                  (mentioned-vars (free-vars-in-term processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
@@ -786,8 +787,7 @@
                     )
            :in-theory (enable make-axe-rule-hyps-for-hyp
                               bound-vars-suitable-for-hypp
-                              MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR
-                              PROCESS-SYNTAXP-ARGUMENT))))
+                              MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR))))
 
 (local (in-theory (disable INTERSECTION-EQUAL))) ;prevent indution
 
@@ -814,8 +814,7 @@
            :in-theory (enable bound-vars-after-hyps
                               bound-vars-after-hyp
                               make-axe-rule-hyps-for-hyp
-                              MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR
-                              ))))
+                              MAKE-AXE-SYNTAXP-HYP-FOR-SYNP-EXPR))))
 
 (defthm mv-nth-2-of-make-axe-rule-hyps-simple
   (implies (and (pseudo-term-listp hyps)
@@ -1003,10 +1002,10 @@
 (defund make-axe-rule (lhs rhs rule-symbol hyps extra-hyps print wrld)
   (declare (xargs :guard (and (axe-rule-lhsp lhs)
                               (pseudo-termp rhs)
+                              (symbolp rule-symbol)
                               (pseudo-term-listp hyps) ;; from the theorem, unprocessed
                               (axe-rule-hyp-listp extra-hyps) ;; already processed, don't bind any vars, for stopping loops
                               (all-axe-syntaxp-hypsp extra-hyps)
-                              (symbolp rule-symbol)
                               (plist-worldp wrld))))
   (b* ((- (and print (cw "(Making Axe rule: ~x0.)~%" rule-symbol)))
        (lhs-vars (free-vars-in-term lhs))
@@ -1350,7 +1349,7 @@
 ;;; make-axe-rules-from-theorem
 ;;;
 
-;; Returns (mv erp axe-rules).
+;; Returns (mv erp axe-rules).  If the conclusion is a conjunction, we get multiple rules.
 (defund make-axe-rules-from-theorem (theorem-body rule-symbol rule-classes known-boolean-fns print wrld)
   (declare (xargs :guard (and (pseudo-termp theorem-body)
                               (symbolp rule-symbol)
@@ -1425,6 +1424,14 @@
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
                 (body (drop-unused-lambda-bindings body))
+                (clique (true-list-fix ; drop?
+                          (recursivep rule-name nil wrld))) ; todo: consider :definition rules and the flg option here
+                (body-fns (all-fnnames body))
+                (- (if (member-eq rule-name body-fns)
+                       (cw "Warning: Make safe openers for recursive function ~x0.~%" rule-name)
+                     (if (intersection-eq clique body-fns)
+                         (cw "Warning: Make safe openers for mut. rec. function ~x0.~%" rule-name)
+                       nil)))
                 (lhs (cons rule-name formals))
                 ;; Make a rule equating a call of the function (on its formals)
                 ;; with its body (note: for recursive functions, it may be
@@ -1541,6 +1548,7 @@
     (mv (erp-nil)
         (union-equal rules rule-set))))
 
+;; this is really axe-rule-setsp:
 (defforall-simple axe-rule-listp)
 (verify-guards all-axe-rule-listp)
 

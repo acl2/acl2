@@ -305,12 +305,16 @@
  (defthm test-secp256k1-operations-verify-guards-lemma
    (< 3 (secp256k1-field-prime))))
 
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (:e secp256k1-field-prime))))
+
 (defun test-secp256k1-operations (a b)
   (declare (xargs :guard (and (natp a) (< a (secp256k1-group-prime))
                               (natp b) (< b (secp256k1-group-prime)))))
   (declare (xargs :guard-hints
              (("Goal" :in-theory (e/d (secp256k1* fep)
-                                      ((:e secp256k1-field-prime)))))))
+                                      ())))))
   (let ((c (pfield::add a b (secp256k1-group-prime))))
     (let ((P (secp256k1* a (secp256k1-generator)))
           (Q (secp256k1* b (secp256k1-generator)))

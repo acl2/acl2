@@ -397,11 +397,14 @@ under-the-hood memoization; kind of nasty."
 
 (defun finish-map-aig-vars-fast (array-len valist ndeps)
   (declare (xargs :guard (and (posp array-len)
-                              (< array-len *maximum-positive-32-bit-integer*)
+                              (< array-len (array-maximum-length-bound))
                               (bounded-integer-alistp valist array-len)
                               (sbitset-listp ndeps)
                               (<= (+ 60 (* 60 (max-sbitset-max-offset ndeps)))
                                   array-len))
+; Matt K. mod, August 2023: the following is necessary now that array-order is
+; disabled by default.
+                  :guard-hints (("Goal" :in-theory (enable array-order)))
                   ;; :guard-hints ((and stable-under-simplificationp
                   ;;                    '(:use ((:instance max-sbitset-max-offset-bound
                   ;;                             (x ndeps)))
@@ -530,7 +533,7 @@ under-the-hood memoization; kind of nasty."
        (ndeps    (map-aig-vars-sparse/trans aigs nseen nalist))
        (array-len (* 60 (+ 1 (floor len 60)))))
     (mbe :logic (finish-map-aig-vars-fast array-len valist ndeps)
-         :exec (if (<= *maximum-positive-32-bit-integer* array-len)
+         :exec (if (<= (array-maximum-length-bound) array-len)
                    (prog2$
                     (er hard? 'map-aig-vars-fast "Array length out of bounds: ~x0" array-len)
                     (non-exec (finish-map-aig-vars-fast array-len valist ndeps)))

@@ -1,7 +1,7 @@
 ; A BV version of nth
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,15 +17,8 @@
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "all-unsigned-byte-p")
 (include-book "bvchop-list")
+(include-book "nth2")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
-
-;we go from nth to this to bvnth - do we still?
-(defund nth2 (indexsize n lst)
-  (DECLARE (XARGS :GUARD (AND (INTEGERP N)
-                              (natp indexsize)
-                              ;(>= N 0)
-                              (TRUE-LISTP Lst))))
-  (nth (bvchop indexsize n) lst))
 
 ;can drop the ifix
 (defund bvnth (element-size index-size index data)

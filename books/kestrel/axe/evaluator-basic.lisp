@@ -1,7 +1,7 @@
 ; An simple evaluator supporting a basic set of functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,8 @@
 (include-book "unguarded-defuns")
 (include-book "make-evaluator-simple")
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
@@ -54,6 +56,7 @@
     booland
     bool-fix$inline
     true-listp
+    true-list-listp
     (denominator denominator-unguarded) ; primitive
     (numerator numerator-unguarded) ; primitive
     (coerce coerce-unguarded) ; primitive
@@ -80,6 +83,7 @@
     (floor floor-unguarded)
     (ceiling ceiling-unguarded)
     (lg lg-unguarded)
+    power-of-2p ; unguarded
     (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
     (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded) ; primitive
@@ -93,6 +97,7 @@
     (symbol-package-name symbol-package-name-unguarded) ; primitive
     unsigned-byte-p
     unsigned-byte-p-forced
+    signed-byte-p ; unguarded
     fix
     ifix
     nfix
@@ -101,8 +106,11 @@
     (min min-unguarded)
     (max max-unguarded)
     (integer-length integer-length-unguarded)
+    (ceiling-of-lg ceiling-of-lg-unguarded)
     ;; (return-last return-last-unguarded) ;we don't want to execute this normally, because that would mean executing the eager-arg
     (width-of-widest-int width-of-widest-int-unguarded)
+
+    (logext logext-unguarded)
 
     ;; bv functions:
 
@@ -124,6 +132,7 @@
     (bvmod bvmod-unguarded)
     (bvdiv bvdiv-unguarded)
 
+    (bvequal bvequal-unguarded)
     (bvand bvand-unguarded)
     (bvor bvor-unguarded)
     (bvxor bvxor-unguarded)
@@ -148,5 +157,5 @@
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)))
 
-;; Makes the evaluator:
+;; Makes the evaluator (also checks that each alias given is equivalent to its function):
 (make-evaluator-simple basic *axe-evaluator-basic-fns-and-aliases*)

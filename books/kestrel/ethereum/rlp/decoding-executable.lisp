@@ -1,6 +1,6 @@
 ; Ethereum Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -536,7 +536,7 @@
      as a case split on @(tsee rlp-tree-encoding-p),
      we first show that the latter is equivalent to
      @(tsee rlp-decodex-tree) not returning an error
-     (not that this equivalence does not hold for @(tsee rlp-parse-tree),
+     (note that this equivalence does not hold for @(tsee rlp-parse-tree),
      which accepts any extensions of the valid encodings).
      The `if' part is proved via the right inverse theorem,
      which says that the encoding is in the image of @(tsee rlp-encode-tree).

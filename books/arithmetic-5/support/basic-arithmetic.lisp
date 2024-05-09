@@ -7,6 +7,9 @@
 ;; basic-arithmetic.lisp
 ;;
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 
 

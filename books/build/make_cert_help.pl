@@ -297,11 +297,13 @@ sub scan_source_file
     my $events = scan_src_run($filename);
     my $max_mem = 0;
     my $max_time = 0;
+    my $image = 0;
     my @includes = ();
     my @pbs = ();
     my $ifdef_level = 0;
     my $ifdef_skipping_level = 0;
     my %defines = ();
+    my $envpairs = [];
     foreach my $event (@$events) {
 	my $type = shift @$event;
 	if ($type eq ifdef_event) {
@@ -335,11 +337,20 @@ sub scan_source_file
 		}
 	    } elsif ($type eq pbs_event) {
 		push @pbs, $event->[0];
+	    } elsif ($type eq cert_param_event) {
+		my $pairs = $event->[0];
+		foreach my $pair (@$pairs) {
+		    if ($pair->[0] eq "acl2-image") {
+			$image = $pair->[1];
+		    }
+		}
+	    } elsif ($type eq cert_env_event) {
+		$envpairs = $event->[0];
 	    }
 	}
     }
 
-     return ( $max_mem, $max_time, \@includes, \@pbs );
+     return ( $max_mem, $max_time, \@includes, \@pbs, $image, $envpairs );
 }
 
 
@@ -493,6 +504,7 @@ my $DEBUG          = $ENV{"ACL2_BOOKS_DEBUG"} ? 1 : 0;
 my $TIME_CERT      = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB       = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
+my $FAILURE_LINES  = $ENV{"FAILURE_LINES"} || "300";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
 my $STACK_TRACES   = $ENV{"NO_STACK_TRACES"} ? 0 : 1;
 
@@ -567,12 +579,34 @@ remove_file_if_exists($outfile);
 write_whole_file($outfile, $HEADER);
 
 
+# --- Scan the source file and .acl2 file for various things ----
+my $acl2file = (-f "$file.acl2") ? "$file.acl2"
+    : (-f "cert.acl2")  ? "cert.acl2"
+    : "";
+
+my ($max_mem, $max_time, $includes, $book_pbs, $book_image, $env_pairs) = scan_source_file("$file.lisp");
+my ($acl2_max_mem, $acl2_max_time, $acl2_includes, $acl2_pbs, $acl2_image)
+    = $acl2file ? scan_source_file($acl2file) : (0, 0, [], [], 0);
+
+$max_mem = $max_mem ? ($max_mem + 3) : 4;
+$max_time = $max_time || 240;
+
+$ENV{"CERT_MAX_MEM"} = $max_mem;
+$ENV{"CERT_MAX_TIME"} = $max_time;
+$ENV{"CERT_GOALFILE"} = $goal;
+foreach my $envpair (@$env_pairs) {
+    $ENV{$envpair->[0]} = $envpair->[1];
+}
+
 
 # Override ACL2 per the image file, as appropriate.
-my $acl2 = read_whole_file_if_exists("$file.image");
+my $acl2 = $book_image;
+$acl2 = $acl2_image if !$acl2;
+$acl2 = read_whole_file_if_exists("$file.image") if !$acl2;
 $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
 $acl2 = $default_acl2 if !$acl2;
 $acl2 = trim($acl2);
+$acl2 = $default_acl2 if $acl2 eq "acl2";
 $ENV{"ACL2"} = $acl2;
 print "-- Image to use = $acl2\n" if $DEBUG;
 die("Can't determine which ACL2 to use.") if !$acl2;
@@ -609,23 +643,9 @@ $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
 $instrs .= "\n";
 
-# --- Scan the source file for includes (to collect the portculli) and resource limits ----
-my ($max_mem, $max_time, $includes, $book_pbs) = scan_source_file("$file.lisp");
-$max_mem = $max_mem ? ($max_mem + 3) : 4;
-$max_time = $max_time || 240;
 
-$ENV{"CERT_MAX_MEM"} = $max_mem;
-$ENV{"CERT_MAX_TIME"} = $max_time;
-$ENV{"CERT_GOALFILE"} = $goal;
-
-# Get the certification instructions from foo.acl2 or cert.acl2, if either
-# exists, or make a generic certify-book command.
-my $acl2file = (-f "$file.acl2") ? "$file.acl2"
-    : (-f "cert.acl2")  ? "cert.acl2"
-    : "";
 
 my $usercmds = $acl2file ? read_file_except_certify($acl2file) : "";
-my $acl2_pbs = $acl2file ? extract_pbs_from_acl2file($acl2file) : [];
 
 # Don't hideously underapproximate timings in event summaries
 $instrs .= "(acl2::assign acl2::get-internal-time-as-realtime acl2::t)\n";
@@ -646,9 +666,9 @@ $instrs .= "; portculli for included books:\n";
 foreach my $pair (@$includes) {
     my ($incname, $incdir) = @$pair;
     if ($incdir) {
-	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t)\n";
+	$instrs .= "(acl2::ld \"$incname.port\" :dir :$incdir :ld-missing-input-ok t :ld-always-skip-top-level-locals t)\n";
     } else {
-	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t)\n";
+	$instrs .= "(acl2::ld \"$incname.port\" :ld-missing-input-ok t :ld-always-skip-top-level-locals t)\n";
     }
 }
 
@@ -758,9 +778,9 @@ chmod(0750,$shtmp);
 
 my $START_TIME = mytime();
 
-    # Single quotes to try to protect against file names with dollar signs and similar.
-    system("$STARTJOB '$shtmp'");
-    $status = $? >> 8;
+$shtmp = File::Spec->file_name_is_absolute($shtmp) ? $shtmp : "./$shtmp";
+system("$STARTJOB", "$shtmp");
+$status = $? >> 8;
 
 my $END_TIME = mytime();
 
@@ -862,7 +882,7 @@ if ($success) {
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
 	($STEP eq "complete") ? "PCERT1->CERT COMPLETION" : "UNKNOWN";
     print "\n**$taskname FAILED** for $dir$file.lisp\n\n" .
-        ($outfile ? `tail -300 $outfile | sed 's/^/   | /'` : "") .
+        ($outfile ? `tail -$FAILURE_LINES $outfile | sed 's/^/   | /'` : "") .
         "\n**$taskname FAILED** for $dir$file.lisp\n\n";
 
     if ($ON_FAILURE_CMD) {

@@ -110,4 +110,22 @@
   (defcong svexlist-eval-equiv svex-eval-equiv (svex-call fn args) 2
     :hints (("goal" :expand ((:free (fn args env)
                               (svex-eval (svex-call fn args) env))))
-            (witness))))
+            (witness)))
+
+  (defthmd svexlist-eval-equiv-redef
+    (equal (svexlist-eval-equiv x y)
+           (if (atom x)
+               (atom y)
+             (and (consp y)
+                  (svex-eval-equiv (car x) (car y))
+                  (svexlist-eval-equiv (cdr x) (cdr y)))))
+    :hints (("goal" :cases ((svexlist-eval-equiv x y)))
+            (and stable-under-simplificationp
+                 (b* ((lit (assoc 'svexlist-eval-equiv clause)))
+                   (if lit
+                       `(:expand (,lit))
+                     '(:use svexlist-eval-equiv-necc
+                       :in-theory (e/d (svexlist-eval)
+                                       (svexlist-eval-equiv-necc
+                                        svexlist-eval-equiv-implies-equal-svexlist-eval-1)))))))
+    :rule-classes ((:definition :install-body nil))))

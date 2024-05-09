@@ -330,7 +330,7 @@
 ; Simple widening rule, so that return values from bech32-split-address can be
 ; used as arguments to bech32-verify-checksum and bech32m-verify-checksum.
 
-(std::defrule unsigned-byte-list-5-is-8
+(std::defruled unsigned-byte-list-5-is-8
   (implies (unsigned-byte-listp 5 x)
            (unsigned-byte-listp 8 x))
   :enable (unsigned-byte-listp unsigned-byte-p))
@@ -364,6 +364,7 @@
    (xdoc::p
     "Disallows a mixed-case string; then downcases the string before
      converting the data characters to bytes and verifying the checksum."))
+  :guard-hints (("Goal" :in-theory (enable unsigned-byte-list-5-is-8)))
   (b* (((when (mixed-case-stringp address)) nil)
        (address (str::downcase-string address))
        ((mv erp hrp data) (bech32-split-address address))
@@ -380,6 +381,7 @@
    (xdoc::p
     "Disallows a mixed-case string; then downcases the string before
      converting the data characters to bytes and verifying the checksum."))
+  :guard-hints (("Goal" :in-theory (enable unsigned-byte-list-5-is-8)))
   (b* (((when (mixed-case-stringp address)) nil)
        (address (str::downcase-string address))
        ((mv erp hrp data) (bech32-split-address address))
@@ -397,6 +399,7 @@
    (xdoc::p
     "Disallows a mixed-case string; then downcases the string before
      converting the data characters to bytes and verifying the checksum."))
+  :guard-hints (("Goal" :in-theory (enable unsigned-byte-list-5-is-8)))
   (b* (((when (mixed-case-stringp address)) nil)
        (address (str::downcase-string address))
        ((mv erp hrp data) (bech32-split-address address))

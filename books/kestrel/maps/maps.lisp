@@ -29,7 +29,7 @@
   (declare (xargs :guard (rcdp r)))
   (if (consp r)
       (set::insert (caar r)
-		   (key-set (cdr r)))
+                   (key-set (cdr r)))
     (set::emptyset)))
 
 (defthm setp-key-set
@@ -47,19 +47,19 @@
   (implies
    (wfr r)
    (equal (set::in a (key-set (s-aux p v r)))
-	  (if v (or (equal a p)
-		    (set::in a (key-set r)))
-	    (and (not (equal a p))
-		 (set::in a (key-set r))))))
+          (if v (or (equal a p)
+                    (set::in a (key-set r)))
+            (and (not (equal a p))
+                 (set::in a (key-set r))))))
   :hints (("goal" :in-theory (e/d (WFKEYED wfr s-aux) (set::in)))))
 
 (defthm rkeys-s
   (implies (and (wfr r)
-	;(wfkey a)
+        ;(wfkey a)
         )
    (equal (rkeys (s a v r))
-	  (if v (set::insert a (rkeys r))
-	    (set::delete a (rkeys r)))))
+          (if v (set::insert a (rkeys r))
+            (set::delete a (rkeys r)))))
   :hints (("goal" :in-theory (enable s SET::DOUBLE-CONTAINMENT-EXPENSIVE))))
 
 (in-theory (disable rkeys))
@@ -164,7 +164,7 @@
                 A
                 (G A R))
            (EQUAL (CAAR R) A))
-  :hints (("Goal" :in-theory (e/d (g wfr WFKEYED) ()))))
+  :hints (("Goal" :in-theory (enable g wfr wfkeyed))))
 
 (defthm g-of-caar
   (IMPLIES (AND (not (ifrp r))
@@ -235,7 +235,7 @@
 ;move to sets
 ;expensive?
 (defthm head-when-empty
-  (implies (set::empty ads)
+  (implies (set::emptyp ads)
            (equal (set::head ads)
                   nil))
   :hints (("Goal" :in-theory (enable set::head set::sfix))))
@@ -291,7 +291,7 @@
 ;return the keys of the map as a list
 (defun key-list (map)
   (declare (type t map))
-  (set::2list (acl2::rkeys map)))
+  (set::2list (rkeys map)))
 
 ;fixme flesh out - or use a different version of maps
 (defund mapp (map)

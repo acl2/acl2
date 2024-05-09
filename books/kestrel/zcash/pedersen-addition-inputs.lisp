@@ -1,10 +1,10 @@
 ; Zcash Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,14 +65,14 @@
 
 (define belowp ((indices nat-setp) (n natp))
   :returns (yes/no booleanp)
-  (or (set::empty indices)
+  (or (set::emptyp indices)
       (and (< (set::head indices) n)
            (belowp (set::tail indices) n)))
   ///
 
   (defruled head-below-when-belowp
     (implies (and (belowp indices n)
-                  (not (set::empty indices)))
+                  (not (set::emptyp indices)))
              (< (set::head indices) n))
     :rule-classes :linear)
 
@@ -100,7 +100,7 @@
   (defrule belowp-of-0
     (implies (nat-setp indices)
              (equal (belowp indices 0)
-                    (set::empty indices)))))
+                    (set::emptyp indices)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,7 +117,7 @@
   :guard (and (integerp (/ (len bits) 3))
               (belowp indices (/ (len bits) 3)))
   :returns (sum integerp :rule-classes (:rewrite :type-prescription))
-  (cond ((set::empty indices) 0)
+  (cond ((set::emptyp indices) 0)
         (t (b* ((index (acl2::lnfix (set::head indices))))
              (+ (* (pedersen-enc (take 3 (nthcdr (* 3 index) bits)))
                    (expt 16 index))
@@ -152,7 +152,7 @@
     :use (:instance sum-of-insert (indices (set::delete index indices))))
 
   (defrule sum-of-0
-    (implies (set::empty indices)
+    (implies (set::emptyp indices)
              (equal (sum indices bits)
                     0))))
 
@@ -481,9 +481,9 @@
                         (nat-setp indices2)
                         (belowp indices1 n)
                         (belowp indices2 n)
-                        (not (set::empty indices1))
-                        (not (set::empty indices2))
-                        (set::empty (set::intersect indices1 indices2)))
+                        (not (set::emptyp indices1))
+                        (not (set::emptyp indices2))
+                        (set::emptyp (set::intersect indices1 indices2)))
                    (and (not (equal (sum indices1 bits)
                                     (sum indices2 bits)))
                         (not (equal (sum indices1 bits)
@@ -532,9 +532,9 @@
                 (nat-setp indices2)
                 (belowp indices1 n)
                 (belowp indices2 n)
-                (not (set::empty indices1))
-                (not (set::empty indices2))
-                (set::empty (set::intersect indices1 indices2)))
+                (not (set::emptyp indices1))
+                (not (set::emptyp indices2))
+                (set::emptyp (set::intersect indices1 indices2)))
            (and (not (equal (sum indices1 bits)
                             (sum indices2 bits)))
                 (not (equal (sum indices1 bits)
@@ -561,9 +561,9 @@
                 (nat-setp indices2)
                 (belowp indices1 n)
                 (belowp indices2 n)
-                (not (set::empty indices1))
-                (not (set::empty indices2))
-                (set::empty (set::intersect indices1 indices2)))
+                (not (set::emptyp indices1))
+                (not (set::emptyp indices2))
+                (set::emptyp (set::intersect indices1 indices2)))
            (and (not (equal (sum indices1 bits)
                             (sum indices2 bits)))
                 (not (equal (sum indices1 bits)
@@ -577,9 +577,9 @@
    (:assume (:nat-set2 (nat-setp indices2)))
    (:assume (:below1 (belowp indices1 n)))
    (:assume (:below2 (belowp indices2 n)))
-   (:assume (:nonempty1 (not (set::empty indices1))))
-   (:assume (:nonempty2 (not (set::empty indices2))))
-   (:assume (:disjoint (set::empty (set::intersect indices1 indices2))))
+   (:assume (:nonempty1 (not (set::emptyp indices1))))
+   (:assume (:nonempty2 (not (set::emptyp indices2))))
+   (:assume (:disjoint (set::emptyp (set::intersect indices1 indices2))))
    (:derive (:below1-n-1 (belowp indices1 (1- n)))
     :from (:below1 :pos :nat-set1 :not-in-set1)
     :hints (("Goal" :use (:instance belowp-of-n-minus-1-when-not-in-set
@@ -668,9 +668,9 @@
                 (nat-setp indices2)
                 (belowp indices1 n)
                 (belowp indices2 n)
-                (not (set::empty indices1))
-                (not (set::empty indices2))
-                (set::empty (set::intersect indices1 indices2)))
+                (not (set::emptyp indices1))
+                (not (set::emptyp indices2))
+                (set::emptyp (set::intersect indices1 indices2)))
            (and (not (equal (sum indices1 bits)
                             (sum indices2 bits)))
                 (not (equal (sum indices1 bits)
@@ -683,9 +683,9 @@
    (:assume (:nat-set2 (nat-setp indices2)))
    (:assume (:below1 (belowp indices1 n)))
    (:assume (:below2 (belowp indices2 n)))
-   (:assume (:nonempty1 (not (set::empty indices1))))
-   (:assume (:nonempty2 (not (set::empty indices2))))
-   (:assume (:disjoint (set::empty (set::intersect indices1 indices2))))
+   (:assume (:nonempty1 (not (set::emptyp indices1))))
+   (:assume (:nonempty2 (not (set::emptyp indices2))))
+   (:assume (:disjoint (set::emptyp (set::intersect indices1 indices2))))
    (:let (indices1-1 (set::delete (1- n) indices1)))
    (:derive (:decompose
              (equal (sum indices1 bits)
@@ -777,9 +777,9 @@
                 (nat-setp indices2)
                 (belowp indices1 n)
                 (belowp indices2 n)
-                (not (set::empty indices1))
-                (not (set::empty indices2))
-                (set::empty (set::intersect indices1 indices2)))
+                (not (set::emptyp indices1))
+                (not (set::emptyp indices2))
+                (set::emptyp (set::intersect indices1 indices2)))
            (and (not (equal (sum indices1 bits)
                             (sum indices2 bits)))
                 (not (equal (sum indices1 bits)
@@ -834,9 +834,9 @@
                 (nat-setp indices2)
                 (belowp indices1 n)
                 (belowp indices2 n)
-                (not (set::empty indices1))
-                (not (set::empty indices2))
-                (set::empty (set::intersect indices1 indices2)))
+                (not (set::emptyp indices1))
+                (not (set::emptyp indices2))
+                (set::emptyp (set::intersect indices1 indices2)))
            (and (not (equal (sum indices1 bits)
                             (sum indices2 bits)))
                 (not (equal (sum indices1 bits)

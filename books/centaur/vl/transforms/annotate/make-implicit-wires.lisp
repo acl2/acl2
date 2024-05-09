@@ -531,16 +531,30 @@ Our version of VCS says this isn't yet implemented.</li>
                declarations."
               vl-portdecl-alist-p)
    (decls     "Fast alist binding names of declared non-port names to anything.
-               These names can be the names of wires, instances, functions, etc.,
-               that are in the local scope, for instance."
-              acl2::any-p)
-   (imports   "Fast alist binding imported names to anything."
-              acl2::any-p)
+               These names can be the names of wires, instances, functions,
+               etc., that are in the local scope, for instance.  Also includes
+               any items explicitly imported from packages."  acl2::any-p)
+   (wildpkgs  vl-packagemap
+              "Fast alist binding the name of each wildcard-imported package to
+               its corresponding scopeitem-alist")
    (ss        vl-scopestack-p
-              "Scopestack for lookup of global names.  Note that this scopestack
+              "Scopestack for lookup of global and package names.  Note that this scopestack
                doesn't typically contain the current module we're looking at,
                because it isn't really a complete module until we add the implicit
                wires to it.")))
+
+
+(define vl-packagemap-find-name ((name stringp)
+                                 (map vl-packagemap-p))
+  :hooks ((:fix :hints (("goal" :induct t)
+                        (and stable-under-simplificationp
+                             '(:expand ((vl-packagemap-fix map)))))))
+  (if (atom map)
+      nil
+    (or (and (mbt (consp (car map)))
+             (hons-get (string-fix name) (vl-scopeitem-alist-fix (cdar map))))
+        (vl-packagemap-find-name name (cdr map)))))
+   
 
 (define vl-remove-declared-wires
   :short "Filter names to remove wires that are already declared.  We remove
@@ -563,7 +577,7 @@ Our version of VCS says this isn't yet implemented.</li>
        (name1 (string-fix (car names)))
        ((when (or (hons-get name1 st.decls)
                   (hons-get name1 st.portdecls)
-                  (hons-get name1 st.imports)
+                  (vl-packagemap-find-name name1 st.wildpkgs)
                   (vl-scopestack-find-item name1 st.ss)))
         ;; This name has been declared locally or in some superior scope.
         ;; Because of that, we do not want to add an implicit wire for
@@ -584,20 +598,14 @@ Our version of VCS says this isn't yet implemented.</li>
                    (fatal :type :vl-bad-import
                           :msg "~a0: trying to import from undefined package ~s1."
                           :args (list x x.pkg))))
-       (imports  st.imports)
-       (imports  (if (eq x.part :vl-import*)
-                     ;; Add all the names from the package onto imports.
-                     (hons-shrink-alist
-                      ;; If the package wasn't found and we tried to
-                      ;; import foo::* from it, we've already caused a
-                      ;; fatal warning, so it's okay to fudge here.
-                      (and package
-                           (vl-package-scope-item-alist-top package))
-                      imports)
-                   ;; Import of a single name.
-                   (hons-acons (the string x.part) nil imports)))
-       (st   (change-vl-implicitst st :imports imports)))
-    (mv warnings st)))
+       ((when (eq x.part :vl-import*))
+        ;; add to wildpkgs
+        (b* ((wildpkgs (cons (cons x.pkg (and package
+                                              (vl-package-scope-item-alist-top package)))
+                             st.wildpkgs)))
+          (mv warnings (change-vl-implicitst st :wildpkgs wildpkgs))))
+       (decls (hons-acons (the string x.part) nil st.decls)))
+    (mv warnings (change-vl-implicitst st :decls decls))))
 
 (define vl-blockitem-update-implicit ((x        vl-blockitem-p)
                                       (st       vl-implicitst-p)
@@ -810,10 +818,7 @@ Our version of VCS says this isn't yet implemented.</li>
                 (make-fast-alist st.portdecls)))
     (or (same-lengthp st.decls new-st.decls)
         (progn$ (fast-alist-free new-st.decls)
-                (make-fast-alist st.decls)))
-    (or (same-lengthp st.imports new-st.imports)
-        (progn$ (fast-alist-free new-st.imports)
-                (make-fast-alist st.imports)))))
+                (make-fast-alist st.decls)))))
 
 
 (defines vl-genelementlist-make-implicit-wires
@@ -1142,7 +1147,7 @@ Our version of VCS says this isn't yet implemented.</li>
        (decls   (make-fast-alist (pairlis$ (vl-portlist->names ifports) (list-fix ifports))))
        (st      (make-vl-implicitst :decls     decls
                                     :portdecls nil
-                                    :imports   nil
+                                    :wildpkgs  nil
                                     :ss        ss))
        (newitems nil)
        (impitems nil)
@@ -1155,8 +1160,7 @@ Our version of VCS says this isn't yet implemented.</li>
        ((vl-implicitst st))
        (newitems (vl-make-port-implicit-wires newitems st.decls nil))
        (- (fast-alist-free st.portdecls))
-       (- (fast-alist-free st.decls))
-       (- (fast-alist-free st.imports)))
+       (- (fast-alist-free st.decls)))
     (mv newitems warnings)))
 
 ;; (trace$ #!vl (vl-make-implicit-wires-main

@@ -30,11 +30,11 @@
     (;layout exposed in main.lisp/print-testing-summary-fn
      ('gcs% (runs dups . vacs)
             (cts . wts))
-     (and (unsigned-29bits-p cts)
-          (unsigned-29bits-p wts)
-          (unsigned-29bits-p runs)
-          (unsigned-29bits-p dups)
-          (unsigned-29bits-p vacs)
+     (and (unsigned-60bits-p cts)
+          (unsigned-60bits-p wts)
+          (unsigned-60bits-p runs)
+          (unsigned-60bits-p dups)
+          (unsigned-60bits-p vacs)
           ))))
 
 (defmacro gcs-1+ (fld-nm)
@@ -130,6 +130,7 @@ cgen-state"
 
 ; make this attachable
 (defstub allowed-cgen-event-ctx-p (*) => *)
+
 (defun allowed-cgen-event-ctx-p-no-defun (ctx)
   (declare (xargs :guard t))
   (cond ((equal ctx "( THM ...)") t)
@@ -138,13 +139,14 @@ cgen-state"
         ;; and the third arg to init-cgen-state/event is supposed to
         ;; satisfy allowed-cgen-event-ctx-p
         ((equal ctx :undefined) t)
-        ((member-equal ctx '(ACL2::THM ACL2::DEFTHM ACL2::VERIFY-GUARDS)))
+        ((member-equal ctx '(acl2::THM acl2::DEFTHM acl2::VERIFY-GUARDS)))
         ((and (consp ctx)
-              (member-equal (car ctx) '(ACL2::DEFTHM ACL2::VERIFY-GUARDS))) t)
+              (member-equal (car ctx) '(acl2::DEFTHM acl2::VERIFY-GUARDS))) t)
         ((and (consp ctx)
-              (member-equal (car ctx) (list "( VERIFY-GUARDS ~x0)"))) t)
+              (member-equal (car ctx)
+                            (list "( VERIFY-GUARDS ~x0)" ))) t)
         (t nil)))
-  
+
 ;; (defun allowed-cgen-event-ctx-p-with-defun (ctx)
 ;;   (cond ((equal ctx "( THM ...)") t)
 ;;         ((member-eq ctx '(ACL2::THM ACL2::DEFTHM ACL2::VERIFY-GUARDS ACL2::DEFUN ACL2::DEFUNS)))
@@ -224,10 +226,10 @@ cgen-state"
           (true-list-listp cts-hyp-vals-list)
           (true-list-listp wts-hyp-vals-list)
           (true-list-listp vacs-hyp-vals-list)
-          (unsigned-29bits-p |#wts|)
-          (unsigned-29bits-p |#cts|)
-          (unsigned-29bits-p |#vacs|)
-          (unsigned-29bits-p |#dups|)
+          (unsigned-60bits-p |#wts|)
+          (unsigned-60bits-p |#cts|)
+          (unsigned-60bits-p |#vacs|)
+          (unsigned-60bits-p |#dups|)
           (symbol-alistp disp-enum-alist)
           (alistp elim-bindings) ;elim-bindings is now a b* binding [2016-09-05 Mon]
           ))))
@@ -309,7 +311,7 @@ cgen-state"
          ;(rationalp end-time)
          (pseudo-termp user-supplied-term)
          (not (eq :undefined displayed-goal))
-         (or (member-eq top-ctx '(:user-defined test?))
+         (or (member-eq top-ctx '(:user-defined test? acl2::itest? acl2s::itest?))
              (not (null top-ctx))); (allowed-cgen-event-ctx-p top-ctx))
          (cgen-params-p params)
 

@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -199,7 +199,8 @@
    (let ((fn (ev-fncall+-fns fn args wrld big-n safe-mode gc-off t)))
      (and (symbolp fn)
           (or (null fn)
-              (function-symbolp fn wrld))))))
+              (function-symbolp fn wrld))))
+   :rule-classes nil))
 
 #+acl2-loop-only
 (defun ev-fncall+-w (fn args w safe-mode gc-off strictp)
@@ -1024,7 +1025,7 @@
 
 ; That brings us to the main function we've been wanting: the one that
 ; determines what generated equivalence relations must be maintained
-; across the the arguments of fn in order to maintain a given
+; across the arguments of fn in order to maintain a given
 ; generated equivalence relation for the fn-expression itself.  Because
 ; we form new geneqvs from stored ones in the database, we have to
 ; have the enabled structure so we filter out disabled congruence
@@ -1393,19 +1394,29 @@
                                     "Failed attempt (when building a term) to ~
                                      call "
                                   "Failed attempt to call "))
-                          (str1 (if (eq fn 'non-exec)
-                                    ""
-                                  (if non-executablep
-                                      "non-executable function "
-                                    "constrained function "))))
+                          (str1 (cond
+                                 ((eq fn 'non-exec) "")
+                                 (non-executablep "non-executable function ")
+                                 (t "constrained function ")))
+                          (str2 (cond
+                                 ((or (eq fn 'non-exec)
+                                      (null (attachment-pair fn wrld)))
+                                  "")
+                                 ((warrant-function-namep fn wrld)
+                                  ":
+warrant functions are not executable during proofs")
+                                 (t
+                                  ":
+its attachment is ignored during proofs"))))
                      (if skip-pkg-prefix
-                         (concatenate 'string str0 str1 (symbol-name fn))
+                         (concatenate 'string str0 str1 (symbol-name fn) str2)
                        (concatenate 'string
                                     str0
                                     str1
                                     (symbol-package-name fn)
                                     "::"
-                                    (symbol-name fn))))))))
+                                    (symbol-name fn)
+                                    str2)))))))
       (case-match reason
         ((:non-executable . erp)
          (let ((reason-string (reason-string erp nil wrld state)))
@@ -3887,7 +3898,7 @@
 ; there might or might not be at least one clause, but if we return a positive
 ; integer, then the term encoded in instrs is a tautology.
 
-  (declare (type (or null (unsigned-byte 29)) pflg))
+  (declare (type (or null #.*fixnat-type*) pflg))
   (cond ((null instrs)
          (let ((v (car stack)))
            (or (cond ((quotep v)
@@ -3904,7 +3915,7 @@
          0)
         (t (let ((caarinstrs (caar instrs))
                  (pflg (and pflg (1-f pflg))))
-             (declare (type (or null (unsigned-byte 29)) pflg))
+             (declare (type (or null #.*fixnat-type*) pflg))
              (case caarinstrs
                (push (if-interp (cdr instrs)
                                 (cons (cdr (car instrs))
@@ -4684,7 +4695,7 @@
 
 (defun rewrite-solidify-rec (bound term type-alist obj geneqv ens wrld ttree
                                    pot-lst pt)
-  (declare (type (unsigned-byte 29) bound))
+  (declare (type #.*fixnat-type* bound))
   (cond
    ((quotep term)
     (cond ((equal term *nil*) (mv *nil* ttree))
@@ -4794,7 +4805,7 @@
                                    rw-equivp)
                                0))
                       (t (1-f bound)))))
-                (declare (type (unsigned-byte 29) new-bound))
+                (declare (type #.*fixnat-type* new-bound))
                 (rewrite-solidify-rec new-bound (fargn eterm 2) type-alist
                                       obj geneqv ens wrld ttree
                                       pot-lst pt)))
@@ -4873,7 +4884,7 @@
 ; completed since there were three very-long running certifications still in
 ; progress (about 3 hours each).  Among those, we noticed
 ; books/nonstd/workshops/2017/cayley/cayley1c.lisp, whose certification went
-; far enough for us to see the the proof of 8-COMPOSITION-LAW completed but
+; far enough for us to see the proof of 8-COMPOSITION-LAW completed but
 ; took 7560.97 seconds, far exceeding the 6.49 seconds taken in a recent run.
 ; It thus seemed obvious that such a change would likely cause massive changes
 ; to be necessary not only in the community books, but also in proprietary
@@ -5975,7 +5986,7 @@
 ; count-ifs of the args already processed and dot-product is the dot-product of
 ; the vector of those count-ifs and the counts already processed.
 
-  (declare (type (signed-byte 30) diff)
+  (declare (type #.*fixnum-type* diff)
            (xargs :guard (and (pseudo-term-listp args)
                               (integer-listp counts)
                               (equal (len args) (len counts)))))
@@ -5987,7 +5998,7 @@
          (too-many-ifs0 (cdr args) (cdr counts) diff ctx))
         (t
          (let ((count1 (the-fixnum! (count-ifs (car args)) ctx)))
-           (declare (type (unsigned-byte 29) count1))
+           (declare (type #.*fixnat-type* count1))
            (too-many-ifs0 (cdr args)
                           (cdr counts)
                           (the-fixnum! (+ (the-fixnum! (* count1
@@ -6054,11 +6065,11 @@
 ; not to go inside of quotes, returning a lower bound on the number of times
 ; term1 occurs in term2.
 
-  (declare (type (signed-byte 30) a m bound-m)
+  (declare (type #.*fixnum-type* a m bound-m)
            (xargs :measure (acl2-count term2)
                   :ruler-extenders (:lambdas)
                   :guard (and (pseudo-termp term2)
-                              (signed-byte-p 30 (+ bound-m m))
+                              (signed-byte-p *fixnum-bits* (+ bound-m m))
                               (<= 0 a)
                               (<= 0 m)
                               (<= 0 bound-m)
@@ -6074,11 +6085,11 @@
          (t (occur-cnt-bounded-lst term1 (fargs term2) a m bound-m)))))
 
 (defun occur-cnt-bounded-lst (term1 lst a m bound-m)
-  (declare (type (signed-byte 30) a m bound-m)
+  (declare (type #.*fixnum-type* a m bound-m)
            (xargs :measure (acl2-count lst)
                   :ruler-extenders (:lambdas)
                   :guard (and (pseudo-term-listp lst)
-                              (signed-byte-p 30 (+ bound-m m))
+                              (signed-byte-p *fixnum-bits* (+ bound-m m))
                               (<= 0 a)
                               (<= 0 m)
                               (<= 0 bound-m)
@@ -6086,7 +6097,7 @@
   (the-fixnum
    (cond ((endp lst) a)
          (t (let ((new (occur-cnt-bounded term1 (car lst) a m bound-m)))
-              (declare (type (signed-byte 30) new))
+              (declare (type #.*fixnum-type* new))
               (if (eql new -1)
                   -1
                 (occur-cnt-bounded-lst term1 (cdr lst) new m bound-m)))))))
@@ -6098,7 +6109,7 @@
 
 ; We assume (<= lhs rhs).
 
-  (declare (type (signed-byte 30) lhs rhs)
+  (declare (type #.*fixnum-type* lhs rhs)
            (xargs :guard (and (pseudo-term-listp args)
                               (pseudo-termp val)
                               (<= 0 lhs)
@@ -6107,13 +6118,13 @@
   (cond
    ((endp args) nil)
    (t (let ((x (the-fixnum! (count-ifs (car args)) ctx)))
-        (declare (type (signed-byte 30) x))
+        (declare (type #.*fixnum-type* x))
         (cond ((eql x 0)
                (too-many-ifs1 (cdr args) val lhs rhs ctx))
               (t (let ((lhs
                         (occur-cnt-bounded (car args) val lhs x
                                            (the-fixnum (- rhs x)))))
-                   (declare (type (signed-byte 30) lhs))
+                   (declare (type #.*fixnum-type* lhs))
                    (if (eql lhs -1)
                        -1
                      (too-many-ifs1 (cdr args) val lhs rhs ctx)))))))))
@@ -6141,57 +6152,6 @@
   (cond ((null args) t)
         (t (and (dumb-occur-lst (car args) top-clause)
                 (all-args-occur-in-top-clausep (cdr args) top-clause)))))
-
-(defun cons-count-bounded-ac (x i max)
-
-; We accumulate into i the number of conses in x, bounding our result by max,
-; which is generally not less than i at the top level.
-
-; With the xargs declarations shown below, we can verify termination and guards
-; as follows.
-
-;   (verify-termination (cons-count-bounded-ac
-;                        (declare (xargs :verify-guards nil))))
-;
-;   (defthm lemma-1
-;     (implies (integerp i)
-;              (integerp (cons-count-bounded-ac x i max)))
-;     :rule-classes (:rewrite :type-prescription))
-;
-;   (defthm lemma-2
-;     (implies (integerp i)
-;              (>= (cons-count-bounded-ac x i max) i))
-;     :rule-classes :linear)
-;
-;   (defthm lemma-3
-;     (implies (and (integerp i)
-;                   (integerp max)
-;                   (<= i max))
-;              (<= (cons-count-bounded-ac x i max)
-;                  max))
-;     :rule-classes :linear)
-;
-;   (verify-guards cons-count-bounded-ac)
-
-  (declare (type (signed-byte 30) i max)
-           (xargs :guard (<= i max)
-                  :measure (acl2-count x)
-                  :ruler-extenders :lambdas))
-  (the (signed-byte 30)
-    (cond ((or (atom x) (>= i max))
-           i)
-          (t (let ((i (cons-count-bounded-ac (car x) (1+f i) max)))
-               (declare (type (signed-byte 30) i))
-               (cons-count-bounded-ac (cdr x) i max))))))
-
-(defun cons-count-bounded (x)
-
-; We return the number of conses in x, except we bound our result by
-; (fn-count-evg-max-val).  We choose (fn-count-evg-max-val) as our bound simply
-; because that bound is used in the similar computation of fn-count-evg.
-
-  (the (signed-byte 30)
-    (cons-count-bounded-ac x 0 (fn-count-evg-max-val))))
 
 (mutual-recursion
 
@@ -6263,7 +6223,7 @@
 ; viewed as the smaller, so we need to be confident that this is not a problem,
 ; and indeed it is not when we call max-form-count in smallest-common-subterms.
 
-  (the (signed-byte 30)
+  (the #.*fixnat-type*
     (cond ((variablep term) 0)
           ((fquotep term) (cons-count-bounded (cadr term)))
           ((eq (ffn-symb term) 'if)
@@ -6272,8 +6232,8 @@
           (t (max-form-count-lst (fargs term) 1)))))
 
 (defun max-form-count-lst (lst acc)
-  (declare (type (signed-byte 30) acc))
-  (the (signed-byte 30)
+  (declare (type #.*fixnat-type* acc))
+  (the #.*fixnat-type*
     (cond ((>= acc (fn-count-evg-max-val))
            (fn-count-evg-max-val))
           ((null lst) acc)
@@ -6537,11 +6497,14 @@
 ; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
 ; books/hints/basic-tests.lisp -- two occurrences
 
+; At the default-hint.lisp occurrence there is a handy comment explaining
+; how to get the new guard.
+
 ; WARNING: The name "rewrite-constant" is a misnomer because it is not really
 ; constant during rewriting.  For example, the active-theory is frequently
 ; toggled.
 
-; The Rewriter's Constant Argument -- rcnst
+; The Rewriter's ``Constant Argument'' -- rcnst
 
 ; In nqthm the rewriter accessed many "special variables" -- variables
 ; bound outside the rewriter.  Some of these were true specials in the
@@ -6561,8 +6524,7 @@
 
 ;    field                           where set        soundness
 ; pt                               rewrite-clause         *
-; current-literal not-flg          rewrite-clause
-; current-literal atm              rewrite-clause
+; current-literal                  rewrite-clause
 
 ; top-clause                       simplify-clause1
 ; current-clause                   simplify-clause1
@@ -6577,18 +6539,27 @@
 ; The fields marked with *'s are involved in the soundness of the result
 ; of rewriting.  The rest are of heuristic use only.
 
-; The current-literal not-flg and atm are always used together so we bundle
-; them so we can extract them both at once:
+; This is a balanced binary tree of depth 4 (first 12 fields) and 5 (last 8
+; fields), constructed by the utility in books/tools/btree.lisp. The order in
+; this record is based on a heuristic (syntactic, not dynamic) judgement of the
+; frequency and cost of access and change (assuming change is about 3 times
+; more expensive than access.  But changes to this ordering of tips has had
+; almost insignificant impact on the time to do full regressions.  So don't
+; overthink this.  Indeed, we adopted the balanced tree approach simply because
+; it is just rational and doesn't strongly suggest that we've dynamically
+; determined the frequency of access and change (as an ad hoc layout might).
 
-  ((active-theory . (rewriter-state . rw-cache-state))
-   current-enabled-structure
-   (pt restrictions-alist . expand-lst)
-   (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
-   (top-clause . current-clause)
-   ((splitter-output . current-literal) . oncep-override)
-   (nonlinearp . cheap-linearp)
-   (case-split-limitations . forbidden-fns)
-   . backchain-limit-rw)
+  ((((CURRENT-ENABLED-STRUCTURE . PT)
+     NONLINEARP . FORBIDDEN-FNS)
+    (HEAVY-LINEARP . ONCEP-OVERRIDE)
+    REWRITER-STATE . BACKCHAIN-LIMIT-RW)
+   ((RESTRICTIONS-ALIST . CURRENT-LITERAL)
+    CASE-SPLIT-LIMITATIONS . EXPAND-LST)
+   ((TERMS-TO-BE-IGNORED-BY-REWRITE . ACTIVE-THEORY)
+    FNS-TO-BE-IGNORED-BY-REWRITE
+    . TOP-CLAUSE)
+   (FORCE-INFO . CURRENT-CLAUSE)
+   RW-CACHE-STATE . SPLITTER-OUTPUT)
   t)
 
 ; Active-theory is either :standard or :arithmetic.  (It was added first to
@@ -6645,8 +6616,9 @@
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.
 
-; Cheap-linearp -- A boolean indicating whether linear arithmetic should avoid
-; rewriting terms to turn into polys and avoid adding linear lemmas.
+; Heavy-linearp -- Indicates whether linear arithmetic should rewrite terms to
+; turn into polys and add linear lemmas.  When :heavy, do extra work when
+; rewriting IF calls.
 
 ; We always obtain our rewrite-constant by loading relevant information into
 ; the following empty constant.  Warning: The constant below is dangerously
@@ -6669,7 +6641,7 @@
         :fns-to-be-ignored-by-rewrite nil
         :force-info nil
         :nonlinearp nil
-        :cheap-linearp nil
+        :heavy-linearp t
         :oncep-override :clear
         :pt nil
         :restrictions-alist nil
@@ -6677,6 +6649,9 @@
         :terms-to-be-ignored-by-rewrite nil
         :top-clause nil
         :backchain-limit-rw nil))
+
+(defstub heavy-linear-p () t)
+(defattach heavy-linear-p constant-nil-function-arity-0)
 
 ; So much for the rcnst.
 
@@ -6687,6 +6662,13 @@
 ; TYPE-ALIST| and the other record functions, because that form comes about by
 ; macroexpanding this defrec.  But if you don't change that PROGN, however, the
 ; build will fail loudly (via a redefinition error).
+
+; WARNING: You must also change (at least) the definition of mfc-obj in
+; books/arithmetic-5/lib/basic-ops/building-blocks.lisp.  Note that mfc-obj is
+; guard-veriable because it builds in the proper guard for (access
+; metafunction-context mfc :obj) and then uses (cadr mfc) instead of the access
+; form.  Similar issues arise around the rewrite-constant.  See the warning
+; there about nonlinearp-default-hint.
 
 ; See the Essay on Metafunction Support, Part 1 for an explanation of the use
 ; of this record.
@@ -6898,7 +6880,7 @@
     (setq *step-limit-error-p* 'error)
     (throw 'step-limit-tag ; irrelevant value
            t))
-  (the (signed-byte 30)
+  (the #.*fixnum-type*
     (prog2$ (er hard? ctx str start where)
             -1)))
 
@@ -6935,7 +6917,7 @@
 ; current binding of a symbol.
 
                   (symbolp step-limit)))
-  `(the (signed-byte 30)
+  `(the #.*fixnum-type*
         (cond
          ((< 0 (the-fixnum ,step-limit))
           (1-f ,step-limit))
@@ -6981,7 +6963,7 @@
            (t (let ((call1
                      `(let ((step-limit
                              (decrement-step-limit step-limit)))
-                        (declare (type (signed-byte 30) step-limit))
+                        (declare (type #.*fixnum-type* step-limit))
                         ,call0))
                     (step-limit-tail (assoc-keyword :step-limit (cdr args))))
                 (cond (step-limit-tail
@@ -7027,7 +7009,7 @@
                 #-cltl2
                 ,(let ((var (gensym)))
                    `(let ((,var ,call))
-                      (declare (type (signed-byte 30) ,var))
+                      (declare (type #.*fixnum-type* ,var))
                       (setq *deep-gstack* gstack)
                       ,var)))
                (t ,call))
@@ -7175,14 +7157,26 @@
 
 ; X is a rewrite-rule or linear-lemma record.  If the field is inappropriate
 ; but the field is one as expected by the guard, then we return the special
-; value :get-rule-field-none.
+; value :get-rule-field-none.  Caveat: If x is a rewrite-rule of subclass
+; rewrite-quoted-constant of form [2], we switch the interpretation of :lhs and
+; :rhs!
 
-  (declare (xargs :guard (let ((fields '(:rune :hyps :lhs :rhs)))
+  (declare (xargs :guard (let ((fields '(:rune :hyps :lhs :rhs :max-term)))
                            (and (not (member-eq x fields))
                                 (member-eq field fields)))))
   `(let ((x ,x))
      (cond ((eq (record-type x) 'rewrite-rule)
-            (access rewrite-rule x ,field))
+            ,(cond ((member-eq field '(:lhs :rhs))
+                    `(cond ((and (eq (access rewrite-rule x :subclass)
+                                     'rewrite-quoted-constant)
+                                 (eql (car (access rewrite-rule x
+                                                   :heuristic-info))
+                                      2))
+                            (access rewrite-rule x
+                                    ,(if (eq field :lhs) :rhs :lhs)))
+                           (t (access rewrite-rule x ,field))))
+                   ((eq field ':max-term) :get-rule-field-none)
+                   (t `(access rewrite-rule x ,field))))
            ((eq (record-type x) 'linear-lemma)
             ,(cond ((member-eq field '(:lhs :rhs)) :get-rule-field-none)
                    (t `(access linear-lemma x ,field))))
@@ -7343,485 +7337,702 @@
                     '(term-evisc-tuple t state))
                  ,frames))
 
-; Essay on "Break-Rewrite"
+; Essay on Break-Rewrite
 ; Essay on BRR
 
-; We wish to develop the illusion of a recursive function we will call
-; "break-rewrite".  In particular, when a rule is to be applied by
-; rewrite-with-lemma and that rule is monitored (i.e., its rune is on
-; brr-monitored-runes) then we imagine the rule is actually applied by
-; "break-rewrite", which is analogous to rewrite-with-lemma but instrumented to
-; allow the user to watch the attempt to apply the rule.  Rewrite-fncall and
-; add-linear-lemma are similarly affected.  Because we find "break-rewrite" a
-; tedious name (in connection with user-available macros for accessing context
-; sensitive information) we shorten it to simply brr when we need a name that
-; is connected with the implementation of "break-rewrite."  There is no
-; "break-rewrite" function -- its presence is an illusion -- and we reserve the
-; string "break-rewrite" to refer to this mythical function.
+; The ``interactive rewriter,'' break-rewrite or brr, is an illusion created by
+; the use of a wormhole to maintain a state machine and to interact with the
+; user without influencing the ultimate behavior of the rewriter.  We implement
+; it this way, rather than directly in rewrite, to make it obvious that
+; interacting with break-rewrite will not change the behavior of rewrite.
 
-; Rather than actually implement "break-rewrite" we sprinkle "break points"
-; through the various rewrite functions.  These break points are the functions
-; brkpt1 and brkpt2.  The reason we do this is so that we don't have to
-; maintain two parallel versions of rewrite-with-lemma (and others) as
-; discussed above.  It is not clear this is justification for what is a
-; surprisingly complicated alternative, especially since a recursive call to
-; the rewriter would make it possible to :EVAL more than once.  (For example,
-; if the :EVAL says that the attempt failed because hyp 3 rewrote to xyz, we
-; might want to :monitor some other rules and do the :EVAL again to see what
-; went wrong.)  But since we haven't pursued any other approach, it is not
-; clear that the complications are isolated in this one.
+; This essay describes the implementation of brr.  However, before reading this
+; essay we recommend that you familiarize yourself how to use brr by reading
+; :doc break-rewrite and :doc monitor.
 
-; The main complication is that if we really had a recursive "break-rewrite"
-; then we could have local variables associated with each attempt to apply a
-; given rule.  This would allow us, for example, to set a variable early in
-; "break-rewrite" and then test it late, without having to worry that recursive
-; calls of "break-rewrite" in between will see the setting.  An additional
-; complication is that to interact with the user we must enter a wormhole and
-; thus have no effect on the state.
+; Since break-rewrite is implemented via a wormhole, to add or correct the
+; functionality of break-rewrite you have to be a ``wormhole programmer.''
+; Please read :doc wormhole-programming-tips.  In addition, you should be
+; familiar with the user's view of break-rewrite.  To that end, read :doc
+; break-rewrite and its subtopics including :doc brr-commands and :doc monitor.
 
-; Our first step is to implement a slightly different interface to wormholes that
-; will provide us with global variables that retain their values from one exit to
-; the next entrance but that can be overwritten conveniently upon entrance.  See
-; brr-wormhole below.  Assume that we have such a wormhole interface providing
-; what we call "brr-globals."
+; To help you explore break-rewrite for yourself we have provided a sample
+; script, at the end of this essay, together with a line-by-line commentary on
+; what is going on.  The sample script can also be found as Scenario 1 in
+; books/demos/brr-test-input.lsp.  The file books/demos/brr-test-log.txt
+; contains the output produced by running that script.  But we suggest not
+; playing with the sample script until you've read through the material below.
 
-; We use the notion of brr-globals to implement "brr-locals."  Of course, what
-; we implement is a stack.  That stack is named brr-stack and it is a
-; brr-global.  By virtue of being a brr-global it retains its value from one
-; call of brr-wormhole to the next.
+; The break-rewrite wormhole is named brr.  The status of the wormhole is
+; maintained as a defrec named brr-status.  The fields of that record are
+; described below and we then give an example that actually comes from the
+; sample script.
 
-; Imagine then that we have this stack.  Its elements are frames.  Each frame
-; specifies the local bindings of various variables.  Inside brkpt1 and brkpt2
-; we access these "brr-locals" via the top-most frame on the stack.  Brkpt1
-; pushes a new frame, appropriately binding the locals.  brkpt2 pops that frame
-; when it exits "break-rewrite".
+; entry-code -- :skip or :enter as normal for wormholes
 
-; For sanity, each frame will contain the gstack for the brkpt1 that built it.
-; Any function accessing a brr-local will present its own gstack as proof that
-; it is accessing the right frame.  One might naively assume that the presented
-; gstack will always be equal to the gstack in the top-most frame and that
-; failure of this identity check might as well signal a hard error.  How might
-; this error occur?  The most obvious route is that we have neglected to pop a
-; frame upon exit from the virtual "break-rewrite", i.e., we have forgotten to
-; call brkpt2 on some exit of rewrite-with-lemma.  More devious is the
-; possibility that brkpt2 was called but failed to pop because we have
-; misinterpreted our various flags and locally monitored runes.  These routes
-; argue for a hard error because they ought never to occur and the error
-; clearly indicates a coding mistake.  But it is possible for the stack to get
-; "out of sync" in an entirely user controlled way!
+; brr-monitored-runes -- list of monitored runes and their break criteria
 
-; Suppose we are in brkpt1.  It has pushed a frame with the current gstack.
-; The user, typing to "break-rewrite" (the brr-wormhole in brkpt1) invokes the
-; theorem prover and we enter another brkpt1.  It pushes its frame.  The user
-; issues the command to proceed (i.e., to attempt to establish the hypotheses).
-; The inner brkpt1 is terminated and control returns to rewrite.  Note that we
-; are still in the inner "break-rewrite" because we are pursuing the hyps of
-; the inner rule.  Consistent with this note is the fact that the stack
-; contains two frames, the top-most one being that pushed by the inner brkpt1.
-; Control is flowing toward the inner brkpt2 where, normally, the user would
-; see the results of trying to establish the inner hyps.  But then the user
-; aborts.  Control is thrown to the outer brkpt1, because all of this action
-; has occurred in response to a recursive invocation of the theorem prover from
-; within that wormhole.  But now the stack at that brkpt1 is out of sync: the
-; gstack of the wormhole is different from the gstack in the top-most frame.
-; So we see that this situation is unavoidable and must be handled gracefully.
+; brr-gstack: a representation of the rewriter's call stack leading to the
+;    current application of the monitored rune that caused the current break.
+;    When you execute the brr-command :path (e.g., command [2] in the script)
+;    in a brr interactive break you are seeing a display of the gstack as
+;    printed by cw-gstack.  By the way, it should be the case that when in raw
+;    Lisp under a brr break, the value of the :brr-gstack component of the
+;    brr-status is equal to the value of the raw Lisp special var
+;    *deep-gstack*.
 
-; Therefore, to access the value of a brr-local we use a function which
-; patiently looks up the stack until it finds the right frame.  It simply
-; ignores "dead" frames along the way.  We could pop them off, but then we
-; would have to side-effect state to update the stack.  The way a frame binds
-; local variables is simply in an alist.  If a variable is not bound at the
-; right frame we scan on up the stack looking for the next binding.  Thus,
-; variables inherit their bindings from higher levels of "break-rewrite" as
-; though the function opened with (let ((var1 var1) (var2 var2) ...) ...).
-; When we "pop a frame" we actually pop all the frames up to and including the
-; one for the gstack presented to pop.  Finally, we need the function that
-; empties the stack.
+; brr-local-alist -- an alist binding variables that rewrite passed to the brr
+;    wormhole.  These variables are all related to the current break, e.g.,
+;    the LEMMA being applied, the TARGET, etc.
 
-; So much for the overview.  We begin by implementing brr-wormholes and
-; brr-globals.
+; brr-previous-status -- the brr-status from the previous (immediately
+;    superior) call of (the fictitious) break-rewrite.  Thus, you can think of
+;    a brr-status record as a stack of frames, each frame containing
+;    :brr-monitored-runes, :brr-gstack, and :brr-local-alist.
 
-; While a normal wormhole provides one "global variable" that persists over
-; entries and exits (namely, in the wormhole data field of the
-; wormhole-status), the brr-wormhole provides several.  These are called
-; "brr-globals."  The implementation of brr-globals is in two places: entry to
-; and exit from the wormhole.  The entry modification is to alter the supplied
-; form so that it first moves the variable values from the wormhole-input and
-; previous wormhole-status vectors into true state global variables.  See
-; brr-wormhole.  The exit modification is to provide exit-brr-wormhole which
-; moves the final values of the globals to the wormhole-status vector to be
-; preserved for the next entrance.
+; See the (defrec brr-status ...) event below for the actual layout of the
+; record.
 
-; NOTE: To add a new brr-global, look for all the functions containing the
-; string "Note: To add a new brr-global" and change them appropriately.  No
-; other changes are necessary (except, of course, passing in the desired values
-; for the new global and using it).
+; Here is an example brr-status object.  Actually, this is not the object
+; itself but a term that constructs a brr-status record.  The record itself is
+; hard to read and is, in fact, often huge because of the values of the RCNST
+; bindings in the :BRR-LOCAL-ALISTs.  The text below was printed by the
+; (print-brr-status t) command at line [ 3] of the sample brr script.  That
+; function substitutes the symbol |some-rewrite-constant| for each RCNST
+; binding in the brr-status stack.  In addition, it substitutes |some-nume| for
+; the :nume field of each rewrite-rule and linear-lemma.  The latter
+; substitution is done so that we can use print-brr-status in run-script books
+; (like books/demo/brr-test-book.lisp) which record in a -log.txt file the
+; correct output.  But numes change from one build of ACL2 to another if the
+; number of ACL2 system functions or lemmas are changed.  If you want to
+; actually see the RCNST bindings and NUME values, use (print-brr-status nil).
 
-(defun restore-brr-globals1 (name new-alist old-alist)
+; (MAKE BRR-STATUS
+;       :ENTRY-CODE ':ENTER
+;       :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+;       :BRR-GSTACK '((REWRITE-WITH-LEMMA NIL (AFN X)
+;                                         REWRITE-RULE (:REWRITE A)
+;                                         |some-nume| ((BFN X))
+;                                         IFF (AFN X)
+;                                         'T
+;                                         BACKCHAIN NIL NIL T)
+;                     (REWRITE 2 (AFN X) NIL . ?)
+;                     (SIMPLIFY-CLAUSE NIL (NOT (EFN X))
+;                                      (AFN X)))
+;       :BRR-LOCAL-ALIST '((LEMMA REWRITE-RULE (:REWRITE A)
+;                                 |some-nume| ((BFN X))
+;                                 IFF (AFN X)
+;                                 'T
+;                                 BACKCHAIN NIL NIL T)
+;                          (TARGET AFN X)
+;                          (UNIFY-SUBST (X . X))
+;                          (TYPE-ALIST ((EFN X) -129))
+;                          (POT-LIST)
+;                          (ANCESTORS)
+;                          (RCNST . |some-rewrite-constant|)
+;                          (INITIAL-TTREE))
+;       :BRR-PREVIOUS-STATUS
+;       (MAKE BRR-STATUS
+;             :ENTRY-CODE ':ENTER
+;             :BRR-MONITORED-RUNES '(((:REWRITE A) (:CONDITION QUOTE T)))
+;             :BRR-GSTACK 'NIL
+;             :BRR-LOCAL-ALIST 'NIL
+;             :BRR-PREVIOUS-STATUS NIL))
 
-; Retrieve the value of name under new-alist, if a value is specified;
-; otherwise use the value of name under old-alist.  See brr-wormhole.
+; This ``stack'' has two ``frames,'' the top-most frame being the frame in
+; which the rewriter is about to try to apply the :rewrite rule A to the target
+; (AFN X), and the deeper one being the status of brr at the top-level of ACL2.
 
-  (let ((pair (assoc-eq name new-alist)))
-    (cond (pair (cdr pair))
-          (t (cdr (assoc-eq name old-alist))))))
+; Break-rewrite is implemented by sprinkling calls of three ``break point
+; handlers'' into the rewrite clique.  (As of this writing -- May, 2023 --
+; there are 30 such calls in the clique.)  In each call, rewrite passes input
+; into the brr wormhole and that wormhole interprets the input and the current
+; status and decides whether to enter a read-eval-print loop.
 
-(defun restore-brr-globals (state)
+; The three break point handlers are functions named near-miss-brkpt1, brkpt1,
+; and brkpt2.  All three use a macro named brr-wormhole which is just a call of
+; wormhole, except that brr-wormhole puts a certain wrapper around the
+; wormhole's ``first form.''  Before wormhole evaluates that elaborated first
+; form, it sets the state global variables WORMHOLE-INPUT and WORMHOLE-STATUS.
+; All calls of the break-point handlers supply the rewriter's current gstack
+; and relevant variable bindings, to be assigned to wormhole-input by wormhole.
+; Wormhole also sets state global 'wormhole-status to the brr persistent-whs.
 
-; We assign incoming values to the brr-globals.  When brr-wormhole
-; enters a wormhole, this function is the first thing that is done.  See
-; brr-wormhole.
+; (Quick review of wormhole terminology from the Essay on Wormholes: the
+; ``persistent-whs'' of a wormhole named name is the last remembered wormhole
+; status of name and is kept in that part of raw Lisp's memory best thought of
+; as outside the reach of normal ACL2 terms.  The raw Lisp varible
+; *wormhole-status-alist* holds the persistent-whs of every known wormhole but
+; is only accessible in raw Lisp.  To get the persistent-whs of a wormhole from
+; inside ACL2 (as opposed to raw Lisp) involves reading the ACL2 oracle.  When
+; inside the name wormhole, its status is stored in the state global variable
+; 'wormhole-status.  That copy of the status is called the ``ephemeral-whs''
+; because it disappears when the wormhole is exited.  :Doc
+; wormhole-programming-tips discusses several issues related to these two
+; concepts, namely ``wormhole coherence,'' whether to care about it, and how to
+; maintain it.  The brr wormhole is always coherent: the persistent-whs and
+; ephemeral-whs are equal whenever you look.)
 
-; NOTE: To add a new brr-global, this function must be changed.
+; The wrapper supplied by brr-wormhole sets the prompt to be the brr prompt and
+; gives special meaning to the value component of the error triple returned by
+; the first form.  If the first form returns (value t) the interactive loop is
+; started and if the first form returns (value nil) the wormhole is silently
+; exited.  (Note that brr-wormhole, like wormhole, also has an entry-lambda and
+; so it is possible for the entry lambda to say :enter and then the first form
+; to exit silently.)
 
-  (let ((new-alist (f-get-global 'wormhole-input state))
-        (old-alist (wormhole-data (f-get-global 'wormhole-status state))))
-    (pprogn
-     (f-put-global 'brr-monitored-runes
-                   (restore-brr-globals1 'brr-monitored-runes
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-evisc-tuple
-                   (restore-brr-globals1 'brr-evisc-tuple
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-stack
-                   (restore-brr-globals1 'brr-stack
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-gstack
-                   (restore-brr-globals1 'brr-gstack
-                                         new-alist old-alist)
-                   state)
-     (f-put-global 'brr-alist
-                   (restore-brr-globals1 'brr-alist
-                                         new-alist old-alist)
-                   state))))
+; The near-miss-brkpt1 and brkpt1 are similar in that if they :ENTER they look
+; at the wormhole-input (containing a gstack and an alist of rewrite variables)
+; and the wormhole-status (the old brr-status) and ``push'' a new frame onto
+; the old one.  See push-brr-status.
 
-(defun save-brr-globals (state)
+; The third handler, brkpt2, prints information, possibly interacts with the
+; user, and then pops the status stack, setting it to the :brr-previous-status.
+; See pop-brr-status.
 
-; We collect into an alist all of the brr-globals and their current values and
-; store that alist into the wormhole data field of (@ wormhole-status).  When
-; exiting from a brr-wormhole, this is the last thing that ought to be done.
-; See exit-brr-wormhole.
+; Every near-miss-brkpt1 call in the rewrite clique is balanced by a brkpt2
+; call.  Similarly, every brkpt1 call is balanced by brkpt2 call.  (Weird
+; clarification: There are 3 calls of near-miss-brkpt1, 4 calls of brkpt1, and
+; 23 calls of brkpt2.  So we mean ``balanced'' in the dynamic sense.  Typically
+; after a call of brkpt1, the rewrite code case splits as it tries to apply the
+; lemma and on each exit from that case split there will be a call of brkpt2
+; reporting the results.  Only one of those many brkpt2 calls is executed.)
+; Near-miss-brkpt1 and brkpt1 print a banner indicating a new ``call'' into the
+; fictitious break-rewrite and brkpt2 prints a final message indicating a
+; ``return'' from break-rewrite.  The first two interpret keyword commands as
+; per *brkpt1-aliases* and the last interprets them as per *brkpt2-aliases*.
 
-; NOTE: To add a new brr-global, this function must be changed.
+; Near-miss-brkpt1 is called every time the rewriter attempts to unify a rule's
+; pattern with the rewriter's target but unification fails.  (By a rule's
+; ``pattern'' we mean, for example, the left-hand side of a :rewrite rule.)
+; The entry-lambda in near-miss-brkpt1 determines whether the rule's pattern is
+; a near miss to the target according to the break criteria, if any, associated
+; with the rule's rune in :brr-monitored-runes.  If so, we :ENTER the wormhole.
+; The first form of the wormhole assembles and pushes the new status onto the
+; old status (via push-brr-status), prints an ``entry to break-rewrite'' banner
+; with a near-miss message, and returns (value t), which means additional
+; interactive input from the user is read.  What happens after that is
+; the same as in brkpt1, so just read on.
 
-  (f-put-global 'wormhole-status
-                (make-wormhole-status
-                 (f-get-global 'wormhole-status state)
-                 :ENTER
-                 (list
-                  (cons 'brr-monitored-runes
-                        (f-get-global 'brr-monitored-runes state))
-                  (cons 'brr-evisc-tuple
-                        (f-get-global 'brr-evisc-tuple state))
-                  (cons 'brr-stack
-                        (f-get-global 'brr-stack state))
-                  (cons 'brr-gstack
-                        (f-get-global 'brr-gstack state))
-                  (cons 'brr-alist
-                        (f-get-global 'brr-alist state))))
-                state))
+; Brkpt1 is called every time a rule's pattern successfully unifies.  The
+; entry-lambda just checks whether the rule's rune has an entry on
+; :brr-monitored-runes and if so :ENTERs.  The first form assembles and pushes
+; the new status (via push-brr-status) and then evals the rune's :condition
+; expression to see if it is satisfied.  If so, it prints the break-rewrite
+; entry banner and returns (value t), soliciting further input from the user.
+; If not, it pops the status (via pop-brr-status) and returns (value nil),
+; silently exiting the wormhole.
 
-(defun get-brr-global (var state)
+; So now let's suppose we're in either near-miss-brkpt1 or brkpt1 and reading
+; input from the user.  Keyword commands are interpretted as specified by
+; *brkpt1-aliases*.  See :doc brr-commands.  Most commands just display
+; information like the :target being rewritten, the :path rewrite took to reach
+; this target, etc.  Typically the user will inspect the current state of the
+; rewriter with these commands.  But ultimately the user will either want to
+; abort the proof attempt because he or she finally understands what's going
+; wrong, or will want to allow the rewriter to proceed to try to use the rule.
+; Proceeding here means to try to relieve the rule's hypotheses, rewrite the
+; right-hand side, etc.  To abort the user types the command :a!.  To proceed
+; the user types one several commands (:ok, :go, :eval, or their variants)
+; depending on the user's interest in seeing the
+; results of the current attempt to apply the rule.  See :doc brr-commands.
 
-; This function should be used whenever we wish to access a brr-global.  That
-; is, we should write (get-brr-global 'brr-stack state) instead of either
-; (f-get-global 'brr-stack state) or (@ brr-stack), even those these
-; alternative forms are equivalent when we are in a brr-wormhole.  But if we
-; are not in a brr-wormhole, these alternative forms might cause arbitrary lisp
-; errors because the brr-globals are not (generally) bound outside of wormholes
-; (though there is nothing to prevent us from using the same symbols as
-; "normal" state globals -- their values would just be unavailable to us from
-; within brr-wormholes because they get over-written upon entry to the
-; wormhole.)  Thus, this function checks that the variable really is bound and
-; causes a hard error if it is not.  That is generally an indication that a
-; function intended to be used only inside wormholes is being called outside.
+; If the user aborts, the cleanup form in wormhole1 will set the brr
+; persistent-whs back to the status brr had at the top-level.  In particular,
+; it pops the brr-status stack all the way back to the first frame and saves
+; that frame to persistent-whs.  This behavior by the cleanup form is unique to
+; the brr wormhole.  Aborts from other wormholes just save the current
+; ephemeral-whs to persistent-whs.
 
-; NOTE: To add a new brr-global, this function must be changed.
+; If, on the other hand, the user proceeds from near-miss-brkpt1 or brkpt1,
+; e.g., with :ok, :go, or :eval, this is what happens: First, we adjust the
+; current status by adding two new bindings to the :brr-local-alist.  THese
+; bindings are intended to tell the eventual brkpt2 handler how to behave when
+; it is called on the current brr-status.  The first new binding saves the
+; current value of standard-oi so that if the user changes it in an inferior
+; break it can be restored when returning to this brr-status.  The second new
+; binding adds a value for the symbol ACTION.  The possible values are SILENT
+; (if we exited with some form of :ok), PRINT (some form of :go), or BREAK
+; (some form of :eval).  The ACTION binding tells brkpt2 what to do when we get
+; back to this brr-status.  Then proceed-from-brkpt1 returns (value :q) which
+; exits the ld and wormhole.  The cleanup form (in the non-abort situation)
+; saves the brr ephemeral-whs to persistent-whs and then undoes all state
+; changes that occurred in the wormhole.  Finally, near-miss-brkpt1 or brkpt1,
+; appropriately, is exited.
 
-  (cond ((eq (f-get-global 'wormhole-name state) 'brr)
-         (case var
-               (brr-monitored-runes
-                (f-get-global 'brr-monitored-runes state))
-               (brr-evisc-tuple
-                (f-get-global 'brr-evisc-tuple state))
-               (brr-stack
-                (f-get-global 'brr-stack state))
-               (brr-gstack
-                (f-get-global 'brr-gstack state))
-               (brr-alist
-                (f-get-global 'brr-alist state))
-               (otherwise
-                (illegal 'get-brr-global
-                         "Unrecognized brr-global, ~x0."
-                         (list (cons #\0 var))))))
-        (t (illegal 'get-brr-global
-                    "It is illegal to call get-brr-global unless you are ~
-                     under break-rewrite and you are not.  The argument to ~
-                     get-brr-global was ~x0."
-                    (list (cons #\0 var))))))
+; The rewriter continues to do whatever it was doing.  But eventually (in the
+; absence of interrupts and aborts) it reaches the balancing call of brkpt2.
 
-(defun exit-brr-wormhole (state)
+; Of course, in between the exit from the first handler and the entry to the
+; second, many more entries and exits of the handlers are encountered but they
+; don't do anything if the relevant runes are not being monitored.  So the
+; question arises: which calls of brkpt2 match ``open'' calls of brkpt1 (or
+; near-miss-brkpt1) and which don't?  That is one reason why :brr-gstack is a
+; component of brr-status.  When brkpt2 is called and the current rewrite
+; gstack is equal to the :brr-gstack in the current brr-status, it means this
+; call of brkpt2 should be :ENTERed and act like it is continuing the earlier
+; brkpt1 call.  (We are being sloppy: we should say ``brkpt1 or
+; near-miss-brkpt1 call.''  Brkpt2 handles them the same way and so we persist
+; now in being sloppy and just talking as though brkpt1 built the status brkpt2
+; is seeing.)
 
-; This function should be called on every exit from a brr-wormhole.  It saves
-; the brr-globals into the wormhole-status to be preserved for future entries
-; and then it returns (value :q) which will cause us to exit the wormhole.
+; Once inside the resulting brkpt2, the first form augments the bindings in the
+; :BRR-LOCAL-ALIST with the alist bindings passed by wormhole from rewrite into
+; from wormhole-input.  Those new bindings include whether the rule was
+; successfully applied or not (the value of the binding of WONP) and what the
+; results were or why it failed.  The first form then inspects the binding of
+; ACTION.  If ACTION is bound to SILENT, then the earlier brkpt1 exited with a
+; version of :ok and brkpt2 just exits, popping the stack with pop-brr-stack.
+; If ACTION is bound to PRINT (i.e., a :go exit), brkpt2 explains what rewrite
+; did and then pops the stack and exits.  If ACTION is bound to BREAK (i.e., an
+; :eval exit), brkpt2 solicits input from the user.  Keyword commands are
+; interpreted as by *brkpt2-aliases* where all the exit commands pop the stack
+; and exit (see exit-brr).
 
-  (pprogn (save-brr-globals state)
-          (value :q)))
+; (By the way, if you're looking at a brr-status and there is a binding for
+; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of of
+; FAILURE-REASON is NEAR-MISS then this brkpt2 closes a near-miss-brkpt1 and
+; otherwise it closes a brkpt1.)
+
+; Changing break-rewrite can require editing several different ACL2 source files.
+; Some possibly unexpected places you should definitely look at are:
+
+; * the clean-up code in the #-acl2-loop-only code in wormhole1 treats the brr
+;   wormhole differently than all other wormholes
+
+; * from the name brr-evisc-tuple you might think it is a component of the
+;   brr-status, but it is not.  It is a state global variable that is mirrored
+;   by the raw Lisp special *wormhole-brr-evisc-tuple* and magically set by
+;   brr-evisc-tuple-oracle-update which is called in some possibly unexpected
+;   places, including ld-read-command and waterfall-step.
+
+; -----------------------------------------------------------------
+; A Sample Script to Exercise Break-Rewrite
+
+; So below is the sample script that shows how you might explore break-rewrite.
+; See also books/demos/brr-test-input.lsp which is a ``run-script'' book that
+; replays several sessions with break-rewrite.  The log file from those sessions
+; is books/demos/brr-test-log.txt.
+
+; But we recommend, first, that you replay the following script in a fresh ACL2
+; session so you see the interaction ``live.''  First do this setup, which
+; introduces some rules, defines a function to check whether the brr wormhole
+; is coherent (persistent-whs and ephemeral-whs are equal), and then enables
+; brr and installs a monitor on rule a.  By the way, the coherence checker
+; below is unnecessary but we want to show you how to get your hands on the
+; persistent-whs and ephemeral-whs when you're in the brr wormhole.  Note that
+; the persistent-whs is ``read'' via the ACL2 oracle.
+
+; (encapsulate ((afn (x) t)
+;               (bfn (x) t)
+;               (cfn (x) t)
+;               (dfn (x) t)
+;               (efn (x) t))
+;   (local (defun afn (x) (declare (ignore x)) t))
+;   (local (defun bfn (x) (declare (ignore x)) t))
+;   (local (defun cfn (x) (declare (ignore x)) t))
+;   (local (defun dfn (x) (declare (ignore x)) t))
+;   (local (defun efn (x) (declare (ignore x)) t))
+;   (defthm a (implies (bfn x)(afn x)))
+;   (defthm b (implies (cfn x)(bfn x)))
+;   (defthm c (implies (dfn x)(cfn x)))
+;   (defthm d (implies (efn x)(dfn x)))
+;   )
+; (defun brr-coherentp (state)
+;   (declare (xargs :mode :program :stobjs (state)))
+;   (if (eq (f-get-global 'wormhole-name state) 'brr)
+;       (er-let*
+;           ((persistent-whs (get-persistent-whs 'brr state))
+;            (ephemeral-whs (value (f-get-global 'wormhole-status state))))
+;         (value (equal persistent-whs ephemeral-whs)))
+;       (value t)))
+; (brr t)
+; (monitor 'a t)
+
+; Now execute each line below and make sure preserve the commented line
+; numbers.  Our description of what happens refers to these commands by the
+; line number and you will want to look at your output and compare it to our
+; descriptions.
+
+; (thm (implies (efn x) (afn x))) ; [ 0]
+; :target                         ; [ 1]
+; :path                           ; [ 2]
+; (print-brr-status t)            ; [ 3]
+; (brr-coherentp state)           ; [ 4]
+; (monitor 'b t)                  ; [ 5]
+; (print-brr-status t)            ; [ 6]
+; (monitored-runes)               ; [ 7]
+; :eval                           ; [ 8]
+; (print-brr-status t)            ; [ 9]
+; :ok                             ; [10]
+; (print-brr-status t)            ; [11]
+; :ok                             ; [12]
+; (print-brr-status t)            ; [13]
+
+; Trying the read the script above and the descriptions below WITHOUT the
+; interactive output is quite confusing.  Don't do it.  Replay the script and
+; look at the output as you read the following!  Alternatively, look at
+; books/demos/brr-test-log.txt (but the line number comments are missing).  (We
+; don't want to dump the output into this comment because it just too long!)
+
+; When we executed the thm command at [ 0] the rewriter eventually tried to
+; apply the rule A to (AFN X) and caused a break because rule A is monitored.
+; So we enter a break.  The prompt printed looks like this:
+
+; (1 Breaking (:REWRITE A) on (AFN X):
+
+; telling us we're at depth 1 in break-rewrite.
+
+; The commands at [ 1] and [ 2] print the target and the path the rewriter took
+; to get here.
+
+; The command at [ 3] is the term (print-brr-status t), which is of no interest
+; to the user but is an invaluable asset to the developer.  It prints the
+; current brr status.  It doesn't actually print the status object itself but
+; ``prettyifies'' it into a make brr-status term so it is easier to read.  The
+; t argument means ``hide the values of RCNST in the :brr-local-alist.'' We
+; advise always using the t argument.  An argument of NIL prints the actual
+; RCNST value.  RCNST is a rewrite-constant record that typically includes
+; several very large objects including the current enabled structure.  Note
+; also that print-brr-status does not return the object or the prettyified
+; version.  It just prints it because it has to fetch it from a wormhole and
+; works whether you're in a break or not (see the [13] where we call it at the
+; top-level).
+
+; Compare the output of the :path command at [ 2] to the :BRR-GSTACK component
+; of the status printed by [ 3].
+
+; Also note the value of :BRR-LOCAL-ALIST printed by [ 3].  It's an alist that
+; binds variables the rewriter passed into the wormhole via the wormhole-input
+; state global.  For example, LEMMA is bound to the actual rewrite-rule object
+; that caused the break, TARGET is bound to the target being rewritten (printed
+; by the :target command at [ 1], etc.  Note that RCNST's value has been
+; skipped in this print out.
+
+; Finally, notice the :BRR-PREVIOUS-STATUS component of [ 3].  It is the
+; top-level status, where only (:REWRITE A) is monitored and the other
+; components are empty.  As you can see, the brr-status is actually a stack and
+; the deepest status in the stack is the one from the top-level of ACL2 when
+; this proof started.
+
+; The command at [ 4] checks whether the brr wormhole is coherent.  It is.
+; Coherence is discussed in :doc wormhole-programming-tips and the function
+; brr-coherentp is not a defined system function but is defined in the sample
+; script.  You might study the definition there.  The brr wormhole is always
+; coherent.
+
+; At command [ 5] we install a monitor on the rewrite rule B.  It prints the new
+; list of monitored runes.  Comparing the print-brr-status at [ 3] to that at
+; [ 6] reveals that the only change is the value of :BRR-MONITORED-RUNES.
+
+; The (monitored-runes) command at [ 7] just prints that component of the
+; status.
+
+; At command [ 8] we :eval the rule A.
+
+; What happens at this point is that the rewriter proceeds to try to apply the
+; rule A to the target.  The rewriter does its thing and eventually tries to
+; apply rule B to target (BFN X).  Since we've installed a monitor on rule B,
+; that provokes a new break at depth 2.
+
+; (2 Breaking (:REWRITE B) on (BFN X):
+
+; Intuitively, the new break just pushes a new status on top of the old status
+; stack.  You can see this by comparing the status printed at [ 6] with the
+; status printed at [ 9].  Count the MAKEs.  There were two (meaning we were at
+; depth 1) and now there are three (meaning we are at depth 2).
+
+; The top-most status is different: it contains the same :BRR-MONITORED-RUNES
+; (although that would change if we monitored or unmonitored runes at this
+; depth), but the :BRR-GSTACK is now deeper, showing that we're rewriting (BFN
+; X) and trying to apply rule (:REWRITE B).  The :BRR-LOCAL-ALIST has the local
+; variables for this application of rewrite, and the :BRR-PREVIOUS-STATUS is --
+; ALMOST -- exactly the status shown by [ 6].  We say ``almost'' because note
+; that the :BRR-LOCAL-ALIST of the :BRR-PREVIOUS-STATUS differs from that in [
+; 6] by the addition of new bindings for SAVED-STANDARD-IO and ACTION.
+
+; Those values were stored when the :eval at [ 8] was executed.  When,
+; eventually, we pop back to that earlier status, break-rewrite will restore
+; STANDARD-IO to the saved value -- it might be changed in an inferior break --
+; and the ACTION tells break-rewrite that when we get back here we are to
+; interact with the user again.  Had we proceeded at [ 8] with, say, :ok
+; instead of :eval, we would have stored a different ACTION.  In short, when we
+; proceed from a break to try the rule, break-rewrite saves information so that
+; when it gets back here it knows what to do.
+
+; So now we're at break depth 2 and we issue the :ok command at [10].  That
+; releases the break on B and allows the rewriter to continue.  It succeeds and
+; we return to the break on A having rewritten the :target, (AFN X), to T.
+
+; Intuitively we just pop the status stack.  But look at the top-most status at
+; [11].  It is almost the status we saw just before we :eval'd at [ 8] except
+; for the SAVED-STANDARD-IO and ACTION bindings noted above (stored by :eval)
+; and bindings for WONP, FAILURE-REASON, BRR-RESULT, and FINAL-TTREE which are
+; completely new.
+
+; Those new bindings were put there when we popped the stack from depth 2 back
+; to depth 1.  The break at depth 2 is passing information up to the break at
+; depth 1.  So now the ACTION tells the us to enter an interactive loop again
+; and the new variables tell us rule A successfully applied and rewrote the
+; target to whatever BRR-RESULT is (i.e., T).
+
+; At [12] we issue the :ok command which exits depth 1 by popping the stack.
+; The proof completes with Q.E.D and the status printed at [13] is the
+; top-level one, where only rule A is monitored.
+
+; --- End of Essay on Break-Rewrite ---
+
+; The brr-status must be a cheap record because entry-code must be the car!  If
+; you wish to inspect a brr-status object, consider using the function
+; prettyify-brr-status, which hides the typically large value of the RCNST
+; binding in :brr-local-alist.
+
+(defrec brr-status
+  (entry-code (brr-monitored-runes . brr-gstack)
+              . (brr-local-alist . brr-previous-status))
+  t)
+
+(defun make-initial-brr-status (monitored-runes)
+  (make brr-status
+        :entry-code :enter
+        :brr-monitored-runes monitored-runes
+        :brr-gstack nil
+        :brr-local-alist nil
+        :brr-previous-status nil))
+
+(defun dive-to-deepest-brr-status (whs)
+  (let ((prev-whs (access brr-status  whs :brr-previous-status)))
+    (if (null prev-whs)
+        whs
+        (dive-to-deepest-brr-status prev-whs))))
+
+(defun top-level-brr-status (whs)
+
+; Given a brr-status, whs, we construct the corresponding top-level status.
+; This function is used by wormhole1 when aborting from whs up to the
+; top-level.  The top-level monitored runes are those originally found at the
+; top-level when the first break-rewrite frame was entered (which is now the
+; deepest brr-previous-status of whs).  All other fields are empty.  We expect
+; that the deepest brr-previous-status is exactly same as the status we
+; construct below, but we just want to be certain that the other fields are
+; empty.
+
+  (make-initial-brr-status
+   (access brr-status (dive-to-deepest-brr-status whs) :brr-monitored-runes)))
+
+(defun brr-depth1 (whs)
+; Whs is a brr-status.  Notice that it is actually a stack of statuses chained
+; through the brr-previous-status component.  We compute its depth.
+  (let ((prev-whs (access brr-status whs :brr-previous-status)))
+    (cond
+     ((null prev-whs)
+      0)
+     (t (+ 1 (brr-depth1 prev-whs))))))
+
+(defun brr-depth (state)
+  (brr-depth1 (f-get-global 'wormhole-status state)))
 
 (defmacro brr-wormhole (entry-lambda input-alist test-form aliases)
 
-; A brr-wormhole is a particular kind of wormhole.  A quick summary of the
-; differences:
-; (0) while our normal convention is that the entry code for all wormholes
-;     should be :ENTER, brr-wormholes really do use the :SKIP option and
-;     toggle between :SKIP and :ENTER frequently; the status of the
-;     brr-wormhole is thus (:key data), where data is the alist mapping
-;     brr-globals to their values as described below
-; (1) brr-wormhole implements brr-global variables which are set
-;     from input-alist (or else retain their values from the
-;     last exit of the 'brr wormhole).
-; (2) test-form returns (value t) or (value nil) indicating whether
-;     a break is to occur.
-; (3) the LD specials are manipulated so that no output appears before
-;     test-form is eval'd and an error in the test-form throws you out of
-;     the wormhole.  If the test-form returns (value nil), the wormhole
-;     entry/exit are entirely silent.
+; A brr-wormhole is just a wormhole except we put a wrapper around the first
+; form (here called the test-form) so that (value t) means enter the
+; interactive loop and (value nil) means silently exit.  (By the way, if the
+; test-form returns (value nil) it ought to pop-brr-status if it pushed one.)
+; The wrapper also sets the ld-keyword-aliases and the ld-prompt appropriately.
 
   (let ((aliases `(append ,aliases
                           '((:exit
                              0 (lambda nil
                                  (prog2$ (cw "The keyword command :EXIT is ~
                                               disabled inside BRR.  Exit BRR ~
-                                              with :ok or use :p! to pop or ~
-                                              :a! to abort; or exit ACL2 ~
-                                              entirely with ~x0.~%"
+                                              with :ok or :go, or use :a! to ~
+                                              abort; or exit ACL2 entirely ~
+                                              with ~x0.~%"
                                              '(exit))
                                          (value :invisible))))
                             (:quit
                              0 (lambda nil
                                  (prog2$ (cw "The keyword command :QUIT is ~
                                               disabled inside BRR.  Quit BRR ~
-                                              with :ok or use :p! to pop or ~
-                                              :a! to abort; or quit ACL2 ~
-                                              entirely with ~x0.~%"
+                                              with :ok or :go, or use :a! to ~
+                                              abort; or quit ACL2 entirely ~
+                                              with ~x0.~%"
                                              '(quit))
                                          (value :invisible))))))))
     `(wormhole 'brr
                ,entry-lambda
                ,input-alist
-               `(pprogn (restore-brr-globals state)
-                        (er-progn
-                         (set-ld-keyword-aliases! ,,aliases)
-                         (set-ld-prompt 'brr-prompt state)
+               `(er-progn
+                 (set-ld-keyword-aliases! ,,aliases)
+                 (set-ld-prompt 'brr-prompt state)
 
 ; The above reference to the function symbol brr-prompt is a little startling
 ; because we haven't defined it yet.  But we will define it before we use this
 ; macro.
 
+                 (mv-let (erp val state)
+                   ,,test-form
+                   (cond
+                    (erp
 
-                         (mv-let (erp val state)
-                                 ,,test-form
-                                 (cond
-                                  (erp (exit-brr-wormhole state))
-                                  (val
-                                   (er-progn (set-ld-error-action :continue state)
-; The aliases had better ensure that every exit  is via exit-brr-wormhole.
-                                             (value :invisible)))
-                                  (t (exit-brr-wormhole state))))))
+; If an error is signaled by the test-form we've made a programming mistake.
+; Check all callers of brr-wormhole!  Every test-form should either return
+; (value t) or (value nil).  The form should always clean up the brr-status
+; before returning (value nil) -- only the form knows whether it pushed a
+; brr-status frame that should be popped or not.
+
+                     (value
+                      (er hard 'brr-wormhole
+                          "The test-form provided to brr-wormhole has ~
+                           signalled an error.  This is a programming error ~
+                           by the ACL2 developers.  Please report this.")))
+                    (val
+
+; Entering the interactive loop.  All exits are as specified by the aliases, which
+; use proceed-from-brkpt1 or exit-brr, cleaning up the brr-status.
+
+                     (er-progn
+                      (set-ld-error-action :continue state)
+                      (with-output
+                        :off :all
+                        (disable-ubt
+                         (msg "Note that ~x0 was executed when an interactive ~
+                               break occurred due to a monitored rule; see ~
+                               :DOC break-rewrite."
+                              'disable-ubt)))
+
+; We solicit user input now.  The aliases control all exits via
+; proceed-from-brkpt1 or exit-brr, appropriately dealing with the brr-status.
+
+                      (value :invisible)))
+                    (t
+
+; The test-form returned (value nil) and is assumed to have cleaned up the
+; brr-status before doing so.
+
+                       (value :q)))))
                :ld-prompt  nil
                :ld-missing-input-ok nil
+               :ld-always-skip-top-level-locals nil
                :ld-pre-eval-filter :all
                :ld-pre-eval-print  nil
                :ld-post-eval-print :command-conventions
-               :ld-evisc-tuple nil
+;              :ld-evisc-tuple nil ; the ld-evisc-tuple stays the same
                :ld-error-triples  t
                :ld-error-action :error
                :ld-query-control-alist nil
                :ld-verbose nil)))
 
-(defun initialize-brr-stack (state)
-
-; This is a no-op that returns nil.  But it has the secret side effect of
-; setting the brr-global brr-stack to nil.  We don't want to reset all the
-; brr-globals: brr-monitored-runes and brr-evisc-tuple should persist.  The
-; others are irrelevant because they will be assigned before they are read.
-
-  (and (f-get-global 'gstackp state)
-       (brr-wormhole '(lambda (whs)
-                        (set-wormhole-entry-code whs :ENTER))
-                     '((brr-stack . nil))
-                     '(value nil)
-                     nil)))
-
-; This completes the implementation of brr-wormholes (except that we must be sure to
-; exit via exit-brr-wormhole always).
+; This completes the implementation of brr-wormholes, though we must remember
+; to use them properly!  E.g., when the test form pushes a new status but
+; returns (value nil) it should pop that status, and if it enters the loop it
+; must exit via proceed-from-brkpt1 or exit-brr.
 
 ; We now move on to the implementation of brr-locals.
 
-(defun lookup-brr-stack (var-name stack)
-
-; See the Essay on "Break-Rewrite".  Stack is a list of frames.  Each frame is
-; of the form (gstack' . alist).  We assoc-eq up the alists of successive
-; frames until we find one binding var-name.  We return the value with which
-; var-name is paired, or else nil if no binding is found.
-
-  (cond ((endp stack) nil)
-        (t (let ((temp (assoc-eq var-name (cdar stack))))
-             (cond (temp (cdr temp))
-                   (t (lookup-brr-stack var-name (cdr stack))))))))
-
-(defun clean-brr-stack1 (gstack stack)
-  (declare (xargs :guard (alistp stack)))
-  (cond ((endp stack)
-         nil)
-        ((equal gstack (caar stack)) stack)
-        (t (clean-brr-stack1 gstack (cdr stack)))))
-
-(defconst *cryptic-brr-message*
-  "If you are seeing this message after you have caused a console interrupt ~
-   (or otherwise have made a break into Lisp) or during a new prover call ~
-   made from within BRR, then it is likely that this is a bit of routine BRR ~
-   housekeeping.  (In the latter case, of a new prover call made from within ~
-   BRR, you can probably avoid this message by calling :brr nil before making ~
-   that new prover call.)  Otherwise, the ACL2 implementors would appreciate ~
-   a script showing how to reproduce this message.")
-
-(defun clean-brr-stack (gstack stack)
-
-; See the Essay on "Break-Rewrite".  Stack is a list of frames.  Each frame is
-; of the form (gstack' . alist), where the frames are ordered so that each
-; successive gstack' is at a higher level than the previous one.  (But note
-; that they do not ascend in increments of one.  That is, suppose the
-; top frame of stack is marked with gstack' and the next-to-top frame is
-; marked with gstack''.  Then gstack' is an extension of gstack'', i.e.,
-; some cdr of gstack' is gstack''.  We sweep down stack looking for
-; the frame marked by gstack.  We return the stack that has this frame on
-; top, or else we return nil.
-
-; We used (Version_2.7 and earlier) to cause a hard error if we did
-; not find a suitable frame because we thought it indicated a coding
-; error.  Now we just return the empty stack because this situation
-; can arise through interrupt processing.  Suppose we are in rewrite
-; and push a new frame with brkpt1.  We're supposed to get to brkpt2
-; eventually and pop it.  An interrupt could prevent that, leaving the
-; frame unpopped.  Suppose that is the last time a brkpt occurs in
-; that simplification.  Then the old stack survives.  Suppose the
-; waterfall carries out an elim and then brings us back to
-; simplification.  Now the gstack is completely different but the
-; preserved brr-stack in *wormhole-status-alist* is still the old one.
-; Clearly, we should ignore it -- had no interrupt occurred it would
-; have been popped down to nil.
-
-  (declare (xargs :guard (alistp stack)))
-  (let ((cleaned-stack (clean-brr-stack1 gstack stack)))
-    (prog2$
-     (if (not (equal cleaned-stack stack))
-         (cw "~%~%Cryptic BRR Message 1:  Sweeping dead frames off ~
-              brr-stack.  ~@0~%~%"
-             *cryptic-brr-message*)
-
-; If anybody ever reports the problem described above, it indicates
-; that frames are being left on the brr-stack as though the
-; pop-brr-stack-frame supposedly performed by brkpt2 is not being
-; executed.  This could leave the brr-stack arbitrarily wrong, as a
-; non-nil stack could survive into the simplification of a subsequent,
-; independent subgoal sharing no history at all with brr-gstack.
-
-       nil)
-     cleaned-stack)))
-
 (defun get-brr-local (var state)
 
-; This function may be used inside code executed under "break-rewrite".  It is
-; NOT for use in general purpose calls of wormhole because it is involved with
-; the local variable illusion associated with "break-rewrite".  A typical use
-; is (get-brr-local 'unify-subst state) which fetches the local binding of
-; 'unify-subst in the frame of brr-stack that is labeled with the current
-; brr-gstack.
+; We fetch the value of var in the :brr-local-alist of the brr ephemeral-whs.
 
-  (let ((clean-stack (clean-brr-stack (get-brr-global 'brr-gstack state)
-                                      (get-brr-global 'brr-stack state))))
-    (lookup-brr-stack var clean-stack)))
+; Warning: This function should only be used under break-rewrite (i.e., under
+; one of the brkpt handlers).  It can't be used in the lambda expressions for
+; wormhole-eval (since there may not be an ephemeral-whs there).  If you want
+; the value of a local variable in wormhole-eval (where the lambda formal is
+; named whs) use (cdr (assoc-eq var (access brr-status whs :brr-local-alist))).
 
-(defun put-brr-local1 (gstack var val stack)
-
-; See the Essay on "Break-Rewrite" and the comment in brr-@ above.  We assign
-; val to var in the frame labeled by gstack.  This function returns the
-; resulting stack but does not side-effect state (obviously).  Dead frames at
-; the top of the stack are removed by this operation.
-
-  (let ((clean-stack (clean-brr-stack gstack stack)))
-    (cons (cons gstack (put-assoc-eq var val (cdar clean-stack)))
-          (cdr clean-stack))))
+  (let ((whs (f-get-global 'wormhole-status state)))
+    (cdr (assoc-eq var (access brr-status whs :brr-local-alist)))))
 
 (defun put-brr-local (var val state)
 
-; This function may be used inside code executed within "break-rewrite".  It is
-; NOT for use in general purpose calls of wormhole because it is involved with
-; the local variable illusion associated with "break-rewrite".  A typical use
-; is (put-brr-local 'unify-subst val state) which stores val as the local
-; binding of 'unify-subst in the frame of brr-stack that is labeled with the
-; current brr-gstack.
+; Put val as the value of var in :brr-local-alist of the ephemeral-whs.
 
-  (f-put-global 'brr-stack
-                (put-brr-local1 (get-brr-global 'brr-gstack state)
-                                var val
-                                (get-brr-global 'brr-stack state))
-                state))
+; Warning: This function should only be used under break-rewrite (i.e., under
+; one of the brkpt handlers).
 
-(defun put-brr-local-lst (alist state)
-  (cond ((null alist) state)
-        (t (pprogn (put-brr-local (caar alist)  (cdar alist) state)
-                   (put-brr-local-lst (cdr alist) state)))))
+; Expects and ensures Wormhole Coherence.
 
-(defun some-cdr-equalp (little big)
-
-; We return t if some cdr of big, including big itself, is equal to little.
-
-  (cond ((equal little big) t)
-        ((null big) nil)
-        (t (some-cdr-equalp little (cdr big)))))
-
-(defun push-brr-stack-frame (state)
-
-; This function may be used inside code executed within "break-rewrite".  It
-; pushes the new frame, (gstack . alist) on the brr-stack, where gstack is the
-; current value of (get-brr-global 'brr-gstack state) and alist is
-; (get-brr-global 'brr-alist state).
-
-  (let ((gstack (get-brr-global 'brr-gstack state))
-        (brr-stack (get-brr-global 'brr-stack state)))
-    (cond
-     ((or (null brr-stack)
-          (and (not (equal (caar brr-stack) gstack))
-               (some-cdr-equalp (caar brr-stack) gstack)))
-      (f-put-global 'brr-stack
-                    (cons (cons gstack (get-brr-global 'brr-alist state))
-                          brr-stack)
-                    state))
-     (t
+  (if (eq (f-get-global 'wormhole-name state) 'brr)
+      (let* ((whs (f-get-global 'wormhole-status state))
+             (alist (access brr-status whs :brr-local-alist))
+             (new-whs (change brr-status whs
+                              :brr-local-alist
+                              (put-assoc-eq var val alist))))
+        (set-persistent-whs-and-ephemeral-whs 'brr new-whs state))
       (prog2$
-       (cw "~%~%Cryptic BRR Message 2:  Discarding dead brr-stack.  ~@0~%~%"
-           *cryptic-brr-message*)
-       (f-put-global 'brr-stack
-                    (cons (cons gstack (get-brr-global 'brr-alist state))
-                          nil)
-                    state))))))
+       (illegal 'put-brr-local
+                "It is illegal to call put-brr-local unless you are under ~
+                 break-rewrite and you are not.  The arguments to ~
+                 put-brr-local were ~x0 and ~x1"
+                (list (cons #\0 var)
+                      (cons #\1 val)))
+       state)))
 
-(defun pop-brr-stack-frame (state)
+(defun put-brr-locals (alist state)
 
-; This function may be used inside code executed within "break-rewrite".  It
-; pops the top-most frame off the brr-stack.  Actually, it pops all the frames
-; up through the one labeled with the current brr-gstack.
+; We merge the bindings in alist with those in the :brr-local-alist of the
+; ephemeral-whs.  This function may overwrite values of locals aready bound in
+; the :brr-local-alist.  New bindings appear at the end.
 
-  (f-put-global 'brr-stack
-                (cdr (clean-brr-stack (get-brr-global 'brr-gstack state)
-                                      (get-brr-global 'brr-stack state)))
-                state))
+; Warning: This function should only be used under break-rewrite (i.e., under
+; one of the brkpt handlers).
+
+; Expects and ensures Wormhole Coherence.
+
+  (if (eq (f-get-global 'wormhole-name state) 'brr)
+      (let* ((whs (f-get-global 'wormhole-status state))
+             (alist1 (access brr-status whs :brr-local-alist))
+             (new-whs (change brr-status whs
+                              :brr-local-alist
+                              (put-assoc-eq-alist alist1 alist))))
+        (set-persistent-whs-and-ephemeral-whs 'brr new-whs state))
+      (prog2$
+       (illegal 'put-brr-locals
+                "It is illegal to call put-brr-locals unless you are under ~
+                 break-rewrite and you are not.  The alist argument to ~
+                 put-brr-locals was ~x0."
+                (list (cons #\0 alist)))
+       state)))
+
+(defun push-brr-status (state)
+
+; This function is called when either near-miss-brkpt1 or brkpt1 enters the
+; wormhole.  At the time this function is called, we have just entered the brr
+; wormhole but it is incompletely initialized.  The generic state globals
+; wormhole-name, wormhole-input, and wormhole-status have been set by wormhole.
+; The wormhole-input is just an alist specifying values for brr-gstack and
+; brr-local-alist, where the gstack value is the gstack that rewrite passed to
+; the brkpt1 handlers and the alist value is an alist binding variables from
+; rewrite that brr might be interested in, e.g., the lemma, target,
+; unify-subst, etc.  We push a new brr-status onto the current status and make
+; the new status the current one (i.e., this function side-effects
+; *wormhole-status-alist*).
+
+; Expects and ensures Wormhole Coherence.
+
+  (let* ((input (f-get-global 'wormhole-input state))
+         (gstack (cdr (assoc-eq 'brr-gstack input)))
+         (alist (cdr (assoc-eq 'brr-local-alist input)))
+         (whs (f-get-global 'wormhole-status state))
+         (new-whs
+          (change brr-status whs
+                  :brr-gstack gstack
+                  :brr-local-alist alist
+                  :brr-previous-status whs)))
+    (set-persistent-whs-and-ephemeral-whs 'brr new-whs state)))
+
+(defun pop-brr-status (state)
+
+; This function sets the brr-status to the :brr-previous-status (unless
+; that's nil, in which case we're already at the top-level of ACL2).
+
+; Expects and ensures Wormhole Coherence.
+
+  (let* ((whs (f-get-global 'wormhole-status state))
+         (prev-whs (access brr-status whs :brr-previous-status)))
+    (if (null prev-whs)
+        state
+        (set-persistent-whs-and-ephemeral-whs 'brr prev-whs state))))
 
 (defun decode-type-alist (type-alist)
 
@@ -7853,19 +8064,27 @@
 (defun eval-break-condition (rune term ctx state)
   (cond
    ((equal term *t*) (value t))
+   ((not (termp term (w state)))
+    (er soft ctx
+        "The monitored rune ~x0 has a non-trivial break :condition, ~X12, ~
+         which is no longer a term.  This is presumably because an undo ~
+         erased some critical definition after the monitor was installed.  We ~
+         are aborting this proof attempt and suggest you inspect ~
+         :monitored-runes."
+        rune term nil))
    (t (mv-let (erp okp latches)
-              (ev term
-                  (list (cons 'state (coerce-state-to-object state)))
-                  state nil nil t)
-              (declare (ignore latches))
-              (cond
-               (erp (pprogn
-                     (error-fms nil ctx nil (car okp) (cdr okp) state)
-                     (er soft ctx
-                         "The break condition installed on ~x0 could not be ~
-                          evaluated."
-                         rune)))
-               (t (value okp)))))))
+        (ev term
+            (list (cons 'state (coerce-state-to-object state)))
+            state nil nil t)
+        (declare (ignore latches))
+        (cond
+         (erp (pprogn
+               (error-fms nil ctx nil (car okp) (cdr okp) state)
+               (er soft ctx
+                   "The break condition installed on ~x0 could not be ~
+                    evaluated.  We are aborting this proof attempt."
+                   rune)))
+         (t (value okp)))))))
 
 (defconst *default-free-vars-display-limit* 30)
 
@@ -8008,20 +8227,6 @@
          wrld)
         (t (scan-to-defpkg name (cdr wrld)))))
 
-(defun scan-to-include-book (full-book-name wrld)
-
-; We wish to give meaning to stringp logical names such as "arith".  We
-; do it in an inefficient way: we scan the whole world looking for an event
-; tuple of type INCLUDE-BOOK and namex full-book-name.
-
-  (cond ((null wrld) nil)
-        ((and (eq (caar wrld) 'event-landmark)
-              (eq (cadar wrld) 'global-value)
-              (eq (access-event-tuple-type (cddar wrld)) 'include-book)
-              (equal full-book-name (access-event-tuple-namex (cddar wrld))))
-         wrld)
-        (t (scan-to-include-book full-book-name (cdr wrld)))))
-
 (defun multiple-assoc-terminal-substringp1 (x i alist)
   (cond ((null alist) nil)
         ((terminal-substringp x (caar alist) i (1- (length (caar alist))))
@@ -8101,9 +8306,9 @@
 
 (defun brr-prompt (channel state)
   (the2s
-   (signed-byte 30)
+   #.*fixnat-type*
    (fmt1 "~F0 ~s1~sr ~@2>"
-         (list (cons #\0 (get-brr-local 'depth state))
+         (list (cons #\0 (brr-depth state))
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
@@ -8234,6 +8439,21 @@
 
 ; End of code for printing type-alists.
 
+(defun print-pot-lst (pot-lst evisc-tuple)
+  (cond
+   ((null pot-lst) (cw "~%"))
+   (t (prog2$
+       (cw "-----~|For maximal term ~X02~|the list of polynomials is:~|~X12~|"
+           (access linear-pot (car pot-lst) :var)
+           (append (show-poly-lst
+                    (access linear-pot (car pot-lst) :negatives)
+                    nil)
+                   (show-poly-lst
+                    (access linear-pot (car pot-lst) :positives)
+                    nil))
+           evisc-tuple)
+       (print-pot-lst (cdr pot-lst) evisc-tuple)))))
+
 ; Start support for find-rules-of-rune, in support of
 ; backchain-limit-enforcers.
 
@@ -8251,32 +8471,17 @@
            (let ((n (getpropc name 'absolute-event-number nil wrld)))
              (cond ((null n) nil)
                    (t (lookup-world-index 'event n wrld)))))))
-   ((stringp name)
-
-; Name may be a package name or a book name.
-
-    (cond
-     ((find-non-hidden-package-entry name
-                                     (global-val 'known-package-alist wrld))
-      (cond ((find-package-entry name *initial-known-package-alist*)
+   ((and (stringp name)
+         (find-non-hidden-package-entry name
+                                        (global-val 'known-package-alist
+                                                    wrld)))
+    (cond ((find-package-entry name *initial-known-package-alist*)
 
 ; These names are not DEFPKGd and so won't be found in a scan.  They
 ; are introduced by absolute event number 0.
 
-             (lookup-world-index 'event 0 wrld))
-            (t (scan-to-defpkg name wrld))))
-     (t (let ((hits (multiple-assoc-terminal-substringp
-                     (possibly-add-lisp-extension name)
-                     (global-val 'include-book-alist wrld))))
-
-; Hits is a subset of the include-book-alist.  The form of each
-; element is (full-book-name user-book-name familiar-name
-; cert-annotations . book-hash).
-
-          (cond
-           ((and hits (null (cdr hits)))
-            (scan-to-include-book (car (car hits)) wrld))
-           (t nil))))))
+           (lookup-world-index 'event 0 wrld))
+          (t (scan-to-defpkg name wrld))))
    (t nil)))
 
 (defun access-x-rule-rune (x rule)
@@ -8384,9 +8589,6 @@
 ; (sym key . val) is a member of wrld.  We collect all the rules in val with
 ; :rune rune.  This function is patterned after info-for-x-rules.
 
-; Wart: If key is 'eliminate-destructors-rule, then val is a single rule, not a
-; list of rules.  We handle this case specially below.
-
 ; Warning: Keep this function in sync with info-for-x-rules.  In that spirit,
 ; note that tau rules never store runes and hence are completely ignored
 ; here, as in info-for-x-rules.
@@ -8432,9 +8634,9 @@
              (if (eq token :linear)
                  (collect-x-rules-of-rune 'linear-lemma rune val ans)
                  ans))
-            (eliminate-destructors-rule
+            (eliminate-destructors-rules
              (if (eq token :elim)
-                 (collect-x-rules-of-rune 'elim-rule rune (list val) ans)
+                 (collect-x-rules-of-rune 'elim-rule rune val ans)
                  ans))
             (congruences
              (if (member-eq token '(:congruence :equivalence))
@@ -8621,61 +8823,43 @@
   (list "" "~@*" "~@*" "~@*"
          (tilde-*-ancestors-stack-msg1 0 ancestors wrld evisc-tuple)))
 
-(defun brr-evisc-tuple (state)
+(defun semi-initialize-brr-wormhole (state)
+
+; This function (sort of) initializes the persistent-whs for the brr wormhole.
+; More precisely, if the brr wormhole has not been set up yet, this function
+; initializes it so that all fields are nil.  If it has been set up and we're
+; not in the brr wormhole, it preserves the BRR-MONITORED-RUNES of the
+; top-level brr-status and nils out the others.  If we are in the brr wormhole
+; then the status has already been set up and brr processing in flight is
+; depending on it, so we do nothing.  (If we're in the processing of aborting
+; and we're in the brr wormhole, the wormhole1 cleanup form will handle this.)
+
+; Before this function is first called, there is no entry for BRR on the
+; *wormhole-status-alist*.  That means the persistent-whs for brr is NIL.  That
+; is actually ok.  All brr-status fields of NIL are NIL.  According to the
+; definition of wormhole1, any non-:SKIP entry code is equivalent to :ENTER.
+
+; Warning: One might be tempted to do this update with
+; set-persistent-whs-and-ephemeral-whs but that would be wrong!  If we used
+; that function while we're in the brr wormhole we'd overwrite the active
+; status!  This is a case where we must use wormhole-eval, make sure we're not
+; already in brr, and only write to the persistent-whs.
+
   (cond
    ((eq (f-get-global 'wormhole-name state) 'brr)
-    (let ((val (get-brr-global 'brr-evisc-tuple state)))
-      (if (eq val :DEFAULT)
-          (term-evisc-tuple t state)
-        val)))
-   (t (er hard 'brr-evisc-tuple
-          "It is illegal to call ~x0 unless you are under ~
-           break-rewrite and you are not.  Consider instead evaluating ~x1."
-          'brr-evisc-tuple
-          '(show-brr-evisc-tuple)))))
-
-(defun set-brr-evisc-tuple (val state)
-  (pprogn
-   (f-put-global 'brr-evisc-tuple-initialized t state)
-   (cond
-    ((eq (f-get-global 'wormhole-name state) 'brr)
-     (f-put-global 'brr-evisc-tuple val state))
-    (t (prog2$
-        (brr-wormhole
-         '(lambda (whs)
-            (set-wormhole-entry-code whs :ENTER))
-         nil
-         `(pprogn (f-put-global 'brr-evisc-tuple ',val state)
-                  (value nil))
-         nil)
-        state)))))
-
-(defun maybe-initialize-brr-evisc-tuple (state)
-  (cond ((f-get-global 'brr-evisc-tuple-initialized state)
-; The test above is always true inside :brr.
-         state)
-        (t (set-brr-evisc-tuple :DEFAULT state))))
-
-(defun show-brr-evisc-tuple-fn (state)
-  (pprogn
-   (maybe-initialize-brr-evisc-tuple state)
-   (cond
-    ((eq (f-get-global 'wormhole-name state) 'brr)
-     (prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
-             (value :invisible)))
-    (t
-     (prog2$
-      (brr-wormhole
+; Brr status is already set up.
+    nil)
+   (t (wormhole-eval
+       'brr
        '(lambda (whs)
-          (set-wormhole-entry-code whs :ENTER))
-       nil
-       `(prog2$ (cw "~Y01~|" (brr-evisc-tuple state) nil)
-                (value nil))
-       nil)
-      (value :invisible))))))
-
-(defmacro show-brr-evisc-tuple ()
-  '(show-brr-evisc-tuple-fn state))
+          (change brr-status whs
+                  :brr-monitored-runes (access brr-status
+                                               (top-level-brr-status whs)
+                                               :brr-monitored-runes)
+                  :brr-gstack nil
+                  :brr-local-alist nil
+                  :brr-previous-status nil))
+       nil))))
 
 (defun show-ancestors-stack-msg (state evisc-tuple)
   (msg "Ancestors stack (most recent entry on top):~%~*0~%Use ~x1 to see ~
@@ -8748,6 +8932,347 @@
          quotep!"
         q)))
 
+(defun get-brr-one-way-unify-info (lemma rcnst)
+
+; This function returns (mv rune brk-cmd-name pattern restrictions) in
+; accordance with how lemma is matched in the rewrite clique.
+
+; This function knows everything there is to know about how one-way-unify is
+; used in the rewrite clique!  We need this when we try to explain near-misses
+; on monitored rules.  As of this writing, only two classes of rules are
+; monitored, namely rewrite-rules (which include definitions and
+; rewrite-quoted-constant rules as subclasses) and linear-lemmas.  The former
+; access the pattern with :lhs (see caveat) and the latter access pattern with
+; :max-term.  (Caveat: when a rewrite-rule is actually of subclass
+; rewrite-quoted-constant of form 2, the pattern we attempt to match is
+; actually the :rhs!  While that pattern is always a variable, restrictions
+; could prevent it from matching.  In any case, the break command :lhs will
+; display the pattern.)  Both :lhs and :max-term are set up in *brkpt1-aliases*
+; and *brkpt2-aliases*, so we can refer to those field names as brkpt commands
+; in our messages, but we must extract the pattern actually used, the
+; restrictions, and what the break command used to view the pattern in the
+; break environment.  Linear rules don't have restrictions.
+
+  (declare (xargs :guard
+                  (and (or (weak-rewrite-rule-p lemma)
+                           (weak-linear-lemma-p lemma))
+                       (weak-rewrite-constant-p rcnst))))
+
+; Note: The two ``guard issues'' tagged below are guaranteed to be true if
+; lemma really is a well-formed rewrite-rule (as all of our stored
+; rewrite-rules are).  But we don't want to characterize what that means, so we
+; suffer the runtime checks just so we can verify the guards of this function.
+
+  (if (eq (record-type lemma) 'rewrite-rule)
+      (mv (access rewrite-rule lemma :rune)
+          :lhs
+          (if (and (eq (access rewrite-rule lemma :subclass)
+                       'rewrite-quoted-constant)
+                   (let ((heuristic-info
+                          (access rewrite-rule lemma :heuristic-info)))
+                     (and (consp heuristic-info) ; guard issue
+                          (eql (car heuristic-info) 2))))
+              (access rewrite-rule lemma :rhs)
+              (access rewrite-rule lemma :lhs))
+          (let ((restrictions-alist (access rewrite-constant rcnst
+                                            :restrictions-alist)))
+            (if (alistp restrictions-alist) ; guard issue
+                (cdr (assoc-equal
+                      (access rewrite-rule lemma :rune)
+                      restrictions-alist))
+                nil)))
+      (mv (access linear-lemma lemma :rune)
+          :max-term
+          (access linear-lemma lemma :max-term)
+          nil)))
+
+(mutual-recursion
+
+(defun abstract-pat1 (k-flg pat vars)
+
+; K-flg may be a nat, in which case we abstract down to level k-flg, or t, in
+; which case we abstract all quoted lambdas.  The lambda abstraction ignores
+; ilks.
+
+  (declare (xargs :guard (and (or (eq k-flg t)
+                                  (natp k-flg))
+                              (pseudo-termp pat)
+                              (true-listp vars))
+                  :verify-guards nil
+                  :measure (acl2-count pat)))
+  (cond
+   ((eql k-flg 0)
+    (let ((new-var (genvar 'brr "GENSYM" 0 vars)))
+      (mv new-var (cons new-var vars))))
+   ((variablep pat) (mv pat vars))
+   ((fquotep pat)
+    (cond ((and (eq k-flg t)
+                (consp (unquote pat))
+                (eq (car (unquote pat)) 'lambda))
+           (let ((new-var (genvar 'brr "GENSYM" 0 vars)))
+             (mv new-var (cons new-var vars))))
+          (t (mv pat vars))))
+   (t (mv-let (new-args new-vars)
+        (abstract-pat1-lst (if (natp k-flg)
+                                   (- k-flg 1)
+                                   k-flg)
+                               (fargs pat) vars)
+        (mv (fcons-term (ffn-symb pat) new-args)
+            new-vars)))))
+
+(defun abstract-pat1-lst (k-flg pats vars)
+  (declare (xargs :guard (and (or (eq k-flg t)
+                                  (natp k-flg))
+                              (pseudo-term-listp pats)
+                              (true-listp vars))
+                  :measure (acl2-count pats)))
+  (cond
+   ((endp pats) (mv nil vars))
+   (t (mv-let (new-arg new-vars)
+        (abstract-pat1 k-flg (car pats) vars)
+        (mv-let (new-args new-vars)
+          (abstract-pat1-lst k-flg (cdr pats) new-vars)
+          (mv (cons new-arg new-args) new-vars)))))))
+
+(defun abstract-pat (k-flg pat)
+  (declare (xargs :guard (and (or (eq k-flg t) (natp k-flg))
+                              (pseudo-termp pat))))
+  (mv-let (new-pat vars)
+    (abstract-pat1 k-flg pat (all-vars pat))
+    (declare (ignore vars))
+    new-pat))
+
+(defun alistp-listp (x)
+  (declare (xargs :guard t))
+  (cond
+   ((atom x) (eq x nil))
+   (t (and (alistp (car x))
+           (alistp-listp (cdr x))))))
+
+(defun one-way-unify-restrictions1 (pat term restrictions)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp-listp restrictions))))
+  (cond
+   ((endp restrictions)
+    (mv nil nil))
+   (t (mv-let (unify-ans unify-subst)
+              (one-way-unify1 pat term (car restrictions))
+              (cond
+               (unify-ans (mv unify-ans unify-subst))
+               (t (one-way-unify-restrictions1 pat term (cdr restrictions))))))))
+
+(defun one-way-unify-restrictions (pat term restrictions)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp-listp restrictions))))
+  (cond
+   ((null restrictions)
+    (one-way-unify pat term))
+   (t (one-way-unify-restrictions1 pat term restrictions))))
+
+(defun symbol-alist-to-keyword-value-list (alist)
+
+; We convert a symbol alist to a keyword-value-listp (but showing the full
+; translations of terms, not their untranslations).  We assume the keys in
+; alist are keywords!
+
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (car (car alist))
+                 (cons (cdr (car alist))
+                       (symbol-alist-to-keyword-value-list (cdr alist)))))))
+
+(defun brr-criteria-alistp (alist)
+  (declare (xargs :guard t))
+  (cond
+   ((atom alist) (equal alist nil))
+   ((not (consp (car alist))) nil)
+   ((eq (car (car alist)) :depth)
+    (and (natp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   ((eq (car (car alist)) :abstraction)
+    (and (pseudo-termp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   ((eq (car (car alist)) :lambda)
+    (and (booleanp (cdr (car alist)))
+         (brr-criteria-alistp (cdr alist))))
+   (t (brr-criteria-alistp (cdr alist)))))
+
+(defun make-built-in-brr-near-miss-msg (brr-cmd-name
+                                        pat alist
+                                        depth-criterion-satisfiedp
+                                        abstraction-criterion-satisfiedp
+                                        lambda-criterion-satisfiedp)
+
+; Pat is the pattern that nearly matched :target and alist is the (translated)
+; criteria alist.  Assuming that one or more of the criteria is satisfied, we
+; return a message that explains which criteria are satisfied.  We assume the
+; message here will be printed as part of a message with an introductory
+; sentence like ``Near-Miss of (:REWRITE FOO): The rule's pattern, (F X (G X
+; Y)), did not match the current :TARGET, (F aaa (G bbb ccc)) (under the
+; restrictions (((X XXX)))), but ...'', where the ... is this message as
+; printed with ~@ as part of the introductory sentence produced by the function
+; near-miss-brkpt1.
+
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (brr-criteria-alistp alist)
+                              (implies depth-criterion-satisfiedp
+                                       (natp (cdr (assoc-eq :depth alist)))))))
+
+; We nfix below because :depth must be bound to a natp.  In fact, we know it is,
+; by the :guard above, except for the fact that we don't know
+  (let* ((depth-msg
+          (if depth-criterion-satisfiedp
+              (list (msg "* The abstraction of ~x0 to depth ~x1, namely the ~
+                          pattern ~X23, matches :TARGET."
+                         brr-cmd-name
+                         (cdr (assoc-eq :depth alist))
+                         (abstract-pat
+                          (cdr (assoc-eq :depth alist))
+                          pat)
+                         nil))
+              nil))
+         (abstraction-msg
+          (if abstraction-criterion-satisfiedp
+              (list (msg "* The :ABSTRACTION pattern provided in your ~
+                          monitor, ~x0, matches :TARGET."
+                         (cdr (assoc-eq :abstraction alist))))
+              nil))
+         (lambda-msg
+          (if lambda-criterion-satisfiedp
+              (list (msg "* ~x0 matches :TARGET except at one or more quoted ~
+                          LAMBDA constants."
+                         brr-cmd-name))
+              nil))
+         (reasons (append depth-msg
+                          abstraction-msg
+                          lambda-msg)))
+    (msg "However, this is considered a NEAR MISS under the break criteria, ~
+          ~X01, specified when this rule was monitored.  The following ~
+          ~#2~[criterion is~/criteria are~] satisfied.~%~%~*3"
+         (symbol-alist-to-keyword-value-list alist)
+         nil
+         (if (cdr reasons) 1 0)
+         (list "" "~@*~%~%" "~@*~%~%" "~@*~%~%"
+               reasons))))
+
+(defun built-in-brr-near-missp (msgp lemma target rcnst criteria-alist)
+
+; We know that that the pattern in lemma failed to match the target term to
+; which it was applied.  This predicate determines whether it was a near-miss
+; according to the criteria-alist.  If so, depending on msgp, we either return
+; t or a message explaining the near miss.  To do this we must extract from the
+; lemma the component that was (unsuccessfully) matched against target.  That
+; information could have been passed down the call hierarchy to here but there
+; is a reason we didn't do it that way: we view this function as the built-in
+; default value for brr-near-missp, to which we want the user to be able to
+; attach more elaborate senses of ``near miss.''  So we designed an interface
+; at a slightly higher level than we would have otherwise.
+
+; This built-in function is only checks the criteria :depth, :abstraction, and
+; :lambda and ignores all other keys.  We assume that if :depth is specified,
+; its value is a natural, if :abstraction is specified, its value is a
+; translated term, and if :lambda is specified its value is a Boolean.  Note
+; that we try the criteria in the order :depth, :abstraction, :lambda, and quit
+; as soon as one is satisfied (provided we are only looking for a Boolean
+; answer).  If msgp is t then, of course, we try all the criteria.
+
+  (declare (xargs :guard (and (or (weak-rewrite-rule-p lemma)
+                                  (weak-linear-lemma-p lemma))
+                              (pseudo-termp target)
+                              (weak-rewrite-constant-p rcnst)
+                              (brr-criteria-alistp criteria-alist))))
+  (mv-let (rune brr-cmd-name pattern restrictions)
+    (get-brr-one-way-unify-info lemma rcnst)
+    (declare (ignore rune))
+    (cond
+     ((and (pseudo-termp pattern)
+           (alistp-listp restrictions))
+
+; In order to verify the guards on this function we must make sure pattern and
+; restrictions are the right shapes.  We know they are when lemma and rcnst are
+; actually as maintained by us!  But we don't want to prove that and so we
+; suffer the necessary runtime checks to allow guard verification here.  If
+; pattern and restrictions are not appropriate, we just indicate that there was
+; no near-miss.
+
+      (let* ((depth-arg (assoc-eq :depth criteria-alist))
+             (depth-criterion-satisfiedp
+              (if (cdr depth-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (abstract-pat (cdr depth-arg) pattern)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil))
+             (abstraction-arg (if (and (not msgp) depth-criterion-satisfiedp)
+                                  nil
+                                  (assoc-eq :abstraction criteria-alist)))
+             (abstraction-criterion-satisfiedp
+              (if (cdr abstraction-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (cdr abstraction-arg)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil))
+             (lambda-arg (if (and (not msgp)
+                                  (or depth-criterion-satisfiedp
+                                      abstraction-criterion-satisfiedp))
+                             nil
+                             (assoc-eq :lambda criteria-alist)))
+             (lambda-criterion-satisfiedp
+              (if (cdr lambda-arg)
+                  (mv-let (flg unify-subst)
+                    (one-way-unify-restrictions
+                     (abstract-pat (cdr lambda-arg) pattern)
+                     target
+                     restrictions)
+                    (declare (ignore unify-subst))
+                    flg)
+                  nil)))
+        (if (or depth-criterion-satisfiedp
+                abstraction-criterion-satisfiedp
+                lambda-criterion-satisfiedp)
+            (if msgp
+                (make-built-in-brr-near-miss-msg brr-cmd-name
+                                                     pattern
+                                                     criteria-alist
+                                                     depth-criterion-satisfiedp
+                                                     abstraction-criterion-satisfiedp
+                                                     lambda-criterion-satisfiedp)
+                t)
+            nil)))
+     (t nil))))
+
+(defproxy brr-near-missp
+
+; The rewriter has tried to match the pattern in lemma to target under the
+; restrictions in rcnst.  The match failed.  We determine whether this
+; constitutes a near miss according to the criteria in criteria-alist.  If so,
+; we return t or, if msgp is non-nil, a message explaining the near miss.  If
+; not, we return nil.
+
+; The alist is a symbol-alist that pairs keywords to their translated values.
+; It is the translated version of the keyword-value-list provided to the
+; :monitor command when the lemma was monitored.  E.g., it is
+
+; ((:condition . 't) (:depth . 3) (:abstraction . (f '44 (car (cdr z))))),
+
+; rather than
+
+; (:condition t :depth 3 :abstraction (f 44 (cadr z)))!
+
+  (* * * * *) => *)
+
+(defattach (brr-near-missp built-in-brr-near-missp)
+  :skip-checks t)
+
 (mutual-recursion
 
 (defun tilde-@-failure-reason-free-phrase (hyp-number alist level unify-subst
@@ -8794,6 +9319,8 @@
                                                       state)
   (cond ((eq failure-reason 'time-out)
          "we ran out of time.")
+        ((eq failure-reason 'near-miss)
+         "the pattern (:LHS or :MAX-TERM) did not match the :TARGET.")
         ((eq failure-reason 'loop-stopper)
          "it permutes a big term forward.")
         ((eq failure-reason 'too-many-ifs-pre-rewrite)
@@ -8973,6 +9500,11 @@
 
 ; Keep this in sync (as appropriate) with *brkpt2-aliases*.
 
+; Note: proceed-from-brkpt1 used below is not yet defined but it doesn't matter
+; since this is just a quoted constant.  Proceed-from-brkpt1 has to check that
+; the indicated runes are monitorable, which we can't define until we've
+; introduced certain certain history management utilities.
+
   (flet ((not-yet-evaled-fn ()
                             `(lambda nil
                                (prog2$
@@ -8980,6 +9512,34 @@
                                     (get-rule-field (get-brr-local 'lemma state)
                                                     :rune))
                                 (value :invisible))))
+         (lhs-fn (plusp)
+                 `(lambda nil
+                    (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                               :lhs)))
+                      (cond
+                       ((eq val :get-rule-field-none) ; linear lemma
+                        (er soft :LHS
+                            ":LHS is only legal for a :REWRITE rule."))
+                       (t
+                        (prog2$
+                         (cw "~X01~|" val ,(if plusp
+                                               nil
+                                               '(brr-evisc-tuple state)))
+                         (value :invisible)))))))
+         (max-term-fn (plusp)
+                      `(lambda nil
+                         (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                                    :max-term)))
+                           (cond
+                            ((eq val :get-rule-field-none) ; rewrite rule
+                             (er soft :MAX-TERM
+                                 ":MAX-TERM is only legal for a :LINEAR rule."))
+                            (t
+                             (prog2$
+                              (cw "~X01~|" val ,(if plusp
+                                                    nil
+                                                    '(brr-evisc-tuple state)))
+                              (value :invisible)))))))
          (ancestors-fn (plusp)
                        `(lambda nil
                           (prog2$
@@ -8992,7 +9552,8 @@
          (btm-fn (plusp)
                  `(lambda nil
                     (prog2$
-                     (let ((gstack (get-brr-global 'brr-gstack state)))
+                     (let* ((whs (f-get-global 'wormhole-status state))
+                            (gstack (access brr-status whs :brr-gstack)))
                        (cw-gframe (length gstack) nil (car gstack)
                                   ,(if plusp
                                        nil
@@ -9000,8 +9561,9 @@
                      (value :invisible))))
          (frame-fn (plusp)
                    `(lambda (n)
-                      (let ((rgstack
-                             (reverse (get-brr-global 'brr-gstack state))))
+                      (let* ((whs (f-get-global 'wormhole-status state))
+                             (rgstack
+                              (reverse (access brr-status whs :brr-gstack))))
                         (cond
                          ((and (integerp n)
                                (>= n 1)
@@ -9043,6 +9605,19 @@
                                              nil
                                            '(brr-evisc-tuple state)))
                              (value :invisible))))
+         (pot-list-fn (plusp)
+                      `(lambda nil
+                         (let ((pot-list (get-brr-local 'pot-list state)))
+                           (prog2$ (if pot-list
+                                       (prog2$
+                                        (cw "~%Display of linear pot-list:~|")
+                                        (print-pot-lst
+                                         pot-list
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state))))
+                                     (cw "~%The linear pot-list is empty.~|"))
+                                   (value :invisible)))))
          (target-fn (plusp)
                     `(lambda nil
                        (prog2$ (cw "~X01~|"
@@ -9056,8 +9631,11 @@
                     (prog2$
                      (cw-gframe 1
                                 nil
-                                (car (reverse (get-brr-global 'brr-gstack
-                                                              state)))
+                                (car (reverse
+                                      (access brr-status
+                                              (f-get-global 'wormhole-status
+                                                            state)
+                                              :brr-gstack)))
                                 ,(if plusp
                                      nil
                                    '(brr-evisc-tuple state)))
@@ -9106,7 +9684,7 @@
            (proceed-from-brkpt1 'break t :eval state)))
       (:eval!
        0 (lambda nil
-           (proceed-from-brkpt1 'break nil :eval! state)))
+           (proceed-from-brkpt1 'break :none :eval! state)))
       (:eval$
        1 (lambda (runes)
            (proceed-from-brkpt1 'break runes :eval$ state)))
@@ -9127,7 +9705,7 @@
            (proceed-from-brkpt1 'print t :go state)))
       (:go!
        0 (lambda nil
-           (proceed-from-brkpt1 'print nil :go! state)))
+           (proceed-from-brkpt1 'print :none :go! state)))
       (:go$
        1 (lambda (runes)
            (proceed-from-brkpt1 'print runes :go$ state)))
@@ -9163,30 +9741,19 @@
       (:initial-ttree+
        0 ,(initial-ttree-fn t))
       (:lhs
-       0 (lambda nil
-           (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                      :lhs)))
-             (cond
-              ((eq val :get-rule-field-none) ; linear lemma
-               (er soft :LHS
-                   ":LHS is only legal for a :REWRITE rule."))
-              (t
-               (prog2$
-                (cw "~x0~|" val)
-                (value :invisible)))))))
+       0 ,(lhs-fn nil))
+      (:lhs+
+       0 ,(lhs-fn t))
+      (:max-term
+       0 ,(max-term-fn nil))
+      (:max-term+
+       0 ,(max-term-fn t))
       (:ok
        0 (lambda nil
-
-; Note:  Proceed-from-brkpt1 is not defined in this file!  It is here used
-; in a constant, fortunately, because it cannot yet be defined.  The problem
-; is that it involves chk-acceptable-monitors, which in turn must look at
-; the rules named by given runes, which is a procedure we can define only
-; after introducing certain history management utilities.
-
            (proceed-from-brkpt1 'silent t :ok state)))
       (:ok!
        0 (lambda nil
-           (proceed-from-brkpt1 'silent nil :ok! state)))
+           (proceed-from-brkpt1 'silent :none :ok! state)))
       (:ok$
        1 (lambda (runes)
            (proceed-from-brkpt1 'silent runes :ok$ state)))
@@ -9198,10 +9765,14 @@
        0 ,(not-yet-evaled-fn))
       (:poly-list+
        0 ,(not-yet-evaled-fn))
+      (:pot-list
+       0 ,(pot-list-fn nil))
+      (:pot-list+
+       0 ,(pot-list-fn t))
       (:q
        0 (lambda nil
-           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
-                      :p! to pop or :a! to abort.~%")
+           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or ~
+                        use :a! to abort.~%")
                    (value :invisible))))
       (:rewritten-rhs
        0 ,(not-yet-evaled-fn))
@@ -9243,11 +9814,42 @@
 
 ; Keep this in sync (as appropriate) with *brkpt1-aliases*.
 
+; Note: exit-brr used below is not yet defined but it doesn't matter since
+; this is just a quoted constant.
+
   (flet ((already-evaled-fn ()
                             '(lambda nil
                                (prog2$ (cw "You already have run some flavor ~
                                             of :eval.~%")
                                        (value :invisible))))
+         (lhs-fn (plusp)
+                 `(lambda nil
+                    (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                               :lhs)))
+                      (cond
+                       ((eq val :get-rule-field-none) ; linear lemma
+                        (er soft :LHS
+                            ":LHS is only legal for a :REWRITE rule."))
+                       (t
+                        (prog2$
+                         (cw "~X01~|" val ,(if plusp
+                                               nil
+                                               '(brr-evisc-tuple state)))
+                         (value :invisible)))))))
+         (max-term-fn (plusp)
+                      `(lambda nil
+                         (let ((val (get-rule-field (get-brr-local 'lemma state)
+                                                    :max-term)))
+                           (cond
+                            ((eq val :get-rule-field-none) ; rewrite rule
+                             (er soft :MAX-TERM
+                                 ":MAX-TERM is only legal for a :LINEAR rule."))
+                            (t
+                             (prog2$
+                              (cw "~X01~|" val ,(if plusp
+                                                    nil
+                                                    '(brr-evisc-tuple state)))
+                              (value :invisible)))))))
          (ancestors-fn (plusp)
                        `(lambda nil
                           (prog2$
@@ -9260,7 +9862,8 @@
          (btm-fn (plusp)
                  `(lambda nil
                     (prog2$
-                     (let ((gstack (get-brr-global 'brr-gstack state)))
+                     (let* ((whs (f-get-global 'wormhole-status state))
+                            (gstack (access brr-status whs :brr-gstack)))
                        (cw-gframe (length gstack) nil (car gstack)
                                   ,(if plusp
                                        nil
@@ -9302,8 +9905,9 @@
                                    (value :invisible)))))))
          (frame-fn (plusp)
                    `(lambda (n)
-                      (let ((rgstack
-                             (reverse (get-brr-global 'brr-gstack state))))
+                      (let* ((whs (f-get-global 'wormhole-status state))
+                             (rgstack (reverse
+                                       (access brr-status whs :brr-gstack))))
                         (cond
                          ((and (integerp n)
                                (>= n 1)
@@ -9312,12 +9916,12 @@
                            (cw-gframe n
                                       (if (= n 1)
                                           nil
-                                        (access gframe (nth (- n 2) rgstack)
-                                                :sys-fn))
+                                          (access gframe (nth (- n 2) rgstack)
+                                                  :sys-fn))
                                       (nth (- n 1) rgstack)
                                       ,(if plusp
                                            nil
-                                         '(brr-evisc-tuple state)))
+                                           '(brr-evisc-tuple state)))
                            (value :invisible)))
                          (t (er soft :frame
                                 ":FRAME must be given an integer argument ~
@@ -9365,6 +9969,19 @@
                               (er soft :POLY-LIST
                                   ":POLY-LIST is only legal for a :LINEAR ~
                                    rule."))))))
+         (pot-list-fn (plusp)
+                      `(lambda nil
+                         (let ((pot-list (get-brr-local 'pot-list state)))
+                           (prog2$ (if pot-list
+                                       (prog2$
+                                        (cw "~%Display of linear pot-list:~|")
+                                        (print-pot-lst
+                                         pot-list
+                                         ,(if plusp
+                                              nil
+                                            '(brr-evisc-tuple state))))
+                                     (cw "~%The linear pot-list is empty.~|"))
+                                   (value :invisible)))))
          (rewritten-rhs-fn (plusp)
                            `(lambda nil
                               (let ((lemma (get-brr-local 'lemma state)))
@@ -9402,8 +10019,11 @@
                     (prog2$
                      (cw-gframe 1
                                 nil
-                                (car (reverse (get-brr-global 'brr-gstack
-                                                              state)))
+                                (car (reverse
+                                      (access brr-status
+                                              (f-get-global 'wormhole-status
+                                                            state)
+                                              :brr-gstack)))
                                 ,(if plusp
                                      nil
                                    '(brr-evisc-tuple state)))
@@ -9512,23 +10132,15 @@
       (:initial-ttree+
        0 ,(initial-ttree-fn t))
       (:lhs
-       0 (lambda nil
-           (let ((val (get-rule-field (get-brr-local 'lemma state)
-                                      :lhs)))
-             (cond
-              ((eq val :get-rule-field-none) ; linear lemma
-               (er soft :LHS
-                   ":LHS is only legal for a :REWRITE rule."))
-              (t
-               (prog2$
-                (cw "~x0~|" val)
-                (value :invisible)))))))
+       0 ,(lhs-fn nil))
+      (:lhs+
+       0 ,(lhs-fn t))
+      (:max-term
+       0 ,(max-term-fn nil))
+      (:max-term+
+       0 ,(max-term-fn t))
       (:ok
        0 (lambda nil
-
-; Note:  Exit-brr is not yet defined because it calls proceed-from-brkpt1.
-; See the note above about that function.
-
            (exit-brr state)))
       (:ok!
        0 (lambda nil
@@ -9545,10 +10157,14 @@
        0 ,(poly-list-fn nil))
       (:poly-list+
        0 ,(poly-list-fn t))
+      (:pot-list
+       0 ,(pot-list-fn nil))
+      (:pot-list+
+       0 ,(pot-list-fn t))
       (:q
        0 (lambda nil
-           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, or use ~
-                      :p! to pop or :a! to abort.~%")
+           (prog2$ (cw "Proceed with some flavor of :ok, :go, or :eval, ~
+                       or use :a! to abort.~%")
                    (value :invisible))))
       (:rewritten-rhs
        0 ,(rewritten-rhs-fn nil))
@@ -9593,8 +10209,437 @@
                   (get-rule-field (get-brr-local 'lemma state) :rune)))
             (value :invisible)))))))
 
+(defrec brr-data-1
+
+; Warning: Keep this in sync with the definition in :DOC brr-data.
+
+; This record stores information at calls of brkpt1.
+
+  (((lemma . target) . (unify-subst . type-alist))
+   .
+   ((pot-list . ancestors) . (rcnst initial-ttree . gstack)))
+  nil)
+
+(defrec brr-data-2
+
+; Warning: Keep this in sync with the definition in :DOC brr-data.
+
+; This record stores information at calls of brkpt2.
+
+  ((failure-reason unify-subst . brr-result)
+   .
+   (rcnst final-ttree . gstack))
+  nil)
+
+(defrec brr-data
+
+; Warning: Keep this in sync with the definition in :DOC brr-data.
+
+; This is a recursive record: pre and post are brr-data-1 and brr-data-2
+; records, respectively, and completed is a list of brr-data records, all as
+; follows.
+
+; For a given call C1 of brkpt1, pre is a brr-data-1 record from that call,
+; post is a brr-data-2 record from the matching (and subsequent) call C2 of
+; brkpt2, and completed is a list of brr-data records similarly constructed
+; from matching brkpt1 and brkpt2 calls at the top level between calls C1 and
+; C2.
+
+  (pre post . completed)
+  nil)
+
+(mutual-recursion
+
+(defun brr-data-p (completed-p x)
+
+; The :post of x is a record when completed-p is t and is nil otherwise.  Such
+; records are called "complete" and "incomplete", respectively.
+
+  (declare (xargs :guard t
+                  :measure (acl2-count x)))
+  (and (weak-brr-data-p x)
+       (weak-brr-data-1-p (access brr-data x :pre))
+       (if completed-p
+           (weak-brr-data-2-p (access brr-data x :post))
+         (null (access brr-data x :post)))
+       (brr-data-listp t (access brr-data x :completed))))
+
+(defun brr-data-listp (completed-p lst)
+  (declare (xargs :guard t
+                  :measure (acl2-count lst)))
+  (cond ((atom lst) (null lst))
+        ((brr-data-p completed-p (car lst))
+         (brr-data-listp completed-p (cdr lst)))
+        (t nil)))
+)
+
+(defproxy brkpt1-brr-data-entry (* * * state)
+
+; The formals are those that are reasonable to query in both brkpt1 and its
+; balancing brkpt2, so that the calls truly balance.  Perhaps unify-subst and
+; type-alist could be added, but since they can change from brkpt1 to brkpt2,
+; we omit those.
+
+  => *)
+
+(defproxy brkpt2-brr-data-entry (* * * state)
+
+; See comments in brkpt1-brr-data-entry.
+
+  => *)
+
+(defstub update-brr-data-1 (lemma target unify-subst type-alist ancestors
+                                  initial-ttree gstack rcnst pot-lst whs-data)
+
+; This is called in brkpt1 to update the wormhole-data for the brr-data
+; wormhole.
+
+  t)
+
+(defstub update-brr-data-2 (wonp failure-reason unify-subst gstack brr-result
+                                 final-ttree rcnst ancestors whs-data)
+
+; This is called in brkpt2 to update the wormhole-data for the brr-data
+; wormhole.
+
+  t)
+
+(defun brkpt1-brr-data-entry-builtin (ancestors gstack rcnst state)
+
+; The -builtin version of brr-data restricts collection to top-level rewriter
+; calls (i.e., without ancestors).
+
+  (declare (xargs :stobjs state)
+           (ignore gstack rcnst state))
+  (null ancestors))
+
+(defun brkpt2-brr-data-entry-builtin (ancestors gstack rcnst state)
+
+; The -builtin version of brr-data restricts collection to top-level rewriter
+; calls (i.e., without ancestors).
+
+  (declare (xargs :stobjs state)
+           (ignore gstack rcnst state))
+  (null ancestors))
+
+(defun update-brr-data-1-builtin (lemma target unify-subst type-alist
+                                        ancestors initial-ttree gstack rcnst
+                                        pot-lst whs-data)
+
+; This function is the default attachment for update-brr-data-1, which brkpt1
+; may use to construct brr-data records.  See the description of those records
+; in (defrec brr-data ...) for relevant background.
+
+; The arguments other than whs-data are the arguments to brkpt1.  Whs-data is
+; the wormhole-data of the current wormhole status for the wormhole named
+; brr-data.  It is either nil or of the form (pending . completed), as follows.
+; Pending is a list of brr-data records as recognized by (brr-data-listp nil
+; pending); we push a new one with each brkpt1 call when tracking with gstackp
+; = :brr-data.  Completed is a list of complete brr-data records; i.e.,
+; (brr-data-listp t completed) holds.  Pending represents the top-level calls
+; of brkpt1 that have not yet been matched with corresponding brkpt2 calls, and
+; completed represents the result of "completing" previous such records using
+; matching brkpt2 calls: those calls fill in records previously in pending with
+; :post fields that are brr-data-2 records, by calling
+; update-brr-data-2-builtin.
+
+  (declare (xargs :guard t))
+  (let ((ctx 'update-brr-data-1-builtin))
+    (cond
+     ((listp whs-data)
+      (let* ((pending (car whs-data))
+             (completed (cdr whs-data)))
+        (cons (cons (make brr-data
+                          :pre (make brr-data-1
+                                     :lemma lemma
+                                     :target target
+                                     :unify-subst unify-subst
+                                     :type-alist type-alist
+                                     :ancestors ancestors
+                                     :initial-ttree initial-ttree
+                                     :gstack gstack
+                                     :rcnst rcnst
+                                     :pot-list pot-lst)
+                          :post nil
+                          :completed nil)
+                    pending)
+              completed)))
+     (t (er hard? ctx
+            "Implementation error: Found whs-data not a listp:~|~y0"
+            whs-data)))))
+
+(defun update-brr-data-2-builtin (wonp failure-reason unify-subst gstack
+                                       brr-result final-ttree rcnst ancestors
+                                       whs-data)
+
+; See update-brr-data-1-builtin for a description of that function and this
+; function.
+
+  (declare (xargs :guard t)
+           (ignore ancestors))
+  (let ((ctx 'update-brr-data-2-builtin))
+    (cond
+     ((listp whs-data)
+      (let* ((pending (car whs-data))
+             (completed (cdr whs-data)))
+        (cond
+         ((not (consp pending))
+          (er hard? ctx
+              "Implementation error: Found bad whs-data ((car pending) not a ~
+               cons):~|~y0"
+              whs-data))
+         ((null wonp) ; pop pending
+          (cons (cdr pending)
+                completed))
+         ((not (weak-brr-data-p (car pending)))
+          (er hard? ctx
+              "Implementation error: Found bad whs-data ((car pending) not a ~
+               brr-data record)):~|~y0"
+              whs-data))
+         (t
+          (let ((x (make brr-data-2
+                         :failure-reason failure-reason
+                         :unify-subst unify-subst
+                         :gstack gstack
+                         :brr-result brr-result
+                         :final-ttree final-ttree
+                         :rcnst rcnst)))
+            (cond
+             ((consp (cdr pending))
+              (cond
+               ((not (weak-brr-data-p (cadr pending)))
+                (er hard? ctx
+                    "Implementation error: Found whs-data (bad (cadr ~
+                     pending)):~|~y0"
+                    whs-data))
+               (t
+
+; Pop pending, folding (car pending) into the :completed field of (cadr
+; pending), filling in the :post field of (car pending).  There is no change to
+; completed.
+
+                (cons (cons (change brr-data (cadr pending)
+                                    :completed
+                                    (cons (change brr-data (car pending)
+                                                  :post x)
+                                          (access brr-data (cadr pending)
+                                                  :completed)))
+                            (cddr pending))
+                      completed))))
+             (t
+
+; Pop pending, leaving an empty stack.  So, we set the :post field of (car
+; pending) to x and then push the resulting record onto completed.
+
+              (cons nil
+                    (cons (change brr-data (car pending)
+                                  :post x)
+                          completed)))))))))
+     (t (er hard? ctx
+            "Implementation error: Found whs-data not a listp:~|~y0"
+            whs-data)))))
+
+(defmacro set-brr-data-attachments (&optional (suffix 'builtin))
+  (declare (xargs :guard (or (symbolp suffix)
+                             (stringp suffix))))
+  (let* ((suffix (cond ((symbolp suffix)
+                        (symbol-name suffix))
+                       (t suffix)))
+         (suffix (concatenate 'string "-" suffix))
+         (update-brr-data-1-suffix (add-suffix 'update-brr-data-1 suffix))
+         (update-brr-data-2-suffix (add-suffix 'update-brr-data-2 suffix))
+         (brkpt1-bde-suffix (add-suffix 'brkpt1-brr-data-entry suffix))
+         (brkpt2-bde-suffix (add-suffix 'brkpt2-brr-data-entry suffix)))
+    `(with-output :off :all
+       (progn (defattach (update-brr-data-1 ,update-brr-data-1-suffix)
+                :system-ok t)
+              (defattach (update-brr-data-2 ,update-brr-data-2-suffix)
+                :system-ok t)
+              (defattach (brkpt1-brr-data-entry ,brkpt1-bde-suffix)
+                :system-ok t)
+              (defattach (brkpt2-brr-data-entry ,brkpt2-bde-suffix)
+                :system-ok t)))))
+
+(defun set-wormhole-data-fast (whs data)
+
+; This function is like set-wormhole-data, except that it avoids a potentially
+; expensive equality test with the trade-off that here, we always cons.
+
+  (declare (xargs :guard t))
+  (if (consp whs)
+      (cons (car whs) data)
+    (cons :enter data)))
+
+(defun brr-data-mirror (lst acc)
+
+; Lst is a list of brr-data records.  We accumulate the reverse of lst into
+; acc, similarly reversing all :completed fields within lst; see brr-data-lst.
+; The goal is for a left-to-right depth-first tree traversal to respect
+; suitably the order present in the proof attempt.
+
+  (declare (xargs :guard (and (brr-data-listp t lst)
+                              (true-listp acc))))
+  (cond ((endp lst)
+         acc)
+        (t (let* ((x1 (car lst))
+                  (c (access brr-data x1 :completed))
+                  (x2 (if (null c)
+                          x1
+                        (change brr-data x1
+                                :completed (brr-data-mirror c nil)))))
+             (brr-data-mirror (cdr lst)
+                              (cons x2 acc))))))
+
+(defun brr-data-lst (state)
+
+; The top-level rewrites have been accumulated into the wormhole by pushing
+; onto a stack.  We reverse that stack and the :completed entries within it to
+; respect the original order of rewrites, as a convenience to the user.
+
+  (declare (xargs :stobjs state))
+  (er-let* ((status (get-persistent-whs 'brr-data state)))
+    (value (let ((data (wormhole-data status)))
+             (cond ((consp data)
+
+; Data is nil or of the form (brr-data-list . brr-data-list).  We expect the
+; car to be nil unless the proof was interrupted.
+
+                    (ec-call (brr-data-mirror (cdr data) nil)))
+
+; If data is not a cons then we haven't collected any data or we have run
+; (clear-brr-data-lst).
+
+                   (t nil))))))
+
+(defun clear-brr-data-lst ()
+  (declare (xargs :guard t))
+  (wormhole-eval
+   'brr-data
+   '(lambda (whs)
+      (set-wormhole-data-fast whs nil))
+   nil))
+
+(defmacro with-brr-data (form &key
+                              (global-var 'brr-data-lst)
+                              (brr-data-returned 'nil))
+
+; Form, which needs to return a value-triple, is evaluated to obtain a result
+; (mv erp val state), which is the error triple returned by the with-brr-data
+; call unless brr-data-returned is true, in which case (mv erp lst state) is
+; returned, where lst is the resulting list of brr-data records.  See :DOC
+; with-brr-data.
+
+  (let* ((form1 `(state-global-let* ((gstackp :brr-data))
+                                    ,form))
+         (form2 (if global-var
+                    `(mv-let (erp val state)
+                       ,form1
+                       (er-progn (set-brr-data-lst ,global-var)
+                                 (mv erp val state)))
+                  form1))
+         (form3 (if brr-data-returned
+                    `(mv-let (erp val state)
+                       ,form2
+                       (declare (ignore val))
+                       ,(if global-var
+                            `(mv erp (@ ,global-var) state)
+                          `(er-let* ((x (brr-data-lst state)))
+                             (mv erp (reverse x) state))))
+                  form2))
+         (form4 `(cond
+                  #+acl2-par
+                  ((f-get-global 'waterfall-parallelism state)
+                   (er soft 'with-brr-data
+                       "~x0 is not supported in ACL2(p) with waterfall ~
+                        parallelism on.  See :DOC ~
+                        unsupported-waterfall-parallelism-features."
+                       'with-brr-data))
+                  (t ,form3))))
+    `(prog2$ (clear-brr-data-lst)
+             ,form4)))
+
+(defun near-miss-brkpt1 (lemma target type-alist ancestors initial-ttree
+                               gstack rcnst simplify-clause-pot-lst state)
+
+; This function is called when lemma failed to match target!  It causes a break
+; similar to the one caused by brkpt1 IF the lemma's monitor specified a
+; near-miss break criteria that is satisfied by the target.  See brkpt1.
+
+; #+ACL2-PAR note: see brkpt1.
+
+  (cond
+   #+acl2-par ; test is always false anyhow when #-acl2-par
+   ((f-get-global 'waterfall-parallelism state)
+    nil)
+   ((not (f-get-global 'gstackp state))
+    nil)
+   (t
+    (mv-let (rune brr-cmd-name pattern restrictions)
+      (get-brr-one-way-unify-info lemma rcnst)
+      (brr-wormhole
+       '(lambda (whs)
+          (set-wormhole-entry-code
+           whs
+
+; Most failed matches inevitably are on unmonitored lemmas (since the vast
+; majority of lemmas will be unmonitored).  So we optimize the case that there
+; is no monitor on lemma.  Pair is either nil -- for an unmonitored rune -- or
+; a pair of the form (rune . criteria-alist), where criteria-alist may or may
+; not contain near-miss criteria.
+
+           (let ((pair
+                  (assoc-equal
+                   (get-rule-field lemma :rune)
+                   (access brr-status whs :brr-monitored-runes))))
+             (cond
+              ((null pair)
+               :SKIP)
+              ((brr-near-missp nil ; no msg required
+                               lemma target rcnst (cdr pair))
+
+; We :ENTER if this is a near miss.  But we don't need a msg here, just a
+; simple Boolean: is this a near miss?
+               :ENTER)
+              (t :SKIP)))))
+       `((brr-gstack . ,gstack)
+         (brr-local-alist . ((rune . ,rune)
+                             (brr-cmd-name-for-pattern . ,brr-cmd-name)
+                             (pattern . ,pattern)
+                             (restrictions . ,restrictions)
+                             (lemma . ,lemma)
+                             (target . ,target)
+                             (type-alist . ,type-alist)
+                             (pot-list . ,simplify-clause-pot-lst)
+                             (ancestors . ,ancestors)
+                             (rcnst . ,rcnst)
+                             (initial-ttree . ,initial-ttree))))
+       '(pprogn
+         (push-brr-status state)
+         (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|~%The pattern in this ~
+                      rule failed to match the target~#4~[~/ under the ~
+                      restrictions ~x5~].  ~@6"
+                     (brr-depth state)
+                     (get-rule-field (get-brr-local 'lemma state)
+                                     :rune)
+                     (get-brr-local 'target state)
+                     (brr-evisc-tuple state)
+                     (if (get-brr-local 'restrictions state) 1 0)
+                     (get-brr-local 'restrictions state)
+                     (brr-near-missp
+                      t ; msg required
+                      (get-brr-local 'lemma state)
+                      (get-brr-local 'target state)
+                      (get-brr-local 'restrictions state)
+                      (cdr (assoc-equal (get-brr-local 'rune state)
+                                        (access brr-status
+                                                (f-get-global 'wormhole-status
+                                                              state)
+                                                :brr-monitored-runes)))))
+                 (value t)))
+       *brkpt1-aliases*)))))
+
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
-                     gstack rcnst state)
+                     gstack rcnst simplify-clause-pot-lst state)
 
 ; #+ACL2-PAR note: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
@@ -9615,55 +10660,90 @@
    #+acl2-par ; test is always false anyhow when #-acl2-par
    ((f-get-global 'waterfall-parallelism state)
     nil)
-   ((not (f-get-global 'gstackp state))
-    nil)
    (t
-    (brr-wormhole
-     '(lambda (whs)
-        (set-wormhole-entry-code
-         whs
-         (if (assoc-equal (get-rule-field lemma :rune)
-                          (cdr (assoc-eq 'brr-monitored-runes
-                                         (wormhole-data whs))))
-             :ENTER
-           :SKIP)))
-     `((brr-gstack . ,gstack)
-       (brr-alist . ((lemma . ,lemma)
-                     (target . ,target)
-                     (unify-subst . ,unify-subst)
-                     (type-alist . ,type-alist)
-                     (ancestors . ,ancestors)
-                     (rcnst . ,rcnst)
-                     (initial-ttree . ,initial-ttree))))
-     '(pprogn
-       (push-brr-stack-frame state)
-       (put-brr-local 'depth (1+ (or (get-brr-local 'depth state) 0)) state)
-       (let ((pair (assoc-equal (get-rule-field (get-brr-local 'lemma state)
-                                                :rune)
-                                (get-brr-global 'brr-monitored-runes state))))
+    (let ((gstackp (f-get-global 'gstackp state)))
+      (cond
+       ((not gstackp)
+        nil)
+       (t
+        (prog2$
+         (and (eq gstackp :brr-data)
+              (brkpt1-brr-data-entry ancestors gstack rcnst state)
+              (wormhole-eval 'brr-data
+                             '(lambda (whs)
+                                (set-wormhole-data-fast
+                                 whs
+                                 (update-brr-data-1
+                                  lemma target unify-subst type-alist ancestors
+                                  initial-ttree gstack rcnst
+                                  simplify-clause-pot-lst
+                                  (wormhole-data whs))))
+                             (list :no-wormhole-lock
+                                   lemma target unify-subst type-alist
+                                   simplify-clause-pot-lst ancestors rcnst
+                                   initial-ttree gstack)))
+         (brr-wormhole
+          '(lambda (whs)
+             (set-wormhole-entry-code
+              whs
+              (if (assoc-equal (get-rule-field lemma :rune)
+                               (access brr-status whs :brr-monitored-runes))
+                  :ENTER
+                :SKIP)))
+          `((brr-gstack . ,gstack)
+            (brr-local-alist . ((lemma . ,lemma)
+                                (target . ,target)
+                                (unify-subst . ,unify-subst)
+                                (type-alist . ,type-alist)
+                                (pot-list . ,simplify-clause-pot-lst)
+                                (ancestors . ,ancestors)
+                                (rcnst . ,rcnst)
+                                (initial-ttree . ,initial-ttree))))
+          '(pprogn
+            (push-brr-status state)
+            (let ((pair (assoc-equal (get-rule-field (get-brr-local 'lemma
+                                                                    state)
+                                                     :rune)
+                                     (access brr-status
+                                             (f-get-global 'wormhole-status
+                                                           state)
+                                             :brr-monitored-runes))))
 ; We know pair is non-nil because of the entrance test on wormhole above
-         (er-let*
-          ((okp (eval-break-condition (car pair) (cadr pair) 'wormhole state)))
-          (cond
-           (okp
-            (pprogn
-             (cond ((true-listp okp)
-                    (stuff-standard-oi okp state))
-                   (t state))
-             (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
-                         (get-brr-local 'depth state)
-                         (get-rule-field (get-brr-local 'lemma state)
-                                         :rune)
-                         (get-brr-local 'target state)
-                         (brr-evisc-tuple state))
-                     (value t))))
-           (t (pprogn
-               (pop-brr-stack-frame state)
-               (value nil)))))))
-     *brkpt1-aliases*))))
+              (mv-let (erp okp state)
+                (eval-break-condition (car pair)
+                                      (cdr (assoc-eq :condition (cdr pair)))
+                                      'wormhole state)
+                (cond
+                 (erp
+
+; If evaling the break condition caused an error, we abort.  The error message
+; has already been printed by eval-break-condition.  To continue silently will
+; most likely just cause the error to be printed repeatedly as the lemma is
+; tried repeatedly.  To enter the interactive loop might leave an offline proof
+; just hanging.
+
+                  (pprogn
+                   (stuff-standard-oi '(:a!) state)
+                   (value t)))
+                 (okp
+                  (pprogn
+                   (cond ((true-listp okp)
+                          (stuff-standard-oi okp state))
+                         (t state))
+                   (prog2$ (cw "~%(~F0 Breaking ~F1 on ~X23:~|"
+                               (brr-depth state)
+                               (get-rule-field (get-brr-local 'lemma state)
+                                               :rune)
+                               (get-brr-local 'target state)
+                               (brr-evisc-tuple state))
+                           (value t))))
+                 (t (pprogn
+                     (pop-brr-status state)
+                     (value nil)))))))
+          *brkpt1-aliases*))))))))
 
 (defun brkpt2 (wonp failure-reason unify-subst gstack brr-result final-ttree
-                    rcnst state)
+                    rcnst ancestors state)
 
 ; #+ACL2-PAR note: see brkpt1.
 
@@ -9671,100 +10751,537 @@
    #+acl2-par ; test is always false anyhow when #-acl2-par
    ((f-get-global 'waterfall-parallelism state)
     nil)
-   ((not (f-get-global 'gstackp state))
-    nil)
    (t
-    (brr-wormhole
-     '(lambda (whs)
-        (set-wormhole-entry-code
-         whs
-         (if (assoc-equal gstack
-                          (cdr (assoc-eq 'brr-stack (wormhole-data whs))))
-             :ENTER
-           :SKIP)))
-     `((brr-gstack . ,gstack)
-       (brr-alist . ((wonp . ,wonp)
-                     (failure-reason . ,failure-reason)
-                     (unify-subst . ,unify-subst) ; maybe changed
-                     (brr-result . ,brr-result)
-                     (rcnst . ,rcnst)
-                     (final-ttree . ,final-ttree))))
-     '(cond
-       ((eq (get-brr-local 'action state) 'silent)
-        (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
-                (pprogn
-                 (f-put-global 'brr-monitored-runes
-                               (get-brr-local 'saved-brr-monitored-runes state)
-                               state)
-                 (f-put-global 'brr-evisc-tuple
-                               (get-brr-local 'saved-brr-evisc-tuple state)
-                               state)
-                 (pop-brr-stack-frame state)
-                 (value nil))))
-       ((eq (get-brr-local 'action state) 'print)
-        (pprogn
-         (put-brr-local-lst (f-get-global 'brr-alist state) state)
-         (prog2$ (if (get-brr-local 'wonp state)
-                     (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
-                         (get-brr-local 'depth state)
-                         (get-rule-field (get-brr-local 'lemma state) :rune)
-                         (brr-result state)
-                         (brr-evisc-tuple state))
-                   (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
-                       (get-brr-local 'depth state)
-                       (get-rule-field (get-brr-local 'lemma state) :rune)
-                       (tilde-@-failure-reason-phrase
-                        (get-brr-local 'failure-reason state)
-                        1
-                        (get-brr-local 'unify-subst state)
-                        (brr-evisc-tuple state)
-                        (free-vars-display-limit state)
-                        state)))
+    (let ((gstackp (f-get-global 'gstackp state)))
+      (cond
+       ((not gstackp)
+        nil)
+       (t
+        (prog2$
+         (brr-wormhole
+          '(lambda (whs)
+             (set-wormhole-entry-code
+              whs
+              (if (equal gstack (access brr-status whs :brr-gstack))
+                  :ENTER
+                :SKIP)))
+          `((brr-gstack . ,gstack)
+            (brr-local-alist . ((wonp . ,wonp)
+                                (failure-reason . ,failure-reason)
+                                (unify-subst . ,unify-subst) ; maybe changed
+                                (brr-result . ,brr-result)
+                                (rcnst . ,rcnst)
+                                (final-ttree . ,final-ttree))))
+          '(cond
+            ((eq (get-brr-local 'action state) 'silent)
+
+; We ought, perhaps, start by using put-brr-locals to augment the
+; :brr-local-alist inherited from brkpt1 with the additional locals (above)
+; passed to brkpt2.  But the action 'silent requires no use of those new
+; locals so we avoid the unnecessary work.
+
+             (prog2$ (cw "~F0)~%" (brr-depth state))
+                     (pprogn
+                      (pop-brr-status state)
+                      (value nil))))
+            ((eq (get-brr-local 'action state) 'print)
+
+; In order to print the results we need to augment the :brr-local-alist with
+; the new inputs.
+
+             (pprogn
+              (put-brr-locals (cdr (assoc-eq 'brr-local-alist
+                                             (f-get-global 'wormhole-input
+                                                           state)))
+                              state)
+              (prog2$ (if (get-brr-local 'wonp state)
+                          (cw "~%~F0 ~F1 produced ~X23.~|~F0)~%"
+                              (brr-depth state)
+                              (get-rule-field (get-brr-local 'lemma state)
+                                              :rune)
+                              (brr-result state)
+                              (brr-evisc-tuple state))
+                        (cw "~%~F0x ~F1 failed because ~@2~|~F0)~%"
+                            (brr-depth state)
+                            (get-rule-field (get-brr-local 'lemma state) :rune)
+                            (tilde-@-failure-reason-phrase
+                             (get-brr-local 'failure-reason state)
+                             1
+                             (get-brr-local 'unify-subst state)
+                             (brr-evisc-tuple state)
+                             (free-vars-display-limit state)
+                             state)))
+                      (pprogn
+                       (pop-brr-status state)
+                       (value nil)))))
+            (t (pprogn
+
+; To interact with the user we need to augment the :brr-local-alist with the
+; new inputs.
+
+                (put-brr-locals (cdr (assoc-eq 'brr-local-alist
+                                               (f-get-global 'wormhole-input
+                                                             state)))
+                                state)
+                (er-progn
+                 (set-standard-oi
+                  (get-brr-local 'saved-standard-oi state)
+                  state)
+                 (cond ((consp (f-get-global 'standard-oi state))
+                        (set-ld-pre-eval-print t state))
+                       (t (value nil))) ; This (value nil) is not an exit!
+                 (prog2$
+                  (if (get-brr-local 'wonp state)
+                      (cw "~%~F0! ~F1 produced ~X23.~|~%"
+                          (brr-depth state)
+                          (get-rule-field (get-brr-local 'lemma state) :rune)
+                          (brr-result state)
+                          (brr-evisc-tuple state))
+                    (cw "~%~F0x ~F1 failed because ~@2~|~%"
+                        (brr-depth state)
+                        (get-rule-field (get-brr-local 'lemma state) :rune)
+                        (tilde-@-failure-reason-phrase
+                         (get-brr-local 'failure-reason state)
+                         1
+                         (get-brr-local 'unify-subst state)
+                         (brr-evisc-tuple state)
+                         (free-vars-display-limit state)
+                         state)))
+
+; We enter the interactive loop.  All exits are handled by the keyword aliases
+; and ought to pop-brr-status.
+
+                  (value t))))))
+          *brkpt2-aliases*)
+         (and (not (eq failure-reason 'near-miss))
+              (eq gstackp :brr-data)
+              (brkpt2-brr-data-entry ancestors gstack rcnst state)
+              (wormhole-eval 'brr-data
+                             '(lambda (whs)
+                                (set-wormhole-data-fast
+                                 whs
+                                 (update-brr-data-2
+                                  wonp failure-reason unify-subst gstack
+                                  brr-result final-ttree rcnst ancestors
+                                  (wormhole-data whs))))
+                             (list :no-wormhole-lock
+                                   wonp failure-reason unify-subst gstack
+                                   brr-result final-ttree rcnst))))))))))
+
+(defun show-brr-data-1 (x)
+  (declare (xargs :guard (weak-brr-data-1-p x)))
+  (list :target (access brr-data-1 x :target)
+        :unify-subst (alist-to-doublets
+                      (access brr-data-1 x :unify-subst))
+        :type-alist (alist-to-doublets
+                     (decode-type-alist (access brr-data-1 x :type-alist)))
+        :lemma (let ((lemma (access brr-data-1 x :lemma)))
+                 (and (consp lemma)
+                      (access-x-rule-rune (car lemma) lemma)))
+        :gstack (access brr-data-1 x :gstack)))
+
+(defun show-brr-data-2 (x)
+  (declare (xargs :guard (weak-brr-data-2-p x)))
+  (list* :brr-result (access brr-data-2 x :brr-result)
+         (let ((failure-reason (access brr-data-2 x :failure-reason)))
+           (and failure-reason
+                (list :failure-reason failure-reason)))))
+
+(mutual-recursion
+
+(defun show-brr-data (x)
+  (declare (xargs :guard (brr-data-p t x)))
+  (and (mbt (brr-data-p t x))
+       (append (show-brr-data-1 (access brr-data x :pre))
+               (show-brr-data-2 (access brr-data x :post))
+               (list :completed
+                     (show-brr-data-lst (access brr-data x :completed))))))
+
+(defun show-brr-data-lst (x)
+  (declare (xargs :guard (brr-data-listp t x)))
+  (cond ((endp x) nil)
+        (t (cons (show-brr-data (car x))
+                 (show-brr-data-lst (cdr x))))))
+)
+
+(mutual-recursion
+
+(defun brr-data-2-for-term-1 (subterm-p term brr-data)
+  (or (brr-data-2-for-term subterm-p
+                           term
+                           (access brr-data brr-data :completed))
+      (let* ((post (access brr-data brr-data :post))
+             (brr-result (access brr-data-2 post :brr-result)))
+        (and (if subterm-p
+                 (dumb-occur term brr-result)
+               (equal term brr-result))
+             post))))
+
+(defun brr-data-2-for-term (subterm-p term brr-data-lst)
+  (cond ((endp brr-data-lst) nil)
+        (t (or (brr-data-2-for-term-1 subterm-p term (car brr-data-lst))
+               (brr-data-2-for-term subterm-p term (cdr brr-data-lst))))))
+)
+
+(mutual-recursion
+
+(defun matching-subterm (pat term alist target)
+
+; If pat/alist2 is a subterm s of term for some extension of alist2 of alist
+; such that s does not occur in target, then return that subterm.  Otherwise
+; return nil.
+
+  (mv-let (flg alist2)
+    (one-way-unify1 pat term alist)
+    (declare (ignore alist2))
+    (cond ((and flg
+                (not (dumb-occur term target)))
+           term)
+          ((or (variablep term)
+               (fquotep term))
+           nil)
+          (t (matching-subterm-lst pat (fargs term) alist target)))))
+
+(defun matching-subterm-lst (pat lst alist target)
+  (cond ((endp lst) nil)
+        (t (or (matching-subterm pat (car lst) alist target)
+               (matching-subterm-lst pat (cdr lst) alist target)))))
+)
+
+(mutual-recursion
+
+(defun cw-gstack-for-term-fn1-1 (subterm-p term brr-data alist)
+
+; This returns either (mv nil nil nil nil) or (mv term2 x d-2 rest), where d-2
+; is a brr-data-2 record, term2 is the brr-result for the bottom of the :gstack
+; of d-2, rest is a list of brr-data records, and x is either nil or a natural
+; number less than the length of the gstack of d-2.
+
+  (let* ((pre (access brr-data brr-data :pre))
+         (target (access brr-data-1 pre :target))
+         (post (access brr-data brr-data :post))
+         (brr-result (access brr-data-2 post :brr-result))
+         (subterm
+          (cond ((eq alist :none)
+                 (and (not (dumb-occur term target))
+                      (if subterm-p
+                          (dumb-occur term brr-result)
+                        (equal term brr-result))
+                      term))
+                (subterm-p
+                 (matching-subterm term brr-result alist target))
+                (t (mv-let (flg alist2)
+                     (one-way-unify1 term brr-result alist)
+                     (declare (ignore alist2))
+                     (and flg
+                          (not (dumb-occur brr-result target))
+                          brr-result))))))
+    (cond
+     (subterm
+      (let ((d-2 (brr-data-2-for-term
+                  subterm-p
+                  subterm
+                  (access brr-data brr-data :completed))))
+        (cond ((null d-2)
+               (mv nil post nil))
+              (t ; the :gstack of post is an initial segment of that of d-2
+               (mv post d-2 nil)))))
+     (t (cw-gstack-for-term-fn1 subterm-p
+                                term
+                                (access brr-data brr-data :completed)
+                                alist)))))
+
+(defun cw-gstack-for-term-fn1 (subterm-p term brr-data-lst alist)
+  (cond ((endp brr-data-lst) (mv nil nil nil))
+        (t (mv-let (earlier-d-2 d-2 rest)
+             (cw-gstack-for-term-fn1-1 subterm-p term (car brr-data-lst)
+                                       alist)
+             (cond (d-2 (mv earlier-d-2
+                            d-2
+                            (append rest (cdr brr-data-lst))))
+                   (t (cw-gstack-for-term-fn1 subterm-p
+                                              term
+                                              (cdr brr-data-lst)
+                                              alist)))))))
+)
+
+(defun symbol-name-lst (lst)
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (symbol-name (car lst))
+                 (symbol-name-lst (cdr lst))))))
+
+(defun acl2-query-simulate-interaction (msg alist controlledp ans state)
+  (cond ((and (atom ans)
+              (or controlledp
+                  (and (not (f-get-global 'window-interfacep state))
+
+; If a special window is devoted to queries, then there is no way to
+; pretend to answer, so we don't.  We just go on.  Imagine that we
+; answered and the window disappeared so quickly you couldn't see the
+; answer.
+
+                       (not (eq (standard-co state) *standard-co*)))))
+         (pprogn
+          (fms msg alist (standard-co state) state (ld-evisc-tuple state))
+          (princ$ ans (standard-co state) state)
+          (newline (standard-co state) state)
+          state))
+        (t state)))
+
+(defun acl2-query1 (id qt alist state)
+
+; This is the function actually responsible for printing the query
+; and getting the answer, for the current level in the query tree qt.
+; See acl2-query for the context.
+
+  (let ((dv (cdr-assoc-query-id id (ld-query-control-alist state)))
+        (msg "ACL2 Query (~x0):  ~@1  (~*2):  ")
+        (alist1 (list (cons #\0 id)
+                      (cons #\1 (cons (car qt) alist))
+                      (cons #\2
+                            (list "" "~s*" "~s* or " "~s*, "
+                                  (symbol-name-lst (evens (cdr qt))))))))
+    (cond
+     ((null dv)
+      (pprogn
+       (io? query nil state
+            (alist1 msg)
+            (fms msg alist1 *standard-co* state (ld-evisc-tuple state)))
+       (er-let*
+        ((ans (read-object *standard-oi* state)))
+        (let ((temp (and (symbolp ans)
+                         (assoc-keyword
+                          (intern (symbol-name ans) "KEYWORD")
+                          (cdr qt)))))
+          (cond (temp
                  (pprogn
-                  (f-put-global 'brr-monitored-runes
-                                (get-brr-local 'saved-brr-monitored-runes state)
-                                state)
-                  (f-put-global 'brr-evisc-tuple
-                                (get-brr-local 'saved-brr-evisc-tuple state)
-                                state)
-                  (pop-brr-stack-frame state)
-                  (value nil)))))
-       (t (pprogn
-           (put-brr-local-lst (f-get-global 'brr-alist state) state)
-           (er-progn
-            (set-standard-oi
-             (get-brr-local 'saved-standard-oi state)
-             state)
-            (cond ((consp (f-get-global 'standard-oi state))
-                   (set-ld-pre-eval-print t state))
-                  (t (value nil)))
-            (pprogn (f-put-global 'brr-monitored-runes
-                                  (get-brr-local 'saved-brr-monitored-runes
-                                                 state)
-                                  state)
-                    (f-put-global 'brr-evisc-tuple
-                                  (get-brr-local 'saved-brr-evisc-tuple
-                                                 state)
-                                  state)
-                    (prog2$
-                     (if (get-brr-local 'wonp state)
-                         (cw "~%~F0! ~F1 produced ~X23.~|~%"
-                             (get-brr-local 'depth state)
-                             (get-rule-field (get-brr-local 'lemma state) :rune)
-                             (brr-result state)
-                             (brr-evisc-tuple state))
-                       (cw "~%~F0x ~F1 failed because ~@2~|~%"
-                           (get-brr-local 'depth state)
-                           (get-rule-field (get-brr-local 'lemma state) :rune)
-                           (tilde-@-failure-reason-phrase
-                            (get-brr-local 'failure-reason state)
-                            1
-                            (get-brr-local 'unify-subst state)
-                            (brr-evisc-tuple state)
-                            (free-vars-display-limit state)
-                            state)))
-                     (value t)))))))
-     *brkpt2-aliases*))))
+                  (acl2-query-simulate-interaction msg alist1 nil ans state)
+                  (value (cadr temp))))
+                (t (acl2-query1 id qt alist state)))))))
+     ((eq dv t)
+      (pprogn
+       (acl2-query-simulate-interaction msg alist1 t (cadr qt) state)
+       (value (caddr qt))))
+     (t (let ((temp (assoc-keyword (if (consp dv) (car dv) dv) (cdr qt))))
+          (cond
+           ((null temp)
+            (er soft 'acl2-query
+                "The default response, ~x0, supplied in ~
+                 ld-query-control-alist for the ~x1 query, is not one ~
+                 of the expected responses.  The ~x1 query ~
+                 is~%~%~@2~%~%Note the expected responses above.  See ~
+                 :DOC ld-query-control-alist."
+                (if (consp dv) (car dv) dv)
+                id
+                (cons msg alist1)))
+           (t
+            (pprogn
+             (acl2-query-simulate-interaction msg alist1 t dv state)
+             (value (cadr temp))))))))))
+
+(defun acl2-query (id qt alist state)
+
+; A query-tree qt is either an atom or a cons of the form
+;   (str :k1 qt1 ... :kn qtn)
+; where str is a string suitable for printing with ~@, each :ki is a
+; keyword, and each qti is a query tree.  If qt is an atom, it is
+; returned.  Otherwise, str is printed and the user is prompted for
+; one of the keys.  When ki is typed, we recur on the corresponding
+; qti.  Note that the user need not type a keyword, just a symbol
+; whose symbol-name is that of one of the keywords.
+
+; Thus, '("Do you want to redefine ~x0?" :y t :n nil) will print
+; the question and require a simple y or n answer, returning t or nil
+; as appropriate.
+
+; Warning: We don't always actually read an answer!  We sometimes
+; default.  Our behavior depends on the LD specials standard-co,
+; standard-oi, and ld-query-control-alist, as follows.
+
+; Let x be (cdr (assoc-eq id (ld-query-control-alist state))).  X must
+; be either nil, a keyword, or a singleton list containing a keyword.
+; If it is a keyword, then it must be one of the keys in (cdr qt) or
+; else we cause an error.  If x is a keyword or a one-element list
+; containing a keyword, we act as though we read that keyword as the
+; answer to our query.  If x is nil, we read *standard-oi* for an
+; answer.
+
+; Now what about printing?  Where does the query actually appear?  If
+; we get the answer from the control alist, then we print both the
+; query and the answer to standard-co, making it simulate an
+; interaction -- except, if the control alist gave us a singleton
+; list, then we do not do any printing.  If we get the answer from
+; *standard-oi* then we print the query to *standard-co*.  In
+; addition, if we get the answer from *standard-oi* but *standard-co*
+; is not standard-co, we simulate the interaction on standard-co.
+
+  (cond ((atom qt) (value qt))
+        ((not (and (or (stringp (car qt))
+                       (and (consp (car qt))
+                            (stringp (caar qt))))
+                   (consp (cdr qt))
+                   (keyword-value-listp (cdr qt))))
+         (er soft 'acl2-query
+             "The object ~x0 is not a query tree!  See the comment in ~
+              acl2-query."
+             qt))
+        (t
+         (er-let* ((qt1 (acl2-query1 id qt alist state)))
+                  (acl2-query id qt1 alist state)))))
+
+(defun brr-data-query (id state)
+  (acl2-query
+   id
+   '("Attempt to present another result?"
+     :y t :n nil
+     :? ("reply with y to continue, or with n to quit"
+         :y t :n nil))
+   nil
+   state))
+
+(defun cw-gstack-for-term-fn (id subterm-p multiple tterm brr-data-lst alist
+                                 state)
+
+; Multiple is nil if only one result is to be considered.  Otherwise multiple
+; is t at the top level and :more on recursive calls.
+
+  (cond
+   ((null brr-data-lst) (value (eq multiple :more)))
+   (t (mv-let (earlier-d2 d-2 rest)
+        (cw-gstack-for-term-fn1 subterm-p tterm brr-data-lst alist)
+        (cond
+         (d-2
+          (progn$ (cw-gstack1 1
+                              nil
+                              (reverse (access brr-data-2 d-2 :gstack))
+                              nil)
+                  (let ((brr-result (access brr-data-2 d-2 :brr-result))
+                        (earlier-brr-result (and earlier-d2
+                                                 (access brr-data-2 earlier-d2
+                                                         :brr-result))))
+                    (cw "The resulting (translated) term is~|  ~
+                         ~y0.~|~#1~[~/Note: The first lemma application above ~
+                         that provides a suitable result is at frame ~x2, and ~
+                         ~#3~[it's the same result as above.~/that result ~
+                         is~|  ~y4.~]~]~|"
+                        brr-result
+                        (if earlier-d2 1 0)
+                        (and earlier-d2
+                             (length (access brr-data-2 earlier-d2 :gstack)))
+                        (if (equal brr-result earlier-brr-result) 0 1)
+                        earlier-brr-result))
+                  (cond
+                   ((not multiple) (value :quit))
+                   (t
+                    (er-let* ((action (if multiple
+                                          (brr-data-query id state)
+                                        (value nil))))
+                      (cond
+                       ((eq action t)
+                        (cw-gstack-for-term-fn id subterm-p :more tterm rest
+                                               alist state))
+                       (t (value :quit))))))))
+         (t (assert$ (null rest)
+                     (value (eq multiple :more)))))))))
+
+(defun cw-gstack-for-term*-fn (id subterm-p multiple uterm+ brr-data-lst state)
+  (mv-let (vars uterm freep)
+    (case-match uterm+
+      ((':free vars uterm)
+       (mv vars uterm t))
+      (& (mv nil uterm+ nil)))
+    (er-let* ((tterm (cond
+                      ((and (consp uterm)
+                            (eq (car uterm) :free))
+                       (er soft id
+                           "An input of the form (:FREE ..) must be of the ~
+                            form (:FREE vars x).  The input ~x0 is thus ~
+                            illegal.  See :DOC cw-gstack-for-term."
+                           uterm))
+                      (t (translate uterm t nil nil id (w state) state))))
+              (alist (cond
+                      ((not (arglistp vars))
+                       (er soft id
+                           "The first argument of :FREE must be a list of ~
+                            distinct variables, but ~f0 is not.  See :DOC ~
+                            cw-gstack-for-term."
+                           vars))
+                      ((not freep) (value :none))
+                      (t (let ((all-vars (all-vars tterm)))
+                           (cond
+                            ((subsetp-eq vars all-vars)
+                             (let ((bound-vars (set-difference-eq all-vars
+                                                                  vars)))
+                               (value (pairlis$ bound-vars bound-vars))))
+                            (t (er soft id
+                                   "For a :FREE expression, each specified ~
+                                    variable must occur in the specified ~
+                                    term.  But ~&0 ~#0~[does~/do~] not occur ~
+                                    in the term, ~x1.  See :DOC ~
+                                    cw-gstack-for-term."
+                                   (set-difference-eq vars all-vars)
+                                   tterm)))))))
+              (ans (cw-gstack-for-term-fn id subterm-p multiple tterm
+                                          brr-data-lst alist state)))
+      (prog2$ (cond ((eq ans t)
+                     (cw "There are no more results.~|"))
+                    ((eq ans nil)
+                     (cw "There are no results.~|"))
+                    (t ; (eq ans :quit)
+                     nil))
+              (value :invisible)))))
+
+(defmacro cw-gstack-for-term* (uterm+ &key
+                                      (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-term* nil t ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro cw-gstack-for-subterm* (uterm+ &key
+                                         (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-subterm* t t ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro cw-gstack-for-term (uterm+ &key
+                                     (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-term nil nil ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro cw-gstack-for-subterm (uterm+ &key
+                                        (global-var 'brr-data-lst))
+  `(cw-gstack-for-term*-fn 'cw-gstack-for-subterm t nil ',uterm+ (@ ,global-var)
+                           state))
+
+(defmacro set-brr-data-lst (global-var &optional (action ':observation))
+
+; This sets the indicated global-var to the accumulated (and suitably reversed)
+; list of accumulated brr-data records.
+
+  (declare (xargs :guard (and (member-eq action '(:observation :error :silent))
+                              global-var
+                              (symbolp global-var))))
+  `(er-let* ((x (brr-data-lst state))
+             (y
+              (cond
+               ((null x)
+                (case ,action
+                  (:observation
+                   (pprogn (observation nil
+                                        "There is no brr-data available.")
+                           (value nil)))
+                  (:error
+                   (er soft nil
+                       "There is no brr-data available."))
+                  (otherwise (value nil))))
+               (t (value x)))))
+     (pprogn (f-put-global ',global-var y state)
+             (case ,action
+               (:observation (observation nil
+                                          "~x0 = ~x1"
+                                          '(length (@ ,global-var))
+                                          (len y)))
+               (otherwise state))
+             (value :invisible))))
 
 ; We now develop some of the code for an implementation of an idea put
 ; forward by Diederik Verkest, namely, that patterns should be allowed
@@ -9973,22 +11490,6 @@
           (expand-permission-result term rcnst geneqv wrld)
           (declare (ignore hyp unify-subst rune))
           (and new-term new-rcnst)))
-
-(defun one-way-unify-restrictions1 (pat term restrictions)
-  (cond
-   ((null restrictions)
-    (mv nil nil))
-   (t (mv-let (unify-ans unify-subst)
-              (one-way-unify1 pat term (car restrictions))
-              (cond
-               (unify-ans (mv unify-ans unify-subst))
-               (t (one-way-unify-restrictions1 pat term (cdr restrictions))))))))
-
-(defun one-way-unify-restrictions (pat term restrictions)
-  (cond
-   ((null restrictions)
-    (one-way-unify pat term))
-   (t (one-way-unify-restrictions1 pat term restrictions))))
 
 (defun ev-fncall! (fn args state aok)
 
@@ -10217,12 +11718,20 @@
 ; no meta-extract hypotheses; in that case, meta-extract-hyps is the empty
 ; conjunction.
 
+; At the end of this Essay are two appendices, both pertaining to transparent
+; functions.  The first explains how our correctness argument can be made to
+; accommodate transparent functions.  The second discusses how the
+; implementation accommodates transparent functions.
+
+; For the discussion below of attachments, it might be helpful to look at the
+; Essay on Defattach and perhaps also the Essay on Merging Attachment Records.
+
 ; Let *mfc* be a metafunction context, and let {*mfc*} denote the formula
 ; asserting the validity of *mfc*, as based on its type-alist.  For example, if
 ; *mfc* has only one entry in its type-alist, and that entry binds (foo x) to
 ; (ts-complement *ts-integer*), then {*mfc*} is (not (integerp (foo x))).  For
 ; notational convenience, we write "ev" below for an evaluator function symbol
-; (which thus is definitely not the predefined ACL2 ev function)!
+; (which thus is definitely not the predefined ACL2 ev function!).
 
 ; Recall the ancestor relation: the transitive-reflexive closure of the
 ; relation "g is an immediate ancestor of f" generated by pairs <f,g> where g
@@ -10262,7 +11771,7 @@
 ; chk-evaluator-use-in-rule for enforcement.  See the example towards the end
 ; of :DOC evaluator-restrictions for necessity of ruling out functions that are
 ; "both ancestral in the evaluator and also ancestral in the meta or
-; clause-processor functions."  Also see the Appendix below for a remark about
+; clause-processor functions."  Also see the Concluding Remark below about
 ; allowing an attachment to ev even if it is ancestral in meta-fn or hyp-fn.)
 
 ; Then the following is a theorem of (mfc-world *mfc*), or equivalently (since
@@ -10403,16 +11912,22 @@
 ; symbol is redundant with (indeed, identical to) its axiom in W0.
 
 ; Let (1') be the result of replacing hyp-fn and meta-fn in W0 with their W1
-; versions, hyp-fn' and meta-fn'.  Let fs be the functional substitution that
-; contains, for every green ancestor f' of hyp-fn' or meta-fn', the pair <f,f'>
-; where f is the red version of f'.  Note that ev is not in the domain of fs,
-; since otherwise it would have an ancestor f with an attachment that is also
-; an ancestor of hyp-fn or meta-fn, a contradiction.  Thus (1') is the result
-; of applying fs to (1), perhaps after replacing green pseudo-termp and/or
-; alistp by the provably equal corresponding red function; so we need only show
-; that fs is a valid functional substitution for (1) in W.  Recall this comment
-; in relevant-constraints, specifying which formulas need to remain theorems
-; when fs is applied to them.
+; versions, hyp-fn' and meta-fn'.  We next show that (1') is a theorem of W.
+; First note that since (1) is a theorem of W0 and hence of W0- (since W0- and
+; W0 have the same theory, even though their evaluation theories may differ),
+; then (1) is a theorem of the extension W of W0-.  We next show that (1') also
+; holds in W, using functional instantiation.  Let fs be the functional
+; substitution that contains, for every green ancestor f' of hyp-fn' or
+; meta-fn', the pair <f,f'> where f is the red version of f'.  Note that ev is
+; not in the domain of fs, since otherwise ev would have a green version and
+; hence ev would have an ancestor f with an attachment that is also an ancestor
+; of hyp-fn or meta-fn, a contradiction.  Thus (1') is the result of applying
+; fs to (1), perhaps after replacing green pseudo-termp and/or alistp by the
+; provably equal corresponding red function (since fully-defined functions are
+; provably unique).  So for (1') to hold in W by functional instantiation of
+; (1), we need only show that fs is a valid functional substitution for (1) in
+; W.  Recall this comment in relevant-constraints, specifying which formulas
+; need to remain theorems when fs is applied to them.
 
 ; The relevant theorems are the set of all terms, term, such that
 ;   (a) term mentions some function symbol in the domain of alist,
@@ -10427,18 +11942,18 @@
 ; ancestors of defaxioms or of hyp-fn, meta-fn, ev, EXTRA-FNS, alistp, or
 ; pseudo-termp.  We need only consider those that also satisfy (a).  By
 ; hypothesis no defaxiom has any ancestor with an attachment, so since every
-; function symbol is in the domain of fs, we may ignore defaxioms.  We also
-; ignore alistp and pseudo-termp since they and their ancestors are fully
-; defined, so any replacement of red by green yields a provably equal function.
-; Any axiom introducing an ancestor f of hyp-fn or meta-fn clearly is either
-; left alone by fs or else is mapped to the axiom introducing the green version
-; of f.  The proof is concluded by showing that the axiom introducing an
-; arbitrary ancestor f of ev or EXTRA-FNS mentions no symbol in the domain of
-; fs.  Suppose to the contrary that g is such a symbol; then since g has a
-; green version, there is an ancestor h of g such that h has an attachment.
-; But then h is a common ancestor of ev or EXTRA-FNS and also of either hyp-fn
-; or meta-fn, contradicting the hypothesis that no such common ancestor has an
-; attachment.
+; function symbol in the domain of fs has an attachment, we may ignore
+; defaxioms in (i)(b) and (ii).  We also ignore alistp and pseudo-termp since
+; they and their ancestors are fully defined, hence with provably equal red and
+; green functions.  Any axiom introducing an ancestor f of hyp-fn or meta-fn
+; clearly is either left alone by fs or else is mapped to the axiom introducing
+; the green version of f.  The validation of fs is concluded by showing that
+; the axiom introducing an arbitrary ancestor f of ev or EXTRA-FNS mentions no
+; symbol in the domain of fs.  Suppose to the contrary that g is such a symbol;
+; then since g has a green version, there is an ancestor h of g such that h has
+; an attachment.  But then h is a common ancestor of ev or EXTRA-FNS and also
+; of either hyp-fn or meta-fn, contradicting the hypothesis that no such common
+; ancestor has an attachment.
 
 ; By the Evaluation History Theorem in the Essay on Defattach, there is a world
 ; W' whose theory is the evaluation theory of W.  (That theorem assumes that
@@ -10447,8 +11962,9 @@
 ; corresponding definition rule.)  Clearly any call of hyp-fn or meta-fn that
 ; completes in W0 with attachments gives the same result as the corresponding
 ; call of its W1 version in W1 with attachments, hence in W with attachments.
-; Therefore, just as (2) followed from (1) in our earlier "warmup" argument,
-; (2) also follows from (1') in W'.  Let W2 be the world obtained by
+; So each such call and result are provably equal in W with attachments, hence
+; in W'.  Therefore, just as (2) followed from (1) in our earlier "warmup"
+; argument, (2) follows from (1') in W'.  Let W2 be the world obtained by
 ; restricting W' to the set of ancestors of at least one of the (red) functions
 ; ev, EXTRA-FNS, alistp, and pseudo-termp, and all defaxioms.  As usual the
 ; theory of W' conservatively extends the theory of W2: both are worlds and W2
@@ -10586,6 +12102,14 @@
 ; Elimination Lemma), however, because by hypothesis, these clauses are all
 ; theorems.
 
+; (Comment added by Matt January 2023.  It's no longer clear to me that we need
+; to collect guards as described in the next paragraphs: the "in essence
+; proved" remark below looks good enough at the moment!  But we have been
+; collecting ancestors of guards for quite some time without obvious ill
+; effect, so we take the safe approach of continuing to do so.  If this
+; decision is revisited, also think about the effect that has on the use of
+; canonical-ancestors in ext-ancestors-attachments1.)
+
 ; We remark briefly on the relation between guards and ancestors in our
 ; criterion for using attachments in meta-level reasoning.  Above, we argue
 ; that we can restrict to attachments to functions ancestral in metafunctions
@@ -10600,7 +12124,7 @@
 ; function chk-evaluator-use-in-rule.
 
 ; So, we enrich the notion of ancestor to include guards.  However, we can
-; weaker our notion of ancestor to avoid the next-to-last argument of
+; weaken our notion of ancestor to avoid the next-to-last argument of
 ; return-last, except when it is used to implement mbe (see function
 ; canonical-ffn-symbs).  This weakening was inspired by an example sent to us
 ; by Sol Swords, who derived it from his own experience, and is justified by
@@ -10608,20 +12132,616 @@
 ; events.  The parameter rlp passed to our functions is true when this special
 ; handling of return-last is to be performed.
 
-; Appendix.  Sol Swords observes that the restrictions in the Theorem above may
-; be weakened to allow attachments ev* and ev*-lst to ev and ev-lst even if ev
-; is ancestral in meta-fn or hyp-fn, provided ev* and ev*-lst are an evaluator
-; pair and that neither they nor EXTRA-FNS have any ancestral attachments.  (He
-; also notes that these attachments need not be direct: they can be by way of a
-; chain of attachments.)  He sketches the following modification of the
-; argument above.  As before we derive (2) in the evaluation theory, by
-; reducing (1) using evaluation.  Let (2*) be the result of replacing ev by ev*
-; in (2); then since ev and ev* are provably equal in the evaluation theory,
-; (2*) also holds there.  Since (2*) has no functions with ancestral
-; attachments, it holds in the current world by the usual conservativity
-; argument, as before.  Finally, complete the argument (the part after the
-; Claim) as before, replacing ev by ev*; here we use the fact that ev* is an
-; evaluator.
+; Concluding Remark.  Sol Swords observes that the restrictions in the Theorem
+; above may be weakened to allow attachments ev* and ev*-lst to ev and ev-lst
+; even if ev is ancestral in meta-fn or hyp-fn, provided ev* and ev*-lst are an
+; evaluator pair and that neither they nor EXTRA-FNS have any ancestral
+; attachments.  (He also notes that these attachments need not be direct: they
+; can be by way of a chain of attachments.)  He sketches the following
+; modification of the argument above.  As before we derive (2) in the
+; evaluation theory, by reducing (1) using evaluation.  Let (2*) be the result
+; of replacing ev by ev* in (2); then since ev and ev* are provably equal in
+; the evaluation theory, (2*) also holds there.  Since (2*) has no functions
+; with ancestral attachments, it holds in the current world by the usual
+; conservativity argument, as before.  Finally, complete the argument (the part
+; after the Claim) as before, replacing ev by ev*; here we use the fact that
+; ev* is an evaluator.
+
+; We turn now to the two appendices promised above, regarding foundations and
+; implementation for transparent functions.  We thank Sol Swords for suggesting
+; (and naming) the notion of transparent functions and sketching a correctness
+; argument, and we thank Mertcan Temel for putting forward a problem with the
+; restriction on common ancestors that was inhibiting progress on community
+; book books/projects/rp-rewriter/cl-correct.isp.  That restriction pertains to
+; common ancestors of meta functions and evaluators; transparent functions
+; modify the notion of ancestor for meta functions in a way that can overcome
+; that restriction.
+
+; Appendix 1: Correctness of Meta Reasoning with Transparent Functions
+
+; The following extension of the Essay on Correctness of Meta Reasoning is
+; rooted in a communication from Sol Swords that included the basic correctness
+; argument.  That communication, on 1/5/2023, introduced the notion of
+; "transparent" function.  For relevant background see the Essay above and see
+; :DOC evaluator-restrictions and :DOC transparent-functions.
+
+; Let ev be our evaluator and let meta-fn our meta function; a similar
+; argument, omitted here, works for clause-processors.  As in the Essay above,
+; we know that
+
+; (1) (equal (ev 'LHS A0)
+;            (ev (meta-fn 'LHS) A0))
+
+; is a theorem of the base theory of the current world (what is sometimes
+; called the "current theory"; that is, the theory used by the prover, not the
+; evaluation theory).
+
+; (2) (equal (ev 'LHS A0)
+;            (ev 'RHS A0))
+
+; is a theorem in the evaluation theory, where (meta-fn 'LHS) computes to 'RHS.
+; We want to show that (2) is a theorem of the base theory.
+
+; Certain constrained functions are introduced as "transparent".  However, in
+; this Appendix we will only consider a function to be transparent if it has an
+; attachment in the current world (denoted W0 below).  The restrictions in
+; Sub-Appendix 1.1 below guarantee that if any function introduced in the
+; signature of a given encapsulate is transparent with an attachment, then they
+; all are.
+
+; A key notion is the "modified extended-ancestor" relation.  It is obtained
+; from the ordinary ancestor relation by modifying the ordinary immediate
+; ancestor relation for any transparent function f, so that f has only its
+; attachment as an immediate modified extended-ancestor (thus ignoring the
+; constraints on f).
+
+; Remarks.  1. As noted in the Essay on Merging Attachment Records, the usual
+; extended-ancestor relation collects both the attachment and the functions
+; called in the constraint.  The terminology "modified" above suggests that for
+; transparent functions, we are collecting only the attachment.  2. The two
+; ancestor relations (modified extended-ancestor and ordinary ancestor) are
+; based on "siblings"; see Sub-Appendix 1.1.
+
+; We define the following worlds.  See Sub-Appendix 1.2 for why these world
+; constructions are valid.
+
+; W0:  the current world, which may have attachments
+; W0-: like W0, but only retaining attachments to functions that both
+;      are transparent and are modified extended-ancestors of meta-fn
+; W1-: like W0- except that for each attachment pair <f,g> of W0-, that
+;      attachment is removed, but also the constraint on f is eliminated
+;      in favor of defining f = g
+; W1:  same base theory as W1-, but this world includes all defattach
+;      events that were eliminated when forming W0-
+
+; Here is a key guarantee on W0, checked by ACL2 (function
+; chk-evaluator-use-in-rule).
+
+;   (G0) For W0, no function symbol satisfies the following three properties:
+;         has an attachment, is a modified extended-ancestor of meta-fn, and is
+;         an ordinary ancestor of ev.
+
+; Next note the following property of W0 and W1, followed by a proof sketch.
+
+;   (Anc) If f1 is an ordinary ancestor of f2 in W1, then f1 is a modified
+;         extended-ancestor of f2 in W0.
+
+; Note first that either f2 has the same ordinary immediate ancestors in W1 as
+; in W0, or else f2 is transparent and has its attachment as its unique
+; ordinary ancestor; either way, (Anc) holds if f1 is an ordinary immediate
+; ancestor of f2 in W1.  Then (Anc) follows by an induction on the closure of
+; the ordinary immediate ancestor relation.
+
+; Our next observation is also critical; a proof sketch follows, essentially by
+; induction on the distance of an ancestor from ev.
+
+;   (E01) Every ordinary ancestor of ev in W1 is an ordinary ancestor of ev in
+;         W0.
+
+; Let's say that a "W1-ancestor path from ev" is a path starting with ev, such
+; that every link satisfies the (ordinary) immediate ancestor relation of W1.
+; We prove by induction on n that every W1-ancestor path from ev consists of
+; ordinary ancestors of ev in W0.  The base case is obvious, since ev is an
+; ordinary ancestor of itself in W0.  It remains to show that if f is an
+; ordinary ancestor of ev in W0 and g is an ordinary immediate ancestor of f in
+; W1, then g is an ordinary ancestor of f in W0.  It suffices that f has the
+; same defining event in W1 as in W0.  But by definition of W1 (and W0- and
+; W1-), the only way that can fail is if f is transparent (hence, has an
+; attachment) and f is a modified extended-ancestor of meta-fn in W0; but that
+; is a violation of (G0).
+
+; The following is proved by an inductive argument similar to the one
+; just above.  The only difference is that in the last step, f may be
+; transparent; but this is fine by definition of the modified
+; extended-ancestor relation of W0.
+
+;   (M01) Every ordinary ancestor of meta-fn in W1 is a modified
+;         extended-ancestor of meta-fn in W0.
+
+; The next property is key, and follows immediately from (G0), (E01), (M01),
+; and the fact that every attachment of W1 is an attachment of W0.
+
+;   (G1)  For W1, no function symbol satisfies the following three properties:
+;         has an attachment, is an ordinary ancestor of meta-fn, and is an
+;         ordinary ancestor of ev.
+
+; Recall that (2) is theorem of the evaluation theory of W0.  We are finally
+; ready to argue that (2) is a theorem of the base theory of W0.
+
+; - (2) is a theorem of the evaluation theory of W1 since that is the same as
+;   the evaluation theory as W0.
+
+; - Let H be the history contained in W1 obtained by closing under ordinary
+;   ancestors of ev in W1.  Thus the base theory of W1 is a conservative
+;   extension of the theory of H.
+
+; - By (G1), together with applying to W1 the main result of the Essay on
+;   Correctness of Meta Reasoning, (2) is a theorem of the base theory of W1.
+
+; - Since W1 is conservative over H (as noted above), (2) is a theorem of H.
+
+; - Since H is contained in W0, by (E01), then (2) is a theorem of the base
+;   theory of W0.
+
+; We now turn to the sub-appendices promised above.
+
+; Sub-Appendix 1.1: Restrictions pertaining to transparent functions
+
+; The implementation uses a notion of "sibling" to compute the various
+; ancestor relations, such that two functions introduced in the same
+; encapsulate's signatures are considered siblings.  The following
+; property therefore holds for the ordinary ancestor relation as well as
+; the modified extended-ancestor relation.
+
+;   Suppose that g is an ordinary ancestor (respectively, a modified
+;   extended-ancestor) of f.  Suppose also that f and f' are siblings
+;   and also g and g' are siblings.  Then g' is an ordinary ancestor
+;   (respectively, a modified extended-ancestor) of f'.
+
+; This property leads us to make the following restriction, since the
+; property just above for the modified extended-ancestor relation
+; requires transparency to be the same for all siblings of a given
+; function symbol.
+
+;   Restriction 1. If any function introduced in an encapsulate's signature is
+;   marked with :transparent t, then all of them are.
+
+; The second restriction is as follows.  Its suitability is discussed in
+; Sub-Appendix 1.3.
+
+;   Restriction 2. When the domain of a defattach event includes a transparent
+;   function, that domain must equal the set of function symbols introduced in
+;   a single encapsulate.  (This is the "siblings" of each introduced function,
+;   and includes all function symbols constrained by the encapsulate, not just
+;   those introduced by the signature, though those are often the same.)
+
+; Sub-Appendix 1.2:  Why the world constructions are valid
+
+; Let's consider the three constructions, in order, starting in each case with
+; the definition given earlier.
+
+; W0-: like W0, but only retaining attachments to functions that both are
+;      transparent and are modified extended-ancestors of meta-fn
+
+; We can construct W0- from W0 by first removing all attachments (say, by
+; attaching nil to all of them) and then re-running just the attachments to
+; transparent functions that are modified extended-ancestors of meta-fn in W0.
+; Let us those call those ancestral transparent functions, "meta-fn
+; transparent".  That is, a meta-fn transparent function is a transparent
+; function that is a modified extended-ancestor of meta-fn.  Thus, the
+; defattach events in W0- are those of W0 that attach to meta-fn transparent
+; functions.
+
+; The re-attachments, after removing all attachments, are legal because they
+; were legal when constructing W0.  In particular, the full extended-ancestor
+; relation of W0- is contained in that of W0 and hence remains acyclic, and the
+; proof obligations all hold in the base theory of W0 (because they held when
+; admitting them, and world extensions never weaken the theory -- even when
+; discarding local events, by conservativity).
+
+; W1-: like W0- except that for each attachment pair <f,g> of W0-, that
+;      attachment is removed, but also the constraint on f is eliminated in
+;      favor of defining f = g
+
+; This is justified by the Evaluation History Theorem.  Note that the base
+; theory of W1- is the same as the evaluation theory of W0-.
+
+; W1:  same base theory as W1-, but this world includes all defattach
+;      events that were eliminated when forming W0-
+
+; Thus, W1 is the world resulting from W1- by redoing all defattach events of
+; W0 that aren't in W1- (i.e., those that attach to other than meta-fn
+; transparent functions).  Why are these legal?  The extended-ancestor relation
+; of W1- is contained in that of W0, hence is acyclic.  The proof obligations
+; are unchanged from W0 to W1, since the guards are unchanged (see next
+; paragraph) and the constraints on the to-be-unattached functions are the same
+; in W0 as in W1.  These proof obligations are all theorems of the base theory
+; of W0 (as argued above when considering W0-), so they are also all theorems
+; of the base theory of W1, since as noted above that is just the evaluation
+; theory of W0 (which of course extends the base theory of W0).
+
+; (Remark.  It's implicit in the Evaluation History Theorem that guards are
+; unchanged.  The idea is that we added f=g only after proving that the guard
+; of f implies the guard of g, so we keep the guard of f unchanged and that's
+; OK.)
+
+; Sub-Appendix 1.3: On the suitability of Restriction 2
+
+; Recall that Restriction 2 says that if the domain of a defattach event
+; contains any transparent function symbol, then that domain must equal the set
+; of all signature functions from a single encapsulate.  To see why this
+; restriction is reasonable, consider the following example.
+
+; (encapsulate ((f1 (x) t :transparent t))
+;   (local (defun f1 (x) x)))
+; (encapsulate ((f2 (x) t :transparent t))
+;   (local (defun f2 (x) x)))
+; (defattach (f1 consp) (f2 f1))
+
+; The argument below requires us to extend with defattach events on transparent
+; functions.  In the example above, if we collect f1 as an extended-ancestor of
+; meta-fn, we will collect f2 -- which leads back to f1.  This loop cannot
+; happen if the domain of the defattach consists of signatures from a single
+; encapsulate, where there is a single canonical sibling.  Perhaps the argument
+; can be extended without the restriction of a single encapsulate, but if so,
+; that may ruin the benefit memoization provides for function
+; canonical-ancestors-tr-rec, memoized in boot-strap-pass-2-b.lisp) because of
+; a new parameter that keeps a list of the function symbols that we have
+; visited.  Perhaps it would suffice to memoize only
+; immediate-canonical-ancestors-tr (also done in boot-strap-pass-2-b.lisp).
+; For now it seems that restricting to a single encapsulate is not a severe
+; restriction; we can revisit this restriction if necessary.
+
+; Appendix 2: How the Implementation Accommodates Transparent Functions
+
+; This Appendix is divided into the following parts.
+
+; Part 1: Terminology and introduction to relevant properties (explained
+;         further below)
+; Part 2: Invariants
+; Part 3: Remarks
+; Part 4: Actions
+; Part 5: On the preservation of invariants
+
+;;;;;;;;;;
+; Part 1: Terminology and introduction to relevant properties (explained
+;         further below)
+;;;;;;;;;;
+
+; We refer to "meta-fns" to denote a set (represented as a list) with the
+; following members: for a :meta rule, the meta-function and, if there is one,
+; the hypothesis meta-function; and for a :clause-processor rule, the
+; clause-processor function.  We refer to "ev-fns" as a set (represented as a
+; list) containing the evaluator and any meta-extract functions of the rule.
+
+; A function is considered to be "transparent" or "non-transparent" according
+; to whether or not (respectively) its canonical sibling has a 'constrainedp
+; property that is a transparent-rec record, which is a record with a single
+; field, :names.  Transparent functions are generally those marked with
+; :transparent t in an encapsulate's signature, but any sibling of such a
+; function is also transparent, in particular those that infect the
+; encapsulate's constraint (see :DOC infected-constraints).  We arrange (when
+; setting the 'siblings properties in encapsulate-pass-2) that the canonical
+; sibling of a transparent function is always a signature function.  This
+; avoids the conflict that would occur if the canonical function were an
+; "infected" function of the encapsulate, defined with defun: such a function
+; should have a 'constrainedp property of nil, hence cannot have a
+; 'constrainedp property that is a transparent-rec record.
+
+; For a rule r of class :meta or :clause-processor, the "common ancestors for
+; r" refers to the set of all function symbols f such that f is both a modified
+; extended-ancestor of the meta-fns of r and a canonical ancestor of the ev-fns
+; of r.
+
+; Note that although "r" suggests "rule", we typically use "r" below as the
+; name of a defthm event that introduces a rule of class :meta or
+; :clause-processor.  Of course, the common case is that only one such rule is
+; introduced by r.
+
+; Here is a summary of the relevant properties.  The next section,
+; "Invariants", spells out the invariants maintained for these
+; properties.
+
+; - Constrainedp property of a canonical transparent function, fn:
+
+;     The property's value is a transparent-rec record whose (unique) :names
+;     field lists all the names of defthm events that introduce a :meta or
+;     :clause-processor rule for which fn is a modified extended-ancestor of
+;     its meta-fns.
+
+;     Note that there is a check in encapsulate-pass-2 that a function symbol
+;     cannot be transparent if it has unknown-constraints.  (There is a comment
+;     about this in the case (and unknown-constraints-p transparent) in
+;     encapsulate-pass-2.)  This avoids the potential conflict caused by the
+;     need to set the 'constrainedp property to *unknown-constraints* in the
+;     unknown-constraints-p case.
+
+; - Attachment property of a function, fn, for which attachments are
+;   disallowed:
+
+;     This property has value of the form (:attachment-disallowed . &).  If fn
+;     is not canonical then the value is (:attachment-disallowed . g) where g
+;     is the canonical sibling of fn.  Then the 'attachment property of g is
+;     (:attachment-disallowed . alist), where alist consists of a pair (r
+;     . token) for every name r of a defthm event that adds a :meta or
+;     :clause-processor rule for which g is common ancestor for r.  Token
+;     represents a rule-class added for r: generally :meta or
+;     :clause-processor, but in the very rare case of more than one such rule
+;     added for r, token is t.
+
+; - Evaluator-check-inputs property of an event name, r:
+
+;     This property is nil except in the following case: r names a defthm event
+;     that adds a :meta or :clause-processor rule that has at least one
+;     transparent, modified extended-ancestor of its meta-fns.  Note that such
+;     an event is necessarily a defthm event.  A non-nil value is of the form
+
+;     (tr-meta-anc common-anc
+;                  (rule-class-1 meta-fns-1 ev-anc-1 extra-anc-1 ev-fns-1)
+;                  ...
+;                  (rule-class-k meta-fns-k ev-anc-k extra-anc-k ev-fns-k))
+
+;     where:
+
+;     - tr-meta-anc lists the transparent modified extended-ancestors of the
+;       meta-fns for r;
+
+;     - common-anc lists the modified extended-ancestors of the meta-fns
+;       that are also canonical ancestors of the ev-fns; and
+
+;     - the remaining elements correspond to the :meta and :clause-processor
+;       rules associated with r.  There is always at least one of these, but
+;       usually there will be only one.  For each such rule:
+
+;       - rule-class is the rule's class (:meta or :clause-processor);
+;       - meta-fns is the rule's meta-fns;
+;       - ev-anc is the canonical-ancestors of the rule's evaluator;
+;       - extra-anc is the canonical-ancestors of the rule's meta-extract
+;         functions if any, else nil; and
+;       - ev-fns is a list without duplicates containing the canonical sibings
+;         of the evaluator and any meta-extract functions of the rule.
+
+;;;;;;;;;;
+; Part 2: Invariants
+;;;;;;;;;;
+
+; For a given defthm name r, we may refer to the "tr-meta-anc of r" and the
+; "common-anc of r" to be lists stored as noted above in the
+; 'evaluator-check-inputs property of r, or nil when that property is nil.
+; Note that all such function symbols are canonical.  Common-anc Invariant 1
+; below connects the list, "common-anc of r", with the set (defined earlier),
+; "common ancestors for r".
+
+; Transparent Function Invariant:
+
+;   The following are equivalent for every canonical function symbol, f.
+
+;   (a) f is transparent.
+
+;   (b) The 'constrainedp property of f is a transparent-rec record.
+
+; Tr-meta-anc Invariant:
+
+;   The following are equivalent for every function symbol f and every name r.
+
+;   (a) f is a transparent, modified extended-ancestor of the meta-fns of a
+;       rule stored for r.
+
+;   (b) f is in the tr-meta-anc of r.
+
+;   (c) f is canonical and its 'constrainedp property is a transparent-rec
+;       record whose :names includes r.
+
+; Common-anc Invariant 1:
+
+;   The following are equivalent for every transparent function symbol f and
+;   every name, r.
+
+;   (a) f is a common ancestor for a rule of a defthm event named r.
+
+;   (b) f is in the common-anc of r.
+
+;   (c) r is mapped to the rule-class of its :meta or :clause-processor rule in
+;       the alist of the 'attachment property of f, (:attachment-disallowed
+;       . alist).  Except, if there is more than one such rule for r, then r is
+;       mapped to t.
+
+; Common-anc Invariant 2:
+
+;   For every name r and every f in the common-anc of r, f does not have an
+;   attachment.
+
+; Attachment Invariants:
+
+;   For any canonical function f and sibling g of f, the 'attachment property
+;   of either is of the form (:attachment-disallowed . x) if and only if both
+;   are of that form.  For f, x is a non-empty alist as described in part (c)
+;   of Common-anc Invariant 1.  For g not equal to f, x is f.
+
+;;;;;;;;;;
+; Part 3: Remarks
+;;;;;;;;;;
+
+; A defaxiom cannot have a rule of class :meta or :clause-processor: the
+; functional instantiation argument in the Essay on Correctness of Meta
+; Reasoning depends on that.  That explains our attention to defthm for
+; addition of such rules.
+
+; As noted above, if there is no transparent, modified extended-ancestor of the
+; meta-fns of a rule for a defthm named r, then the 'evaluator-check-inputs
+; property of r is nil.  The reason nil is appropriate is that the role of the
+; 'evaluator-check-inputs property is to help ensure the invariants hold, but
+; the modified extended-ancestors of the meta-fns will never change if they do
+; not include a transparent function, even when attachments are modified.
+
+; The rule-class components of (c) in Common-anc Invariant 1 are used for error
+; messages.
+
+; Membership in common-anc does not exclude transparent functions.  This may be
+; surprising when one considers that changing a transparent function's
+; attachment may eliminate the presence of any attachment to a function symbol
+; in common-anc, because the modified extended-ancestors of meta-fns can
+; change.  However, if a function symbol f is in common-anc, then f will remain
+; in common-anc even if its attachment is changed: the path from meta-fns to f
+; will still be valid.  The only way the common-anc can change with attachment
+; to a transparent function is if that function is on the path from a meta-fn
+; to a common ancestor, before reaching a common ancestor.
+
+; Consider the case that the 'constrainedp property for a transparent function
+; fn is a transparent-rec record with names (r1 r2 ... rk), where each ri is
+; the name of a theorem for which fn is a modified canonical-ancestor of its
+; meta-fns.  Then although more than one :meta or :clause-processor rule may be
+; associated with an ri, this is likely to be very rare, so we don't try to be
+; particularly efficient for that case.  Rather, we coalesce into a single
+; tr-meta-anc and a single common-anc for ri, rather than for each of its
+; rules.
+
+; One might be concerned about the case that a transparent function f and meta
+; rule r are introduced in a sub-encapsulate, where r has f in its tr-meta-anc?
+; But that works out, since ACL2 insists that if any signature function in an
+; encapsulate is marked with :transparent t, then they all are.  Thus, the
+; notion of "transparency" for f at the time r is introduced doesn't change as
+; one pops out of the sub-encapsulate.
+
+;;;;;;;;;;
+; Part 4: Actions
+;;;;;;;;;;
+
+; Actions taken for events establish and preserve the invariants above as the
+; three relevant properties are updated: 'constrainedp, 'attachment, and
+; 'evaluator-check-inputs.  There are two event types whose actions affect
+; these invariants: defthm and defattach.  Here we describe their effects on
+; those three properties.
+
+;;;
+; Defthm actions
+;;;
+
+; Here is how defthm-fn1 puts properties as described in the first section
+; above.  (That section is referenced freely and implicitly below.)  Function
+; update-meta-props does this work.
+
+; Let r be the name of the defthm.
+
+; First, as the rule is checked, function chk-evaluator-use-in-rule creates a
+; ttree entry with tag 'evaluator-check-for-rule and value as described above,
+; of the form (tr-meta-anc common-anc rule-class meta-fns ev-anc extra-anc
+; ev-fns).  Except, of course, if any member of common-anc has an attachment
+; then there is an error.  (Also, as an optimization, there is no ttree entry
+; added when both tr-meta-anc and common-anc are nil.)  The resulting ttree is
+; passed to chk-acceptable-meta-rule or chk-acceptable-clause-processor-rule.
+; Then defthm-fn1 uses these values to update properties as follows.
+
+; Property 'evaluator-check-inputs of r is created from the list L of values
+; from the ttree.  That property's value is (tr-meta-anc common-anc . L'),
+; where: tr-meta-anc is the union of the tr-meta-anc values from L; common-anc
+; is the union of the common-anc values from L; and L' is the result of
+; removing these from each element of L.
+
+; The 'constrainedp property of each symbol f in that tr-meta-anc list is
+; updated to reflect r.  We know that the existing property's value is a
+; transparent-rec record.  The action is to update that property by adding r to
+; its :names.
+
+; Finally, the 'attachment property of each symbol in that common-anc list is
+; then put as value (:attachment-disallowed . alist), where there are two
+; cases, based on the existing value, v, of that property.  In both cases, let
+; c be the rule-class of the :meta or :clause-processor rule associated with r
+; unless there are more than one, in which case c is t.  Then if v is nil,
+; alist is ((r . c)); otherwise v is of the form (:attachment-disallowed
+; . alist0), and lst is ((r . c) . lst0).
+
+;;;
+; Defattach actions
+;;;
+
+; For defattach, the property updates take place after installing the new
+; world, just before calling install-event.  The actions may cause an error;
+; hence, a revert-world-on-error wrapper is necessary around the relevant
+; defattach-fn code (and it may be found in the definition of
+; put-defattach-props).
+
+; First, here is a summary.  When a defattach event applies to any function fn
+; in the tr-meta-anc of a theorem named r, that may change the tr-meta-anc of r
+; and thus also change the common-anc of r.  So these are recomputed, while
+; checking that no member of the new common-anc has an attachment.  Then ACL2
+; updates the 'evaluator-check-inputs property of r with the new tr-meta-anc
+; and common-anc, the 'constrained properties according to the old and new
+; tr-meta-anc, and the 'attachment properties according to the old and new
+; common-anc.
+
+; Here is a more detailed description of the defattach actions.  These are
+; taken by function put-defattach-props.
+
+; Consider a new event (defattach (f1 ...) ...) that attaches to at least one
+; transparent function.  ACL2 then insists that it attach to precisely a single
+; set of siblings.  Let fn be the canonical sibling among them; equivalently,
+; because of the "single set" property just mentioned, fn is the canonical
+; sibling of f1.
+
+; Thus, the value of the 'constrainedp property of fn is a transparent-rec
+; record, say with :names (r1 r2 ... rk).  After updating the world as though
+; the defattach event has completed, then for each ri, grab its
+; 'evaluator-check-inputs property and recompute tr-meta-anc and then
+; common-anc using function chk-meta-fn-attachments, which causes an error if
+; there is an attachment to any function in common-anc.  Then take the
+; following actions for that ri.  (Note that the 'constrainedp property of a
+; canonical transparent function symbol is a transparent-rec record, and also
+; that every member of a tr-meta-anc list is a canonical transparent function
+; symbol; so we can refer below to the :names of any symbol in a tr-meta-anc
+; list.)
+
+; - Replace the tr-meta-anc of the 'evaluator-check-inputs property of
+;   ri with the newly-computed tr-meta-anc, and do the following for every
+;   function symbol g that is in the difference between the old and new
+;   tr-meta-anc.
+
+;   - If g is old but not new, remove ri from the :names in the 'constrainedp
+;     property of g.
+
+;   - If g is new but not old, add ri to the :names in the 'constrainedp
+;     property of g.
+
+; - Replace the common-anc of the 'evaluator-check-inputs property of ri with
+;   the newly-computed common-anc, and do the following for every function
+;   symbol g that is in the difference between the old and new common-anc.
+
+;   - If g is old but not new, remove ri as a key from the alist in the
+;     (:attachment-disallowed . alist) value of the 'attachment property of g.
+;     Except, if the alist becomes empty then set that 'attachment property to
+;     nil.
+
+;   - If g is new but not old, there are two cases depending on the value of
+;     the 'attachment property of g (which we have already checked cannot
+;     indicate an attachment).  Note that relevant rule-classes are in the cddr
+;     of the 'constrainedp property of ri; denote that as Lst.
+
+;     - If the value is (:attachment-disallowed . alist), then add a suitable
+;       entry with key ri to alist.
+
+;     - If the value is nil then set the 'attachment property to
+;       (:attachment-disallowed . ((ri . rule-class))) for suitable rule-class
+;       from Lst; thus, rule-class is t if Lst has more than one element.
+
+;;;;;;;;;;
+; Part 5: On the preservation of invariants
+;;;;;;;;;;
+
+; It is straightforward to check that the actions described above preserve the
+; invariants (from the "Invariants" section above).  Here we merely make a few
+; remarks that may be helpful.
+
+; The Transparent Function Invariant holds for a function symbol f when it is
+; introduced; see encapsulate-pass-2.  No subsequent action violates this
+; invariant.
+
+; The Tr-meta-anc Invariant, Common-anc Invariants 1 and 2, and the Attachment
+; Invariants are established for f and r when r is introduced by defthm.  They
+; are preserved by the actions taken for defattach.
+
+; For preservation of Common-anc Invariant 2 by defattach, note that attachment
+; to a function is disallowed when its 'attachment property is of the form
+; (:attachment . &).
 
 ; End of Essay on Correctness of Meta Reasoning
 
@@ -10679,35 +12799,35 @@
 (defmacro rdepth-error (form &optional preprocess-p)
   (if preprocess-p
       (let ((ctx ''preprocess))
-        `(prog2$ (er hard ,ctx
-                     "The call depth limit of ~x0 has been exceeded in the ~
-                      ACL2 preprocessor (a sort of rewriter).  There might be ~
-                      a loop caused by some set of enabled simple rules.  To ~
-                      see why the limit was exceeded, ~@1retry the proof with ~
-                      :hints~%  :do-not '(preprocess)~%and then follow the ~
-                      directions in the resulting error message.  See :DOC ~
-                      rewrite-stack-limit for a possible solution when there ~
-                      is not a loop."
-                     (rewrite-stack-limit wrld)
-                     (if (f-get-global 'gstackp state)
-                         ""
-                       "execute~%  :brr t~%and next "))
+        `(prog2$ (er-hard
+                  ,ctx "Call depth"
+                  "The call depth limit of ~x0 has been exceeded in the ACL2 ~
+                   preprocessor (a sort of rewriter).  There might be a loop ~
+                   caused by some set of enabled simple rules.  To see why ~
+                   the limit was exceeded, ~@1retry the proof with :hints~%  ~
+                   :do-not '(preprocess)~%and then follow the directions in ~
+                   the resulting error message.  See :DOC rewrite-stack-limit ~
+                   for a possible solution when there is not a loop."
+                  (rewrite-stack-limit wrld)
+                  (if (f-get-global 'gstackp state)
+                      ""
+                    "execute~%  :brr t~%and next "))
                  ,form))
     (let ((ctx ''rewrite))
-      `(prog2$ (er hard ,ctx
-                   "The call depth limit of ~x0 has been exceeded in the ACL2 ~
-                    rewriter.  To see why the limit was exceeded, ~@1execute ~
-                    the form (cw-gstack) or, for less verbose output, instead ~
-                    try (cw-gstack :frames 30).  You may then notice a loop ~
-                    caused by some set of enabled rules, some of which you ~
-                    can then disable; see :DOC disable.  For a possible ~
-                    solution when there is not a loop, see :DOC ~
-                    rewrite-stack-limit."
-                   (rewrite-stack-limit wrld)
-                   (if (f-get-global 'gstackp state)
-                       ""
-                     "first execute~%  :brr ~
-                      t~%and then try the proof again, and then "))
+      `(prog2$ (er-hard
+                ,ctx "Call depth"
+                "The call depth limit of ~x0 has been exceeded in the ACL2 ~
+                 rewriter.  To see why the limit was exceeded, ~@1execute the ~
+                 form (cw-gstack) or, for less verbose output, instead try ~
+                 (cw-gstack :frames 30).  You may then notice a loop caused ~
+                 by some set of enabled rules, some of which you can then ~
+                 disable; see :DOC disable.  For a possible solution when ~
+                 there is not a loop, see :DOC rewrite-stack-limit."
+                (rewrite-stack-limit wrld)
+                (if (f-get-global 'gstackp state)
+                    ""
+                  "first execute~%  :brr t~%and then try the proof again, and ~
+                   then "))
                ,form))))
 
 (defun bad-synp-hyp-msg1 (hyp bound-vars all-vars-bound-p wrld)
@@ -10911,7 +13031,7 @@
   (let ((new-vars (cons 'step-limit vars)))
     `(mv-let ,new-vars
              ,form
-             (declare (type (signed-byte 30) step-limit))
+             (declare (type #.*fixnum-type* step-limit))
              ,@rest)))
 
 #+acl2-par
@@ -10924,7 +13044,7 @@
   (let ((new-vars (cons 'step-limit vars)))
     `(mv-let@par ,new-vars
                  ,form
-                 (declare (type (signed-byte 30) step-limit))
+                 (declare (type #.*fixnum-type* step-limit))
                  ,@rest)))
 
 (defmacro rewrite-entry-extending-failure (unify-subst failure-reason form
@@ -10941,16 +13061,6 @@
                            (cons ,unify-subst ,failure-reason))
                           failure-reason-lstxx))
                unify-substxx ttreexx allpxx rw-cache-alist-newxx)))
-
-(defun set-difference-assoc-eq (lst alist)
-  (declare (xargs :guard (and (true-listp lst)
-                              (alistp alist)
-                              (or (symbol-listp lst)
-                                  (symbol-alistp alist)))))
-  (cond ((endp lst) nil)
-        ((assoc-eq (car lst) alist)
-         (set-difference-assoc-eq (cdr lst) alist))
-        (t (cons (car lst) (set-difference-assoc-eq (cdr lst) alist)))))
 
 (defun extend-unify-subst (alist unify-subst)
 
@@ -11508,28 +13618,6 @@
 ; WARNING: This macro assumes that the given rw-cache is non-empty.
 
   `(eq (car ,cache) t))
-
-(defun merge-symbol-alistp (a1 a2)
-  (cond ((endp a1) a2)
-        ((endp a2) a1)
-        ((symbol< (caar a1) (caar a2))
-         (cons (car a1)
-               (merge-symbol-alistp (cdr a1) a2)))
-        (t
-         (cons (car a2)
-               (merge-symbol-alistp a1 (cdr a2))))))
-
-(defun merge-sort-symbol-alistp (alist)
-  (cond ((endp (cdr alist)) alist)
-        ((endp (cddr alist))
-         (cond ((symbol< (car (car alist)) (car (cadr alist)))
-                alist)
-               (t (list (cadr alist) (car alist)))))
-        (t (let* ((n (length alist))
-                  (a (ash n -1)))
-             (merge-symbol-alistp
-              (merge-sort-symbol-alistp (take a alist))
-              (merge-sort-symbol-alistp (nthcdr a alist)))))))
 
 (defun cdr-sort-rw-cache (cache)
 
@@ -12607,17 +14695,18 @@
           *ttag-fns*)
      forbidden-fns0)))
 
-(table skip-meta-termp-checks-table nil nil
-       :guard
-       (and (or (null val)
-                (ttag world)
-                (er hard 'skip-meta-termp-checks
-                    "An active trust tag is required for setting ~x0 except ~
-                     when clearing it."
-                    'skip-meta-termp-checks-table))
-            (eq key t)
-            (or (eq val t)
-                (symbol-listp val))))
+(set-table-guard skip-meta-termp-checks-table
+                 (and (or (null val)
+                          (ttag world))
+                      (eq key t)
+                      (or (eq val t)
+                          (symbol-listp val)))
+                 :topic set-skip-meta-termp-checks
+                 :coda (and val
+                            (not (ttag world))
+                            (msg "An active trust tag is required for setting ~
+                                  ~x0 except when clearing it."
+                                 'skip-meta-termp-checks-table)))
 
 (defmacro set-skip-meta-termp-checks! (x)
   (declare (xargs :guard (or (booleanp x)
@@ -13161,6 +15250,82 @@
 (defconst *rewrite-lambda-modep-xrune*
   '(:EXECUTABLE-COUNTERPART REWRITE-LAMBDA-MODEP))
 
+(defconst *rewrite-lambda-modep-def-rune*
+  '(:DEFINITION REWRITE-LAMBDA-MODEP))
+
+(defun formal-cons-to-components (term)
+
+; Term is a translated term.  This function returns (mv flg car cdr).  If flg
+; is nil, term does not represent a CONS term.  Otherwise it does and car and
+; cdr are the first and second args of that CONS term.  The only tricky thing
+; about this function is that term might be a quoted constant.
+
+  (cond ((variablep term) (mv nil nil nil))
+        ((fquotep term)
+         (let ((evg (unquote term)))
+           (if (consp evg)
+               (mv t
+                   (kwote (car evg))
+                   (kwote (cdr evg)))
+               (mv nil nil nil))))
+        ((eq (ffn-symb term) 'cons)
+         (mv t (fargn term 1) (fargn term 2)))
+        (t (mv nil nil nil))))
+
+(defun recover-subst-from-formal-var-alist (term)
+
+; We return (mv flg sigma).  If flg is t then term is the translation of (list
+; (cons 'var1 val1) ... (cons 'vark valk)), where each vari is a legal variable
+; name and sigma is the substitution ((var1 . val1) ... (vark . valk)).  Else,
+; we return (mv nil nil).  (Technically, a substitution should have no
+; duplicate keys, but sublis-var ignores all but the first binding.)
+
+; Note the similarity of this function with formal-alist-to-alist-on-vars.  But
+; that function also strips out assoc-eq-safe calls from the vals!  So don't be
+; confused!
+
+  (cond
+   ((variablep term) (mv nil nil))
+   ((equal term *nil*) (mv t nil))
+   (t (mv-let (flg pair rest)
+        (formal-cons-to-components term)
+        (cond
+         ((null flg) (mv nil nil))
+         (t (mv-let (flg key val)
+              (formal-cons-to-components pair)
+              (cond
+               ((null flg) (mv nil nil))
+               ((and (quotep key)
+                     (eq (legal-variable-or-constant-namep (unquote key))
+                         'variable))
+                (mv-let (flg sigma)
+                  (recover-subst-from-formal-var-alist rest)
+                  (cond
+                   ((null flg) (mv nil nil))
+                   (t (mv t (cons (cons (unquote key) val) sigma))))))
+               (t (mv nil nil))))))))))
+
+(defun extend-subst-on-unbound-vars (vars alist)
+
+; For every var in vars that is not already bound in alist we add (var . 'nil)
+; to alist.
+
+  (cond
+   ((endp vars) alist)
+   ((assoc-eq (car vars) alist)
+    (extend-subst-on-unbound-vars (cdr vars) alist))
+   (t (cons (cons (car vars) *nil*)
+            (extend-subst-on-unbound-vars (cdr vars) alist)))))
+
+(defmacro rewrite-standard-exit (fn rewritten-args)
+  `(sl-let
+    (rewritten-term ttree)
+    (rewrite-entry
+     (rewrite-primitive ,fn ,rewritten-args))
+    (rewrite-entry
+     (rewrite-with-lemmas
+      rewritten-term))))
+
 (mutual-recursion
 
 ; State is an argument of rewrite only to permit us to call ev.  In general,
@@ -13217,14 +15382,14 @@
 ; The first value is the rewritten term.  The second is the final
 ; value of ttree.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((gstack (push-gframe 'rewrite bkptr term alist obj))
          (rdepth (adjust-rdepth rdepth)))
-     (declare (type (unsigned-byte 29) rdepth))
+     (declare (type #.*fixnat-type* rdepth))
      (cond
       ((zero-depthp rdepth)
        (rdepth-error
@@ -13387,7 +15552,7 @@
 
             (not (equal (fargn term 1) ''progn)))
        (rewrite-entry
-        (rewrite (fargn term 3) alist 2)
+        (rewrite (fargn term 3) alist 3)
         :ttree (push-lemma
                 (fn-rune-nume 'return-last nil nil wrld)
                 ttree)))
@@ -13501,7 +15666,7 @@
           (mv step-limit *t* ttree))
          (t
           (sl-let (rewritten-concl ttree)
-                  (rewrite-entry (rewrite (fargn term 2) alist 1)
+                  (rewrite-entry (rewrite (fargn term 2) alist 2)
                                  :obj '?
                                  :geneqv *geneqv-iff*
                                  :pequiv-info nil)
@@ -13571,12 +15736,34 @@
                           (access rewrite-constant rcnst :pt))))
       (t
        (let ((fn (ffn-symb term)))
-         (mv-let (mv-nth-result mv-nth-rewritep)
-           (if (eq fn 'mv-nth)
-               (simplifiable-mv-nth term alist)
-             (mv nil nil))
-           (cond
-            (mv-nth-result
+         (mv-let (term ttree)
+           (if (and (eq fn 'DO$)
+                    (quotep (fargn term 6))
+                    (quotep (fargn term 7))
+                    (unquote (fargn term 6)) ; both non-nil
+                    (unquote (fargn term 7)))
+
+; We rewrite any non-nil quoted irrelevant arg of a DO$ call to 'nil and blame
+; DO$.  It's a mild stretch to blame this on DO$ since technically it's an
+; inductively proved lemma about DO$.
+
+               (mv (cons-term fn
+                              (list (fargn term 1)
+                                    (fargn term 2)
+                                    (fargn term 3)
+                                    (fargn term 4)
+                                    (fargn term 5)
+                                    *nil*
+                                    *nil*))
+                   (push-lemma (fn-rune-nume 'do$ nil nil wrld)
+                               ttree))
+               (mv term ttree))
+           (mv-let (mv-nth-result mv-nth-rewritep)
+             (if (eq fn 'mv-nth)
+                 (simplifiable-mv-nth term alist)
+                 (mv nil nil))
+             (cond
+              (mv-nth-result
 
 ; This is a special case.  We are looking at a term/alist of the form (mv-nth
 ; 'i (cons x0 (cons x1 ... (cons xi ...)...))) and we immediately rewrite it to
@@ -13590,47 +15777,47 @@
 ; below is 2, i.e., we say we are rewriting the 2nd arg of the mv-nth, when in
 ; fact we are rewriting a piece of it (namely xi).
 
-             (let ((ttree (push-lemma
-                           (fn-rune-nume 'mv-nth nil nil wrld)
-                           ttree))
-                   (step-limit (1+f step-limit)))
-               (declare (type (signed-byte 30) step-limit))
-               (if mv-nth-rewritep
-                   (rewrite-entry
-                    (rewrite mv-nth-result alist 2))
-                 (rewrite-entry
-                  (rewrite-solidify-plus mv-nth-result)))))
-            (t
-             (let ((ens (access rewrite-constant rcnst
-                                :current-enabled-structure)))
-               (mv-let
-                 (deep-pequiv-lst shallow-pequiv-lst)
-                 (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
-                 (sl-let
-                  (rewritten-args ttree)
-                  (rewrite-entry
-                   (rewrite-args (fargs term) alist 1 nil
-                                 deep-pequiv-lst shallow-pequiv-lst
-                                 geneqv fn)
-                   :obj '?
-                   :geneqv
-                   (geneqv-lst fn geneqv ens wrld)
-                   :pequiv-info nil ; ignored
-                   )
-                  (cond
-                   ((and
-                     (or (flambdap fn)
-                         (logicp fn wrld))
-                     (all-quoteps rewritten-args)
-                     (or
-                      (flambda-applicationp term)
-                      (and (enabled-xfnp fn ens wrld)
+               (let ((ttree (push-lemma
+                             (fn-rune-nume 'mv-nth nil nil wrld)
+                             ttree))
+                     (step-limit (1+f step-limit)))
+                 (declare (type #.*fixnum-type* step-limit))
+                 (if mv-nth-rewritep
+                     (rewrite-entry
+                      (rewrite mv-nth-result alist 2))
+                     (rewrite-entry
+                      (rewrite-solidify-plus mv-nth-result)))))
+              (t
+               (let ((ens (access rewrite-constant rcnst
+                                  :current-enabled-structure)))
+                 (mv-let
+                   (deep-pequiv-lst shallow-pequiv-lst)
+                   (pequivs-for-rewrite-args fn geneqv pequiv-info wrld ens)
+                   (sl-let
+                    (rewritten-args ttree)
+                    (rewrite-entry
+                     (rewrite-args (fargs term) alist 1 nil
+                                   deep-pequiv-lst shallow-pequiv-lst
+                                   geneqv fn)
+                     :obj '?
+                     :geneqv
+                     (geneqv-lst fn geneqv ens wrld)
+                     :pequiv-info nil ; ignored
+                     )
+                    (cond
+                     ((and
+                       (or (flambdap fn)
+                           (logicp fn wrld))
+                       (all-quoteps rewritten-args)
+                       (or
+                        (flambda-applicationp term)
+                        (and (enabled-xfnp fn ens wrld)
 
 ; We don't mind disallowing constrained functions that have attachments,
 ; because the call of ev-fncall below disallows the use of attachments (last
 ; parameter, aok, is nil).  Indeed, we rely on this check in chk-live-state-p.
 
-                           (not (getpropc fn 'constrainedp nil wrld)))))
+                             (not (getpropc fn 'constrainedp nil wrld)))))
 
 ; Note: The test above, if true, leads here where we execute the
 ; executable-counterpart of the fn (or just go into the lambda
@@ -13643,43 +15830,43 @@
 ; provided such functions are currently toggled.  Undefined functions
 ; (e.g., car) pass the test.
 
-                    (cond
-                     ((flambda-applicationp term)
-                      (rewrite-entry
-                       (rewrite (lambda-body fn)
-                                (pairlis$ (lambda-formals fn)
-                                          rewritten-args)
-                                'lambda-body)))
-                     (t
-                      (let ((ok-to-force (ok-to-force rcnst)))
-                        (mv-let
-                          (erp val apply$ed-fns)
-                          (pstk
-                           (ev-fncall+ fn
-                                       (strip-cadrs rewritten-args)
+                      (cond
+                       ((flambda-applicationp term)
+                        (rewrite-entry
+                         (rewrite (lambda-body fn)
+                                  (pairlis$ (lambda-formals fn)
+                                            rewritten-args)
+                                  'lambda-body)))
+                       (t
+                        (let ((ok-to-force (ok-to-force rcnst)))
+                          (mv-let
+                            (erp val apply$ed-fns)
+                            (pstk
+                             (ev-fncall+ fn
+                                         (strip-cadrs rewritten-args)
 
 ; The strictp argument is nil here, as we will deal with required true warrants
 ; in push-warrants, below.  See the Essay on Evaluation of Apply$ and Loop$
 ; Calls During Proofs.
 
-                                       nil
-                                       state))
-                          (mv-let
-                            (erp2 ttree)
-                            (cond ((or erp
+                                         nil
+                                         state))
+                            (mv-let
+                              (erp2 ttree)
+                              (cond ((or erp
 
 ; No special action is necessary if apply$ed-fns is nil, as opposed to a
 ; non-empty list.
 
-                                       (null apply$ed-fns))
-                                   (mv erp ttree))
-                                  (t (push-warrants
-                                      apply$ed-fns
-                                      (cons-term fn rewritten-args)
-                                      type-alist ens wrld ok-to-force
-                                      ttree ttree)))
-                            (cond
-                             (erp2
+                                         (null apply$ed-fns))
+                                     (mv erp ttree))
+                                    (t (push-warrants
+                                        apply$ed-fns
+                                        (cons-term fn rewritten-args)
+                                        type-alist ens wrld ok-to-force
+                                        ttree ttree)))
+                              (cond
+                               (erp2
 
 ; We following a suggestion from Matt Wilding and attempt to rewrite the term
 ; before applying HIDE.  This is really a heuristic choice; we could choose
@@ -13688,39 +15875,97 @@
 ; apply in the rare case that the current function symbol (whose evaluation has
 ; errored out) is a compound recognizer.
 
-                              (let ((new-term1
-                                     (cons-term fn rewritten-args)))
-                                (sl-let
-                                 (new-term2 ttree)
-                                 (rewrite-entry
-                                  (rewrite-with-lemmas new-term1))
-                                 (cond
-                                  ((equal new-term1 new-term2)
-                                   (mv step-limit
-                                       (hide-with-comment
-                                        (if erp
-                                            (cons :non-executable erp)
-                                          (cons :missing-warrant erp2))
-                                        new-term1
-                                        wrld state)
-                                       (push-lemma
-                                        (fn-rune-nume 'hide nil nil
-                                                      wrld)
-                                        ttree)))
-                                  (t (mv step-limit new-term2 ttree))))))
-                             (t (mv step-limit
-                                    (kwote val)
-                                    (push-lemma
-                                     (fn-rune-nume fn nil t wrld)
-                                     ttree))))))))))
-                   (t
-                    (sl-let
-                     (rewritten-term ttree)
-                     (rewrite-entry
-                      (rewrite-primitive fn rewritten-args))
-                     (rewrite-entry
-                      (rewrite-with-lemmas
-                       rewritten-term)))))))))))))))))
+                                (let ((new-term1
+                                       (cons-term fn rewritten-args)))
+                                  (sl-let
+                                   (new-term2 ttree)
+                                   (rewrite-entry
+                                    (rewrite-with-lemmas new-term1))
+                                   (cond
+                                    ((equal new-term1 new-term2)
+                                     (mv step-limit
+                                         (hide-with-comment
+                                          (if erp
+                                              (cons :non-executable erp)
+                                              (cons :missing-warrant erp2))
+                                          new-term1
+                                          wrld state)
+                                         (push-lemma
+                                          (fn-rune-nume 'hide nil nil
+                                                        wrld)
+                                          ttree)))
+                                    (t (mv step-limit new-term2 ttree))))))
+                               (t (mv step-limit
+                                      (kwote val)
+                                      (push-lemma
+                                       (fn-rune-nume fn nil t wrld)
+                                       ttree))))))))))
+                     ((and (eq fn 'EV$)
+                           (global-val 'projects/apply/base-includedp wrld)
+                           (active-runep '(:rewrite ev$-opener)) ; uses ens!
+                           (quotep (car rewritten-args)))
+
+; We're looking at (EV$ 'x y).  Under certain conditions we'll rewrite this EV$
+; call by rewriting x under sigma'.  If those conditions are not met we just
+; ``fall through'' to the rewriter's normal handling of a non-special-case
+; function call.
+
+; The conditions are that x must be a tame term, every function in it has been
+; warranted, all the warrants are true in type-alist or can be forced, we can
+; recover from y a substitution, sigma.  Sigma', mentioned above, is just the
+; extension of sigma obtained by binding to 'nil all free variables of x that
+; are not bound in sigma.
+
+; This special processing of certain EV$ calls can be skipped by disabling
+; (:rewrite ev$-opener), a rewrite rule in projects/apply/base.lisp.  We
+; confirm that that book has been included so that we know the rewrite rule of
+; that name really is our rule.
+
+                     (let ((x (unquote (car rewritten-args)))
+                           (y (cadr rewritten-args)))
+                       (mv-let (flg sigma)
+                         (recover-subst-from-formal-var-alist y)
+                         (cond
+                          ((null flg)
+                           (rewrite-standard-exit fn rewritten-args))
+                          ((not (and (termp x wrld)
+                                     (executable-tamep x wrld)))
+                           (rewrite-standard-exit fn rewritten-args))
+                          (t (mv-let (warranted-fns unwarranted-fns)
+                             (partition-userfns-by-warrantp (all-fnnames x)
+                                                            wrld nil nil)
+                             (cond
+                              (unwarranted-fns
+                               (rewrite-standard-exit fn rewritten-args))
+                              (t (let ((new-alist
+                                        (extend-subst-on-unbound-vars
+                                         (all-vars x)
+                                         sigma)))
+                                   (mv-let (erp ttree1)
+                                     (push-warrants
+                                      warranted-fns
+                                      term type-alist ens wrld
+                                      (ok-to-force rcnst)
+                                      (push-lemma?
+                                       (active-runep '(:rewrite ev$-opener))
+                                       ttree)
+                                      ttree)
+                                  (cond
+                                   (erp
+                                    (rewrite-standard-exit fn rewritten-args))
+                                   (t
+
+; Note that every variable in x is bound in new-alist to a term that has been
+; recovered from rewritten-args, so the type-alist and the other data being
+; passed into this recursive call of rewrite legitimately describes the current
+; context.  Note also that as soon as rewrite sees a variable symbol it looks
+; it up in alist, transferring its attention to the binding.
+
+                                    (rewrite-entry
+                                     (rewrite x new-alist
+                                              'expansion)
+                                     :ttree ttree1)))))))))))))
+                     (t (rewrite-standard-exit fn rewritten-args))))))))))))))))
 
 (defun rewrite-solidify-plus (term ; &extra formals
                               rdepth step-limit
@@ -13739,11 +15984,11 @@
 ; "The rewriter has been modified to work slightly harder in relieving
 ; hypotheses."
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let (new-term new-ttree)
            (rewrite-solidify term type-alist obj geneqv
                              (access rewrite-constant rcnst
@@ -13780,6 +16025,132 @@
                           (declare (ignore rewrittenp))
                           (mv step-limit term1 ttree)))))))
 
+(defun assume-true-false-heavy-linearp (test ; &extra formals
+                                        rdepth step-limit
+                                        type-alist obj geneqv pequiv-info
+                                        wrld state
+                                        fnstack ancestors
+                                        backchain-limit
+                                        simplify-clause-pot-lst
+                                        rcnst gstack ttree)
+
+; This is the interface to assume-true-false when rewriting is done when rcst
+; specifies the use of heavy-linearp.
+
+  (declare (ignore obj))
+  (mv-let (must-be-true
+           must-be-false
+           true-type-alist
+           false-type-alist
+           ts-ttree)
+
+; See the long comment above the calls of assume-true-false in rewrite-if.
+
+    (assume-true-false test nil
+                       (ok-to-force rcnst)
+                       nil type-alist
+                       (access rewrite-constant rcnst
+                               :current-enabled-structure)
+                       wrld
+                       simplify-clause-pot-lst
+                       (access rewrite-constant rcnst :pt)
+                       nil)
+    (cond
+     ((or must-be-true must-be-false)
+      (mv step-limit must-be-true must-be-false
+          true-type-alist false-type-alist
+          simplify-clause-pot-lst simplify-clause-pot-lst ts-ttree))
+     (t ; Note that ts-ttree is irrelevant.
+      (let ((test+ (list test)))
+      (sl-let
+         (contradictionp true-pot-lst)
+         (rewrite-entry
+          (add-terms-and-lemmas test+ nil t)
+          :obj t)
+         (cond
+          (contradictionp
+           (mv step-limit nil t nil false-type-alist
+               nil simplify-clause-pot-lst
+               (push-lemma
+                *fake-rune-for-linear*
+                (access poly contradictionp :ttree))))
+          (t
+           (sl-let
+            (contradictionp false-pot-lst)
+            (rewrite-entry
+             (add-terms-and-lemmas test+ nil nil)
+             :obj nil)
+            (cond
+             (contradictionp
+              (mv step-limit t nil true-type-alist nil
+                  simplify-clause-pot-lst nil
+                  (push-lemma
+                   *fake-rune-for-linear*
+                   (access poly contradictionp :ttree))))
+             (t (mv step-limit nil nil true-type-alist false-type-alist
+                    true-pot-lst false-pot-lst nil))))))))))))
+
+(defun rewrite-if-finish (test unrewritten-test left right alist
+                               swapped-p
+                               must-be-true must-be-false
+                               true-type-alist false-type-alist
+                               true-pot-lst false-pot-lst
+                               ts-ttree ; &extra formals
+                               rdepth step-limit
+                               type-alist obj geneqv pequiv-info wrld state
+                               fnstack ancestors backchain-limit
+                               simplify-clause-pot-lst rcnst gstack ttree)
+  (cond
+   (must-be-true
+    (if (and unrewritten-test
+             (geneqv-refinementp 'iff geneqv wrld)
+             (equal unrewritten-test left))
+        (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
+      (rewrite-entry (rewrite left alist 2)
+                     :type-alist true-type-alist
+                     :simplify-clause-pot-lst true-pot-lst
+                     :ttree (cons-tag-trees ts-ttree ttree))))
+   (must-be-false
+    (rewrite-entry (rewrite right alist 3)
+                   :type-alist false-type-alist
+                   :simplify-clause-pot-lst false-pot-lst
+                   :ttree (cons-tag-trees ts-ttree ttree)))
+   (t (let ((ttree (normalize-rw-any-cache ttree)))
+        (sl-let
+         (rewritten-left ttree)
+         (if (and unrewritten-test
+                  (geneqv-refinementp 'iff geneqv wrld)
+                  (equal unrewritten-test left))
+             (mv step-limit *t* ttree)
+           (sl-let (rw-left ttree1)
+                   (rewrite-entry (rewrite left alist 2)
+                                  :type-alist true-type-alist
+                                  :simplify-clause-pot-lst true-pot-lst
+                                  :ttree (rw-cache-enter-context ttree))
+                   (mv step-limit
+                       rw-left
+                       (rw-cache-exit-context ttree ttree1))))
+         (sl-let (rewritten-right ttree1)
+                 (rewrite-entry (rewrite right alist 3)
+                                :type-alist false-type-alist
+                                :simplify-clause-pot-lst false-pot-lst
+                                :ttree (rw-cache-enter-context
+                                        ttree))
+                 (mv-let
+                   (rewritten-term ttree)
+                   (rewrite-if1 test
+                                rewritten-left rewritten-right
+                                swapped-p
+                                type-alist geneqv
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                (ok-to-force rcnst)
+                                wrld
+                                (rw-cache-exit-context ttree ttree1))
+                   (rewrite-entry
+                    (rewrite-with-lemmas
+                     rewritten-term)))))))))
+
 (defun rewrite-if (test unrewritten-test left right alist ; &extra formals
                         rdepth step-limit
                         type-alist obj geneqv pequiv-info wrld state fnstack
@@ -13793,11 +16164,11 @@
 ; Warning: If you modify this function, consider modifying the code below a
 ; comment mentioning rewrite-if in rewrite-with-lemmas.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let
      (test unrewritten-test left right swapped-p)
      (cond
@@ -13832,13 +16203,27 @@
                (mv step-limit *t* ttree)
              (rewrite-entry (rewrite left alist 2)))
          (rewrite-entry (rewrite right alist 3))))
-      (t (let ((ens (access rewrite-constant rcnst :current-enabled-structure)))
-           (mv-let
-             (must-be-true
-              must-be-false
-              true-type-alist
-              false-type-alist
-              ts-ttree)
+      ((eq (access rewrite-constant rcnst :heavy-linearp) :heavy)
+       (sl-let (must-be-true
+                must-be-false
+                true-type-alist
+                false-type-alist
+                true-pot-lst
+                false-pot-lst
+                ts-ttree)
+               (rewrite-entry (assume-true-false-heavy-linearp test))
+               (rewrite-entry
+                (rewrite-if-finish test unrewritten-test left right alist
+                                   swapped-p
+                                   must-be-true must-be-false
+                                   true-type-alist false-type-alist
+                                   true-pot-lst false-pot-lst
+                                   ts-ttree))))
+      (t (mv-let (must-be-true
+                  must-be-false
+                  true-type-alist
+                  false-type-alist
+                  ts-ttree)
 
 ; Once upon a time, the call of assume-true-false below was replaced by a call
 ; of repetitious-assume-true-false.  See the Essay on Repetitive Typing.  This
@@ -13883,60 +16268,29 @@
 ; power when rewriting the current clause, because it is potentially expensive
 ; and the user can see (and therefore change) what is going on.
 
-             (if ancestors
-                 (assume-true-false test nil
-                                    (ok-to-force rcnst)
-                                    nil type-alist ens wrld
-                                    simplify-clause-pot-lst
-                                    (access rewrite-constant rcnst :pt)
-                                    nil)
+           (if ancestors
                (assume-true-false test nil
                                   (ok-to-force rcnst)
-                                  nil type-alist ens wrld nil nil nil))
-             (cond
-              (must-be-true
-               (if (and unrewritten-test
-                        (geneqv-refinementp 'iff geneqv wrld)
-                        (equal unrewritten-test left))
-                   (mv step-limit *t* (cons-tag-trees ts-ttree ttree))
-                 (rewrite-entry (rewrite left alist 2)
-                                :type-alist true-type-alist
-                                :ttree (cons-tag-trees ts-ttree ttree))))
-              (must-be-false
-               (rewrite-entry (rewrite right alist 3)
-                              :type-alist false-type-alist
-                              :ttree (cons-tag-trees ts-ttree ttree)))
-              (t (let ((ttree (normalize-rw-any-cache ttree)))
-                   (sl-let
-                    (rewritten-left ttree)
-                    (if (and unrewritten-test
-                             (geneqv-refinementp 'iff geneqv wrld)
-                             (equal unrewritten-test left))
-                        (mv step-limit *t* ttree)
-                      (sl-let (rw-left ttree1)
-                              (rewrite-entry (rewrite left alist 2)
-                                             :type-alist true-type-alist
-                                             :ttree (rw-cache-enter-context ttree))
-                              (mv step-limit
-                                  rw-left
-                                  (rw-cache-exit-context ttree ttree1))))
-                    (sl-let (rewritten-right ttree1)
-                            (rewrite-entry (rewrite right alist 3)
-                                           :type-alist false-type-alist
-                                           :ttree (rw-cache-enter-context
-                                                   ttree))
-                            (mv-let
-                              (rewritten-term ttree)
-                              (rewrite-if1 test
-                                           rewritten-left rewritten-right
-                                           swapped-p
-                                           type-alist geneqv ens
-                                           (ok-to-force rcnst)
-                                           wrld
-                                           (rw-cache-exit-context ttree ttree1))
-                              (rewrite-entry
-                               (rewrite-with-lemmas
-                                rewritten-term)))))))))))))))
+                                  nil type-alist
+                                  (access rewrite-constant rcnst
+                                          :current-enabled-structure)
+                                  wrld
+                                  simplify-clause-pot-lst
+                                  (access rewrite-constant rcnst :pt)
+                                  nil)
+             (assume-true-false test nil
+                                (ok-to-force rcnst)
+                                nil type-alist
+                                (access rewrite-constant rcnst
+                                        :current-enabled-structure)
+                                wrld nil nil nil))
+           (rewrite-entry
+            (rewrite-if-finish test unrewritten-test left right alist
+                               swapped-p
+                               must-be-true must-be-false
+                               true-type-alist false-type-alist
+                               simplify-clause-pot-lst simplify-clause-pot-lst
+                               ts-ttree))))))))
 
 (defun rewrite-args (args alist bkptr rewritten-args-rev
                           deep-pequiv-lst shallow-pequiv-lst
@@ -13957,12 +16311,12 @@
 ; is ignored in this function and that deep-pequiv-lst can be the special
 ; value, :none, which is handled by function pequiv-info-for-rewrite.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit)
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit)
            (ignore pequiv-info))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((null args)
           (mv step-limit (reverse rewritten-args-rev) ttree))
          (t (mv-let
@@ -13995,11 +16349,11 @@
                              ttree)
 
   (declare (ignore geneqv pequiv-info obj)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((flambdap fn) (mv step-limit (fcons-term fn args) ttree))
     ((eq fn 'equal)
@@ -14035,8 +16389,8 @@
 ; superior calls, in order to break loops as explained below.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14046,7 +16400,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((equal lhs rhs)
      (mv step-limit *t* (puffert ttree)))
@@ -14406,8 +16760,8 @@
 ; do care that bkptr is a number representing the hypothesis.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14417,7 +16771,7 @@
 
   (the-mv
    6
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((ffn-symb-p hyp0 'synp)
           (mv-let (wonp failure-reason unify-subst ttree)
                   (relieve-hyp-synp rune hyp0 unify-subst rdepth type-alist wrld
@@ -14737,11 +17091,11 @@
 ; elaborate form of failure reporting.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    7
-   (signed-byte 30)
+   #.*fixnum-type*
 
 ; In relieve-hyps1-free-1 we extend unify-subst to new-unify-subst by searching
 ; a type-alist.  Here we perform that extension by taking the first element of
@@ -14839,8 +17193,8 @@
 ; entries, rather than extending rw-cache-alist.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -14850,7 +17204,7 @@
 
   (the-mv
    7
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null hyps)
      (mv step-limit t nil unify-subst ttree allp rw-cache-alist-new))
@@ -14859,7 +17213,7 @@
       (relieve-hyp-ans failure-reason new-unify-subst new-ttree allp)
       (with-accumulated-persistence
        rune
-       ((the (signed-byte 30) step-limit)
+       ((the #.*fixnum-type* step-limit)
         relieve-hyp-ans failure-reason new-unify-subst new-ttree allp)
 
 ; Even in the "special case" for relieve-hyp, we can mark this as a success
@@ -14920,7 +17274,7 @@
 
 ; Note that we reverse below even though we do not reverse in the analogous
 ; function, relieve-hyps1-free-1.  That is because in relieve-hyps1-free-1, the
-; the failure-reason-lst is built by traversing a type-alist whose entries are
+; failure-reason-lst is built by traversing a type-alist whose entries are
 ; in reverse order from the order of hypotheses encountered that created those
 ; entries; but here, the unify-subst-lst is processed in order.
 
@@ -15021,11 +17375,11 @@
 ; 'hyp-vars token is used in its place (see relieve-hyps1).
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    7
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let
     (ans new-unify-subst new-ttree new-rest-type-alist)
     (search-type-alist+ term typ rest-type-alist unify-subst ttree wrld)
@@ -15127,12 +17481,12 @@
 ; a resulting allp.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
   (the-mv
    7
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((endp lemmas)
 
@@ -15310,8 +17664,8 @@
 ; output ttrees.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -15321,7 +17675,7 @@
 
   (the-mv
    5
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null hyps)
 
@@ -15453,14 +17807,14 @@
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
 ; output ttrees.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((gstack (push-gframe 'rewrite-with-lemma nil term lemma))
          (rdepth (adjust-rdepth rdepth)))
-     (declare (type (unsigned-byte 29) rdepth))
+     (declare (type #.*fixnat-type* rdepth))
      (cond ((zero-depthp rdepth)
             (rdepth-error
              (mv step-limit nil term ttree)))
@@ -15510,7 +17864,7 @@
                      (rune (access rewrite-rule lemma :rune)))
                 (with-accumulated-persistence
                  rune
-                 ((the (signed-byte 30) step-limit) flg term ttree)
+                 ((the #.*fixnum-type* step-limit) flg term ttree)
                  flg
                  (mv-let
                   (erp val latches)
@@ -15876,7 +18230,7 @@
                                           (rewritten-rhs ttree)
                                           (with-accumulated-persistence
                                            rune
-                                           ((the (signed-byte 30) step-limit)
+                                           ((the #.*fixnum-type* step-limit)
                                             rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
@@ -15957,7 +18311,8 @@
                              (null (brkpt1 lemma term unify-subst
                                            type-alist ancestors
                                            ttree
-                                           gstack rcnst state)))
+                                           gstack rcnst simplify-clause-pot-lst
+                                           state)))
                         (cond
                          ((null (loop-stopperp
                                  (access rewrite-rule lemma :heuristic-info)
@@ -15966,12 +18321,12 @@
                           (prog2$
                            (brkpt2 nil 'loop-stopper
                                    unify-subst gstack nil nil
-                                   rcnst state)
+                                   rcnst ancestors state)
                            (mv step-limit nil term ttree)))
                          (t
                           (with-accumulated-persistence
                            rune
-                           ((the (signed-byte 30) step-limit) flg term ttree)
+                           ((the #.*fixnum-type* step-limit) flg term ttree)
                            flg
                            (sl-let
                             (relieve-hyps-ans failure-reason unify-subst ttree)
@@ -16003,7 +18358,7 @@
                                (rewritten-rhs ttree)
                                (with-accumulated-persistence
                                 rune
-                                ((the (signed-byte 30) step-limit)
+                                ((the #.*fixnum-type* step-limit)
                                  rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
@@ -16019,7 +18374,7 @@
                                 (access rewrite-rule lemma :hyps))
                                (prog2$
                                 (brkpt2 t nil unify-subst gstack rewritten-rhs
-                                        ttree rcnst state)
+                                        ttree rcnst ancestors state)
                                 (mv step-limit t rewritten-rhs
                                     (push-lemma
                                      (geneqv-refinementp
@@ -16034,9 +18389,18 @@
                              (t (prog2$
                                  (brkpt2 nil failure-reason
                                          unify-subst gstack nil nil
-                                         rcnst state)
+                                         rcnst ancestors state)
                                  (mv step-limit nil term ttree)))))))))
-                       (t (mv step-limit nil term ttree))))))
+                       (t (progn$
+                           (near-miss-brkpt1 lemma term type-alist
+                                             ancestors ttree
+                                             gstack rcnst
+                                             simplify-clause-pot-lst
+                                             state)
+                           (brkpt2 nil 'near-miss
+                                   unify-subst gstack nil nil
+                                   rcnst ancestors state)
+                           (mv step-limit nil term ttree)))))))
            (t (mv step-limit nil term ttree))))))
 
 (defun rewrite-with-lemmas1 (term lemmas
@@ -16054,11 +18418,11 @@
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
 ; output ttrees.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((null lemmas) (mv step-limit nil term ttree))
 
 ; When we are doing non-linear we will be rewriting linear terms
@@ -16110,11 +18474,11 @@
 ; it only for recursive fns simply because the non-recursive case seems
 ; unlikely.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (let* ((fn (ffn-symb term))
           (args (fargs term))
           (body (if (null rule)
@@ -16207,10 +18571,11 @@
                (cond
                 ((and unify-ans
                       (null (brkpt1 rule term unify-subst type-alist ancestors
-                                    ttree gstack rcnst state)))
+                                    ttree gstack rcnst simplify-clause-pot-lst
+                                    state)))
                  (with-accumulated-persistence
                   (access rewrite-rule rule :rune)
-                  ((the (signed-byte 30) step-limit) term-out ttree)
+                  ((the #.*fixnum-type* step-limit) term-out ttree)
 
 ; The following mis-guarded use of eq instead of equal implies that we could be
 ; over-counting successes at the expense of failures.
@@ -16231,7 +18596,7 @@
 
                     (prog2$
                      (brkpt2 nil 'too-many-ifs-pre-rewrite unify-subst gstack
-                             :rewriten-rhs-avoided ttree rcnst state)
+                             :rewriten-rhs-avoided ttree rcnst ancestors state)
                      (prepend-step-limit
                       2
                       (rewrite-solidify term type-alist obj geneqv
@@ -16271,7 +18636,7 @@
                       (relieve-hyps-ans
                        (with-accumulated-persistence
                         rune
-                        ((the (signed-byte 30) step-limit) term-out ttree)
+                        ((the #.*fixnum-type* step-limit) term-out ttree)
                         t ; considered a success unless the parent with-acc-p fails
                         (sl-let
                          (rewritten-body new-ttree1)
@@ -16300,7 +18665,7 @@
                                (prog2$
                                 (brkpt2 nil 'too-many-ifs-post-rewrite
                                         unify-subst gstack rewritten-body
-                                        ttree1 rcnst state)
+                                        ttree1 rcnst ancestors state)
                                 (prepend-step-limit
                                  2
                                  (rewrite-solidify
@@ -16313,7 +18678,8 @@
                                   (access rewrite-constant rcnst :pt)))))
                               (t (prog2$
                                   (brkpt2 t nil unify-subst gstack
-                                          rewritten-body ttree1 rcnst state)
+                                          rewritten-body ttree1 rcnst ancestors
+                                          state)
                                   (mv step-limit
                                       rewritten-body
                                       (push-lemma+ rune ttree1 rcnst ancestors
@@ -16360,7 +18726,7 @@
 
 ;                            (prog2$
 ;                             (brkpt2 t nil unify-subst gstack rewritten-body
-;                                     ttree1 rcnst state)
+;                                     ttree1 rcnst ancestors state)
 ;                             (mv rewritten-body
 ;                                 (push-lemma rune ttree1))))
 
@@ -16420,14 +18786,14 @@
                                          (prog2$
                                           (brkpt2 t nil unify-subst gstack
                                                   rewritten-body ttree2 rcnst
-                                                  state)
+                                                  ancestors state)
                                           (mv step-limit
                                               rewritten-body
                                               ttree2)))))
                               (t
                                (prog2$
                                 (brkpt2 t nil unify-subst gstack rewritten-body
-                                        ttree1 rcnst state)
+                                        ttree1 rcnst ancestors state)
                                 (mv step-limit
                                     rewritten-body
                                     (push-lemma+ rune ttree1 rcnst
@@ -16436,7 +18802,8 @@
                                                  rewritten-body))))))
                             (t (prog2$
                                 (brkpt2 nil 'rewrite-fncallp unify-subst gstack
-                                        rewritten-body ttree1 rcnst state)
+                                        rewritten-body ttree1 rcnst ancestors
+                                        state)
                                 (prepend-step-limit
                                  2
                                  (rewrite-solidify
@@ -16452,7 +18819,7 @@
                         (access rewrite-rule rule :hyps)))
                       (t (prog2$
                           (brkpt2 nil failure-reason unify-subst gstack nil
-                                  nil rcnst state)
+                                  nil rcnst ancestors state)
                           (prepend-step-limit
                            2
                            (rewrite-solidify term type-alist obj geneqv
@@ -16464,26 +18831,36 @@
                                              simplify-clause-pot-lst
                                              (access rewrite-constant rcnst
                                                      :pt)))))))))))
-                (t (prepend-step-limit
-                    2
-                    (rewrite-solidify term type-alist obj geneqv
-                                      (access rewrite-constant rcnst
-                                              :current-enabled-structure)
-                                      wrld ttree
-                                      simplify-clause-pot-lst
-                                      (access rewrite-constant rcnst
-                                              :pt))))))))))))
+                (t
+                 (progn$
+                  (near-miss-brkpt1 rule term type-alist
+                                    ancestors ttree
+                                    gstack rcnst
+                                    simplify-clause-pot-lst
+                                    state)
+                  (brkpt2 nil 'near-miss
+                          unify-subst gstack nil nil
+                          rcnst ancestors state)
+                  (prepend-step-limit
+                   2
+                   (rewrite-solidify term type-alist obj geneqv
+                                     (access rewrite-constant rcnst
+                                             :current-enabled-structure)
+                                     wrld ttree
+                                     simplify-clause-pot-lst
+                                     (access rewrite-constant rcnst
+                                             :pt)))))))))))))
 
 (defun rewrite-with-lemmas (term ; &extra formals
                             rdepth step-limit
                             type-alist obj geneqv pequiv-info wrld state fnstack
                             ancestors backchain-limit
                             simplify-clause-pot-lst rcnst gstack ttree)
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((variablep term)
      (rewrite-entry (rewrite-solidify-plus term)))
@@ -16531,7 +18908,7 @@
 
                   (with-accumulated-persistence
                    rune
-                   ((the (signed-byte 30) step-limit) new-term ttree)
+                   ((the #.*fixnum-type* step-limit) new-term ttree)
                    t
                    (sl-let
                     (rewritten-test ttree)
@@ -16622,7 +18999,7 @@
                  (new-term
                   (with-accumulated-persistence
                    rune
-                   ((the (signed-byte 30) step-limit) new-term ttree)
+                   ((the #.*fixnum-type* step-limit) new-term ttree)
                    t
                    (sl-let (final-term ttree)
                            (rewrite-entry (rewrite new-term alist 'expansion)
@@ -16677,8 +19054,8 @@
 ; We return two things, the rewritten term and the new ttree.
 
   (declare (ignore obj geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16688,7 +19065,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let
     (not-flg atm)
     (strip-not term)
@@ -16752,8 +19129,8 @@
 ; terms and their ttrees.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16763,7 +19140,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (if (null term-lst)
        (mv step-limit nil nil)
      (sl-let
@@ -16815,8 +19192,8 @@
 ; loop-stopper-value which exceeds *max-linear-pot-loop-stopper-value*.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -16826,7 +19203,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((gstack (push-gframe 'add-linear-lemma nil term lemma))
          (rdepth (adjust-rdepth rdepth)))
      (mv-let
@@ -16838,11 +19215,11 @@
              (null (brkpt1 lemma term unify-subst
                            type-alist ancestors
                            nil ; ttree
-                           gstack rcnst state)))
+                           gstack rcnst simplify-clause-pot-lst state)))
         (let ((rune (access linear-lemma lemma :rune)))
           (with-accumulated-persistence
            rune
-           ((the (signed-byte 30) step-limit) contradictionp pot-lst)
+           ((the #.*fixnum-type* step-limit) contradictionp pot-lst)
            (or contradictionp
 
 ; The following mis-guarded use of eq instead of equal implies that we could be
@@ -16873,7 +19250,7 @@
                (rewritten-concl ttree2)
                (with-accumulated-persistence
                 rune
-                ((the (signed-byte 30) step-limit) rewritten-concl ttree2)
+                ((the #.*fixnum-type* step-limit) rewritten-concl ttree2)
                 t ; considered a success unless the parent with-acc-p fails
                 (rewrite-entry
                  (rewrite-linear-term
@@ -16979,7 +19356,7 @@
                     (prog2$ (brkpt2 t nil unify-subst gstack
                                     brr-result
                                     nil ; ttree, not used (see brkpt2)
-                                    rcnst state)
+                                    rcnst ancestors state)
                             (mv step-limit contradictionp nil)))
                    (t
                     (mv-let
@@ -17088,26 +19465,35 @@
                             (prog2$ (brkpt2 t nil unify-subst gstack
                                             brr-result
                                             nil ; ttree, not used (see brkpt2)
-                                            rcnst state)
+                                            rcnst ancestors state)
                                     (mv step-limit contradictionp nil)))
                            (failure-reason
                             (prog2$ (brkpt2 nil failure-reason unify-subst gstack
                                             brr-result
                                             nil ; ttree, not used (see brkpt2)
-                                            rcnst state)
+                                            rcnst ancestors state)
                                     (mv step-limit nil new-pot-lst)))
                            (t
                             (prog2$ (brkpt2 t nil unify-subst gstack
                                             brr-result
                                             nil ; ttree, not used (see brkpt2)
-                                            rcnst state)
+                                            rcnst ancestors state)
                                     (mv step-limit nil new-pot-lst)))))))))))
              (t (prog2$
                  (brkpt2 nil failure-reason
                          unify-subst gstack nil nil
-                         rcnst state)
+                         rcnst ancestors state)
                  (mv step-limit nil simplify-clause-pot-lst))))))))
-       (t (mv step-limit nil simplify-clause-pot-lst)))))))
+       (t (progn$
+           (near-miss-brkpt1 lemma term type-alist
+                             ancestors nil ; ttree
+                             gstack rcnst
+                             simplify-clause-pot-lst
+                             state)
+           (brkpt2 nil 'near-miss
+                   unify-subst gstack nil nil
+                   rcnst ancestors state)
+           (mv step-limit nil simplify-clause-pot-lst))))))))
 
 (defun add-linear-lemmas (term linear-lemmas ; &extra formals
                                rdepth step-limit
@@ -17125,8 +19511,8 @@
 ; The second is the possibly new pot-lst.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17136,7 +19522,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null linear-lemmas)
      (mv step-limit nil simplify-clause-pot-lst))
@@ -17183,8 +19569,8 @@
 ; (term . coeff).
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17194,7 +19580,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let* ((leaves1 (binary-*-leaves (car alist-entry1)))
           (leaves2 (binary-*-leaves (car alist-entry2)))
           (leaves (merge-arith-term-order leaves1 leaves2))
@@ -17243,8 +19629,8 @@
 ; alist2 and adding the result to poly.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17254,7 +19640,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null alist2)
      (mv step-limit poly))
@@ -17298,8 +19684,8 @@
 ; alist1 multiplying each entry by alist2 and adding the result to poly.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17309,7 +19695,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null alist1)
      (mv step-limit poly))
@@ -17354,8 +19740,8 @@
 ; into the growing alist.  We finish with multiply-alists.
 
   (declare (ignore obj geneqv pequiv-info ttree rel1 rel2)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17488,7 +19874,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let* ((temp-poly1
            (if (eql const2 0)
                poly
@@ -17520,8 +19906,8 @@
 ; We assume that either poly1 or poly2 is rational-poly-p.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17531,7 +19917,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((alist1 (access poly poly1 :alist))
          (ttree1 (access poly poly1 :ttree))
          (const1 (access poly poly1 :constant))
@@ -17579,8 +19965,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17590,7 +19976,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null big-poly-list)
      (mv step-limit new-poly-list))
@@ -17638,8 +20024,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17649,7 +20035,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null poly-list)
      (mv step-limit new-poly-list))
@@ -17684,8 +20070,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17695,7 +20081,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null var-list)
      (mv step-limit nil))
@@ -17739,8 +20125,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17750,7 +20136,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (sl-let
     (poly-list1)
     (rewrite-entry
@@ -17793,8 +20179,8 @@
 ; We return a list of polys.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17804,7 +20190,7 @@
 
   (the-mv
    2
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null var-list) ; How can we multiply 0 things?
      (mv step-limit nil))
@@ -17841,8 +20227,8 @@
 ; corresponding to the pots labeled by the vars in var-list.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17852,7 +20238,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((product-already-triedp var-list products-already-tried)
      (mv step-limit nil simplify-clause-pot-lst products-already-tried))
@@ -17918,13 +20304,13 @@
 
 ; Var-list is a list of pot labels.  If we have not yet multiplied
 ; the polys corresponding to those labels, we do so and add them to the
-; the simplify-clause-pot-lst.  Products-already-tried is a list of the
+; simplify-clause-pot-lst.  Products-already-tried is a list of the
 ; factors we have already tried, and pot-lst-to-look-in is the pot-lst
 ; from which we get our polys.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -17934,7 +20320,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null (cdr var-list))
      (mv step-limit nil simplify-clause-pot-lst products-already-tried))
@@ -18021,8 +20407,8 @@
 ; tried.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18032,7 +20418,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((equal part-of-new-var *1*)
      (if (null (cdr var-list))
@@ -18128,8 +20514,8 @@
 ; tried.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18139,7 +20525,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((eq (fn-symb new-var) 'BINARY-*)
      (rewrite-entry
@@ -18182,8 +20568,8 @@
 ; tried.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18193,7 +20579,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null pot-lst-to-step-down)
      (mv step-limit nil simplify-clause-pot-lst products-already-tried))
@@ -18300,8 +20686,8 @@
 ; tried.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18311,7 +20697,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((null pot-lst-to-step-down)
           (mv step-limit nil simplify-clause-pot-lst products-already-tried))
          (t
@@ -18378,8 +20764,8 @@
 ; comments and documentation there.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18389,7 +20775,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null new-vars)
      (mv step-limit nil simplify-clause-pot-lst))
@@ -18508,8 +20894,8 @@
 ; we have already tried multiplying the polys from.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18519,14 +20905,14 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null new-vars)
      (mv step-limit nil simplify-clause-pot-lst))
     (t
      (let ((gstack (push-gframe 'non-linear-arithmetic nil new-vars))
            (rdepth (adjust-rdepth rdepth)))
-       (declare (type (unsigned-byte 29) rdepth))
+       (declare (type #.*fixnat-type* rdepth))
        (rewrite-entry
         (non-linear-arithmetic1 new-vars pot-lst products-already-tried)
         :obj    nil      ; ignored
@@ -18556,8 +20942,8 @@
 ; division).
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18567,7 +20953,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null new-vars)
      (let ((new-vars (expanded-new-vars-in-pot-lst simplify-clause-pot-lst
@@ -18597,7 +20983,7 @@
          (contradictionp new-pot-lst)
          (if (and (nvariablep (car new-vars))
                   (not (flambda-applicationp (car new-vars)))
-                  (not (access rewrite-constant rcnst :cheap-linearp)))
+                  (access rewrite-constant rcnst :heavy-linearp))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
                                  (getpropc (ffn-symb (car new-vars))
@@ -18659,8 +21045,8 @@
 ; non-linear arithmetic.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18670,7 +21056,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((<= *non-linear-rounds-value* cnt)
      (mv step-limit nil simplify-clause-pot-lst))
@@ -18765,8 +21151,8 @@
 ; We return the standard contradictionp and a new pot-lst.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18776,7 +21162,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null new-vars)
      (let ((new-vars (new-vars-in-pot-lst simplify-clause-pot-lst
@@ -18794,7 +21180,7 @@
         (cond
          ((or (flambda-applicationp
                (car new-vars))
-              (access rewrite-constant rcnst :cheap-linearp))
+              (not (access rewrite-constant rcnst :heavy-linearp)))
           (mv step-limit nil simplify-clause-pot-lst))
          (t
           (rewrite-entry
@@ -18830,8 +21216,8 @@
 ; is that you get to think of better names for everything!
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18841,7 +21227,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (mv-let
     (contradictionp new-pot-lst)
     (add-polys lst simplify-clause-pot-lst
@@ -18953,8 +21339,8 @@
 ; being able to use cons to generate a unique object.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -18964,7 +21350,7 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (sl-let
     (contradictionp new-pot-lst1)
     (rewrite-entry
@@ -19150,8 +21536,8 @@
 ; that it survived all those years in Nqthm without coming to our attention.
 
   (declare (ignore obj geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -19161,7 +21547,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null split-lst)
      (let ((eqp (equal pot-lst0 simplify-clause-pot-lst)))
@@ -19244,8 +21630,8 @@
 ; source documentation (see books/system/doc/acl2-doc.lisp).
 
   (declare (ignore geneqv pequiv-info ttree)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -19255,14 +21641,14 @@
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((gstack (push-gframe 'add-terms-and-lemmas nil term-lst obj))
          (rdepth (adjust-rdepth rdepth)))
-     (declare (type (unsigned-byte 29) rdepth))
+     (declare (type #.*fixnat-type* rdepth))
      (sl-let
       (term-lst ttree-lst)
       (if (and (access rewrite-constant rcnst :nonlinearp)
-               (not (access rewrite-constant rcnst :cheap-linearp)))
+               (access rewrite-constant rcnst :heavy-linearp))
 
 ; This call to rewrite-linear-term-lst is new to Version_2.7.
 ; We wish to be able to have a different normal form when doing
@@ -19404,8 +21790,8 @@
 ;   hints.
 
   (declare (ignore geneqv pequiv-info)
-           (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+           (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
 
 ; Convention: It is our convention to pass nils into ignored &extra formals.
 ; Do not change the (ignore ...) declaration above without looking at the
@@ -19415,7 +21801,7 @@
 
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (let ((positivep (eq obj nil)))
      (cond
       ((and (not (eq obj '?))
@@ -19483,17 +21869,17 @@
 ; 'rw-cache-any-tag and 'rw-cache-nil-tag may differ between the input and
 ; output ttrees.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (let* ((gstack (push-gframe 'rewrite-quoted-constant-with-lemma nil term lemma))
           (rdepth (adjust-rdepth rdepth))
           (temp (access rewrite-rule lemma :heuristic-info))
           (n (car temp))
           (loop-stopper (cdr temp)))
-     (declare (type (unsigned-byte 29) rdepth)
+     (declare (type #.*fixnat-type* rdepth)
               (type integer n))
      (cond ((zero-depthp rdepth)
             (rdepth-error
@@ -19541,18 +21927,19 @@
                        (null (brkpt1 lemma term unify-subst
                                      type-alist ancestors
                                      ttree
-                                     gstack rcnst state)))
+                                     gstack rcnst simplify-clause-pot-lst
+                                     state)))
                   (cond
                    ((null (loop-stopperp loop-stopper unify-subst wrld))
                     (prog2$
                      (brkpt2 nil 'loop-stopper
                              unify-subst gstack nil nil
-                             rcnst state)
+                             rcnst ancestors state)
                      (mv step-limit nil term ttree)))
                    (t
                     (with-accumulated-persistence
                      rune
-                     ((the (signed-byte 30) step-limit) flg term ttree)
+                     ((the #.*fixnum-type* step-limit) flg term ttree)
                      flg
                      (sl-let
                       (relieve-hyps-ans failure-reason unify-subst ttree)
@@ -19584,7 +21971,7 @@
                          (rewritten-rhs ttree)
                          (with-accumulated-persistence
                           rune
-                          ((the (signed-byte 30) step-limit)
+                          ((the #.*fixnum-type* step-limit)
                            rewritten-rhs ttree)
 
 ; This rewrite of the body is considered a success unless the parent with-acc-p
@@ -19606,7 +21993,7 @@
                                (eql n 3))
                            (prog2$
                             (brkpt2 t nil unify-subst gstack rewritten-rhs
-                                    ttree rcnst state)
+                                    ttree rcnst ancestors state)
                             (mv step-limit
                                 t
                                 rewritten-rhs
@@ -19630,12 +22017,12 @@
                                        (sublis-var unify-subst rhs)
                                        rewritten-rhs)
                                       unify-subst gstack nil nil
-                                      rcnst state)
+                                      rcnst ancestors state)
                               (mv step-limit nil term ttree))))))
                        (t (prog2$
                            (brkpt2 nil failure-reason
                                    unify-subst gstack nil nil
-                                   rcnst state)
+                                   rcnst ancestors state)
                            (mv step-limit nil term ttree)))))))))
                  (t (mv step-limit nil term ttree))))))))))
 
@@ -19646,11 +22033,11 @@
         fnstack ancestors backchain-limit
         simplify-clause-pot-lst rcnst gstack ttree)
 ; Term is a quoted evg.
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit))
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit))
   (the-mv
    4
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond
     ((null lemmas) (mv step-limit nil term ttree))
     ((not (enabled-numep
@@ -19707,22 +22094,48 @@
 
 ; Evg is some evg and rewrite has been called on 'evg.  Furthermore, we know
 ; from geneqv that 'evg is in a :FN slot.  If evg is in fact a well-formed
-; lambda object we attempt to rewrite its body, in a context-free way, carrying
-; no external assumptions in and expanding no recursive functions in it.  (The
-; last restriction is accomplished by pushing :rewrite-lambda-object on the
-; fnstack, which signals rewrite-fncall not to open any recursive function.
-; See the explanation of a simplify loop below.)  If the rewritten body is
-; different, contains no free variables and is tame, we return a new lambda
-; object with the rewritten body.  Coincidentally, we drop the optional DECLARE
-; form permitted in lambda objects; we take no special action to eliminate
-; RETURN-LAST because there is an abbreviation-style rewrite rule that will do
-; that.  But if evg is not well-formed or its rewritten body is equal to the
-; original body (and there is no DECLARE form) or it contains free variables,
-; or it is not tame, we return evg unchanged.  In the case that a well-formed
-; lambda object is rewritten but the rewritten body is rejected on the grounds
-; of free variables or tameness, we print a "rewrite-lambda-object" warning,
-; which can be inhibited if it gets annoying.  To inhibit the warning but leave
-; all other warnings on, do (set-inhibit-warnings "rewrite-lambda-object").
+; lambda object and all the user defined functions in it have had warrants
+; issued (whether they're in the type-alist or not) we attempt to ``rewrite''
+; its body, in a context-free way, carrying in no external assumptions other
+; than warrants and expanding no recursive functions in it.
+
+; Actually, we carry in all 0-ary entries in the type-alist.
+
+; Actually, the user can select three different senses of ``rewrite'' behavior
+; by appropriately specifying the enabled status of two runes,
+; (:executable-counterpart rewrite-lambda-modep) and (:definition
+; rewrite-lambda-modep), which we abbreviate below as runes e and d
+; respectively.
+
+; ``Rewrite'' Action Desired                      Rune Status
+
+; full-blown rewriting                        e and d both enabled
+; just syntactic cleaning up                  e enabled and d disabled
+; hands off (i.e., modifying lambda objects)  e disabled
+
+; Both full-blown rewriting and syntactic cleaning effectively force
+; needed warrants.  (Actually, cleaning forces the warrants of all user fns
+; in the body that aren't assumed true in type-alist.  And if some such warrant
+; is assumed false, no cleaning is done.)
+
+; The restriction that we expand no recursive functions is accomplished by
+; pushing :rewrite-lambda-object on the fnstack, which signals rewrite-fncall
+; not to open any recursive function.  See the explanation of a simplify loop
+; below.)
+
+; If the rewritten body is different, contains no free variables and is tame,
+; we return a new lambda object with the rewritten body and appropriately
+; forced warrants.  Coincidentally, we drop the optional DECLARE form permitted
+; in lambda objects; we take no special action to eliminate RETURN-LAST because
+; there is an abbreviation-style rewrite rule that will do that.  We nilify the
+; last two arguments of DO$ with a special clause inside the rewriter itself.
+; But if evg is not well-formed or its rewritten body is equal to the original
+; body (and there is no DECLARE form) or it contains free variables, or it is
+; not tame, we return evg unchanged.  In the case that a well-formed lambda
+; object is rewritten but the rewritten body is rejected on any grounds, we
+; print a "rewrite-lambda-object" warning, which can be inhibited if it gets
+; annoying.  To inhibit the warning but leave all other warnings on, do
+; (set-inhibit-warnings "rewrite-lambda-object").
 
 ; Explanation of an infinite simplify loop:
 
@@ -19755,14 +22168,14 @@
 ; see why a more sophisticated solution is needed.  But as a first cut we just
 ; don't open recursive functions in lambda bodies.
 
-  (declare (type (unsigned-byte 29) rdepth)
-           (type (signed-byte 30) step-limit)
+  (declare (type #.*fixnat-type* rdepth)
+           (type #.*fixnum-type* step-limit)
            (ignore obj geneqv pequiv-info
                    ancestors simplify-clause-pot-lst))
 
   (the-mv
    3
-   (signed-byte 30)
+   #.*fixnum-type*
    (cond ((or (symbolp evg)
 
 ; We don't mess with evg if it is a symbol.  If we did, it would fail the first
@@ -19785,13 +22198,14 @@
             (mv-let (pre-have-warrants pre-have-no-warrants)
               (partition-userfns-by-warrantp fns wrld nil nil)
 
-; Fns is the list of fns in body.  It does not include fns buried in quoted
-; objects; they are handled by recursion.  Progs is the list of :program mode
-; functions in fns, pre-have-warrants are the symbols in fns that have warrants
-; (whether they're assumed in the current context or not), and
-; pre-have-no-warrants are the symbols in fns for which no warrants exist but
-; which would require a warrant to be apply$d.  (Primitives and apply$
-; primitives don't have warrants but don't need them.)
+; Note that (:executable-counterpart rewrite-lambda-modep) is enabled.  Fns is
+; the list of fns in body.  It does not include fns buried in quoted objects;
+; they are handled by recursion.  Progs is the list of :program mode functions
+; in fns, pre-have-warrants are the symbols in fns that have warrants (whether
+; they're assumed in the current context or not), and pre-have-no-warrants are
+; the symbols in fns for which no warrants exist but which would require a
+; warrant to be apply$d.  (Primitives and apply$ primitives don't have warrants
+; but don't need them.)
 
               (cond
                ((and (null progs)
@@ -19800,112 +22214,158 @@
 ; So body is in :logic mode and every function symbol occurring in it has a
 ; warrant or doesn't need one.
 
+; Since (:executable-counterpart rewrite-lambda-modep), aka ``e'', is enabled
+; and body is a well-formed tame term and all the functions in it are in :logic
+; mode and have had warrants issued (whether or not they are assumed true in
+; type-alist1) we have permission to modify body.
+
+; We are going to bind rewritten-body and ttree1 to the result of either (a)
+; rewriting and normalizing body or (b) removing guards and cleaning up body.
+; Since e is enabled, the user can select (a) or (b) by manipulating the
+; enabled status of (:definition rewrite-lambda-modep), aka ``d''.  If d is
+; enabled, we do (a), and if d is disabled we do (b).  The use of
+; clean-up-dirty-lambda-object-body below is intended to perform the same
+; transformation on the body of this lambda as add-rewrite-rule, for example,
+; would if the body were the lhs of a :rewrite rule.
+
+; Note: Since we normalize the result of rewriting it was natural to normalize
+; the result of just cleaning up.  That's easy enough to do here but impossible
+; in add-rewrite-rule because there we don't have a stable ens, which is used
+; in type-set and assume-true-false to normalize.  (The global ens not won't be
+; the same as it was when rules were added.)  Given that we use the enabled
+; status of e and d to select our action here, and that we offer 3 options now,
+; we could easily offer a fourth: normalize wrt the ens available here after
+; cleaning.  But we see no need, yet.
+
                 (sl-let
                  (rewritten-body ttree1)
-                 (rewrite-entry (rewrite body
-                                         nil
-                                         'lambda-object-body)
-                                :fnstack (cons :rewrite-lambda-object fnstack)
-                                :type-alist type-alist1
-                                :obj '?
-                                :geneqv nil ; maintain EQUAL
-                                :pequiv-info nil
-                                :ancestors nil
-                                :simplify-clause-pot-lst nil
-                                :ttree nil)
-                 (mv-let (rewritten-body1 ttree1)
-                   (normalize rewritten-body
-                              nil ; iff-flg
-                              nil ; type-alist
-                              (access rewrite-constant
-                                      rcnst
-                                      :current-enabled-structure)
-                              wrld
-                              ttree1
-                              (backchain-limit wrld :ts))
+                 (if (enabled-numep *rewrite-lambda-modep-def-nume*
+                                    (access rewrite-constant
+                                            rcnst
+                                            :current-enabled-structure))
+                     (sl-let
+                      (temp-rewritten-body temp-ttree1)
+                      (rewrite-entry (rewrite body
+                                              nil
+                                              'lambda-object-body)
+                                     :fnstack (cons :rewrite-lambda-object fnstack)
+                                     :type-alist type-alist1
+                                     :obj '?
+                                     :geneqv nil ; maintain EQUAL
+                                     :pequiv-info nil
+                                     :ancestors nil
+                                     :simplify-clause-pot-lst nil
+                                     :ttree nil)
+                      (mv-let (temp-rewritten-body temp-ttree1)
+                        (normalize temp-rewritten-body
+                                   nil ; iff-flg
+                                   nil ; type-alist
+                                   (access rewrite-constant
+                                           rcnst
+                                           :current-enabled-structure)
+                                   wrld
+                                   temp-ttree1
+                                   (backchain-limit wrld :ts))
+                        (mv step-limit temp-rewritten-body temp-ttree1)))
+                     (mv step-limit
+                         (clean-up-dirty-lambda-object-body
+                          :all
+                          body
+                          wrld
+                          (remove-guard-holders-lamp))
+                         ttree))
+                 (cond
+                  ((equal rewritten-body body) ; no change
                    (cond
-                    ((equal rewritten-body1 body)
-                     (cond
-                      ((null dcl)
-                       (mv step-limit evg ttree))
-                      (t (mv step-limit
-                             `(lambda ,formals ,body) ; Just drop the dcl
-                             ttree))))
-                    ((or (not (subsetp-eq (all-vars rewritten-body1) formals))
-                         (not (executable-tamep rewritten-body1 wrld)))
+                    ((null dcl)
+                     (mv step-limit evg ttree))
+                    (t (mv step-limit
+                           `(lambda ,formals ,body) ; Just drop the dcl
+                           ttree))))
+                  ((or (not (subsetp-eq (all-vars rewritten-body) formals))
+                       (not (executable-tamep rewritten-body wrld)))
 
 ; If the rewritten body contains free variables or is not tame, we reject this
 ; whole rewrite, after possibly printing a warning.
 
-                     (prog2$ (rewrite-lambda-object-post-warning
-                              evg rewritten-body nil ttree1 wrld)
-                             (mv step-limit evg ttree)))
-                    (t
+                   (prog2$ (rewrite-lambda-object-post-warning
+                            evg rewritten-body nil ttree1 wrld)
+                           (mv step-limit evg ttree)))
+                  (t
 
-; The replacement of body by rewritten-body (or, actually, by the normalized
-; rewritten-body) inside a quoted lambda object depends on the equivalence of
-; the ev$ of the quotations of those two terms.  We know that body is equal to
-; rewritten-body, by the correctness of rewrite.  So the equivalence of the
-; ev$s of their quotations is just analogous to the theorem justifying meta
-; rules, except we need to know that (ev$ '(fn a1 ... an) env) = (fn (ev$ 'a1
-; env) ... (ev$ 'an env)), for every function in either term.  (Note: here
-; ``ev$'' is used where a suitable evaluator is used in metafunction
-; correctness theorems.)  But we have that theorem for every apply$ primitive
-; and for every apply$ boot function (provided the two terms are both tame),
-; but we warrants for every userfn in either term.  (The tameness hypotheses
-; required in the warrants are already assured by the tameness checks here, so
-; we know we have badges, but not necessarily warrants.  We know all fns in
-; rewritten-body1 are in :logic mode because it was produced by rewriting a
-; :logic mode term and the rewriter never introduces a :program mode fn.)
-; Furthermore, we don't just need the userfns to be warranted, we need to have
-; each warrant hypothesis.  We ensure that by collecting all the warranted
-; userfns functions occurring in either term and then calling push-warrants.
+; The replacement of body by rewritten-body inside a quoted lambda object
+; depends on the equivalence of the ev$ of the quotations of those two terms.
+; We know that body is equal to rewritten-body, by the correctness of rewrite,
+; normalize, etc.  So the equivalence of the ev$s of their quotations is just
+; analogous to the theorem justifying meta rules, except we need to know that
+; (ev$ '(fn a1 ... an) env) = (fn (ev$ 'a1 env) ... (ev$ 'an env)), for every
+; function in either term.  (Note: here ``ev$'' is used where a suitable
+; evaluator is used in metafunction correctness theorems.)  But we have that
+; theorem for every apply$ primitive and for every apply$ boot function
+; (provided the two terms are both tame), but we warrants for every userfn in
+; either term.  (The tameness hypotheses required in the warrants are already
+; assured by the tameness checks here, so we know we have badges, but not
+; necessarily warrants.  We know all fns in rewritten-body1 are in :logic mode
+; because it was produced by rewriting a :logic mode term and the rewriter
+; never introduces a :program mode fn.)  Furthermore, we don't just need the
+; userfns to be warranted, we need to have each warrant hypothesis.  We ensure
+; that by collecting all the warranted userfns functions occurring in either
+; term and then calling push-warrants.
 
-                     (mv-let (post-have-warrants post-have-no-warrants)
-                       (partition-userfns-by-warrantp
-                        (all-fnnames rewritten-body1)
-                        wrld nil nil)
-                       (cond
-                        (post-have-no-warrants
-                         (prog2$
-                          (rewrite-lambda-object-post-warning
-                           evg rewritten-body post-have-no-warrants ttree1
-                           wrld)
-                          (mv step-limit evg ttree)))
-                        (t
-                         (mv-let (erp ttree2)
-                           (push-warrants (union-eq pre-have-warrants
-                                                    post-have-warrants)
-                                          body
-                                          type-alist1
-                                          (access rewrite-constant rcnst
-                                                  :current-enabled-structure)
-                                          wrld
-                                          (ok-to-force rcnst)
-                                          ttree1 ttree)
+                   (mv-let (post-have-warrants post-have-no-warrants)
+                     (partition-userfns-by-warrantp
+                      (all-fnnames rewritten-body)
+                      wrld nil nil)
+                     (cond
+                      (post-have-no-warrants
+                       (prog2$
+                        (rewrite-lambda-object-post-warning
+                         evg rewritten-body post-have-no-warrants ttree1
+                         wrld)
+                        (mv step-limit evg ttree)))
+                      (t
+                       (mv-let (erp ttree2)
+                         (push-warrants (union-eq pre-have-warrants
+                                                  post-have-warrants)
+                                        body
+                                        type-alist1
+                                        (access rewrite-constant rcnst
+                                                :current-enabled-structure)
+                                        wrld
+                                        (ok-to-force rcnst)
+                                        ttree1 ttree)
 
 ; Body, above, is passed in as the ``target'' for push-warrants.  The target is
-; only used in commentary about the forcing.  The :target of a forced rewerite
+; only used in commentary about the forcing.  The :target of a forced rewrite
 ; rule is generally the term to which the rule was applied, but here we're
 ; talking about function symbols that must (probably) be apply$'d during the
 ; rewriting of :target.
-                           (cond
-                            (erp
+                         (cond
+                          (erp
 
 ; A warrant is assumed false, the apply$ rule for a fn is disabled, or forcing
 ; is not allowed.
 
-                             (prog2$
-                              (rewrite-lambda-object-post-warning
-                               evg rewritten-body nil ttree1 wrld)
-                              (mv step-limit
-                                  evg
-                                  ttree)))
-                            (t (mv step-limit
-                                   `(lambda ,formals ,rewritten-body1)
-                                   (push-lemma
-                                    *rewrite-lambda-modep-xrune*
-                                    (cons-tag-trees ttree2 ttree))))))))))))))
+                           (prog2$
+                            (rewrite-lambda-object-post-warning
+                             evg rewritten-body nil ttree1 wrld)
+                            (mv step-limit
+                                evg
+                                ttree)))
+                          (t (let ((ttree3
+                                    (push-lemma
+                                     *rewrite-lambda-modep-xrune*
+                                     (cons-tag-trees ttree2 ttree))))
+                               (mv step-limit
+                                   `(lambda ,formals ,rewritten-body)
+                                   (if (enabled-numep *rewrite-lambda-modep-def-nume*
+                                                      (access rewrite-constant
+                                                              rcnst
+                                                              :current-enabled-structure))
+                                       (push-lemma
+                                        *rewrite-lambda-modep-def-rune*
+                                        ttree3)
+                                       ttree3)))))))))))))
                (t (prog2$
                    (rewrite-lambda-object-pre-warning
                     evg nil progs pre-have-no-warrants wrld)

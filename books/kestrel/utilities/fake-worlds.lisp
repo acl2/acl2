@@ -37,7 +37,7 @@
            (fn (car pair))
            (arity (cdr pair))
            ;; the names of the formals don't matter:
-           (wrld (putprop fn 'formals (make-var-names arity 'fake-formal) wrld)))
+           (wrld (putprop fn 'formals (make-var-names 'fake-formal arity) wrld)))
       (add-fake-fns-to-world (rest name-to-arity-alist) wrld))))
 
 (defthm plist-worldp-of-add-fake-fns-to-world

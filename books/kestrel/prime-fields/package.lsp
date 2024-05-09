@@ -10,8 +10,12 @@
 
 (in-package "ACL2")
 
+(include-book "projects/numbers/portcullis" :dir :system)
+
 (defpkg "PFIELD"
-  (append '(ffn-symb
+  (append '(dm::primep
+            dm::divides
+            ffn-symb
             smaller-termp
             mod-expt-fast
             pos-fix)

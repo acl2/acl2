@@ -24,6 +24,9 @@
 ; how these operations affect membership in the satisfying set of bit vectors
 ; for this BDD.
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 (include-book "extra-operations")
 

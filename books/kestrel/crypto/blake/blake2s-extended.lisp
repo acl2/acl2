@@ -37,7 +37,6 @@
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/bv/bvcat" :dir :system)) ;reduce, for unsigned-byte-p-of-mod-of-expt
 
 ;; Returns a list of 8 32-bit words (same shape as the IV).  Not a "block" in
 ;; the sense of blockp.
@@ -104,6 +103,10 @@
          (len words1))
   :hints (("Goal" :in-theory (enable xor-words))))
 
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (:e expt))))
+
 ;; This function replaces the function blake2s-main.
 ;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
 (defund blake2s-extended-main (d ll kk nn parameter-block)
@@ -122,7 +125,7 @@
                               (equal (len parameter-block) 8))
                   :guard-hints (("Goal" :expand ((wordp nn)
                                                  (unsigned-byte-p 64 (+ 64 ll)))
-                                 :in-theory (e/d (natp) ((:e expt)))))))
+                                 :in-theory (e/d (natp) ())))))
   (let* ((h (xor-words (iv) parameter-block)) ; this is what differs from the version in blake2s.lisp
          (dd (len d))
          (h (if (> dd 1)

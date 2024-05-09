@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1649,7 +1649,7 @@
      or otherwise @('<left-expr> != NIL');
      and @('<false/NIL>') is @('false') if @('<right-type>') is @('boolean')
      or otherwise @('NIL')
-     (not that these are the only two possible translations of @('nil'))."))
+     (note that these are the only two possible translations of @('nil'))."))
   (if (and (equal left-types (list (atj-type-acl2 (atj-atype-boolean))))
            (equal right-types (list (atj-type-acl2 (atj-atype-boolean))))
            (null right-block))
@@ -3133,6 +3133,7 @@
     (string-append "execStringAppend")
     (len "execLen")
     (char (if guards$ "execCharChar" "execChar"))
+    (hard-error "execHardError")
     (t (prog2$ (impossible) "irrelevant-method-name")))
   :guard-hints (("Goal" :in-theory (enable aij-nativep))))
 
@@ -3290,6 +3291,7 @@
         (cw "  ~s0 for ~x1~%" method-name fn))
        (method-param-names
         (case fn
+          (hard-error (list "ctx" "str" "alist"))
           (intern-in-package-of-symbol (list "str" "sym"))
           (char (list "s" "n"))
           (if (list "x" "y" "z"))
@@ -4621,7 +4623,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a public class.
-     [JLS:7.6] says that a Java implementation may require
+     [JLS14:7.6] says that a Java implementation may require
      public classes to be in files with the same names (plus extension).
      The code that we generate satisfies this requirement.")
    (xdoc::p
@@ -4635,7 +4637,7 @@
      comes textually before the fields for the quoted constants,
      so that the ACL2 environment is initialized
      before the field initializers, which construct ACL2 values, are executed;
-     [JLS:12.4.1] says that the class initialization code
+     [JLS14:12.4.1] says that the class initialization code
      is executed in textual order.")
    (xdoc::p
     "If @(':guards') is @('t'), we exclude the ACL2 functions

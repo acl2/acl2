@@ -38,7 +38,7 @@
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 ; [Shilpi Goel] This book used to live in
-; [books]/projects/x86isa/tools/execution/exec-loaders, but now it's
+; projects/x86isa/tools/execution/exec-loaders, but now it's
 ; in a stand-alone library of its own.
 
 ;; Constants from MACOS 10.8.5 file:  "/usr/include/mach-o/loader.h"

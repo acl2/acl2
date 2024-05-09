@@ -37,7 +37,7 @@
                 (DEFTHM
                   LEN-BECOMES-LEN-UNROLLED-BY-3
                   (EQUAL (LEN X) (LEN-UNROLLED-BY-3 X))
-                  :HINTS (("Goal" :INDUCT (LEN X)
+                  :HINTS (("Goal" :INDUCT (LEN-UNROLLED-BY-3 X) ; (LEN X)
                            :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)
                            :EXPAND NIL
                            :IN-THEORY (UNION-THEORIES '(LEN LEN-UNROLLED-BY-3)

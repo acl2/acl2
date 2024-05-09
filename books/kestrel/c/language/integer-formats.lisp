@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,6 +17,11 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,7 +40,7 @@
    (xdoc::p
     "[C:6.2.6.2/2] allows padding bits, which we disallow for now.
      [C:6.2.6.2/2] allows signed integers to be
-     two's complement, one's complement, or sign and magnitude;
+     two's complement, ones' complement, or sign and magnitude;
      for now we assume two's complement.")
    (xdoc::p
     "The exact number of bits in a byte is also implementation-dependent

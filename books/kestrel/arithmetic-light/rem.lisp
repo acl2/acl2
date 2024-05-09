@@ -15,12 +15,11 @@
 (local (include-book "mod"))
 (local (include-book "floor"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus-and-minus"))
 (local (include-book "plus"))
 (local (include-book "minus"))
-(local (include-book "floor"))
-(local (include-book "divides"))
+(local (include-book "divide"))
 
 (in-theory (disable rem))
 
@@ -44,8 +43,7 @@
                     (if (equal 0 (mod x y))
                         0
                       (+ (- y) (mod x y))))))
-  :hints (("Goal" :in-theory (e/d (rem mod truncate-becomes-floor-gen)
-                                  ())
+  :hints (("Goal" :in-theory (enable rem mod truncate-becomes-floor-gen)
            :cases ((equal 0 y)))))
 
 (defthm rem-x-y-=-x-better

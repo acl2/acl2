@@ -17,6 +17,19 @@
 (include-book "std/io/read-file-characters" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
+; (depends-on "../../../abnf/notation/core-rules.abnf")
+; (depends-on "../../../abnf/notation/concrete-syntax-rules.abnf")
+; (depends-on "../../../abnf/examples/uri.abnf")
+; (depends-on "../../../abnf/examples/http.abnf")
+; (depends-on "../../../abnf/examples/imf.abnf")
+; (depends-on "../../../abnf/examples/smtp.abnf")
+; (depends-on "../../../abnf/examples/imap.abnf")
+; (depends-on "../../../c/language/grammar.abnf")
+; (depends-on "../../../java/language/lexical-grammar.abnf")
+; (depends-on "../../../java/language/syntactic-grammar.abnf")
+; (depends-on "../../../json/grammar.abnf")
+; (depends-on "../../../yul/language/grammar-new.abnf")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This file collects some of the ATJ tests in this directory
@@ -274,47 +287,51 @@
 (progn
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/core-rules.txt" state)
+     (get-input-from-file "../../../abnf/notation/core-rules.abnf" state)
      (value `(defconst *abnf-core* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/concrete-syntax-rules.txt" state)
+     (get-input-from-file "../../../abnf/notation/concrete-syntax-rules.abnf" state)
      (value `(defconst *abnf-syntax* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/json-grammar.txt" state)
-     (value `(defconst *json* ',nats))))
-  (make-event
-   (mv-let (nats state)
-     (get-input-from-file "../../../abnf/uri-grammar.txt" state)
+     (get-input-from-file "../../../abnf/examples/uri.abnf" state)
      (value `(defconst *uri* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/http-grammar.txt" state)
+     (get-input-from-file "../../../abnf/examples/http.abnf" state)
      (value `(defconst *http* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/imf-grammar.txt" state)
+     (get-input-from-file "../../../abnf/examples/imf.abnf" state)
      (value `(defconst *imf* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/smtp-grammar.txt" state)
+     (get-input-from-file "../../../abnf/examples/smtp.abnf" state)
      (value `(defconst *smtp* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../abnf/imap-grammar.txt" state)
+     (get-input-from-file "../../../abnf/examples/imap.abnf" state)
      (value `(defconst *imap* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../java/language/lexical-grammar.txt" state)
+     (get-input-from-file "../../../c/language/grammar.abnf" state)
+     (value `(defconst *c* ',nats))))
+  (make-event
+   (mv-let (nats state)
+     (get-input-from-file "../../../java/language/lexical-grammar.abnf" state)
      (value `(defconst *java-lexical* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../java/language/syntactic-grammar.txt" state)
+     (get-input-from-file "../../../java/language/syntactic-grammar.abnf" state)
      (value `(defconst *java-syntactic* ',nats))))
   (make-event
    (mv-let (nats state)
-     (get-input-from-file "../../../yul/language/abnf-grammar-new.txt" state)
+     (get-input-from-file "../../../json/grammar.abnf" state)
+     (value `(defconst *json* ',nats))))
+  (make-event
+   (mv-let (nats state)
+     (get-input-from-file "../../../yul/language/grammar-new.abnf" state)
      (value `(defconst *yul* ',nats)))))
 
 ; Making a call like the following in the ACL2 shell
@@ -325,25 +342,27 @@
 #|
 (run-abnf-tests (list *abnf-core*
                       *abnf-syntax*
-                      *json*
                       *uri*
                       *http*
                       *imf*
                       *smtp*
                       *imap*
+                      *c*
                       *java-lexical*
                       *java-syntactic*
+                      *json*
                       *yul*)
                 '(abnf-core
                   abnf-syntax
-                  json
                   uri
                   http
                   imf
                   smtp
                   imap
+                  c
                   java-lexical
                   java-syntactic
+                  json
                   yul)
                 10
                 1

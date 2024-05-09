@@ -1,6 +1,6 @@
 ; Utilities that deal with doublets (true lists of length 2)
 ;
-; Copyright (C) 2016-2020 Kestrel Institute
+; Copyright (C) 2016-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
 
 ;; Note that alist-to-doublets is built in to ACL2.
 
-; See also TUPLEP in in [books]/std/util/support.lisp.
+; See also TUPLEP in std/util/support.lisp.
 
 ;; Recognize a doublet (a true list with two elements)
 (defun doubletp (x)
@@ -33,13 +33,7 @@
   (and (true-listp x)
        (= 2 (len x))))
 
-(defun make-doublets (xs ys)
-  (declare (xargs :guard (and (true-listp xs)
-                              (true-listp ys))))
-  (if (endp xs)
-      nil
-    (cons (list (first xs) (first ys))
-          (make-doublets (rest xs) (rest ys)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a doublet containing two symbols
 (defun symbol-symbol-doubletp (x)

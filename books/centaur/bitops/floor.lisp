@@ -95,7 +95,7 @@
                               (integer-length b))))))
     :hints (("goal" :induct (integer-length-of-floor-ind a b))
             (and stable-under-simplificationp
-                 '(:expand ((:with integer-length 
+                 '(:expand ((:with integer-length
                              (integer-length (floor a b))))
                    :in-theory (enable ash-1-is-2*)
                    :do-not '(generalize))))))
@@ -127,8 +127,13 @@
                          (x a) (y b2)))
            :in-theory (disable acl2::floor-mod-elim
                                (force)))
-          (and stable-under-simplificationp
-               '(:nonlinearp t)))
+
+; The following change from Matt K. is to accommodate the heuristic change made
+; Feb. 2023, to re-order literals when building the type-alist.  Non-linear
+; arithmetic is known to be slow in some cases, and that was the case here
+; after the change, when the "desperation heuristics" built the type-alist with
+; the inequality hypothesis after the other hypotheses.
+
+;         (and stable-under-simplificationp '(:nonlinearp t))
+          ("goal'5'":nonlinearp t))
   :rule-classes :linear)
-
-

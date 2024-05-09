@@ -167,7 +167,7 @@
 (defund concretize-using-contexts (dag-lst)
   (declare (xargs :guard (or (myquotep dag-lst)
                              (and (pseudo-dagp dag-lst)
-                                  (< (LEN DAG-LST) 2147483647)))
+                                  (<= (LEN DAG-LST) *max-1d-array-length*)))
                   :guard-hints (("Goal" :in-theory (enable PSEUDO-DAGP)))
                   ))
   (prog2$ (cw "(Concretizing using contexts:~%")

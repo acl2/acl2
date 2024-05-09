@@ -13,9 +13,14 @@
 (include-book "kestrel/std/strings/nondigit-chars" :dir :system)
 (include-book "kestrel/std/system/fresh-namep" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-formp" :dir :system)
+(include-book "kestrel/std/system/table-alist-plus" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/defval" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "system/kestrel" :dir :system)
+
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,6 +97,8 @@
    e.g. @('foo{1}'), @('foo{2}'), ...
    </p>")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc numbered-name-index-start
   :parents (numbered-names)
   :short "Starting marker of the numeric index of numbered names."
@@ -99,6 +106,8 @@
   "<p>
    This is stored in a singleton @(tsee table).
    </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define numbered-name-index-start-p (x)
   :returns (yes/no booleanp)
@@ -113,18 +122,23 @@
        (str::nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (table numbered-name-index-start nil nil
   :guard (and (equal key 'start) ; one key => singleton table
               (numbered-name-index-start-p val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *default-numbered-name-index-start*
   :parents (numbered-name-index-start)
   :short "Default starting marker of the numeric index of numbered names."
   "{")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define get-numbered-name-index-start ((wrld plist-worldp))
-  :returns (start "A @(tsee numbered-name-index-start-p).")
-  :verify-guards nil
+  :returns (start numbered-name-index-start-p)
   :parents (numbered-name-index-start)
   :short "Retrieve the current starting marker
           of the numeric index of numbered names."
@@ -132,14 +146,30 @@
   "<p>
    If the starting marker is not set yet, the default is returned.
    </p>"
-  (let ((pair (assoc-eq 'start (table-alist 'numbered-name-index-start wrld))))
-    (if pair (cdr pair) *default-numbered-name-index-start*)))
+  (let ((pair (assoc-eq 'start (table-alist+ 'numbered-name-index-start wrld))))
+    (cond ((not pair) *default-numbered-name-index-start*)
+          ((numbered-name-index-start-p (cdr pair)) (cdr pair))
+          (t (prog2$ (raise "Internal error: ~
+                             ~x0 does not satisfy NUMBERED-NAME-INDEX-START-P."
+                            (cdr pair))
+                     *default-numbered-name-index-start*)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defret stringp-of-get-numbered-name-index-start
+  (stringp start)
+  :hints (("Goal" :in-theory (enable get-numbered-name-index-start
+                                     numbered-name-index-start-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; set to default the first time this form is evaluated,
 ;; then set to current (i.e. no change) when this form is evaluated again
 ;; (e.g. when this file is redundantly loaded):
 (table numbered-name-index-start
   'start (get-numbered-name-index-start world))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection set-numbered-name-index-start
   :parents (numbered-name-index-start)
@@ -153,6 +183,8 @@
   (defmacro set-numbered-name-index-start (start)
     `(table numbered-name-index-start 'start ,start)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc numbered-name-index-end
   :parents (numbered-names)
   :short "Ending marker of the numeric index of numbered names."
@@ -160,6 +192,8 @@
   "<p>
    This is stored in a singleton @(tsee table).
    </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define numbered-name-index-end-p (x)
   :returns (yes/no booleanp)
@@ -173,18 +207,23 @@
   (and (stringp x)
        (str::nondigit-charlist-p (explode x))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (table numbered-name-index-end nil nil
   :guard (and (equal key 'end) ; one key => singleton table
               (numbered-name-index-end-p val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *default-numbered-name-index-end*
   :parents (numbered-name-index-end)
   :short "Default ending marker of the numeric index of numbered names."
   "}")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define get-numbered-name-index-end ((wrld plist-worldp))
-  :returns (end "A @(tsee numbered-name-index-end-p).")
-  :verify-guards nil
+  :returns (end numbered-name-index-end-p)
   :parents (numbered-name-index-end)
   :short "Retrieve the current ending marker
           of the numeric index of numbered names."
@@ -192,14 +231,30 @@
   "<p>
    If the ending marker is not set yet, the default is returned.
    </p>"
-  (let ((pair (assoc-eq 'end (table-alist 'numbered-name-index-end wrld))))
-    (if pair (cdr pair) *default-numbered-name-index-end*)))
+  (let ((pair (assoc-eq 'end (table-alist+ 'numbered-name-index-end wrld))))
+    (cond ((not pair) *default-numbered-name-index-end*)
+          ((numbered-name-index-end-p (cdr pair)) (cdr pair))
+          (t (prog2$ (raise "Internal error: ~
+                             ~x0 does not satisfy NUMBERED-NAME-INDEX-END-P."
+                            (cdr pair))
+                     *default-numbered-name-index-end*)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defret stringp-of-get-numbered-name-index-end
+  (stringp end)
+  :hints (("Goal" :in-theory (enable get-numbered-name-index-end
+                                     numbered-name-index-end-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; set to default the first time this form is evaluated,
 ;; then set to current (i.e. no change) when this form is evaluated again
 ;; (e.g. when this file is redundantly loaded):
 (table numbered-name-index-end
   'end (get-numbered-name-index-end world))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection set-numbered-name-index-end
   :parents (numbered-name-index-end)
@@ -213,6 +268,8 @@
   (defmacro set-numbered-name-index-end (end)
     `(table numbered-name-index-end 'end ,end)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc numbered-name-index-wildcard
   :parents (numbered-names)
   :short "Wildcard for the numeric index of numbered names."
@@ -220,6 +277,8 @@
   "<p>
    This is stored in a singleton @(tsee table).
    </p>")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define numbered-name-index-wildcard-p (x)
   :returns (yes/no booleanp)
@@ -234,18 +293,23 @@
        (str::nondigit-charlist-p (explode x))
        (not (equal x ""))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (table numbered-name-index-wildcard nil nil
   :guard (and (equal key 'wildcard) ; one key => singleton table
               (numbered-name-index-wildcard-p val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *default-numbered-name-index-wildcard*
   :parents (numbered-name-index-wildcard)
   :short "Default wildcard for the numeric index of numbered names."
   "*")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define get-numbered-name-index-wildcard ((wrld plist-worldp))
-  :returns (wildcard "A @(tsee numbered-name-index-wildcard-p).")
-  :verify-guards nil
+  :returns (wildcard numbered-name-index-wildcard-p)
   :parents (numbered-name-index-wildcard)
   :short "Retrieve the current wildcard
           for the numeric index of numbered names."
@@ -254,14 +318,30 @@
    If the wildcard is not set yet, the default is returned.
    </p>"
   (let ((pair
-         (assoc-eq 'wildcard (table-alist 'numbered-name-index-wildcard wrld))))
-    (if pair (cdr pair) *default-numbered-name-index-wildcard*)))
+         (assoc-eq 'wildcard (table-alist+ 'numbered-name-index-wildcard wrld))))
+    (cond ((not pair) *default-numbered-name-index-wildcard*)
+          ((numbered-name-index-wildcard-p (cdr pair)) (cdr pair))
+          (t (prog2$ (raise "Internal error: ~
+                             ~x0 does not satisfy NUMBERED-NAME-INDEX-WILDCARD-P."
+                            (cdr pair))
+                     *default-numbered-name-index-wildcard*)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defret stringp-of-get-numbered-name-index-wildcard
+  (stringp wildcard)
+  :hints (("Goal" :in-theory (enable get-numbered-name-index-wildcard
+                                     numbered-name-index-wildcard-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; set to default the first time this form is evaluated,
 ;; then set to current (i.e. no change) when this form is evaluated again
 ;; (e.g. when this file is redundantly loaded):
 (table numbered-name-index-wildcard
   'wildcard (get-numbered-name-index-wildcard world))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection set-numbered-name-index-wildcard
   :parents (numbered-name-index-wildcard)
@@ -275,6 +355,8 @@
   (defmacro set-numbered-name-index-wildcard (wildcard)
     `(table numbered-name-index-wildcard 'wildcard ,wildcard)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-numbered-name ((name symbolp) (wrld plist-worldp))
   :returns (mv (yes/no booleanp "@('t') iff @('name') is a numbered name.")
                (base symbolp "Base symbol of @('name'),
@@ -282,7 +364,6 @@
                (index maybe-natp "Numeric index of @('name'),
                                   or 0 if it is the wildcard,
                                   or @('nil') if @('yes/no') is @('nil')."))
-  :verify-guards nil
   :parents (numbered-names)
   :short "Check if a symbol is a numbered name."
   :long
@@ -358,12 +439,21 @@
            ((unless base-chars) (mv nil nil nil)))
         (mv t (intern-in-package-of-symbol (implode base-chars) name) 0)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule natp-of-check-numbered-name.index
+  (implies (mv-nth 0 (check-numbered-name name wrld))
+           (natp (mv-nth 2 (check-numbered-name name wrld))))
+  :enable (check-numbered-name)
+  :rule-classes :type-prescription)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define make-numbered-name
   ((base symbolp)
    (index-or-wildcard natp "Positive index, or 0 for the wildcard.")
    (wrld plist-worldp))
   :returns (name symbolp)
-  :verify-guards nil
   :parents (numbered-names)
   :short "Construct a numbered name from a base and an index (or wildcard)."
   (b* ((base-chars (explode (symbol-name base)))
@@ -381,12 +471,13 @@
         (intern (implode name-chars) "ACL2")
       (intern-in-package-of-symbol (implode name-chars) base))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define make-numbered-name-list ((bases symbol-listp)
                                  (indices/wildcards nat-listp)
                                  (wrld plist-worldp))
   :guard (= (len bases) (len indices/wildcards))
   :returns (names symbol-listp)
-  :verify-guards nil
   :parents (numbered-names)
   :short "Lift @(tsee make-numbered-name) to lists."
   (cond ((endp bases) nil)
@@ -400,10 +491,11 @@
   (defret len-of-make-numbered-name-list
     (equal (len names) (len bases))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define set-numbered-name-index
   ((name symbolp) (index posp) (wrld plist-worldp))
   :returns (new-name symbolp)
-  :verify-guards nil
   :parents (numbered-names)
   :short "Sets the index of a numbered name."
   :long
@@ -418,6 +510,8 @@
     (if is-numbered-name
         (make-numbered-name base index wrld)
       (make-numbered-name name index wrld))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc numbered-names-in-use
   :parents (numbered-names)
@@ -437,10 +531,14 @@
    and indices @('index1'), ..., @('indexN') are in use.
    </p>")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (table numbered-names-in-use nil nil
   :guard (and (symbolp key)
               (pos-listp val)
               (no-duplicatesp val)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection add-numbered-name-in-use
   :parents (numbered-names-in-use)
@@ -470,6 +568,8 @@
   (defmacro add-numbered-name-in-use (name)
     `(make-event (add-numbered-name-in-use-fn ',name (w state)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define max-numbered-name-index-in-use ((base symbolp) (wrld plist-worldp))
   :returns (max-index natp)
   :verify-guards nil
@@ -497,6 +597,8 @@
                (cdr indices)
                (max (car indices) current-max-index)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define resolve-numbered-name-wildcard ((name symbolp) (wrld plist-worldp))
   :returns (resolved-name symbolp)
   :verify-guards nil
@@ -519,6 +621,8 @@
                             wrld)
       (mbe :logic (symbol-fix name)
            :exec name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next-numbered-name ((name symbolp) (wrld plist-worldp))
   :returns (new-name "A symbol.")
@@ -569,6 +673,8 @@
            (next-numbered-name-aux base (1+ current-index) wrld)
          current-index)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define next-fresh-numbered-names ((bases symbol-listp)
                                    (index posp)
                                    (names-to-avoid symbol-listp)
@@ -586,6 +692,8 @@
         (mv names (append names names-to-avoid))))
     (next-fresh-numbered-names bases (1+ index) names-to-avoid wrld)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define next-fresh-numbered-name ((base symbolp)
                                   (index posp)
                                   (names-to-avoid symbol-listp)
@@ -600,6 +708,8 @@
                                                              names-to-avoid
                                                              wrld)))
     (mv (car names) names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc global-numbered-name-index
   :parents (numbered-names)
@@ -621,13 +731,16 @@
    which increments the index in a more &ldquo;local&rdquo; way.
    </p>")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (table global-numbered-name-index nil nil
   :guard (and (eq key 'index) ; one key => singleton table
               (posp val)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define get-global-numbered-name-index ((wrld plist-worldp))
-  :returns (global-index "A @(tsee posp).")
-  :verify-guards nil
+  :returns (global-index posp "A @(tsee posp).")
   :parents (global-numbered-name-index)
   :short "Retrieve the global index for numbered names."
   :long
@@ -635,14 +748,22 @@
    If the global index is not set yet, 1 is returned.
    </p>"
   (let ((pair (assoc-eq 'index
-                        (table-alist 'global-numbered-name-index wrld))))
-    (if pair (cdr pair) 1)))
+                        (table-alist+ 'global-numbered-name-index wrld))))
+    (cond ((not pair) 1)
+          ((posp (cdr pair)) (cdr pair))
+          (t (prog2$ (raise "Internal error: ~x0 does not satisfy POSP."
+                            (cdr pair))
+                     1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; set to 1 the first time this form is evaluated,
 ;; then set to current (i.e. no change) when this form is evaluated again
 ;; (e.g. when this file is redundantly loaded):
 (table global-numbered-name-index
   'index (get-global-numbered-name-index world))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection increment-global-numbered-name-index
   :parents (global-numbered-name-index)
@@ -657,6 +778,8 @@
        'index
        (1+ (get-global-numbered-name-index world)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection reset-global-numbered-name-index
   :parents (global-numbered-name-index)
   :short "Reset to 1 the global index for numbered names."
@@ -668,9 +791,10 @@
   (defmacro reset-global-numbered-name-index ()
     '(table global-numbered-name-index 'index 1)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define set-numbered-name-index-to-global ((name symbolp) (wrld plist-worldp))
   :returns (new-name symbolp)
-  :verify-guards nil
   :parents (numbered-names)
   :short "Sets the index of a numbered name
           to the global index for numbered names."

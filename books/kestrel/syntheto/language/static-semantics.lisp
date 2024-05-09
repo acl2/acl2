@@ -1,10 +1,11 @@
 ; Syntheto Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu) and Stephen Westfold (westfold@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -722,7 +723,7 @@
      A variable is always single-valued."))
   (b* ((var-ctxt (context->variables ctxt))
        (var (identifier-fix var))
-       (pair? (omap::in var var-ctxt))
+       (pair? (omap::assoc var var-ctxt))
        ((when (not pair?)) (type-result-err
                             (list :variable-not-in-context
                               var
@@ -2739,7 +2740,7 @@
 
 (define check-type-product ((tprod type-productp) (ctxt contextp))
   :guard (and (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2794,7 +2795,7 @@
 
 (define check-alternative ((alternative alternativep) (ctxt contextp))
   :guard (and (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2813,7 +2814,7 @@
 
 (define check-alternative-list ((alternatives alternative-listp) (ctxt contextp))
   :guard (and (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2831,7 +2832,7 @@
 
 (define check-type-sum ((tsum type-sump) (ctxt contextp))
   :guard (and (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2856,7 +2857,7 @@
 
 (define check-type-subset ((tsub type-subsetp) (ctxt contextp))
   :guard (and (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2929,7 +2930,7 @@
 
 (define check-type-definer ((definer type-definerp) (ctxt contextp))
   :guard (and (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2952,7 +2953,7 @@
 (define check-type-definition ((typedef type-definitionp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -2999,7 +3000,7 @@
   :guard (and (member-equal (type-definition->name typedef)
                             (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3035,7 +3036,7 @@
   :guard (and (subsetp-equal (type-definition-list->name-list typedefs)
                              (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3060,7 +3061,7 @@
 (define check-type-recursion ((typerec type-recursionp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3099,7 +3100,7 @@
 
 (define check-function-header ((header function-headerp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns err?
@@ -3139,7 +3140,7 @@
 (define check-function-header-list ((headers function-header-listp)
                                     (ctxt contextp))
   :guard (and (null (context->types ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns err?
@@ -3231,7 +3232,7 @@
   :guard (and (null (context->types ctxt))
               (member-equal (function-definition->header fundef)
                             (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3366,7 +3367,7 @@
   :guard (and (null (context->types ctxt))
               (subsetp-equal (function-definition-list->header-list fundefs)
                              (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3393,7 +3394,7 @@
                                    (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3420,7 +3421,7 @@
 (define check-function-recursion ((funrec function-recursionp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3456,7 +3457,7 @@
                                   (inputs/outputs typed-variable-listp)
                                   (ctxt contextp))
   :guard (and (null (context->types ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3537,7 +3538,7 @@
                                       (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3585,7 +3586,7 @@
 (define check-theorem ((thm theoremp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3671,7 +3672,7 @@
 (define check-toplevel ((top toplevelp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?
@@ -3706,9 +3707,9 @@
     (not (context->functions new-ctxt))
     :hyp (not (context->functions ctxt)))
 
-  (defret empty-of-check-toplevel-new-ctxt-variables
-    (omap::empty (context->variables new-ctxt))
-    :hyp (omap::empty (context->variables ctxt)))
+  (defret emptyp-of-check-toplevel-new-ctxt-variables
+    (omap::emptyp (context->variables new-ctxt))
+    :hyp (omap::emptyp (context->variables ctxt)))
 
   (defret not-of-check-toplevel-new-ctxt-obligation-vars
     (not (context->obligation-vars new-ctxt))
@@ -3723,7 +3724,7 @@
 (define check-toplevel-list ((tops toplevel-listp) (ctxt contextp))
   :guard (and (null (context->types ctxt))
               (null (context->functions ctxt))
-              (omap::empty (context->variables ctxt))
+              (omap::emptyp (context->variables ctxt))
               (null (context->obligation-vars ctxt))
               (null (context->obligation-hyps ctxt)))
   :returns (mv err?

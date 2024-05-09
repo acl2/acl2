@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "iprint-and-brr")
+
+; Help dependency scanner.
+#||
+(depends-on "iprint-and-brr-input.lsp")
+(depends-on "iprint-and-brr-log.txt")
+||#
+
+; cert-flags: ? t :ttags :all

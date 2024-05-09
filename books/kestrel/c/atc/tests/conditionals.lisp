@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -43,7 +43,7 @@
   (declare (xargs :guard (and (c::sintp |x|)
                               (c::sintp |y|)
                               ;; x > 0:
-                              (> (c::sint->get |x|) 0))
+                              (> (c::integer-from-sint |x|) 0))
                   :guard-hints (("Goal"
                                  :in-theory
                                  (enable c::sub-sint-sint-okp
@@ -78,7 +78,7 @@
 
 (defun |j| (|x|)
   (declare (xargs :guard (and (c::sintp |x|)
-                              (>= (c::sint->get |x|) 0))
+                              (>= (c::integer-from-sint |x|) 0))
                   :guard-hints (("Goal"
                                  :in-theory (enable c::sint-integerp-alt-def
                                                     c::lt-sint-sint
@@ -95,4 +95,5 @@
         |h|
         |i|
         |j|
-        :output-file "conditionals.c")
+        :file-name "conditionals"
+        :header t)

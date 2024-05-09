@@ -22,12 +22,6 @@
          (boolif test x y))
   :hints (("Goal" :in-theory (enable boolif))))
 
-;dup
-(defun pairlis$-safe (lst1 lst2)
-  (if (equal (len lst1) (len lst2))
-      (pairlis$ lst1 lst2)
-    (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
-
 ;; todo: use this (or byte-types-for-vars) more, in place of pairlis$-safe
 (defun assign-type-to-vars (type vars)
   (declare (xargs :guard (and (axe-typep type)

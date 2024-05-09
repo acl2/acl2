@@ -483,36 +483,87 @@ explicit declarations.</p>")
                 name @('direct-pkg'), i.e., @('import foo::bar').")
    (wildpkgs   string-listp
                "This entry is imported via @('import foo::*') statements from
-                each of packages named in @('wildpkgs').")
+                each of packages named in @('wildpkgs').
+
+                We used to eagerly compute this, but in the common case where
+                there are lots of imports of big packages and relatively few
+                uses of them, this isn't efficient.  So vl-lexscope-find
+                computes this lazily instead.")
    (genblockp booleanp
               :rule-classes :type-prescription
               "Non-nil indicates that this is a generate block and therefore
                may not be present in the scopestack.")))
 
-(fty::defalist vl-lexscope
-  :short "Representation of a single, partial, lexical scope."
-  :long "<p>We always expect lexscopes to be fast alists.</p>"
+(fty::defalist vl-lexscope-decls
+  :short "Main part of a @(see vl-lexscope), mapping names to lexscope entries."
+  :long "<p>We always expect the decls of a lexscope to be fast alists.</p>"
   :key-type stringp
   :val-type vl-lexscope-entry)
+
+(fty::defalist vl-packagemap :key-type stringp :val-type vl-scopeitem-alist :true-listp t)
+
+(defprod vl-lexscope
+  :short "Representation of a single partial lexical scope."
+  :long "
+
+<p>Abstractly a lexscope is just a mapping from names to @(see
+vl-lexscope-entry) objects, i.e. a @(see vl-lexscope-decls) object.  The
+@('decls') field has this mapping, for names that are explicitly declared or
+imported explicitly from packages at the current scope.  But for wildcard
+imports, we don't store imported symbols in the decls map.  Instead, we keep an
+additional field @('wildpkgs') mapping each wildcard-imported package name to
+the scopeitem-alist of the declarations of that package.  Whenever we look up a
+name in a lexscope, we also look up the name in all of these package
+scopeitem-alists to collect the list of packages that the name is imported
+from (populating the @('wildpkgs') field of the @(see vl-lexscope-entry)'
+object.</p>
+"
+  ((decls vl-lexscope-decls-p)
+   (wildpkgs vl-packagemap))
+  :layout :list)
 
 (define vl-empty-lexscope ()
   :returns (scope vl-lexscope-p)
   :parents (vl-lexscope)
   :short "Create a new, empty lexical scope."
   :inline t
-  nil)
+  (make-vl-lexscope))
+
+(define vl-packagemap-find-packages-for-name ((name stringp)
+                                              (map vl-packagemap-p))
+  :returns (names string-listp)
+  :hooks ((:fix :hints (("goal" :induct t)
+                        (and stable-under-simplificationp
+                             '(:expand ((vl-packagemap-fix map)))))))
+  (if (atom map)
+      nil
+    (if (and (mbt (consp (car map)))
+             (hons-get (string-fix name) (vl-scopeitem-alist-fix (cdar map))))
+        (cons (string-fix (caar map))
+              (vl-packagemap-find-packages-for-name name (cdr map)))
+      (vl-packagemap-find-packages-for-name name (cdr map)))))
 
 (define vl-lexscope-find ((name  stringp)
                           (scope vl-lexscope-p))
   :returns (entry (iff (vl-lexscope-entry-p entry) entry))
   :parents (vl-lexscope)
   :short "Look up a name in a (single) lexical scope."
-  :inline t
-  (cdr (hons-get (string-fix name) (vl-lexscope-fix scope)))
+  ;; :inline t
+  (b* (((vl-lexscope scope))
+       (entry1 (cdr (hons-get (string-fix name) scope.decls)))
+       (packages (vl-packagemap-find-packages-for-name name scope.wildpkgs))
+       ((when entry1)
+        (if packages
+            (change-vl-lexscope-entry entry1 :wildpkgs packages)
+          entry1))
+       ((when packages)
+        (make-vl-lexscope-entry :wildpkgs packages)))
+    nil)
+    
   :prepwork
   ((local (defthm l0
-            (implies (vl-lexscope-p scope)
-                     (iff (cdr (hons-assoc-equal name scope))
+            (implies (vl-lexscope-decls-p scope)
+                     (iff (cdr (hons-assoc-equal name  scope))
                           (hons-assoc-equal name scope)))
             :hints(("Goal" :induct (len scope)))))))
 
@@ -538,7 +589,7 @@ explicit declarations.</p>")
        ((when (atom scopes))
         (raise "Expected at least one lexscope."))
        ((cons head tail) scopes))
-    (fast-alist-free head)
+    (fast-alist-free (vl-lexscope->decls head))
     tail))
 
 (define vl-lexscopes-find ((name   stringp)
@@ -579,17 +630,19 @@ explicit declarations.</p>")
         (mv scopes warnings))
 
        (scope1 (car scopes))
+       (decls (vl-lexscope->decls scope1))
        (entry  (vl-lexscope-find name scope1))
 
        ((unless entry)
         ;; Completely new declaration, can't possibly conflict with anything.
         ;; No information to merge.  Just add a new entry to the scope.
-        (mv (cons (hons-acons name
-                              (make-vl-lexscope-entry :decl       decl
-                                                      :direct-pkg nil
-                                                      :wildpkgs   nil
-                                                      :genblockp genblockp)
-                              scope1)
+        (mv (cons (change-vl-lexscope scope1
+                                      :decls (hons-acons name
+                                                         (make-vl-lexscope-entry :decl       decl
+                                                                                 :direct-pkg nil
+                                                                                 :wildpkgs   nil
+                                                                                 :genblockp genblockp)
+                                                         decls))
                   (cdr scopes))
             warnings))
 
@@ -618,7 +671,7 @@ explicit declarations.</p>")
        ;; In the case of multiple declarations, we'll arbitrarily choose to
        ;; keep the earliest declaration.
        (new-entry  (change-vl-lexscope-entry entry :decl (or entry.decl decl)))
-       (new-scope1 (hons-acons name new-entry scope1))
+       (new-scope1 (change-vl-lexscope scope1 :decls (hons-acons name new-entry decls)))
        (new-scopes (cons new-scope1 (cdr scopes))))
     (mv new-scopes warnings)))
 
@@ -643,15 +696,17 @@ explicit declarations.</p>")
         (mv scopes warnings))
 
        (scope1   (car scopes))
+       (decls    (vl-lexscope->decls scope1))
        (entry    (vl-lexscope-find name scope1))
        ((unless entry)
         ;; Completely new declaration, can't possibly conflict with anything.
         ;; No information to merge.  Just add a new entry to the scope.
-        (mv (cons (hons-acons name
-                              (make-vl-lexscope-entry :direct-pkg pkgname
-                                                      :decl nil
-                                                      :wildpkgs nil)
-                              scope1)
+        (mv (cons (change-vl-lexscope scope1
+                                   :decls (hons-acons name
+                                                      (make-vl-lexscope-entry :direct-pkg pkgname
+                                                                              :decl nil
+                                                                              :wildpkgs nil)
+                                                      decls))
                   (cdr scopes))
             warnings))
 
@@ -685,113 +740,9 @@ explicit declarations.</p>")
             entry
           (change-vl-lexscope-entry entry :direct-pkg pkgname)))
 
-       (new-scope1 (hons-acons name new-entry scope1))
+       (new-scope1 (change-vl-lexscope scope1 :decls (hons-acons name new-entry decls)))
        (new-scopes (cons new-scope1 (cdr scopes))))
     (mv new-scopes warnings)))
-
-
-(define vl-lexscopes-wild-import-name ((pkgname  stringp "Name of the package being imported from.")
-                                       (name     stringp "Single name declared in the package.")
-                                       (scopes   vl-lexscopes-p)
-                                       (ctx      vl-import-p)
-                                       (warnings vl-warninglist-p))
-  :returns (mv (scopes   vl-lexscopes-p)
-               (warnings vl-warninglist-p))
-  :parents (vl-lexscopes)
-  :short "Extend the lexscopes with a wildcard import of a single name."
-  (declare (ignorable ctx))
-  (b* ((pkgname  (string-fix pkgname))
-       (name     (string-fix name))
-       (scopes   (vl-lexscopes-fix scopes))
-       (warnings (vl-warninglist-fix warnings))
-
-       ((when (atom scopes))
-        (raise "Expected at least one scope.")
-        (mv scopes warnings))
-
-       (scope1   (car scopes))
-       (entry    (vl-lexscope-find name scope1))
-       ((unless entry)
-        ;; Completely new declaration, can't possibly conflict with anything.
-        ;; No information to merge.  Just add a new entry to the scope.
-        (mv (cons (hons-acons name
-                              (make-vl-lexscope-entry :decl nil
-                                                      :direct-pkg nil
-                                                      :wildpkgs (list pkgname))
-                              scope1)
-                  (cdr scopes))
-            warnings))
-
-       ((vl-lexscope-entry entry))
-       ((when (member-equal pkgname entry.wildpkgs))
-        ;; Already imported from this package, so noop.
-        (mv scopes warnings))
-       ;; I don't think we want to warn about anything here.  Just extend the
-       ;; list of wild packages.
-       (new-entry  (change-vl-lexscope-entry entry :wildpkgs (cons pkgname entry.wildpkgs)))
-       (new-scope1 (hons-acons name new-entry scope1))
-       (new-scopes (cons new-scope1 (cdr scopes))))
-    (mv new-scopes warnings)))
-
-
-(local
- (defsection string-listp-of-alist-keys-of-vl-package-scope-item-alist
-
-   (local (defthm l0
-            (equal (string-listp (alist-keys (vl-typedeflist-alist x acc)))
-                   (string-listp (alist-keys acc)))
-            :hints(("Goal" :in-theory (enable vl-typedeflist-alist)))))
-
-   (local (defthm l1
-            (equal (string-listp (alist-keys (vl-taskdecllist-alist x acc)))
-                   (string-listp (alist-keys acc)))
-            :hints(("Goal" :in-theory (enable vl-taskdecllist-alist)))))
-
-   (local (defthm l2
-            (equal (string-listp (alist-keys (vl-fundecllist-alist x acc)))
-                   (string-listp (alist-keys acc)))
-            :hints(("Goal" :in-theory (enable vl-fundecllist-alist)))))
-
-   (local (defthm l3
-            (equal (string-listp (alist-keys (vl-vardecllist-alist x acc)))
-                   (string-listp (alist-keys acc)))
-            :hints(("Goal" :in-theory (enable vl-vardecllist-alist)))))
-
-   (local (defthm l4
-            (equal (string-listp (alist-keys (vl-paramdecllist-alist x acc)))
-                   (string-listp (alist-keys acc)))
-            :hints(("Goal" :in-theory (enable vl-paramdecllist-alist)))))
-
-   (local (defthm l5
-            (equal (string-listp (alist-keys (vl-dpiimportlist-alist x acc)))
-                   (string-listp (alist-keys acc)))
-            :hints(("Goal" :in-theory (enable vl-dpiimportlist-alist)))))
-
-   (defthm string-listp-of-alist-keys-of-vl-package-scope-item-alist
-     (equal (string-listp (alist-keys (vl-package-scope-item-alist x acc)))
-            (string-listp (alist-keys acc)))
-     :hints(("Goal" :in-theory (enable vl-package-scope-item-alist))))))
-
-
-(define vl-lexscopes-wild-import-names ((pkgname  stringp      "Name of the package being imported from.")
-                                        (pkg-item-alist "Goofy, we only care about the names, but we take
-                                                         the whole alist to reuse @(see vl-package-scope-item-alist).")
-                                        (scopes   vl-lexscopes-p)
-                                        (ctx      vl-import-p)
-                                        (warnings vl-warninglist-p))
-  :guard   (string-listp (alist-keys pkg-item-alist))
-  :returns (mv (scopes   vl-lexscopes-p)
-               (warnings vl-warninglist-p))
-  :parents (vl-lexscopes)
-  :short "Extend the lexscopes with a wildcard import of a list of names."
-  (declare (ignorable ctx))
-  (b* (((when (atom pkg-item-alist))
-        (mv (vl-lexscopes-fix scopes) (vl-warninglist-fix warnings)))
-       ((when (atom (car pkg-item-alist)))
-        (vl-lexscopes-wild-import-names pkgname (cdr pkg-item-alist) scopes ctx warnings))
-       ((mv scopes warnings)
-        (vl-lexscopes-wild-import-name pkgname (caar pkg-item-alist) scopes ctx warnings)))
-    (vl-lexscopes-wild-import-names pkgname (cdr pkg-item-alist) scopes ctx warnings)))
 
 (local (defthm stringp-when-vl-importpart-p
          (implies (vl-importpart-p x)
@@ -835,9 +786,18 @@ explicit declarations.</p>")
           ;; because we caused a fatal error already.  It seems basically
           ;; reasonable to pretend that we imported it successfully, so we can
           ;; check subsequent uses of it.
-          (vl-lexscopes-direct-import-name x.pkg x.part scopes x warnings))))
+          (vl-lexscopes-direct-import-name x.pkg x.part scopes x warnings)))
 
-    (vl-lexscopes-wild-import-names x.pkg pkg-item-alist scopes x warnings)))
+       ((vl-lexscope scope1) (car scopes))
+
+       ((when (hons-assoc-equal x.pkg scope1.wildpkgs))
+        ;; Package has already been imported; don't change anything
+        (mv scopes warnings)))
+
+    (mv (cons (change-vl-lexscope scope1 :wildpkgs (cons (cons x.pkg pkg-item-alist)
+                                                         scope1.wildpkgs))
+              (cdr scopes))
+        warnings)))
 
 
 (defprod vl-shadowcheck-state

@@ -1,7 +1,7 @@
 ; Another book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,14 +14,13 @@
 ;; STATUS: This book could use some cleaning up.
 
 (include-book "mod")
-(local (include-book "divides"))
+(local (include-book "divide"))
 (local (include-book "times"))
 (local (include-book "floor"))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;to prove mod-expt-mod, mod-bound, etc.
 (local (include-book "expt"))
 (local (include-book "expt2"))
-(local (include-book "times-and-divides"))
-(local (include-book "times"))
+(local (include-book "times-and-divide"))
 (local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -45,8 +44,7 @@
                   (mod a 2)))
   :hints (("Goal" :cases ((not (acl2-numberp a))
                           (rationalp a))
-           :in-theory (disable ;DIVISIBILITY-IN-TERMS-OF-FLOOR
-                       mod-cancel))))
+           :in-theory (disable mod-cancel))))
 
 ;gross proof? use a bound lemma?
 (defthm integerp-of-*-of-/-and-mod
@@ -82,10 +80,6 @@
                 (rationalp x))
            (equal (< 0 (mod x y))
                   (not (equal 0 (mod x y))))))
-
-(local (include-book "floor")) ;move?!
-
-
 
 (local (in-theory (disable mod-minus)))
 

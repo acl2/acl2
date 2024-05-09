@@ -1,0 +1,258 @@
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="utf-8"> <title>Mmap</title> <style>html body{margin:0 auto 0 auto;padding:20px;max-width:1024px;font-family:sans-serif;font-size:14pt;overflow-y:scroll;}html body a{text-decoration:none;}html body a[href]{color:#0055AA;}html body a[href]:hover{color:#0088EE;}html body pre{background:#FAFAFA;border:1px solid #DDDDDD;padding:0.75em;overflow-x:auto;}html body pre >code a[href]{color:#223388;}article.system h1,article.system h2,article.system h3,article.system h4,article.system h5,article.system h6{margin:0.2em 0 0.1em 0;text-indent:1em;}article.system >header{text-align:center;}article.system >header img.logo{display:block;margin:auto;max-height:170px;}article.system >header h1{display:inline-block;text-indent:0;font-size:2.5em;}article.system >header .version{vertical-align:bottom;}article.system >header .languages{margin-top:-0.5em;text-transform:capitalize;}article.system >header .description{margin:0;}article.system >header .pages{margin-top:0.5em;font-size:1.2em;text-transform:capitalize;}article.system >header .pages a{display:inline-block;padding:0 0.2em;}article.system >section{margin:1em 0 1em 0;}article.system #index >ul{list-style:none;margin:0;padding:0;}article.system .row label{display:inline-block;min-width:6em;}article.system #system .row{display:flex;}article.system #system #dependencies{display:inline;margin:0;padding:0;}article.system #system #dependencies li{display:inline;padding:0 0.2em;}article.definition{margin:1em 0 0 0;}article.definition >header h1,article.definition >header h2,article.definition >header h3,article.definition >header h4,article.definition >header h5,article.definition >header h6{text-indent:0;display:inline-block;}article.definition >header ul{display:inline-block;list-style:none;margin:0;padding:0;}article.definition >header ul li{display:inline-block;padding:0 0.2em 0 0;}article.definition >header .visibility{display:none;}article.definition >header .visibility,article.definition >header .type{text-transform:lowercase;}article.definition >header .source-link{visibility:hidden;float:right;}article.definition >header .source-link:after{visibility:visible;content:"[SRC]";}article.definition .docstring{margin:0 0 0 1em;}article.definition .docstring pre{font-size:0.8em;white-space:pre-wrap;}.definition.package >header ul.nicknames{display:inline-block;list-style:none;margin:0;padding:0 0 0 1em;}.definition.package >header ul.nicknames li{display:inline;}.definition.package >header ul.nicknames:before{content:"(";}.definition.package >header ul.nicknames:after{content:")";}.definition.package ul.definitions{margin:0;list-style:none;padding:0 0 0 0.5em;}.definition.callable >header .name:before,.definition.type >header .name:before{content:"(";font-weight:normal;}.definition.callable >header .arguments:after,.definition.type >header .arguments:after{content:")";}.definition.callable >header .arguments .arguments:before,.definition.type >header .arguments .arguments:before{content:"(";}.definition.callable >header .arguments .argument,.definition.type >header .arguments .argument{padding:0;}.definition.callable >header .arguments .argument.lambda-list-keyword,.definition.type >header .arguments .argument.lambda-list-keyword{color:#991155;}.definition li>mark{background:none;border-left:0.3em solid #0088EE;padding-left:0.3em;display:block;}</style> </head> <body> <article class="system"> <header>  <h1>mmap</h1> <span class="version">1.0.0</span> <nav class="languages">  <a href="index.html">English</a>  </nav> <p class="description">Portable mmap (file memory mapping) utility library.</p> <nav class="pages">  <a href="index.html">mmap</a>  </nav> </header> <section id="documentation"><h2 id="about_mmap">About MMAP</h2> <p>This is a utility library providing access to the <code><a href="#FUNCTION%20MMAP%3AMMAP" class="xref">mmap</a></code> family of functions in a portable way. It should work on Posix and Windows systems. <code><a href="#FUNCTION%20MMAP%3AMMAP" class="xref">mmap</a></code> allows you to directly map a file into the address space of your process without having to manually read it into memory sequentially. Typically this is much more efficient for files that are larger than a few Kb.</p> <h2 id="supported_operations">Supported operations</h2> <p>The library offers access to the following functions:</p> <ul> <li><code><a href="#FUNCTION%20MMAP%3AMMAP" class="xref">mmap</a></code></li> <li><code><a href="#FUNCTION%20MMAP%3AMUNMAP" class="xref">munmap</a></code></li> <li><code><a href="#FUNCTION%20MMAP%3AMSYNC" class="xref">msync</a></code></li> <li><code><a href="#FUNCTION%20MMAP%3AMPROTECT" class="xref">mprotect</a></code></li> </ul> <p>It also provides a convenience macro called <code><a href="#MACRO-FUNCTION%20MMAP%3AWITH-MMAP" class="xref">with-mmap</a></code> to perform safe, local mappings of files.</p> <pre><code>(<a href="#MACRO-FUNCTION%20MMAP%3AWITH-MMAP" class="xref">mmap:with-mmap</a> (addr fd size #p&quot;/etc/lsb-release&quot;)
+  (<a href="http://l1sp.org/cl/with-output-to-string" class="xref">with-output-to-string</a> (out)
+    (<a href="http://l1sp.org/cl/loop" class="xref">loop</a> for i from 0 below size
+          for char = (code-char (cffi:mem-aref addr :char i))
+          do (write-char char out))))
+</code></pre> </section>  <section id="system"> <h2>System Information</h2>  <div class="row"> <label for="version">Version:</label> <a id="version">1.0.0</a> </div>   <div class="row"> <label for="dependencies">Dependencies:</label> <ul id="dependencies"><li><a class="external">trivial-features</a></li><li><a class="external" href="https://Shinmera.github.io/documentation-utils/">documentation-utils</a></li><li><a class="external">cffi</a></li><li><a class="external">osicat</a></li></ul> </div>   <div class="row"> <label for="author">Author:</label> <a id="author" href="mailto:shinmera@tymoon.eu">Nicolas Hafner</a> </div>   <div class="row"> <label for="license">License:</label> <a id="license" href="https://github.com/shinmera/mmap/blob/master/LICENSE">Artistic</a> </div>   <div class="row"> <label for="homepage">Homepage:</label> <a id="homepage" href="https://shinmera.github.io/mmap/">https://shinmera.github.io/mmap/</a> </div>  </section>  <section id="index"> <h2>Definition Index</h2> <ul> <li> <article class="definition package" id="PACKAGE MMAP"> <header> <h3> <a href="#PACKAGE%20MMAP">MMAP</a> </h3> <ul class="nicknames"> <li>ORG.SHIRAKUMO.FRAF.TRIAL.MMAP</li> </ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> <ul class="definitions"> <li> <article class="definition condition" id="CONDITION MMAP:MMAP-ERROR"> <header> <span class="visibility">EXTERNAL</span> <span class="type">CONDITION</span> <h4 class="name"> <a href="#CONDITION%20MMAP%3AMMAP-ERROR">MMAP-ERROR</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/mmap/blob/master/generic.lisp#L9">Source</a>  </header> <div class="docstring"><pre>Error signalled if the mmap attempt fails for some reason.
+
+Possible reasons include, but are not limited to:
+- File not found
+- File access denied
+- Out of memory
+- Out of address space
+- Mapping not allowed
+- Invalid combination of flags
+
+See <a href="#FUNCTION%20MMAP%3AMMAP" class="xref">MMAP</a>
+See <a href="#GENERIC-FUNCTION%20MMAP%3ACODE" class="xref">CODE</a>
+See <a href="#GENERIC-FUNCTION%20MMAP%3AMESSAGE" class="xref">MESSAGE</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION MMAP:MMAP"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20MMAP%3AMMAP">MMAP</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">PATH</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">OPEN</li>    <li class="argument">PROTECTION</li>    <li class="argument">MMAP</li>    <li class="argument">SIZE</li>    <li class="argument">OFFSET</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/mmap/blob/master/posix.lisp#L86">Source</a>  </header> <div class="docstring"><pre>Map the given path or number of bytes into the address space.
+
+PATH can be either a pathname designator, or NIL. If it is NIL, an anonymous
+file is mapped and the MMAP flag list must include the flag :ANONYMOUS.
+If it is a path, then the contents of the given file on the file system are
+mapped into the address space. The file contents can then be read, written,
+or executed depending on the given flags as if normal memory was accessed.
+If the file is NIL or its size cannot be automatically determined, you must
+pass a valid SIZE. You may optionally pass an OFFSET (in bytes) into the
+file from which the mapping begins.
+
+If the map attempt fails, an error of type MMAP-ERROR is signalled.
+If the call succeeds, three values are returned:
+
+  PTR  --- A CFFI:FOREIGN-POINTER that points to the start of the place in
+           memory where the file contents have been mapped. The contents
+           should be placed in increasing address order, unless the flag
+           :GROWS-DOWN is active.
+  FD   --- An opaque file descriptor. You should not touch this.
+  SIZE --- The size of the region of memory that has been mapped in bytes.
+
+All three values need to be passed on to MUNMAP completely unchanged. Any
+change could cause severe issues.
+
+The three options OPEN, PROTECTION, and MMAP are lists of flags. Not all of
+those flags are portable, some are only allowed on Linux, some only on non-
+Windows systems. To indicate support, the flags are marked as EVERY, POSIX
+(non-Windows), LINUX, or WINDOWS.
+
+OPEN
+ :READ          --- [EVERY] Opens the file for read access.
+ :WRITE         --- [EVERY] Opens the file for write access.
+ :CREATE        --- [EVERY] Creates the file if it does not exist yet.
+ :ENSURE-CREATE --- [EVERY] Creates the file if it does not exist yet and
+                            errors if it does.
+ :TRUNCATE      --- [EVERY] Truncates the file and replaces it if it exists.
+ :DIRECT        --- [EVERY] Causes system buffers to be bypassed.
+ :FILE-SYNC     --- [EVERY] Causes writes to the file to be flushed asap.
+ :DATA-SYNC     --- [POSIX] Similar to FILE-SYNC, but uses data integrity
+                            semantics rather than file integrity semantics.
+ :DONT-CLAIM-TTY--- [POSIX] If the file is a tty and the process does not
+                            already have a controlling tty, this file will
+                            not become the process' controlling tty.
+ :NON-BLOCK     --- [POSIX] Attempt to open the file in non-blocking mode,
+                            causing operations on the fd to return asap.
+ :NO-FOLLOW     --- [LINUX] Errors if the file is a symlink.
+ :ASYNC         --- [LINUX] Enable signal driven IO.
+ :DIRECTORY     --- [LINUX] Errors if the file is not a directory.
+ :LARGE-FILE    --- [LINUX] Allows opening files with size not representable
+                            by a 32 bit unsigned integer.
+
+PROTECTION
+ :READ          --- [EVERY] Allows reading from the memory region. The OPEN
+                            flag :READ is required for this protection mode.
+                            This flag is required on windows.
+ :WRITE         --- [EVERY] Allows writing to the memory region.
+ :EXEC          --- [EVERY] Allows executing code in the memory region.
+ :NONE          --- [POSIX] Prevents accessing the memory region.
+
+MMAP
+ :PRIVATE       --- [EVERY] The underlying file is not changed if the memory
+                            area is written to. Copy-on-write is employed to
+                            ensure separation.
+ :SHARED        --- [EVERY] The underlying file is changed if the memory
+                            area is written to and the change will be
+                            visible to other processes. In this case the
+                            OPEN flag :WRITE must be specified.
+ :ANONYMOUS     --- [LINUX/WINDOWS] The path should be a number of bytes to
+                            map to memory. The memory region is then mapped
+                            against an &quot;anonymous&quot; file.
+ :NO-RESERVE    --- [LINUX] Don't reserve swap for this mapping. If memory
+                            runs out, a segfault will be generated instead.
+ :LOCKED        --- [LINUX] Locks the region to RAM, preventing it from
+                            being swapped out.
+ :GROWS-DOWN    --- [LINUX] Causes the memory region to be mapped with a
+                            decreasing address, like in a stack.
+ :POPULATE      --- [LINUX] Pre-populate the memory region with the file
+                            contents, which can help performance.
+ :NON-BLOCK     --- [LINUX] Only useful with :POPULATE -- do not perform a
+                            read-ahead.
+
+The default values for the flags are:
+ :OPEN (:READ) :PROTECTION (:READ) :MMAP (:PRIVATE)
+
+Note that if you are intending to use MPROTECT to change the protection of
+the mapped file at a later date, you need to call MMAP with the maximal
+combination of protection flags first. If this is not the protection that
+you want to start out with, call MPROTECT with the correct combination
+immediately after. For instance, if you would like to start with (:READ) and
+later want to change it to (:READ :WRITE), call MMAP with (:READ :WRITE),
+and immediately after call MPROTECT with (:READ).
+
+See <a href="#FUNCTION%20MMAP%3AMUNMAP" class="xref">MUNMAP</a>
+See <a href="#MACRO-FUNCTION%20MMAP%3AWITH-MMAP" class="xref">WITH-MMAP</a>
+See <a href="#CONDITION%20MMAP%3AMMAP-ERROR" class="xref">MMAP-ERROR</a>
+See <a href="http://pubs.opengroup.org/onlinepubs/7908799/xsh/mmap.html" class="exref">http://pubs.opengroup.org/onlinepubs/7908799/xsh/mmap.html</a>
+See <a href="http://pubs.opengroup.org/onlinepubs/009604499/functions/stat.html" class="exref">http://pubs.opengroup.org/onlinepubs/009604499/functions/stat.html</a>
+See <a href="http://man7.org/linux/man-pages/man2/mmap.2.html" class="exref">http://man7.org/linux/man-pages/man2/mmap.2.html</a>
+See <a href="http://man7.org/linux/man-pages/man2/stat.2.html" class="exref">http://man7.org/linux/man-pages/man2/stat.2.html</a>
+See <a href="https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilew" class="exref">https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-createfilew</a>
+See <a href="https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-getfilesize" class="exref">https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-getfilesize</a>
+See <a href="https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-createfilemappinga" class="exref">https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-createfilemappinga</a>
+See <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa366761(v=vs.85).aspx" class="exref">https://msdn.microsoft.com/en-us/library/windows/desktop/aa366761(v=vs.85).aspx</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION MMAP:MPROTECT"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20MMAP%3AMPROTECT">MPROTECT</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ADDR</li>    <li class="argument">SIZE</li>    <li class="argument">PROTECTION</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/mmap/blob/master/posix.lisp#L120">Source</a>  </header> <div class="docstring"><pre>Changes the access protection of the mapped memory region.
+
+The values passed to this function must be the ones retrieved from a call
+to MMAP.
+
+The following protection flags are supported:
+
+ :READ          --- [EVERY] Allows reading from the memory region. The OPEN
+                            flag :READ is required for this protection mode.
+                            This flag is required on windows.
+ :WRITE         --- [EVERY] Allows writing to the memory region.
+ :EXEC          --- [EVERY] Allows executing code in the memory region.
+ :NONE          --- [POSIX] Prevents accessing the memory region.
+
+This function returns nothing useful.
+
+This function may signal an MMAP-ERROR in case the operating system notices
+a problem.
+
+See <a href="#FUNCTION%20MMAP%3AMMAP" class="xref">MMAP</a>
+See <a href="#CONDITION%20MMAP%3AMMAP-ERROR" class="xref">MMAP-ERROR</a>
+See <a href="http://pubs.opengroup.org/onlinepubs/9699919799/functions/mprotect.html" class="exref">http://pubs.opengroup.org/onlinepubs/9699919799/functions/mprotect.html</a>
+See <a href="http://man7.org/linux/man-pages/man2/mprotect.2.html" class="exref">http://man7.org/linux/man-pages/man2/mprotect.2.html</a>
+See <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa366898(v=vs.85).aspx" class="exref">https://msdn.microsoft.com/en-us/library/windows/desktop/aa366898(v=vs.85).aspx</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION MMAP:MSYNC"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20MMAP%3AMSYNC">MSYNC</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ADDR</li>    <li class="argument">FD</li>    <li class="argument">SIZE</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">FLAGS</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/mmap/blob/master/posix.lisp#L108">Source</a>  </header> <div class="docstring"><pre>Causes writes to the mapped file area to be written to disk.
+
+The values passed to this function must be the ones retrieved from a call
+to MMAP.
+
+The following flags are supported:
+
+ :SYNC          --- [EVERY] Writing is synchronous. A call to this function 
+                            will not return until the data is flushed to
+                            disk.
+ :ASYNC         --- [EVERY] Writing is asynchronous and a call will return
+                            immediately.
+ :INVALIDATE    --- [POSIX] Asks to invalidate other mappings of the same
+                            file, ensuring the view is synchronised.
+
+This function returns nothing useful.
+
+This function may signal an MMAP-ERROR in case the operating system notices
+a problem.
+
+See <a href="#FUNCTION%20MMAP%3AMMAP" class="xref">MMAP</a>
+See <a href="#CONDITION%20MMAP%3AMMAP-ERROR" class="xref">MMAP-ERROR</a>
+See <a href="http://pubs.opengroup.org/onlinepubs/000095399/functions/msync.html" class="exref">http://pubs.opengroup.org/onlinepubs/000095399/functions/msync.html</a>
+See <a href="http://man7.org/linux/man-pages/man2/msync.2.html" class="exref">http://man7.org/linux/man-pages/man2/msync.2.html</a>
+See <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa366563(v=vs.85).aspx" class="exref">https://msdn.microsoft.com/en-us/library/windows/desktop/aa366563(v=vs.85).aspx</a>
+See <a href="https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-flushfilebuffers" class="exref">https://docs.microsoft.com/en-us/windows/desktop/api/fileapi/nf-fileapi-flushfilebuffers</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION MMAP:MUNMAP"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20MMAP%3AMUNMAP">MUNMAP</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ADDR</li>    <li class="argument">FD</li>    <li class="argument">SIZE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/mmap/blob/master/posix.lisp#L102">Source</a>  </header> <div class="docstring"><pre>Unmaps the memory region, freeing the address space and its file.
+
+The values passed to this function must be the ones retrieved from a call
+to MMAP. Calling MUNMAP with the same values more than once will lead to
+undefined consequences and may very well corrupt your system to crash. The
+same goes for calling MUNMAP with values not directly returned by MMAP,
+calling it with changed values returned by MMAP, or attempting to
+dereference the PTR after a call to MUNMAP.
+
+This function returns nothing useful.
+
+This function may signal an MMAP-ERROR in case the operating system notices
+a problem.
+
+See <a href="#FUNCTION%20MMAP%3AMMAP" class="xref">MMAP</a>
+See <a href="#CONDITION%20MMAP%3AMMAP-ERROR" class="xref">MMAP-ERROR</a>
+See <a href="#MACRO-FUNCTION%20MMAP%3AWITH-MMAP" class="xref">WITH-MMAP</a>
+See <a href="http://pubs.opengroup.org/onlinepubs/9699919799/functions/mprotect.html" class="exref">http://pubs.opengroup.org/onlinepubs/9699919799/functions/mprotect.html</a>
+See <a href="http://man7.org/linux/man-pages/man2/mprotect.2.html" class="exref">http://man7.org/linux/man-pages/man2/mprotect.2.html</a>
+See <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa366882(v=vs.85).aspx" class="exref">https://msdn.microsoft.com/en-us/library/windows/desktop/aa366882(v=vs.85).aspx</a>
+See <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx" class="exref">https://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION MMAP:CODE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20MMAP%3ACODE">CODE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">CONDITION</li>  </ul>  </header> <div class="docstring"><pre>The OS-specific error code returned for the mmap failure.
+
+See <a href="#CONDITION%20MMAP%3AMMAP-ERROR" class="xref">MMAP-ERROR</a></pre></div> </article> </li>  <li> <article class="definition generic-function callable" id="GENERIC-FUNCTION MMAP:MESSAGE"> <header> <span class="visibility">EXTERNAL</span> <span class="type">GENERIC-FUNCTION</span> <h4 class="name"> <a href="#GENERIC-FUNCTION%20MMAP%3AMESSAGE">MESSAGE</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">CONDITION</li>  </ul>  </header> <div class="docstring"><pre>The (hopefully) user-readable error message for the mmap failure.
+
+See <a href="#CONDITION%20MMAP%3AMMAP-ERROR" class="xref">MMAP-ERROR</a></pre></div> </article> </li>  <li> <article class="definition macro callable" id="MACRO-FUNCTION MMAP:WITH-MMAP"> <header> <span class="visibility">EXTERNAL</span> <span class="type">MACRO</span> <h4 class="name"> <a href="#MACRO-FUNCTION%20MMAP%3AWITH-MMAP">WITH-MMAP</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <ul class="arguments"> <li class="argument">ADDR</li>  <li class="argument">FD</li>  <li class="argument">SIZE</li>  <li class="argument">PATH</li>  <li class="argument lambda-list-keyword">&amp;REST</li>  <li class="argument">ARGS</li> </ul>    <li class="argument lambda-list-keyword">&amp;BODY</li>    <li class="argument">BODY</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/mmap/blob/master/generic.lisp#L29">Source</a>  </header> <div class="docstring"><pre>Map the file or number of bytes to a memory region within the body.
+
+This is a convenience macro that calls MMAP with the given arguments,
+binds the results to the variables ADDR, FD, and SIZE, and automatically
+ensures that MUNMAP is called with the correct values when the body is
+exited.
+
+It is safe to change the ADDR, FD, and SIZE bindings, though probably not
+very good style to do so. It is NOT safe to save the ADDR and SIZE values
+somewhere and use them outside of the dynamic scope of the body. Attempting
+to do so is very likely going to burn your process to the ground.
+
+See <a href="#FUNCTION%20MMAP%3AMMAP" class="xref">MMAP</a>
+See <a href="#FUNCTION%20MMAP%3AMUNMAP" class="xref">MUNMAP</a></pre></div> </article> </li> </ul> </article> </li> </ul> </section> </article> <script>window.addEventListener("DOMContentLoaded", function(){
+    var unmarkElement = function(el){
+        if(el.tagName === "mark" || el.tagName === "MARK"){
+            [].forEach.call(el.childNodes, function(child){
+                el.parentNode.insertBefore(child, el);
+            });
+            el.parentNode.removeChild(el);
+        }else if(el.parentNode.tagName === "mark"){
+            return unmarkElement(el.parentNode);
+        }
+        return null;
+    }
+
+    var unmarkAll = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("mark"), unmarkElement);
+    }
+    
+    var markElement = function(el){
+        if(el.parentNode.tagName === "mark" || el.parentNode.tagName === "MARK"){
+            return el.parentNode;
+        } else {
+            unmarkAll();
+            var marked = document.createElement("mark");
+            el.parentNode.insertBefore(marked, el);
+            marked.appendChild(el);
+            return marked;
+        }
+    }
+
+    var markFragmented = function(){
+        if(window.location.hash){
+            var el = document.getElementById(decodeURIComponent(window.location.hash.substr(1)));
+            if(el) markElement(el);
+        }
+    }
+
+    var registerXrefLink = function(link){
+        var el = document.getElementById(decodeURIComponent(link.getAttribute("href").substr(1)));
+        if(el){
+            link.addEventListener("click", function(){
+                markElement(el);
+            });
+        }
+    }
+
+    var registerXrefLinks = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("a.xref"), registerXrefLink);
+    }
+
+    markFragmented();
+    registerXrefLinks();
+}); </script> </body> </html> 

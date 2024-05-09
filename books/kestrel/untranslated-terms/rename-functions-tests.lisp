@@ -86,3 +86,44 @@
  '(LET ((Y 4)) x))
 
 ;; TODO: Add tests of case-match, etc.
+
+(defstub foo2 (x) t)
+
+;; A test with MV
+(assert-equal
+ (rename-functions-in-untranslated-term
+  '(mv-let (x y z) (mv z (foo2 y) x) (+ x y (foo2 z)))
+  '((foo2 . bar))
+  state)
+ '(mv-let (x y z)
+    (mv z (bar y) x)
+    (+ x y (bar z))))
+
+;; Still works, despite the use of foo2 in a quoted constant
+(assert-equal
+ (rename-functions-in-untranslated-term
+  '(mv-let (x y z) (mv z (foo2 y) x) (+ 'foo2 x y (foo2 z)))
+  '((foo2 . bar))
+  state)
+ '(mv-let (x y z)
+    (mv z (bar y) x)
+    (+ 'foo2 x y (bar z))))
+
+; Still works, even though foo2 in the vars list kind of look like it's in a
+; function call:
+(assert-equal
+ (rename-functions-in-untranslated-term
+  '(mv-let (foo2 y z) (mv z (foo2 y) x) (+ foo2 y (foo2 z)))
+  '((foo2 . bar))
+  state)
+ '(mv-let (foo2 y z) (mv z (bar y) x) (+ foo2 y (bar z))))
+
+;; Without built-in support for mv-let, this would force the mv-let to be
+;; expanded, because the heuristics don't work.  (The first arg, (foo2 y), does
+;; translate, but the replacement done on (foo2 y) would not be appropriate.)
+(assert-equal
+ (rename-functions-in-untranslated-term
+  '(mv-let (foo2 y) (mv (foo2 y) x) (+ foo2 (foo2 y)))
+  '((foo2 . bar))
+  state)
+ '(mv-let (foo2 y) (mv (bar y) x) (+ foo2 (bar y))))

@@ -30,7 +30,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/library-wrappers/my-make-flag" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "kestrel/untranslated-terms/rename-functions" :dir :system)
 (include-book "kestrel/utilities/ruler-extenders" :dir :system)
 (include-book "kestrel/utilities/defining-forms" :dir :system) ;for get-body-from-event
@@ -86,7 +86,7 @@
                               (symbol-listp parents)
                               (macro-arg-descriptionsp transform-specific-arg-descriptions)
                               (plist-worldp wrld))))
-  (b* (((when (not (fn-definedp function-body-transformer wrld)))
+  (b* (((when (not (defined-functionp function-body-transformer wrld)))
         (er hard? 'def-equality-transformation-fn "The function body transformer, ~x0, is not a defined function." function-body-transformer))
        (transform-specific-arg-names (append transform-specific-required-args
                                              (strip-cars transform-specific-keyword-args-and-defaults)))
@@ -127,7 +127,7 @@
                                      (function-renamingp function-renaming)
                                      (member-eq rec '(nil :single :mutual))
                                      (t/nil/auto-p function-disabled)
-                                     ;; TODO: Guards for guard-hints, measure, and measure-hints
+                                     ;; TODO: Guards for measure, and measure-hints
                                      (fn-definedp fn (w state))
                                      (booleanp normalize))
                          :mode :program ; because we call rename-functions-in-untranslated-term
@@ -136,7 +136,7 @@
                 (wrld (w state))
                 (formals (fn-formals fn wrld))
                 (non-executable (non-executablep fn wrld))
-                ;; Chose between defun, defund, defun-nx, etc.:
+                ;; Chooses between defun, defund, defun-nx, etc.:
                 (defun-variant (defun-variant fn non-executable function-disabled state))
                 ;; TODO: Pull out the handling of declares into a utility:
                 (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
@@ -291,7 +291,7 @@
          (declare (xargs :stobjs state
                          ;; :verify-guards nil
                          :mode :program ;because of my-get-event and get-clique
-                         :guard t       ;; inputs are checked below
+                         :guard t ;; inputs are checked below
                          ))
          (b* ((- (and verbose (cw "Now in the expansion phase of ~x0 for ~x1.~%" ',name fn)))
               (description (msg "The target function"))
@@ -304,6 +304,10 @@
                                (eq :auto measure))
                           (ensure-function-known-measure fn description :bad-input fn ctx state)
                         (mv nil nil state)))
+              ((er &) (if (or (eq :auto guard-hints)
+                              (true-listp guard-hints))
+                          (mv nil nil state) ; no error
+                        (mv :bad-guard-hints nil state)))
               (wrld (w state))
               ;; Get the event that introduced fn:
               (fn-event (my-get-event fn wrld))

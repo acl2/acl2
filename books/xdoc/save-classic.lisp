@@ -173,7 +173,7 @@ command, along the following lines:</p>
 })
 
 <p>Your topic should then automatically overwrite this default page.</p>")
-           (cons :from "[books]/xdoc/save-classic.lisp"))
+           (cons :from "xdoc/save-classic.lisp :DIR :SYSTEM"))
      all-topics)))
 
 (defun find-roots (x)
@@ -391,7 +391,7 @@ command, along the following lines:</p>
 ;;        (state       (oslib::mkdir! dir))
 ;;        (state       (oslib::mkdir! dir/xml))
 
-;;        (dir-system   (acl2::f-get-global 'acl2::system-books-dir state))
+;;        (dir-system   (acl2::system-books-dir state))
 ;;        (xdoc-dir     (oslib::catpath dir-system "xdoc"))
 ;;        (xdoc/classic (oslib::catpath xdoc-dir "classic"))
 

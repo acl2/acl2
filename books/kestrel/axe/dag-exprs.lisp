@@ -1,7 +1,7 @@
 ; Expressions that can appear in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-dargp")
+(include-book "darg-listp")
 
 ;move
 ;compromise.  we leave car but turn cadr etc into nth.
@@ -32,8 +32,13 @@
   (and (consp expr)
        (symbolp (ffn-symb expr)) ; disallows lambdas (they should be immediately beta reduced)
        (not (eq 'quote (ffn-symb expr)))
-       (true-listp (fargs expr))
-       (all-dargp (fargs expr))))
+       (darg-listp (fargs expr))))
+
+(defthm dag-function-call-exprp-forward-to-consp
+  (implies (dag-function-call-exprp expr)
+           (consp expr))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-function-call-exprp))))
 
 ;;;
 ;;; dargs
@@ -81,11 +86,19 @@
   :hints (("Goal" :expand (nth 1 (dargs expr))
            :in-theory (enable nth))))
 
-(defthm caddr-of-dargs-becomes-nth-1-of-dargs
+(defthm caddr-of-dargs-becomes-nth-2-of-dargs
   (equal (caddr (dargs expr))
          (nth 2 (dargs expr)))
   :hints (("Goal" :expand ((nth 1 (cdr (dargs expr)))
                            (nth 2 (dargs expr)))
+           :in-theory (enable nth))))
+
+(defthm cadddr-of-dargs-becomes-nth-3-of-dargs
+  (equal (cadddr (dargs expr))
+         (nth 3 (dargs expr)))
+  :hints (("Goal" :expand ((nth 1 (cdr (cdr (dargs expr))))
+                           (nth 2 (cdr (dargs expr)))
+                           (nth 3 (dargs expr)))
            :in-theory (enable nth))))
 
 (defun-inline darg1 (x) (declare (xargs :guard (and (dag-function-call-exprp x) (<= 1 (len (dargs x)))))) (first (dargs x)))
@@ -102,8 +115,7 @@
          (and (consp expr)
               (symbolp (ffn-symb expr)) ;this disallows lambdas (think about that?  they should be immediately beta reduced)
               (not (eq 'quote (ffn-symb expr)))
-              (true-listp (dargs expr))
-              (all-dargp (dargs expr))))
+              (darg-listp (dargs expr))))
   :rule-classes :definition
   :hints (("Goal" :in-theory (enable dag-function-call-exprp dargs))))
 
@@ -117,14 +129,13 @@
   (equal (dag-function-call-exprp (cons fn args))
          (and (symbolp fn)
               (not (eq 'quote fn))
-              (all-dargp args)
-              (true-listp args)))
+              (darg-listp args)))
   :hints (("Goal" :in-theory (enable dag-function-call-exprp-redef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A expression that can appear at a DAG node must be a variable, quoted constant, or function symbol applied to nodenums/constants.
-;; Note that we do not allow simply the number of another node.  Also, note that lambdas applications are not allowed  (each function must be a symbol).
+;; Note that we do not allow simply the number of another node.  Also, note that lambdas applications are not allowed (each function must be a symbol).
 (defund dag-exprp (expr)
   (declare (xargs :guard t))
   (or (symbolp expr) ;a variable
@@ -132,10 +143,16 @@
       ;; a function call:
       (dag-function-call-exprp expr)))
 
-(defthm all-dargp-of-dargs-when-dag-exprp
+(defthm dag-function-call-exprp-forward-to-dag-exprp
+  (implies (dag-function-call-exprp expr)
+           (dag-exprp expr))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
+(defthm darg-listp-of-dargs-when-dag-exprp
   (implies (and (dag-exprp expr)
                 (not (eq 'quote (car expr))))
-           (all-dargp (dargs expr)))
+           (darg-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
 (defthm true-listp-of-dargs-when-dag-exprp
@@ -146,12 +163,40 @@
            (true-listp (dargs expr)))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
+; normal form matches consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+(defthmd consp-of-dargs-when-dag-exprp-iff
+  (implies (and (dag-exprp expr)
+                ;; (consp expr)
+                ;; (not (equal 'quote (car expr)))
+                )
+           (iff (consp (dargs expr))
+                (dargs expr)))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
+; normal form matches consp-of-dargs-of-aref1-when-pseudo-dag-arrayp-simple-iff
+(defthmd consp-of-cdr-of-dargs-when-dag-exprp-iff
+  (implies (and (dag-exprp expr)
+                ;; (consp expr)
+                ;; (not (equal 'quote (car expr)))
+                )
+           (iff (consp (cdr (dargs expr)))
+                (cdr (dargs expr))))
+  :hints (("Goal" :in-theory (enable dag-exprp))))
+
+;; trying to enforce a normal form...
+(defthmd dag-function-call-exprp-when-dag-exprp
+  (implies (dag-exprp expr)
+           (equal (dag-function-call-exprp expr)
+                  (and (consp expr)
+                       (not (equal 'quote (car expr))))))
+  :hints (("Goal" :in-theory (enable dag-function-call-exprp dag-exprp))))
+
 ;drop?
-(local (in-theory (enable consp-of-cdr-of-nth-when-all-dargp)))
+(local (in-theory (enable consp-of-cdr-of-nth-when-darg-listp)))
 
-(local (in-theory (enable equal-of-quote-and-car-of-nth-when-all-dargp)))
+(local (in-theory (enable equal-of-quote-and-car-of-nth-when-darg-listp)))
 
-(local (in-theory (enable equal-of-quote-and-nth-0-of-nth-when-all-dargp)))
+(local (in-theory (enable equal-of-quote-and-nth-0-of-nth-when-darg-listp)))
 
 ;; We normalize claims about dag-args to consp.
 (defthm consp-of-cdr-of-nth-of-dargs
@@ -185,8 +230,27 @@
                 )
            (equal (myquotep (nth n (dargs expr)))
                   (consp (nth n (dargs expr)))))
-  :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-all-dargp)
+  :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-darg-listp)
                                   (myquotep)))))
+
+; n need not be in bounds, because nil is eqlable
+(defthm eqlablep-of-nth-when-darg-listp
+  (implies (and (darg-listp dargs)
+                (natp n))
+           (equal (eqlablep (nth n dargs))
+                  (not (consp (nth n dargs)))))
+  :hints (("Goal" :in-theory (enable nth))))
+
+; n need not be in bounds, because nil is eqlable
+(defthm eqlablep-of-nth-of-dargs
+  (implies (and (dag-exprp expr)
+                ;; (consp expr) ; not a var
+                ;; (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr))))
+           (equal (eqlablep (nth n (dargs expr)))
+                  (not (consp (nth n (dargs expr))))))
+  :hints (("Goal" :in-theory (disable nth))))
 
 (defthm dargp-of-nth-of-dargs
   (implies (and (dag-exprp expr)
@@ -196,7 +260,7 @@
 ;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
                 )
            (dargp (nth n (dargs expr))))
-  :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-all-dargp)
+  :hints (("Goal" :in-theory (e/d (myquotep-of-nth-when-darg-listp)
                                   (myquotep)))))
 
 (defthm equal-of-quote-and-nth-0-of-nth-of-dargs
@@ -218,7 +282,7 @@
                 )
            (equal (equal 2 (len (nth n (dargs expr))))
                   (consp (nth n (dargs expr)))))
-  :hints (("Goal" :in-theory (enable equal-of-len-of-nth-and-2-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable equal-of-len-of-nth-and-2-when-darg-listp))))
 
 (defthm natp-of-nth-of-dargs
   (implies (and (dag-exprp expr)
@@ -227,8 +291,8 @@
                 (not (equal 'quote (nth 0 expr))))
            (equal (natp (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
-                                     not-<-of-0-and-nth-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-darg-listp
+                                     not-<-of-0-and-nth-when-darg-listp))))
 
 (defthm rationalp-of-nth-of-dargs
   (implies (and (dag-exprp expr)
@@ -237,16 +301,16 @@
                 (not (equal 'quote (nth 0 expr))))
            (equal (rationalp (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp
-                                     not-<-of-0-and-nth-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-darg-listp
+                                     not-<-of-0-and-nth-when-darg-listp))))
 
 (defthm not-equal-of-header-and-nth-of-dargs
   (implies (and (dag-exprp expr)
                 (not (equal 'quote (car expr))))
            (not (equal :header (nth n (dargs expr)))))
   :hints (("Goal" :in-theory (enable dag-exprp
-                                     integerp-of-nth-when-all-dargp
-                                     not-<-of-0-and-nth-when-all-dargp))))
+                                     integerp-of-nth-when-darg-listp
+                                     not-<-of-0-and-nth-when-darg-listp))))
 
 (defthm integerp-of-nth-of-dargs
   (implies (and (dag-exprp expr)
@@ -255,7 +319,7 @@
                 (not (equal 'quote (nth 0 expr))))
            (equal (integerp (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-darg-listp))))
 
 ;uses car instead of nth to check for a quotep
 (defthm integerp-of-nth-of-dargs-alt
@@ -265,7 +329,7 @@
                 (not (equal 'quote (car expr))))
            (equal (integerp (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable integerp-of-nth-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable integerp-of-nth-when-darg-listp))))
 
 (defthm acl2-numberp-of-nth-of-dargs
   (implies (and (dag-exprp expr)
@@ -274,7 +338,7 @@
                 (not (equal 'quote (car expr))))
            (equal (acl2-numberp (nth n (dargs expr)))
                   (not (consp (nth n (dargs expr))))))
-  :hints (("Goal" :in-theory (enable acl2-numberp-of-nth-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable acl2-numberp-of-nth-when-darg-listp))))
 
 (defthm not-<-of-0-and-nth-of-dargs
   (implies (and (dag-exprp expr)
@@ -292,8 +356,11 @@
 ;               (not (consp (nth n (aref1 dag-array-name dag-array nodenum)))) ;rules out a quotep
                 )
            (true-listp (cdr (nth n (dargs expr)))))
-  :hints (("Goal" :in-theory (enable true-listp-of-cdr-of-nth-when-all-dargp
-                                     dag-exprp))))
+  :hints (("Goal" :in-theory (e/d (true-listp-of-cdr-of-nth-when-darg-listp
+                                   dag-exprp
+                                   ;;darg-listp
+                                   dargs-when-not-consp-cheap)
+                                  (myquotep)))))
 
 ;; use consp as our normal form
 (defthm len-of-nth-of-dargs
@@ -305,7 +372,7 @@
                   (if (consp (nth n (dargs expr)))
                       2
                     0)))
-  :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-all-dargp))))
+  :hints (("Goal" :in-theory (enable <-of-1-and-len-of-nth-when-darg-listp))))
 
 ;; too expensive to leave enabled
 (defthmd symbolp-of-car-when-dag-exprp
@@ -361,7 +428,7 @@
               (true-listp args)
               (if (eq 'quote fn)
                   (equal 1 (len args))
-                (all-dargp args))))
+                (darg-listp args))))
   :hints (("Goal" :in-theory (enable dag-exprp))))
 
 ;; We use consp as the normal form

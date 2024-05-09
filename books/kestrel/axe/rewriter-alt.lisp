@@ -1,7 +1,7 @@
 ; Another Axe Rewriter (not used much yet)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -30,10 +30,10 @@
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
-(include-book "kestrel/utilities/pseudo-termp" :dir :system) ; make local
 (include-book "rule-lists") ;todo: just for lookup-rules (can we do without that? - try to avoid using make-var-lookup-terms -- instead require the nested DAG alist to have a certain form and just do the lookup).
 (include-book "jvm/axe-syntaxp-evaluator-jvm")
 (include-book "jvm/axe-bind-free-evaluator-jvm")
+(local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -767,7 +767,7 @@
                                                          ;;no equality match:
                                                          (if (and (eq fn 'bvxor) ;; TODO: Add similar handling for bitxor!
                                                                   normalize-xors
-                                                                  (quoted-natp (first simplified-args)))
+                                                                  (darg-quoted-natp (first simplified-args)))
                                                              ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
                                                              (b* ((bvxor-width (unquote (first simplified-args)))
                                                                   ;; get xors from arg2 (TODO: Consider memoizing):

@@ -1,7 +1,7 @@
 ; Tools for processing the alists that represent parsed mach-o files.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
 ;; Get the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
 (defund get-mach-o-load-command (cmd-type load-commands)
@@ -127,15 +128,90 @@
           entry
         (get-symbol-entry-mach-o subroutine-name text-section-number (rest symbol-table))))))
 
+(defun get-names-from-mach-o-symbol-table (text-section-number symbol-table acc)
+  (if (endp symbol-table)
+      (reverse acc)
+    (let* ((entry (first symbol-table))
+           (name (lookup-eq-safe :string entry))
+           (n-sect (lookup-eq-safe :n-sect entry)))
+      (if (eql n-sect text-section-number)
+          (get-names-from-mach-o-symbol-table text-section-number (rest symbol-table) (cons name acc))
+        (get-names-from-mach-o-symbol-table text-section-number (rest symbol-table) acc)))))
+
+;; this is for the text section
+(defun get-mach-o-symbol-table (mach-o)
+  (let* ((load-commands (acl2::lookup-eq-safe :cmds mach-o))
+         (symbol-table-load-command (get-mach-o-load-command :LC_SYMTAB load-commands))
+         (symbol-table (lookup-eq-safe :syms symbol-table-load-command)))
+    symbol-table))
+
 ;; Get the starting address of the subroutine called subroutine-name
 ;; in the __Text,__text section of, MACH-O, which should be a parsed
 ;; Mach-O executable.
 (defun subroutine-address-mach-o (subroutine-name mach-o)
   (let* ((text-section-number (get-text-section-number-mach-o mach-o))
-         (load-commands (acl2::lookup-eq-safe :cmds mach-o))
-         (symbol-table-load-command (get-mach-o-load-command :LC_SYMTAB load-commands))
-         (symbol-table (lookup-eq-safe :syms symbol-table-load-command))
+         (symbol-table (get-mach-o-symbol-table mach-o))
          (symbol-entry (get-symbol-entry-mach-o subroutine-name text-section-number symbol-table)))
     (if (not symbol-entry)
         (er hard? 'get-start-address "No symbol table entry found for ~x0." subroutine-name)
       (lookup-eq-safe :N-VALUE symbol-entry))))
+
+;; this is for the text section
+(defun get-all-mach-o-symbols (parsed-mach-o)
+  (let ((text-section-number (get-text-section-number-mach-o parsed-mach-o)))
+    (get-names-from-mach-o-symbol-table text-section-number (get-mach-o-symbol-table parsed-mach-o) nil)))
+
+(defun mach-o-cpu-type (parsed-mach-o)
+  (lookup-eq-safe :cputype (lookup-eq-safe :header parsed-mach-o)))
+
+;; Returns the segment, or nil if the segment doesn't exist
+(defund maybe-get-mach-o-segment-from-load-commands (segment-name load-commands)
+  (if (endp load-commands)
+      nil
+    (let* ((load-command (first load-commands))
+           (cmd (acl2::lookup-eq-safe :cmd load-command)))
+      (if (not (or (eq cmd :LC_SEGMENT)
+                   (eq cmd :LC_SEGMENT_64)))
+          (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))
+        (let ((this-name (acl2::lookup-eq-safe :SEGNAME load-command)))
+          (if (equal segment-name this-name)
+              load-command
+            (maybe-get-mach-o-segment-from-load-commands segment-name (rest load-commands))))))))
+
+;; Returns the segment, or nil if the segment doesn't exist.
+(defund maybe-get-mach-o-segment (segment-name parsed-mach-o)
+  (declare (xargs :guard (and (stringp segment-name)
+                              ;; parsed-mach-o
+                              )
+                  :verify-guards nil))
+  (maybe-get-mach-o-segment-from-load-commands segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
+
+;; Returns the section, or nil if the section doesn't exist.
+(defund maybe-get-mach-o-section (name sections)
+  (declare (xargs :guard (and (stringp name)
+                              (alistp sections))))
+  (if (endp sections)
+      nil
+    (let* ((section (first sections)))
+      (if (not (alistp section))
+          (er hard? 'maybe-get-mach-o-section "Ill-formed section: ~x0." section)
+        (if (equal name (acl2::lookup-eq-safe :sectname section))
+            section
+          (maybe-get-mach-o-section name (rest sections)))))))
+
+(defun mach-o-section-presentp (segment-name section-name parsed-mach-o)
+  (declare (xargs :guard (and (stringp segment-name)
+                              (stringp section-name)
+                              ;; parsed-mach-o
+                              )
+                  :verify-guards nil))
+  (let ((seg (maybe-get-mach-o-segment segment-name parsed-mach-o)))
+    (and seg
+         (if (maybe-get-mach-o-section section-name (acl2::lookup-eq-safe :sections seg))
+             t
+           nil))))
+
+(def-constant-opener maybe-get-mach-o-segment-from-load-commands)
+(def-constant-opener maybe-get-mach-o-segment)
+(def-constant-opener maybe-get-mach-o-section)
+(def-constant-opener mach-o-section-presentp)

@@ -12,6 +12,9 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
@@ -41,12 +44,50 @@
 ;          :nonlinearp)
 
 ; where, by ``expected,'' we mean to exclude the pathological cases allowing
-; car and cdr to be applied to nil.  Unfortuantely, the guard must be changed
+; car and cdr to be applied to nil.  You must also change the guard on the
+; definition of this function where it is found -- twice! -- in
+; books/hints/basic-tests.lisp.  And, unfortunately, the guard must be changed
 ; every time the locations of the two fields change in their respective
-; defrecs.  To get it, translate the access expression above and then write a
-; consp of every subterm but the top-most.  In addition, you must also change
-; the guard on the definition of this function where it is found -- twice! --
-; in books/hints/basic-tests.lisp.
+; defrecs.
+
+; To compute the new guard, define these two functions:
+
+; (defun convert-car/cdr-nest-to-guard1 (x)
+;   (cond ((atom x) (mv nil x))
+;         (t (mv-let (tests var1)
+;              (convert-car/cdr-nest-to-guard1 (cadr x))
+;              (cond ((eq (car x) 'car)
+;                     (mv (append tests `((consp ,var1)))
+;                         `(car ,var1)))
+;                    (t (mv (append tests `((consp ,var1)))
+;                           `(cdr ,var1))))))))
+
+; (defun convert-car/cdr-nest-to-guard (x)
+;   (mv-let (tests var)
+;     (convert-car/cdr-nest-to-guard1 x)
+;     (declare (ignore var))
+;     (if (null tests)
+;         t
+;         (if (null (cdr tests))
+;             (car tests)
+;             (cons 'and tests)))))
+
+; And then translate the access expression above, convert it to a
+; simple car/cdr nest, say x, on the root variable, pspv, and evaluate
+; (convert-car/cdr-nest-to-guard x).  For example, in the current
+; system the access expression translates to
+
+; ((LAMBDA (NONLINEARP)
+;          (CAR (CDR (CAR (CAR NONLINEARP)))))
+;  ((LAMBDA (REWRITE-CONSTANT)
+;           (CAR (CAR REWRITE-CONSTANT)))
+;   PSPV))
+
+; which we convert to the simple car/cdr nest x =
+
+; (CAR (CDR (CAR (CAR (CAR (CAR PSPV))))))
+
+; and then (convert-car/cdr-nest-to-guard x) gives us the guard below.
 
   (declare
    (xargs
@@ -54,13 +95,9 @@
     (and (consp pspv)
          (consp (car pspv))
          (consp (car (car pspv)))
-         (consp (cdr (car (car pspv))))
-         (consp (cdr (cdr (car (car pspv)))))
-         (consp (cdr (cdr (cdr (car (car pspv))))))
-         (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
-         (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
-         (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
-         (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
+         (consp (car (car (car pspv))))
+         (consp (car (car (car (car pspv)))))
+         (consp (cdr (car (car (car (car pspv)))))))))
 
   (cond (stable-under-simplificationp
          (if (not (access rewrite-constant

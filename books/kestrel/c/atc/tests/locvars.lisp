@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -45,11 +45,11 @@
     (declare (xargs :guard (and (c::sintp |x|)
                                 (c::sintp |y|)
                                 ;; -10 <= x <= 10:
-                                (<= -10 (c::sint->get |x|))
-                                (<= (c::sint->get |x|) 10)
+                                (<= -10 (c::integer-from-sint |x|))
+                                (<= (c::integer-from-sint |x|) 10)
                                 ;; -10 <= y <= 10:
-                                (<= -10 (c::sint->get |y|))
-                                (<= (c::sint->get |y|) 10))
+                                (<= -10 (c::integer-from-sint |y|))
+                                (<= (c::integer-from-sint |y|) 10))
                     :guard-hints (("Goal"
                                    :do-not-induct t
                                    :in-theory (enable c::declar
@@ -68,4 +68,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| :output-file "locvars.c")
+(c::atc |f| |g| |h| :file-name "locvars" :header t)

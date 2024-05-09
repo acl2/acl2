@@ -1,0 +1,114 @@
+; Gathering events from the world since the book-strap
+;
+; Copyright (C) 2022 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ACL2")
+
+(verify-termination access-event-tuple-form)
+;(verify-guards access-event-tuple-form) ; todo: add a guard
+
+;; Or we could look for a command (instead of an event), but that might miss a
+;; reset-prehistory wrapped in with-output.
+(defun boot-strap-eventp (form)
+  (declare (xargs :guard t))
+  (and (consp form)
+       (let ((fn (car form)))
+         (or (eq fn 'exit-boot-strap-mode)
+             (eq fn 'reset-prehistory)))))
+
+;; Returns a subset of the triples in WRLD.
+;; In the result, the oldest tripes come first
+(defun world-since-boot-strap (wrld
+                               syms-to-keep ; the cars of the triples to keep
+                               acc)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (or (eq :all syms-to-keep)
+                                  (symbol-listp syms-to-keep))
+                              (true-listp acc))
+                  :verify-guards nil ; because of access-event-tuple-form
+                  ))
+  (if (endp wrld)
+      (er hard? 'world-since-boot-strap "No end of boot-strap found.")
+    (let ((trip (first wrld)))
+      (if (and (eq 'event-landmark (car trip))
+               (eq 'global-value (cadr trip))
+               (boot-strap-eventp (access-event-tuple-form (cddr trip))))
+          acc
+        (world-since-boot-strap (rest wrld)
+                                syms-to-keep
+                                (if (or (eq :all syms-to-keep)
+                                        (member-eq (car trip) syms-to-keep))
+                                    (cons trip acc)
+                                  acc))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;; Looks for the triple (embedded-event-lst global-value) to indicate the end
+;; ;; of the include-book but also handled nested include-books.
+;; (defun skip-trips-through-end-of-include-book (trips)
+;;   (declare (xargs :measure (len trips)
+;;                   :mode :program ; todo
+;;                   ))
+;;   (if (endp trips)
+;;       (er hard 'skip-trips-through-end-of-include-book "End of include-book not found.")
+;;     (let ((trip (first trips)))
+;;       (if (equal trip '(embedded-event-lst global-value))
+;;           (rest trips) ; done skipping
+;;         (if (eq 'event-landmark (car trip))
+;;             (let ((event (access-event-tuple-form (cddr trip))))
+;;               (if (not (consp event))
+;;                   (er hard 'skip-trips-through-end-of-include-book "Unexpected event landmark: ~X01." event nil)
+;;                 (if (eq 'include-book (car event))
+;;                     (skip-trips-through-end-of-include-book (skip-trips-through-end-of-include-book (rest trips)))
+;;                   (skip-trips-through-end-of-include-book (rest trips)))))
+;;           (skip-trips-through-end-of-include-book (rest trips)))))))
+
+(defun skip-trips-through-trip (trips trip)
+  (declare (xargs :guard (plist-worldp trips)))
+  (if (endp trips)
+      (er hard? 'skip-trips-through-trip "Triple ~x0 not found." trip)
+    (if (equal (first trips) trip)
+        (rest trips) ; done skipping
+      (skip-trips-through-trip (rest trips) trip))))
+
+;; Result has the newest defthms first.
+(defun top-level-defthms-in-trips (trips ; oldest first
+                                   acc)
+  (declare (xargs :guard (plist-worldp trips)
+                  :verify-guards nil ; todo
+                  ))
+  (if (endp trips)
+      acc
+    (let ((trip (first trips)))
+      (case (car trip)
+        (event-landmark
+         (let ((event (access-event-tuple-form (cddr trip))))
+           (if (not (consp event))
+               (er hard 'top-level-defthms-in-trips "Unexpected event landmark: ~X01." event nil)
+             (if (member-eq (car event) '(defthm defthmd))
+                 (top-level-defthms-in-trips (rest trips)
+                                             (cons event acc))
+               (top-level-defthms-in-trips (rest trips)
+                                           acc)))))
+        (include-book-path
+         (if (equal '(include-book-path global-value) trip)
+             (er hard 'top-level-defthms-in-trips "Unexpected clearing of include-book-path: ~X01." trip nil)
+           ;; It's an include-book-path that represents the start of the events
+           ;; from an include-book, so look for a triple that sets the
+           ;; include-book-path back to nil, indicating we're back at the
+           ;; top-level:
+           (top-level-defthms-in-trips (skip-trips-through-trip trips '(include-book-path global-value)) acc)))
+        (otherwise (top-level-defthms-in-trips (rest trips) acc))))))
+
+;; TODO: Consider excluding theorems generated by a tool, such as defmergesort.
+(defun top-level-defthms-in-world (wrld)
+  (declare (xargs :guard (plist-worldp wrld)
+                  :verify-guards nil ; todo
+                  ))
+  (top-level-defthms-in-trips (world-since-boot-strap wrld '(event-landmark include-book-path) nil) nil))

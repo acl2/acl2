@@ -39,6 +39,7 @@
 
                     (acl2::ifdef "OS_HAS_IPASIR"
                                  (include-book "centaur/sv/tutorial/sums" :dir :system)
+                                 (include-book "centaur/sv/tutorial/srt-div/proof" :dir :system)
                                  :endif)
                     :endif))
 (local (acl2::ifndef "OS_HAS_GLUCOSE"
@@ -53,8 +54,13 @@ book that depends on Glucose being installed.</p>")
                        :short "Stub for missing topic"
                        :long "<p>This topic was omitted from the manual because it is in a
 book that depends on Glucose being installed.</p>")
+                     (defxdoc sv::decomposition-proofs
+                       :parents (sv::sv-tutorial)
+                       :short "Stub for missing topic"
+                       :long "<p>This topic was omitted from the manual because it is in a
+book that depends on Glucose being installed.</p>")
                      :endif))
 
 
 (xdoc::archive-matching-topics
- (str::strprefixp "[books]/centaur/sv/" (cdr (assoc :from x))))
+ (str::strprefixp "centaur/sv/" (cdr (assoc :from x))))

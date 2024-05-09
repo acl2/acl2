@@ -27,4 +27,9 @@
           ".")
   :long (xdoc::topstring-@def "pseudo-event-form-listp")
   :true-listp t
-  :elementp-of-nil nil)
+  :elementp-of-nil nil
+  ///
+
+  (defthmd true-listp-when-pseudo-event-form-listp-rewrite
+    (implies (pseudo-event-form-listp x)
+             (true-listp x))))

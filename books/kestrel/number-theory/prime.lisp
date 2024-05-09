@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "prime-fix")
 
@@ -20,7 +20,7 @@
   :short "Fixtype of prime numbers."
   :parents (acl2::number-theory)
   (fty::deffixtype prime
-    :pred primep
+    :pred dm::primep
     :fix prime-fix
     :equiv prime-equiv
     :define t

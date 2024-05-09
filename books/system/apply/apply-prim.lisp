@@ -374,6 +374,21 @@
                        ;; (:definition hons-get)
                        (:meta apply$-prim-meta-fn-ev-expander-correct)
                        (:REWRITE APPLY$-PRIM-META-FN-EV-CONSTRAINT-8)
+                       (:REWRITE ; df0
+                        #-non-standard-analysis
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-968
+                        #+non-standard-analysis
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-972)
+                       (:REWRITE ; df1
+                        #-non-standard-analysis
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-969
+                        #+non-standard-analysis
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-973)
+                       (:REWRITE ; from-df
+                        #-non-standard-analysis
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-186
+                        #+non-standard-analysis
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-189)
                        n-car-cadr-caddr-etc-opener
                        (natp)
                        ;; apply$-prim-meta-fn-ev-constraint-1

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,20 +38,6 @@
            (subset (insert a x)
                    (insert a y)))
   :enable subset)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist list-notin (x set)
-  :guard (and (true-listp x)
-              (setp set))
-  (not (in x set))
-  :true-listp nil
-  :elementp-of-nil :unknown
-  ///
-
-  (std::defrule list-notin-of-sfix-2
-    (equal (list-notin list (sfix set))
-           (list-notin list set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

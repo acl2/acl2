@@ -1,0 +1,233 @@
+main * {
+	@extend .stack-first;
+}
+
+main {
+	* {
+		+ h1, + h2, + h3, + h4, + h5, + h6,
+		+ p,
+		+ hr,
+		+ table,
+		+ ul,
+		+ ol,
+		+ dl,
+		+ blockquote,
+		+ pre,
+		+ figure {
+			@extend .stack;
+		}
+	}
+
+	li > ul,
+	li > ol {
+		@extend .stack-unset;
+	}
+}
+
+figure > figcaption {
+	@extend .stack-reset;
+}
+
+.table_of_contents,
+.edit-meta,
+.edit-page,
+.pagination,
+.highlight,
+.powered,
+.panel,
+.button,
+.gist,
+.twitter-tweet {
+	@extend .stack;
+}
+
+.pagination {
+	@include grid($flex-wrap: nowrap, $justify-content: space-between);
+	font-weight: bold;
+	> * {
+		@extend .stack-reset;
+	}
+}
+.nav-prev {}
+.nav-next {
+	margin-left: auto;
+}
+
+@media screen and (max-width: #{map-get($default-breakpoints, xs )} ) {
+	.pagination {
+		@include grid($flex-flow: column nowrap, $justify-content: null, $align-items: center);
+	}
+	.nav-next {
+		margin-left: 0;
+	}
+}
+
+.panel {
+	padding: $default-layout-padding;
+}
+.panel-primary {
+	border: 1px solid $default-border-color;
+}
+
+.panel-notice {
+	color: #fff;
+	background: #4ba0e1;
+}
+.panel-success {
+	color: #fff;
+	background: #609f43;
+}
+.panel-caution {
+	color: #fff;
+	background: #de776d;
+}
+.panel-warning {
+	color: #fff;
+	background: #e67e22;
+}
+.panel-danger {
+	color: #fff;
+	background: #ce3426;
+}
+
+.panel-header {}
+.panel-body {}
+
+.button {
+	display: inline-block;
+	font-size: 120%;
+	padding: .8rem;
+	font-weight: bold;
+	text-decoration: none;
+	border-radius: 12px;
+	color: #fff;
+	background: #4ba0e1;
+
+	&:hover {
+		color: #fff;
+		text-decoration: none;
+		background: #3b89c5;
+	}
+}
+
+.button-primary {
+	border: 1px solid $default-border-color;
+}
+.button-success {
+	background: #369b08;
+	&:hover {
+		background: #256905;
+	}
+}
+.button-caution {
+	background: #f56558;
+	&:hover {
+		background: #d45145;
+	}
+}
+.button-warning {
+	background: #f5811b;
+	&:hover {
+		background: #db7012;
+	}
+}
+.button-danger {
+	background: #ce3426;
+	&:hover {
+		background: #a0281d;
+	}
+}
+
+.notification {
+	padding: .2rem $default-layout-padding;
+	text-align: center;
+	background: $sidebar-active-color;
+}
+
+.backtothetop {
+	display: none;
+	font-size: 200%;
+}
+.fa-layers .fa-circle {
+	color: #fff;
+}
+
+figure > figcaption h4 {
+	font-size: 80%;
+	font-weight: normal;
+}
+
+.table_of_contents {
+	font-size: 90%;
+	padding: $default-layout-padding;
+	border: 4px solid $default-border-color;
+
+	ul {
+		list-style: none;
+		padding-left: 0;
+	}
+	li {
+		border-top: 1px solid $default-border-color;
+	}
+	> nav > ul > li:first-child {
+		border-top: unset;
+	}
+
+	ul > li li a {
+		margin-left: 2rem * 1;
+	}
+	ul ul > li li a {
+		margin-left: 2rem * 2;
+	}
+	ul ul ul > li li a {
+		margin-left: 2rem * 3;
+	}
+	ul ul ul ul > li li a {
+		margin-left: 2rem * 4;
+	}
+	ul ul ul ul ul > li li a {
+		margin-left: 2rem * 5;
+	}
+
+}
+
+.ais-SearchBox {
+	.ais-SearchBox-input {
+		width: 70%;
+	}
+	button {
+		margin-left: .2rem;
+		padding: .4rem;
+	}
+}
+.ais-Stats {
+	font-size: 80%;
+	color: #70757a;
+}
+.ais-Hits-item {
+	@extend .stack;
+
+	h3 {
+		font-size: 140%;
+		font-weight: normal;
+	}
+	p {
+		@extend .stack-unset;
+		color: #3C4043;
+	}
+	.lastmod {
+		font-size: 90%;
+		color: #70757a;
+	}
+}
+
+.ais-Pagination {
+	margin-top: 1em;
+}
+.ais-Pagination-list {
+	@extend ul.no-style;
+	@include grid($flex-wrap: wrap, $justify-content: center);
+}
+.ais-Pagination-item {
+	padding: .6rem;
+}

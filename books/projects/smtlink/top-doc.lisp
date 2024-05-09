@@ -9,4 +9,4 @@
 (include-book "xdoc/archive-matching-topics" :dir :system)
 (local (include-book "top")) ; no_port
 (xdoc::archive-matching-topics
- (str::strprefixp "[books]/projects/smtlink/" (cdr (assoc :from x))))
+ (str::strprefixp "projects/smtlink/" (cdr (assoc :from x))))

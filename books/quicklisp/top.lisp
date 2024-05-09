@@ -75,7 +75,7 @@ up-to-date details about how to do this.</p>
 
 <p>In order to certify the Quicklisp books, OpenSSL may need to be installed in
 the system.  At least one instance was observed in which the certification of
-the Quicklisp books on MacOS Catalina with SBCL failed initially, but worked
+the Quicklisp books on macOS Catalina with SBCL failed initially, but worked
 after installing OpenSSL via Homebrew (using the command @('brew install
 openssl')).  The initial certification error did not explicitly mention
 OpenSSL, but rather a @('SIGABRT'); thus, if this kind of certification error
@@ -227,4 +227,7 @@ work around that using @('eval-when').</p>
     ; ** functionality
     (defun foo (x y z)
       (cl-json:...))
-})")
+})
+
+<p>The user has access to the CL-JSON functionality because the non-raw
+@('cl-json.lisp') book is included in the non-raw @('my-book.lisp') book.</p>")

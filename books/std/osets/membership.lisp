@@ -118,7 +118,7 @@ in the future to obtain something along these lines.</p>"
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
     (mbe :logic
-         (and (not (empty X))
+         (and (not (emptyp X))
               (or (equal a (head X))
                   (in a (tail X))))
          :exec
@@ -139,7 +139,7 @@ in the future to obtain something along these lines.</p>"
   (encapsulate ()
 
     (local (defthm head-not-whole
-             (implies (not (empty X))
+             (implies (not (emptyp X))
                       (not (equal (head X) X)))
              :hints(("Goal" :in-theory (enable (:ruleset primitive-rules))))))
 
@@ -155,7 +155,7 @@ in the future to obtain something along these lines.</p>"
            (in a X)))
 
   (defthm never-in-empty
-    (implies (empty X)
+    (implies (emptyp X)
              (not (in a X))))
 
   (defthm in-set
@@ -174,7 +174,7 @@ in the future to obtain something along these lines.</p>"
   (defthm in-head
     ;; BOZO seems redundant with never-in-empty
     (equal (in (head X) X)
-           (not (empty X)))))
+           (not (emptyp X)))))
 
 
 ; We now begin to move away from set order.
@@ -183,14 +183,14 @@ in the future to obtain something along these lines.</p>"
   :extension head
 
   (local (defthm lemma
-	   (implies (and (not (empty X))
+	   (implies (and (not (emptyp X))
 			 (not (equal a (head X)))
 			 (not (<< a (head (tail X))))
 			 (<< a (head X)))
 		    (not (in a X)))
 	   :hints(("Goal"
 		   :in-theory (enable (:ruleset order-rules))
-		   :cases ((empty (tail X)))))))
+		   :cases ((emptyp (tail X)))))))
 
   (defthm head-minimal
     (implies (<< a (head X))
@@ -206,11 +206,11 @@ in the future to obtain something along these lines.</p>"
 
 
   (local (defthm lemma2
-	   (implies (empty (tail X))
+	   (implies (emptyp (tail X))
 		    (not (in (head X) (tail X))))))
 
   (local (defthm lemma3
-	   (implies (not (empty (tail X)))
+	   (implies (not (emptyp (tail X)))
 		    (not (in (head X) (tail X))))
 	   :hints(("Goal" :in-theory (enable (:ruleset order-rules))))))
 
@@ -287,7 +287,7 @@ automatically be used instead.</p>"
 
   (defun weak-insert-induction (a X)
     (declare (xargs :guard (setp X)))
-    (cond ((empty X) nil)
+    (cond ((emptyp X) nil)
           ((in a X) nil)
           ((equal (head (insert a X)) a) nil)
           (t (list (weak-insert-induction a (tail X))))))
@@ -326,8 +326,8 @@ galloping.</p>"
     (declare (xargs :guard (and (setp X) (setp Y))
                     :guard-hints(("Goal" :in-theory (enable (:ruleset primitive-rules) <<)))))
     (mbe :logic
-         (cond ((empty X) t)
-               ((empty Y) nil)
+         (cond ((emptyp X) t)
+               ((emptyp Y) nil)
                ((<< (head X) (head Y)) nil)
                ((equal (head X) (head Y)) (fast-subset (tail X) (tail Y)))
                (t (fast-subset X (tail Y))))
@@ -344,7 +344,7 @@ galloping.</p>"
     (declare (xargs :guard (and (setp X) (setp Y))
                     :verify-guards nil))
     (mbe :logic
-         (if (empty X)
+         (if (emptyp X)
                     t
                   (and (in (head X) Y)
                        (subset (tail X) Y)))
@@ -363,8 +363,8 @@ galloping.</p>"
                              (subset X (tail Y))))))
 
     (local (defthm case-1
-             (implies (and (not (empty X))
-                           (not (empty Y))
+             (implies (and (not (emptyp X))
+                           (not (emptyp Y))
                            (not (<< (head X) (head Y)))
                            (not (equal (head X) (head Y)))
                            (implies (and (setp X) (setp (tail Y)))
@@ -377,8 +377,8 @@ galloping.</p>"
                      :use (:instance lemma)))))
 
     (local (defthm case-2
-             (implies (and (not (empty x))
-                           (not (empty y))
+             (implies (and (not (emptyp x))
+                           (not (emptyp y))
                            (not (<< (head x) (head y)))
                            (equal (head x) (head y))
                            (implies (and (setp (tail x)) (setp (tail y)))
@@ -542,7 +542,7 @@ instantiated to reduce a proof of @('(all X)') to a proof of</p>
 
   (defun all (set-for-all-reduction)
     (declare (xargs :guard (setp set-for-all-reduction)))
-    (if (empty set-for-all-reduction)
+    (if (emptyp set-for-all-reduction)
         t
       (and (predicate (head set-for-all-reduction))
            (all (tail set-for-all-reduction)))))
@@ -561,7 +561,7 @@ instantiated to reduce a proof of @('(all X)') to a proof of</p>
 
   (local (defun find-not (X)
            (declare (xargs :guard (setp X)))
-           (cond ((empty X) nil)
+           (cond ((emptyp X) nil)
                  ((not (predicate (head X))) (head X))
                  (t (find-not (tail X))))))
 
@@ -600,7 +600,7 @@ automatically reduce proof goals such as:</p>
 
 <p>The mechanism for doing this is somewhat elaborate: the rewrite rule
 replaces the @('(subset X Y)') with @('(subset-trigger X Y)').  This trigger is
-recognized by a computed hint, which then suggest proving the theorem via
+recognized by a computed hint, which then suggests proving the theorem via
 functional instantiation of @(see all-by-membership).</p>
 
 <p>The pick-a-point method is often a good way to prove subset relations.  On
@@ -641,7 +641,7 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
     ;; only this very special case to solve such goals.
     (implies (syntaxp (equal set-for-all-reduction 'set-for-all-reduction))
              (equal (subset set-for-all-reduction rhs)
-                    (cond ((empty set-for-all-reduction) t)
+                    (cond ((emptyp set-for-all-reduction) t)
                           ((in (head set-for-all-reduction) rhs)
                            (subset (tail set-for-all-reduction) rhs))
                           (t nil))))))
@@ -661,13 +661,13 @@ if you do not want to use the pick-a-point method to solve your goal.</p>"
            (subset X Y)))
 
   (defthm empty-subset
-    (implies (empty X)
+    (implies (emptyp X)
              (subset X Y)))
 
   (defthm empty-subset-2
-    (implies (empty Y)
+    (implies (emptyp Y)
              (equal (subset X Y)
-                    (empty X))))
+                    (emptyp X))))
 
   (defthm subset-in
     (and (implies (and (subset X Y)
@@ -750,7 +750,7 @@ directed by @(see accumulated-persistence).</p>"
 ; Suppose that we have two sets which are subsets of one another, i.e. (subset
 ; X Y) and (subset Y X) are true.  First, we will show that (head X) = (head
 ; Y).  Next we will show that (in a (tail X)) implies that (in a (tail Y)).
-; This fact is then used for a sub- set by membership argument to show that
+; This fact is then used for a subset by membership argument to show that
 ; (tail X) = (tail Y).  Now, (head X) = (head Y) and (tail X) = (tail Y) can be
 ; used together to show that X = Y (see primitives.lisp, head-tail-same) so we
 ; are done.
@@ -795,28 +795,28 @@ directed by @(see accumulated-persistence).</p>"
 
   (local (defun double-tail-induction (X Y)
 	   (declare (xargs :guard (and (setp X) (setp Y))))
-	   (if (or (empty X) (empty Y))
+	   (if (or (emptyp X) (emptyp Y))
 	       (list X Y)
 	     (double-tail-induction (tail X) (tail Y)))))
 
   (local (defthm double-containment-is-equality-lemma
-	   (IMPLIES (AND (NOT (OR (EMPTY X) (EMPTY Y)))
-			 (IMPLIES (AND (SUBSET (TAIL X) (TAIL Y))
-				       (SUBSET (TAIL Y) (TAIL X)))
-				  (EQUAL (EQUAL (TAIL X) (TAIL Y)) T))
-			 (SETP X)
-			 (SETP Y)
-			 (SUBSET X Y)
-			 (SUBSET Y X))
-		    (EQUAL (EQUAL X Y) T))
+	   (implies (and (not (or (emptyp x) (emptyp y)))
+			 (implies (and (subset (tail x) (tail y))
+				       (subset (tail y) (tail x)))
+				  (equal (equal (tail x) (tail y)) t))
+			 (setp x)
+			 (setp y)
+			 (subset x y)
+			 (subset y x))
+		    (equal (equal x y) t))
 	   :hints(("Goal"
                    :in-theory (enable head-tail-same)
 		   :use ((:instance double-containment-lemma-tail
-				    (X X) (Y Y))
+				    (x x) (y y))
 			 (:instance double-containment-lemma-tail
-				    (X Y) (Y X))
+				    (x y) (y x))
 			 (:instance double-containment-lemma-head
-				    (X X) (Y Y)))))))
+				    (x x) (y y)))))))
 
   (local (defthmd double-containment-is-equality
 	   (implies (and (setp X)
@@ -866,7 +866,7 @@ directed by @(see accumulated-persistence).</p>"
     (equal (setp (cons a X))
            (and (setp X)
                 (or (<< a (head X))
-                    (empty X)))))
+                    (emptyp X)))))
 
   (defthm in-to-member
     (implies (setp X)

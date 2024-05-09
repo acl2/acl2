@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define interpret-loop ((estate eval-state-p) (program programp))
-  :returns (value? "A @(tsee maybe-valuep).")
+  :returns (value? "A @(tsee value-optionp).")
   :mode :program
   :short "Exhaustively apply @(tsee step) to an evaluation state."
   :long
@@ -58,7 +58,7 @@
 (define interpret ((function symbol-valuep)
                    (arguments value-listp)
                    (program programp))
-  :returns (value? "A @(tsee maybe-valuep).")
+  :returns (value? "A @(tsee value-optionp).")
   :mode :program
   :short "Exhaustively execute a function call."
   :long

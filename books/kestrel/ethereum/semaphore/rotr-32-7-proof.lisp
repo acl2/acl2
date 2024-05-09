@@ -14,7 +14,6 @@
 (include-book "lift-semaphore-r1cs")
 (include-book "verify-semaphore-r1cs")
 (include-book "baby-jubjub-prime")
-(include-book "kestrel/axe/r1cs/axe-prover-r1cs" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 
 ;; Load the R1CS:
@@ -102,7 +101,8 @@
                 ;;pfield::ifix-when-fep
                 acl2::bvcat-equal-rewrite
                 acl2::bvchop-of-bvcat-cases
-                acl2::leftrotate32
+                ;acl2::leftrotate32 ; looped
+                acl2::leftrotate32-open-when-constant-shift-amount
                 acl2::leftrotate
                 acl2::getbit-0-of-getbit
                 acl2::booleanp-of-equal

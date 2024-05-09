@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -71,7 +71,7 @@
      These generated macros are used as follows.")
 
    (xdoc::p
-    "Then the user should make a (top-level) call
+    "Now the user should make a (top-level) call
      to define the top page of the tutorial:")
    (xdoc::codeblock
     "(def-my-tutorial-top"
@@ -102,7 +102,7 @@
      the remaining arguments of @('def-my-tutorial-top').")
 
    (xdoc::p
-    "Then the user should make one of more (top-level) calls
+    "Then the user should make one or more (top-level) calls
      to define the (non-top) pages of the tutorial:")
    (xdoc::codeblock
     "(def-my-tutorial-page first-topic"

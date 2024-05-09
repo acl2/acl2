@@ -13,12 +13,15 @@
                       '(sum$))
    *common-lisp-symbols-from-main-lisp-package*
    STD::*std-exports*
-   '(defxdoc defsection
+   '(local-defun local-defund local-defthm local-defthmd local-in-theory
+      defxdoc defsection
       rtl ; simplifies dealing with this xdoc topic name
       *default-step-limit* ; should perhaps be in *acl2-exports*
       binary-logand binary-logior binary-logxor binary-logeqv ; used in lib/log.lisp
       b*
       const-fns-gen
+      expand-reduce-cp
+      alt-const-fns-gen
       def-gl-rule
       def-gl-thm
       defundd

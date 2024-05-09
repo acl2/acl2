@@ -29,17 +29,35 @@
 ;; (symbols).
 (defun rule-itemp (item)
   (declare (xargs :guard t))
-  (or (symbolp item)
+  (or (and (symbolp item)
+           ;; catch this common mistake:
+           (not (equal item 'quote)))
       (and (true-listp item)
            (= 1 (len item))
            (symbolp (first item)))))
 
-(defun rule-item-listp (items)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund rule-item-listp (items)
   (declare (xargs :guard t))
   (if (atom items)
       (null items)
     (and (rule-itemp (first items))
          (rule-item-listp (rest items)))))
+
+(defthm rule-item-listp-of-union-equal
+  (implies (and (rule-item-listp a)
+                (rule-item-listp b))
+           (rule-item-listp (union-equal a b)))
+  :hints (("Goal" :in-theory (enable rule-item-listp union-equal))))
+
+(defthm rule-item-listp-forward-to-true-listp
+  (implies (rule-item-listp items)
+           (true-listp items))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rule-item-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund rule-item-list-listp (items)
   (declare (xargs :guard t))
@@ -79,7 +97,8 @@
 (defund elaborate-rule-items-aux (items acc state)
   (declare (xargs :guard (and (rule-item-listp items)
                               (symbol-listp acc))
-                  :stobjs state))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable rule-item-listp)))))
   (if (endp items)
       (reverse acc)
     (elaborate-rule-items-aux (rest items)

@@ -1,7 +1,7 @@
 ; Converting a dag to a term using lets.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/utilities/if-rules" :dir :system))
 
 ;; TODO: Consider not lifting let-bound variables up through IFs (can cause problems with guards).
 ;; TODO: Consider splitting the result into several functions if a single function would be too large.
@@ -48,8 +49,7 @@
   :hints (("Goal" :use (:instance <-of-largest-non-quotep-of-dargs (expr (aref1 dag-array-name dag-array nodenum))))))
 
 (defun supporters-of-args (items supporters-array acc)
-  (declare (xargs :guard (and (all-dargp items)
-                              (true-listp items)
+  (declare (xargs :guard (and (darg-listp items)
                               (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items)))
                               (bounded-darg-listp items (alen1 'supporters-array supporters-array)) ; a bit redundant
                               (true-listp acc))
@@ -69,7 +69,7 @@
 
 (defthm nat-listp-of-supporters-of-args
   (implies (and (nat-listp acc)
-                (all-dargp items)
+                (darg-listp items)
                 (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items))))
            (nat-listp (supporters-of-args items supporters-array acc)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors))))
@@ -223,13 +223,13 @@
 ;returns an array named 'supporters-array
 (defund make-supporters-array (dag-len dag-array-name dag-array)
   (declare (xargs :guard (and (posp dag-len)
-                              (<= dag-len 2147483646)
+                              (<= dag-len *max-1d-array-length*)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
   (make-supporters-array-aux 0 (+ -1 dag-len) dag-array-name dag-array (make-empty-array 'supporters-array dag-len)))
 
 (defthm alen1-of-make-supporters-array
   (implies (and (posp dag-len)
-                (<= dag-len 2147483646))
+                (<= dag-len *max-1d-array-length*))
            (equal (alen1 'supporters-array (make-supporters-array dag-len dag-array-name dag-array))
                   dag-len))
   :hints (("Goal" :in-theory (enable make-supporters-array))))
@@ -239,7 +239,7 @@
                 (<= n dag-len)
                 (natp dag-len)
                 (posp dag-len)
-                (< dag-len 2147483647))
+                (<= dag-len *max-1d-array-length*))
            (supporters-arrayp-aux 'supporters-array
                                   (make-empty-array 'supporters-array dag-len)
                                   n))
@@ -247,15 +247,14 @@
 
 (defthm supporters-arrayp-of-make-supporters-array
   (implies (and (posp dag-len)
-                (<= DAG-LEN 2147483646)
+                (<= DAG-LEN *max-1d-array-length*)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len))
            (supporters-arrayp 'supporters-array (make-supporters-array dag-len dag-array-name dag-array) dag-len))
   :hints (("Goal" :in-theory (enable SUPPORTERS-ARRAYP make-supporters-array pseudo-dag-arrayp))))
 
 ;;Return the members of ITEMS that are nodes whose supporters include target-nodenum.
 (defun nodenums-supported-by-target (items target-nodenum supporters-array)
-  (declare (xargs :guard (and (true-listp items)
-                              (all-dargp items)
+  (declare (xargs :guard (and (darg-listp items)
                               (supporters-arrayp 'supporters-array supporters-array (+ 1 (largest-non-quotep items)))
                               (bounded-darg-listp items (alen1 'supporters-array supporters-array)) ; a bit redundant
                               (natp target-nodenum))
@@ -271,7 +270,7 @@
           (nodenums-supported-by-target (rest items) target-nodenum supporters-array))))))
 
 (defthm all-natp-of-nodenums-supported-by-target
-  (implies (all-dargp items)
+  (implies (darg-listp items)
            (all-natp (nodenums-supported-by-target items target-nodenum supporters-array))))
 
 (defthm all-<-of-nodenums-supported-by-target
@@ -307,13 +306,6 @@
  (defthm bound-hack
   (implies (<= 0 x)
            (<= 0 (+ 1 x)))))
-
-(local
- (defthm integerp-of-if
-   (equal (integerp (if test tp ep))
-          (if test
-              (integerp tp)
-            (integerp ep)))))
 
 (defthm supporters-arrayp-forward
   (implies (supporters-arrayp array-name array array-len)
@@ -468,7 +460,7 @@
                               (binding-arrayp 'binding-array binding-array (+ 1 top-nodenum))
                               (equal (alen1 'binding-array binding-array)
                                      (+ 1 top-nodenum))
-                              (dag-parent-arrayp 'parent-array-temp parent-array)
+                              (dag-parent-arrayp 'parent-array-temp parent-array) ; alen1 may not match that of dag-array
                               (equal (alen1 'parent-array-temp parent-array)
                                      (+ 1 top-nodenum)))))
   (if (or (not (mbt (natp nodenum)))
@@ -512,7 +504,7 @@
 (defun dag-array-to-term-with-lets (dag-len dag-array-name dag-array)
   (declare (xargs :guard (and (posp dag-len)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len))))
-  (let ((parent-array (make-dag-parent-array-with-name dag-len dag-array-name dag-array 'parent-array-temp))
+  (let ((parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'parent-array-temp))
         (term-array (make-empty-array 'term-array dag-len))
         (binding-array (make-empty-array 'binding-array dag-len))
         (supporters-array (make-supporters-array dag-len dag-array-name dag-array)))
@@ -522,7 +514,7 @@
 (defun dag-to-term-with-lets (dag)
   (declare (xargs :guard (or (myquotep dag)
                              (and (pseudo-dagp dag)
-                                  (<= (car (car dag)) 2147483645)))
+                                  (<= (car (car dag)) *max-1d-array-index*)))
                   :guard-hints (("Goal" :in-theory (enable pseudo-dagp)))))
   (if (quotep dag)
       dag

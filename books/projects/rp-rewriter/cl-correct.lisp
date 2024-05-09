@@ -49,16 +49,18 @@
 
 (include-book "proofs/guards")
 
-(encapsulate
-  nil
-  (defrec rp-cl-hints
-    (runes runes-outside-in new-synps . cases)
+(progn
+  (defrec rp-cl-args
+    (runes runes-outside-in new-synps cases ruleset
+           suppress-not-simplified-error)
     t)
-  (defun rp-cl-hints-p (hints)
+  (defun rp-cl-args-p (cl-args)
     (declare (xargs :guard t))
-    (and  (weak-rp-cl-hints-p hints)
-          (or (alistp (access rp-cl-hints hints :new-synps))
-              (hard-error 'rp-cl-hints-p
+    (and  (weak-rp-cl-args-p cl-args)
+          (symbolp (access rp-cl-args cl-args :ruleset))
+          (booleanp (access rp-cl-args cl-args :suppress-not-simplified-error))   
+          (or (alistp (access rp-cl-args cl-args :new-synps))
+              (hard-error 'rp-cl-args-p
                           "The :new-synps hint should be an alist. ~%" nil)))))
 
 (defund get-meta-rules (table-entry)
@@ -69,53 +71,83 @@
     (b* ((e (cdar table-entry)))
       (append (true-list-fix e) (get-meta-rules (cdr table-entry))))))
 
-(defun rp-clause-processor-aux (cl hints rp-state state)
+
+(defun rp-clause-processor-aux (cl cl-args rp-state state)
   (declare
    (xargs
     :guard (and
-            (rp-cl-hints-p hints))
+            (true-listp cl)
+            (rp-cl-args-p cl-args))
     :stobjs (rp-state state)
     :guard-hints (("Goal"
                    :in-theory (e/d ()
-                                   (preprocess-then-rp-rw
+                                   (acl2::disjoin
+                                    preprocess-then-rp-rw
+                                    update-orig-conjecture
                                     update-casesplitter-cases
                                     get-rules
                                     beta-search-reduce))))
     :verify-guards t))
-  (if (and (consp cl)
-           (not (consp (cdr cl))))
-      (b* ((car-cl (beta-search-reduce (car cl) *big-number*))
-           ((when (not (and (rp-termp car-cl)
-                            (mbt (rp-statep rp-state))
-                            (mbt (alistp (access rp-cl-hints hints :new-synps)))
-                            (or (not (include-fnc car-cl 'rp))
-                                (hard-error
-                                 'rp-clause-processor-aux
-                                 "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil)))))
-            (mv nil (list cl) rp-state state))
+  (b* (((unless (and (consp cl)
+                     (not (consp (cdr cl)))))
+        ;; this trap is  actually unnecessary and removing would  not cause any
+        ;; problem with  rest of the  stuff here.  But  I am leaving  this here
+        ;; because I never experimented with clauses with multiple literals and
+        ;; I would  first want  to see  an example  before letting  the program
+        ;; disjoin the clause and let the  rw start working on it. For example,
+        ;; if literals come in a bad order, then it may first rewrite the large
+        ;; term and then the other terms that are intended to be in the context
+        ;; first.
+        (progn$ (hard-error
+                 'rp-clause-processor-aux
+                 "RP-Rewriter currently only supports clauses with a single literal. You may make a request to fix this.~%"
+                 nil)
+                (mv nil (list cl) rp-state state)))
 
-           (rp-state (rp-state-new-run rp-state))
-           (cases (access rp-cl-hints hints :cases))
-           (rp-state (if (rp-term-listp cases)
-                         (update-casesplitter-cases cases rp-state)
-                       (progn$ (hard-error 'rp-clause-processor-aux
-                                           "Given cases does not satisfy rp-term-listp: ~p0 ~%"
-                                           (list (cons #\0 cases)))
-                               rp-state)))
-           (rp-state (rp-state-init-rules (access rp-cl-hints hints :runes)
-                                          (access rp-cl-hints hints :runes-outside-in)
-                                          (access rp-cl-hints hints :new-synps)
-                                          rp-state
-                                          state))
-           ((mv rw rp-state)
-            (if (rp-formula-checks state)
-                (preprocess-then-rp-rw car-cl rp-state state)
-              (mv car-cl rp-state))))
-        (mv nil
-            (list (list rw))
-            rp-state
-            state))
-    (mv nil (list cl) rp-state state)))
+       (car-cl (acl2::disjoin cl))
+       (car-cl (beta-search-reduce car-cl *big-number*))
+       ((when (not (and (rp-termp car-cl)
+                        (mbt (rp-statep rp-state))
+                        (mbt (alistp (access rp-cl-args cl-args :new-synps)))
+                        (or (not (include-fnc car-cl 'rp))
+                            (hard-error
+                             'rp-clause-processor-aux
+                             "Conjectures given to RP-Rewriter cannot include an rp instance~%" nil))
+                        (or (not (include-fnc car-cl 'equals))
+                            (hard-error
+                             'rp-clause-processor-aux
+                             "Conjectures given to RP-Rewriter cannot include an equals instance~%" nil)))))
+        (mv nil (list cl) rp-state state))
+
+       (rp-state (update-orig-conjecture car-cl rp-state))
+       
+       (rp-state (rp-state-new-run rp-state))
+       (cases (access rp-cl-args cl-args :cases))
+       (rp-state (if (rp-term-listp cases)
+                     (update-casesplitter-cases cases rp-state)
+                   (progn$ (hard-error 'rp-clause-processor-aux
+                                       "Given cases does not satisfy rp-term-listp: ~p0 ~%"
+                                       (list (cons #\0 cases)))
+                           rp-state)))
+       (rp-state (rp-state-init-rules (access rp-cl-args cl-args :runes)
+                                      (access rp-cl-args cl-args :runes-outside-in)
+                                      (access rp-cl-args cl-args :new-synps)
+                                      rp-state
+                                      state
+                                      :ruleset
+                                      (or (access rp-cl-args cl-args :ruleset) 'rp-rules)
+                                      :suppress-not-simplified-error
+                                      (and (access rp-cl-args cl-args :suppress-not-simplified-error) t)))
+       
+       ((mv rw rp-state)
+        (if (and (rp-meta-fnc-formula-checks state)
+                 (rp-proc-formula-checks state))
+            (preprocess-then-rp-rw car-cl rp-state state)
+          (mv car-cl rp-state))))
+    (mv nil
+        (list (list rw))
+        rp-state
+        state)))
 
 (local
  (defthm correctness-of-rp-clause-processor-aux
@@ -133,7 +165,8 @@
             :in-theory (e/d (rp-evl-of-fncall-args
                              rp-evl-of-beta-search-reduce
                              preprocess-then-rp-rw-is-correct)
-                            (get-rules
+                            (update-orig-conjecture
+                             get-rules
                              update-casesplitter-cases
                              ex-from-synp-lemma1
                              valid-rules-alistp
@@ -142,20 +175,31 @@
                              table-alist))))
    :rule-classes :rewrite))
 
-(defun rp-rewriter (cl hints rp-state state)
+(defun rp-rewriter (cl cl-args rp-state state)
   (declare
    (xargs :stobjs (rp-state state)
           :guard t
-          :guard-hints (("goal"
-                         :in-theory (e/d ()
-                                         (rp-meta-valid-syntaxp-sk))))
+; Matt K. mod, 8/30/2023: The :guard-hints were formerly ignored by a later
+; verify-guards event, but that has changed.  When the verify-guards event
+; below uses the :in-theory below on "goal", guard verification fails, because
+; RP-META-VALID-SYNTAXP-SK does not designate any rules.  So we comment this
+; out so that once again, there are no :hints for the verify-guards event.
+;         :guard-hints (("goal"
+;                        :in-theory (e/d ()
+;                                        (rp-meta-valid-syntaxp-sk))))
           :verify-guards nil))
-  (if (rp-cl-hints-p hints)
-      (rp-clause-processor-aux
-       cl hints
-       rp-state
-       state)
-    (mv nil (list cl) rp-state state)))
+  (if (and (rp-cl-args-p cl-args)
+           (true-listp cl))
+      (time$ (rp-clause-processor-aux cl cl-args
+                                      rp-state
+                                      state)
+             ;;:mintime 1/2
+             :msg "RP-Rewriter took ~st seconds (real-time), or ~sc seconds ~
+  (cpu-time), and ~sa bytes allocated.~%~%")
+    (mv (hard-error 'rp-rewriter
+                    "Given cl-args does not satisfy rp-cl-args-p: ~p0 ~%"
+                    (list (cons #\0 cl-args)))
+        (list cl) rp-state state)))
 
 (verify-guards rp-rewriter)
 
@@ -186,7 +230,7 @@
            :in-theory (e/d (correctness-of-rp-clause-processor-aux
                             preprocess-then-rp-rw-is-correct)
                            (rp-clause-processor-aux
-                            rp-cl-hints-p
+                            rp-cl-args-p
                             acl2::conjoin-clauses
                             acl2::clauses-result))))
   :rule-classes :clause-processor)

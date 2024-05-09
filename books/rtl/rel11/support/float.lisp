@@ -6,7 +6,7 @@
 
 (local (include-book "basic"))
 (include-book "definitions")
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 (defrule abs-type
   (implies (real/rationalp x)
@@ -1227,7 +1227,7 @@
 (defrule exactrp-x2
     (implies (and (rationalp x)
                   (integerp p)
-		  (primep b)
+		  (dm::primep b)
 		  (exactrp (* x x) (* 2 p) b))
 	     (exactrp x p b))
   :prep-lemmas (
@@ -1248,46 +1248,47 @@
       :use (:instance sigm-prod (x x) (y x))
       :rule-classes ())
     (defrule divides-p-when-divides-p*p
-      (implies (and (posp p) (divides (* p p) x))
-               (divides p x))
-      :enable (divides acl2::intp-*)
+      (implies (and (posp p) (dm::divides (* p p) x))
+               (dm::divides p x))
+      :enable (dm::divides acl2::intp-*)
       :use (:instance acl2::intp-1
              (x (/ x (* p p)))
              (y p)))
     (defrule divides-p-n*n
       (implies (and (integerp n)
-                    (primep p)
-                    (divides (* p p) (* b n n))
-                    (or (primep b) (= b 1)))
-               (divides p (* n n)))
-      :cases ((divides p (* b n n)))
+                    (dm::primep p)
+                    (dm::divides (* p p) (* b n n))
+                    (or (dm::primep b) (= b 1)))
+               (dm::divides p (* n n)))
+      :cases ((dm::divides p (* b n n)))
       :hints (
         ("subgoal 1" :cases ((= p b)))
-        ("subgoal 1.2" :cases ((divides p b)))
-        ("subgoal 1.2.2" :use (:instance euclid
+        ("subgoal 1.2" :cases ((dm::divides p b)))
+        ("subgoal 1.2.2" :use (:instance dm::euclid
                                (a b)
-                               (b (* n n))))
-        ("subgoal 1.2.1" :use (:instance primep-no-divisor
+                               (b (* n n))
+                               (p p)))
+        ("subgoal 1.2.1" :use (:instance dm::primep-no-divisor
                                 (p b)
                                 (d p)))
-        ("subgoal 1.1" :in-theory (enable divides)))
+        ("subgoal 1.1" :in-theory (enable dm::divides)))
       :rule-classes ())
     (defrule divides-p-n
       (implies (and (integerp n)
-                    (primep p)
-                    (divides (* p p) (* b n n))
-                    (or (primep b) (= b 1)))
-               (divides p n))
+                    (dm::primep p)
+                    (dm::divides (* p p) (* b n n))
+                    (or (dm::primep b) (= b 1)))
+               (dm::divides p n))
       :use (divides-p-n*n
-            (:instance euclid (a n) (b n)))
+            (:instance dm::euclid (a n) (b n) (p p)))
       :rule-classes ())
     (defrule kkkk
       (implies (and (posp p)
                     (posp d)
-                    (divides p d)
+                    (dm::divides p d)
                     (integerp (* b (/ n d) (/ n d))))
-        (divides (* p p) (* b n n)))
-     :enable (divides acl2::intp-*)
+        (dm::divides (* p p) (* b n n)))
+     :enable (dm::divides acl2::intp-*)
      :use ((:instance acl2::intp-1
              (x (/ d p))
              (y (/ d p)))
@@ -1297,45 +1298,45 @@
     (defrule ttt
       (implies (and (integerp n)
                     (posp d)
-                    (primep p)
-                    (divides p d)
+                    (dm::primep p)
+                    (dm::divides p d)
                     (integerp (* b (/ n d) (/ n d)))
-                    (or (primep b) (= b 1)))
-               (divides p n))
+                    (or (dm::primep b) (= b 1)))
+               (dm::divides p n))
       :use (divides-p-n kkkk))
     (defrule least-divisor-denominator
       (implies (and (rationalp c)
                     (not (integerp c)))
-               (and (primep (least-divisor 2 (denominator c)))
-                    (divides (least-divisor 2 (denominator c))
+               (and (dm::primep (dm::least-divisor 2 (denominator c)))
+                    (dm::divides (dm::least-divisor 2 (denominator c))
                              (denominator c))
-                    (not (divides (least-divisor 2 (denominator c))
+                    (not (dm::divides (dm::least-divisor 2 (denominator c))
                                   (numerator c)))))
-      :enable divides
-      :use ((:instance primep-least-divisor
+      :enable dm::divides
+      :use ((:instance dm::primep-least-divisor
               (n (denominator c)))
-            (:instance least-divisor-divides
+            (:instance dm::least-divisor-divides
               (k 2)
               (n (denominator c)))
             (:instance lowest-terms
              (x c)
-             (n (least-divisor 2 (denominator c)))
-             (r (/ (numerator c) (least-divisor 2 (denominator c))))
-             (q (/ (denominator c) (least-divisor 2 (denominator c)))))))
+             (n (dm::least-divisor 2 (denominator c)))
+             (r (/ (numerator c) (dm::least-divisor 2 (denominator c))))
+             (q (/ (denominator c) (dm::least-divisor 2 (denominator c)))))))
     (defrule lemma2
       (implies (and (rationalp c)
                     (integerp (* b c c))
-                    (or (primep b) (= b 1)))
+                    (or (dm::primep b) (= b 1)))
                (integerp c))
       :use (least-divisor-denominator
             (:instance ttt
               (n (numerator c))
               (d (denominator c))
-              (p (least-divisor 2 (denominator c))))))
+              (p (dm::least-divisor 2 (denominator c))))))
     (defrule lemma3
       (implies (and (rationalp x)
                     (integerp p)
-                    (primep b)
+                    (dm::primep b)
                     (exactrp (* x x) (* 2 p) b))
                (integerp (sigc x p b)))
       :use (lemma-sigc

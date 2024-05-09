@@ -1,0 +1,1459 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFCONST *OLD-STANDARD-OI*
+          *STANDARD-OI*)
+
+Summary
+Form:  ( DEFCONST *OLD-STANDARD-OI* ...)
+Rules: NIL
+ *OLD-STANDARD-OI*
+ACL2 !>>(REDEF+)
+ T
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-OI*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-OI STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-OI* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-CO*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-CO STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-CO* ...):  *STANDARD-CO*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-CO* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-CO* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-CO*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(DEFSTUB F0 (X) T)
+
+Summary
+Form:  (DEFSTUB F0 ...)
+Rules: NIL
+ F0
+ACL2 !>>(DEFUN F1 (X) (CONS X X))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem (CONSP (F1 X)).  We used
+primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F1
+ACL2 !>>(DEFUN F2 (X) (F1 (F0 X)))
+
+Since F2 is non-recursive, its admission is trivial.  We observe that
+the type of F2 is described by the theorem (CONSP (F2 X)).  We used
+the :type-prescription rule F1.
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: ((:TYPE-PRESCRIPTION F1))
+ F2
+ACL2 !>>(DEFUN F3 (X)
+          (IF (ATOM X) (F2 X) (F2 (CAR X))))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (CONSP (F3 X)).  We used
+the :type-prescription rule F2.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:TYPE-PRESCRIPTION F2))
+ F3
+ACL2 !>>(WITH-BRR-DATA (THM (EQUAL (F3 X) YYY)))
+
+Splitter note (see :DOC splitter) for Goal (2 subgoals).
+  if-intro: ((:DEFINITION F3))
+
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (CONSP X)
+         (EQUAL (CONS (F0 (CAR X)) (F0 (CAR X)))
+                YYY))
+
+Normally we would attempt to prove Subgoal 2'' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION F2)
+        (:DEFINITION F3)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION F3))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint before reverting to proof by induction: ***
+
+Subgoal 2
+(IMPLIES (CONSP X)
+         (EQUAL (CONS (F0 (CAR X)) (F0 (CAR X)))
+                YYY))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 1
+ACL2 !>>(CW-GSTACK-FOR-TERM (CONS (F0 (CAR X)) (F0 (CAR X))))
+1. Simplifying the clause
+     ((EQUAL (F3 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 7, and it's the same result as above.
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
+1. Simplifying the clause
+     ((EQUAL (F3 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (F0 (CAR X)) (F0 (CAR X)))
+    (CONS (F0 X) (F0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (F0 (CAR X)))
+1. Simplifying the clause
+     ((EQUAL (F3 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (F0 (CAR X)) (F0 (CAR X)))
+    (CONS (F0 X) (F0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  reply with y to continue, or
+with n to quit  (Y or N):  ACL2 !>>(CW-GSTACK-FOR-TERM (F0 (CAR X)))
+There are no results.
+ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (X) (CONS X X)))
+1. Simplifying the clause
+     ((EQUAL (F3 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 7, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  1. Simplifying the clause
+     ((EQUAL (F3 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the third argument,
+     (F2 X),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 X)
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : X
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 X))
+The resulting (translated) term is
+  (CONS (F0 X) (F0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 7, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (Y) (CONS X X)))
+
+
+ACL2 Error in CW-GSTACK-FOR-TERM*:  For a :FREE expression, each specified
+variable must occur in the specified term.  But Y does not occur in
+the term, (CONS X X).  See :DOC cw-gstack-for-term.
+
+ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE X (CONS X X)))
+
+
+ACL2 Error in CW-GSTACK-FOR-TERM*:  The first argument of :FREE must
+be a list of distinct variables, but X is not.  See :DOC cw-gstack-
+for-term.
+
+ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (X X) (CONS X X)))
+
+
+ACL2 Error in CW-GSTACK-FOR-TERM*:  The first argument of :FREE must
+be a list of distinct variables, but (X X) is not.  See :DOC cw-gstack-
+for-term.
+
+ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (X 3) (CONS X X)))
+
+
+ACL2 Error in CW-GSTACK-FOR-TERM*:  The first argument of :FREE must
+be a list of distinct variables, but (X 3) is not.  See :DOC cw-gstack-
+for-term.
+
+ACL2 !>>(CW-GSTACK-FOR-TERM* (:FREE (CONS X X)))
+
+
+ACL2 Error in CW-GSTACK-FOR-TERM*:  An input of the form (:FREE ..)
+must be of the form (:FREE vars x).  The input (:FREE (CONS X X)) is
+thus illegal.  See :DOC cw-gstack-for-term.
+
+ACL2 !>>(CW-GSTACK-FOR-TERM (:FREE (V) (CONS (F0 V) (F0 (CAR V)))))
+There are no results.
+ACL2 !>>(WITH-BRR-DATA (THM (EQUAL (F3 (F0 3)) YYY)))
+
+Splitter note (see :DOC splitter) for Goal (2 subgoals).
+  if-intro: ((:DEFINITION F3))
+
+Subgoal 2
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (CONSP (F0 3))
+         (EQUAL (CONS (F0 (CAR (F0 3)))
+                      (F0 (CAR (F0 3))))
+                YYY))
+
+*1 (Subgoal 2) is pushed for proof by induction.
+
+])
+Subgoal 1
+
+([ A key checkpoint:
+
+Subgoal 1
+(IMPLIES (NOT (CONSP (F0 3)))
+         (EQUAL (CONS (F0 (F0 3)) (F0 (F0 3)))
+                YYY))
+
+Normally we would attempt to prove Subgoal 1 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION F2)
+        (:DEFINITION F3))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION F3))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 2
+(IMPLIES (CONSP (F0 3))
+         (EQUAL (CONS (F0 (CAR (F0 3)))
+                      (F0 (CAR (F0 3))))
+                YYY))
+
+Subgoal 1
+(IMPLIES (NOT (CONSP (F0 3)))
+         (EQUAL (CONS (F0 (F0 3)) (F0 (F0 3)))
+                YYY))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 1
+ACL2 !>>(CW-GSTACK-FOR-TERM (:FREE (X) (CONS X X)))
+1. Simplifying the clause
+     ((EQUAL (F3 (F0 '3)) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 (F0 '3)) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 (F0 '3)),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 (F0 '3))
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : (F0 '3)
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : (F0 '3)
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR (F0 '3)))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR (F0 '3))
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR (F0 '3))))
+The resulting (translated) term is
+  (CONS (F0 (CAR (F0 '3)))
+        (F0 (CAR (F0 '3)))).
+Note: The first lemma application above that provides a suitable result
+is at frame 7, and it's the same result as above.
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM (F0 (CAR (F0 3))))
+1. Simplifying the clause
+     ((EQUAL (F3 (F0 '3)) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 (F0 '3)) YYY),
+3. Rewriting (to simplify) the first argument,
+     (F3 (F0 '3)),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 (F0 '3))
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : (F0 '3)
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : (F0 '3)
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR (F0 '3)))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR (F0 '3))
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR (F0 '3))))
+The resulting (translated) term is
+  (CONS (F0 (CAR (F0 '3)))
+        (F0 (CAR (F0 '3)))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP (F0 '3))
+      (CONS (F0 (CAR (F0 '3)))
+            (F0 (CAR (F0 '3))))
+    (CONS (F0 (F0 '3)) (F0 (F0 '3)))).
+ACL2 !>>(DEFSTUB G0 (X) T)
+
+Summary
+Form:  (DEFSTUB G0 ...)
+Rules: NIL
+ G0
+ACL2 !>>(DEFUN G1 (X) (CONS X X))
+
+Since G1 is non-recursive, its admission is trivial.  We observe that
+the type of G1 is described by the theorem (CONSP (G1 X)).  We used
+primitive type reasoning.
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ G1
+ACL2 !>>(DEFUN G2 (X)
+          (G1 (IF (ATOM X) (G0 X) (G0 (CAR X)))))
+
+Since G2 is non-recursive, its admission is trivial.  We observe that
+the type of G2 is described by the theorem (CONSP (G2 X)).  We used
+the :type-prescription rule G1.
+
+Summary
+Form:  ( DEFUN G2 ...)
+Rules: ((:TYPE-PRESCRIPTION G1))
+ G2
+ACL2 !>>(DEFUN G3 (X) (G2 X))
+
+Since G3 is non-recursive, its admission is trivial.  We observe that
+the type of G3 is described by the theorem (CONSP (G3 X)).  We used
+the :type-prescription rule G2.
+
+Summary
+Form:  ( DEFUN G3 ...)
+Rules: ((:TYPE-PRESCRIPTION G2))
+ G3
+ACL2 !>>(WITH-BRR-DATA (THM (EQUAL (G3 X) YYY)))
+Goal'
+
+Splitter note (see :DOC splitter) for Goal' (2 subgoals).
+  if-intro: ((:DEFINITION G2))
+
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (CONSP X)
+         (EQUAL (CONS (G0 (CAR X)) (G0 (CAR X)))
+                YYY))
+
+Normally we would attempt to prove Subgoal 2'' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION G1)
+        (:DEFINITION G2)
+        (:DEFINITION G3)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION G2))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint before reverting to proof by induction: ***
+
+Subgoal 2
+(IMPLIES (CONSP X)
+         (EQUAL (CONS (G0 (CAR X)) (G0 (CAR X)))
+                YYY))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 1
+ACL2 !>>(CW-GSTACK-FOR-TERM (CONS (G0 (CAR X)) (G0 (CAR X))))
+1. Simplifying the clause
+     ((EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (G1 (G0 (CAR X))),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 (CAR X)))
+The resulting (translated) term is
+  (CONS (G0 (CAR X)) (G0 (CAR X))).
+ACL2 !>>(CW-GSTACK-FOR-TERM (G0 (CAR X)))
+There are no results.
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (G0 (CAR X)))
+1. Simplifying the clause
+     ((EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (G1 (G0 (CAR X))),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 (CAR X)))
+The resulting (translated) term is
+  (CONS (G0 (CAR X)) (G0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (G0 (CAR X)) (G0 (CAR X)))
+    (CONS (G0 X) (G0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (G0 (CAR X)))
+1. Simplifying the clause
+     ((EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (G1 (G0 (CAR X))),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 (CAR X)))
+The resulting (translated) term is
+  (CONS (G0 (CAR X)) (G0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (G0 (CAR X)) (G0 (CAR X)))
+    (CONS (G0 X) (G0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  ACL2 !>>(CW-GSTACK-FOR-SUBTERM (CONS (G0 (CAR X)) (G0 (CAR X))))
+1. Simplifying the clause
+     ((EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (G1 (G0 (CAR X))),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 (CAR X)))
+The resulting (translated) term is
+  (CONS (G0 (CAR X)) (G0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (G0 (CAR X)) (G0 (CAR X)))
+    (CONS (G0 X) (G0 X))).
+ACL2 !>>(WITH-BRR-DATA (THM (IMPLIES (OR (SYMBOLP X)
+                                         (CONSP X)
+                                         (ACL2-NUMBERP X))
+                                     (EQUAL (G3 X) YYY)))
+                       :GLOBAL-VAR FOO)
+Goal'
+Subgoal 3
+
+([ A key checkpoint:
+
+Subgoal 3
+(IMPLIES (SYMBOLP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+*1 (Subgoal 3) is pushed for proof by induction.
+
+])
+Subgoal 2
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (ACL2-NUMBERP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+Normally we would attempt to prove Subgoal 2 by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION G1)
+        (:DEFINITION G2)
+        (:DEFINITION G3))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 3
+(IMPLIES (SYMBOLP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+Subgoal 2
+(IMPLIES (ACL2-NUMBERP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ FOO)) = 3
+ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X))
+                             :GLOBAL-VAR FOO)
+1. Simplifying the clause
+     ((NOT (IF (SYMBOLP X)
+               (SYMBOLP X)
+             (IF (CONSP X)
+                 (CONSP X)
+               (ACL2-NUMBERP X))))
+      (EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the second literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the third argument,
+     (G1 (G0 X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 X))
+The resulting (translated) term is
+  (CONS (G0 X) (G0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  1. Simplifying the clause
+     ((NOT (IF (SYMBOLP X)
+               (SYMBOLP X)
+             (IF (CONSP X)
+                 (CONSP X)
+               (ACL2-NUMBERP X))))
+      (EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the second literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the third argument,
+     (G1 (G0 X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 X))
+The resulting (translated) term is
+  (CONS (G0 X) (G0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X))
+                             :GLOBAL-VAR FOO)
+1. Simplifying the clause
+     ((NOT (IF (SYMBOLP X)
+               (SYMBOLP X)
+             (IF (CONSP X)
+                 (CONSP X)
+               (ACL2-NUMBERP X))))
+      (EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the second literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the third argument,
+     (G1 (G0 X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 X))
+The resulting (translated) term is
+  (CONS (G0 X) (G0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  1. Simplifying the clause
+     ((NOT (IF (SYMBOLP X)
+               (SYMBOLP X)
+             (IF (CONSP X)
+                 (CONSP X)
+               (ACL2-NUMBERP X))))
+      (EQUAL (G2 X) YYY))
+2. Rewriting (to simplify) the atom of the second literal,
+     (EQUAL (G2 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G2 X),
+4. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the third argument,
+     (G1 (G0 X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 X))
+The resulting (translated) term is
+  (CONS (G0 X) (G0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  ACL2 !>>(WITH-BRR-DATA (THM (IMPLIES (OR (SYMBOLP X)
+                                         (CONSP X)
+                                         (ACL2-NUMBERP X))
+                                     (EQUAL (G3 X) YYY))
+                            :HINTS (("Goal" :IN-THEORY (DISABLE G3)
+                                            :DO-NOT '(PREPROCESS))
+                                    '(:IN-THEORY (ENABLE G3)))))
+Subgoal 3
+Subgoal 3'
+
+([ A key checkpoint:
+
+Subgoal 3'
+(IMPLIES (SYMBOLP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+*1 (Subgoal 3') is pushed for proof by induction.
+
+])
+Subgoal 2
+Subgoal 2'
+
+([ A key checkpoint:
+
+Subgoal 2'
+(IMPLIES (ACL2-NUMBERP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+Normally we would attempt to prove Subgoal 2' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION G1)
+        (:DEFINITION G2)
+        (:DEFINITION G3))
+
+---
+The key checkpoint goals, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoints before reverting to proof by induction: ***
+
+Subgoal 3'
+(IMPLIES (SYMBOLP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+Subgoal 2'
+(IMPLIES (ACL2-NUMBERP X)
+         (EQUAL (CONS (G0 X) (G0 X)) YYY))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 2
+ACL2 !>>(CW-GSTACK-FOR-TERM* (CONS (G0 X) (G0 X)))
+1. Simplifying the clause
+     ((NOT (SYMBOLP X)) (EQUAL (G3 X) YYY))
+2. Rewriting (to simplify) the atom of the second literal,
+     (EQUAL (G3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G3 X),
+4. Attempting to apply (:DEFINITION G3) to
+     (G3 X)
+5. Rewriting (to simplify) the rhs of the conclusion,
+     (G2 X),
+   under the substitution
+     X : X
+6. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+7. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+8. Rewriting (to simplify) the third argument,
+     (G1 (G0 X)),
+   under the substitution
+     X : X
+9. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 X))
+The resulting (translated) term is
+  (CONS (G0 X) (G0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  1. Simplifying the clause
+     ((NOT (ACL2-NUMBERP X))
+      (EQUAL (G3 X) YYY))
+2. Rewriting (to simplify) the atom of the second literal,
+     (EQUAL (G3 X) YYY),
+3. Rewriting (to simplify) the first argument,
+     (G3 X),
+4. Attempting to apply (:DEFINITION G3) to
+     (G3 X)
+5. Rewriting (to simplify) the rhs of the conclusion,
+     (G2 X),
+   under the substitution
+     X : X
+6. Attempting to apply (:DEFINITION G2) to
+     (G2 X)
+7. Rewriting (to simplify) the body,
+     (IF (CONSP X)
+         (G1 (G0 (CAR X)))
+       (G1 (G0 X))),
+   under the substitution
+     X : X
+8. Rewriting (to simplify) the third argument,
+     (G1 (G0 X)),
+   under the substitution
+     X : X
+9. Attempting to apply (:DEFINITION G1) to
+     (G1 (G0 X))
+The resulting (translated) term is
+  (CONS (G0 X) (G0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and it's the same result as above.
+
+ACL2 Query (CW-GSTACK-FOR-TERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(WITH-BRR-DATA (THM (EQUAL (APPEND (F3 X) Y) Z)
+                            :HINTS (("Goal" :IN-THEORY (DISABLE APPEND)))))
+
+Splitter note (see :DOC splitter) for Goal (2 subgoals).
+  if-intro: ((:DEFINITION F3))
+
+Subgoal 2
+Subgoal 2'
+Subgoal 2''
+
+([ A key checkpoint:
+
+Subgoal 2
+(IMPLIES (CONSP X)
+         (EQUAL (APPEND (CONS (F0 (CAR X)) (F0 (CAR X)))
+                        Y)
+                Z))
+
+Normally we would attempt to prove Subgoal 2'' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION F2)
+        (:DEFINITION F3)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION F3))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint before reverting to proof by induction: ***
+
+Subgoal 2
+(IMPLIES (CONSP X)
+         (EQUAL (APPEND (CONS (F0 (CAR X)) (F0 (CAR X)))
+                        Y)
+                Z))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 1
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM (APPEND (CONS (F0 (CAR X)) (F0 (CAR X)))
+                                       Y))
+There are no results.
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM (CONS (F0 (CAR X)) (F0 (CAR X))))
+1. Simplifying the clause
+     ((EQUAL (BINARY-APPEND (F3 X) Y) Z))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (BINARY-APPEND (F3 X) Y) Z),
+3. Rewriting (to simplify) the first argument,
+     (BINARY-APPEND (F3 X) Y),
+4. Rewriting (to simplify) the first argument,
+     (F3 X),
+5. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+6. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+7. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+8. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+9. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+10. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 5, and that result is
+  (IF (CONSP X)
+      (CONS (F0 (CAR X)) (F0 (CAR X)))
+    (CONS (F0 X) (F0 X))).
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (CONS (F0 X) (F0 X)))
+1. Simplifying the clause
+     ((EQUAL (BINARY-APPEND (F3 X) Y) Z))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (BINARY-APPEND (F3 X) Y) Z),
+3. Rewriting (to simplify) the first argument,
+     (BINARY-APPEND (F3 X) Y),
+4. Rewriting (to simplify) the first argument,
+     (F3 X),
+5. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+6. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+7. Rewriting (to simplify) the third argument,
+     (F2 X),
+   under the substitution
+     X : X
+8. Attempting to apply (:DEFINITION F2) to
+     (F2 X)
+9. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : X
+10. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 X))
+The resulting (translated) term is
+  (CONS (F0 X) (F0 X)).
+Note: The first lemma application above that provides a suitable result
+is at frame 5, and that result is
+  (IF (CONSP X)
+      (CONS (F0 (CAR X)) (F0 (CAR X)))
+    (CONS (F0 X) (F0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(INCLUDE-BOOK "kestrel/utilities/brr-data-all"
+                      :DIR :SYSTEM)
+
+Summary
+Form:  ( INCLUDE-BOOK "kestrel/utilities/brr-data-all" ...)
+Rules: NIL
+ (:SYSTEM . "kestrel/utilities/brr-data-all.lisp")
+ACL2 !>>(SET-BRR-DATA-ATTACHMENTS ALL)
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(WITH-BRR-DATA (THM (EQUAL (F3 X) (F3 Y))))
+
+Splitter note (see :DOC splitter) for Goal (4 subgoals).
+  if-intro: ((:DEFINITION F3))
+
+Subgoal 4
+Subgoal 4'
+Subgoal 4''
+Subgoal 4'''
+Subgoal 4'4'
+Subgoal 4'5'
+
+([ A key checkpoint:
+
+Subgoal 4'
+(IMPLIES (AND (CONSP X) (CONSP Y))
+         (EQUAL (F0 (CAR X)) (F0 (CAR Y))))
+
+Normally we would attempt to prove Subgoal 4'5' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION F2)
+        (:DEFINITION F3)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CONS-EQUAL))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION F3))
+Modified system attachments:
+       ((BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
+        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL)
+        (UPDATE-BRR-DATA-1 UPDATE-BRR-DATA-1-ALL)
+        (BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint before reverting to proof by induction: ***
+
+Subgoal 4'
+(IMPLIES (AND (CONSP X) (CONSP Y))
+         (EQUAL (F0 (CAR X)) (F0 (CAR Y))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 25
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (:FREE (V) (CONS V V)))
+1. Simplifying the clause
+     ((EQUAL (F3 X) (F3 Y)))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) (F3 Y)),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (F0 (CAR X)) (F0 (CAR X)))
+    (CONS (F0 X) (F0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  1. Simplifying the clause
+     ((EQUAL (F3 X) (F3 Y)))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) (F3 Y)),
+3. Rewriting (to simplify) the second argument,
+     (F3 Y),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 Y)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : Y
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : Y
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR Y))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR Y)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR Y)))
+The resulting (translated) term is
+  (CONS (F0 (CAR Y)) (F0 (CAR Y))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP Y)
+      (CONS (F0 (CAR Y)) (F0 (CAR Y)))
+    (CONS (F0 Y) (F0 Y))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(CLEAR-BRR-DATA-LST)
+NIL
+ACL2 !>>(F-PUT-GLOBAL 'GSTACKP :BRR-DATA STATE)
+<state>
+ACL2 !>>(THM (EQUAL (F3 X) (F3 Y)))
+
+Splitter note (see :DOC splitter) for Goal (4 subgoals).
+  if-intro: ((:DEFINITION F3))
+
+Subgoal 4
+Subgoal 4'
+Subgoal 4''
+Subgoal 4'''
+Subgoal 4'4'
+Subgoal 4'5'
+
+([ A key checkpoint:
+
+Subgoal 4'
+(IMPLIES (AND (CONSP X) (CONSP Y))
+         (EQUAL (F0 (CAR X)) (F0 (CAR Y))))
+
+Normally we would attempt to prove Subgoal 4'5' by induction.  However,
+we prefer in this instance to focus on the original input conjecture
+rather than this simplified special case.  We therefore abandon our
+previous work on this conjecture and reassign the name *1 to the original
+conjecture.  (See :DOC otf-flg.)
+
+])
+
+No induction schemes are suggested by *1.  Consequently, the proof
+attempt has failed.
+
+Summary
+Form:  ( THM ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION F2)
+        (:DEFINITION F3)
+        (:ELIM CAR-CDR-ELIM)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE CONS-EQUAL))
+Splitter rules (see :DOC splitter):
+  if-intro: ((:DEFINITION F3))
+Modified system attachments:
+       ((BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
+        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL)
+        (UPDATE-BRR-DATA-1 UPDATE-BRR-DATA-1-ALL)
+        (BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL))
+
+---
+The key checkpoint goal, below, may help you to debug this failure.
+See :DOC failure and see :DOC set-checkpoint-summary-limit.
+---
+
+*** Key checkpoint before reverting to proof by induction: ***
+
+Subgoal 4'
+(IMPLIES (AND (CONSP X) (CONSP Y))
+         (EQUAL (F0 (CAR X)) (F0 (CAR Y))))
+
+ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(SET-BRR-DATA-LST BRR-DATA-LST)
+
+ACL2 Observation:  (LENGTH (@ BRR-DATA-LST)) = 25
+ACL2 !>>(CW-GSTACK-FOR-SUBTERM* (:FREE (V) (CONS V V)))
+1. Simplifying the clause
+     ((EQUAL (F3 X) (F3 Y)))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) (F3 Y)),
+3. Rewriting (to simplify) the first argument,
+     (F3 X),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 X)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : X
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : X
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR X))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR X)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR X)))
+The resulting (translated) term is
+  (CONS (F0 (CAR X)) (F0 (CAR X))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP X)
+      (CONS (F0 (CAR X)) (F0 (CAR X)))
+    (CONS (F0 X) (F0 X))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  1. Simplifying the clause
+     ((EQUAL (F3 X) (F3 Y)))
+2. Rewriting (to simplify) the atom of the first literal,
+     (EQUAL (F3 X) (F3 Y)),
+3. Rewriting (to simplify) the second argument,
+     (F3 Y),
+4. Attempting to apply (:DEFINITION F3) to
+     (F3 Y)
+5. Rewriting (to simplify) the body,
+     (IF (CONSP X) (F2 (CAR X)) (F2 X)),
+   under the substitution
+     X : Y
+6. Rewriting (to simplify) the second argument,
+     (F2 (CAR X)),
+   under the substitution
+     X : Y
+7. Attempting to apply (:DEFINITION F2) to
+     (F2 (CAR Y))
+8. Rewriting (to simplify) the rhs of the conclusion,
+     (F1 (F0 X)),
+   under the substitution
+     X : (CAR Y)
+9. Attempting to apply (:DEFINITION F1) to
+     (F1 (F0 (CAR Y)))
+The resulting (translated) term is
+  (CONS (F0 (CAR Y)) (F0 (CAR Y))).
+Note: The first lemma application above that provides a suitable result
+is at frame 4, and that result is
+  (IF (CONSP Y)
+      (CONS (F0 (CAR Y)) (F0 (CAR Y)))
+    (CONS (F0 Y) (F0 Y))).
+
+ACL2 Query (CW-GSTACK-FOR-SUBTERM*):  Attempt to present another result?
+(Y, N or ?):  There are no more results.
+ACL2 !>>(REDEF+)
+
+TTAG NOTE: Adding ttag :REDEF+ from the top level loop.
+ T
+ACL2 p!>>(DEFCONST *STANDARD-OI*
+           *OLD-STANDARD-OI*)
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-OI* ...):  *STANDARD-OI*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-OI* ...)
+Rules: NIL
+Modified system attachments:
+       ((BRKPT2-BRR-DATA-ENTRY BRKPT2-BRR-DATA-ENTRY-ALL)
+        (UPDATE-BRR-DATA-2 UPDATE-BRR-DATA-2-ALL)
+        (UPDATE-BRR-DATA-1 UPDATE-BRR-DATA-1-ALL)
+        (BRKPT1-BRR-DATA-ENTRY BRKPT1-BRR-DATA-ENTRY-ALL))
+Warnings:  Redef
+ *STANDARD-OI*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>Bye.

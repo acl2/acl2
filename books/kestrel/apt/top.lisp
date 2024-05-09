@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021-2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021-2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,8 @@
 (in-package "APT")
 
 (include-book "utilities/top")
+
+(include-book "def")
 
 (include-book "common-concepts")
 (include-book "common-options")

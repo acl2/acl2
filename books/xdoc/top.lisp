@@ -58,8 +58,6 @@
            (type string x))
   (bootstrap-revappend-chars-aux x 0 (length x) acc))
 
-
-
 (defun revappend-bar-escape-string (x n xl acc)
   (declare (xargs :mode :program)
            (type string x)
@@ -67,7 +65,7 @@
   (if (eql n xl)
       acc
     (let* ((char (char x n))
-           (acc  (if (eql char #\|)
+           (acc  (if (or (eql char #\|) (eql char #\\))
                      (cons #\\ acc)
                    acc)))
       (revappend-bar-escape-string x (+ n 1) xl (cons char acc)))))
@@ -357,6 +355,7 @@
          (extension   (cdr (extract-keyword-from-args :extension args)))
          (pkg         (cdr (extract-keyword-from-args :pkg args)))
          (no-xdoc-override (cdr (extract-keyword-from-args :no-xdoc-override args)))
+         (set-as-default-parent (cdr (extract-keyword-from-args :set-as-default-parent args)))
          (extension
           (cond ((symbolp extension) extension)
                 ((and (consp extension)
@@ -399,6 +398,18 @@
           (if new-args
               '(:stack :pop)
             nil))
+
+         ;; Insert  (local (xdoc::set-default-parents  name))  when wrapper  is
+         ;; encapsulate and set-as-default-parent is t.
+         (new-args
+          (if set-as-default-parent
+              (progn$ (and (not (equal (car wrapper) 'encapsulate))
+                           (er hard?  'defsection "In section  ~x0, set-as-default-parent ~
+                     cannot be  set to  t when the  wrapper is  not encapsulate."
+                               name))
+                      (cons `(local (xdoc::set-default-parents ,name))
+                            new-args))
+            new-args))
 
          (wrapper
           ;; ACL2 wants an encapsulate to have at least one event, so things
@@ -466,6 +477,8 @@
 (defmacro defsection-progn (name &rest args)
   (defsection-fn '(progn) name args))
 
+(table acl2::ppr-special-syms 'defsection 1)
+(table acl2::ppr-special-syms 'defsection-progn 1)
 
 
 ;; Moved from cutil/deflist for greater availability

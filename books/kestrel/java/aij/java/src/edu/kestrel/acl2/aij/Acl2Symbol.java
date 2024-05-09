@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
  * Author: Alessandro Coglio (coglio@kestrel.edu)
  */
@@ -64,7 +64,7 @@ public final class Acl2Symbol extends Acl2Value {
      * Some inner maps share values,
      * e.g. the inner map associated with {@code "ACL2"} in the outer map
      * maps {@code "CONS"} to the same {@link Acl2Symbol} object
-     * that the inner map assocaited with {@code "COMMON-LISP"} in the outer map
+     * that the inner map associated with {@code "COMMON-LISP"} in the outer map
      * maps {@code "CONS"}.
      * <p>
      * This nested map structure is extended in three circumstances:
@@ -765,6 +765,11 @@ public final class Acl2Symbol extends Acl2Value {
      */
     public static final Acl2Symbol CHAR;
 
+    /**
+     * The symbol denoted by {@code acl2::hard-error}.
+     */
+    public static final Acl2Symbol HARD_ERROR;
+
     static { // builds the pre-created symbols
         // names of the symbols:
         Acl2String stringT = Acl2String.imake("T");
@@ -812,6 +817,7 @@ public final class Acl2Symbol extends Acl2Value {
         Acl2String stringStringAppend = Acl2String.make("STRING-APPEND");
         Acl2String stringLen = Acl2String.make("LEN");
         Acl2String stringChar = Acl2String.make("CHAR");
+        Acl2String stringHardError = Acl2String.make("HARD-ERROR");
         // symbols:
         T = new Acl2Symbol(Acl2PackageName.LISP, stringT);
         NIL = new Acl2Symbol(Acl2PackageName.LISP, stringNil);
@@ -862,6 +868,7 @@ public final class Acl2Symbol extends Acl2Value {
                 new Acl2Symbol(Acl2PackageName.ACL2, stringStringAppend);
         LEN = new Acl2Symbol(Acl2PackageName.ACL2, stringLen);
         CHAR = new Acl2Symbol(Acl2PackageName.LISP, stringChar);
+        HARD_ERROR = new Acl2Symbol(Acl2PackageName.ACL2, stringHardError);
         // initial inner map for the "COMMON-LISP" package:
         Map<Acl2String, Acl2Symbol> initialLispMap = new HashMap<>();
         initialLispMap.put(stringT, T);
@@ -909,6 +916,7 @@ public final class Acl2Symbol extends Acl2Value {
                 NONNEGATIVE_INTEGER_QUOTIENT);
         initialAcl2Map.put(stringStringAppend, STRING_APPEND);
         initialAcl2Map.put(stringLen, LEN);
+        initialAcl2Map.put(stringHardError, HARD_ERROR);
         // initial outer map:
         symbols.put(Acl2PackageName.LISP, initialLispMap);
         symbols.put(Acl2PackageName.ACL2, initialAcl2Map);

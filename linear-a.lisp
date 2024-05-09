@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1468,21 +1468,12 @@
 ;; needed here.  Besides, I'm not sure what the right value would be
 ;; for a real number!
 
-(defmacro fn-count-evg-max-val ()
-
-; Warning: (* 2 (fn-count-evg-max-val)) must be a (signed-byte 30); see
-; fn-count-evg-rec and max-form-count-lst.  Modulo that requirement, we just
-; pick a large natural number rather arbitrarily.
-
-  200000)
-
 (defmacro fn-count-evg-max-val-neg ()
   (-f (fn-count-evg-max-val)))
 
 (defmacro fn-count-evg-max-calls ()
 
-; Warning: The following plus 2 must be a (signed-byte 30); see
-; fn-count-evg-rec.
+; Warning: The following plus 2 must be a fixnat; see fn-count-evg-rec.
 
 ; Modulo that requirement, the choice of 1000 below is rather arbitrary.  We
 ; chose 1000 for *default-rewrite-stack-limit*, so for no great reason we
@@ -1490,16 +1481,13 @@
 
   1000)
 
-#-acl2-loop-only
-(declaim (inline min-fixnum))
+(defun-inline min-fixnat (x y)
 
-(defun min-fixnum (x y)
-
-; This is a fast version of min, for fixnums.  We avoid the name minf because
+; This is a fast version of min, for fixnats.  We avoid the name minf because
 ; it's already used in the regression suite.
 
-  (declare (type (signed-byte 30) x y))
-  (the (signed-byte 30) (if (< x y) x y)))
+  (declare (type #.*fixnat-type* x y))
+  (the #.*fixnat-type* (if (< x y) x y)))
 
 (defun fn-count-evg-rec (evg acc calls)
 
@@ -1508,9 +1496,9 @@
 
   (declare (xargs :measure (acl2-count evg)
                   :ruler-extenders :all)
-           (type (unsigned-byte 29) acc calls))
+           (type #.*fixnat-type* acc calls))
   (the
-   (unsigned-byte 29)
+   #.*fixnat-type*
    (cond
     ((or (>= calls (fn-count-evg-max-calls))
          (>= acc (fn-count-evg-max-val)))
@@ -1521,12 +1509,12 @@
                    (cond ((< evg 0)
                           (cond ((<= evg (fn-count-evg-max-val-neg))
                                  (fn-count-evg-max-val))
-                                (t (min-fixnum (fn-count-evg-max-val)
+                                (t (min-fixnat (fn-count-evg-max-val)
                                                (+f 2 acc (-f evg))))))
                          (t
                           (cond ((<= (fn-count-evg-max-val) evg)
                                  (fn-count-evg-max-val))
-                                (t (min-fixnum (fn-count-evg-max-val)
+                                (t (min-fixnat (fn-count-evg-max-val)
                                                (+f 1 acc evg)))))))
                   (t
                    (fn-count-evg-rec (numerator evg)
@@ -1552,19 +1540,19 @@
                     0))
            ((symbolp evg)
             (cond ((null evg) ; optimization: len below is 3
-                   (min-fixnum (fn-count-evg-max-val)
+                   (min-fixnat (fn-count-evg-max-val)
                                (+f 8 acc)))
                   (t
                    (let ((len (length (symbol-name evg))))
                      (cond ((<= (fn-count-evg-max-val) len)
                             (fn-count-evg-max-val))
-                           (t (min-fixnum (fn-count-evg-max-val)
+                           (t (min-fixnat (fn-count-evg-max-val)
                                           (+f 2 acc (*f 2 len)))))))))
            ((stringp evg)
             (let ((len (length evg)))
               (cond ((<= (fn-count-evg-max-val) len)
                      (fn-count-evg-max-val))
-                    (t (min-fixnum (fn-count-evg-max-val)
+                    (t (min-fixnat (fn-count-evg-max-val)
                                    (+f 1 acc (*f 2 len)))))))
            (t ; (characterp evg)
             (1+f acc))))
@@ -2147,7 +2135,7 @@
 
 ; Lst is a list of polys, term is the linear var which triggered the
 ; addition of the polys in lst, and flag is a boolean indicating
-; whether we have maxed out the the loop-stopper-value associated
+; whether we have maxed out the loop-stopper-value associated
 ; with term.  If flag is true, we check whether any of the polys are
 ; arith-term-order worse than term.
 
@@ -3461,7 +3449,7 @@
 ; accumulates the new polys in new-lst.  When lst is exhausted it
 ; starts over on the ones in new-lst and iterates that until no new polys
 ; are produced.  It returns 2 values:  the standard contradictionp in the
-; the first and the final pot-lst in the second.
+; first and the final pot-lst in the second.
 
 ; See add-polys0 for a discussion of max-rounds.
 
@@ -3524,9 +3512,10 @@
 ; The next group of "show-" functions is convenient for system debugging and is
 ; used (specifically, show-poly-lst is used) by brr.  (Show-poly poly) will
 ; create a list structure that prints so as to show a polynomial in the
-; conventional notation.  The term enclosed in an extra set of parentheses is
-; the leading term of the poly.  An example show-poly is '(3 J + (I) + 77 <= 4
-; M + 2 N).
+; conventional notation.  If optional argument parp is true (which is the
+; default), then the term enclosed in an extra set of parentheses is the
+; leading term of the poly.  An example show-poly is '(3 J + (I) + 77 <= 4 M +
+; 2 N).
 
 (defun show-poly2 (pair lst)
   (let ((n (abs (cdr pair)))
@@ -3549,21 +3538,24 @@
          (show-poly1 (cdr alist) lhs (show-poly2 (car alist) rhs)))
         (t (show-poly1 (cdr alist) (show-poly2 (car alist) lhs) rhs))))
 
-(defun show-poly (poly)
-  (let* ((pair (show-poly1
-                   (cond ((null (access poly poly :alist)) nil)
-                         (t (cons (cons (list (caar (access poly poly :alist)))
-                                        (cdar (access poly poly :alist)))
-                                  (cdr (access poly poly :alist)))))
-                   (cond ((= (access poly poly :constant) 0)
-                          nil)
-                         ((logical-< 0 (access poly poly :constant)) nil)
-                         (t (cons (- (access poly poly :constant)) nil)))
-                   (cond ((= (access poly poly :constant) 0)
-                          nil)
-                         ((logical-< 0 (access poly poly :constant))
-                          (cons (access poly poly :constant) nil))
-                         (t nil))))
+(defun show-poly-fn (poly parp)
+  (let* ((pair
+          (show-poly1
+           (cond ((null (access poly poly :alist)) nil)
+                 (t (cons (cons (if parp
+                                    (list (caar (access poly poly :alist)))
+                                  (caar (access poly poly :alist)))
+                                (cdar (access poly poly :alist)))
+                          (cdr (access poly poly :alist)))))
+                 (cond ((= (access poly poly :constant) 0)
+                        nil)
+                       ((logical-< 0 (access poly poly :constant)) nil)
+                       (t (cons (- (access poly poly :constant)) nil)))
+                 (cond ((= (access poly poly :constant) 0)
+                        nil)
+                       ((logical-< 0 (access poly poly :constant))
+                        (cons (access poly poly :constant) nil))
+                       (t nil))))
          (lhs (car pair))
          (rhs (cdr pair)))
 
@@ -3574,13 +3566,19 @@
     (append (or lhs '(0))
             (cons (access poly poly :relation) (or rhs '(0))))))
 
-(defun show-poly-lst (poly-lst)
-  (cond ((null poly-lst) nil)
-        (t (cons (show-poly (car poly-lst))
-                 (show-poly-lst (cdr poly-lst))))))
+(defmacro show-poly (poly &optional (parp 't))
+  `(show-poly-fn ,poly ,parp))
 
-;
+(defun show-poly-lst-fn (poly-lst parp)
+  (cond ((null poly-lst) nil)
+        (t (cons (show-poly-fn (car poly-lst) parp)
+                 (show-poly-lst-fn (cdr poly-lst) parp)))))
+
+(defmacro show-poly-lst (poly-lst &optional (parp 't))
+  `(show-poly-lst-fn ,poly-lst ,parp))
+
 ; (defun show-pot-lst (pot-lst)
+; ; See print-pot-lst for a variant of this defun.
 ;   (cond
 ;    ((null pot-lst) nil)
 ;    (t (cons
@@ -3590,7 +3588,7 @@
 ;                       (show-poly-lst
 ;                        (access linear-pot (car pot-lst) :positives))))
 ;        (show-pot-lst (cdr pot-lst))))))
-;
+
 ; (defun show-type-alist (type-alist)
 ;   (cond ((endp type-alist) nil)
 ;         (t (cons (list (car (car type-alist))

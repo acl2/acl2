@@ -286,7 +286,7 @@
   :rule-classes ((:rewrite)
                  (:forward-chaining :trigger-terms ((o- a b)))))
 
-(defthm bad
+(defthm |a<=b => (o-first-expt a) <= (o-first-expt b)|
   (implies (and (o<= a b)
                 (o-p a)
                 (o-p b))
@@ -469,7 +469,7 @@ corollary, you get the above rule.
 			    (b a)
 			    (c (o+ b a)))))))
 
-(defthm |(b > 1)  =>  (a < b  <=>  a-1 < b-1|
+(defthm |(b > 1)  =>  (a < b  <=>  a-1 < b-1)|
    (implies (and (not (equal b 1))
                  (o-p a)
 		 (o-p b))

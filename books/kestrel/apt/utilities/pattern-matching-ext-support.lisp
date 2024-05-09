@@ -13,6 +13,8 @@
 ; comments.  Since this book is included locally in pattern-matching-ext.lisp,
 ; we don't bother to mark lemmas below as local.
 
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "std/util/bstar" :dir :system)

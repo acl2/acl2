@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "pretty-printing-options")
 (include-book "defstruct")
+(include-book "defobject")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
@@ -24,9 +25,49 @@
 (include-book "kestrel/error-checking/ensure-value-is-string" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
 (include-book "kestrel/event-macros/input-processing" :dir :system)
+(include-book "kestrel/std/strings/letter-digit-uscore-dash-chars" :dir :system)
+(include-book "kestrel/std/system/irecursivep-plus" :dir :system)
+(include-book "kestrel/std/system/ubody-plus" :dir :system)
+(include-book "kestrel/std/system/uguard-plus" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation-plus" :dir :system)
+(include-book "kestrel/std/util/error-value-tuples" :dir :system)
+(include-book "oslib/catpath" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "kestrel/std/util/tuple" :dir :system)
+
+(local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "kestrel/std/system/w" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel alistp-when-symbol-alistp
+  (implies (symbol-alistp x)
+           (alistp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel symbol-listp-of-strip-cars-when-symbol-alistp
+  (implies (symbol-alistp x)
+           (symbol-listp (strip-cars x)))
+  :induct t
+  :enable symbol-alistp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel true-listp-when-keyword-listp
+  (implies (keyword-listp x)
+           (true-listp x))
+  :induct t
+  :enable keyword-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,17 +95,15 @@
 (define atc-process-function ((fn symbolp)
                               (previous-fns symbol-listp)
                               (uncalled-fns symbol-listp)
-                              (ctx ctxp)
-                              state)
-  :guard (function-symbolp fn (w state))
+                              (wrld plist-worldp))
+  :guard (function-symbolp fn wrld)
   :returns (mv erp
-               (val (tuple (new-previous-fns symbol-listp)
-                           (new-uncalled-fns symbol-listp)
-                           val)
-                    :hyp (and (symbolp fn)
-                              (symbol-listp previous-fns)
-                              (symbol-listp uncalled-fns)))
-               state)
+               (new-previous-fns symbol-listp
+                                 :hyp (and (symbolp fn)
+                                           (symbol-listp previous-fns)))
+               (new-uncalled-fns symbol-listp
+                                 :hyp (and (symbolp fn)
+                                           (symbol-listp uncalled-fns))))
   :short "Process a target function @('fn') among @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
@@ -102,317 +141,433 @@
     "When this input processing function is called,
      @('fn') is already known to be a function name.
      See @(tsee atc-process-target)."))
-  (b* ((irrelevant (list nil nil))
-       ((when (member-eq fn previous-fns))
-        (er-soft+ ctx t irrelevant
-                  "The target function ~x0 appears more than once ~
-                   in the list of targets."
-                  fn))
+  (b* (((reterr) nil nil)
        (previous-fns (cons fn previous-fns))
        (desc (msg "The target function ~x0" fn))
-       ((er &) (ensure-function-is-logic-mode$ fn desc t irrelevant))
-       ((er &) (ensure-function-is-guard-verified$ fn desc t irrelevant))
-       ((er &) (ensure-function-is-defined$ fn desc t irrelevant))
-       ((when (ffnnamep fn (uguard+ fn (w state))))
-        (er-soft+ ctx t irrelevant
-                  "The target function ~x0 is used in its own guard. ~
-                   This is currently not supported in ATC."
-                  fn))
-       (rec (irecursivep+ fn (w state)))
+       ((unless (logicp fn wrld))
+        (reterr (msg "~@0 must be in logic mode." desc)))
+       ((unless (acl2::guard-verified-p fn wrld))
+        (reterr (msg "~@0 must be guard-verified." desc)))
+       ((unless (acl2::definedp fn wrld))
+        (reterr (msg "~@0 must be defined." desc)))
+       ((when (ffnnamep fn (uguard+ fn wrld)))
+        (reterr (msg "The target function ~x0 is used in its own guard. ~
+                      This is currently not supported in ATC."
+                     fn)))
+       (rec (irecursivep+ fn wrld))
        ((when (and rec (> (len rec) 1)))
-        (er-soft+ ctx t irrelevant
-                  "The recursive target function ~x0 ~
-                   must be singly recursive, ~
-                   but it is mutually recursive with ~x1 instead."
-                  fn (remove-eq fn rec)))
+        (reterr (msg "The recursive target function ~x0 ~
+                      must be singly recursive, ~
+                      but it is mutually recursive with ~x1 instead."
+                     fn (remove-eq fn rec))))
        ((when (and rec
-                   (not (equal (well-founded-relation+ fn (w state))
+                   (not (equal (well-founded-relation+ fn wrld)
                                'o<))))
-        (er-soft+ ctx t irrelevant
-                  "The well-founded relation ~
-                   of the recursive target function ~x0 ~
-                   must be O<, but it ~x1 instead. ~
-                   Only recursive functions with well-founded relation O< ~
-                   are currently supported by ATC."
-                  fn (well-founded-relation+ fn (w state))))
-       (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn (w state))))
+        (reterr (msg "The well-founded relation ~
+                      of the recursive target function ~x0 ~
+                      must be O<, but it ~x1 instead. ~
+                      Only recursive functions with well-founded relation O< ~
+                      are currently supported by ATC."
+                     fn (well-founded-relation+ fn wrld))))
+       (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn wrld)))
        (uncalled-fns (if rec
                          (cons fn uncalled-fns)
                        uncalled-fns)))
-    (acl2::value (list previous-fns
-                       uncalled-fns)))
-  :guard-hints (("Goal" :in-theory (enable
-                                    acl2::ensure-function-is-guard-verified
-                                    acl2::ensure-function-is-logic-mode
-                                    acl2::ensure-function-is-defined)))
+    (retok previous-fns
+           uncalled-fns))
   ///
-
   (more-returns
-   (val true-listp
-        :rule-classes :type-prescription
-        :name true-listp-of-atc-process-function.val))
-
-  (defret true-listp-of-atc-process-function.new-previous-fns
-    (b* (((list new-previous-fns &) val))
-      (true-listp new-previous-fns))
-    :hyp (true-listp previous-fns)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-function.new-uncalled-fns
-    (b* (((list & new-uncalled-fns) val))
-      (true-listp new-uncalled-fns))
-    :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription))
+   (new-previous-fns true-listp
+                     :hyp (true-listp previous-fns)
+                     :rule-classes :type-prescription)
+   (new-uncalled-fns true-listp
+                     :hyp (true-listp new-uncalled-fns)
+                     :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-target (target
                             (previous-structs symbol-listp)
+                            (previous-objs symbol-listp)
                             (previous-fns symbol-listp)
                             (uncalled-fns symbol-listp)
-                            (ctx ctxp)
-                            state)
+                            (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (new-previous-structs symbol-listp)
-                           (new-previous-fns symbol-listp)
-                           (new-uncalled-fns symbol-listp)
-                           val)
-                    :hyp (and (symbol-listp previous-structs)
-                              (symbol-listp previous-fns)
-                              (symbol-listp uncalled-fns)))
-               state)
+               (target$ symbolp)
+               (new-previous-structs symbol-listp
+                                     :hyp (symbol-listp previous-structs))
+               (new-previous-objs symbol-listp
+                                  :hyp (symbol-listp previous-objs))
+               (new-previous-fns symbol-listp
+                                 :hyp (symbol-listp previous-fns))
+               (new-uncalled-fns symbol-listp
+                                 :hyp (symbol-listp uncalled-fns)))
   :short "Process a target among @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
    (xdoc::p
     "The parameters @('previous-fns') and @('uncalled-fns')
      are explained in @(tsee atc-process-function).
-     The parameter @('previous-structs') is analogous to @('previous-fns'),
-     but for the @(tsee defstruct) targets instead of the function targets:
-     it lists all the @(tsee defstruct) targets that precede @('target')
+     The parameters @('previous-structs') and @('previous-objs')
+     are analogous to @('previous-fns'),
+     but for the @(tsee defstruct) and @(tsee defobject) targets
+     instead of the function targets:
+     it lists all the @(tsee defstruct) and @('defobject') targets
+     that precede @('target')
      in the list of targets @('(t1 ... tp)').
-     This is used to detect duplicate @(tsee defstruct) targets.")
+     This is used to detect duplicate symbol names.")
    (xdoc::p
     "If the target is a function name,
-     its processing is delegated to @(tsee atc-process-function).
-     Otherwise, it must be a @(tsee defstruct) name,
-     and it is processed here.
-     We just check that the it is in the @(tsee defstruct) table."))
-  (b* ((irrelevant (list nil nil nil))
-       ((when (acl2::function-namep target (w state)))
-        (b* (((mv erp (list previous-fns uncalled-fns) state)
-              (atc-process-function target previous-fns uncalled-fns ctx state))
-             ((when erp) (mv erp irrelevant state)))
-          (acl2::value (list previous-structs
-                             previous-fns
-                             uncalled-fns))))
-       ((when (member-eq target previous-structs))
-        (er-soft+ ctx t irrelevant
-                  "The target DEFSTRUCT name ~x0 appears more than once ~
-                   in the list of targets."
-                  target))
+     its processing is delegated to @(tsee atc-process-function),
+     except for ensuring that its symbol name is distinct from
+     the symbol names of the preceding targets.
+     Otherwise, the target must be
+     a @(tsee defstruct) or @(tsee defobject) name,
+     and it is processed here:
+     we check that it is in the @(tsee defstruct) or @(tsee defobject) table;
+     furthermore, if it is a @(tsee defobject) target,
+     we ensure that it differs from the preceding function targets.")
+   (xdoc::p
+    "If all the checks are successful, we also return the target itself,
+     with a guaranteed @(tsee symbolp) type,
+     so that calling code has that fact readily available."))
+  (b* (((reterr) nil nil nil nil nil)
        ((unless (symbolp target))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 is not a symbol."
-                  target))
-       ((unless (defstruct-table-lookup (symbol-name target) (w state)))
-        (er-soft+ ctx t irrelevant
-                  "The target ~x0 is neither a function name ~
-                   nor a DEFSTRUCT name."
-                  target))
-       (previous-structs (cons target previous-structs)))
-    (acl2::value (list previous-structs
-                       previous-fns
-                       uncalled-fns)))
+        (reterr (msg "The target ~x0 is not a symbol." target)))
+       (functionp (function-symbolp target wrld))
+       (struct-info (defstruct-table-lookup (symbol-name target) wrld))
+       (obj-info (defobject-table-lookup (symbol-name target) wrld))
+       ((when (and functionp struct-info obj-info))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a function, a DEFSTRUCT, and a DEFOBJECT."
+                     target)))
+       ((when (and functionp struct-info))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a function and a DEFSTRUCT."
+                     target)))
+       ((when (and functionp obj-info))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a function and a DEFOBJECT"
+                     target)))
+       ((when (and struct-info obj-info))
+        (reterr (msg "The target ~x0 ambiguously denotes ~
+                      a DEFSTRUCT and a DEFOBJECT."
+                     target)))
+       ((when functionp)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (reterr (msg "The target function ~x0 has the same name as ~
+                            the target function ~x1 that precedes it."
+                           target (car previous-fns))))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (reterr (msg "The target function ~x0 has the same name as ~
+                            the target DEFSTRUCT ~x1 that precedes it."
+                           target (car previous-structs))))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (reterr (msg "The target function ~x0 has the same name as ~
+                            the target DEFOBJECT ~x1 that precedes it."
+                           target (car previous-objs))))
+             ((erp previous-fns uncalled-fns)
+              (atc-process-function target
+                                    previous-fns
+                                    uncalled-fns
+                                    wrld)))
+          (retok target
+                 previous-structs
+                 previous-objs
+                 previous-fns
+                 uncalled-fns)))
+       ((when struct-info)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (reterr (msg "The target DEFSTRUCT ~x0 has the same name as ~
+                            the target function ~x1 that precedes it."
+                           target (car previous-fns))))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (reterr (msg "The target DEFSTRUCT ~x0 has the same name as ~
+                            the target DEFSTRUCT ~x1 that precedes it."
+                           target (car previous-structs))))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (reterr (msg "The target DEFSTRUCT ~x0 has the same name as ~
+                            the target DEFOBJECT ~x1 that precedes it."
+                           target (car previous-objs))))
+             (previous-structs (cons target previous-structs)))
+          (retok target
+                 previous-structs
+                 previous-objs
+                 previous-fns
+                 uncalled-fns)))
+       ((when obj-info)
+        (b* ((found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-fns)))
+             ((when found)
+              (reterr (msg "The target DEFOBJECT ~x0 has the same name as ~
+                            the target function ~x1 that precedes it."
+                           target (car previous-fns))))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-structs)))
+             ((when found)
+              (reterr (msg "The target DEFOBJECT ~x0 has the same name as ~
+                            the target DEFSTRUCT ~x1 that precedes it."
+                           target (car previous-structs))))
+             (found (member-equal (symbol-name target)
+                                  (symbol-name-lst previous-objs)))
+             ((when found)
+              (reterr (msg "The target DEFOBJECT ~x0 has the same name as ~
+                            the target DEFOBJECT ~x1 that precedes it."
+                           target (car previous-objs))))
+             (previous-objs (cons target previous-objs)))
+          (retok target
+                 previous-structs
+                 previous-objs
+                 previous-fns
+                 uncalled-fns))))
+    (reterr (msg "The target ~x0 is a symbol that does not identify ~
+                  any function or DEFSTRUCT or DEFOBJECT."
+                 target)))
   ///
 
   (more-returns
-   (val true-listp
-        :rule-classes :type-prescription))
-
-  (defret len-of-atc-process-target.val
-    (equal (len val) 3))
-
-  (defret true-listp-of-atc-process-target.new-previous-structs
-    (b* (((list new-previous-structs & &) val))
-      (true-listp new-previous-structs))
-    :hyp (true-listp previous-structs)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target.new-previous-fns
-    (b* (((list & new-previous-fns &) val))
-      (true-listp new-previous-fns))
-    :hyp (true-listp previous-fns)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target.new-uncalled-fns
-    (b* (((list & & new-uncalled-fns) val))
-      (true-listp new-uncalled-fns))
-    :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription))
+   (new-previous-structs true-listp
+                         :hyp (true-listp previous-structs)
+                         :rule-classes :type-prescription)
+   (new-previous-objs true-listp
+                      :hyp (true-listp previous-objs)
+                      :rule-classes :type-prescription)
+   (new-previous-fns true-listp
+                     :hyp (true-listp previous-fns)
+                     :rule-classes :type-prescription)
+   (new-uncalled-fns true-listp
+                     :hyp (true-listp uncalled-fns)
+                     :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-target-list ((targets true-listp)
                                  (previous-structs symbol-listp)
+                                 (previous-objs symbol-listp)
                                  (previous-fns symbol-listp)
                                  (uncalled-fns symbol-listp)
-                                 (ctx ctxp)
-                                 state)
+                                 (wrld plist-worldp))
   :returns (mv erp
-               (val (tuple (new-previous-structs symbol-listp)
-                           (new-previous-fns symbol-listp)
-                           (new-uncalled-fns symbol-listp)
-                           val)
-                    :hyp (and (symbol-listp previous-structs)
-                              (symbol-listp previous-fns)
-                              (symbol-listp uncalled-fns)))
-               state)
+               (targets symbol-listp)
+               (new-previous-structs symbol-listp
+                                     :hyp (symbol-listp previous-structs))
+               (new-previous-objs symbol-listp
+                                  :hyp (symbol-listp previous-objs))
+               (new-previous-fns symbol-listp
+                                 :hyp (symbol-listp previous-fns))
+               (new-uncalled-fns symbol-listp
+                                 :hyp (symbol-listp uncalled-fns)))
   :short "Lift @(tsee atc-process-function) to lists."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We thread the lists through."))
-  (b* (((when (endp targets)) (acl2::value (list previous-structs
-                                                 previous-fns
-                                                 uncalled-fns)))
-       ((er (list previous-structs previous-fns uncalled-fns))
+    "We thread the lists through.")
+   (xdoc::p
+    "If successful, we also return the target list itself,
+     with a guaranteed @(tsee symbol-listp) type,
+     so that calling code has that fact readily available."))
+  (b* (((reterr) nil nil nil nil nil)
+       ((when (endp targets)) (retok nil
+                                     previous-structs
+                                     previous-objs
+                                     previous-fns
+                                     uncalled-fns))
+       ((erp
+         target
+         previous-structs
+         previous-objs
+         previous-fns
+         uncalled-fns)
         (atc-process-target (car targets)
                             previous-structs
+                            previous-objs
                             previous-fns
                             uncalled-fns
-                            ctx
-                            state)))
-    (atc-process-target-list (cdr targets)
-                             previous-structs
-                             previous-fns
-                             uncalled-fns
-                             ctx
-                             state))
+                            wrld))
+       ((erp
+         targets
+         previous-structs
+         previous-objs
+         previous-fns
+         uncalled-fns)
+        (atc-process-target-list (cdr targets)
+                                 previous-structs
+                                 previous-objs
+                                 previous-fns
+                                 uncalled-fns
+                                 wrld)))
+    (retok (cons target targets)
+           previous-structs
+           previous-objs
+           previous-fns
+           uncalled-fns))
   ///
 
   (more-returns
-   (val true-listp
-        :rule-classes :type-prescription
-        :name true-listp-of-atc-process-target-list.val))
-
-  (defret true-listp-of-atc-process-target-list.new-previous-structs
-    (b* (((list new-previous-structs & &) val))
-      (true-listp new-previous-structs))
-    :hyp (true-listp previous-structs)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target-list.new-previous-fns
-    (b* (((list & new-previous-fns &) val))
-      (true-listp new-previous-fns))
-    :hyp (true-listp previous-fns)
-    :rule-classes :type-prescription)
-
-  (defret true-listp-of-atc-process-target-list.new-uncalled-fns
-    (b* (((list & & new-uncalled-fns) val))
-      (true-listp new-uncalled-fns))
-    :hyp (true-listp uncalled-fns)
-    :rule-classes :type-prescription))
+   (new-previous-structs true-listp
+                         :hyp (true-listp previous-structs)
+                         :rule-classes :type-prescription)
+   (new-previous-objs true-listp
+                      :hyp (true-listp previous-objs)
+                      :rule-classes :type-prescription)
+   (new-previous-fns true-listp
+                     :hyp (true-listp previous-fns)
+                     :rule-classes :type-prescription)
+   (new-uncalled-fns true-listp
+                     :hyp (true-listp uncalled-fns)
+                     :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-targets ((targets true-listp) (ctx ctxp) state)
+(define atc-process-targets ((targets true-listp) (wrld plist-worldp))
   :returns (mv erp
-               (target-fns symbol-listp)
-               state)
+               (targets symbol-listp)
+               (target-fns symbol-listp))
   :short "Process the targets @('t1'), ..., @('tp')."
   :long
   (xdoc::topstring
    (xdoc::p
     "We initialize the lists of
-     previous @(tsee defstruct) names,
-     previous functions,
+     previous @(tsee defstruct) targets,
+     previous @(tsee defobject) targets,
+     previous function targets,
      and uncalled recursive functions to be empty,
      and we ensure that the latter list is empty
      after processing all the targets.")
    (xdoc::p
-    "We return all the target functions."))
-  (b* (((unless (consp targets))
-        (er-soft+ ctx t nil
-                  "At least one target must be supplied."))
-       ((mv erp (list & previous-fns uncalled-fns) state)
-        (atc-process-target-list targets nil nil nil ctx state))
-       ((when erp) (mv erp nil state))
+    "We return all the target functions.
+     We also return all the targets,
+     with a guaranteed @(tsee symbol-listp) type for use by the caller."))
+  (b* (((reterr) nil nil)
+       ((unless (consp targets))
+        (reterr "At least one target must be supplied."))
+       ((erp targets-as-symbols & & previous-fns uncalled-fns)
+        (atc-process-target-list targets nil nil nil nil wrld))
        ((unless (endp uncalled-fns))
-        (er-soft+ ctx t nil
-                  "The recursive target functions ~&0 ~
-                   are not called by any other target function."
-                  uncalled-fns)))
-    (acl2::value previous-fns)))
+        (reterr (msg "The recursive target functions ~&0 ~
+                      are not called by any other target function."
+                     uncalled-fns))))
+    (retok targets-as-symbols previous-fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-output-file (output-file
-                                 (output-file? booleanp)
-                                 (ctx ctxp)
-                                 state)
-  :returns (mv erp (nothing "Always @('nil').") state)
-  :mode :program
-  :short "Process the @(':output-file') input."
-  (b* (((unless output-file?)
-        (er-soft+ ctx t nil
-                  "The :OUTPUT-FILE input must be present, ~
-                   but it is absent instead."))
-       ((er &) (ensure-value-is-string$ output-file
-                                        "The :OUTPUT-FILE input"
-                                        t
-                                        nil))
-       ((mv msg? dirname state) (oslib::dirname output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "No directory path can be obtained ~
-                               from the output file path ~x0. ~@1"
-                              output-file msg?))
-       ((er &)
-        (if (equal dirname "")
-            (acl2::value nil)
-          (b* (((mv msg? kind state) (oslib::file-kind dirname))
-               ((when msg?) (er-soft+ ctx t nil
-                                      "The kind of ~
-                                       the output directory path ~x0 ~
-                                       cannot be tested. ~@1"
-                                      dirname msg?))
-               ((unless (eq kind :directory))
-                (er-soft+ ctx t nil
-                          "The output directory path ~x0 ~
-                           is not a directory; it has kind ~x1 instead."
-                          dirname kind)))
-            (acl2::value nil))))
-       ((mv msg? basename state) (oslib::basename output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "No file name can be obtained ~
-                               from the output file path ~x0. ~@1"
-                              output-file msg?))
-       ((unless (and (>= (length basename) 2)
-                     (equal (subseq basename
-                                    (- (length basename) 2)
-                                    (length basename))
-                            ".c")))
-        (er-soft+ ctx t nil
-                  "The file name ~x0 of the output path ~x1 ~
-                   must have extension '.c', but it does not."
-                  basename output-file))
-       ((mv msg? existsp state) (oslib::path-exists-p output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "The existence of the output path ~x0 ~
-                               cannot be tested. ~@1"
-                              output-file msg?))
-       ((when (not existsp)) (acl2::value nil))
-       ((mv msg? kind state) (oslib::file-kind output-file))
-       ((when msg?) (er-soft+ ctx t nil
-                              "The kind of output file path ~x0 ~
-                               cannot be tested. ~@1"
-                              output-file msg?))
+(define atc-process-output-dir ((options symbol-alistp) state)
+  :returns (mv erp (output-dir stringp) state)
+  :short "Process the @(':output-dir') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, return the input itself,
+     with a guaranteed @(tsee stringp) type."))
+  (b* (((reterr) "" state)
+       (output-dir-option (assoc-eq :output-dir options))
+       (output-dir (if output-dir-option
+                       (cdr output-dir-option)
+                     "."))
+       ((unless (stringp output-dir))
+        (reterr (msg "The :OUTPUT-DIR input must be a string, ~
+                      but ~x0 is not a string."
+                     output-dir)))
+       ((mv msg? kind state) (oslib::file-kind output-dir))
+       ((when msg?) (reterr (msg "The kind of ~
+                                  the output directory path ~x0 ~
+                                  cannot be tested.  ~
+                                  ~@1"
+                                 output-dir msg?)))
+       ((unless (eq kind :directory))
+        (reterr (msg "The output directory path ~x0 ~
+                      is not a directory; it has kind ~x1 instead."
+                     output-dir kind))))
+    (retok output-dir state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-file-name ((options symbol-alistp)
+                               (output-dir stringp)
+                               state)
+  :returns (mv erp
+               (file-name stringp)
+               (path-wo-ext stringp)
+               state)
+  :short "Process the @(':file-name') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, return, besides the file name itself as a string,
+     the full path of the file(s),
+     without the @('.c') or @('.h') extension,
+     consisting of the output directory and
+     the file name without extension.")
+   (xdoc::p
+    "We make sure that, after adding each of the @('.h') and @('.c') extensions,
+     either the file does not exist in the file system
+     or is a file and not a directory (i.e. has the right kind).")
+   (xdoc::p
+    "Due to the use of the file utilities, we also need to return state."))
+  (b* (((reterr) "" "" state)
+       (file-name-option (assoc-eq :file-name options))
+       ((unless (consp file-name-option))
+        (reterr (msg "The :FILE-NAME input must be present, ~
+                      but it is absent instead.")))
+       (file-name (cdr file-name-option))
+       ((unless (stringp file-name))
+        (reterr (msg "The :FILE-NAME input must be a string, ~
+                      but ~x0 is not a string."
+                     file-name)))
+       ((when (equal file-name ""))
+        (reterr (msg "The :FILE-NAME input must not be the empty string.")))
+       ((unless (str::letter/digit/uscore/dash-charlist-p
+                 (str::explode file-name)))
+        (reterr (msg "The :FILE-NAME input must consists of only ~
+                      ASCII letters, digits, underscores, and dashes, ~
+                      but ~s0 violates this condition."
+                     file-name)))
+       (path-wo-ext (oslib::catpath output-dir file-name))
+       (path.c (str::cat path-wo-ext ".c"))
+       ((mv msg? existsp state) (oslib::path-exists-p path.c))
+       ((when msg?) (reterr (msg "The existence of the file path ~x0 ~
+                                  cannot be tested.  ~
+                                  ~@1"
+                                 path.c msg?)))
+       ((when (not existsp)) (retok file-name path-wo-ext state))
+       ((mv msg? kind state) (oslib::file-kind path.c))
+       ((when msg?) (reterr (msg "The kind of the file path ~x0 ~
+                                  cannot be tested.  ~
+                                  ~@1"
+                                 path.c msg?)))
        ((unless (eq kind :regular-file))
-        (er-soft+ ctx t nil
-                  "The output file path ~x0 ~
-                   is not a regular file; it has kind ~x1 instead."
-                  output-file kind)))
-    (acl2::value nil)))
+        (reterr (msg "The file path ~x0 ~
+                      is not a regular file; it has kind ~x1 instead."
+                     path.c kind))))
+    (retok file-name path-wo-ext state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-header ((options symbol-alistp))
+  :returns (mv erp (header booleanp))
+  :short "Process the @(':header') input."
+  (b* (((reterr) nil)
+       (header-option (assoc-eq :header options))
+       (header (if header-option
+                   (cdr header-option)
+                 nil))
+       ((unless (booleanp header))
+        (reterr (msg "The :HEADER input must be a boolean, ~
+                      but ~x0 is not a boolean."
+                     header))))
+    (retok header)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,60 +581,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-pretty-printing (pretty-printing
-                                     (ctx ctxp)
-                                     state)
-  :returns (mv erp (options pprint-options-p) state)
+(define atc-process-pretty-printing ((options symbol-alistp))
+  :returns (mv erp (ppoptions pprint-options-p))
   :short "Process the @(':pretty-printing') input."
-  (b* ((irrelevant (make-pprint-options))
-       ((er &) (ensure-keyword-value-list$ pretty-printing
-                                           "The :PRETTY-PRINTING input"
-                                           t
-                                           irrelevant))
+  (b* (((reterr) (irr-pprint-options))
+       (pretty-printing-option (assoc-eq :pretty-printing options))
+       (pretty-printing (if pretty-printing-option
+                            (cdr pretty-printing-option)
+                          nil))
+       ((unless (keyword-value-listp pretty-printing))
+        (reterr (msg "The :PRETTY-PRINTING input must be a keyword-value list, ~
+                      but ~x0 is not a keyword-value list."
+                     pretty-printing)))
        (alist (keyword-value-list-to-alist pretty-printing))
        (keywords (strip-cars alist))
        (desc (msg "The list of keywords in the :PRETTY-PRINTING input ~x0"
                   keywords))
-       ((er &) (ensure-list-has-no-duplicates$ keywords
-                                               desc
-                                               t
-                                               irrelevant))
-       ((er &) (ensure-list-subset$ keywords
-                                    *atc-allowed-pretty-printing-options*
-                                    desc
-                                    t
-                                    irrelevant))
+       ((unless (no-duplicatesp-eq keywords))
+        (reterr (msg "~@0 must have no duplicates." desc)))
+       ((unless (subsetp-eq keywords *atc-allowed-pretty-printing-options*))
+        (reterr (msg "~@0 must be a subset of ~x1."
+                     desc *atc-allowed-pretty-printing-options*)))
        (parenthesize-nested-conditionals
         (cdr (assoc-eq :parenthesize-nested-conditionals alist)))
-       ((er &) (ensure-value-is-boolean$
-                parenthesize-nested-conditionals
-                (msg "The value ~x0 of the pretty-printing option ~
-                      :PARENTHESIZE-NESTED-CONDITIONALS"
-                     parenthesize-nested-conditionals)
-                t
-                irrelevant)))
-    (acl2::value
+       ((unless (booleanp parenthesize-nested-conditionals))
+        (reterr (msg "The value ~x0 of the pretty-printing option ~
+                      :PARENTHESIZE-NESTED-CONDITIONALS must be a boolean."
+                     parenthesize-nested-conditionals))))
+    (retok
      (make-pprint-options
-      :parenthesize-nested-conditionals parenthesize-nested-conditionals)))
-  :guard-hints (("Goal" :in-theory (enable acl2::ensure-keyword-value-list
-                                           acl2::ensure-value-is-boolean)))
-  :prepwork ((local (include-book "std/alists/top" :dir :system))))
+      :parenthesize-nested-conditionals parenthesize-nested-conditionals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-const-name (const-name
-                                (const-name? booleanp)
+(define atc-process-proofs ((options symbol-alistp))
+  :returns (mv erp (proofs booleanp))
+  :short "Process the @(':proofs') input."
+  (b* (((reterr) nil)
+       (proofs-option (assoc-eq :proofs options))
+       (proofs (if proofs-option
+                   (cdr proofs-option)
+                 t))
+       ((unless (booleanp proofs))
+        (reterr (msg "The :PROOFS input must be a boolean, ~
+                      but ~x0 is not a boolean."
+                     proofs))))
+    (retok proofs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-const-name ((options symbol-alistp)
                                 (target-fns symbol-listp)
-                                (proofs booleanp)
-                                (ctx ctxp)
-                                state)
+                                (wrld plist-worldp))
   :returns (mv erp
-               (val "A @('(tuple (prog-const symbolp)
-                                 (wf-thm symbolp)
-                                 (fn-thms symbol-symbol-alistp)
-                                 val)').")
-               state)
-  :mode :program
+               (prog-const symbolp)
+               (wf-thm symbolp)
+               (fn-thms symbol-symbol-alistp
+                        :hyp (symbol-listp target-fns))
+               (fn-limits symbol-symbol-alistp
+                          :hyp (symbol-listp target-fns))
+               (fn-body-limits symbol-symbol-alistp
+                               :hyp (symbol-listp target-fns)))
   :short "Process the @(':const-name') input."
   :long
   (xdoc::topstring
@@ -500,81 +662,134 @@
      The thing appended differs across the theorems:
      thus, their names are all distinct by construction.")
    (xdoc::p
-    "If the @(':proofs') input is @('nil'),
-     the @(':const-name') input must be absent
-     and we return @('nil') for this as well as for the theorem names.
-     No constant and theorems are generated when @(':proofs') is @('nil')."))
-  (b* ((irrelevant (list nil nil nil))
-       ((when (not proofs))
-        (if const-name?
-            (er-soft+ ctx t irrelevant
-                      "Since the :PROOFS input is NIL, ~
-                       the :CONST-NAME input must be absent, ~
-                       but it is ~x0 instead."
-                      const-name)
-          (acl2::value (list nil nil nil))))
-       ((er &) (ensure-value-is-symbol$ const-name
-                                        "The :CONST-NAME input"
-                                        t
-                                        irrelevant))
+    "Besides the names of the generated theorems,
+     we also return the names of the soon-to-be-generated limit functions.
+     There will be one limit function for each target function,
+     whose name is obtained by adding @('-limit')
+     after the constant name and the target function name:
+     this will express a limit sufficient to execute the target function.
+     There will be also an additional limit function
+     for each recursive target function,
+     whose name is obtained by adding @('-body-limit')
+     after the constant name and the target function name;
+     this will express a limit sufficient to run
+     any instance of the loop body."))
+  (b* (((reterr) nil nil nil nil nil)
+       (const-name-option (assoc-eq :const-name options))
+       (const-name (if (consp const-name-option)
+                       (cdr const-name-option)
+                     :auto))
+       ((unless (symbolp const-name))
+        (reterr (msg "The :CONST-NAME input must be a symbol, ~
+                      but ~x0 is not a symbol."
+                     const-name)))
        (prog-const (if (eq const-name :auto)
                        'c::*program*
                      const-name))
-       ((er &) (ensure-symbol-is-fresh-event-name$
-                prog-const
-                (msg "The constant name ~x0 ~
-                      specified by the :CONST-NAME input"
-                     prog-const)
-                'const
-                nil
-                t
-                nil))
+       (msg? (acl2::fresh-namep-msg-weak prog-const 'acl2::const wrld))
+       ((when msg?)
+        (reterr (msg "The constant name ~x0 ~
+                      determined by the :CONST-NAME input ~x0 ~
+                      is invalid: ~@2"
+                     prog-const const-name msg?)))
        (wf-thm (add-suffix prog-const "-WELL-FORMED"))
-       ((er &) (ensure-symbol-is-fresh-event-name$
-                wf-thm
-                (msg "The generated theorem name ~x0 ~
-                      indirectly specified by the :CONST-NAME input"
-                     wf-thm)
-                nil
-                nil
-                t
-                nil))
-       ((er fn-thms)
-        (atc-process-const-name-aux target-fns prog-const ctx state)))
-    (acl2::value (list prog-const
-                       wf-thm
-                       fn-thms)))
+       (msg? (acl2::fresh-namep-msg-weak wf-thm nil wrld))
+       ((when msg?)
+        (reterr (msg "The generated theorem name ~x0 ~
+                      for the well-formedness theorem is invalid: ~@1"
+                     wf-thm msg?)))
+       ((erp fn-thms fn-limits fn-body-limits)
+        (atc-process-const-name-aux target-fns prog-const wrld)))
+    (retok prog-const wf-thm fn-thms fn-limits fn-body-limits))
 
   :prepwork
   ((define atc-process-const-name-aux ((target-fns symbol-listp)
                                        (prog-const symbolp)
-                                       (ctx ctxp)
-                                       state)
+                                       (wrld plist-worldp))
      :returns (mv erp
-                  (val "A @(tsee symbol-symbol-alistp).")
-                  state)
-     :mode :program
-     (b* (((when (endp target-fns)) (acl2::value nil))
+                  (fn-thms symbol-symbol-alistp
+                           :hyp (symbol-listp target-fns))
+                  (fn-limits symbol-symbol-alistp
+                             :hyp (symbol-listp target-fns))
+                  (fn-body-limits symbol-symbol-alistp
+                                  :hyp (symbol-listp target-fns)))
+     (b* (((reterr) nil nil nil)
+          ((when (endp target-fns)) (retok nil nil nil))
           (fn (car target-fns))
           (fn-thm (packn (list prog-const "-" (symbol-name fn) "-CORRECT")))
-          ((er &) (ensure-symbol-is-fresh-event-name$
-                   fn-thm
-                   (msg "The generated theorem name ~x0 ~
-                         indirectly specified by the :CONST-NAME input"
-                        fn-thm)
-                   nil
-                   nil
-                   t
-                   nil))
-          ((er fn-thms) (atc-process-const-name-aux
-                         (cdr target-fns) prog-const ctx state)))
-       (acl2::value (acons fn fn-thm fn-thms))))))
+          (msg? (acl2::fresh-namep-msg-weak fn-thm nil wrld))
+          ((when msg?)
+           (reterr (msg "The generated theorem name ~x0 ~
+                         for the correctness theorem of the function ~x1 ~
+                         is invalid: ~@2"
+                        fn-thm fn msg?)))
+          ((erp fn-thms fn-limits fn-body-limits)
+           (atc-process-const-name-aux (cdr target-fns) prog-const wrld))
+          (fn-limit (packn (list prog-const "-" (symbol-name fn) "-LIMIT")))
+          (msg? (acl2::fresh-namep-msg-weak fn-limit 'function wrld))
+          ((when msg?)
+           (reterr (msg "The generated function name ~x0 ~
+                         for the limit of the function ~x1 ~
+                         is invalid: ~@2"
+                        fn-limit fn msg?)))
+          ((when (not (irecursivep+ fn wrld)))
+           (retok (acons fn fn-thm fn-thms)
+                  (acons fn fn-limit fn-limits)
+                  fn-body-limits))
+          (fn-body-limit
+           (packn (list prog-const "-" (symbol-name fn) "-BODY-LIMIT")))
+          (msg? (acl2::fresh-namep-msg-weak fn-body-limit 'function wrld))
+          ((when msg?)
+           (reterr (msg "The generated function name ~x0 ~
+                         for the body limit of the function ~x1 ~
+                         is invalid: ~@2"
+                        fn-body-limit fn msg?))))
+       (retok (acons fn fn-thm fn-thms)
+              (acons fn fn-limit fn-limits)
+              (acons fn fn-body-limit fn-body-limits)))
+     :prepwork ((local (in-theory (enable acons))))
+     :verify-guards nil ; done below
+     ///
+     (verify-guards atc-process-const-name-aux
+       :hints
+       (("Goal"
+         :in-theory
+         (enable acl2::alistp-when-symbol-symbol-alistp-rewrite)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-process-print ((options symbol-alistp))
+  :returns (mv erp (print evmac-input-print-p))
+  :short "Process the @(':print') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the @(tsee evmac-input-print-p) type,
+     but we exclude the @('nil') case; see the ATC user doc.
+     We should probably define a new type for
+     the printing levels supported by ATC,
+     or perhaps change @(tsee evmac-input-print-p) to be that,
+     as it may be more appropriate."))
+  (b* (((reterr) nil)
+       (print-option (assoc-eq :print options))
+       (print (if print-option
+                  (cdr print-option)
+                :result))
+       ((unless (and (evmac-input-print-p print)
+                     print))
+        (reterr (msg "The :PRINT input must be ~
+                      :ERROR, :RESULT, :INFO, or :ALL; ~
+                      but it is ~x0 instead."
+                     print))))
+    (retok print)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *atc-allowed-options*
   :short "Keyword options accepted by @(tsee atc)."
-  (list :output-file
+  (list :output-dir
+        :file-name
+        :header
         :pretty-printing
         :proofs
         :const-name
@@ -585,73 +800,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-process-inputs ((args true-listp) (ctx ctxp) state)
+(define atc-process-inputs ((args true-listp) state)
   :returns (mv erp
-               (val "A @('(tuple (targets symbol-listp)
-                                 (output-file stringp)
-                                 (pretty-printing pprint-options-p)
-                                 (proofs booleanp)
-                                 (prog-const symbolp)
-                                 (wf-thm symbolp)
-                                 (fn-thms symbol-symbol-alistp)
-                                 (print evmac-input-print-p)
-                                 val)').")
+               (targets symbol-listp)
+               (file-name stringp)
+               (path-wo-ext stringp)
+               (header booleanp)
+               (pretty-printing pprint-options-p)
+               (proofs booleanp)
+               (prog-const symbolp)
+               (wf-thm symbolp)
+               (fn-thms symbol-symbol-alistp)
+               (fn-limits symbol-symbol-alistp)
+               (fn-body-limits symbol-symbol-alistp)
+               (print evmac-input-print-p)
                state)
-  :mode :program
   :short "Process all the inputs."
-  (b* (((mv erp targets options)
+  (b* (((reterr)
+        nil "" "" nil (irr-pprint-options)
+        nil nil nil nil nil nil nil state)
+       (wrld (w state))
+       ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))
-       ((when erp) (er-soft+ ctx t nil
-                             "The inputs must be the targets ~
-                              followed by the options ~&0."
-                             *atc-allowed-options*))
-       ((er target-fns) (atc-process-targets targets ctx state))
-       (output-file-option (assoc-eq :output-file options))
-       ((mv output-file output-file?)
-        (if output-file-option
-            (mv (cdr output-file-option) t)
-          (mv :irrelevant nil)))
-       ((er &) (atc-process-output-file output-file
-                                        output-file?
-                                        ctx
-                                        state))
-       (pretty-printing-option (assoc-eq :pretty-printing options))
-       (pretty-printing (if pretty-printing-option
-                            (cdr pretty-printing-option)
-                          nil))
-       ((er pretty-printing) (atc-process-pretty-printing pretty-printing
-                                                          ctx
-                                                          state))
-       (proofs-option (assoc-eq :proofs options))
-       (proofs (if proofs-option
-                   (cdr proofs-option)
-                 t))
-       ((er &) (ensure-value-is-boolean$ proofs
-                                         "The :PROOFS input"
-                                         t
-                                         nil))
-       (const-name-option (assoc-eq :const-name options))
-       ((mv const-name const-name?)
-        (if const-name-option
-            (mv (cdr const-name-option) t)
-          (mv :auto nil)))
-       ((er (list prog-const wf-thm fn-thms))
-        (atc-process-const-name const-name
-                                const-name?
-                                target-fns
-                                proofs
-                                ctx
-                                state))
-       (print-option (assoc-eq :print options))
-       (print (if print-option
-                  (cdr print-option)
-                :result))
-       ((er &) (evmac-process-input-print print ctx state)))
-    (acl2::value (list targets
-                       output-file
-                       pretty-printing
-                       proofs
-                       prog-const
-                       wf-thm
-                       fn-thms
-                       print))))
+       ((when erp) (reterr (msg "The inputs must be the targets ~
+                                 followed by the options ~&0."
+                                *atc-allowed-options*)))
+       ((erp targets target-fns) (atc-process-targets targets wrld))
+       ((erp output-dir state) (atc-process-output-dir options state))
+       ((erp file-name path-wo-ext state)
+        (atc-process-file-name options output-dir state))
+       ((erp header) (atc-process-header options))
+       ((erp pretty-printing) (atc-process-pretty-printing options))
+       ((erp proofs) (atc-process-proofs options))
+       ((erp prog-const wf-thm fn-thms fn-limits fn-body-limits)
+        (atc-process-const-name options target-fns wrld))
+       ((erp print) (atc-process-print options)))
+    (retok targets
+           file-name
+           path-wo-ext
+           header
+           pretty-printing
+           proofs
+           prog-const
+           wf-thm
+           fn-thms
+           fn-limits
+           fn-body-limits
+           print
+           state)))

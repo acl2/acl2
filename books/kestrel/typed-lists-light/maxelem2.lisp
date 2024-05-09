@@ -1,7 +1,7 @@
 ; More theorems about maxelem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,16 +17,15 @@
 (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; This book mixes maxelem with other non-built-in functions.
 
 ;rename
-(defthm maxelem-of-member
+;drop?
+(defthmd maxelem-of-member
   (implies (memberp a x)
-           (<= a (maxelem x)))
-  :hints (("Goal" :in-theory (enable maxelem))))
-
+           (<= a (maxelem x))))
 
 ;; (IMPLIES (AND (CONSP X)
 ;;               (CONSP (CDR X))
@@ -41,14 +40,12 @@
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (enable maxelem bag::perm))))
 
+;move to main book
 (defthm maxelem-of-remove1
   (implies (<= 2 (len lst)) ;bozo, so maxelem is well-defined after we remove a
            (<= (maxelem (remove1-equal a lst))
                (maxelem lst)))
-  :hints (("Goal" :expand ((REMOVE1-EQUAL A LST)
-                           (REMOVE1-EQUAL A (CDR LST)))
-           :in-theory (enable maxelem ;consp-cdr
-                                     ))))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
 
 (defthmd maxelem-when-subbagp-helper
   (implies (and (subsetp-equal lst1 lst2)

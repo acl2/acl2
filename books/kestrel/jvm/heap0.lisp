@@ -289,7 +289,7 @@
   (declare (xargs :guard t)) ; require heapp?
   (let* ((old-instance (g ad heap))
          (new-instance (s class-field-pair value old-instance))
-	 (new-heap (s ad new-instance heap)))
+         (new-heap (s ad new-instance heap)))
     new-heap))
 
 (defthm all-bound-to-heap-objectsp-of-s
@@ -348,26 +348,26 @@
 ;This logically subsumes the next 4 theorems but can cause a case-split, so I put it first (since more recent rules will be tried first).
 (defthm get-field-of-set-field-both
   (equal (get-field ad1 pair1 (set-field ad2 pair2 value heap))
-	 (if (and (equal ad1 ad2)
+         (if (and (equal ad1 ad2)
                   (equal pair1 pair2))
-	     value
-	   (get-field ad1 pair1 heap)))
+             value
+           (get-field ad1 pair1 heap)))
   :hints (("Goal" :in-theory (enable get-field set-field))))
 
 (defthm get-field-of-set-field-same
   (equal (get-field ref pair (set-field ref pair value heap))
-	 value))
+         value))
 
 (defthm get-field-of-set-field-diff-2
   (implies (not (equal pair1 pair2))
-	   (equal (get-field ref1 pair1 (set-field ref2 pair2 value heap))
-		  (get-field ref1 pair1 heap))))
+           (equal (get-field ref1 pair1 (set-field ref2 pair2 value heap))
+                  (get-field ref1 pair1 heap))))
 
 ;classes can differ or fields can differ.  here, refs differ
 (defthm get-field-of-set-field-diff-1
   (implies (not (equal ref1 ref2))
-	   (equal (get-field ref1 pair1 (set-field ref2 pair2 value heap))
-		  (get-field ref1 pair1 heap))))
+           (equal (get-field ref1 pair1 (set-field ref2 pair2 value heap))
+                  (get-field ref1 pair1 heap))))
 
 
 ;should the previous 3 rules be combined for efficiency?
@@ -380,7 +380,7 @@
 
 (defthm set-field-of-get-field-same
   (equal (set-field ref pair (get-field ref pair heap) heap)
-	 heap)
+         heap)
   :hints (("goal" :in-theory (enable get-field set-field))))
 
 ;;
@@ -396,40 +396,40 @@
 ;this rule won't fire when the else-part would be chosen?
 (defthm set-field-of-set-field-both
   (equal (set-field ref1 pair1 value1
-			   (set-field ref2 pair2 value2 heap))
-	 (if (or (not (equal ref1 ref2))
-		 (not (equal pair1 pair2)))
-	     (set-field ref2 pair2 value2
-			       (set-field ref1 pair1 value1 heap))
-	   (set-field ref1 pair1 value1 heap)
-	   ))
+                           (set-field ref2 pair2 value2 heap))
+         (if (or (not (equal ref1 ref2))
+                 (not (equal pair1 pair2)))
+             (set-field ref2 pair2 value2
+                               (set-field ref1 pair1 value1 heap))
+           (set-field ref1 pair1 value1 heap)
+           ))
   :rule-classes ((:rewrite :loop-stopper ((ref1 ref2)
-					  (pair1 pair2))))
+                                          (pair1 pair2))))
   :hints (("Goal" :in-theory (enable get-field set-field))))
 
 
 (defthm set-field-of-set-field-same
   (equal (set-field ref pair value1 (set-field ref pair value2 heap))
-	 (set-field ref pair value1 heap))
+         (set-field ref pair value1 heap))
   :hints (("Goal" :in-theory (enable get-field set-field))))
 
 
 (defthm set-field-of-set-field-diff-2
   (implies (not (equal pair1 pair2))
-	   (equal (set-field ref1 pair1 value1
-				    (set-field ref2 pair2 value2  heap))
-		  (set-field ref2 pair2 value2
+           (equal (set-field ref1 pair1 value1
+                                    (set-field ref2 pair2 value2  heap))
+                  (set-field ref2 pair2 value2
                              (set-field ref1 pair1 value1 heap))))
   :rule-classes ((:rewrite :loop-stopper ((ref1 ref2)
-					  (pair1 pair2)))))
+                                          (pair1 pair2)))))
 
 ;classes or fields or refs can differ.  here, refs differ
 (defthm set-field-of-set-field-diff-1
   (implies (not (equal ref1 ref2))
-	   (equal (set-field ref1 pair1 value1 (set-field ref2 pair2 value2 heap))
-		  (set-field ref2 pair2 value2 (set-field ref1 pair1 value1 heap))))
+           (equal (set-field ref1 pair1 value1 (set-field ref2 pair2 value2 heap))
+                  (set-field ref2 pair2 value2 (set-field ref1 pair1 value1 heap))))
   :rule-classes ((:rewrite :loop-stopper ((ref1 ref2)
-					  (pair1 pair2)))))
+                                          (pair1 pair2)))))
 
 
 ;TTODO or consider sorting from high to low to aid in sharing (usually heap are filled from start to end, rather than from end to start)
@@ -444,14 +444,14 @@
 
 (defthm set-field-of-get-field-same-eric
   (implies (equal (get-field ref pair heap)
-		  (get-field ref pair heap2))
-	   (equal (set-field ref pair (get-field ref pair heap2) heap)
-		  heap)))
+                  (get-field ref pair heap2))
+           (equal (set-field ref pair (get-field ref pair heap2) heap)
+                  heap)))
 
 (defthm set-field-of-get-field-same-eric-2
   (implies (equal value (get-field ref pair heap))
-	   (equal (set-field ref pair value heap)
-		  heap)))
+           (equal (set-field ref pair value heap)
+                  heap)))
 
 ;could be expensive?
 ;gen the (dom heap) to a variable?
@@ -558,11 +558,11 @@
 ;rename.
 (defthm get-either-case
   (equal (get-field ref1 pair
-		    (set-field ref2 pair
-			       (get-field ref1 pair heap)
-			       heap))
-	 (get-field ref1 pair heap)
-	 )
+                    (set-field ref2 pair
+                               (get-field ref1 pair heap)
+                               heap))
+         (get-field ref1 pair heap)
+         )
   :hints (("goal" :cases ((equal ref1 ref2)))))
 
 (defthm get-field-of-new-ad
@@ -737,8 +737,8 @@
 ;; ;similar theorem for set-field?
 ;; (defthm reduce-claim-thatset-class-doesnt-change-heap
 ;;   (equal (equal (set-class-of-ref ref class-name heap)
-;; 		heap)
-;; 	 (equal (get-class-of-ref ref heap) class-name))
+;;              heap)
+;;       (equal (get-class-of-ref ref heap) class-name))
 ;;     :hints (("goal" :in-theory (enable set-class-of-ref get-class-of-ref))))
 
 
@@ -848,12 +848,12 @@
 ;;   (if (endp bindings)
 ;;       heap
 ;;     (let* ((first-binding (car bindings))
-;; 	   (adr (car first-binding))
-;; 	   (class-name (cadr first-binding))
-;; 	   (field-id (caddr first-binding))
-;; 	   (value (cadddr first-binding)))
+;;         (adr (car first-binding))
+;;         (class-name (cadr first-binding))
+;;         (field-id (caddr first-binding))
+;;         (value (cadddr first-binding)))
 ;;       (set-field adr (cons class-name field-id) value
-;; 		 (set-field-many (cdr bindings) heap)))))
+;;               (set-field-many (cdr bindings) heap)))))
 
 ;; (defthm set-field-many-with-bindings-not-a-consp
 ;;   (implies (not (consp bindings))
@@ -863,22 +863,22 @@
 
 ;; (defthm set-field-many-opener-1
 ;;   (equal (set-field-many nil heap)
-;; 	 heap)
+;;       heap)
 ;;   :hints (("Goal" :in-theory (enable set-field-many))))
 
 ;; ;so we open set-field-many but close up set-fields?  can we reconcile these two approaches?
 ;; (defthm set-field-many-opener-2
 ;;   (implies (and (and (syntaxp (equal 'cons (car bindings)))) ;why did i write it like this?
-;; 		(consp bindings)
-;; 		)
-;; 	   (equal (set-field-many bindings heap)
-;; 		  (let* ((first-binding (car bindings))
-;; 			 (adr (car first-binding))
-;; 			 (class-name (cadr first-binding))
-;; 			 (field-id (caddr first-binding))
-;; 			 (value (cadddr first-binding)))
-;; 		    (set-field adr (cons class-name field-id) value
-;; 			       (set-field-many (cdr bindings) heap)))))
+;;              (consp bindings)
+;;              )
+;;         (equal (set-field-many bindings heap)
+;;                (let* ((first-binding (car bindings))
+;;                       (adr (car first-binding))
+;;                       (class-name (cadr first-binding))
+;;                       (field-id (caddr first-binding))
+;;                       (value (cadddr first-binding)))
+;;                  (set-field adr (cons class-name field-id) value
+;;                             (set-field-many (cdr bindings) heap)))))
 ;;   :hints (("Goal" :in-theory (enable set-field-many))))
 
 
@@ -912,16 +912,16 @@
 
 ;; (defthm get-field-of-set-field-many-diff-adr
 ;;   (implies (not (memberp adr (strip-cars bindings)))
-;; 	   (equal (get-field adr pair (set-field-many bindings heap))
-;; 		  (get-field adr pair heap)))
+;;         (equal (get-field adr pair (set-field-many bindings heap))
+;;                (get-field adr pair heap)))
 ;;   :hints (("Goal" :in-theory (enable set-field-many memberp))))
 
 
 
 ;; (defthm get-field-of-set-field-many-diff-class-name
 ;;   (implies (not (memberp pair (strip-cadrs bindings)))
-;; 	   (equal (get-field adr pair (set-field-many bindings heap))
-;; 		  (get-field adr pair heap)))
+;;         (equal (get-field adr pair (set-field-many bindings heap))
+;;                (get-field adr pair heap)))
 ;;   :hints (("Goal" :in-theory (enable set-field-many memberp))))
 
 
@@ -940,15 +940,15 @@
 
 ;; (defthm new-ad-ignores-extra-set-fields-of-the-same-adr
 ;;   (implies (and (not (equal value1 nil))
-;; 		(not (equal value2 nil)))
+;;              (not (equal value2 nil)))
 ;;   (equal (NEW-AD
-;; 	  (SET-FIELD
-;; 	   ref class-name1 field-id1 value1
-;; 	   (SET-FIELD ref class-name2 field-id2 value2 heap)))
-;; 	 (NEW-AD
-;; 	  (SET-FIELD
-;; 	   ref class-name1 field-id1 value1
-;; 	   heap))))
+;;        (SET-FIELD
+;;         ref class-name1 field-id1 value1
+;;         (SET-FIELD ref class-name2 field-id2 value2 heap)))
+;;       (NEW-AD
+;;        (SET-FIELD
+;;         ref class-name1 field-id1 value1
+;;         heap))))
 ;;   :hints (("Goal" :in-theory (enable new-ad new-ad-aux set-field))))
 
 ;; ...
@@ -956,30 +956,30 @@
 
 ;; (defthm s-of-set-field
 ;;   (equal (s ref value1 (set-field ref pair value2 heap))
-;; 	 (s ref value1 heap))
+;;       (s ref value1 heap))
 ;;   :hints (("goal" :in-theory (enable set-field))))
 
 ;; (defthm s-of-set-class
 ;;   (equal (s ref value1 (set-class-of-ref ref class-name heap))
-;; 	 (s ref value1 heap))
+;;       (s ref value1 heap))
 ;;   :hints (("goal" :in-theory (enable set-class-of-ref))))
 
 ;; ...
 
 ;; (defthm hack11
 ;;   (implies (g ref heap)
-;; 	   (equal (unite (dom heap)
-;; 			       (s1 ref))
-;; 		  (dom heap)))
+;;         (equal (unite (dom heap)
+;;                             (s1 ref))
+;;                (dom heap)))
 ;;   :hints (("goal" :use (:instance in-dom-iff-g (a ref) (r heap))
 
-;; 	   :in-theory (disable in-dom-iff-g))))
+;;         :in-theory (disable in-dom-iff-g))))
 
 ;; (defthm new-ad-s-already-bound-val
 ;;   (implies (and (g ref heap)
-;; 		val)
-;; 	   (equal (NEW-AD (S ref val HEAP))
-;; 		  (new-ad heap)))
+;;              val)
+;;         (equal (NEW-AD (S ref val HEAP))
+;;                (new-ad heap)))
 ;;   :hints (("Goal" :in-theory (enable new-ad))))
 
 
@@ -988,8 +988,8 @@
 ;;  bozo rephrase
 ;; (defthm get-field-of-not-bound
 ;;   (implies (not (bound-in-heap adr heap))
-;; 	   (equal (get-field adr class-name field-id heap)
-;; 		  nil))
+;;         (equal (get-field adr class-name field-id heap)
+;;                nil))
 ;;   :hints (("Goal" :in-theory (enable bound-in-heap get-field))))
 
 ;; ...
@@ -997,7 +997,7 @@
 ;;  BOZO
 ;; (defthm get-field-of-new-ad
 ;;   (equal (get-field (new-ad heap) class-name field-id heap)
-;; 	 nil)
+;;       nil)
 ;;   :hints (("goal" :in-theory (disable in-dom-iff-g)))
 ;;   )
 
@@ -1017,13 +1017,13 @@
 
 ;; (defthm g-of-set-field-2
 ;;   (implies (case-split value)
-;; 	   (G ref (SET-FIELD
-;; 		   ref class-name field-id value heap)))
+;;         (G ref (SET-FIELD
+;;                 ref class-name field-id value heap)))
 ;;   :hints (("Goal" :in-theory (enable set-field))))
 
 ;; (defthm get-field-non-nil-means-bound
 ;;   (implies (get-field adr pair heap)
-;; 	   (bound-in-heap adr heap))
+;;         (bound-in-heap adr heap))
 ;;   :rule-classes ((:rewrite :match-free :all))
 ;;   :hints (("Goal" :in-theory (enable bound-in-heap get-field))))
 
@@ -1034,12 +1034,12 @@
 
 ;; ;kill?
 ;; (local (defthm new-ad-not-bound-helper3
-;; 	  (implies (sets::subset bound-adrs bound-adrs2)
-;; 		   (not (sets::in (new-ad-aux bound-adrs2 current-try) bound-adrs)))
-;; 	  :hints (
-;; 		  ("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
-;; 		   :use (:instance new-ad-not-bound-helper2
-;; 					  (ad-set bound-adrs2))))))
+;;        (implies (sets::subset bound-adrs bound-adrs2)
+;;                 (not (sets::in (new-ad-aux bound-adrs2 current-try) bound-adrs)))
+;;        :hints (
+;;                ("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
+;;                 :use (:instance new-ad-not-bound-helper2
+;;                                        (ad-set bound-adrs2))))))
 
 
 

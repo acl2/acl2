@@ -1,6 +1,6 @@
 ; Zcash Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2021-2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "std/portcullis" :dir :system)
+(include-book "projects/numbers/portcullis" :dir :system)
 (include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "kestrel/isar/portcullis" :dir :system)
@@ -31,6 +32,7 @@
                           nat-setp
                           ecurve::twisted-edwards-zero
                           isar::defisar
+                          dm::primep
                           pfield::fep
                           pfield::add
                           pfield::neg

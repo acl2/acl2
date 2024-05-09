@@ -1,4 +1,4 @@
-(include-book "std/strings/istrprefixp" :dir :system)
+;; (include-book "std/strings/istrprefixp" :dir :system)
 
 (include-book "centaur/sv/portcullis" :dir :system)
 
@@ -37,7 +37,17 @@
             acl2::loghead
             acl2::logtail
 	    acl2::defines
-            
+	    acl2::and*
+	    acl2::or*
+	    acl2::if*
+	    acl2::raise
+	    acl2::maybe-natp
+	    acl2::maybe-nat-listp
+
+	    sv::bitor
+	    sv::bitxor
+	    sv::bitand
+	    sv::bitnot
             sv::3vec-bitand
             sv::2vec
             sv::4vec
@@ -56,7 +66,15 @@
 	    sv::svex-fix
 	    sv::svexlist-p
 	    sv::svexlist-eval
-	    sv::4VECLIST-NTH-SAFE
+	    sv::svexlist-eval$
+	    sv::svex-alist-eval	
+	    sv::svex-alist-eval$
+	    sv::4veclist-nth-safe
+	    sv::svex-eval-when-quote
+	    sv::svex-eval-when-fncall
+	    sv::svex-eval$-when-quote
+	    sv::svex-eval$-when-fncall
+
 	    sv::svex-call->fn
 	    sv::svex-kind
 	    sv::fnsym-p
@@ -64,8 +82,12 @@
 	    sv::svex-call->args
 	    sv::svex-env-p
 	    sv::svex-eval
+	    sv::svex-apply
+	    sv::svex-eval$
+	    sv::svex-apply$
 	    sv::svex-var->name
 	    sv::svex-apply-cases
+	    SV::SVEX-APPLY$-CASES
 	    std::defret
 	    std::defret-mutual
 
@@ -90,6 +112,7 @@
             acl2::SYMBOL-LIST-LISTP
             acl2::unprettify
 
+	    rp::config
 	    rp::rp
 	    rp::falist
 	    rp::show-rules-used
@@ -120,6 +143,12 @@
 	    rp::rp-state
 	    rp::valid-rp-statep
 	    rp::valid-rp-state-syntaxp
+	    rp::rp-evl-of-apply$-userfn-call
+	    rp::rp-evl-of-badge-userfn-call
+	    rp::rp-evl-of-apply$-call
+	    rp::env
+	    rp::context
+	    rp::create-case-match-macro
 
 
             acl2::sv
@@ -128,7 +157,8 @@
             acl2::svtv-run
             acl2::svl-run
             acl2::svl-flatten-design
-            
+
+	    acl2::defsection
             acl2::arglist
 	    acl2::value
             acl2::in

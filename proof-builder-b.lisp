@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -235,8 +235,7 @@
                                     nil
                                     (fms0 "Please supply an event name (or :A to ~
                                    abort)~%>> "))
-                               (with-infixp-nil
-                                (read-object *standard-oi* state))))))
+                               (read-object *standard-oi* state)))))
             (if (eq event-name :a)
                 (pprogn (io? proof-builder nil state
                              nil
@@ -528,19 +527,6 @@
                        `(without-evisc ,print-form)
                      print-form)))))
 
-(defun bounded-integer-listp (i j lst)
-  ;; If i is a non-integer, then it's -infinity.
-  ;; If j is a non-integer, then it's +infinity.
-  (if (consp lst)
-      (and (integerp (car lst))
-           (if (integerp i)
-               (if (integerp j)
-                   (and (<= i (car lst))
-                        (<= (car lst) j))
-                 (<= i (car lst)))
-             (<= (car lst) j)))
-    (null lst)))
-
 (defun fetch-term-and-cl (term addr cl)
   ;; Returns the subterm of TERM at address ADDR paired with a list
   ;; containing the tests governing that occurrence of the subterm plus
@@ -698,7 +684,7 @@
 )
 
 (defun remove-?s (term abbreviations-alist ctx state)
-  (let ((newterm (sublis-expr abbreviations-alist term)))
+  (let ((newterm (sublis-expr-non-quoteps abbreviations-alist term)))
     (er-progn (chk-?s newterm ctx state)
               (value newterm))))
 
@@ -951,27 +937,25 @@
 ; :bye objects in the tag-tree, there is no checking of the load mode, and the
 ; warning above.
 
-  (prog2$
-   (initialize-brr-stack state)
-   (er-let* ((ttree
-              (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
-                                        state
-                                        (splitter-output)
-                                        hints))
-                    (clauses (list (list term))))
-                (if (f-get-global 'in-verify-flg state) ;interactive
-                    (state-global-let*
-                     ((saved-output-p t)
-                      (saved-output-token-lst :all))
-                     (pprogn (f-put-global 'saved-output-reversed nil state)
-                             (push-current-acl2-world 'saved-output-reversed
-                                                      state)
-                             (prove-loop clauses pspv hints ens wrld ctx
-                                         state)))
-                  (prove-loop clauses pspv hints ens wrld ctx state)))))
-            (er-progn
-             (chk-assumption-free-ttree ttree ctx state)
-             (value ttree)))))
+  (er-let* ((ttree
+             (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld
+                                       state
+                                       (splitter-output)
+                                       hints))
+                   (clauses (list (list term))))
+               (if (f-get-global 'in-verify-flg state) ;interactive
+                   (state-global-let*
+                    ((saved-output-p t)
+                     (saved-output-token-lst :all))
+                    (pprogn (f-put-global 'saved-output-reversed nil state)
+                            (push-current-acl2-world 'saved-output-reversed
+                                                     state)
+                            (prove-loop clauses pspv hints ens wrld ctx
+                                        state)))
+                   (prove-loop clauses pspv hints ens wrld ctx state)))))
+    (er-progn
+     (chk-assumption-free-ttree ttree ctx state)
+     (value ttree))))
 
 (defun abbreviations-alist-? (abbreviations)
   ;; Same as abbreviations-alist, except that we assume that we
@@ -1512,24 +1496,24 @@
                  the number of conjuncts)"
                 nil nil nil))))))
 
-(table dive-into-macros-table nil nil
-       :guard
-       (and (symbolp key)
-            (or (and (function-symbolp val world)
+(set-table-guard
+ dive-into-macros-table
+ (and (symbolp key)
+      (or (and (function-symbolp val world)
 
 ; We can call key using ev-fncall-w in expand-address, so we had better be sure
 ; that the guard of ev-fncall-w will be satisfied.
 
-                     (equal (stobjs-in val world) '(nil nil nil nil))
-                     (not (assoc-eq val *ttag-fns*))
+               (equal (stobjs-in val world) '(nil nil nil nil))
+               (not (assoc-eq val *ttag-fns*))
 
 ; The following test is a bit too strong, since it fails to take into account
 ; temp-touchable-fns; see untouchable-fn-p.  However, this drawback seems quite
 ; minor and it certainly does not affect soundness.
 
-                     (not (member-eq val (global-val 'untouchable-fns world))))
-                (integerp val)
-                (null val))))
+               (not (member-eq val (global-val 'untouchable-fns world))))
+          (integerp val)
+          (null val))))
 
 (defmacro add-dive-into-macro (name val)
   `(table dive-into-macros-table ',name ',val))
@@ -3307,7 +3291,7 @@
                                  (abbreviations extra-alist sub
                                                 lemma-id)
                                  (fms0 "~|Apply linear rule ~x0 under the ~
-                                        following extension of the the ~
+                                        following extension of the ~
                                         substitution generated by matching ~
                                         that rule's trigger term with the ~
                                         current term ~#1~[ (after extending ~
@@ -3595,11 +3579,8 @@
                      (t
                       (let ((base-rcnst
                              (and rewrite
-                                  (change
-                                   rewrite-constant
-                                   *empty-rewrite-constant*
-                                   :current-enabled-structure pc-ens
-                                   :force-info t))))
+                                  (make-rcnst pc-ens w state
+                                              :force-info t))))
                         (mv-let
                           (flg hyps-type-alist pot-lst ttree)
                           (hyps-type-alist-and-pot-lst assumptions
@@ -4030,8 +4011,7 @@
                             above:) "
                            (list (cons #\0 (strip-cars ss-alist)))))
                 (mv-let (erp val state)
-                        (with-infixp-nil
-                         (read-object *standard-oi* state))
+                        (read-object *standard-oi* state)
                         (declare (ignore erp))
                         (retrieve-fn val state)))))
      ((not (symbolp name))
@@ -4466,6 +4446,18 @@
                                      data)))))
    nil))
 
+(defun proof-builder-assumptions (concl-flg govs-flg conc current-addr
+                                            state-stack)
+  (cond (concl-flg (union-equal (hyps t)
+                                (cond (govs-flg
+                                       (add-to-set-equal
+                                        (dumb-negate-lit conc)
+                                        (governors conc current-addr)))
+                                      (t (list (dumb-negate-lit conc))))))
+        (govs-flg (union-equal (hyps t)
+                               (governors conc current-addr)))
+        (t (hyps t))))
+
 (define-pc-help type-alist (&optional concl-flg govs-flg fc-report-flg
                                       alistp)
   (when-goals
@@ -4487,22 +4479,14 @@
                             nil)
                            (set-fc-report-on-the-fly t))))
       (mv-let
-       (flg hyps-type-alist ttree)
+       (flg hyps-type-alist ign)
        (hyps-type-alist
-        (cond (concl-flg
-               (union-equal (hyps t)
-                            (cond (govs-flg
-                                   (add-to-set-equal
-                                    (dumb-negate-lit conc)
-                                    (governors conc current-addr)))
-                                  (t (list (dumb-negate-lit conc))))))
-              (govs-flg (union-equal (hyps t)
-                                     (governors conc current-addr)))
-              (t (hyps t)))
+        (proof-builder-assumptions concl-flg govs-flg conc current-addr
+                                   state-stack)
         (make-pc-ens (pc-ens t) state)
         w
         state)
-       (declare (ignore ttree))
+       (declare (ignore ign))
        (prog2$
         (and fc-report-flg (restore-fc-report-settings))
         (if flg
@@ -4522,6 +4506,73 @@
                                     (decode-type-alist hyps-type-alist))))
                               (t (print-type-alist hyps-type-alist w nil)))
                         state))))))))))
+
+(define-pc-help pot-lst (&optional concl-flg govs-flg rawp)
+  (when-goals
+   (let* ((conc (conc t))
+          (current-addr (current-addr t))
+          (wrld (w state))
+          (govs-flg (if (cdr args) govs-flg (not concl-flg)))
+          (assumptions
+           (proof-builder-assumptions concl-flg govs-flg conc current-addr
+                                      state-stack))
+          (clause (dumb-negate-lit-lst (expand-assumptions assumptions)))
+          (ens (make-pc-ens (pc-ens t) state))
+          (clause-pts (enumerate-elements clause 0)))
+     (mv-let
+       (contradictionp type-alist fc-pair-lst)
+       (forward-chain-top 'pot-lst
+                          clause
+; Pts = nil as in call of hyps-type-alist in type-alist command.
+                          nil
+                          (ok-to-force-ens ens)
+                          nil ; do-not-reconsiderp
+                          wrld ens (match-free-override wrld) state)
+       (cond
+        (contradictionp
+         (io? proof-builder nil state
+              (concl-flg)
+              (fms0 "*** Contradiction (from forward-chaining, towards ~
+                     building a pot-lst)! ***~|~#0~[The S command should ~
+                     complete this goal.~|~/~]"
+                    (list (cons #\0 (if concl-flg 1 0))))))
+        (t
+         (let ((rcnst
+; The following is taken from simplify-clause.
+                (make-rcnst ens wrld state
+                            :force-info
+                            (if (ffnnamep-lst 'if clause)
+                                'weak
+                              t)
+                            :top-clause clause
+                            :current-clause clause)))
+           (mv-let
+             (step-limit contradictionp pot-lst)
+             (setup-simplify-clause-pot-lst clause
+                                            (pts-to-ttree-lst clause-pts)
+                                            fc-pair-lst
+                                            type-alist
+                                            rcnst
+                                            wrld state
+                                            *default-step-limit*)
+             (declare (ignore step-limit))
+             (cond
+              (contradictionp
+               (io? proof-builder nil state
+                    (concl-flg)
+                    (fms0 "*** Contradiction from attempting to build a ~
+                           pot-lst)! ***~|~#0~[The S command should complete ~
+                           this goal.~|~/~]"
+                          (list (cons #\0 (if concl-flg 1 0))))))
+              (t
+               (io? proof-builder nil state
+                    (pot-lst rawp)
+                    (pprogn
+                     (fms0 "~|Current pot-lst:~%")
+                     (prog2$ (if rawp
+                                 (cw "~x0~|" pot-lst)
+                               (print-pot-lst pot-lst nil))
+                             state)))))))))))))
 
 (define-pc-macro print-main ()
   (value '(print (caddr (event-name-and-types-and-raw-term (state-stack))))))

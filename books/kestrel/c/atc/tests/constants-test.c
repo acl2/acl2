@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "constants.h"
+
 int main(void) {
   printf("signed int decimal = %d\n",
          signed_int_decimal());

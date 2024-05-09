@@ -35,6 +35,7 @@
 (include-book "centaur/satlink/litp" :dir :system)
 (include-book "fgl-object")
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "centaur/meta/subst" :dir :system)
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "std/util/termhints" :dir :system))
 (local (std::add-default-post-define-hook :fix))
@@ -42,16 +43,20 @@
 (defsection bfr
   :parents (fgl-internals)
   :short "An abstraction of the <b>B</b>oolean <b>F</b>unction
-<b>R</b>epresentation used by GL."
+<b>R</b>epresentation used by FGL."
 
-  :long "<p>GL was originally designed to operate on @(see ubdds), with support
-for hons-@(see aig)s and @(see aignet) added later.  To avoid redoing a lot of
-proof work, a small level of indirection was added.</p>
+  :long "<p>GL, the predecessor to FGL, was originally designed to represent
+Boolean functions with on @(see ubdds), with support for hons-@(see aig)s added
+later.  In one mode of operation, all Boolean functions were represented with
+BDDs, and in another, all Boolean functions were represented with AIGs. BFR was
+a type that depended on the mode, meaning UBDD when in BDD mode and AIG when in
+AIG mode.</p>
 
-<p>The particular Boolean function representation that we are using at any
-particular time is governed by @(see bfr-mode), and operations like
-@('bfr-and') allow us to construct new function nodes using whatever the
-current representation is.</p>
+<p>FGL currently only supports representing Boolean functions using references
+into an AIGNET stobj, but in case we want to add support for other
+representations we still use the BFR concept.  The particular representation
+used is governed by a @(see bfr-mode) object stored in the @('logicman') field
+of the @('interp-st').</p>
 
 <p>To support aignets, it is important for BFRs to be well-formed,
 i.e. literals whose node index is in bounds for the current aignet.  So we
@@ -1280,6 +1285,28 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     
 
   (local (in-theory (enable fgl-object-bindings-fix))))
+
+(define variable-g-bindings ((vars pseudo-var-list-p))
+  :returns (bindings fgl-object-bindings-p)
+  (if (atom vars)
+      nil
+    (cons (cons (pseudo-var-fix (car vars))
+                (g-var (car vars)))
+          (variable-g-bindings (cdr vars))))
+  ///
+  (defret fgl-object-bindings-bfrlist-of-<fn>
+    (equal (fgl-object-bindings-bfrlist bindings) nil))
+
+  (defret alist-keys-of-<fn>
+    (equal (alist-keys bindings)
+           (pseudo-var-list-fix vars))
+    :hints(("Goal" :in-theory (enable alist-keys))))
+
+  (defret lookup-in-<fn>
+    (equal (hons-assoc-equal k bindings)
+           (and (member k (pseudo-var-list-fix vars))
+                (cons k (g-var k))))
+    :hints(("Goal" :in-theory (enable pseudo-var-list-fix)))))
 
 
 

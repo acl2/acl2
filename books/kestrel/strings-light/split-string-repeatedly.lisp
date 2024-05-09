@@ -27,7 +27,7 @@
 
 ;; Repeatedly split the string STR at occurrences of CHAR.  Returns a list of
 ;; strings.  If STR starts with CHAR, the result has an empty string at the
-;; front.  If STR end with CHAR, the result has an empty string at the end.
+;; front.  If STR ends with CHAR, the result has an empty string at the end.
 (defund split-string-repeatedly (str char)
   (declare (xargs :guard (and (stringp str)
                               (characterp char))))

@@ -36,4 +36,4 @@
 (local (include-book "top"))
 
 (xdoc::archive-matching-topics
- (str::strprefixp "[books]/centaur/aig/" (cdr (assoc :from x))))
+ (str::strprefixp "centaur/aig/" (cdr (assoc :from x))))

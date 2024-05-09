@@ -26,8 +26,11 @@
      cw?
      ecw
      ecw?
+     ; => I really want this to be undefined since we define it to
+     ; mean implies
      _ ;range
      comment
+     get-alist
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -51,6 +54,8 @@
      ecw?
      => ;sig
      _ ;range
+     comment
+     get-alist
      )
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
@@ -74,7 +79,7 @@
      ;more acl2 exports
      aconsp
      
-     mget mset wf-keyp good-map
+     mget g mset s wf-keyp recordp good-map msets msets-macro
 
      ;; fix-pkg ; Matt K. mod: now in acl2::*acl2-exports*
      fix-sym
@@ -97,6 +102,7 @@
      stage
      ;community books
      u::defloop def-ruleset
+
      )
    
    acl2s-shared::*acl2s-shared-exports*))
@@ -132,6 +138,20 @@
     defdata-alias
     stage
     defdata-defaults-table
+
+    infinite
+    
+    type-of-pred-aux
+    type-of-pred
+    enum-of-type
+    trans1-cmp
+    base-val-of-type
+    type-of-type
+    pred-of-type
+    defdata-domain-size-fn
+    defdata-domain-size
+    defdata-base-val-of-type-fn
+    defdata-base-val-of-type
     ))
 
 
@@ -159,7 +179,7 @@
      
      ; from community books
      u::defloop template-subst
-     mget mset
+     mget g mset s wf-keyp recordp good-map msets msets-macro
 
      stage
 
@@ -186,6 +206,18 @@
      set-cgen-guard-checking
      ))
 
+(defpkg "ACL2S-INTERFACE-INTERNAL" *common-lisp-symbols-from-main-lisp-package*)
+
+#!ACL2S-INTERFACE-INTERNAL
+(acl2::defconst acl2::*acl2s-interface-exports*
+  '( ;API export
+    acl2s-compute
+    acl2s-query
+    acl2s-event
+    acl2s-interface
+    itest?-query
+    ))
+
 (defconst *ccg-exports*
   '(set-termination-method 
     get-termination-method
@@ -199,7 +231,7 @@
   (union-eq
    '(defxdoc e/d er-let* b* value
       aconsp 
-      mget mset wf-keyp good-map
+      mget g mset s wf-keyp recordp good-map msets msets-macro
       legal-variable-or-constant-namep
       legal-constantp
       legal-variablep
@@ -359,6 +391,13 @@
       guard-checking-on
       current-flg
       raw-mode-p
+
+      acl2s
+      acl2-sedan
+      alist-keys
+      alist-vals
+      repeat
+      
       )
    (union-eq
     (union-eq 
@@ -371,7 +410,9 @@
      defdata::*defdata-exports*
      (union-eq
       cgen::*cgen-exports*
-      acl2s-shared::*acl2s-shared-exports*)))))
+      (union-eq
+       acl2s-shared::*acl2s-shared-exports*
+       *acl2s-interface-exports*))))))
 
 #!ACL2S
 (defconst *acl2s-exports*

@@ -137,7 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-safe-top-block-evm ((block blockp))
-  :returns (_ resulterr-optionp)
+  :returns (_ reserr-optionp)
   :short "Check if the top block is safe, in the EVM dialect."
   :long
   (xdoc::topstring
@@ -145,8 +145,8 @@
     "This is like @(tsee check-safe-top-block) for generic Yul,
      except that the initial function table is
      the one with the EVM functions."))
-  (b* (((ok modes) (check-safe-block block nil (evm-funtable))))
+  (b* (((okf modes) (check-safe-block block nil (evm-funtable))))
     (if (equal modes (set::insert (mode-regular) nil))
         nil
-      (err (list :top-block-mode modes))))
+      (reserrf (list :top-block-mode modes))))
   :hooks (:fix))

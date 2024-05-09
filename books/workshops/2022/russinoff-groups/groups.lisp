@@ -1,8 +1,8 @@
-(in-package "RTL")
+(in-package "DM")
 
 (include-book "rtl/rel11/lib/top" :dir :system)
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 (local (include-book "support"))
 
@@ -754,13 +754,13 @@
 ;; be proved, as illustrated in the examples below.
 
 (defmacro defgroup (name args cond elts op inv)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "RTL"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "RTL"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "RTL"))
-	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "RTL"))
-	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "RTL"))
-	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "RTL"))
-	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "RTL")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM"))
+	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "DM"))
+	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "DM"))
+	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "DM"))
+	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "DM")))
     `(encapsulate ()
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
@@ -828,9 +828,9 @@
 ;; A version of defgroup that defines a family of groups but does not prove anything:
 
 (defmacro defgroup-light (name args elts op)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "RTL"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "RTL"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "RTL")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM")))
     `(encapsulate ()
        (defun ,op-name (x y ,@args) ,op)
        (defun ,name-row (x m ,@args)
@@ -924,7 +924,7 @@
 (defun rel-primes-aux (k n)
   (if (zp k)
       ()
-    (if (= (g-c-d k n) 1)
+    (if (= (gcd k n) 1)
         (append (rel-primes-aux (1- k) n) (list k))
       (rel-primes-aux (1- k) n))))
 
@@ -936,7 +936,7 @@
 	   (iff (member k (rel-primes n))
 	        (and (posp k)
 		     (< k n)
-		     (= (g-c-d k n) 1))))
+		     (= (gcd k n) 1))))
   :hints (("Goal" :in-theory (disable member-rel-primes-aux-<=) :use (member-rel-primes-1))))
 
 (defthm consp-rel-primes
@@ -967,10 +967,10 @@
 	          x))
   :hints (("Goal" :use ((:instance member-rel-primes (k x))))))
 
-(defthm g-c-d-0
+(defthm gcd-0
   (implies (posp n)
-           (equal (g-c-d 0 n) n))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd 0 n) n))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthm z*-closed
   (implies (and (posp n) (> n 1)
@@ -981,7 +981,7 @@
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k (z*-op x y n)))
 			(:instance mod-prod-rel-prime (a x) (b y))
-			(:instance g-c-d-divides (x (* x y)) (y n))))))
+			(:instance gcd-divides (x (* x y)) (y n))))))
 
 (defthm z*-assoc
   (implies (and (posp n)
@@ -996,17 +996,17 @@
 			(:instance mod-mod-times (b x) (a (* y z)))
 			(:instance mod-mod-times (b z) (a (* x y)))))))
 
-;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
+;; The definition of z*-inv is based on the following lemma from books/projects/numbers/euclid.lisp"
 
-(defthm g-c-d-linear-combination
+(defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
-		(g-c-d x y)))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
+		(gcd x y)))
     :rule-classes ())
 
-(defun z*-inv (x n) (mod (r-int x n) n))
+(defun z*-inv (x n) (mod (r x n) n))
 
 (defthm z*-inverse
   (implies (and (posp n) (> n 1)
@@ -1726,11 +1726,11 @@
 
 (defmacro defsubgroup (name args cond elts)
   (let ((g (car (last args)))
-        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "RTL"))
-        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "RTL"))
-        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "RTL"))
-        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "RTL"))
-        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "RTL")))
+        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "DM"))
+        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
+        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "DM"))
+        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "DM"))
+        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "DM")))
     `(encapsulate ()
        (defthm ,non-nil-name
          (implies ,cond (not (member-equal () ,elts)))

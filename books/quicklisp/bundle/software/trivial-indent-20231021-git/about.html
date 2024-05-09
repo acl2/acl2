@@ -1,0 +1,86 @@
+<!DOCTYPE html> <html xmlns="http://www.w3.org/1999/xhtml"> <head> <meta charset="utf-8"> <title>Trivial-Indent</title> <meta name="viewport" content="width=device-width"> <meta name="description" content="A very simple library to allow indentation hints for SWANK."> <meta name="author" content="Nicolas Hafner &lt;shinmera@tymoon.eu&gt;"> <style type="text/css"> body{
+          max-width: 1024px;
+          margin: 0 auto 0 auto;
+          font-family: sans-serif;
+          color: #333333;
+          font-size: 14pt;
+          padding: 5px;
+      }
+      body>header{
+          display:flex;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          max-width: 100%;
+          text-align: center;
+      }
+      body>header img{
+          max-width: 50%;
+      }
+      img{
+          max-width: 100%;
+          max-height: 100%;
+      }
+      code{
+          font-family: Consolas, Inconsolata, monospace;
+      }
+      a{
+          text-decoration: none;
+          color: #0055AA;
+      }
+      a img{
+          border: none;
+      }
+      #documentation{
+          text-align: justify;
+      }
+      #documentation pre{
+          margin-left: 20px;
+          overflow: auto;
+      }
+      #documentation img{
+          margin: 5px;
+      }
+      #symbol-index>ul{
+          list-style: none;
+          padding: 0;
+      }
+      #symbol-index .package>ul{
+          list-style: none;
+          padding: 0 0 0 10px;
+      }
+      #symbol-index .package .nicknames{
+          font-weight: normal;
+      }
+      #symbol-index .package h4{
+          display: inline-block;
+          margin: 0;
+      }
+      #symbol-index .package article{
+          margin: 0 0 15px 0;
+      }
+      #symbol-index .package article header{
+          font-size: 1.2em;
+          font-weight: normal;
+      }
+      #symbol-index .package .name{
+          margin-right: 5px;
+      }
+      #symbol-index .package .docstring{
+          margin: 0 0 0 15px;
+          white-space: pre-wrap;
+          font-size: 12pt;
+      }
+      @media (max-width: 800px){
+          body{font-size: 12pt;}
+      } </style> </head> <body> <header> <h1>trivial-indent</h1> <span class="version">1.0.0</span> <p class="description">A very simple library to allow indentation hints for SWANK.</p> </header> <main> <article id="documentation">  <div><h2 id="about_trivial-indent">About Trivial-Indent</h2> <p>This allows you to define custom indentation hints for your macros if the one recognised by Slime automatically produces unwanted results.</p> <h2 id="how_to">How To</h2> <p>The only feature of this that you will really need to use is <code><a href="#TRIVIAL-INDENT:DEFINE-INDENTATION">DEFINE-INDENTATION</a></code>.</p> <pre><code>(<a href="#TRIVIAL-INDENT:DEFINE-INDENTATION">define-indentation</a> defmacro (4 &amp;lambda &amp;body))
+(<a href="#TRIVIAL-INDENT:DEFINE-INDENTATION">define-indentation</a> something-more-complex (4 &amp;rest (<a href="http://l1sp.org/cl/&amp;whole">&amp;whole</a> 2 0 4 &amp;body)))</code></pre> <p>For more information on how the indentation rule forms work, please refer to the Slime source and documentation.
+Otherwise just faffing about until it produces the indentation you need works well too.</p> </div>  </article> <article id="copyright">  <h2>Copyright</h2> <span>trivial-indent</span> is licensed under the <span><a href="https://tldrlegal.com/search?q=Artistic">Artistic</a></span> license.  © <span>Nicolas Hafner &lt;shinmera@tymoon.eu&gt;</span> .    </article>  <article id="symbol-index"> <h2>Package Index</h2> <ul><li class="package"> <h3> <a name="TRIVIAL-INDENT" href="#TRIVIAL-INDENT">TRIVIAL-INDENT</a> <span class="nicknames">(INDENT ORG.TYMOONNEXT.RADIANCE.LIB.TRIVIAL-INDENT)</span> </h3> <ul><li> <a name="TRIVIAL-INDENT:INDENTATION"> </a> <article id="ACCESSOR TRIVIAL-INDENT:INDENTATION"> <header class="accessor"> <span class="type">accessor</span>  <code>(</code><h4 class="name"><code><a href="#ACCESSOR%20TRIVIAL-INDENT%3AINDENTATION">INDENTATION</a></code></h4> <code class="qualifiers"></code> <code class="arguments">SYMBOL</code><code>)</code>  </header> <div class="docstring"><pre>Returns the custom defined indentation of a symbol if there is any. SETF-able.</pre></div> </article> </li><li> <a name="TRIVIAL-INDENT:INITIALIZE-SLIME"> </a> <article id="FUNCTION TRIVIAL-INDENT:INITIALIZE-SLIME"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-INDENT%3AINITIALIZE-SLIME">INITIALIZE-SLIME</a></code></h4> <code class="qualifiers"></code> <code class="arguments"></code><code>)</code>  </header> <div class="docstring"><pre>Attempts to initialize slime with our indentation table.
+If SWANK-INDENTATION is not loaded, this does nothing.
+It should be safe to call this function regardless of whether
+SWANK is loaded at all or not.
+
+This is automatically called when TRIVIAL-INDENT is loaded.</pre></div> </article> </li><li> <a name="TRIVIAL-INDENT:REMOVE-INDENTATION"> </a> <article id="FUNCTION TRIVIAL-INDENT:REMOVE-INDENTATION"> <header class="function"> <span class="type">function</span>  <code>(</code><h4 class="name"><code><a href="#FUNCTION%20TRIVIAL-INDENT%3AREMOVE-INDENTATION">REMOVE-INDENTATION</a></code></h4> <code class="qualifiers"></code> <code class="arguments">SYMBOL</code><code>)</code>  </header> <div class="docstring"><pre>Remove the indentation hint for a symbol.</pre></div> </article> </li><li> <a name="TRIVIAL-INDENT:DEFINE-INDENTATION"> </a> <article id="MACRO TRIVIAL-INDENT:DEFINE-INDENTATION"> <header class="macro"> <span class="type">macro</span>  <code>(</code><h4 class="name"><code><a href="#MACRO%20TRIVIAL-INDENT%3ADEFINE-INDENTATION">DEFINE-INDENTATION</a></code></h4> <code class="qualifiers"></code> <code class="arguments">SYMBOL RULE-FORM</code><code>)</code>  </header> <div class="docstring"><pre>Define an indentation hint for a symbol.
+
+See <a href="http://l1sp.org/cl/the">the</a> SLIME/SWANK documentation for more information on the rules.
+Example: (define-indentation defmacro (4 &amp;lambda &amp;body))</pre></div> </article> </li></ul> </li></ul> </article>  </main> </body> </html> 

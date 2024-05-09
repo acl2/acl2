@@ -134,6 +134,13 @@
        (or (equal (cadr term) ''bitp)
            (has-bitp-side-cond (caddr term)))))
 
+(define has-integerp-side-cond (term)
+  :prepwork ((local
+              (in-theory (e/d (rp::is-rp) ()))))
+  (and (rp::is-rp term)
+       (or (equal (cadr term) ''integerp)
+           (has-integerp-side-cond (caddr term)))))
+
 (define is-bits-0-pos-size-of-a-bitp (orig-term start size)
   :progn t
   :inline t
@@ -180,19 +187,54 @@
    (defthm is-bitand/or/xor-implies-fc
      (implies (is-bitand/or/xor term)
               (and (consp term)
-                   (CONSP (CDR TERM))
-                   (CONSP (CDDR TERM))
-                   (EQ (CDDDR TERM) NIL)
+                   (consp (cdr term))
+                   (consp (cddr term))
+                   (eq (cdddr term) nil)
                    (not (quotep term))
-                   (not (EQ (CAR TERM) 'quote))
-                   (not (EQ (CAR TERM) 'if))
-                   (not (EQ (CAR TERM) 'rp))
-                   (or (EQ (CAR TERM) '4VEC-BITAND)
-                       (EQ (CAR TERM) '4VEC-BITOR)
-                       (EQ (CAR TERM) 'SV::4VEC-BITXOR))))
+                   (not (eq (car term) 'quote))
+                   (not (eq (car term) 'if))
+                   (not (eq (car term) 'rp))
+                   (or (eq (car term) '4vec-bitand)
+                       (eq (car term) '4vec-bitor)
+                       (eq (car term) 'sv::4vec-bitxor))))
      :rule-classes :forward-chaining)))
 
-(define bits-meta-fn-aux (term (start natp) (size natp))
+(define integerp-from-context? (var
+                                &key
+                                (context 'context))
+  (if (atom context)
+      nil
+    (or
+     (b* ((c (car context)))
+       (case-match c
+         (('integerp other)
+          (equal var (rp::ex-from-rp other)))))
+     (integerp-from-context? var :context (cdr context)))))
+
+
+(define parent-term-already-has-sc? (term sc
+                                          rp::rp-state
+                                          &optional
+                                          (cnt '(min (1- rp::*rw-recent-terms-size*)
+                                                     4)))
+  :guard (natp cnt)
+  (if (zp cnt)
+      nil
+    (or
+     (b* ((cnt (1- cnt))
+          (other-term (rp::get-from-rw-recent-terms cnt rp::rp-state)))
+       (case-match other-term
+         (('rp::rp ('quote other-sc) subterm)
+          (and (equal other-sc sc)
+               (rp::rp-equal-cnt subterm term 0)))))
+     (parent-term-already-has-sc? term sc rp::rp-state (1- cnt)))))
+
+(define bits-meta-fn-aux (term
+                          (start natp)
+                          (size natp)
+                          &key
+                          (context 'context)
+                          (rp::rp-state 'rp::rp-state))
   :measure (rp::cons-count term)
   :hints (("Goal"
            :in-theory (e/d (rp::measure-lemmas)
@@ -235,11 +277,19 @@
                                   (:rewrite
                                    acl2::member-equal-newvar-components-1)))))
   (b* ((orig-term term)
+       (has-integerp (has-integerp-side-cond orig-term))
        (term (rp::ex-from-rp term)))
     (cond
-     ((atom term)
-      (mv `(bits ,orig-term ',start ',size)
-          `(nil t t t)))
+     ((atom term) ;; same as the default case at the bottom.
+      (b* ((new-term `(bits ,orig-term ',start ',size))
+           (new-dont-rw `(nil t t t)))
+        (if (rp::and*-exec (or has-integerp
+                               (integerp-from-context? term))
+                           (rp::not*
+                            (parent-term-already-has-sc? new-term 'integerp rp-state)))
+            (mv `(rp 'integerp ,new-term)  
+                `(nil t ,new-dont-rw))
+          (mv new-term  new-dont-rw))))
      ((is-sbits term)
       (b* ((s-start (cadr (cadr term)))
            (s-size (cadr (caddr term)))
@@ -403,8 +453,13 @@
      ((is-bits-pos-start-of-a-bitp orig-term start size)
       (mv ''0 t))
      (t
-      (mv `(bits ,orig-term ',start ',size)
-          `(nil t t t))))))
+      (if has-integerp
+          (mv `(rp 'integerp (bits ,term  ',start ',size)) ;; remove side-conds
+              ;; from inside.  so it doesn't cause a loop by keeping going into
+              ;; the meta rule.
+              `(nil t (nil t t t)))    
+        (mv `(bits ,orig-term ',start ',size)
+            `(nil t t t)))))))
 
 (define bits-meta-fn-aux-can-change (val start size)
   :inline t
@@ -422,12 +477,16 @@
                      (equal (car val) 'sv::4vec-?!)
                      (equal (car val) 'sv::4vec-?*)))))))
 
-(define bits-of-meta-fn (term)
+(define bits-of-meta-fn (term
+                         &key
+                         (context 'context)
+                         (rp::rp-state 'rp::rp-state))
   (case-match term
     (('bits val ('quote start) ('quote size))
      (cond ((and (natp start)
                  (natp size)
-                 (bits-meta-fn-aux-can-change val start size))
+                 ;;(bits-meta-fn-aux-can-change val start size)
+                 )
             (b* (((mv res dont-rw)
                   (bits-meta-fn-aux val start size))
                  ((when (rp::rp-equal-cnt res val 2))
@@ -439,7 +498,8 @@
     (('sv::4vec-part-select ('quote start) ('quote size) val)
      (cond ((and (natp start)
                  (natp size)
-                 (bits-meta-fn-aux-can-change val start size))
+                 ;;(bits-meta-fn-aux-can-change val start size)
+                 )
             (b* (((mv res dont-rw)
                   (bits-meta-fn-aux val start size))
                  ((when (rp::rp-equal-cnt res val 2))
@@ -478,7 +538,9 @@
       (mv `(4vec-concat$ ',size ,term1-orig ,term2)
           `(nil t t t))))))
 
-(define concat-meta (term)
+(define concat-meta (term &key
+                          (context 'context)
+                          (rp::rp-state 'rp::rp-state))
   (case-match term
     (('4vec-concat ('quote size) term1 &)
      (if (natp size)
@@ -631,25 +693,94 @@
             :induct (concat$-meta-aux size term1 term2 limit)
             :do-not-induct t
             :in-theory (e/d (concat$-meta-aux
-                             rp::is-rp rp::is-if
-                             
+                             rp::is-rp rp::is-if rp::is-equals
+                             rp::is-equals
                              natp) ())))))
+
+(local
+ (rp::create-regular-eval-lemma bits 3  bits-of-formula-checks))
+(local
+ (rp::create-regular-eval-lemma integerp 1  bits-of-formula-checks))
+;; (local
+;;  (rp::create-regular-eval-lemma quote 1  bits-of-formula-checks))
+
+(local
+ (defthm HAS-INTEGERP-SIDE-COND-lemma
+   (implies (and (rp-evl-meta-extract-global-facts)
+                 (rp::valid-sc term a)
+                 (HAS-INTEGERP-SIDE-COND TERM))
+            (and (integerp (rp-evlt term a))
+                 ;;(integerp (rp-evl term a))
+                 ))
+   :hints (("Goal"
+            :induct (HAS-INTEGERP-SIDE-COND TERM)
+            :do-not-induct t
+            :in-theory (e/d (HAS-INTEGERP-SIDE-COND
+                             rp::is-if
+                             RP::VALID-SC-SINGLE-STEP
+                             rp::is-rp rp::is-equals
+                             RP::VALID-SC
+                             )
+                            (integerp))))))
+
+
+(local
+ (defthm INTEGERP-FROM-CONTEXT-correct
+   (implies (and (rp::eval-and-all context a)
+                 (integerp-from-context? term))
+            (INTEGERP (RP-EVLT TERM A)))
+   :hints (("Goal"
+            :induct (integerp-from-context? term)
+            :in-theory (e/d (integerp-from-context?)
+                            ())))))
+
+
+(local
+ (defthm INTEGERP-FROM-CONTEXT-correct-2
+   (implies (and (rp::eval-and-all context a)
+                 (integerp-from-context? (RP::EX-FROM-RP TERM)))
+            (INTEGERP (RP-EVLT TERM A)))
+   :hints (("Goal"
+            :use ((:instance INTEGERP-FROM-CONTEXT-correct
+                             (term (RP::EX-FROM-RP TERM))))
+            :in-theory (e/d ()
+                            ())))))
 
 (local
  (defthm valid-sc-bits-meta-fn-aux
    (implies (and (natp size)
                  (natp start)
-                 (rp::valid-sc term a))
+                 (rp::valid-sc term a)
+                 (bits-of-formula-checks state)
+                 (rp::eval-and-all context a)
+                 (rp-evl-meta-extract-global-facts))
             (rp::valid-sc (mv-nth 0 (bits-meta-fn-aux term start size)) a))
    :hints (("goal"
             :induct (bits-meta-fn-aux term start size)
             :do-not-induct t
+            :expand ((rp-trans (LIST 'QUOTE START))
+                     (rp-trans (LIST 'QUOTE SIZE)))
             :in-theory (e/d (bits-meta-fn-aux
                              is-bits-0-pos-size-of-a-bitp
                              is-bits-pos-start-of-a-bitp
-                             rp::is-rp rp::is-if 
-                             natp)
+                             rp::is-rp rp::is-equals rp::is-if rp::is-equals
+                             natp
+
+                             rp::valid-sc-single-step
+
+                             rp::regular-rp-evl-of_bits_when_bits-of-formula-checks_with-ex-from-rp
+                             rp::regular-rp-evl-of_bits_when_bits-of-formula-checks
+                             RP::REGULAR-RP-EVL-OF_INTEGERP_WHEN_BITS-OF-FORMULA-CHECKS_WITH-EX-FROM-RP
+                             RP::REGULAR-RP-EVL-OF_INTEGERP_WHEN_BITS-OF-FORMULA-CHECKS
+                             )
                             (rp::falist-consistent
+                             RP::RP-TRANS-IS-TERM-WHEN-LIST-IS-ABSENT
+                             rp-trans
+                             RP::RP-TERMP
+                             RP::RP-EVL-OF-RP-EQUAL2
+                             RP::RP-TERMP-OF-RP-TRANS
+                             (:DEFINITION ACL2::APPLY$-BADGEP)
+                             (:REWRITE ACL2::APPLY$-BADGEP-PROPERTIES . 1)
                              ifix
                              (:definition rp::ex-from-rp)
                              (:rewrite default-car)
@@ -657,65 +788,36 @@
 
 (local
  (defthm valid-sc-of-bits-of-meta-fn
-   (implies (rp::valid-sc term a)
+   (implies (and (rp::valid-sc term a)
+                 (bits-of-formula-checks state)
+                 (rp::eval-and-all context a)
+                 (rp-evl-meta-extract-global-facts))
             (rp::valid-sc (mv-nth 0 (bits-of-meta-fn term)) a))
    :hints (("Goal"
             :in-theory (e/d (bits-of-meta-fn
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              rp::is-if
                              )
                             ())))))
 
 (local
  (defthm valid-sc-of-concat-meta
-   (implies (rp::valid-sc term a)
+   (implies (and (bits-of-formula-checks state)
+                 (rp-evl-meta-extract-global-facts)
+                 (rp::eval-and-all context a)
+                 (rp::valid-sc term a))
             (rp::valid-sc (mv-nth 0 (concat-meta term)) a))
    :hints (("Goal"
             :in-theory (e/d (concat-meta
                              rp::is-if
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              )
                             ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; dont-rw sytnaxp lemmas
 
-(local
- (defthm dont-rw-syntaxp-concat$-meta-aux
-   (implies t
-            (rp::dont-rw-syntaxp (mv-nth 1 (concat$-meta-aux size term1 term2 limit))))
-   :hints (("Goal"
-            :induct (concat$-meta-aux size term1 term2 limit)
-            :do-not-induct t
-            :in-theory (e/d (concat$-meta-aux
-                             natp) ())))))
 
-(local
- (defthm dont-rw-syntaxp-bits-meta-fn-aux
-   (implies t
-            (rp::dont-rw-syntaxp (mv-nth 1 (bits-meta-fn-aux term start size))))
-   :hints (("Goal"
-            :induct (bits-meta-fn-aux term start size)
-            :do-not-induct t
-            :in-theory (e/d (bits-meta-fn-aux
-                             is-bits-0-pos-size-of-a-bitp
-                             is-bits-pos-start-of-a-bitp
-                             natp)
-                            (rp::falist-consistent))))))
-
-(local
- (defthm dont-rw-syntaxp-of-bits-of-meta-fn
-   (implies t
-            (rp::dont-rw-syntaxp (mv-nth 1 (bits-of-meta-fn term))))
-   :hints (("Goal"
-            :in-theory (e/d (bits-of-meta-fn) ())))))
-
-(local
- (defthm dont-rw-syntaxp-of-concat-meta
-   (implies t
-            (rp::dont-rw-syntaxp (mv-nth 1 (concat-meta term))))
-   :hints (("Goal"
-            :in-theory (e/d (concat-meta) ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; rp-evlt lemmas
@@ -761,7 +863,7 @@
             :in-theory (e/d* (concat$-meta-aux
                               (:REWRITE
                                RP::REGULAR-RP-EVL-OF_4VEC-CONCAT$_WHEN_BITS-OF-FORMULA-CHECKS_WITH-EX-FROM-RP)
-                              rp::is-rp rp::is-if
+                              rp::is-rp rp::is-if rp::is-equals
                               rp-evlt-of-ex-from-rp-reverse
                               natp)
                              (RP::RP-EVLT-OF-EX-FROM-RP
@@ -781,10 +883,13 @@
             :in-theory (e/d (HAS-BITP-SIDE-COND
                              rp::is-if
                              RP::VALID-SC-SINGLE-STEP
-                             rp::is-rp
+                             rp::is-rp rp::is-equals
                              RP::VALID-SC
                              )
                             (bitp))))))
+
+
+
 
 (local
  (defthm bits-meta-fn-aux-correct-lemma1
@@ -878,7 +983,7 @@
                      (:free (x) (nth 0 x)))
             :in-theory (e/d* (bits-meta-fn-aux
                               IS-BITAND/OR/XOR
-                              rp::is-rp rp::is-if
+                              rp::is-rp rp::is-if rp::is-equals 
                               rp::regular-eval-lemmas
                               rp::regular-eval-lemmas-with-ex-from-rp
                               rp-evlt-of-ex-from-rp-reverse
@@ -1033,28 +1138,28 @@
                                 :valid-syntax t)))||#
 
 (rp::add-meta-rule
- :meta-fnc bits-of-meta-fn
+ :meta-fnc bits-of-meta-fn-fn
  :trig-fnc sv::4vec-part-select
  :formula-checks bits-of-formula-checks
  :valid-syntaxp t
  :returns (mv term dont-rw))
 
 (rp::add-meta-rule
- :meta-fnc bits-of-meta-fn
+ :meta-fnc bits-of-meta-fn-fn
  :trig-fnc bits
  :formula-checks bits-of-formula-checks
  :valid-syntaxp t
  :returns (mv term dont-rw))
 
 (rp::add-meta-rule
- :meta-fnc concat-meta
+ :meta-fnc concat-meta-fn
  :trig-fnc 4vec-concat$
  :formula-checks bits-of-formula-checks
  :valid-syntaxp t
  :returns (mv term dont-rw))
 
 (rp::add-meta-rule
- :meta-fnc concat-meta
+ :meta-fnc concat-meta-fn
  :trig-fnc sv::4vec-concat
  :formula-checks bits-of-formula-checks
  :valid-syntaxp t

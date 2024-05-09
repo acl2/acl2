@@ -41,7 +41,8 @@
 ;; TODO: Print a warning or error if user attempts to lift a recursive function
 
 (include-book "kestrel/jvm/control-flow" :dir :system)
-(include-book "kestrel/jvm/load-class" :dir :system)
+(include-book "kestrel/jvm/read-class" :dir :system) ; convenient to have, if not strictly needed
+(include-book "kestrel/jvm/read-jar" :dir :system) ; convenient to have, if not strictly needed
 (include-book "rule-lists-jvm")
 (include-book "output-indicators")
 (include-book "rules-in-rule-lists-jvm") ;include less?  but some of these rules are now used during decompilation?
@@ -54,20 +55,21 @@
 (include-book "../make-axe-rules2")
 (include-book "../dag-to-term-with-lets")
 (include-book "../add-to-dag")
-;(include-book "kestrel/bv/arith" :dir :system) ;todo?
+(include-book "kestrel/bv/arith" :dir :system) ;todo ; for equal-of-same-cancel-1
 (include-book "jvm-rules-axe2") ;for smart if handling
 (include-book "../math-rules") ; todo: why?
-(include-book "kestrel/untranslated-terms-old/untranslated-terms" :dir :system)
+(include-book "kestrel/untranslated-terms/untranslated-terms-old" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/utilities/auto-termination" :dir :system)
-(include-book "../prune") ;for maybe-prune-dag
+(include-book "../prune-dag-precisely")
 (include-book "kestrel/jvm/symbolic-execution2" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 
@@ -137,7 +139,7 @@
                             interpreted-function-alist ;todo, check that this includes definitions for all non-built-in functions (and all functions they call, etc.)
                             )
   (declare (xargs :guard (and (or (and (pseudo-dagp dag)
-                                       (< (len dag) 2147483647))
+                                       (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
                               (or (null max-term-size)
                                   (natp max-term-size))
@@ -433,14 +435,11 @@
 ;;; The :excluded-locals option:
 ;;;
 
-(defforall-simple nat-listp)
-(verify-guards all-nat-listp)
-
 (defun excluded-localsp (x)
   (declare (xargs :guard t))
   (and (doublet-listp x)
        (all-loop-function-idp (strip-cars x))
-       (all-nat-listp (strip-cadrs x))))
+       (nat-list-listp (strip-cadrs x))))
 
 ;;;
 ;;; The :postludes option:
@@ -2659,10 +2658,10 @@
                                                      monitored-symbols
                                                      print
                                                      "INVAR"
+                                                     nil ;context ;a contextp over nodes in context-array
                                                      nil ;context-array-name
                                                      nil ;context-array
                                                      0
-                                                     nil ;context ;a contextp over nodes in context-array
                                                      6000 ;max-conflicts
                                                      nil  ;print-max-conflicts-goalp
                                                      nil  ;options
@@ -3332,7 +3331,7 @@
       nil
     (let* ((entry (car alist-with-dag-keys))
            (key (car entry)))
-      (if (equivalent-dags dag key)
+      (if (equivalent-dagsp dag key)
           (cdr entry)
         (lookup-equivalent-dag dag (cdr alist-with-dag-keys))))))
 
@@ -4612,7 +4611,7 @@
                                          ;; (farg1 type)))
                                          parameter-name))
                         (input-vars (if len
-                                        (list parameter-name) ;(make-var-names len parameter-name) ;TODO: what about clashes
+                                        (list parameter-name) ;(make-var-names parameter-name len) ;TODO: what about clashes
                                       (list parameter-name)))
                         (len-claims (if len
                                         `((equal (len ,contents-term) ',len))
@@ -4717,7 +4716,7 @@
   (declare (xargs :stobjs (state)
                   :mode :program))
   (b* ((- (cw "(Submitting :postlude event for loop number ~x0:~%" this-loop-number))
-       ((mv erp state) (submit-event-helper postlude-event
+       ((mv erp state) (submit-event postlude-event
                                    :brief ;todo: use an overarching print argument
                                    nil
                                    state))
@@ -5157,15 +5156,14 @@
                            (make-axe-rules! (set-difference-eq
                                             (append (map-rules)
                                                     (jvm-simplification-rules)
-                                                    (jvm-rules-list)
-                                                    (jvm-rules-alist)
+                                                    (list-rules3)
+                                                    (alist-rules)
                                                     (bv-array-rules)
                                                     (jvm-rules-unfiled-misc)
                                                     (boolean-rules)
                                                     '(IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
-                                                      UBP-LONGER-BETTER
-                                                      SBVLT-TRIM-CONSTANT-RIGHT
+                                                      UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
                                                       sbvlt-of-bvminus-of-1-and-minus-1
                                                       sbvlt-of-bvplus-of-minus-1-and-1
@@ -5675,7 +5673,7 @@
               ;; (- (cw "(paramnum-name-alist: ~x0)~%" (reverse paramnum-name-alist))) ;todo: drop?
 
               ;; Submit the events right now, so we can reason about the new functions (e.g., to prove that array lengths are unchanged)
-              (state (submit-events defuns-and-theorems state))
+              (state (submit-events-brief defuns-and-theorems state))
               (generated-events-acc (append generated-events-acc defuns-and-theorems)) ;; new stuff comes at the end
               (postlude-alist (g :postlude-alist options))
               (postlude-event (lookup-loop-function loop-function-name loop-designator postlude-alist nil)) ;often a progn, or nil if there is none
@@ -5995,24 +5993,27 @@
           :check-inputs nil
           ))
         ((when erp) (mv erp nil nil nil nil nil nil state))
+        ;; TODO: Handle a state-dag that is a quotep?
         ;; Prune unreachable branches:
         ;; TODO: May need to repeatedly prune branches and rewrite?
         ((mv erp state-dag state)
-         (maybe-prune-dag-new (g :prune-branches options)
-                              state-dag
-                              hyps
-                              (set-difference-eq
-                               ;;todo: improve?:
-                               (append (amazing-rules-spec-and-dag)
-                                       (map-rules)
-                                       ;; (jvm-semantics-rules)
-                                       (jvm-simplification-rules)
-                                       (g :extra-rules options))
-                               (g :remove-rules options))
-                              nil ; interpreted-fns
-                              (g :monitor options)
-                              (g :call-stp options)
-                              state))
+         (maybe-prune-dag-precisely (g :prune-branches options)
+                                    state-dag
+                                    hyps
+                                    (set-difference-eq
+                                     ;;todo: improve?:
+                                     (append (amazing-rules-spec-and-dag)
+                                             (map-rules)
+                                             ;; (jvm-semantics-rules)
+                                             (jvm-simplification-rules)
+                                             (g :extra-rules options))
+                                     (g :remove-rules options))
+                                    :none ; todo: pass a rule-alist here?
+                                    nil ; interpreted-fns
+                                    (g :monitor options)
+                                    (g :call-stp options)
+                                    print
+                                    state))
         ((when erp) (mv erp nil nil nil nil nil nil state))
         (- (cw " Done attempting to run all branches.)~%")))
      (if (member-eq 'run-until-exit-segment-or-hit-loop-header (dag-fns state-dag))
@@ -6523,22 +6524,25 @@
        ;; ((when (not (pseudo-term-listp assumptions)))
        ;;   (er hard? 'lift-java-code-fn "Hyps are not pseudo-terms: ~X01" assumptions nil)
        ;;   (mv t nil state))
+       ;; TODO: Handle an output-dag that is a quotep?
        ((mv erp output-dag state)
-        (maybe-prune-dag-new (g :prune-branches options)
-                             output-dag
-                             assumptions ;todo think about this
-                             (set-difference-eq
-                              ;;todo: improve?:
-                              (append (amazing-rules-spec-and-dag)
-                                      (map-rules)
-                                      ;; (jvm-semantics-rules)
-                                      (jvm-simplification-rules)
-                                      (g :extra-rules options))
-                              (g :remove-rules options))
-                             nil ; interpreted-fns
-                             (g :monitor options)
-                             (g :call-stp options)
-                             state))
+        (maybe-prune-dag-precisely (g :prune-branches options)
+                                   output-dag
+                                   assumptions ;todo think about this
+                                   (set-difference-eq
+                                    ;;todo: improve?:
+                                    (append (amazing-rules-spec-and-dag)
+                                            (map-rules)
+                                            ;; (jvm-semantics-rules)
+                                            (jvm-simplification-rules)
+                                            (g :extra-rules options))
+                                    (g :remove-rules options))
+                                   :none ; todo: pass a rule-alist here?
+                                   nil ; interpreted-fns
+                                   (g :monitor options)
+                                   (g :call-stp options)
+                                   print
+                                   state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
                              (print-list output-dag)
@@ -6570,7 +6574,7 @@
         state)))
 
 ;; The main way to call the lifter.
-;; The actual code should have been already stored in the GLOBAL-CLASS-TABLE (in the books generated by build-book-for-class).
+;; The actual code should have been already stored in the global-class-alist (in the books generated by build-book-for-class).
 ;; NOTE: Keep this in sync with SHOW-LIFT-JAVA-CODE below.
 ;; TODO: Consider re-playing with :print t if the lift attempt fails.
 ;; TODO: Suppress more printing if :print is nil.

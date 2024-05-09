@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-input-channel
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,45 +21,23 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable len true-listp member-equal nth update-nth)))
 
 (in-theory (disable open-input-channel
-                    open-input-channel-p  ;so that a rule below fires
                     open-input-channel-p1
                     mv-nth ;so that the rules below fire
                     ))
 
+;; The channel name, or nil.
 (defthm symbolp-of-mv-nth-0-of-open-input-channel
   (symbolp (mv-nth 0 (open-input-channel file-name typ state)))
   :hints (("Goal" :in-theory (enable open-input-channel))))
 
-(defthm open-input-channel-p1-after-open-input-channel
-  (implies (mv-nth 0 (open-input-channel file-name typ state)) ;no error
-           (open-input-channel-p1 (mv-nth 0 (open-input-channel file-name typ state))
-                                  typ
-                                  (mv-nth 1 (open-input-channel file-name typ state))))
-  :hints (("Goal" :in-theory (enable open-input-channel open-input-channel-p1))))
-
-(defthm open-input-channel-any-p1-after-open-input-channel
-  (implies (and (mv-nth 0 (open-input-channel file-name typ state)) ;no error
-                (member-equal typ '(:byte :character :object)))
-           (open-input-channel-any-p1 (mv-nth 0 (open-input-channel file-name typ state))
-                                      (mv-nth 1 (open-input-channel file-name typ state))))
-  :hints (("Goal" :in-theory (enable open-input-channel-any-p1 member-equal))))
-
-(defthm open-input-channel-p-after-open-input-channel
-  (implies (mv-nth 0 (open-input-channel file-name typ state)) ;no error
-           (open-input-channel-p (mv-nth 0 (open-input-channel file-name typ state))
-                                 typ
-                                 (mv-nth 1 (open-input-channel file-name typ state))))
-  :hints (("Goal" :in-theory (enable open-input-channel-p open-input-channel-p1 open-input-channel))))
-
 (defthm state-p1-of-mv-nth-1-of-open-input-channel
-  (implies (and ;; (mv-nth 0 (open-input-channel file-name typ state)) ;no error
-                (member-eq typ '(:character :byte :object))
+  (implies (and (member-eq typ *file-types*)
                 (stringp file-name)
                 (state-p1 state))
            (state-p1 (mv-nth 1 (open-input-channel file-name typ state))))
@@ -79,17 +57,48 @@
                                    written-files-p)))))
 
 (defthm state-p-of-mv-nth-1-of-open-input-channel
-  (implies (and ;; (mv-nth 0 (open-input-channel file-name typ state)) ;no error
-                (member-eq typ '(:character :byte :object))
+  (implies (and (member-eq typ *file-types*)
                 (stringp file-name)
                 (state-p state))
            (state-p (mv-nth 1 (open-input-channel file-name typ state))))
   :hints (("Goal" :in-theory (enable state-p))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm open-input-channel-p1-after-open-input-channel
+  (implies (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+           (open-input-channel-p1 (mv-nth 0 (open-input-channel file-name typ state))
+                                  typ
+                                  (mv-nth 1 (open-input-channel file-name typ state))))
+  :hints (("Goal" :in-theory (enable open-input-channel open-input-channel-p1))))
+
+(defthm open-input-channel-p-after-open-input-channel
+  (implies (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+           (open-input-channel-p (mv-nth 0 (open-input-channel file-name typ state))
+                                 typ
+                                 (mv-nth 1 (open-input-channel file-name typ state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-p))))
+
+(defthm open-input-channel-any-p1-after-open-input-channel
+  (implies (and (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-input-channel-any-p1 (mv-nth 0 (open-input-channel file-name typ state))
+                                      (mv-nth 1 (open-input-channel file-name typ state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p1 member-equal))))
+
+(defthm open-input-channel-any-p-after-open-input-channel
+  (implies (and (mv-nth 0 (open-input-channel file-name typ state)) ;no error
+                (member-equal typ *file-types*))
+           (open-input-channel-any-p (mv-nth 0 (open-input-channel file-name typ state))
+                                     (mv-nth 1 (open-input-channel file-name typ state))))
+  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p) (open-input-channel-any-p1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; See the guard of close-input-channel
 (defthm not-equal-standard-character-input-0-and-mv-nth-0-of-open-input-channel
   (implies (state-p state)
-           (not (equal 'acl2-input-channel::standard-character-input-0 (mv-nth 0 (open-input-channel file-name typ state)))))
+           (not (equal *standard-ci* (mv-nth 0 (open-input-channel file-name typ state)))))
   :hints (("Goal" :in-theory (enable ;state-p1
                               open-input-channel
                               equal-of-intern-in-package-of-symbol
@@ -99,7 +108,7 @@
 ;; See the guard of close-input-channel
 (defthm not-equal-standard-object-input-0-and-mv-nth-0-of-open-input-channel
   (implies (state-p state)
-           (not (equal 'acl2-input-channel::standard-object-input-0 (mv-nth 0 (open-input-channel file-name typ state)))))
+           (not (equal *standard-oi* (mv-nth 0 (open-input-channel file-name typ state)))))
   :hints (("Goal" :in-theory (enable ;state-p1
                               open-input-channel
                               equal-of-intern-in-package-of-symbol
@@ -107,7 +116,7 @@
                               equal-of-append))))
 
 ;; See the guard of close-input-channel
-(defthm not-member-equal-of--mv-nth-0-of-open-input-channel
+(defthm not-member-equal-of-mv-nth-0-of-open-input-channel
   (implies (state-p state)
            (not (member-equal (mv-nth 0 (open-input-channel file-name typ state))
                               '(acl2-input-channel::standard-character-input-0

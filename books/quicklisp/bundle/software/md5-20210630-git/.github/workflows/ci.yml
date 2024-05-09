@@ -1,0 +1,38 @@
+name: Common Lisp CI
+
+on:
+  push:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: ${{ matrix.lisp }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        lisp: [sbcl-bin, clisp]
+        os: [ubuntu-latest, macOS-latest]
+        exclude:
+          # CLISP currently does not build on ubuntu due to readline7
+          - lisp: clisp
+            os: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Roswell
+        env:
+          LISP: ${{ matrix.lisp }}
+        run: |
+          curl -L https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+
+      - name: Build and Run Tests
+        run: |
+          ros -e '(pushnew :md5-testing cl:*features*)
+           (ql:quickload "md5")
+           (unless (md5::test-rfc1321)
+             (uiop:quit 1))
+           (unless (md5::test-other)
+             (uiop:quit 1))'

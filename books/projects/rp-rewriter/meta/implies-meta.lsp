@@ -123,9 +123,10 @@
 ;; Since rp-check-context attaches side-conditions on the go, this is not
 ;; necessary anymore. 
 
-#|(rp::add-meta-rule
+(rp::add-meta-rule
  :meta-fnc implies-meta
  :trig-fnc implies
  :valid-syntaxp t
  :outside-in t
- :returns (mv term dont-rw))|#
+ :disabled t
+ :returns (mv term dont-rw))

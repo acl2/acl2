@@ -245,7 +245,12 @@ the expressions that the keys are bound to.</p>"
                   (not (member v (svex-alist-vars y))))
              (not (member v (svex-alist-vars (fast-alist-fork x y)))))
     :hints(("Goal" :in-theory (enable svex-alist-vars
-                                      fast-alist-fork)))))
+                                      fast-alist-fork))))
+
+  (defthmd svexlist-vars-of-svex-alist-vals
+    (equal (svexlist-vars (svex-alist-vals x))
+           (svex-alist-vars x))
+    :hints(("Goal" :in-theory (enable svex-alist-vals svex-alist-vars svexlist-vars)))))
 
 
 
@@ -1102,29 +1107,4 @@ Correctness is stated in terms of @(see svexlist-vars):</p>
 
 
 
-(define svarlist-non-override-test-p ((x svarlist-p))
-  (if (atom x)
-      t
-    (and (b* (((svar x1) (car x)))
-           (not x1.override-test))
-         (svarlist-non-override-test-p (cdr x)))))
 
-(define svarlist-non-override-p ((x svarlist-p))
-  (if (atom x)
-      t
-    (and (b* (((svar x1) (car x)))
-           (and (not x1.override-test)
-                (not x1.override-val)))
-         (svarlist-non-override-p (cdr x))))
-  ///
-  (defthm svarlist-non-override-p-of-append
-    (equal (svarlist-non-override-p (append x y))
-           (and (svarlist-non-override-p x)
-                (svarlist-non-override-p y)))))
-
-(define svarlist->override-tests ((x svarlist-p))
-  :returns (new-x svarlist-p)
-  (if (atom x)
-      nil
-    (cons (change-svar (Car x) :override-test t)
-          (svarlist->override-tests (cdr x)))))

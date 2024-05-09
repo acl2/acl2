@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a file
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,26 +10,18 @@
 
 (in-package "ACL2")
 
-;; TODO: Why does the resulting file always start with a blank line?
-
 (include-book "write-objects-to-channel")
-(local (include-book "std/io/base" :dir :system)) ;for reasoning support
 (local (include-book "kestrel/utilities/state" :dir :system))
+(local (include-book "kestrel/utilities/get-serialize-character" :dir :system))
+(local (include-book "open-output-channel"))
 
-;move
-(local
- (defthm get-serialize-character-of-mv-nth-1-of-open-output-channel
-  (equal (get-serialize-character (mv-nth 1 (open-output-channel filename typ state)))
-         (get-serialize-character state))
-  :hints (("Goal" :in-theory (enable get-serialize-character open-output-channel
-                                     update-open-output-channels
-                                     get-global
-                                     global-table
-                                     update-file-clock)))))
+(local (in-theory (disable put-global
+                           open-output-channel-p1
+                           open-output-channel-p)))
 
-;; Writes the OBJECTS to file FILENAME, overwriting its previous contents.
-;; Returns (mv erp state).
-(defun write-objects-to-file (objects filename ctx state)
+;; Writes the OBJECTS to FILENAME, each on a separate line, overwriting the
+;; previous contents of FILENAME.  Returns (mv erp state).
+(defund write-objects-to-file (objects filename ctx state)
   (declare (xargs :guard (and (true-listp objects)
                               (stringp filename)
                               ;; required by print-object$ (why?):

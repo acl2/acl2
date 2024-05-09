@@ -50,12 +50,6 @@
 
 ;; CPUID-related definitions:
 
-(define subset-equal (x y)
-  :guard (true-listp y)
-  (or (atom x)
-      (and (member-equal (first x) y)
-           (subset-equal (rest x) y))))
-
 (defsection cpuid
   :parents (machine opcode-maps)
   :short "Determining which CPUID features are supported in @('x86isa')"
@@ -412,9 +406,9 @@
    (and (equal (feature-flag :maxphyaddr) 52)
         (equal (feature-flag :linearaddr) 48)))
 
-  (define feature-flags (features)
-    :guard (subset-equal features *supported-feature-flags*)
-    :guard-hints (("Goal" :in-theory (enable subset-equal)))
+  (define feature-flags ((features true-listp))
+    :guard (subsetp-equal features *supported-feature-flags*)
+    :guard-hints (("Goal" :in-theory (enable subsetp-equal)))
     (cond ((atom features) 1)
           ((eql (feature-flag (first features)) 0) 0)
           (t (feature-flags (rest features))))))

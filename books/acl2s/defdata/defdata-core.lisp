@@ -208,12 +208,14 @@ Does not seem to be used.
        (xvar (if (member-eq d avoid-lst)
                  d
                (acl2::generate-variable d avoid-lst nil nil wrld)))
-       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld)))
-    `((defthm ,(s+ name "P-TESTTHM" :pkg curr-pkg)
-        (equal (,pred-name ,xvar)
-               ,pred-body)
+       (pred-body (make-pred-I ndef xvar kwd-alist A M C B wrld))
+       (defthm-body `(equal (,pred-name ,xvar) ,pred-body))
+       (defthm-name (s+ name "P-TESTTHM" :pkg curr-pkg)))
+    `((defthm ,defthm-name
+        ,defthm-body
         :rule-classes nil
-        :hints ,(get1 :hints kwd-alist)))))
+        :hints ,(get1 :hints kwd-alist))
+      (verify-guards ,defthm-name))))
 
 (defloop already-defined-pred-defthm-events (ps kwd-alist wrld)
   (for ((p in ps)) (append (already-defined-pred-defthm-event p kwd-alist wrld))))
@@ -405,6 +407,16 @@ Does not seem to be used.
 
 (logic)
 
+(defun substitute-sym (new old form)
+  (declare (xargs :guard (symbolp old)))
+  (cond ((symbolp form)
+         (cond ((eq form old) new)
+               (t form)))
+        ((atom form) form)
+        ((quotep form) form)
+        (t (cons (substitute-sym new old (car form))
+                 (substitute-sym new old (cdr form))))))
+
 (defun match-alist (name key val A)
   (declare (xargs :guard (and (symbolp name) (eqlable-2-alistp A))))
   (if (endp A)
@@ -414,7 +426,12 @@ Does not seem to be used.
           (match-alist name key val (cdr A)))
          (Aval (cdr lookup))
          (Aname (caar A))
-         (nval (acl2::subst Aname name val)))
+         ;; This is substitute-sym because subst also replaces constants
+         ;; and that is a problem.
+         (nval (if (symbolp Aname) ;;should be a symbol, but guard
+                   ;;checking for substitute-sym
+                   (substitute-sym Aname name val)
+                 val)))
       (if (equal Aval nval)
           Aname
         (match-alist name key val (cdr A))))))
@@ -426,7 +443,7 @@ Does not seem to be used.
       nil
     (b* ((Aval (get1 key (cdar A)))
          (Aname (caar A))
-         (nval (acl2::subst Aname name val)))
+         (nval (acl2::subst-var Aname name val)))
       (if (equal Aval nval)
           Aname
         (match-alist name key val (cdr A))))))
@@ -1413,7 +1430,6 @@ because the rule-classes may matter.
   (declare (xargs :verify-guards nil))
   (predicate-name type))
 
-
 (defun is-a-typeName-gv (type wrld)
   (declare (xargs :guard t))
   (ec-call (is-a-typeName-current type wrld)))
@@ -1611,7 +1627,7 @@ capturing the metadata associated with each typename.
 |---------------------+------------------+---------+----------+-------------------------------|
 | :predicate          | 1-arity fn       |         | no       |                               |
 |---------------------+------------------+---------+----------+-------------------------------|
-| :domain-size        | oneof pos t      | 't      | no       |                               |
+| :domain-size        | oneof nat t      | 't      | no       |                               |
 |---------------------+------------------+---------+----------+-------------------------------|
 | :enumerator         | 1-arity fn       |         | no       |                               |
 |---------------------+------------------+---------+----------+-------------------------------|

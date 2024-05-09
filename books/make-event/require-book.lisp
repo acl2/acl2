@@ -51,25 +51,26 @@ to give more specific messages for each recommended book.
 (program)
 (set-state-ok t)
 
-(defun er-get-full-book-name (user-book-name dir ctx state)
+(defun er-get-full-book-string/name (user-book-name dir ctx state)
   (er-let*
     ((dir-value
       (cond (dir (include-book-dir-with-chk soft ctx dir))
             (t (value (cbd))))))
     (mv-let
-     (full-book-name directory-name familiar-name)
+     (full-book-string full-book-name directory-name familiar-name)
      (parse-book-name dir-value user-book-name ".lisp" ctx state)
      (declare (ignore directory-name familiar-name))
-     (value full-book-name))))
+     (value (cons full-book-string full-book-name)))))
 
 (defun chk-for-included-book-fn (user-book-name dir errmsg no-err-if-existsp ctx state)
   (er-let*
-    ((full-book-name
-      (er-get-full-book-name user-book-name dir ctx state)))
-    (let ((include-book-alist0 (global-val 'include-book-alist (w state))))
+    ((full-book-string/name
+      (er-get-full-book-string/name user-book-name dir ctx state)))
+    (let ((full-book-string (car full-book-string/name))
+          (full-book-name (cdr full-book-string/name))
+          (include-book-alist0 (global-val 'include-book-alist (w state))))
       (er-progn
-       (chk-book-name user-book-name full-book-name ctx state)
-       (chk-input-object-file full-book-name ctx state)
+       (chk-input-object-file full-book-string ctx state)
        (if (and full-book-name
                 (assoc-equal full-book-name include-book-alist0))
          (value t) ; good; already included
@@ -78,34 +79,34 @@ to give more specific messages for each recommended book.
             (cond ((null errmsg) ; no message
                    state)
                   ((stringp errmsg)
-                   (observation1 ctx errmsg (list (cons #\b full-book-name)) nil state))
+                   (observation1 ctx errmsg (list (cons #\b full-book-string)) nil state))
                   ((and (consp errmsg)
                         (stringp (car errmsg))
                         (alistp (cdr errmsg)))
                    (observation1 ctx
                                  (car errmsg)
-                                 (cons (cons #\b full-book-name)
+                                 (cons (cons #\b full-book-string)
                                        (cdr errmsg))
                                  nil
                                  state))
                   (t ; a default message
-                   (observation ctx "Book has not been included: ~x0" full-book-name)))
+                   (observation ctx "Book has not been included: ~x0" full-book-string)))
             (value nil))
            (cond ((stringp errmsg)
-                  (error1 ctx nil errmsg (list (cons #\b full-book-name)) state))
+                  (error1 ctx nil errmsg (list (cons #\b full-book-string)) state))
                  ((and (consp errmsg)
                        (stringp (car errmsg))
                        (alistp (cdr errmsg)))
                   (error1 ctx
                           nil
                           (car errmsg)
-                          (cons (cons #\b full-book-name)
+                          (cons (cons #\b full-book-string)
                                 (cdr errmsg))
                           state))
                  ((null errmsg) ; no error message
                   (mv t nil state))
                  (t ; a default message
-                  (er soft ctx "Book has not been included: ~x0" full-book-name)))))))))
+                  (er soft ctx "Book has not been included: ~x0" full-book-string)))))))))
 
 (defun maybe-chk-for-included-book-fn (user-book-name dir errmsg no-err-if-existsp ctx state)
   (let ((behalf-of (cond ((or (@ certify-book-info)

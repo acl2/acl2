@@ -32,181 +32,197 @@
 
 // xslt.js
 //
-// Compatbility wrapper for lack of XSLT standards in browsers.
+// Compatibility wrapper for lack of XSLT standards in browsers.
 //
-// Interface:
-//   renderText(String of XDOC XML markup) -> String of Plain Text
-//   renderHtml(String of XDOC XML markup) -> HTML DOM Object
 
-function wrapXdocFragment(str)
-{
-    var wrap = "<!DOCTYPE xdoc [";
-    wrap += "<!ENTITY ndash \"&#8211;\">";
-    wrap += "<!ENTITY mdash \"&#8212;\">";
-    wrap += "<!ENTITY rarr \"&#8594;\">";
-    wrap += "<!ENTITY nbsp \"&#160;\">";
-    wrap += "<!ENTITY lsquo \"&#8216;\">";
-    wrap += "<!ENTITY rsquo \"&#8217;\">";
-    wrap += "<!ENTITY ldquo \"&#8220;\">";
-    wrap += "<!ENTITY rdquo \"&#8221;\">";
-    wrap += "]>";
-    wrap += "<root>" + str + "</root>";
-    return wrap;
+// Warning: Keep this in sync with *entity-strings* and
+// *entitytok-as-plaintext-fal* in ../parse-xml.lisp,
+// *xml-entity-stuff* in ../prepare-topic.lisp, and
+// (defxdoc entities ...) in topics.lisp, and
+// wrap_xdoc_fragment in xdata2html.pl
+/**
+ * Turn XDOC XML markup into a valid XML document for use with XSLT
+ * below. This mainly involves adding entity references (to deal with
+ * special entities that XDOC supports - see the Entities XDOC topic)
+ * @param {string} str The XML markup to wrap
+ * @returns {string} The wrapped XML markup, ready for use with XSLT.
+ */
+function wrapXdocFragment(str) {
+    // We do not need any declaration for the following standard predefiend XML entities:
+    // amp, lt, gt, quot, apos
+    return `<!DOCTYPE xdoc [
+        <!ENTITY nbsp "&#160;">
+        <!ENTITY ndash "&#8211;">
+        <!ENTITY mdash "&#8212;">
+        <!ENTITY larr "&#8592;">
+        <!ENTITY rarr "&#8594;">
+        <!ENTITY harr "&#8596;">
+        <!ENTITY lang "&#9001;">
+        <!ENTITY rang "&#9002;">
+        <!ENTITY hellip "&#8230;">
+        <!ENTITY lsquo "&#8216;">
+        <!ENTITY rsquo "&#8217;">
+        <!ENTITY ldquo "&#8220;">
+        <!ENTITY rdquo "&#8221;">
+        <!ENTITY and   "&#8743;">
+        <!ENTITY or    "&#8744;">
+        <!ENTITY not   "&#172;">
+        <!ENTITY ne    "&#8800;">
+        <!ENTITY le    "&#8804;">
+        <!ENTITY ge    "&#8805;">
+        <!ENTITY mid   "&#8739;">
+        <!ENTITY times "&#215;">
+        <!ENTITY Alpha "&#913;">
+        <!ENTITY Beta "&#914;">
+        <!ENTITY Gamma "&#915;">
+        <!ENTITY Delta "&#916;">
+        <!ENTITY Epsilon "&#917;">
+        <!ENTITY Zeta "&#918;">
+        <!ENTITY Eta "&#919;">
+        <!ENTITY Theta "&#920;">
+        <!ENTITY Iota "&#921;">
+        <!ENTITY Kappa "&#922;">
+        <!ENTITY Lambda "&#923;">
+        <!ENTITY Mu "&#924;">
+        <!ENTITY Nu "&#925;">
+        <!ENTITY Xi "&#926;">
+        <!ENTITY Omicron "&#927;">
+        <!ENTITY Pi "&#928;">
+        <!ENTITY Rho "&#929;">
+        <!ENTITY Sigma "&#931;">
+        <!ENTITY Tau "&#932;">
+        <!ENTITY Upsilon "&#933;">
+        <!ENTITY Phi "&#934;">
+        <!ENTITY Chi "&#935;">
+        <!ENTITY Psi "&#936;">
+        <!ENTITY Omega "&#937;">
+        <!ENTITY alpha "&#945;">
+        <!ENTITY beta "&#946;">
+        <!ENTITY gamma "&#947;">
+        <!ENTITY delta "&#948;">
+        <!ENTITY epsilon "&#949;">
+        <!ENTITY zeta "&#950;">
+        <!ENTITY eta "&#951;">
+        <!ENTITY theta "&#952;">
+        <!ENTITY iota "&#953;">
+        <!ENTITY kappa "&#954;">
+        <!ENTITY lambda "&#955;">
+        <!ENTITY mu "&#956;">
+        <!ENTITY nu "&#957;">
+        <!ENTITY xi "&#958;">
+        <!ENTITY omicron "&#959;">
+        <!ENTITY pi "&#960;">
+        <!ENTITY rho "&#961;">
+        <!ENTITY sigma "&#963;">
+        <!ENTITY tau "&#964;">
+        <!ENTITY upsilon "&#965;">
+        <!ENTITY phi "&#966;">
+        <!ENTITY chi "&#967;">
+        <!ENTITY psi "&#968;">
+        <!ENTITY omega "&#969;">
+        <!ENTITY forall "&#8704;">
+        <!ENTITY exist "&#8707;">
+        <!ENTITY empty "&#8709;">
+        <!ENTITY isin "&#8712;">
+        <!ENTITY notin "&#8713;">
+        <!ENTITY prod "&#8719;">
+        <!ENTITY sum "&#8721;">
+    ]>
+    <root>${str}</root>`;
 }
 
-var xslt_impl = {};
-
-// create the nodeType constants if the Node object is not defined
-if (!window.Node)
-{
-    var Node = {
-	ELEMENT_NODE                :  1,
-	ATTRIBUTE_NODE              :  2,
-	TEXT_NODE                   :  3,
-	CDATA_SECTION_NODE          :  4,
-	ENTITY_REFERENCE_NODE       :  5,
-	ENTITY_NODE                 :  6,
-	PROCESSING_INSTRUCTION_NODE :  7,
-	COMMENT_NODE                :  8,
-	DOCUMENT_NODE               :  9,
-	DOCUMENT_TYPE_NODE          : 10,
-	DOCUMENT_FRAGMENT_NODE      : 11,
-	NOTATION_NODE               : 12
-    };
-}
-
-function unfuglifyLegacyQuotes (node)
-{
+/**
+ * Fix quotes in a DOM node. Modifies the DOM node in-place.
+ * @param {Node} node The DOM node to fix quotes in.
+ */
+function unfuglifyLegacyQuotes (node) {
     switch(node.nodeType) {
-	case Node.ELEMENT_NODE:
-	    // Don't fix up quotes when there is code involved.
-	    // Unfortunately we have to keep this in sync with render.js
-	    var tag = node.tagName.toLowerCase();
-	    if (tag == "pre" || tag == "tt" || tag == "code")
-		return;
+        case Node.ELEMENT_NODE:
+            // Don't fix up quotes when there is code involved.
+            // Unfortunately we have to keep this in sync with render.js
+            const tag = node.tagName.toLowerCase();
+            if (tag == "pre" || tag == "tt" || tag == "code")
+                return;
 
-	    var cl = node.getAttribute("class");
-	    if (cl == "v" || cl == "tt" || cl == "mathfrag" || cl == "mathblock")
-		return;
-	break;
+            const cl = node.getAttribute("class");
+            if (cl == "v" || cl == "tt" || cl == "mathfrag" || cl == "mathblock")
+                return;
+        break;
 
-	case Node.TEXT_NODE:
-	    var text = node.nodeValue;
- 	    // Apparently we can't use html entities here like &ldquo; or you end
-	    // up with something like &amp;ldquo; in your document.  Fortunately the
-	    // unicode escapes work.  Thanks stackoverflow.
-  	    text = text.replace(/``/g, '\u201c')   // ldquo, smart `` quote
-	               .replace(/''/g, '\u201d')   // rdquo, smart '' quote
-                       .replace(/`/g,  '\u2018')   // lsquo, smart ` quote
-	               .replace(/'/g,  '\u2019');  // rsquo, smart ' quote
-	    node.nodeValue = text;
-	break;
+        case Node.TEXT_NODE:
+            let text = node.nodeValue;
+            // Apparently we can't use html entities here like &ldquo; or you end
+            // up with something like &amp;ldquo; in your document.  Fortunately the
+            // unicode escapes work.  Thanks stackoverflow.
+            text = text.replace(/``/g, '\u201c')   // ldquo, smart `` quote
+                    .replace(/''/g, '\u201d')   // rdquo, smart '' quote
+                    .replace(/`/g,  '\u2018')   // lsquo, smart ` quote
+                    .replace(/'/g,  '\u2019');  // rsquo, smart ' quote
+            node.nodeValue = text;
+        break;
     }
 
-    for(var i = 0; i < node.childNodes.length; ++i)
-    {
-	var child = node.childNodes[i];
-	unfuglifyLegacyQuotes(child);
-    }
-}
-
-function xsltInit() {
-
-    if (window.ActiveXObject // detects IE <= version 11
-        || "ActiveXObject" in window // detects IE version 11
-       )
-    {
-	var xslt_plain = $.base64.decode(xslt_base64);
-
-	var xsltdom = new ActiveXObject("Msxml2.DOMDocument.6.0");
-	xsltdom.validateOnParse = true;
-	xsltdom.async = false;
-	xsltdom.loadXML(xslt_plain);
-	xslt_impl["proc"] = xsltdom;
-
-	var xmldom  = new ActiveXObject("Msxml2.DOMDocument.6.0");
-	xmldom.validateOnParse = false;
-	xmldom.async = false;
-	xmldom.setProperty("ProhibitDTD", false);
-
-	xslt_impl["renderText"] = function(str) {
-	    xmldom.loadXML(wrapXdocFragment(str));
-	    if (xmldom.parseError.errorCode != 0) {
-		var myErr = xmldom.parseError;
-		try {
-		    console.log("IE XML Error: " + myErr.reason);
-		}catch(e) {}
-		return "Error: " + myErr.reason;
-	    }
-	    var output = xmldom.transformNode(xsltdom);
-	    var str = $("<div>" + output + "</div>").text();
-	    var ret = String(str)
- 		       .replace(/"/g, '&quot;')
-		       .replace(/'/g, '&apos;');
-	    return ret;
-	};
-
-	xslt_impl["renderHtml"] = function(str) {
-	    xmldom.loadXML(wrapXdocFragment(str));
-	    if (xmldom.parseError.errorCode != 0) {
-		var myErr = xmldom.parseError;
-		try {
-		    console.log("IE XML Error: " + myErr.reason);
-		}catch(e) {}
-		return "Error: " + myErr.reason;
-	    }
-	    var output = xmldom.transformNode(xsltdom);
-	    // Don't try to unfuglify quotes on IE, I run into errors
-	    // in code like node.childNodes.length and it just isn't worth
-	    // trying to figure out.
-	    // unfuglifyLegacyQuotes(output);
-	    var str = $("<div>" + output + "</div>");
-	    return str;
-	};
-    }
-
-    else {
-
-	// Initialize an XSLT processor for XDOC --> HTML conversion
-	xslt_impl["proc"] = new XSLTProcessor();
-	var xslt_plain = $.base64.decode(xslt_base64);
-	var xslt_dom = $.parseXML(xslt_plain);
-	xslt_impl["proc"].importStylesheet(xslt_dom);
-
-	xslt_impl["renderText"] = function(str) {
-	    var xml = $.parseXML(wrapXdocFragment(str));
-	    var dom = xslt_impl["proc"].transformToFragment(xml,document);
-	    var str = $(dom).text();
-
-	    // It's not clear to me whether this is good or bad.  The
-	    // basic problem is that strings like "short" strings
-	    // might legitimately have quotes or apostrophes in them.
-	    // This is no problem if we're going to stick the
-	    // renderText into a paragraph or something like that.
-	    // But it *is* a problem if we're going to stick it into
-	    // an attribute like a tooltip or similar.  So, just to
-	    // avoid problems like that, make sure the resulting
-	    // string is free of " and ' characters.
-	    return String(str)
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&apos;');
-	};
-
-	xslt_impl["renderHtml"] = function(str) {
-	    var xml = $.parseXML(wrapXdocFragment(str));
-	    var dom = xslt_impl["proc"].transformToFragment(xml,document);
-	    unfuglifyLegacyQuotes(dom);
-	    return dom;
-	};
+    for(let i = 0; i < node.childNodes.length; ++i) {
+        const child = node.childNodes[i];
+        unfuglifyLegacyQuotes(child);
     }
 }
 
-function renderText(str) {
-    return xslt_impl["renderText"](str);
-}
+class XdocRenderer {
+    constructor() {
+        this.ready = false;
+    }
 
-function renderHtml(str) {
-    return xslt_impl["renderHtml"](str);
-}
+    /**
+     * Set up a XSLT processor with the given template source.
+     * @param {string} xsltSource The source of the XSLT template.
+     */
+    init(xsltSource) {
+        this.proc = new XSLTProcessor();
+        const xslt_dom = new DOMParser().parseFromString(xsltSource, "text/xml");
+        this.proc.importStylesheet(xslt_dom);
+        this.ready = true;
+    }
 
-xsltInit();
+    /**
+     * Render some content written in the XDoc markup language to plain text.
+     * @param {string} str The content to render.
+     * @returns {string} The content, rendered as plain text.
+     */
+    renderText(str) {
+        if(!this.ready) {
+            console.error("Unable to render text before XSL template is loaded.");
+        }
+        const xml = new DOMParser().parseFromString(wrapXdocFragment(str), "text/xml");
+        const dom = this.proc.transformToFragment(xml,document);
+        const outStr = dom.textContent;
+
+        // It's not clear to me whether this is good or bad.  The
+        // basic problem is that strings like "short" strings
+        // might legitimately have quotes or apostrophes in them.
+        // This is no problem if we're going to stick the
+        // renderText into a paragraph or something like that.
+        // But it *is* a problem if we're going to stick it into
+        // an attribute like a tooltip or similar.  So, just to
+        // avoid problems like that, make sure the resulting
+        // string is free of " and ' characters.
+        return String(outStr)
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    }
+
+    /**
+     * Render some content written in the XDoc markup language to DOM elements.
+     * @param {string} str The content to render.
+     * @returns {DocumentFragment} The content, rendered to a HTML DOM tree.
+     */
+    renderHtml(str) {
+        if(!this.ready) {
+            console.error("Unable to render text before XSL template is loaded.");
+        }
+        const xml = new DOMParser().parseFromString(wrapXdocFragment(str), "text/xml");
+        const dom = this.proc.transformToFragment(xml,document);
+        unfuglifyLegacyQuotes(dom);
+        return dom;
+    }
+}

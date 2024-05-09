@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,7 +26,8 @@
                                  :in-theory
                                  (enable c::sint-from-uchar-okp
                                          c::sint-integerp-alt-def
-                                         c::uchar-integerp-alt-def)))))
+                                         c::uchar-integerp-alt-def
+                                         c::bit-width-value-choices)))))
   (c::bitxor-sint-sint (c::sint-from-uchar |x|)
                        (c::sint-from-uchar |y|)))
 
@@ -38,4 +39,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| :output-file "conversions.c")
+(c::atc |f| |g| :file-name "conversions" :header t)

@@ -1,7 +1,7 @@
 ; A parser for Mach-O executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,10 +12,11 @@
 (in-package "ACL2")
 
 (include-book "parser-utils")
-(include-book "std/io/read-file-bytes" :dir :system)
+(include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
+(include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (include-book "kestrel/bv/defs-bitwise" :dir :system) ;for bvor
 
 ;; See also
@@ -37,18 +38,6 @@
 ;; - this tool has many fewer dependencies than mach-o-reader.lisp
 ;;
 ;; - Disadvantage: This tool does not yet support exotic load commands.
-
-;;;
-;;; library routines
-;;;
-
-; map code-char over a list of bytes
-(defun code-chars (bytes)
-  (if (endp bytes)
-      nil
-    (cons (code-char (first bytes))
-          (code-chars (rest bytes)))))
-
 
 ;; The constants in this file are from /usr/include/mach-o/loader.h on
 ;; my Mac.  I believe they all agree with the ones in
@@ -177,7 +166,7 @@
 
 (defun parse-n-bytes-into-string (n bytes)
   (b* (((mv string-bytes bytes) (parse-n-bytes n bytes))
-       (string (coerce (code-chars (keep-non-zeros string-bytes)) 'string)) ;TODO: strip trailing 0 bytes
+       (string (coerce (map-code-char (keep-non-zeros string-bytes)) 'string)) ;TODO: strip trailing 0 bytes
        )
       (mv string bytes)))
 
@@ -447,7 +436,7 @@
                            (cons :n-ext n-ext)))))
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
-                 (coerce (code-chars (keep-non-zeros (nthcdr n-strx string-table))) 'string))))
+                 (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string))))
       (mv (list (cons :string string)
                 ;;(cons :n-strx n-strx)
                 (cons :n-type n-type)
@@ -470,7 +459,7 @@
        ((mv n-value bytes) (parse-u64 bytes))
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
-                 (coerce (code-chars (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
+                 (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
        (stabp (not (eql 0 (logand #xe0 n-type))))
        (n-type (if stabp
                    (lookup-safe n-type *mach-o-stab-symbol-types*)
@@ -585,7 +574,7 @@
                            ;(cons :strsize strsize)
                            (cons :syms syms)
                            ;; Make it into one big string, for readability:
-                           (cons :string-table (coerce (code-chars string-table) 'string)))
+                           (cons :string-table (coerce (map-code-char string-table) 'string)))
                      bytes)))
           ;;TODO: Add more!
           (t (prog2$ (cw "NOTE: Ignoring unsupported command type: ~x0.~%" cmd)
@@ -625,7 +614,7 @@
                          32
                        (if (member-eq magic *64-bit-magic-numbers*)
                            64
-                         (er hard 'parse-mach-o-file "Bad magic number."))))
+                         (er hard 'parse-mach-o-file-bytes "Bad magic number."))))
        ((mv header bytes)
         (if (eql architecture 32)
             (parse-mach-o-header-32 bytes)
@@ -637,24 +626,24 @@
             (cons :header header)
             (cons :cmds cmds))))
 
-;; Parse a file that is known to be a Mach-O executable.  Returns (mv
-;; contents state) where contents in an alist representing the
-;; contents of the Mach-O executable.
-(defun parse-mach-o-file (filename state)
-  (declare (xargs :stobjs state
-                  :mode :program
-                  :guard (stringp filename)))
-  (b* (((mv existsp state)
-        (file-existsp filename state))
-       ((when (not existsp))
-        (progn$ (cw "ERROR in parse-for-mach-o-file: File does not exist: ~x0." filename)
-                (exit 1) ;return non-zero exit status
-                (mv t state)))
-       ((mv bytes state)
-        (read-file-bytes filename state))
-       ((when (not (consp bytes))) ;I've seen this be a string error message
-        (prog2$ (er hard 'parse-mach-o-file "Failed to read any bytes from file: ~x0.  Result: ~x1" filename bytes)
-                (mv t state)))
-       ;; Parse the bytes read:
-       (parsed-mach-o-file (parse-mach-o-file-bytes bytes)))
-      (mv parsed-mach-o-file state)))
+;; ;; Parse a file that is known to be a Mach-O executable.  Returns (mv
+;; ;; erp contents state) where contents in an alist representing the
+;; ;; contents of the Mach-O executable.
+;; (defun parse-mach-o-file (filename state)
+;;   (declare (xargs :guard (stringp filename)
+;;                   :stobjs state
+;; ;                  :mode :program
+;;                   :verify-guards nil ; todo
+;;                   ))
+;;   (b* (((mv existsp state) (file-existsp filename state))
+;;        ((when (not existsp))
+;;         (progn$ (cw "ERROR in parse-for-mach-o-file: File does not exist: ~x0." filename)
+;;                 (exit 1) ;return non-zero exit status ;todo: do we really want this?
+;;                 (mv :file-does-not-exist nil state)))
+;;        ((mv erp bytes state) (read-file-into-byte-list filename state))
+;;        ((when erp)
+;;         (er hard 'parse-mach-o-file "Failed to read any bytes from file: ~x0." filename) ; todo: should we exit here, like we do above?
+;;         (mv erp nil state))
+;;        ;; Parse the bytes read:
+;;        (parsed-mach-o-file (parse-mach-o-file-bytes bytes)))
+;;     (mv nil parsed-mach-o-file state)))

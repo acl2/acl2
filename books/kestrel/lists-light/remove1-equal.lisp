@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function remove1-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -106,3 +106,34 @@
   (equal (remove1-equal x (remove1-equal y l))
          (remove1-equal y (remove1-equal x l)))
   :hints (("Goal" :in-theory (enable remove1-equal))))
+
+;; Might be expensive
+(defthm remove1-equal-when-not-member-equal
+  (implies (not (member-equal x l))
+           (equal (remove1-equal x l)
+                  (true-list-fix l))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm <-of-acl2-count-of-remove1-equal-linear
+  (implies (member-equal a x)
+           (< (acl2-count (remove1-equal a x))
+              (acl2-count x)))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
+
+(defthm <=-of-acl2-count-of-remove1-equal-linear
+  (<= (acl2-count (remove1-equal a x))
+      (acl2-count x))
+  :rule-classes ((:linear :trigger-terms ((acl2-count (remove1-equal a x)))))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
+
+(defthm equal-of-acl2-count-of-remove1-equal-and-acl2-count
+  (equal (equal (acl2-count (remove1-equal a x))
+                (acl2-count x))
+         (if (member-equal a x)
+             nil
+           (equal (acl2-count (true-list-fix x)) ;simplify?
+                  (acl2-count x))))
+  :hints (("Goal" :use (:instance <-of-acl2-count-of-remove1-equal-linear)
+           :in-theory (disable <-of-acl2-count-of-remove1-equal-linear))))

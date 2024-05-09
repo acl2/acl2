@@ -1,7 +1,7 @@
 ; A function to check that all elements of a list are true-lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 ;; See also true-list-listp, but that one requires the final cdr to be nil.
-(defun all-true-listp (x)
+(defund all-true-listp (x)
   (declare (xargs :guard t))
   (if (atom x)
       t
@@ -21,12 +21,14 @@
 
 (defthm all-true-listp-of-cdr
   (implies (all-true-listp x)
-           (all-true-listp (cdr x))))
+           (all-true-listp (cdr x)))
+  :hints (("Goal" :in-theory (enable all-true-listp))))
 
 ;; Disabled since this might be tried often.
 (defthmd true-listp-of-car-when-all-true-listp
   (implies (all-true-listp x)
-           (true-listp (car x))))
+           (true-listp (car x)))
+  :hints (("Goal" :in-theory (enable all-true-listp))))
 
 ;; Disabled since this might be tried often.
 (defthmd true-listp-of-nth-when-all-true-listp

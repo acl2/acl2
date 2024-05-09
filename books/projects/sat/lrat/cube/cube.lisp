@@ -14,6 +14,10 @@
                               (open-input-channel-p channel :object state)
                               (true-listp acc)
                               (natp n))
+                  :guard-hints (("Goal" :in-theory
+                                 (enable read-acl2-oracle
+                                         update-acl2-oracle
+                                         acl2::iprint-oracle-updates)))
                   :measure (nfix n)))
   (cond
    ((zp n)
@@ -177,7 +181,8 @@
                                                     literal-listp
                                                     literalp
                                                     unique-literalsp)))))
-  (let ((input-formula (ec-call (cnf-read-file cnf-file state))))
+  (let* ((input-formula (ec-call (cnf-read-file cnf-file state)))
+         (state (increment-file-clock state)))
     (cond
      ((not (stringp clrat-file))
       (er-soft-logic

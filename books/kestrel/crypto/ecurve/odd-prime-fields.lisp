@@ -12,10 +12,10 @@
 (in-package "ECURVE")
 
 ; for primep definition
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 ; for fermat's little theorem
-(include-book "projects/quadratic-reciprocity/fermat" :dir :system)
+(include-book "projects/numbers/fermat" :dir :system)
 
 (include-book "kestrel/utilities/integer-arithmetic/top" :dir :system)
 
@@ -72,8 +72,8 @@
   (local (defun prime () 3))
 
   (defthm primep-of-prime
-    (rtl::primep (prime))
-    :hints (("Goal" :in-theory (enable rtl::primep))))
+    (dm::primep (prime))
+    :hints (("Goal" :in-theory (enable dm::primep))))
 
   ;; we need this because we divide (1- (prime)) by 2 later in this file
   (defthm prime-is-odd
@@ -181,9 +181,9 @@
   (local (include-book "arithmetic-5/top" :dir :system))
   (defthm prime-divides-iff-=p-0
     (implies (integerp x)
-             (iff (rtl::divides (prime) x)
+             (iff (dm::divides (prime) x)
                   (=p x 0)))
-    :hints (("Goal" :in-theory (enable =p rtl::divides modp)))))
+    :hints (("Goal" :in-theory (enable =p dm::divides modp)))))
 
 ; =p is (conditionally) a congruence for expt
 ; (used to prove congruence for division later)
@@ -252,14 +252,14 @@
            (=p (i* (/p x) x) 1))
   :hints (("Goal"
            :in-theory (enable =p modp /p i* expt)
-           :use (:instance rtl::fermat (p (prime)) (m x)))))
+           :use (:instance dm::fermat (p (prime)) (m x)))))
 
 (defthm /p-identity-right
   (implies (force (not (=p x 0)))
            (=p (i* x (/p x)) 1))
   :hints (("Goal"
            :in-theory (enable =p modp /p i* expt)
-           :use (:instance rtl::fermat (p (prime)) (m x)))))
+           :use (:instance dm::fermat (p (prime)) (m x)))))
 
 (defthm /p-cancellation-on-left
   (implies (force (not (=p x 0)))
@@ -470,9 +470,9 @@
   :rule-classes nil
   :hints (("Goal"
            :in-theory (enable =p modp)
-           :use (:instance rtl::fermat (m m) (p (prime))))))
+           :use (:instance dm::fermat (m m) (p (prime))))))
 
-; the whole identity is shown in "projects/quadratic-reciprocity/euler"
+; the whole identity is shown in "projects/numbers/euler"
 (defthmd weak-euler-criterion
   (implies (and (integerp sqrt{a})
                 (integerp a)

@@ -56,7 +56,10 @@
                                           bvchop-when-top-bit-1
                                           getbit-when-val-is-not-an-integer
                                           )
-                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+                                  (bvminus-becomes-bvplus-of-bvuminus
+                                   ;; for speed:
+                                   associativity-of-+ bvchop-when-top-bit-1
+                                   )))))
 
 (defthmd signed-addition-overflowsp-symmetric-limited
   (implies (and (syntaxp (smaller-termp y x))
@@ -80,7 +83,10 @@
                                           BVCHOP-WHEN-TOP-BIT-1
                                           GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                           )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   bvchop-when-top-bit-1 ; for speed
+                                   getbit-of-plus ; for speed
+                                   )))))
 
 ;todo: more like this
 (defthm signed-addition-overflowsp-subst-constant-arg1
@@ -118,13 +124,16 @@
   (implies (posp size)
            (iff (signed-addition-underflowsp size x y)
                 (signed-addition-underflowsp size y x)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-plus
-                                          logext-cases
-                                          bvminus bvuminus
-                                          bvchop-when-top-bit-1
-                                          getbit-when-val-is-not-an-integer
-                                          )
-                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+  :hints (("Goal" :in-theory (e/d ( ;bvplus
+                                   bvchop-of-sum-cases sbvlt bvlt getbit-of-plus
+                                   logext-cases
+                                   bvminus bvuminus
+                                   bvchop-when-top-bit-1
+                                   getbit-when-val-is-not-an-integer
+                                   )
+                                  (bvminus-becomes-bvplus-of-bvuminus
+                                   bvchop-of-sum-cases +-of-expt-and---of-expt-of-one-less-extra ; for speed
+                                   )))))
 
 (defthmd signed-addition-underflowsp-symmetric-limited
   (implies (and (syntaxp (smaller-termp y x))

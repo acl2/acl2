@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -66,8 +66,9 @@
   (declare (xargs :stobjs state :mode :program))
   (b* (((mv afn cfn) (afn-cfn-unary op index))
        (arg-expr (integer-to-sint-expr arg))
-       ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg)) 'test state nil))
-       (res (c::sint->get res))
+       ((er (cons & res))
+        (trans-eval `(,afn (c::sint-from-integer ,arg)) 'test state nil))
+       (res (c::integer-from-sint res))
        (res-expr (integer-to-sint-expr res)))
     (value
      `(defun ,cfn ()
@@ -86,11 +87,13 @@
   (b* (((mv afn cfn) (afn-cfn-binary op index))
        (arg1-expr (integer-to-sint-expr arg1))
        (arg2-expr (integer-to-sint-expr arg2))
-       ((er (cons & res)) (trans-eval `(,afn (c::sint ,arg1) (c::sint ,arg2))
-                                      'test
-                                      state
-                                      nil))
-       (res (c::sint->get res))
+       ((er (cons & res))
+        (trans-eval `(,afn (c::sint-from-integer ,arg1)
+                           (c::sint-from-integer ,arg2))
+                    'test
+                    state
+                    nil))
+       (res (c::integer-from-sint res))
        (res-expr (integer-to-sint-expr res)))
     (value
      `(defun ,cfn ()
@@ -370,4 +373,5 @@
         |bitior_sint_sint_test2|
         |bitior_sint_sint_test3|
         |bitior_sint_sint_test4|
-        :output-file "operators.c")
+        :file-name "operators"
+        :header t)

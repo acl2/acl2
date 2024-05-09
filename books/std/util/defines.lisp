@@ -892,7 +892,7 @@ encapsulate), and is mainly meant as a tool for macro developers.</dd>
               '(:off :all))
        (make-event (defines-fn ',name ',args (w state))))))
 
-
+(table acl2::ppr-special-syms 'defines 1)
 
 
 

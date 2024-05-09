@@ -23,7 +23,7 @@
 ; by A. Coglio and S. Westfold, published at the ACL2-2020 Workshop.
 
 ; This file extends the example in
-; [books]/workshops/2017/coglio-kaufmann-smith/support/example-integers.lisp
+; workshops/2017/coglio-kaufmann-smith/support/example-integers.lisp
 ; with the use of ISODATA.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

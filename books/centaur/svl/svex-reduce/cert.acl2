@@ -1,0 +1,12 @@
+(include-book "../portcullis")
+
+;; cert-flags: ? t :ttags :all :skip-proofs-okp t
+; cert_param: (non-acl2r)
+
+; Matt K. mod, 2/20/2023: The use of (logbitp-reasoning) makes ACL2(p) with
+; waterfall-parallelism enabled complain that "the form (LOGBITP-REASONING) was
+; expected to represent an ordinary value, not an error triple (mv erp val
+; state), as would be acceptable in a serial execution of ACL2".  I saw this in
+; at least two book certification attempts (width-of-svex.lisp and
+; simplify-bitand-or-xor.lisp), so I'll turn off waterfall parallelism here.
+(local (set-waterfall-parallelism nil))

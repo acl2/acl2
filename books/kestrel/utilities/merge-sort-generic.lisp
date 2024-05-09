@@ -19,7 +19,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (enable revappend-lemma)))
+(local (in-theory (enable revappend-becomes-append-of-reverse-list)))
 
 ;; ;todo: use remove1?
 ;; (defthm remove-1-of-true-list-fix
@@ -135,7 +135,10 @@
   (local (defun generic-comparison (x y) (list x y))))
 
 ;; The function to merge 2 sorted lists
-(defun merge-generic (l1 l2 acc)
+(defund merge-generic (l1 ; sorted
+                       l2 ; sorted
+                       acc ; sorted in reverse order, contains elements <= to those in l1 and l2
+                       )
   (declare (xargs :measure (+ (len l1) (len l2))
                   :hints
                   (("Goal"
@@ -155,6 +158,32 @@
          (merge-generic (cdr l1) l2 (cons (car l1) acc)))
         (t (merge-generic l1 (cdr l2) (cons (car l2) acc)))))
 
+(defthm true-listp-of-merge-generic
+  (implies (and (true-listp l1)
+                (true-listp l2))
+           (true-listp (merge-generic l1 l2 acc)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable merge-generic))))
+
+(defthm all-generic-predp-of-merge-generic
+  (implies (and (all-generic-predp l1)
+                (all-generic-predp l2)
+                (all-generic-predp acc))
+           (all-generic-predp (merge-generic l1 l2 acc)))
+  :hints (("Goal" :in-theory '(merge-generic all-generic-predp-of-cdr
+                                                        all-generic-predp-of-cons
+                                                        all-generic-predp-of-revappend
+                                                        generic-predp-of-car
+                                                        atom))))
+
+(defthm perm-of-merge-generic
+  (perm (merge-generic x y acc)
+        (append x y acc))
+  :hints (("Goal" :induct (merge-generic x y acc)
+           :in-theory (enable merge-generic))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The main merge-sort function
 (defun merge-sort-generic (l)
   (declare (xargs :measure (len l)
@@ -173,24 +202,11 @@
                   ))
   (if (atom (cdr l))
       l
-      (mv-let (first-half second-half)
-        (split-list-fast l)
-        (merge-generic (merge-sort-generic first-half)
-                                  (merge-sort-generic second-half)
-                                  nil))))
-
-
-
-(defthm all-generic-predp-of-merge-generic
-  (implies (and (all-generic-predp l1)
-                (all-generic-predp l2)
-                (all-generic-predp acc))
-           (all-generic-predp (merge-generic l1 l2 acc)))
-  :hints (("Goal" :in-theory '(merge-generic all-generic-predp-of-cdr
-                                                        all-generic-predp-of-cons
-                                                        all-generic-predp-of-revappend
-                                                        generic-predp-of-car
-                                                        atom))))
+    (mv-let (first-half second-half)
+      (split-list-fast l)
+      (merge-generic (merge-sort-generic first-half)
+                     (merge-sort-generic second-half)
+                     nil))))
 
 (defthm all-generic-predp-of-merge-sort-generic
   (implies (all-generic-predp lst)
@@ -199,25 +215,11 @@
 (verify-guards merge-sort-generic
   :hints (("Goal" :induct (merge-sort-generic l))))
 
-(defthm true-listp-of-merge-generic
-  (implies (and (true-listp l1)
-                (true-listp l2))
-           (true-listp (merge-generic l1 l2 acc)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable merge-sort-generic))))
-
 (defthm true-listp-of-merge-sort-generic
   (implies (true-listp lst)
            (true-listp (merge-sort-generic lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable merge-sort-generic))))
-
-(verify-guards merge-sort-generic)
-
-(defthm perm-of-merge-generic
-  (perm (merge-generic x y acc)
-        (append x y acc))
-  :hints (("Goal" :induct (merge-generic x y acc))))
 
 (defthm perm-of-merge-sort-generic
   (perm (merge-sort-generic x)

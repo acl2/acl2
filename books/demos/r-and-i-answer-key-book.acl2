@@ -1,0 +1,31 @@
+; Here we define the following two macros used in the input file.  By keeping
+; these definitions out of the input file, we avoid distracting those who read
+; that file.
+
+(defmacro next-problem (s)
+
+; When we use :next-problem on a string, that command is printed -- so we don't
+; want this macro to print the string (say, with fms).
+
+  (declare (ignore s))
+  `(value :invisible))
+
+(defmacro ----- (s)
+
+; This is the same as next-problem, but we use it when inserting a comment in
+; the middle of a solution.  Our hope is that when the user sees ":-----", it
+; has the appearance of suitable separator.
+
+  (declare (ignore s))
+  `(value :invisible))
+
+(include-book "tools/run-script" :dir :system)
+(run-script "r-and-i-answer-key"
+            :ld-error-action :return!)
+
+; Help dependency scanner.
+#||
+(depends-on "r-and-i-answer-key-input.lsp")
+(depends-on "r-and-i-answer-key-log.txt")
+(include-book "ordinals/ordinals" :dir :system)
+||#

@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,10 +21,16 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/formals-plus" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
+(include-book "kestrel/std/system/term-guard-obligation" :dir :system)
+(include-book "kestrel/std/system/theorem-namep" :dir :system)
+(include-book "kestrel/std/system/thm-formula-plus" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/system/paired-names" :dir :system)
+(include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "utilities/input-processing")
@@ -550,7 +556,9 @@
        (antecedent-conjuncts (cons old-guard
                                    (negate-terms (take (1- k) conditions$))))
        (antecedent (conjoin antecedent-conjuncts))
-       (consequent (term-guard-obligation (nth (1- k) conditions$) state))
+       (consequent (term-guard-obligation (nth (1- k) conditions$)
+                                          :limited
+                                          state))
        (formula (implicate antecedent consequent)))
     (make-evmac-appcond :name name :formula formula)))
 
@@ -583,7 +591,9 @@
        (new (if (= k 0)
                 (car (last news))
               (nth (1- k) news)))
-       (consequent (term-guard-obligation new state))
+       (consequent (term-guard-obligation new
+                                          :limited
+                                          state))
        (formula (implicate antecedent consequent)))
     (make-evmac-appcond :name name :formula formula)))
 
@@ -782,6 +792,7 @@
                      :in-theory nil
                      :use (,@(strip-cdrs guard-appcond-thm-names)
                            (:guard-theorem ,old$)))))
+   :guard-simplify :limited
    :verify-guards verify-guards$
    :enable new-enable$)
 

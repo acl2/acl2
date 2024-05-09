@@ -44,5 +44,5 @@
 (set-compile-fns t)
 
 (xdoc::archive-matching-topics
- (or (str::strprefixp "[books]/centaur/esim/" (cdr (assoc :from x)))
-     (str::strprefixp "[books]/centaur/4v-sexpr/" (cdr (assoc :from x)))))
+ (or (str::strprefixp "centaur/esim/" (cdr (assoc :from x)))
+     (str::strprefixp "centaur/4v-sexpr/" (cdr (assoc :from x)))))

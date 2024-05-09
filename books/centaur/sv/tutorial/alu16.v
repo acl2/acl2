@@ -83,10 +83,15 @@ module alu16 (
     : (opcode == `OP_BITXOR) ? ans_bitxor
     : (opcode == `OP_MIN)    ? ans_min
     : (opcode == `OP_COUNT)  ? ans_count
-    : (opcode == `OP_MULT)   ? ans_mult
     : 16'bx;
 
   flop #(16) outflop (.q(out), .d(ans), .clk(clk));
 
-endmodule
+//   assign ans2 = out;
+//    : (opcode == `OP_MULT)   ? ans_mult
+//    : 16'bx;
 
+//  flop #(16) outflop2 (.q(out2), .d(ans2), .clk(clk));
+
+
+endmodule

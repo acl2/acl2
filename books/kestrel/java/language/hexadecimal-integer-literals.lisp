@@ -19,7 +19,7 @@
 
 (defxdoc+ hexadecimal-integer-literals
   :parents (integer-literals)
-  :short "Java hexadecimal integer literals [JLS:3.10.1]."
+  :short "Java hexadecimal integer literals [JLS14:3.10.1]."
   :order-subtopics t
   :default-parent t)
 

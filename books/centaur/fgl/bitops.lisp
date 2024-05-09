@@ -40,6 +40,8 @@
 (include-book "centaur/misc/starlogic" :dir :system)
 (include-book "checks")
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "primitive-lemmas"))
+(local (std::add-default-post-define-hook :fix))
 
 (disable-definition intcons)
 (disable-definition intcons*)
@@ -530,6 +532,48 @@
            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))))
 
+
+  (local (defthm logapp-equal-0-implies
+           (implies (equal (logapp n x y) 0)
+                    (zip y))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))
+           :rule-classes :forward-chaining))
+
+  (local (defthm logapp-equal-neg1-implies
+           (implies (equal (logapp n x y) -1)
+                    (equal y -1))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))
+           :rule-classes :forward-chaining))
+
+
+  
+  (local (defthm loghead-when-gte-integer-length
+           (implies (and (not (acl2::negp x))
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (loghead n x) (ifix x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
+  (local (defthm logapp-neg1-when-gte-integer-length
+           (implies (and (acl2::negp x)
+                         (natp n)
+                         (<= (integer-length x) n))
+                    (equal (logapp n x -1) (ifix x)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                              bitops::ihsext-recursive-redefs)))))
+
+
+  (local (defthm int-revapp-0-gte-0
+           (<= 0 (int-revapp nbits x 0))
+           :rule-classes (:linear :type-prescription)))
+
+  (local (fty::deffixcong acl2::int-equiv equal (integer-length-bound ans x) x
+           :hints(("Goal" :in-theory (enable integer-length-bound)))))
+  
+
   (def-fgl-rewrite logapp-helper-impl
     (implies (and (syntaxp (and (fgl-object-case shift-rev '(:g-integer :g-concrete))
                                 (natp shift-width)))
@@ -545,11 +589,28 @@
                                       (check-equal! x-equal-y x y)))
                            x))
                       (if (intcar shift-rev)
-                          (b* ((width (ash 1 (1- shift-width))))
-                            (logapp width x
-                                    (logapp-helper (intcdr shift-rev) (1- shift-width)
+                          (b* ((width (ash 1 (1- shift-width)))
+                               (rest (logapp-helper (intcdr shift-rev) (1- shift-width)
                                                     (logtail (ash 1 (1- shift-width)) x)
-                                                    y)))
+                                                    y))
+                               ;; Note: Special case is now taken care of by fgl-logapp-primitive
+                               ;; ;; Special case: x has known sign, x's integer
+                               ;; ;; length bound is less than width, and rest is
+                               ;; ;; -1 or 0 matching that sign -- just return x.
+                               ;; ;; Could consider just doing this in the logapp primitive instead.
+                               ;; (special-case-validp
+                               ;;  (b* ((x-sign (check-int-sign! x-sign x))
+                               ;;       ((unless x-sign) nil)
+                               ;;       (x-width (integer-length-bound! x-width x))
+                               ;;       ((unless (and x-width (<= x-width width))) nil)
+                               ;;       (rest-endp (check-int-endp! rest-endp rest))
+                               ;;       ((unless rest-endp) nil)
+                               ;;       (rest-sign (check-int-sign! rest-sign rest))
+                               ;;       ((unless (eql rest-sign x-sign)) nil))
+                               ;;    t))
+                               ;; ((when special-case-validp) x)
+                               )
+                            (logapp width x rest))
                         (logapp-helper (intcdr shift-rev) (1- shift-width) x y)))))
     :hints(("Goal" :in-theory (enable* bitops::logapp**
                                        acl2::arith-equiv-forwarding
@@ -566,16 +627,6 @@
                                                              (logcdr shift-rev)
                                                              0)
                                                  1)))))))
-
-  
-
-  (local (defthm loghead-when-gte-integer-length
-           (implies (and (natp x)
-                         (natp n)
-                         (<= (integer-length x) n))
-                    (equal (loghead n x) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
 
   (def-fgl-rewrite logapp-to-logapp-helper
     (implies (syntaxp (not (fgl-object-case n :g-concrete)))
@@ -728,13 +779,8 @@
 
 
 
-(define +carry ((c booleanp)
-                (x integerp)
-                (y integerp))
-  (+ (bool->bit c)
-     (lifix x)
-     (lifix y))
-  ///
+(defsection +carry
+  (local (in-theory (enable +carry)))
   (disable-definition +carry)
 
   (def-fgl-rewrite fgl-+carry
@@ -761,7 +807,12 @@
   (def-fgl-rewrite minus-to-+carry
     (implies (integerp x)
              (equal (- x) (+carry t 0 (lognot x))))
-    :hints(("Goal" :in-theory (enable lognot)))))
+    :hints(("Goal" :in-theory (enable lognot))))
+
+  (def-fgl-rewrite binary-minus-to-+carry
+    (equal (binary-minus x y)
+           (+carry 1 x (lognot y)))
+    :hints(("Goal" :in-theory (enable binary-minus lognot)))))
 
 (encapsulate nil
   (local (defthm replace-mult
@@ -810,6 +861,12 @@
                  (b* ((less (and (intcar x) (not (intcar y)))))
                    (mv less
                        (and (not less) (or (intcar! x) (not (intcar y)))))))
+                ((unless (syntax-bind integers
+                                      (and (or (fgl-object-case x :g-integer)
+                                               (fgl-object-case x :g-concrete))
+                                           (or (fgl-object-case y :g-integer)
+                                               (fgl-object-case y :g-concrete)))))
+                 (abort-rewrite (</= x y)))
                 ((mv rest< rest=) (</= (intcdr x) (intcdr y)))
                 ;; ((when (and (syntax-bind rest<-true (eq rest< t))
                 ;;             rest<))
@@ -842,7 +899,9 @@
                              (equal y 0))
                         (if (check-int-endp! x-endp x)
                             (intcar! x)
-                          (< (intcdr x) 0))
+                          (if (syntax-bind x-integerp (fgl-object-case x :g-integer))
+                              (< (intcdr x) 0)
+                            (abort-rewrite (< x 0))))
                       (mv-nth 0 (</= x y)))))
     :hints(("Goal" :in-theory (enable int-endp)))))
 
@@ -885,6 +944,11 @@
               (iff (xor nil x) x)
               (iff (xor t x) (not x))
               (iff (xor x t) (not x)))))
+
+
+(fty::deffixcong acl2::pos-equiv equal (logext n x) n
+  :hints(("Goal" 
+          :in-theory (enable pos-fix bitops::logext**))))
 
 (define +carry-ext ((width posp)
                       (c booleanp)
@@ -1179,3 +1243,88 @@
   :hints(("Goal" :in-theory (enable pos-fix))))
 
 
+(define s-append (lsb-bits (msb-bits true-listp))
+  (if (atom lsb-bits)
+      (if (atom msb-bits) '(nil)
+        (mbe :logic (true-list-fix msb-bits)
+             :exec msb-bits))
+    (scons (car lsb-bits) (s-append (cdr lsb-bits) msb-bits)))
+  ///
+  (defthm eval-of-s-append
+    (equal (bools->int (gobj-bfr-list-eval (s-append lsb-bits msb-bits) env))
+           (logapp (len lsb-bits)
+                   (bools->int (gobj-bfr-list-eval lsb-bits env))
+                   (bools->int (gobj-bfr-list-eval msb-bits env))))
+    :hints(("Goal" :in-theory (enable len)
+            :induct (s-append lsb-bits msb-bits)
+            :expand ((gobj-bfr-list-eval lsb-bits env)))
+           (and stable-under-simplificationp
+                '(:in-theory (e/d* (s-endp scdr
+                                           bitops::ihsext-recursive-redefs))))
+           (and stable-under-simplificationp
+                '(:expand ((gobj-bfr-list-eval msb-bits env))))))
+
+  (defthm member-of-s-append
+    (implies (and (not (member v msb-bits))
+                  (not (member v lsb-bits))
+                  v)
+             (not (member v (s-append lsb-bits msb-bits))))))
+
+
+
+(local (defthm logcdr-neg-bit
+         (implies (bitp x)
+                  (equal (logcdr (- x)) (- x)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+
+(local (defthm logext-neg-bit
+         (implies (bitp x)
+                  (equal (logext n (- x)) (- x)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+(local (defthm logcons-neg-bit
+         (implies (bitp x)
+                  (equal (logcons x (- x)) (- x)))
+         :hints(("Goal" :in-theory (enable bitp)))))
+
+
+(define extend-bits ((n natp) x)
+  :guard-hints (("goal" :in-theory (enable default-car)))
+  (b* (((when (zp n)) nil)
+       (first (mbe :logic (car x)
+                   :exec (and (consp x) (car x))))
+       ((when (eql n 1)) (list first))
+       ((when (or (atom x) (atom (cdr x))))
+        (cons first (extend-bits (1- n) x))))
+    (cons first (extend-bits (1- n) (cdr x))))
+  ///
+  (defthm len-of-extend-bits
+    (Equal (len (extend-bits n x)) (nfix n)))
+
+  (defthm consp-of-extend-bits
+    (Equal (consp (extend-bits n x))
+           (posp n)))
+
+  (defthm bools->int-of-extend-bits
+    (equal (bools->int (extend-bits n x))
+           (if (zp n)
+               0
+             (logext n (bools->int x))))
+    :hints(("Goal" :in-theory (enable bools->int bitops::logext**))))
+
+  
+  (local (defthm gobj-bfr-list-eval-under-iff
+           (iff (gobj-bfr-list-eval x env)
+                (consp x))
+           :hints(("Goal" :in-theory (enable gobj-bfr-list-eval)))))
+
+  (defthm gobj-bfr-list-eval-of-extend-bits
+    (equal (gobj-bfr-list-eval (extend-bits n x) env)
+           (extend-bits n (gobj-bfr-list-eval x env)))
+    :hints(("Goal" :in-theory (enable gobj-bfr-list-eval))))
+
+  (defthm member-of-extend-bits
+    (implies (and (not (member v x))
+                  v)
+             (not (member v (extend-bits n x))))))

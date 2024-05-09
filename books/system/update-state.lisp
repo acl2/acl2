@@ -42,9 +42,6 @@
   '(open-input-channels
     open-output-channels
     global-table
-    t-stack
-    32-bit-integer-stack
-    big-clock-entry
     idates
     acl2-oracle
     file-clock
@@ -52,7 +49,6 @@
     written-files
     read-files
     writeable-files
-    list-all-package-names-lst
     user-stobj-alist1
     all-boundp
     file-clock-p
@@ -81,12 +77,6 @@
                (open-output-channels state))
         (equal (global-table (update-open-input-channels updates state))
                (global-table state))
-        (equal (t-stack (update-open-input-channels updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-open-input-channels updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-open-input-channels updates state))
-               (big-clock-entry state))
         (equal (idates (update-open-input-channels updates state))
                (idates state))
         (equal (acl2-oracle (update-open-input-channels updates state))
@@ -101,8 +91,6 @@
                (read-files state))
         (equal (writeable-files (update-open-input-channels updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-open-input-channels updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-open-input-channels updates state))
                (user-stobj-alist1 state)))))
 
@@ -120,7 +108,7 @@
 
 (local (defthm len-state
   (implies (state-p1 state)
-           (equal (len state) 15))
+           (equal (len state) 11))
   :hints(("Goal" :expand (state-p1 state)))))
 
 
@@ -137,12 +125,6 @@
                updates)
         (equal (global-table (update-open-output-channels updates state))
                (global-table state))
-        (equal (t-stack (update-open-output-channels updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-open-output-channels updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-open-output-channels updates state))
-               (big-clock-entry state))
         (equal (idates (update-open-output-channels updates state))
                (idates state))
         (equal (acl2-oracle (update-open-output-channels updates state))
@@ -157,8 +139,6 @@
                (read-files state))
         (equal (writeable-files (update-open-output-channels updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-open-output-channels updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-open-output-channels updates state))
                (user-stobj-alist1 state)))))
 
@@ -187,12 +167,6 @@
                (open-output-channels state))
         (equal (global-table (update-global-table updates state))
                updates)
-        (equal (t-stack (update-global-table updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-global-table updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-global-table updates state))
-               (big-clock-entry state))
         (equal (idates (update-global-table updates state))
                (idates state))
         (equal (acl2-oracle (update-global-table updates state))
@@ -207,160 +181,8 @@
                (read-files state))
         (equal (writeable-files (update-global-table updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-global-table updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-global-table updates state))
                (user-stobj-alist1 state)))))
-
-
-
-(defthm update-t-stack-state-lemmas
-  (implies
-   (state-p1 state)
-   (and (true-listp (update-t-stack updates state))
-        (equal (len (update-t-stack updates state))
-               (len state))
-        (equal (open-input-channels (update-t-stack updates state))
-               (open-input-channels state))
-        (equal (open-output-channels (update-t-stack updates state))
-               (open-output-channels state))
-        (equal (global-table (update-t-stack updates state))
-               (global-table state))
-        (equal (t-stack (update-t-stack updates state))
-               updates)
-        (equal (32-bit-integer-stack (update-t-stack updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-t-stack updates state))
-               (big-clock-entry state))
-        (equal (idates (update-t-stack updates state))
-               (idates state))
-        (equal (acl2-oracle (update-t-stack updates state))
-               (acl2-oracle state))
-        (equal (file-clock (update-t-stack updates state))
-               (file-clock state))
-        (equal (readable-files (update-t-stack updates state))
-               (readable-files state))
-        (equal (written-files (update-t-stack updates state))
-               (written-files state))
-        (equal (read-files (update-t-stack updates state))
-               (read-files state))
-        (equal (writeable-files (update-t-stack updates state))
-               (writeable-files state))
-        (equal (list-all-package-names-lst (update-t-stack updates state))
-               (list-all-package-names-lst state))
-        (equal (user-stobj-alist1 (update-t-stack updates state))
-               (user-stobj-alist1 state)))))
-
-(defthm update-t-stack-preserves-state-p1
-  (implies (state-p1 state)
-           (equal (state-p1 (update-t-stack updates state))
-                  (true-listp updates)))
-  :hints(("Goal" :in-theory (disable update-t-stack
-                                     statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (update-t-stack updates state)))))))
-
-
-
-(defthm update-32-bit-integer-stack-state-lemmas
-  (implies
-   (state-p1 state)
-   (and (true-listp (update-32-bit-integer-stack updates state))
-        (equal (len (update-32-bit-integer-stack updates state))
-               (len state))
-        (equal (open-input-channels (update-32-bit-integer-stack updates state))
-               (open-input-channels state))
-        (equal (open-output-channels (update-32-bit-integer-stack updates state))
-               (open-output-channels state))
-        (equal (global-table (update-32-bit-integer-stack updates state))
-               (global-table state))
-        (equal (t-stack (update-32-bit-integer-stack updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-32-bit-integer-stack updates state))
-               updates)
-        (equal (big-clock-entry (update-32-bit-integer-stack updates state))
-               (big-clock-entry state))
-        (equal (idates (update-32-bit-integer-stack updates state))
-               (idates state))
-        (equal (acl2-oracle (update-32-bit-integer-stack updates state))
-               (acl2-oracle state))
-        (equal (file-clock (update-32-bit-integer-stack updates state))
-               (file-clock state))
-        (equal (readable-files (update-32-bit-integer-stack updates state))
-               (readable-files state))
-        (equal (written-files (update-32-bit-integer-stack updates state))
-               (written-files state))
-        (equal (read-files (update-32-bit-integer-stack updates state))
-               (read-files state))
-        (equal (writeable-files (update-32-bit-integer-stack updates state))
-               (writeable-files state))
-        (equal (list-all-package-names-lst (update-32-bit-integer-stack updates state))
-               (list-all-package-names-lst state))
-        (equal (user-stobj-alist1 (update-32-bit-integer-stack updates state))
-               (user-stobj-alist1 state)))))
-
-(defthm update-32-bit-integer-stack-preserves-state-p1
-  (implies (state-p1 state)
-           (equal (state-p1 (update-32-bit-integer-stack updates state))
-                  (32-bit-integer-listp updates)))
-  :hints(("Goal" :in-theory (disable update-32-bit-integer-stack
-                                     statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (update-32-bit-integer-stack updates state)))))))
-
-
-(defthm update-big-clock-entry-state-lemmas
-  (implies
-   (state-p1 state)
-   (and (true-listp (update-big-clock-entry updates state))
-        (equal (len (update-big-clock-entry updates state))
-               (len state))
-        (equal (open-input-channels (update-big-clock-entry updates state))
-               (open-input-channels state))
-        (equal (open-output-channels (update-big-clock-entry updates state))
-               (open-output-channels state))
-        (equal (global-table (update-big-clock-entry updates state))
-               (global-table state))
-        (equal (t-stack (update-big-clock-entry updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-big-clock-entry updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-big-clock-entry updates state))
-               updates)
-        (equal (idates (update-big-clock-entry updates state))
-               (idates state))
-        (equal (acl2-oracle (update-big-clock-entry updates state))
-               (acl2-oracle state))
-        (equal (file-clock (update-big-clock-entry updates state))
-               (file-clock state))
-        (equal (readable-files (update-big-clock-entry updates state))
-               (readable-files state))
-        (equal (written-files (update-big-clock-entry updates state))
-               (written-files state))
-        (equal (read-files (update-big-clock-entry updates state))
-               (read-files state))
-        (equal (writeable-files (update-big-clock-entry updates state))
-               (writeable-files state))
-        (equal (list-all-package-names-lst (update-big-clock-entry updates state))
-               (list-all-package-names-lst state))
-        (equal (user-stobj-alist1 (update-big-clock-entry updates state))
-               (user-stobj-alist1 state)))))
-
-(defthm update-big-clock-entry-preserves-state-p1
-  (implies (state-p1 state)
-           (equal (state-p1 (update-big-clock-entry updates state))
-                  (integerp updates)))
-  :hints(("Goal" :in-theory (disable update-big-clock-entry
-                                     statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (update-big-clock-entry updates state)))))))
-
 
 (defthm update-idates-state-lemmas
   (implies
@@ -374,12 +196,6 @@
                (open-output-channels state))
         (equal (global-table (update-idates updates state))
                (global-table state))
-        (equal (t-stack (update-idates updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-idates updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-idates updates state))
-               (big-clock-entry state))
         (equal (idates (update-idates updates state))
                updates)
         (equal (acl2-oracle (update-idates updates state))
@@ -394,8 +210,6 @@
                (read-files state))
         (equal (writeable-files (update-idates updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-idates updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-idates updates state))
                (user-stobj-alist1 state)))))
 
@@ -423,12 +237,6 @@
                (open-output-channels state))
         (equal (global-table (update-acl2-oracle updates state))
                (global-table state))
-        (equal (t-stack (update-acl2-oracle updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-acl2-oracle updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-acl2-oracle updates state))
-               (big-clock-entry state))
         (equal (idates (update-acl2-oracle updates state))
                (idates state))
         (equal (acl2-oracle (update-acl2-oracle updates state))
@@ -443,8 +251,6 @@
                (read-files state))
         (equal (writeable-files (update-acl2-oracle updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-acl2-oracle updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-acl2-oracle updates state))
                (user-stobj-alist1 state))))
   :hints(("Goal" :in-theory (enable update-acl2-oracle))))
@@ -486,12 +292,6 @@
                (open-output-channels state))
         (equal (global-table (update-file-clock updates state))
                (global-table state))
-        (equal (t-stack (update-file-clock updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-file-clock updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-file-clock updates state))
-               (big-clock-entry state))
         (equal (idates (update-file-clock updates state))
                (idates state))
         (equal (acl2-oracle (update-file-clock updates state))
@@ -506,8 +306,6 @@
                (read-files state))
         (equal (writeable-files (update-file-clock updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-file-clock updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-file-clock updates state))
                (user-stobj-alist1 state)))))
 
@@ -536,12 +334,6 @@
                (open-output-channels state))
         (equal (global-table (update-written-files updates state))
                (global-table state))
-        (equal (t-stack (update-written-files updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-written-files updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-written-files updates state))
-               (big-clock-entry state))
         (equal (idates (update-written-files updates state))
                (idates state))
         (equal (acl2-oracle (update-written-files updates state))
@@ -556,8 +348,6 @@
                (read-files state))
         (equal (writeable-files (update-written-files updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-written-files updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-written-files updates state))
                (user-stobj-alist1 state)))))
 
@@ -583,12 +373,6 @@
                (open-output-channels state))
         (equal (global-table (update-read-files updates state))
                (global-table state))
-        (equal (t-stack (update-read-files updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-read-files updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-read-files updates state))
-               (big-clock-entry state))
         (equal (idates (update-read-files updates state))
                (idates state))
         (equal (acl2-oracle (update-read-files updates state))
@@ -603,8 +387,6 @@
                updates)
         (equal (writeable-files (update-read-files updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-read-files updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-read-files updates state))
                (user-stobj-alist1 state)))))
 
@@ -620,54 +402,6 @@
 
 ; hey, there's no function called update-writeable-files!
 
-(defthm update-list-all-package-names-lst-state-lemmas
-  (implies
-   (state-p1 state)
-   (and (true-listp (update-list-all-package-names-lst updates state))
-        (equal (len (update-list-all-package-names-lst updates state))
-               (len state))
-        (equal (open-input-channels (update-list-all-package-names-lst updates state))
-               (open-input-channels state))
-        (equal (open-output-channels (update-list-all-package-names-lst updates state))
-               (open-output-channels state))
-        (equal (global-table (update-list-all-package-names-lst updates state))
-               (global-table state))
-        (equal (t-stack (update-list-all-package-names-lst updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-list-all-package-names-lst updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-list-all-package-names-lst updates state))
-               (big-clock-entry state))
-        (equal (idates (update-list-all-package-names-lst updates state))
-               (idates state))
-        (equal (acl2-oracle (update-list-all-package-names-lst updates state))
-               (acl2-oracle state))
-        (equal (file-clock (update-list-all-package-names-lst updates state))
-               (file-clock state))
-        (equal (readable-files (update-list-all-package-names-lst updates state))
-               (readable-files state))
-        (equal (written-files (update-list-all-package-names-lst updates state))
-               (written-files state))
-        (equal (read-files (update-list-all-package-names-lst updates state))
-               (read-files state))
-        (equal (writeable-files (update-list-all-package-names-lst updates state))
-               (writeable-files state))
-        (equal (list-all-package-names-lst (update-list-all-package-names-lst updates state))
-               updates)
-        (equal (user-stobj-alist1 (update-list-all-package-names-lst updates state))
-               (user-stobj-alist1 state)))))
-
-(defthm update-list-all-package-names-lst-preserves-state-p1
-  (implies (state-p1 state)
-           (equal (state-p1 (update-list-all-package-names-lst updates state))
-                  (true-list-listp updates)))
-  :hints(("Goal" :use ((:instance state-p1
-                                  (x state))
-                       (:instance state-p1
-                                  (x (update-list-all-package-names-lst updates
-                                                                        state)))))))
-
-
 (defthm update-user-stobj-alist1-state-lemmas
   (implies
    (state-p1 state)
@@ -680,12 +414,6 @@
                (open-output-channels state))
         (equal (global-table (update-user-stobj-alist1 updates state))
                (global-table state))
-        (equal (t-stack (update-user-stobj-alist1 updates state))
-               (t-stack state))
-        (equal (32-bit-integer-stack (update-user-stobj-alist1 updates state))
-               (32-bit-integer-stack state))
-        (equal (big-clock-entry (update-user-stobj-alist1 updates state))
-               (big-clock-entry state))
         (equal (idates (update-user-stobj-alist1 updates state))
                (idates state))
         (equal (acl2-oracle (update-user-stobj-alist1 updates state))
@@ -700,8 +428,6 @@
                (read-files state))
         (equal (writeable-files (update-user-stobj-alist1 updates state))
                (writeable-files state))
-        (equal (list-all-package-names-lst (update-user-stobj-alist1 updates state))
-               (list-all-package-names-lst state))
         (equal (user-stobj-alist1 (update-user-stobj-alist1 updates state))
                updates))))
 
@@ -718,14 +444,10 @@
 (in-theory (disable update-open-input-channels
                     update-open-output-channels
                     update-global-table
-                    update-t-stack
-                    update-32-bit-integer-stack
-                    update-big-clock-entry
                     update-idates
                     update-acl2-oracle
                     update-file-clock
                     update-written-files
                     update-read-files
-                    update-list-all-package-names-lst
                     update-user-stobj-alist1))
 

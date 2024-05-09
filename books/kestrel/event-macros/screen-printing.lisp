@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,7 +21,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Event macros normally print messages on then screen when they run.
+    "Event macros normally print messages on the screen when they run.
      At a minimum, they should print error messages,
      e.g. when user inputs do not pass validation.
      Event macros are run to produce "

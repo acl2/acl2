@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -60,7 +60,7 @@
 ; Matt and Jared think the answer is "no" for the reader macros.  Why?  These
 ; macros are just extensions of certain readtables like the *acl2-readtable*,
 ; which are used by READ to interpret input.  But there are already any number
-; of other ways for READ to produce bad objects, for instance it might produce a
+; of other ways for READ to produce bad objects, for instance it might produce
 ; floating point numbers, symbols in a foreign package, vectors, structures,
 ; etc.  The "Remarks on *acl2-readtable*" in acl2.lisp has more discussion of
 ; these matters.  At any rate, whenever ACL2 is using READ, it already needs to

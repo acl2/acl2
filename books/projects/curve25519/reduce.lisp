@@ -1,4 +1,4 @@
-(in-package "RTL")
+(in-package "DM")
 
 (include-book "projects/shnf/top" :dir :system)
 

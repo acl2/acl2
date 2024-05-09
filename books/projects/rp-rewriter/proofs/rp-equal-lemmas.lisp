@@ -39,7 +39,6 @@
 (in-package "RP")
 (include-book "../rp-rewriter")
 (include-book "local-lemmas")
-(include-book "proof-functions")
 (include-book "aux-function-lemmas")
 
 (include-book "proof-function-lemmas")

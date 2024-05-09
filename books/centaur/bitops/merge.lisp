@@ -116,7 +116,7 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
                                  (how-many natp)
                                  &key
                                  ((base-subst acl2::tmplsubst-p) '(acl2::make-tmplsubst)))
-  
+
   :mode :program
   (if (zp how-many)
       nil
@@ -127,7 +127,7 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
              :strs (append `((,(symbol-name name) . ,(coerce (explode-atom from 10) 'string)))
                            base-subst.strs)))
           (indexed-subst-templates name (+ from by) by (1- how-many) :base-subst base-subst))))
-      
+
 
 (defun logapp*-fn (width args)
   (if (atom args)
@@ -156,7 +156,7 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 
 (local
  (encapsulate nil
-   
+
    (in-theory (enable bitops::logapp-right-assoc))
 
    (defthm logapp-of-loghead-same
@@ -193,7 +193,7 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
                              (integer-length (loghead width a)))))
            :hints(("Goal" :in-theory (enable* ihsext-inductions
                                               ihsext-recursive-redefs)))))
-                  
+
   (defret width-of-merge-unsigneds-aux
     (unsigned-byte-p (+ (integer-length (nfix acc))
                         (* (nfix width) (len elts)))
@@ -243,7 +243,7 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
                   (logapp (* (nfix width) (len lst))
                           (merge-unsigneds width lst)
                           (nfix acc)))
-           :hints(("Goal" 
+           :hints(("Goal"
                    :induct (merge-unsigneds-aux-elim-ind width lst acc)
                    :expand ((:free (acc) (merge-unsigneds-aux width lst acc)))))))
 
@@ -333,6 +333,8 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 (def-merge-n-bits 4)
 (def-merge-n-bits 8)
 (def-merge-n-bits 16)
+(def-merge-n-bits 32)
+(def-merge-n-bits 64)
 
 
 
@@ -355,7 +357,7 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
                                                 "<WIDTH>-bit numbers")))
                                 str))))
        ;; bozo I was trying to use fmt1-to-string with ~n0 to produce
-       ;; e.g. "eight" for 8 but ran into weird safe-mode problems       
+       ;; e.g. "eight" for 8 but ran into weird safe-mode problems
        (str-alist `(("<N>" . ,ns)
                     ("<N-1>" . ,n-1s)
                     ("<N/2>" . ,(coerce (explode-atom (/ n 2) 10) 'string))
@@ -398,7 +400,17 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
         (acl2::add-to-ruleset merge-definitions '((:d merge-<n>-u<width>s)))
 
         (defthm unsigned-byte-p-<prod>-of-merge-<n>-u<width>s
-          (unsigned-byte-p <prod> (merge-<n>-u<width>s (:@proj countdown a<i>))))
+          (unsigned-byte-p <prod>
+                           (merge-<n>-u<width>s (:@proj countdown a<i>)))
+          :rule-classes
+          ((:rewrite
+            :corollary
+            (implies
+             (>= (nfix n) <prod>)
+             (unsigned-byte-p
+              n
+              (merge-<n>-u<width>s (:@proj countdown a<i>))))
+            :hints (("Goal" :in-theory (disable unsigned-byte-p))))))
 
         (defthmd merge-<n>-u<width>s-is-merge-unsigneds
           (equal (merge-<n>-u<width>s (:@proj countdown a<i>))
@@ -459,10 +471,14 @@ a theorem about @(see unsigned-byte-p)), and that it has a @(see nat-equiv)
 (def-merge-n-unsigneds 8 32)
 (def-merge-n-unsigneds 8 64)
 
+(def-merge-n-unsigneds 16 2)
+(def-merge-n-unsigneds 16 4)
 (def-merge-n-unsigneds 16 8)
 (def-merge-n-unsigneds 16 16)
 (def-merge-n-unsigneds 16 32)
 
+(def-merge-n-unsigneds 32 2)
+(def-merge-n-unsigneds 32 4)
 (def-merge-n-unsigneds 32 8)
 (def-merge-n-unsigneds 32 16)
 

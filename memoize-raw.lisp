@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -187,7 +187,7 @@
 ;; RDTSC nonsense, but we still can report mysterious results since we have no
 ;; clue about which core we are running on in CCL (or, presumably, SBCL).
 
-#+(and (or ccl sbcl) x86-64)
+#+(and (or ccl sbcl) (or x86-64 64-bit))
 (eval-when
  (:execute :compile-toplevel :load-toplevel)
  (when #+ccl (fboundp 'ccl::rdtsc)
@@ -211,10 +211,22 @@
 ; funcall and intern, so as to avoid a package-lock read error when the symbol
 ; sb-impl::read-cycle-counter does not exist at read time.
 
-       (ignore-errors (funcall (intern "READ-CYCLE-COUNTER" "SB-IMPL")))
-   (format t "; Note: pushing :RDTSC onto *features*.~&")
-   (finish-output)
-   (pushnew :RDTSC *features*)))
+; We have gotten a report of sb-impl::read-cycle-counter returning 0 as both
+; values on an M1 Mac running SBCL.  So we check for that.  Since the rdtsc is
+; supposed to measure cycles since the machine's last reset, a return of two
+; zeroes plausibly indicates that read-cycle-counter (see its definition in
+; SBCL source file src/code/time.lisp, is punting.  (It is a bit tempting to
+; use the CYCLE-COUNTER feature that is used in that definition of
+; read-cycle-counter, but that feature is not present in our SBCL build -- it
+; must be temporary somehow.)
+
+       (ignore-errors
+         (mv-let (x y)
+           (funcall (intern "READ-CYCLE-COUNTER" "SB-IMPL"))
+           (not (and (eql x 0) (eql y 0)))))
+       (format t "; Note: pushing :RDTSC onto *features*.~&")
+       (finish-output)
+       (pushnew :RDTSC *features*)))
 
 #+rdtsc
 (defconstant *2^30-1-for-rdtsc*
@@ -3509,7 +3521,7 @@
               (and condition ; else no memo table usage, so skip flushing
                    (remove-duplicates-eq
                     (loop for st in (union stobjs-in stobjs-out)
-                          when st
+                          when (and st (not (eq st :df)))
                           collect
                           (assert$
                            (not (eq st 'state)) ; see memoize-table-chk
@@ -5151,17 +5163,17 @@
 
 (defun update-memo-entries-for-attachments (fns wrld state)
 
-; See the Essay on Memoization with Attachments.  Here is a brief, high-level ;
-; summary of what is going on. ;
+; See the Essay on Memoization with Attachments.  Here is a brief, high-level
+; summary of what is going on.
 
-; This function is called by update-wrld-structures, which is called when the ;
-; world is updated.  When a defattach event is added or removed from the world, ;
-; variable *defattach-fns* collects the name of the function with an attachment ;
-; (either being added or removed).  Ultimately, *defattach-fns* is passed as ;
-; the fns parameter to the present function, and functions' entries in ;
-; *memoize-info-ht* are correspondingly updated as necessary, in particular ;
-; clearing tables whose values may have depended on attachments that are no ;
-; longer present. ;
+; This function is called by update-wrld-structures, which is called when the
+; world is updated.  When a defattach event is added or removed from the world,
+; variable *defattach-fns* collects the name of the function with an attachment
+; (either being added or removed).  Ultimately, *defattach-fns* is passed as
+; the fns parameter to the present function, and functions' entries in
+; *memoize-info-ht* are correspondingly updated as necessary, in particular
+; clearing tables whose values may have depended on attachments that are no
+; longer present.
 
   (let ((ctx 'top-level)
         (fns (if (eq fns :clear)
@@ -5205,4 +5217,8 @@
         *memoize-info-ht*))))
   (clear-memoize-table 'canonical-ancestors-rec)
   (clear-memoize-table 'immediate-canonical-ancestors)
+  (clear-memoize-table 'canonical-ancestors-tr-rec)
+  (clear-memoize-table 'immediate-canonical-ancestors-tr)
+  (clear-memoize-table 'canonical-ancestors-path)
+  (clear-memoize-table 'canonical-ancestors-tr-path)
   )

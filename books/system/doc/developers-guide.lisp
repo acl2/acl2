@@ -44,7 +44,12 @@
  in some cases there is a note of the following form, for use in the
  workshop:</p>
 
- <color rgb='#800080'><p>[...SOME NOTE FOR THE WORKSHOP...]</p></color>
+ <p>Prospective ACL2 developers are advised to read the paper, <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2009/final/10/10.pdf'>&ldquo;Abbreviated
+ Output for Input in ACL2&rdquo;</a>, which has a lot of discussion about ACL2
+ development.</p>
+
+ <color rgb='#800080'><p>[...SOME NOTES FOR THE WORKSHOP...]</p></color>
 
  <color rgb='#c00000'>
  <p>For a small list of potential ACL2 development tasks, see community books
@@ -686,6 +691,7 @@
 
  <li>@('local')</li>
  <li>@('skip-proofs')</li>
+ <li>@('with-cbd')</li>
  <li>@('with-guard-checking-event')</li>
  <li>@('with-output')</li>
  <li>@('with-prover-step-limit')</li>
@@ -719,26 +725,31 @@
  comments that explain the fields; perhaps more illuminating, accessors for
  event-tuple fields are defined immediately below the definition of
  @('make-event-tuple').  We can apply these accessors to deconstruct the value,
- @('val'), in the triple above, @('(event-landmark global-value . val)').</p>
+ @('val'), in the triple above, @('(event-landmark global-value . val)').
+ Regarding the @('local-p') field of an event-tuple: if an event @('E') is
+ evaluated in a @(see local) context, then the corresponding event-tuple is
+ @('(local . x)') where @('x') is the event-tuple for @('E').</p>
 
  @({
  ACL2 !>(let ((val (cddr '(EVENT-LANDMARK GLOBAL-VALUE 8625 ((DEFUN) FOO . :IDEAL)
-                                          DEFUN FOO (X)
-                                          X))))
-          (list :number (access-event-tuple-number val)
-                :depth  (access-event-tuple-depth val)
-                :type   (access-event-tuple-type val)
-                :skipp  (access-event-tuple-skipped-proofs-p val)
-                :namex  (access-event-tuple-namex val)
-                :form   (access-event-tuple-form val)
-                :symcls (access-event-tuple-symbol-class val)))
- (:NUMBER 8625
-          :DEPTH 0
-          :TYPE DEFUN
-          :SKIPP NIL
-          :NAMEX FOO
-          :FORM (DEFUN FOO (X) X)
-          :SYMCLS :IDEAL)
+                                           DEFUN FOO (X)
+                                           X))))
+           (list :local-p (access-event-tuple-local-p val)
+                 :number  (access-event-tuple-number val)
+                 :depth   (access-event-tuple-depth val)
+                 :type    (access-event-tuple-type val)
+                 :skipp   (access-event-tuple-skipped-proofs-p val)
+                 :namex   (access-event-tuple-namex val)
+                 :form    (access-event-tuple-form val)
+                 :symcls  (access-event-tuple-symbol-class val)))
+ (:LOCAL-P NIL
+           :NUMBER 8625
+           :DEPTH 0
+           :TYPE DEFUN
+           :SKIPP NIL
+           :NAMEX FOO
+           :FORM (DEFUN FOO (X) X)
+           :SYMCLS :IDEAL)
  ACL2 !>
  })
 
@@ -1211,7 +1222,7 @@
    <2 (TAU-TERM ((NIL)
                  (INTEGERP (NIL . 3) NIL . 18)
                  ((166 . FILE-CLOCK-P)
-                  (155 . 32-BIT-INTEGERP)
+                  (155 . 32-BIT-INTEGERP) ; probably not after 3/29/2023
                   (20 . O-FINP)
                   (19 . POSP)
                   (17 . NATP)
@@ -1261,7 +1272,7 @@
  (decode-tau '((NIL)
                (INTEGERP (NIL . 3) NIL . 18)
                ((166 . FILE-CLOCK-P)
-                (155 . 32-BIT-INTEGERP)
+                (155 . 32-BIT-INTEGERP) ; probably not after 3/29/2023
                 (20 . O-FINP)
                 (19 . POSP)
                 (17 . NATP)
@@ -1313,7 +1324,7 @@
       (NATP (BINARY-+ '3 X))
       (POSP (BINARY-+ '3 X))
       (O-FINP (BINARY-+ '3 X))
-      (32-BIT-INTEGERP (BINARY-+ '3 X))
+      (32-BIT-INTEGERP (BINARY-+ '3 X)) ; probably not after 3/29/2023
       (FILE-CLOCK-P (BINARY-+ '3 X))
       (<= 3 (BINARY-+ '3 X))                     ; <---
       (<= (BINARY-+ '3 X) 18)                    ; <---
@@ -1548,10 +1559,7 @@
 
  <li>The @('acl2r') target just generates a file @('acl2r.lisp') that is loaded
  in to Lisp at start up by the other two targets.  It defines features that
- support readtime conditionals during the build process.  For example, by
- default that file contains the form @('(push :hons *features*)'), so that
- forms prefixed by @('#+hons') are read while those prefixed by @('#-hons') are
- ignored.</li>
+ support readtime conditionals during the build process.</li>
 
  <li>The @('full') target compiles source files when compilation is indicated.
  Compilation is skipped for host Lisps CCL and SBCL because those Lisps compile
@@ -3308,15 +3316,6 @@
  available by modern Lisps that have 64-bit implementations.  (CMUCL seems to
  be an exception.)</p>
 
- <h3>Infix printing is no longer supported</h3>
-
- <p>At one time ACL2 had support for infix printing, which was used rarely if
- at all.  Infix code is still present, conditioned by feature @(':acl2-infix'),
- but it has probably been quite some time since it was tested.  Perhaps it is
- time to remove all such code; indeed, the release notes for Version 8.0 (see
- @(see note-8-0)) say that ``The (minimal) support for infix printing has been
- removed.''</p>
-
  <p>NEXT SECTION: @(see developers-guide-releases)</p>")
 
 (defxdoc developers-guide-releases
@@ -3376,8 +3375,8 @@
  an exception being small expressions that are not at the top level of the
  @('if') structure.</p>
 
- <p>System state globals need to be included in @('*initial-global-table*') or
- @('*initial-ld-special-bindings*').</p>
+ <p>System state globals need to be included in
+ @('*initial-global-table*').</p>
 
  <p>Blank lines are avoided except in the usual circumstances, e.g.,
  surrounding comments and between definitions.  Avoid consecutive blank
@@ -3459,6 +3458,628 @@
  <p>Perhaps this Guide will be expanded in the future.  If so, the expansion
  should probably not duplicate code comments, but rather, provide overview
  information and perspective with pointers to those comments.</p>
+
+ <p>NEXT SECTION: @(see developers-guide-examples)</p>")
+
+(defxdoc developers-guide-examples
+  :parents (developers-guide)
+  :short "ACL2 development examples"
+  :long "<p>This topic discusses issues encountered during ACL2 development
+  using two examples.  It consists of notes for the following talk.</p>
+
+ <blockquote>
+
+ <p>Title: Some Illustrations of ACL2 Development<br/>
+ Speaker: Matt Kaufmann<br/>
+ Date/venue: March 31, 2023, over zoom<br/>
+ Follow <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/manuals/movies/2023-03-31-Developer-Talk.mov'>this
+ link</a> to see a video recording of the talk (@('.mov') format).</p>
+
+ <p>Abstract:</p>
+
+ <p>(WARNING: This is *NOT* a typical ACL2 talk!  It is focused on
+ implementation, not ACL2 usage, to help those who may want to contribute ACL2
+ source code in the future.  There are no specific prerequisites; but, for
+ example, you'll be lost if you don't know what is meant by &ldquo;error
+ triple&rdquo;.)</p>
+
+ <p>ACL2 development continues to be the responsibility of J Moore and me.  But
+ we envision a time when others may take on that role.  To that end we hosted
+ &ldquo;Developer's Workshops&rdquo; in <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2017/'>2017</a>
+ and <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-devel-2018/'>2018</a>,
+ added documentation topic @(see developers-guide) to the manual, and added
+ @(see community-books) file @('books/system/to-do.txt').  This talk continues
+ towards developing developers.</p>
+
+ <p>This talk will use recent examples to illustrate ACL2 development.</p>
+
+ </blockquote>
+
+ <p><b>WARNING</b>.  Although I'm trying to provide training for others to do
+ ACL2 development, contact me first if you want your development work to make
+ it into the system (as per &ldquo;WARNINGS&rdquo; near the top of @(see
+ community-book) file @('books/system/to-do.txt')).  (Of course, this will
+ change when J and I are no longer the ACL2 maintainers.)</p>
+
+ <p>For another example illustration of ACL2 development issues, see my paper
+ &ldquo;<i>Abbreviated Output for Input in ACL2: An Implementation Case
+ Study</i>&rdquo;, either <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2009/presentations/kaufmann-evisc.pdf'>the
+ slides</a> or <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2009/final/10/10.pdf'>the
+ paper</a>, in Proceedings of <a
+ href='https://www.cs.utexas.edu/users/moore/acl2/workshop-2009/'>ACL2 Workshop
+ 2009</a>.</p>
+
+ <h3>EXAMPLE 1:<br/>NEW FEATURE SET-WARNINGS-AS-ERRORS</h3>
+
+ <p>Mark Greenstreet found that when he used ACL2, @('\"Use\"') warnings would
+ often be followed by proof failures.  So he wanted those warnings to be errors
+ in his sessions.  Quoting :DOC @(see note-8-6):</p>
+
+ <blockquote>
+
+ <p>Added utility @(tsee set-warnings-as-errors), which can change @(see
+ warnings) to hard @(see errors).  Thanks to Mark Greenstreet for the idea and
+ for discussions that were helpful in refining it.</p>
+
+ </blockquote>
+
+ <p>This is a good time to take a look at the documentation for @(tsee
+ set-warnings-as-errors).</p>
+
+ <h4>APPROACH: CONVERT WARNINGS TO HARD ERRORS</h4>
+
+ <p>I changed warnings to hard errors, not soft errors, because changing
+ them to soft errors could be a massive undertaking.</p>
+
+ <ul>
+
+ <li>A soft error @('(er soft ...)') returns @('(mv t nil state)') after doing
+ some printing.  There is no error &ldquo;signaled&rdquo; &mdash; the caller
+ needs to handle this appropriately.</li>
+
+ <li>The primary warning macro, @('warning$'), returns @(tsee state).</li>
+
+ <li>So how can we signal an error when a function returns @('state')?</li>
+
+ </ul>
+
+ <p>Example call stack:</p>
+
+ @({
+ print-summary [which returns state]
+   calls
+ print-redefinition-warning [which returns state]
+   calls
+ warning$
+ })
+
+ <p>Another issue: @('warning$-cw') returns @('nil'), which makes it impossible
+ to convert to a soft error (returning @('state')).  More on that is below.</p>
+
+ <p><b>SOLUTION</b>.  Convert warnings to hard errors, @('(er hard ...)'),
+ which are really aborts.</p>
+
+ <p>This illustrates an important trade-off: don't sacrifice quality, but if we
+ can get something useful and correct for 10% (or less!) of the effort it would
+ take to get something perfect &mdash; e.g., converting warnings to hard errors
+ instead of soft errors &mdash; that's possibly quite fine.  It's a judgment
+ call.</p>
+
+ <h4>KEY SURPRISE: TIME TAKEN</h4>
+
+ <p>This task took me something like 10 hours or maybe a bit more, even though
+ this seemed like a relatively easy task.  That's more time even than it took
+ me for the more subtle changes in the second example below.</p>
+
+ <p>It took non-trivial time to develop tests and documentation; more on that
+ below.</p>
+
+ <h4>COMPLICATION 1: COMMENT-WINDOW WARNINGS</h4>
+
+ <p>Note that while @('warning$') takes and returns @(tsee state),
+ @('warning$-cw') does &ldquo;comment window&rdquo; printing without taking or
+ returning state.</p>
+
+ <p>The definitions of @('warning$') and @('warning$-cw1') lead to similar
+ calls of the macro, @('warning1-form').  The lack of @('state') available to
+ @('warning$-cw1') leads to the use of the @('state-vars') record (shown
+ below), which contains state information and was originally introduced so that
+ @('translate11'), the main &ldquo;translate&rdquo; function, has access to
+ some state components without taking state.</p>
+
+ <ul>
+
+ <li>I'm not sure I'd use a macro like @('warning1-form') now.  I might instead
+ just write analogous code for @('warning$') and @('warning$-cw1') and comments
+ about keeping them in sync.</li>
+
+ <li>But as a rule, I take an <i>incremental</i> approach to ACL2 code
+ development: building on what's there seems less error-prone and
+ time-consuming than ripping things apart (unless there's a good reason rather
+ than a minor stylistic one).</li>
+
+ </ul>
+
+ <p>I had to add to @('state-vars'), but I didn't want to worry about impacting
+ efficiency.  So my modification had minimal effect on only one existing field,
+ namely, @('do-expressionp').  From the source code at the time (comments
+ omitted here):</p>
+
+ @({
+ (defrec state-vars
+   (((safe-mode . boot-strap-flg) . (temp-touchable-vars . guard-checking-on))
+    .
+    ((ld-skip-proofsp . temp-touchable-fns) .
+     ((parallel-execution-enabled . in-macrolet-def)
+      do-expressionp warnings-as-errors . inhibit-output-lst)))
+   nil)
+ })
+
+ <p>Related changes, for example deprecating @('warning$-cw') in favor of
+ @('warning$-cw0'), aren't discussed here.</p>
+
+ <h4>COMPLICATION 2: RUN-SCRIPT</h4>
+
+ <p>Testing is obviously important, and the @(tsee run-script) utility was very
+ helpful, especially for this effort.  During development I added to the tests
+ incrementally, and I checked that new mods didn't introduce unfortunate
+ changes to the output.</p>
+
+ <p>I added the following files to test output; see @(see run-script).</p>
+
+ @({
+ books/system/tests/warnings-as-errors-input.lsp
+ books/system/tests/warnings-as-errors-book.acl2
+ books/system/tests/warnings-as-errors-book.lisp
+ books/system/tests/warnings-as-errors-log.txt
+ })
+
+ <p>Recall that @('*standard-co*') is the default character output channel for
+ standard output (see @(see IO) and that @('(standard-co state)') is the
+ <i>current</i> such channel.  @('Run-tests') redirects output so that
+ @('(standard-co state)') points to a file (the generated @('*-log.out') file).
+ Also note that @('warning$-cw1') uses @('*standard-co*') and not @(tsee
+ standard-co), since changes to files should be recorded in the ACL2 @(see
+ state) but @('warning$-cw1') doesn't take or return state.</p>
+
+ <p>So, warnings produced by @('warning$-cw1') were going to the terminal, not
+ to the intended output file.  Therefore I put the following hack near the top
+ of @('warnings-as-errors-input.lsp').</p>
+
+ @({
+ (redef+)
+ (make-event `(defconst *standard-co* ',(standard-co state)))
+ (redef-)
+ })
+
+ <h4>COMPLICATION 3: INTERFACE DESIGN ISSUES</h4>
+
+ <p>This section discusses several design issues.</p>
+
+ <p><i>ISSUE.</i> How does setting warnings as errors interact with inhibiting
+ warnings?</p>
+
+ <blockquote>
+
+ <p>Recall that essentially <i>all</i> warnings can be turned off (inhibited)
+ with</p>
+
+ @({
+ (set-inhibit-output-lst '(... warning ...))
+ })
+
+ <p>or one can turn off only certain warning <i>types</i> (what the sources
+ call the &ldquo;summary strings&rdquo;) with a call such as the following.</p>
+
+ @({
+ (set-inhibit-warnings \"theory\" \"use\")')
+ })
+
+ <p>If @('warning$') is called but the warning is inhibited, does that affect
+ whether the warning is converted to an error?</p>
+
+ <p>Demo:</p>
+
+ @({
+ (thm (equal x x) :hints ((\"Goal\" :use nth))) ; warning
+ (set-warnings-as-errors T '(\"use\") state)
+ (thm (equal x x) :hints ((\"Goal\" :use nth))) ; error
+ (set-inhibit-warnings \"USE\")
+ (thm (equal x x) :hints ((\"Goal\" :use nth))) ; quiet
+ (set-warnings-as-errors :always '(\"use\") state)
+ (thm (equal x x) :hints ((\"Goal\" :use nth))) ; error
+ })
+
+ <p>The demo shows that I decided to provide two settings for converting
+ warnings to errors: @('T') for causing an error only if the warning is to be
+ printed, and @(':ALWAYS') without that restriction.</p>
+
+ @({
+ (set-warnings-as-errors T types state)
+ (set-warnings-as-errors :ALWAYS types state)
+ })
+
+ </blockquote>
+
+ <p><i>ISSUE.</i> Can we convert warnings to errors regardless of the type
+ (summary string).</p>
+
+ <blockquote>
+
+ <p>Solution:</p>
+
+ @({
+ (set-warnings-as-errors flg :ALL state)
+ })
+
+ <p>The documentation explains that we can do that and then go back to just
+ warnings for specific types.</p>
+
+ </blockquote>
+
+ <p><i>ISSUE.</i> If a warning is converted to an error, is printing
+ controllable?</p>
+
+ <blockquote>
+
+ <p>Solution: Yes, using @('(set-inhibit-output-lst ... error ...)') or using
+ @(tsee set-inhibit-er).  Regarding the latter, in @('warning1-form') we
+ find the following call that deals with the summary string.</p>
+
+ @({
+ (hard-error ctx (cons summary str) alist)
+ })
+
+ <p>Quoting :DOC @(tsee set-warnings-as-errors):</p>
+
+ <blockquote>
+
+ <p>When a warning of a given type (possibly @('nil') type) is converted to a
+ hard error as specified above, then whether that error is printed is
+ controlled by the usual mechanism for suppressing error messages; see @(see
+ set-inhibit-er).  Note that the error will still be signaled regardless of
+ whether the error message is thus suppressed.</p>
+
+ </blockquote>
+
+ </blockquote>
+
+ <p><i>ISSUE.</i> Some warnings are intended to be followed by errors, so we
+ avoid converting those warnings to errors, as explained in :DOC @(see
+ set-warnings-as-errors).  NOTE: Some of you may have noticed recent testing
+ failures that were missing such warnings, and the following from that :DOC
+ addresses that problem.</p>
+
+ <ul>
+ <li>No warning whose type specified by constant
+ @('*uninhibited-warning-summaries*') is converted to an error.  Those types
+ are the ones that belong, with a case-insensitive check, to the list
+ @(`*uninhibited-warning-summaries*`).  This exception overrides all discussion
+ below.</li>
+ </ul>
+
+ <p><i>ISSUE.</i> How about @(tsee make-event) expansion?  We allow
+ @('make-event') to change state global @('warnings-as-errors'); see the
+ definition of @('*protected-system-state-globals*').  But that setting will
+ revert after @(tsee certify-book) or @(tsee include-book), as noted below.</p>
+
+ <p><i>ISSUE.</i> If I ship you a book, you'll want @(tsee certify-book) to
+ succeed even if you are setting warnings as errors.  So, again quoting :DOC
+ @(see set-warnings-as-errors):</p>
+
+ <blockquote>
+
+ <p>Previous evaluations of calls of @('set-warnings-as-errors') are ignored
+ during @(tsee certify-book) and @(tsee include-book).  The handling of
+ warnings as errors is restored at the end of these operations to what it was
+ at the beginning.</p>
+
+ </blockquote>
+
+ <h4>COMPLICATION 4: GUARD VERIFICATION</h4>
+
+ <p>The &ldquo;@('make devel-check')&rdquo; process verifies guards for quite a
+ few built-in functions: see @(see verify-guards-for-system-functions), though
+ I follow a comment in @('*system-verify-guards-alist*').</p>
+
+ <p>For that devel-check process, I needed to modify guard verification for
+ @('bind-macro-args').  I added the following two forms to the ACL2
+ sources.</p>
+
+ @({
+ (verify-termination-boot-strap warnings-as-errors-val-guard) ; and guards
+ (verify-termination-boot-strap warnings-as-errors-val) ; and guards
+ })
+
+ <p>But where did I put them? A guiding principle in ACL2 development is to
+ follow precedent when feasible.  So I added those forms in the following
+ section of @('boot-strap-pass-2-a.lisp').</p>
+
+ @({
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ ;;; Miscellaneous verify-termination and guard verification
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ })
+
+ <p>Guard verification for @('bind-macro-args') is (I think) why I used @(tsee
+ ec-call) in @('warning1-form') (e.g., for the call of @('warning$-cw1') in
+ @('bind-macro-args-keys1')).</p>
+
+ <h4>COMPLICATION 5: DOCUMENTATION AND COMMENTS</h4>
+
+ <p>Well, that's not exactly a complication &mdash; but @(see documentation)
+ can be time-consuming to write!</p>
+
+ <p>For this task I documented @(tsee set-warnings-as-errors).  I think it
+ helped that as I implemented stuff, I kept notes on what to remember to
+ document.</p>
+
+ <p>J and I write a lot of comments, but here's a small remark on @(tsee
+ defrec) and comments.</p>
+
+ <blockquote>
+
+ <p>Maybe I should add a comment in the following that the @(':default') field
+ is @('nil'), @('t'), or @(':always').  But I think that's pretty clear if one
+ reads the :DOC for @(see set-warnings-as-errors) and does a tags-search for
+ @('warnings-as-errors').</p>
+
+ @({
+ (defrec warnings-as-errors
+   (default . alist)
+   nil)
+ })
+
+ <p>Notice the &lsquo;cheap&rsquo; flag of @('nil'), which causes accesses to
+ check that we indeed have a @('warnings-as-errors') record.  We can use
+ @(':')@(tsee trans1) on the above @(tsee defrec) call to see how the generated
+ definition of @('weak-warnings-as-errors-p') depends on the cheap flag.  Maybe
+ some day I'll be confident enough to change that @('nil') to @('t').</p>
+
+ <p>So, the @(tsee access) call below checks that we have a valid record.  Note
+ the use of @(tsee defabbrev) to avoid evaluating @('x') more than once.</p>
+
+ @({
+ (defabbrev warnings-as-errors-default (x)
+   (and x ; else default is nil
+        (access warnings-as-errors x :default)))
+ })
+
+ </blockquote>
+
+ <h4>SOME GENERAL ADVICE before modifying sources</h4>
+
+ <p>This advice is from both me (Matt) and J.</p>
+
+ <ul>
+ <li>Read relevant documentation.</li>
+ <li>Read relevant Lisp comments in the source code.</li>
+ <li>Make up tests of new or modified features.</li>
+ <li>Keep back-ups along the way, copying/moving the @('saved/')
+ directory.</li>
+ <li>Do regression testing.</li>
+ <li>Try to follow precedents.</li>
+ <li>Update documentation, including release notes.</li>
+ <li>For each bug discovered, even if it's not related to what you're doing,
+ either fix it or make a note to come back to it.</li>
+ </ul>
+
+ <h4>TESTING SUMMARY</h4>
+
+ <p>When I change ACL2 sources, I always do a fresh &ldquo;@('make
+ regression-everything')&rdquo; (except for comment-only changes), e.g., as
+ follows.</p>
+
+ @({
+ make clean-books ; (time nice make -j 16 regression-everything \\
+ USE_QUICKLISP=1) >& \\
+ make-regression-everything-ccl-quicklisp-j-16.log&
+ })
+
+ <p>But when there are changes to @(see logic)-mode functions, I often run the
+ following two tests as well.</p>
+
+ <ul>
+
+ <li>@('make proofs')
+
+ <blockquote>
+
+ <p>This causes ACL2 to &ldquo;prove its way&rdquo; through parts of the
+ sources, adding a bit of extra assurance.</p>
+
+ </blockquote></li>
+
+ <li>@('make devel-check')
+
+ <blockquote>
+
+ <p>See @(see verify-guards-for-system-functions) for information about this
+ test.  That provides instructions, but I usually follow a comment in
+ @('*system-verify-guards-alist*').</p>
+
+ </blockquote></li>
+
+ </ul>
+
+ <h4>THE PATCH FILE: SUMMARY OF CHANGES</h4>
+
+ <p>My patch file may be found in
+ @('books/system/doc/warnings-as-errors-patch.lsp').</p>
+
+ <p>It may be instructive to compare it with ACL2 sources from git commit
+ 55d5fff82d920f9cd42943aa26cf58d44d6a333d, which was a version shortly before
+ warnings-as-errors was added).</p>
+
+ <p>The very first function in that patch file, @('output-ignored-p'), is to
+ fix a bug encountered in the process: &ldquo;Tweaked output production, in
+ particular from @(':')@(tsee pso)&rdquo;.  Details are in the message for
+ commit 55f20c02c15f9a2d7626060d7381eed3fc849933, which has been added at the
+ end of the patch file.  I fixed that bug as part of the work, rather than
+ deferring its fix, because that helped with the warnings-as-errors
+ implementation.</p>
+
+ <h3>EXAMPLE 2:<br/>NEW FEATURE SET-LD-ALWAYS-SKIP-TOP-LEVEL-LOCALS</h3>
+
+ <p>Quoting :DOC @(see note-8-6):</p>
+
+ <blockquote>
+
+ <p>A new @(tsee LD) special, @(tsee ld-always-skip-top-level-locals), has the
+ effect of skipping @(tsee local) top-level forms.  Thanks to Sol Swords for
+ requesting such a capability, to support faster loading of @('.port') files by
+ the build system (see @(tsee build::cert.pl)).</p>
+
+ </blockquote>
+
+ <p>Sol requested this because @('cert.pl') loads @('.port') files of included
+ books (stemming from @('.acl2') files), but those may contain expensive @(see
+ local) @(tsee include-book) forms books that should be ignored.</p>
+
+ @({
+ (local (include-book ...)) ; form in a .port file to be ignored
+ })
+
+ <p>After</p>
+
+ <ul>
+ <li>understanding the requested change,</li>
+ <li>being convinced of the change's utility,</li>
+ <li>helpful discussions with Sol, and</li>
+ <li>a helpful chat with J,</li>
+ </ul>
+
+ <p>then I decided to add an @('LD') <i>special</i> (see @(tsee ld) &mdash;
+ think, keyword argument of @('LD')).  So after this change, Sol arranged for
+ @('cert.pl') to load @('.port') files roughly as follows (see
+ @('books/build/make_cert_help.pl')).</p>
+
+ @({
+ (ld \"foo.port\" :ld-always-skip-top-level-locals t)
+ })
+
+ <p>An @('LD') special is good because:</p>
+
+ <ul>
+
+ <li>it's documented where users will see it; and</li>
+
+ <li>it's bound rather than merely set &mdash; the original value is restored
+ when the @('LD') call returns.</li>
+
+ </ul>
+
+ <p><b>QUESTION</b>:</p>
+
+ <blockquote>
+
+ <p>Why not just do this by adding a new possible value for @(tsee
+ ld-skip-proofsp)?</p>
+
+ </blockquote>
+
+ <p><b>ANSWER</b>:</p>
+
+ <blockquote>
+
+ <p>There are two dimensions of @('ld-skip-proofsp'):</p>
+
+ <ul>
+
+ <li>Skip proofs or not</li>
+ <li>Skip locals or not</li>
+
+ </ul>
+
+ <p>Values of @('ld-skip-proofsp') already support three of the four
+ combinations, as follows.</p>
+
+ <ul>
+
+ <li>@('nil') &mdash;<br/>
+ do not skip proofs, do not skip locals</li>
+
+ <li>@(''include-book') &mdash;<br/>
+ skip proofs, skip locals</li>
+
+ <li>@('t') &mdash;<br/>
+ skip proofs, do not skip locals</li>
+
+ </ul>
+
+ <p>So why not have a fourth value as follows?</p>
+
+ <ul>
+ <li>@(''skip-locals') &mdash;<br/>
+ do not skip proofs, do skip locals</li>
+ </ul>
+
+ <p>The reason is that it's too easy to make a mistake.  In particular, a
+ non-@('nil') value of @('(f-get-global 'ld-skip-proofsp state)') currently
+ means &ldquo;proofs are being skipped&rdquo;.  That would no longer be the
+ case if the value can be @(''skip-locals') &mdash; so many changes would have
+ to be made, and some may be in proprietary books.  Also, the name doesn't fit
+ @('ld-skip-proofsp'), since the new @(''skip-locals') value is not about
+ skipping proofs.</p>
+
+ </blockquote>
+
+ <p><b>QUESTION</b>:</p>
+
+ <blockquote>
+
+ <p>So what did I do?</p>
+
+ </blockquote>
+
+ <p><b>ANSWER</b>:</p>
+
+ <blockquote>
+
+ <p>I added a new @('LD') special, @(tsee ld-always-skip-top-level-locals).</p>
+
+ </blockquote>
+
+ <p><b>OLD TRICK</b>:</p>
+
+ <blockquote>
+
+ <p>To add @('ld-always-skip-top-level-locals') I tags-searched for @(tsee
+ ld-missing-input-ok) to find code to modify; also, I searched
+ @('books/') (both @('.lisp') and @('.acl2') files).</p>
+
+ </blockquote>
+
+ <p><b>IMPORTANT</b>:  Ignore the new @('LD') special when appropriate.</p>
+
+ <blockquote>
+
+ <p>It is bound to @('nil') for @(tsee certify-book), @(tsee include-book), and
+ @(tsee encapsulate).  Those need to behave as intended, without skipping
+ @(tsee local) events.</p>
+
+ <p>Binding to @('nil') for @('encapsulate') but not @('progn') was easy.  The
+ trick was to bind @('ld-always-skip-top-level-locals') to @('nil') in
+ @('process-embedded-events'), not @('eval-event-lst').  One learns about such
+ utilities over time.</p>
+
+ </blockquote>
+
+ <p><b>WHAT'S IN A NAME?</b></p>
+
+ <blockquote>
+
+ <p>At one point during development, the name was @('ld-always-skip-locals'); I
+ changed it to @('ld-always-skip-top-level-locals,') given the @('encapsulate')
+ behavior.  I don't mind that the name is long; I don't expect widespread
+ usage, just occasional use in tools like @('cert.pl').</p>
+
+ </blockquote>
 
  <p>NEXT SECTION: @(see developers-guide-acl2-devel)</p>")
 

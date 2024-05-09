@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -101,7 +101,37 @@
 
   (eq (legal-variable-or-constant-namep name) 'constant))
 
+(defun gsym (pkg-witness char-lst cnt)
+  (declare (xargs :guard (and (symbolp pkg-witness)
+                              (character-listp char-lst)
+                              (integerp cnt)
+                              (<= 0 cnt))))
+  (intern-in-package-of-symbol
+   (coerce
+    (append char-lst
+            (explode-nonnegative-integer cnt 10 nil))
+    'string)
+   pkg-witness))
+
+(defun genvar1-guardp (pkg-witness char-lst avoid-lst cnt)
+  (declare (xargs :guard t))
+  (and (symbolp pkg-witness)
+       (let ((p (symbol-package-name pkg-witness)))
+         (and (not (equal p "KEYWORD"))
+              (not (equal p *main-lisp-package-name*))))
+       (character-listp char-lst)
+       (consp char-lst)
+       (not (eql (car char-lst) #\*))
+       (not (eql (car char-lst) #\&))
+       (true-listp avoid-lst)
+       (natp cnt)))
+
 (defun genvar1 (pkg-witness char-lst avoid-lst cnt)
+
+; This function is logically genvar when the guard is true.  We've replaced
+; the open call of intern-in-package-of-symbol by a call of gsym so we can
+; access our lemmas about gsym and we've coerced the formals above to satisfy
+; the guard.
 
 ; This function generates a symbol in the same package as the symbol
 ; pkg-witness that is guaranteed to be a legal-variablep and not in avoid-lst.
@@ -115,27 +145,36 @@
 ; finite number of generated symbols might have been interned in one of the
 ; non-variable packages).
 
-  (declare (xargs :guard (and (let ((p (symbol-package-name pkg-witness)))
-                                (and (not (equal p "KEYWORD"))
-                                     (not (equal p *main-lisp-package-name*))))
-                              (consp char-lst)
-                              (not (eql (car char-lst) #\*))
-                              (not (eql (car char-lst) #\&)))))
-  (let ((sym (intern-in-package-of-symbol
-              (coerce
-               (append char-lst
-                       (explode-nonnegative-integer cnt 10 nil))
-               'string)
-              pkg-witness)))
-    (cond ((or (member sym avoid-lst)
+  (declare (xargs :guard
+                  (genvar1-guardp pkg-witness char-lst avoid-lst cnt)))
+  (if (mbt (genvar1-guardp pkg-witness char-lst avoid-lst cnt))
+      (let ((sym (mbe :logic (gsym pkg-witness char-lst cnt)
+                      :exec (intern-in-package-of-symbol
+                             (coerce
+                              (append char-lst
+                                      (explode-nonnegative-integer cnt 10 nil))
+                              'string)
+                             pkg-witness))))
+        (cond ((or (member sym avoid-lst)
 
 ; The following call of legal-variablep could soundly be replaced by
 ; legal-variable-or-constant-namep, given the guard above, but we keep it
 ; as is for robustness.
 
-               (not (legal-variablep sym)))
-           (genvar1 pkg-witness char-lst avoid-lst (1+ cnt)))
-          (t sym))))
+                   (not (legal-variablep sym)))
+               (genvar1 pkg-witness char-lst avoid-lst (1+ cnt)))
+              (t sym)))
+; In the event that the guard doesn't hold, we don't care what the returned value
+; is.  All theorems about genvar1 will assume the guard!
+
+      nil))
+
+(defun genvar-guardp (pkg-witness prefix n avoid-lst)
+  (declare (xargs :guard t))
+  (and (symbolp pkg-witness)
+       (stringp prefix)
+       (or (null n) (natp n))
+       (true-listp avoid-lst)))
 
 (defun genvar (pkg-witness prefix n avoid-lst)
 
@@ -158,6 +197,7 @@
 ; function.  Thus, all other code associated with variable name
 ; generation is heuristic if this one is correct.
 
+  (declare (xargs :guard (genvar-guardp pkg-witness prefix n avoid-lst)))
   (let* ((pkg-witness (cond ((let ((p (symbol-package-name pkg-witness)))
                                (or (equal p "KEYWORD")
                                    (equal p *main-lisp-package-name*)))
@@ -171,18 +211,19 @@
                 (legal-variablep sym)
                 (not (member sym avoid-lst)))
            sym)
-          (t (let ((prefix (coerce prefix 'list)))
-               (cond ((null prefix) (genvar1 pkg-witness '(#\V) avoid-lst cnt))
-                     ((and (consp prefix)
-                           (or (eql (car prefix) #\*)
-                               (eql (car prefix) #\&)))
-                      (genvar1 pkg-witness (cons #\V prefix) avoid-lst cnt))
-                     (t (genvar1 pkg-witness prefix avoid-lst cnt))))))))
+          (t (let ((char-lst (coerce prefix 'list)))
+               (cond ((null char-lst) (genvar1 pkg-witness '(#\V) avoid-lst cnt))
+                     ((and (consp char-lst)
+                           (or (eql (car char-lst) #\*)
+                               (eql (car char-lst) #\&)))
+                      (genvar1 pkg-witness (cons #\V char-lst) avoid-lst cnt))
+                     (t (genvar1 pkg-witness char-lst avoid-lst cnt))))))))
 
 (defun gen-formals-from-pretty-flags1 (pretty-flags i avoid)
   (cond ((endp pretty-flags) nil)
         ((and (symbolp (car pretty-flags))
-              (equal (symbol-name (car pretty-flags)) "*"))
+              (or (equal (symbol-name (car pretty-flags)) "*")
+                  (eq (car pretty-flags) :df)))
          (let ((xi (pack2 'x i)))
            (cond ((member-eq xi avoid)
                   (let ((new-var (genvar 'genvar ;;; ACL2 package
@@ -220,13 +261,27 @@
 (defun collect-non-x (x lst)
 
 ; This function preserves possible duplications of non-x elements in lst.
-; We use this fact when we check the legality of signatures.
+; We may use this fact when we check the legality of signatures.
 
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
         ((equal (car lst) x)
          (collect-non-x x (cdr lst)))
         (t (cons (car lst) (collect-non-x x (cdr lst))))))
+
+(defun collect-non-nil-df (lst)
+
+; This function preserves possible duplications of non-x elements in lst.
+; We may use this fact when we check the legality of signatures.
+
+; It could just as well be defined as (set-difference-eq lst '(nil :df)).
+
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) nil)
+        ((or (eq (car lst) nil)
+             (eq (car lst) :df))
+         (collect-non-nil-df (cdr lst)))
+        (t (cons (car lst) (collect-non-nil-df (cdr lst))))))
 
 (defun collect-non-* (lst)
 
@@ -254,11 +309,50 @@
          (cond ((and (symbolp outputs)
                      (equal (symbol-name outputs) "*"))
                 nil)
+               ((eq outputs :df)
+                '(df0))
                (t outputs)))
         ((and (symbolp (car outputs))
               (equal (symbol-name (car outputs)) "*"))
          (cons nil (defstub-body-new (cdr outputs))))
+        ((eq (car outputs) :df)
+         (cons '(df0) (defstub-body-new (cdr outputs))))
         (t (cons (car outputs) (defstub-body-new (cdr outputs))))))
+
+(defun collect-non-*-df (lst)
+
+; This variant of collect-symbol-name considers any symbol with name "*",
+; regardless of the package.
+
+  (declare (xargs :guard (symbol-listp lst)))
+  (cond ((endp lst) nil)
+        ((or (equal (symbol-name (car lst)) "*")
+             (eq (car lst) :df))
+         (collect-non-*-df (cdr lst)))
+        (t (cons (car lst) (collect-non-*-df (cdr lst))))))
+
+(defun collect-by-position (sub-domain full-domain full-range)
+
+; Full-domain and full-range are lists of the same length, where
+; full-domain is a list of symbols.  Collect into a list those members
+; of full-range that correspond (positionally) to members of
+; full-domain that belong to sub-domain.
+
+  (declare (xargs :guard (and (symbol-listp full-domain)
+                              (true-listp sub-domain)
+                              (true-listp full-range)
+                              (eql (length full-domain)
+                                   (length full-range)))))
+  (if (endp full-domain)
+      nil
+    (if (member-eq (car full-domain) sub-domain)
+        (cons (car full-range)
+              (collect-by-position sub-domain
+                                   (cdr full-domain)
+                                   (cdr full-range)))
+      (collect-by-position sub-domain
+                           (cdr full-domain)
+                           (cdr full-range)))))
 
 #+acl2-loop-only
 (defmacro defproxy (name args-sig arrow body-sig)
@@ -270,13 +364,17 @@
         "Defproxy must be of the form (proxy name args-sig => body-sig), ~
          where args-sig is a true-list of symbols.  See :DOC defproxy."))
    (t
-    (let ((formals (gen-formals-from-pretty-flags args-sig))
-          (body (defstub-body-new body-sig))
-          (stobjs (collect-non-* args-sig)))
+    (let* ((formals (gen-formals-from-pretty-flags args-sig))
+           (body (defstub-body-new body-sig))
+           (stobjs (collect-non-*-df args-sig))
+           (dfs (collect-by-position '(:df)
+                                     args-sig
+                                     formals)))
       `(defun ,name ,formals
          (declare (xargs :non-executable :program
                          :mode :program
-                         ,@(and stobjs `(:stobjs ,stobjs)))
+                         ,@(and stobjs `(:stobjs ,stobjs))
+                         ,@(and dfs `(:dfs ,dfs)))
                   (ignorable ,@formals))
 
 ; The form of the body below is dictated by function throw-nonexec-error-p.
@@ -313,11 +411,12 @@
 ; encapsulate, provided we generate it!  Provided they check out, the
 ; result returned is the list of ignored formals.
 
+  (declare (xargs :guard t))
   (if (and (symbol-listp formals)
            (or (symbolp body)
                (and (consp body)
-                    (symbol-listp (cdr body)))))
-      (set-difference-equal
+                    (true-listp (cdr body)))))
+      (set-difference-eq
        formals
        (if (symbolp body)
            (list body)
@@ -357,7 +456,7 @@
                (t nil)))
         (t (cons (car outputs) (defstub-body-old-aux (cdr outputs) stobjs)))))
 
-(defun defstub-fn1 (signatures name formals ign-dcl stobjs body outputs)
+(defun defstub-fn1 (signatures name formals ign-dcl stobjs dfs body outputs)
   `(with-output
      :off (:other-than error summary)
      :ctx '(defstub . ,name)
@@ -371,7 +470,8 @@
          (local
           (defun ,name ,formals
             (declare ,ign-dcl
-                     ,@(and stobjs `((xargs :stobjs ,stobjs))))
+                     ,@(and stobjs `((xargs :stobjs ,stobjs)))
+                     ,@(and dfs `((type double-float ,@dfs))))
             ,body)))
        ,@(and (consp outputs)
 
@@ -430,7 +530,8 @@
 ; We handle the old style first.
 
      ((or (= len-args 2)
-          (keywordp (caddr args)))
+          (and (keywordp (caddr args))
+               (not (eq (caddr args) :df))))
 
 ; We keep the same syntax for the signature, including any options.  We use the
 ; inputs as the formals of the witness function.  If there is a :stobjs option
@@ -446,7 +547,7 @@
       (let* ((inputs (car args))
              (outputs (cadr args))
              (options (cddr args))
-             (stobjs (and (keyword-value-listp options) ; assoc-keyword guard
+             (stobjs (and (keyword-value-listp options)
                           (cadr (assoc-keyword :stobjs options))))
              (stobjs (cond ((symbol-listp stobjs) stobjs) ; covers nil case
                            ((symbolp stobjs) (list stobjs))
@@ -461,12 +562,14 @@
 ; be illegal in the generated encapsulate, in which case the value of stobjs is
 ; irrelevant.
 
+             (dfs (and (keyword-value-listp options)
+                       (cadr (assoc-keyword :dfs options))))
              (body (defstub-body-old outputs stobjs)))
         (defstub-fn1
           `((,name ,@args)) ; args includes inputs, outputs, and options
           name inputs
           `(ignorable ,@inputs)
-          stobjs body outputs)))
+          stobjs dfs body outputs)))
 
 ; In the new style, we adapt the syntax of the signature, keeping all the
 ; options.  We derive the formals of the witness function by replacing the *s
@@ -496,11 +599,14 @@
                              (gen-formals-from-pretty-flags inputs)))
                (body (defstub-body-new outputs))
                (ignores (defstub-ignores formals body))
-               (stobjs (and (true-listp inputs) ; collect-non-x guard
-                            (collect-non-* inputs))))
+               (stobjs (and (symbol-listp inputs) ; collect-non-*-df guard
+                            (collect-non-*-df inputs)))
+               (dfs (collect-by-position '(:df)
+                                         inputs
+                                         formals)))
           (defstub-fn1
             `(((,name ,@inputs) ,arrow ,outputs ,@options))
-            name formals `(ignore ,@ignores) stobjs body outputs))))))
+            name formals `(ignore ,@ignores) stobjs dfs body outputs))))))
 
 (defmacro defstub (name &rest args)
   (defstub-fn name args))
@@ -744,50 +850,46 @@
   (cond ((equal n 0) v)
         (t (fargn1 v n))))
 
+(encapsulate () (logic)
+; We do it this way (instead of putting (logic) inside the
+; partial-encapsulate), to support redundancy in pass 2.
+(partial-encapsulate
+ (((constrained-df-string *)  => * :formals (x)))
+ ()
+ (local (defun constrained-df-string (x)
+          (declare (ignore x))
+          ""))
+ (defthm stringp-constrained-df-string
+   (stringp (constrained-df-string x))
+   :rule-classes :type-prescription)
+)
+)
+
+#+acl2-loop-only
+(defun df-string (x)
+  (declare (xargs :guard t :mode :logic))
+  (constrained-df-string x))
+
 (defun stobj-print-name (name)
-  (coerce
-   (cons #\<
-         (append (string-downcase1 (coerce (symbol-name name) 'list))
-                 '(#\>)))
-   'string))
-
-(defun evisceration-stobj-mark (name inputp)
-
-; NAME is a stobj name.  We return an evisceration mark that prints as
-; ``<name>''.  We make a special case out of STATE.
-
-  (cond
-   (inputp name)
-   ((eq name 'STATE)
-    *evisceration-state-mark*)
-   (t
-    (cons *evisceration-mark* (stobj-print-name name)))))
-
-(defun evisceration-stobj-marks1 (stobjs-flags inputp)
-
-; See the comment in eviscerate-stobjs, below.
-
-  (cond ((null stobjs-flags) nil)
-        ((car stobjs-flags)
-         (cons (evisceration-stobj-mark (car stobjs-flags) inputp)
-               (evisceration-stobj-marks1 (cdr stobjs-flags) inputp)))
-        (t
-         (cons nil
-               (evisceration-stobj-marks1 (cdr stobjs-flags) inputp)))))
+  (declare (xargs :guard (symbolp name)))
+  (let* ((s (symbol-name name))
+         (s (if (standard-string-p s)
+                s
+              "some_stobj")))
+    (coerce
+     (cons #\<
+           (append (string-downcase1 (coerce s 'list))
+                   '(#\>)))
+     'string)))
 
 (defconst *error-triple-sig*
   '(nil nil state))
 
+(defconst *error-triple-df-sig*
+  '(nil :df state))
+
 (defconst *cmp-sig*
   '(nil nil))
-
-(defun evisceration-stobj-marks (stobjs-flags inputp)
-  (cond ((equal stobjs-flags *error-triple-sig*)
-         (if inputp
-             *error-triple-sig*
-           *evisceration-error-triple-marks*))
-        ((equal stobjs-flags '(nil)) '(nil))
-        (t (evisceration-stobj-marks1 stobjs-flags inputp))))
 
 (defun eviscerate-stobjs1 (estobjs-out lst print-level print-length
                                        alist evisc-table hiding-cars
@@ -828,17 +930,18 @@
 ; Stobjs below.
 
 ; We wish to eviscerate lst with the given print-level, etc., but respecting
-; stobjs that we may find in lst.  Estobjs-out describes the shape of lst as a
-; multiple value vector: if estobjs-out is of length 1, then lst is the single
-; result; otherwise, lst is a list of as many elements as estobjs-out is long.
-; The non-nil elements of stobjs name the stobjs in lst -- EXCEPT that unlike
-; an ordinary ``stobjs-out'', the elements of estobjs-out are evisceration
-; marks we are to ``print!''  For example corresponding to the stobjs-out
-; setting of '(NIL $MY-STOBJ NIL STATE) is the estobjs-out
+; stobjs and dfs that we may find in lst.  Estobjs-out describes the shape of
+; lst as a multiple value vector: if estobjs-out is of length 1, then lst is
+; the single result; otherwise, lst is a list of as many elements as
+; estobjs-out is long.  The non-nil elements of estobjs-out name the stobjs and
+; dfs in lst, so that unlike an ordinary ``stobjs-out'', the elements of estobjs-out
+; are evisceration marks we are to ``print!''  For example corresponding to the
+; stobjs-out setting of '(NIL $MY-STOBJ NIL :DF STATE) may be the estobjs-out
 
 ; '(NIL
 ;   (:EVISCERATION-MARK . "<$my-stobj>")
 ;   NIL
+;   (:EVISCERATION-MARK . "#d6.0")
 ;   (:EVISCERATION-MARK . "<state>"))
 
 ; Here, we assume *evisceration-mark* is :EVISCERATION-MARK.
@@ -871,26 +974,33 @@
 
 ; See eviscerate-stobjs.
 
-  (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
-    (mv-let (result iprint-alist iprint-fal-new)
-      (eviscerate-stobjs estobjs-out lst print-level print-length alist
-                         evisc-table hiding-cars
-                         (and (iprint-enabledp state)
-                              (iprint-last-index state))
-                         iprint-fal-old
-                         (iprint-eager-p iprint-fal-old))
-      (fast-alist-free-on-exit
-       iprint-fal-new
-       (let ((state
-              (cond
-               ((eq iprint-alist t)
-                (f-put-global 'evisc-hitp-without-iprint t state))
-               ((atom iprint-alist) state)
-               (t (update-iprint-ar-fal iprint-alist
-                                        iprint-fal-new
-                                        iprint-fal-old
-                                        state)))))
-         (mv result state))))))
+  (pprogn
+
+; First we ensure that the result will reflect iprint and brr-evisc-tuple
+; updates made during brr.
+
+   (iprint-oracle-updates? state)
+   (brr-evisc-tuple-oracle-update state)
+   (let ((iprint-fal-old (f-get-global 'iprint-fal state)))
+     (mv-let (result iprint-alist iprint-fal-new)
+       (eviscerate-stobjs estobjs-out lst print-level print-length alist
+                          evisc-table hiding-cars
+                          (and (iprint-enabledp state)
+                               (iprint-last-index state))
+                          iprint-fal-old
+                          (iprint-eager-p iprint-fal-old))
+       (fast-alist-free-on-exit
+        iprint-fal-new
+        (let ((state
+               (cond
+                ((eq iprint-alist t)
+                 (f-put-global 'evisc-hitp-without-iprint t state))
+                ((atom iprint-alist) state)
+                (t (update-iprint-ar-fal iprint-alist
+                                         iprint-fal-new
+                                         iprint-fal-old
+                                         state)))))
+          (mv result state)))))))
 
 ; Essay on Abbreviating Live Stobjs
 
@@ -1247,41 +1357,56 @@
    (mv nil nil state)))
 
 (defun chk-inhibit-output-lst (lst ctx state)
-  (cond ((not (true-listp lst))
-         (er soft ctx
-             "The argument to set-inhibit-output-lst must evaluate to a ~
-              true-listp, unlike ~x0."
-             lst))
-        ((not (subsetp-eq lst *valid-output-names*))
-         (er soft ctx
-             "The argument to set-inhibit-output-lst must evaluate to a ~
-              subset of the list ~X01, but ~x2 contains ~&3."
-             *valid-output-names*
-             nil
-             lst
-             (set-difference-eq lst *valid-output-names*)))
-        (t (let ((lst (if (member-eq 'warning! lst)
-                          (add-to-set-eq 'warning lst)
-                        lst)))
-             (pprogn (cond ((and (member-eq 'prove lst)
-                                 (not (member-eq 'proof-tree lst))
-                                 (member-eq 'proof-tree
-                                            (f-get-global 'inhibit-output-lst
-                                                          state)))
-                            (warning$ ctx nil
-                                      "The printing of proof-trees is being ~
-                                       enabled while the printing of proofs ~
-                                       is being disabled.  You may want to ~
-                                       execute :STOP-PROOF-TREE in order to ~
-                                       inhibit proof-trees as well."))
-                           (t state))
-                     (value lst))))))
+  (let ((msg (chk-inhibit-output-lst-msg lst)))
+    (cond (msg (er soft ctx "~@0" msg))
+          (t (let ((lst (if (member-eq 'warning! lst)
+                            (add-to-set-eq 'warning lst)
+                          lst)))
+               (pprogn (cond ((and (member-eq 'prove lst)
+                                   (not (member-eq 'proof-tree lst))
+                                   (member-eq 'proof-tree
+                                              (f-get-global 'inhibit-output-lst
+                                                            state)))
+                              (warning$ ctx nil
+                                        "The printing of proof-trees is being ~
+                                         enabled while the printing of proofs ~
+                                         is being disabled.  You may want to ~
+                                         execute :STOP-PROOF-TREE in order to ~
+                                         inhibit proof-trees as well."))
+                             (t state))
+                       (value lst)))))))
+
+(defun set-inhibit-output-lst-fn (lst state)
+  (er-let* ((lst (chk-inhibit-output-lst lst 'set-inhibit-output-lst state)))
+    (pprogn (f-put-global 'inhibit-output-lst lst state)
+            (value lst))))
+
+(defmacro set-inhibit-output-lst (lst)
+
+; In spite of the documentation for this macro, 'warning and 'warning! are
+; handled completely independently by the ACL2 warning mechanism, which looks
+; for 'warning or 'warning! in the value of state global 'inhibit-output-lst.
+; Set-inhibit-output-lst adds 'warning to this state global whenever it adds
+; 'warning.  If the user sets inhibit-output-lst directly using f-put-global or
+; assign, then including 'warning! will not automatically include 'warning.
+
+  `(set-inhibit-output-lst-fn ,lst state))
 
 ; With er defined, we may now define chk-ld-skip-proofsp.
 
 (defconst *ld-special-error*
+
+; Warning: If you change this value, consider also changing the value of
+; *state-global-error*.
+
   "~x1 is an illegal value for the state global variable ~x0.  See ~
    :DOC ~x0.")
+
+(defconst *state-global-error*
+
+; Since *ld-special-error* does not mention LD, we use its value here.
+
+  *ld-special-error*)
 
 (defun chk-ld-skip-proofsp (val ctx state)
   (declare (xargs :mode :program))
@@ -1407,182 +1532,22 @@
 
   (check-sum1 0 *1-check-length-exclusive-maximum* channel state))
 
-; We now develop code for computing checksums of objects.  There are two
-; separate algorithms, culminating respectively in functions old-check-sum-obj
-; and fchecksum-obj.  The first development was used up through ACL2
-; Version_3.4, which uses an algorithm similar to that of our file-based
-; function, check-sum.  However, ACL2 (with hons) was being used on large cons
-; trees with significant subtree sharing.  These "galactic" trees could have
-; relatively few distinct cons cells but a huge naive node count.  It was thus
-; desirable to memoize the computation of checksums, which was impossible using
-; the existing algorithm because it modified state.
+; We now develop code for computing checksums of objects.  For many versions
+; through Version_8.5 there were two separate algorithms, culminating
+; respectively in functions named old-check-sum-obj, which has since been
+; removed from the sources, and fchecksum-obj.  The first development was used
+; up through ACL2 Version_3.4, which used an algorithm similar to that of our
+; file-based function, check-sum.  However, ACL2 (with hons) was being used on
+; large cons trees with significant subtree sharing.  These "galactic" trees
+; could have relatively few distinct cons cells but a huge naive node count.
+; It was thus desirable to memoize the computation of checksums, which was
+; impossible using the existing algorithm because it modified state.
 
 ; The second development was contributed by Jared Davis (and is now maintained
 ; by the ACL2 developers, who are responsible for any errors).  It is amenable
 ; to memoization and, indeed, fchecksum-obj is memoized.  We say more after
 ; developing the code for the first algorithm, culminating in function
 ; check-sum-obj1.
-
-; We turn now to the first development (which is no longer used in ACL2).
-
-(defun check-sum-inc (n state)
-  (declare (type (unsigned-byte 7) n))
-  (let ((top
-         (32-bit-integer-stack-length state)))
-    (declare (type (signed-byte 32) top))
-    (let ((sum-loc (the (signed-byte 32) (+ top -1)))
-          (len-loc (the (signed-byte 32) (+ top -2))))
-      (declare (type (signed-byte 32) sum-loc len-loc))
-      (let ((sum
-             (aref-32-bit-integer-stack sum-loc state)))
-        (declare (type (signed-byte 32) sum))
-        (let ((len
-               (aref-32-bit-integer-stack len-loc state)))
-          (declare (type (signed-byte 32) len))
-          (let ((len (cond ((= 0 len) *1-check-length-exclusive-maximum*)
-                           (t (the (signed-byte 32) (+ len -1))))))
-            (declare (type (signed-byte 32) len))
-            (let ((state
-                   (aset-32-bit-integer-stack len-loc len state)))
-              (let ((new-sum
-                     (the (signed-byte 32)
-                      (+ sum (the (signed-byte 32) (* n len))))))
-                (declare (type (signed-byte 32) new-sum))
-                (let ((new-sum
-                       (cond ((>= new-sum *check-sum-exclusive-maximum*)
-                              (the (signed-byte 32)
-                               (+ new-sum *-check-sum-exclusive-maximum*)))
-                             (t new-sum))))
-                  (declare (type (signed-byte 32) new-sum))
-                  (aset-32-bit-integer-stack sum-loc new-sum state))))))))))
-
-(defun check-sum-natural (n state)
-  (declare (type unsigned-byte n))
-  (cond ((<= n 127)
-         (check-sum-inc (the (unsigned-byte 7) n) state))
-        (t (pprogn (check-sum-inc (the (unsigned-byte 7) (rem n 127)) state)
-                   (check-sum-natural (truncate n 127) state)))))
-
-(defun check-sum-string1 (str i len state)
-  (declare (type string str))
-  (declare (type (signed-byte 32) i len))
-  (cond ((= i len) state)
-        (t (let ((chr (char str i)))
-             (declare (type character chr))
-             (let ((code (ascii-code! chr)))
-               (declare (type (unsigned-byte 7) code))
-               (cond ((> code 127)
-                      (f-put-global
-                       'check-sum-weirdness (cons str i) state))
-                     (t (pprogn (check-sum-inc code state)
-                                (check-sum-string1
-                                 str
-                                 (the (signed-byte 32) (1+ i))
-                                 len
-                                 state)))))))))
-
-(defun check-sum-string2 (str i len state)
-
-; This function serves the same purpose as check-sum-string1 except
-; that no assumption is made that i or len fit into 32 bits.  It
-; seems unlikely that this function will ever be called, since it
-; seems unlikely that any Lisp will support strings of length 2 billion
-; or more, but who knows.
-
-  (declare (type string str))
-  (cond ((= i len) state)
-        (t (let ((chr (char str i)))
-             (let ((code (ascii-code! chr)))
-               (cond ((> code 127)
-                      (f-put-global
-                       'check-sum-weirdness (cons str i) state))
-                     (t (pprogn (check-sum-inc code state)
-                                (check-sum-string2
-                                 str
-                                 (1+ i)
-                                 len
-                                 state)))))))))
-
-(defun check-sum-string (str state)
-  (let ((len (the integer (length (the string str)))))
-    (cond ((32-bit-integerp len)
-           (check-sum-string1 str 0 (the (signed-byte 32) len) state))
-          (t (check-sum-string2 str 0 len state)))))
-
-(defun check-sum-obj1 (obj state)
-  (cond ((symbolp obj)
-         (pprogn (check-sum-inc 1 state)
-                 (check-sum-string (symbol-name obj) state)))
-        ((stringp obj)
-         (pprogn (check-sum-inc 2 state)
-                 (check-sum-string obj state)))
-        ((rationalp obj)
-         (cond ((integerp obj)
-                (cond ((< obj 0)
-                       (pprogn (check-sum-inc 3 state)
-                               (check-sum-natural (- obj) state)))
-                      (t (pprogn (check-sum-inc 4 state)
-                                 (check-sum-natural obj state)))))
-               (t (let ((n (numerator obj)))
-                    (pprogn (check-sum-inc 5 state)
-                            (check-sum-natural (if (< n 0) (1- (- n)) n) state)
-                            (check-sum-natural (denominator obj) state))))))
-        ((consp obj)
-         (pprogn (check-sum-inc 6 state)
-                 (check-sum-obj1 (car obj) state)
-                 (cond ((atom (cdr obj))
-                        (cond ((cdr obj)
-                               (pprogn (check-sum-inc 7 state)
-                                       (check-sum-obj1 (cdr obj) state)))
-                              (t (check-sum-inc 8 state))))
-                       (t (check-sum-obj1 (cdr obj) state)))))
-        ((characterp obj)
-         (pprogn (check-sum-inc 9 state)
-                 (let ((n (ascii-code! obj)))
-                   (cond ((< n 128)
-                          (check-sum-inc (ascii-code! obj) state))
-                         (t (f-put-global
-                             'check-sum-weirdness obj state))))))
-        ((complex-rationalp obj)
-         (pprogn (check-sum-inc 14 state)
-                 (check-sum-obj1 (realpart obj) state)
-                 (check-sum-obj1 (imagpart obj) state)))
-        (t (f-put-global
-            'check-sum-weirdness obj state))))
-
-(defun old-check-sum-obj (obj state)
-
-; This function became obsolete after Version_3.4 but we include it in case
-; there are situations where it becomes useful again.  It is the culmination of
-; our first development of checksums for objects (as discussed above).
-
-; We return a checksum on obj, using an algorithm similar to that of
-; check-sum.  We return a non-integer as the first value if (and only if) the
-; obj is not composed entirely of conses, symbols, strings, rationals, complex
-; rationals, and characters. If the first value is not an integer, it is one of
-; the offending objects encountered.
-
-; We typically used this function to compute checksums for .cert files.
-
-  (pprogn
-   (extend-32-bit-integer-stack 2 0 state)
-   (let ((top
-          (32-bit-integer-stack-length state)))
-     (let ((sum-loc (+ top -1))
-           (len-loc (+ top -2)))
-       (pprogn
-        (aset-32-bit-integer-stack sum-loc 0 state)
-        (aset-32-bit-integer-stack len-loc *1-check-length-exclusive-maximum*
-                                   state)
-        (f-put-global 'check-sum-weirdness nil state)
-        (check-sum-obj1 obj state)
-        (let ((ans (aref-32-bit-integer-stack sum-loc state)))
-          (pprogn (shrink-32-bit-integer-stack 2 state)
-                  (let ((x (f-get-global 'check-sum-weirdness state)))
-                    (cond (x (pprogn (f-put-global
-                                      'check-sum-weirdness nil state)
-                                     (mv x state)))
-                          (t (mv ans state)))))))))))
 
 ; We now develop code for the second checksum algorithm, contributed by Jared
 ; Davis (now maintained by the ACL2 developers, who are responsible for any
@@ -1615,8 +1580,9 @@
 ; any inappropriate type declarations in the code below, and there were no
 ; checksumming problems exhibited with CCL, GCL, or SBCL.  Moreover, Allegro CL
 ; showed significant slow down with the fancy times-mod-m31, not surprisingly
-; since Allegro CL supports fixnums of less than 32 bits.  Therefore, we
-; decided to use a much simpler times-mod-m31 for all Lisps except GCL.
+; since Allegro CL supports fixnums of less than 32 bits (at the time this
+; comment was written; many more bits now).  Therefore, we decided to use a
+; much simpler times-mod-m31 for all Lisps except GCL.
 
 (defun plus-mod-m31 (u v)
 
@@ -2114,19 +2080,6 @@
   (setq *fchecksum-obj-stack-bound* *fchecksum-obj-stack-bound-init*)
   (fchecksum-obj obj))
 
-; ; To use old check-sum-obj code, but then add check-sum-obj to
-; ; *INITIAL-PROGRAM-FNS-WITH-RAW-CODE* if doing this for a build:
-; (defun check-sum-obj (obj)
-;   #-acl2-loop-only
-;   (return-from check-sum-obj
-;                (mv-let (val state)
-;                        (old-check-sum-obj obj *the-live-state*)
-;                        (declare (ignore state))
-;                        val))
-;   #+acl2-loop-only
-;   (declare (ignore obj))
-;   (er hard 'check-sum-obj "ran *1* code for check-sum-obj"))
-
 ; Here are some examples.  Warning: in raw Lisp, set
 ; *fchecksum-obj-stack-bound* to a very large value (say, 10000000) before
 ; running these examples.
@@ -2254,7 +2207,8 @@
            (mv (reverse acc) state))
           (t (read-file-iterate channel (cons obj acc) state)))))
 
-(defun read-file (name state)
+(defun read-file+ (name msg ctx state)
+  (declare (xargs :stobjs state :mode :program))
   (mv-let (channel state)
     (open-input-channel name :object state)
     (cond (channel
@@ -2262,7 +2216,12 @@
              (read-file-iterate channel nil state)
              (pprogn (close-input-channel channel state)
                      (mv nil ans state))))
-          (t (er soft 'read-file "No file found ~x0." name)))))
+          (msg (er soft ctx "~@0" msg))
+          (t (er soft ctx "No file found ~x0." name)))))
+
+(defun read-file (name state)
+  (declare (xargs :stobjs state :mode :program))
+  (read-file+ name nil 'read-file state))
 
 (defun formals (fn w)
   (declare (xargs :guard (and (symbolp fn)
@@ -2394,19 +2353,19 @@
            (logicp (car (car user-table)) w)
            (arities-okp (cdr user-table) w)))))
 
-(table user-defined-functions-table nil nil
-       :guard
-       (and (symbolp val)
-            (case key
-              ((untranslate untranslate-lst)
-               (equal (length (getpropc val 'formals nil world))
-                      (length (getpropc key 'formals nil world))))
-              (untranslate-preprocess
-               (equal (length (getpropc val 'formals nil world))
-                      2))
-              (otherwise nil))
-            (equal (getpropc val 'stobjs-out '(nil) world)
-                   '(nil))))
+(set-table-guard
+ user-defined-functions-table
+ (and (symbolp val)
+      (case key
+        ((untranslate untranslate-lst)
+         (equal (length (getpropc val 'formals nil world))
+                (length (getpropc key 'formals nil world))))
+        (untranslate-preprocess
+         (equal (length (getpropc val 'formals nil world))
+                2))
+        (otherwise nil))
+      (equal (getpropc val 'stobjs-out '(nil) world)
+             '(nil))))
 
 (defrec def-body
 
@@ -2606,44 +2565,70 @@
 ; pass down this flag.  I won't mark every such place, but they'll
 ; show up in the compare-windows.
 
+(mutual-recursion
+
+(defun optimize-dfp (known-dfs term)
+  (cond ((or (variablep term)
+             (fquotep term))
+         term)
+        ((and (eq (ffn-symb term) 'dfp)
+              (variablep (fargn term 1)) ; optimization
+              (member-eq (fargn term 1) known-dfs))
+         *t*)
+        (t (mcons-term-smart (ffn-symb term)
+                             (optimize-dfp-lst known-dfs (fargs term))))))
+
+(defun optimize-dfp-lst (known-dfs termlist)
+  (cond ((endp termlist) nil)
+        (t (cons (optimize-dfp known-dfs (car termlist))
+                 (optimize-dfp-lst known-dfs (cdr termlist))))))
+)
+
 (defun guard (fn stobj-optp w)
 
 ; This function is just the standard way to obtain the guard of fn in
 ; world w.
 
-; If stobj-optp is t, we optimize the returned term, simplifying it
-; under the assumption that every stobj recognizer in it is true.  If
-; fn traffics in stobjs, then it was translated under the stobj
-; syntactic restrictions.  Let st be a known stobj for fn (i.e.,
-; mentioned in its stobjs-in) and let st-p be the corresponding
-; recognizer.  This function should only be called with stobj-optp = t
-; if you know (st-p st) to be true in the context of that call.
+; If stobj-optp is t, we optimize the returned term, simplifying it under the
+; assumption that every stobj recognizer in it is true, as is every application
+; of dfp to a df formal.  If fn traffics in stobjs or dfs, then it was
+; translated under the stobj syntactic restrictions.  Let st be a known stobj
+; for fn (i.e., mentioned in its stobjs-in) and let st-p be the corresponding
+; recognizer.  This function should only be called with stobj-optp = t if you
+; know (st-p st) to be true in the context of that call.  The analogous
+; requirement holds for dfs.
 
 ; The documentation string below addresses the general notion of
 ; guards in ACL2, rather than explaining this function.
 
   (cond ((flambdap fn) *t*)
         ((or (not stobj-optp)
-             (all-nils (stobjs-in fn w)) )
+             (all-nils (stobjs-in fn w)))
          (getpropc fn 'guard *t* w))
         (t
 
-; If we have been told to optimize the stobj recognizers (stobj-optp =
-; t) and there are stobjs among the arguments of fn, then fn was
-; translated with the stobj syntactic restrictions enforced for those
-; names.  That means we can optimize the guard of the function
-; appropriately.
+; If we have been told to optimize the stobj recognizers (stobj-optp = t) and
+; there are stobjs or dfs among the arguments of fn, then fn was translated
+; with the stobj syntactic restrictions enforced.  That means we can optimize
+; the guard of the function appropriately.
 
-         (optimize-stobj-recognizers
-          (collect-non-x 'nil (stobjs-in fn w))
-          (or (getpropc fn 'guard *t* w)
+         (let* ((guard (or (getpropc fn 'guard *t* w)
 
 ; Once upon a time we found a guard of nil, and it took awhile to track down
 ; the source of the ensuing error.
 
-              (illegal 'guard "Found a nil guard for ~x0."
-                       (list (cons #\0 fn))))
-          w))))
+                           (illegal 'guard "Found a nil guard for ~x0."
+                                    (list (cons #\0 fn)))))
+                (stobjs-in (stobjs-in fn w))
+                (known-dfs (collect-by-position '(:df)
+                                                stobjs-in
+                                                (formals fn w))))
+           (optimize-stobj-recognizers
+            (collect-non-nil-df stobjs-in)
+            (if known-dfs ; optimization
+                (optimize-dfp known-dfs guard)
+              guard)
+            w)))))
 
 (defun guard-lst (fns stobj-optp w)
   (cond ((null fns) nil)
@@ -2674,33 +2659,6 @@
          (eq fn 'iff)
          (and (not (flambdap fn))
               (getpropc fn 'coarsenings nil ,w)))))
-
-(defun >=-len (x n)
-  (declare (xargs :guard (and (integerp n) (<= 0 n))))
-  (if (= n 0)
-      t
-      (if (atom x)
-          nil
-          (>=-len (cdr x) (1- n)))))
-
-(defun all->=-len (lst n)
-  (declare (xargs :guard (and (integerp n) (<= 0 n))))
-  (if (atom lst)
-      (eq lst nil)
-      (and (>=-len (car lst) n)
-           (all->=-len (cdr lst) n))))
-
-(defun strip-cadrs (x)
-  (declare (xargs :guard (all->=-len x 2)))
-  (cond ((endp x) nil)
-        (t (cons (cadar x) (strip-cadrs (cdr x))))))
-
-; Rockwell Addition: Just moved from other-events.lisp
-
-(defun strip-cddrs (x)
-  (declare (xargs :guard (all->=-len x 2)))
-  (cond ((endp x) nil)
-        (t (cons (cddar x) (strip-cddrs (cdr x))))))
 
 (defun global-set-lst (alist wrld)
   (cond ((null alist) wrld)
@@ -3016,6 +2974,9 @@
 
 ; Warning: This function currently has heuristic application only.  We need to
 ; think harder about it if we are to rely on it for soundness.
+
+; This function is applied a translated term.  See stobjs-out-for-form for an
+; analogous function that is applied to untranslated terms.
 
   (cond
    ((variablep term)
@@ -3350,13 +3311,14 @@
      ,form
      (declare (ignore val))
      (prog2$ (and erp (er hard ,ctx
-                          "Unexpected error.  An error message may have been ~
-                           printed above."))
+                          "An error message may have been printed above."))
              state)))
 
 (defmacro defun-for-state (name args)
   `(defun ,(defun-for-state-name name)
-       ,args
+       ,(if (member-eq 'state args)
+            args
+          (append args '(state)))
      (error-free-triple-to-state
       ',name
       (,name ,@args))))
@@ -3429,6 +3391,20 @@
     (f-put-global 'proofs-co val state)
     (value val))))
 
+(defun chk-trace-co (val ctx state)
+  (cond
+   ((and (symbolp val)
+         (open-output-channel-p val :character state))
+    (value nil))
+   (t (er soft ctx *state-global-error* 'trace-co val))))
+
+(defun set-trace-co (val state)
+  (er-progn
+   (chk-trace-co val 'set-trace-co state)
+   (pprogn
+    (f-put-global 'trace-co val state)
+    (value val))))
+
 (defun illegal-state-ld-prompt (channel state)
 
 ; See the Essay on Illegal-states.
@@ -3464,6 +3440,7 @@
                          (equal (stobjs-in val wrld) '(nil state))
                          (equal (stobjs-out val wrld) '(nil state)))
                     (cond ((or (eq val 'brr-prompt)
+                               (eq val 'wormhole-prompt)
                                (ttag wrld))
                            (value nil))
                           (t (er soft ctx
@@ -3504,9 +3481,9 @@
                        (arglistp (cadr fn))
                        (int= (length (cadr fn)) n))))))))
 
-(table ld-keyword-aliases nil nil
-       :guard
-       (ld-keyword-aliasesp key val world))
+(set-table-guard ld-keyword-aliases
+                 (ld-keyword-aliasesp key val world)
+                 :show t)
 
 #+acl2-loop-only
 (defmacro add-ld-keyword-alias! (key val)
@@ -3558,6 +3535,24 @@
    (chk-ld-missing-input-ok val 'set-ld-missing-input-ok state)
    (pprogn
     (f-put-global 'ld-missing-input-ok val state)
+    (value val))))
+
+(defun ld-always-skip-top-level-locals (state)
+  (f-get-global 'ld-always-skip-top-level-locals state))
+
+(defun chk-ld-always-skip-top-level-locals (val ctx state)
+  (cond
+   ((member-eq val '(t nil))
+    (value nil))
+   (t (er soft ctx *ld-special-error* 'ld-always-skip-top-level-locals val))))
+
+(defun set-ld-always-skip-top-level-locals (val state)
+  (er-progn
+   (chk-ld-always-skip-top-level-locals val
+                                        'set-ld-always-skip-top-level-locals
+                                        state)
+   (pprogn
+    (f-put-global 'ld-always-skip-top-level-locals val state)
     (value val))))
 
 (defun new-namep (name wrld)
@@ -3620,7 +3615,7 @@
                          LABEL
                          LINEAR-LEMMAS
                          FORWARD-CHAINING-RULES
-                         ELIMINATE-DESTRUCTORS-RULE
+                         ELIMINATE-DESTRUCTORS-RULES
                          COARSENINGS
                          CONGRUENCES
                          PEQUIVS
@@ -4108,7 +4103,7 @@
   (declare (xargs :guard (and (integerp fixnum-lo)
                               (integerp fixnum-hi)
                               (>= fixnum-hi fixnum-lo)))
-           (type (signed-byte 30) fixnum-lo fixnum-hi))
+           (type #.*fixnum-type* fixnum-lo fixnum-hi))
 
 ; This function is simply NIL in the logic but allocates a range of fixnums
 ; (from fixnum-lo to fixnum-hi) in GCL as a side effect (a side effect which
@@ -4387,11 +4382,27 @@
   `(set-gag-mode-fn ,action state))
 
 (defun pop-inhibit-output-lst-stack (state)
+
+; If one messes with the value of 'inhibit-output-lst-stack, that could affect
+; with-output.  But there's no soundness issue; at worst, the call of
+; set-inhibit-output-lst-state below could cause a hard error.
+
   (let ((stk (f-get-global 'inhibit-output-lst-stack state)))
-    (cond ((null stk) state)
-          (t (pprogn (f-put-global 'inhibit-output-lst
-                                   (caar stk)
-                                   state)
+    (cond ((atom stk) state)
+          ((atom (car stk))
+
+; This case can't happen unless the user has assigned directly to
+; 'inhibit-output-lst-stack.  That's possible because state global
+; 'inhibit-output-lst-stack is not untouchable -- making it untouchable would
+; require introducing set-pop-inhibit-output-lst-stack-state or such to be used
+; automatically in the cleanup form of state-global-let*, to avoid assigning
+; directly to (untouchable) variable 'inhibit-output-lst-stack.  All we can do
+; here is to go ahead and cdr the stack.
+
+           (f-put-global 'inhibit-output-lst-stack
+                         (cdr stk)
+                         state))
+          (t (pprogn (set-inhibit-output-lst-state (caar stk) state)
                      (set-gag-mode (cdar stk))
                      (f-put-global 'inhibit-output-lst-stack
                                    (cdr stk)

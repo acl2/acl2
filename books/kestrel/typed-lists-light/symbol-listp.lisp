@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function symbol-listp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -102,6 +102,17 @@
   (implies (symbol-listp x)
            (symbol-listp (remove-equal a x)))
   :hints (("Goal" :in-theory (enable remove-equal))))
+
+(defthm symbol-listp-of-remove1-equal
+  (implies (symbol-listp x)
+           (symbol-listp (remove1-equal a x)))
+  :hints (("Goal" :in-theory (enable remove1-equal))))
+
+;; todo: strengthen?
+(defthm symbol-listp-of-remove-duplicates-equal
+  (implies (symbol-listp x)
+           (symbol-listp (remove-duplicates-equal x)))
+  :hints (("Goal" :in-theory (enable remove-duplicates-equal))))
 
 ;this matches something in STD
 (defthm true-listp-when-symbol-listp

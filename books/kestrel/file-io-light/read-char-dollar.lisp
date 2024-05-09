@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function read-char$.
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,50 +12,48 @@
 
 (include-book "kestrel/utilities/channel-contents" :dir :system)
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/channels" :dir :system))
+(local (include-book "channels"))
+(local (include-book "open-input-channel-p"))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
+;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-char$))
 
 (local (in-theory (disable open-input-channels
                            update-open-input-channels
+                           open-input-channel-p1
                            member-equal)))
 
 (defthm state-p1-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
-                (assoc-equal channel (open-input-channels state)))
+  (implies (and (state-p1 state)
+                (assoc-equal channel (open-input-channels state)) ;todo: instead say it's an open input channel?x
+                )
            (state-p1 (mv-nth 1 (read-char$ channel state))))
   :hints (("Goal" :in-theory (enable read-char$))))
 
 (defthm state-p-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p state)
                 (assoc-equal channel (open-input-channels state)))
            (state-p (mv-nth 1 (read-char$ channel state))))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
-                (open-input-channel-p1 channel typ state))
-           (open-input-channel-p1 channel typ (mv-nth 1 (read-char$ channel state))))
-  :hints (("Goal" :in-theory (enable read-char$))))
+  (implies (open-input-channel-p1 channel typ state)
+           (open-input-channel-p1 channel typ (mv-nth 1 (read-char$ channel2 state))))
+  :hints (("Goal" :in-theory (enable read-char$ open-input-channel-p1))))
 
-;; Because it's an open :character channel
-(defthm open-input-channel-any-p1-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
-                (open-input-channel-p1 channel :character state))
-           (open-input-channel-any-p1 channel (mv-nth 1 (read-char$ channel state))))
-  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1)
-                                  (open-input-channel-p1)))))
+(defthm open-input-channel-p-of-mv-nth-1-of-read-char$
+  (implies (open-input-channel-p channel typ state)
+           (open-input-channel-p channel typ (mv-nth 1 (read-char$ channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-p))))
+
+(defthm open-input-channel-any-p1-of-mv-nth-1-of-read-char$-gen
+  (implies (open-input-channel-any-p1 channel state)
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-char$ channel2 state)))))
 
 (defthm open-input-channels-of-mv-nth-1-of-read-char$
-  (implies (and (symbolp channel)
-                (state-p1 state)
+  (implies (and (state-p1 state)
                 (open-input-channel-p1 channel :character state))
            (equal (open-input-channels (mv-nth 1 (read-char$ channel state)))
                   (if (cddr (assoc-equal channel (open-input-channels state)))
@@ -67,7 +65,7 @@
                                 (open-input-channels state))
                     ;; no more data to read:
                     (open-input-channels state))))
-  :hints (("Goal" :in-theory (enable read-char$))))
+  :hints (("Goal" :in-theory (enable read-char$ open-input-channel-p1))))
 
 ;; Reading gives a non-nil value iff the channel contents are non-empty
 (defthm mv-nth-0-of-read-char$-iff
@@ -79,9 +77,8 @@
                        )))
   :hints (("Goal" :use (:instance character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                                   (channels (open-input-channels state)))
-           :in-theory (e/d (read-char$ channel-contents)
-                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                            true-listp)))))
+           :in-theory (e/d (read-char$ channel-contents open-input-channel-p1 open-input-channel-p)
+                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp)))))
 
 (defthm characterp-of-mv-nth-0-of-read-char$-iff
   (implies (and (open-input-channel-p channel :character state)
@@ -90,9 +87,8 @@
                 (mv-nth 0 (read-char$ channel state))))
   :hints (("Goal" :use (:instance character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                                   (channels (open-input-channels state)))
-           :in-theory (e/d (read-char$ channel-contents character-listp)
-                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                            true-listp)))))
+           :in-theory (e/d (read-char$ open-input-channel-p1 open-input-channel-p)
+                           (character-listp-of-cddr-of-assoc-equal-when-open-channel-listp)))))
 
 (defthm <-of-len-of-channel-contents-of-mv-nth-1-of-read-char$
   (implies (consp (channel-contents channel state))
@@ -106,4 +102,4 @@
   (implies (consp (cddr (assoc-equal channel (open-input-channels state))))
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 1 (read-char$ channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
-  :hints (("Goal" :in-theory (enable read-char$ channel-contents))))
+  :hints (("Goal" :in-theory (enable read-char$))))

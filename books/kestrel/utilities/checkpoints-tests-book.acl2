@@ -1,3 +1,7 @@
+; Copyright (C) 2021, ForrestHunt, Inc.
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 (include-book "tools/run-script" :dir :system)
 (run-script "checkpoints-tests")
 
@@ -8,4 +12,3 @@
 (depends-on "checkpoints-tests-input.lsp")
 (depends-on "checkpoints-tests-log.txt")
 ||#
-

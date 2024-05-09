@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system) ;for myquotep
 (include-book "kestrel/utilities/polarity" :dir :system)
-;(include-book "all-dargp")
+;(include-book "darg-listp")
 ;(include-book "dargp-less-than")
 (include-book "bounded-darg-listp")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -25,6 +25,7 @@
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
 ;; TODO: Make a more abstract interface to this (e.g., axe-tree-args instead of cdr)
 ;; See also bounded-axe-treep.
+;; TODO: Disable these:
 (mutual-recursion
  (defun axe-treep (tree)
    (declare (xargs :guard t))
@@ -45,7 +46,7 @@
                        (equal (len fn) 3)
                        (eq (car fn) 'lambda)
                        (symbol-listp (cadr fn))
-                       ;; lambda body is a regular, pseudo-term, not an axe-tree:
+                       ;; lambda body is a regular pseudo-term, not an axe-tree:
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
@@ -133,7 +134,8 @@
   (defthm axe-tree-listp-when-pseudo-term-listp
     (implies (pseudo-term-listp trees)
              (axe-tree-listp trees))
-    :flag axe-tree-listp))
+    :flag axe-tree-listp)
+  :hints (("Goal" :in-theory (enable axe-treep axe-tree-listp))))
 
 ;; dargps are axe-trees.
 (defthm-flag-axe-treep
@@ -141,11 +143,11 @@
     (implies (dargp tree)
              (axe-treep tree))
     :flag axe-treep)
-  (defthm axe-tree-listp-when-all-dargp
-    (implies (all-dargp trees)
-             (equal (axe-tree-listp trees)
-                    (true-listp trees)))
-    :flag axe-tree-listp))
+  (defthm axe-tree-listp-when-darg-listp
+    (implies (darg-listp trees)
+             (axe-tree-listp trees))
+    :flag axe-tree-listp)
+  :hints (("Goal" :in-theory (enable axe-treep axe-tree-listp))))
 
 (defthm axe-tree-listp-of-cons
   (equal (axe-tree-listp (cons tree trees))
@@ -170,7 +172,8 @@
   (implies (and (axe-treep tree)
                 (consp tree)
                 (not (equal 'quote (car tree))))
-           (axe-tree-listp (cdr tree))))
+           (axe-tree-listp (cdr tree)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm axe-tree-listp-of-cdr-2
   (implies (axe-tree-listp trees)
@@ -188,14 +191,16 @@
                     (true-listp tree))
                (symbolp tree)
                (natp tree)))
-  :rule-classes :compound-recognizer)
+  :rule-classes :compound-recognizer
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 ;TODO: disable outside axe
 (defthm symbolp-of-car-when-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (not (consp (car tree))))
            (symbolp (car tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm len-of-nth-1-of-car-when-axe-treep-cheap
   (implies (and (axe-treep tree)
@@ -203,8 +208,12 @@
            (equal (len (nth 1 (car tree))) ;the lambda formals
                   (len (cdr tree))         ;the args
                   ))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+  :hints (("Goal" :in-theory (e/d (axe-treep)
+                                  ( ;; for speed:
+                                   equal-of-len-and-0)))))
 
+;todo: prove from the above
 (defthm len-of-nth-1-of-nth-0-when-axe-treep-cheap
   (implies (and (axe-treep tree)
                 (consp (car tree)))
@@ -233,7 +242,8 @@
   (implies (equal 'quote (car tree))
            (equal (axe-treep tree)
                   (myquotep tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm symbol-of-nth-0-when-axe-treep
   (implies (axe-treep tree)
@@ -269,8 +279,9 @@
            (equal (len (nth 0 tree))
                   (if (consp (nth 0 tree))
                       3
-                      0)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+                    0)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-treep))))
 
 (defthm axe-treep-of-nth
   (implies (and (axe-tree-listp trees)
@@ -313,13 +324,13 @@
                                 (len args)))))))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
-(defthm axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
-  (implies (and (all-dargp (strip-cdrs alist))
+(defthm axe-treep-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs
+  (implies (and (darg-listp (strip-cdrs alist))
                 ;; (assoc-equal form alist)
                 )
            (axe-treep (cdr (assoc-equal form alist))))
-  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal (var form))
-           :in-theory (disable dargp-of-cdr-of-assoc-equal))))
+  :hints (("Goal" :use (:instance dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs (var form))
+           :in-theory (disable dargp-of-cdr-of-assoc-equal-when-darg-listp-of-strip-cdrs))))
 
 (defthm axe-treep-when-not-consp-and-not-symbolp-cheap
   (implies (and (not (consp tree))
@@ -369,7 +380,7 @@
                        (equal (len fn) 3)
                        (eq (car fn) 'lambda)
                        (symbol-listp (cadr fn))
-                       ;; lambda body is a regular, pseudo-term, not an axe-tree:
+                       ;; lambda body is a regular pseudo-term, not an axe-tree:
                        (pseudo-termp (caddr fn))
                        (equal (len (cadr fn))
                               (len (fargs tree))))))))))
@@ -460,9 +471,8 @@
               (bounded-axe-tree-listp trees bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-tree-listp))))
 
-(defthm bounded-axe-tree-listp-when-all-dargp
-  (implies (and (all-dargp items)
-                )
+(defthm bounded-axe-tree-listp-when-darg-listp
+  (implies (darg-listp items)
            (equal (bounded-axe-tree-listp items bound)
                   (bounded-darg-listp items bound)))
   :hints (("Goal" :expand ((bounded-axe-treep (car items) bound)
@@ -578,7 +588,7 @@
               (bounded-axe-tree-listp y bound)))
   :hints (("Goal" :in-theory (enable bounded-axe-tree-listp append))))
 
-(defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-all-dargp-of-strip-cdrs
+(defthm bounded-axe-treep-of-cdr-of-assoc-equal-when-bounded-darg-listp-of-strip-cdrs
   (implies (and (bounded-darg-listp (strip-cdrs alist) dag-len)
                 ;; (assoc-equal form alist)
                 )

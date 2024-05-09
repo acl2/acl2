@@ -1,7 +1,7 @@
 ; More theorems about memberp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,3 +40,13 @@
 
 (defcong perm equal (memberp a x) 2
   :hints (("Goal" :use (:instance member-equal-when-perm-iff (y x-equiv)))))
+
+;todo: improve?
+(defthm not-memberp-of-subrange
+  (implies (and (not (memberp x lst))
+                (< end (len lst))
+                (natp end))
+           (not (memberp x (subrange start end lst))))
+  :hints (("Goal" :in-theory (enable subrange
+                                     take ; todo
+                                     ))))

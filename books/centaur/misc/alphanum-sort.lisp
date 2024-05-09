@@ -124,7 +124,7 @@
      (implies (equal (nfix n) (len x))
               (equal (take n x) (true-list-fix x))))
 
-   
+
    (defthmd equal-cons-strong
      (equal (equal (cons a b) c)
             (and (consp c)
@@ -135,7 +135,7 @@
      (implies (and (true-listp x)
                    (<= (len x) (nfix n)))
               (not (nthcdr n x))))
-   
+
 
    (defthm len-equal-0
      (equal (equal (len x) 0)
@@ -177,14 +177,14 @@
        (ind (cdr x) (cdr y))))
 
    (defthm equal-of-dec-digit-chars-value
-     (implies (and (str::dec-digit-char-listp x)
-                   (str::dec-digit-char-listp y)
+     (implies (and (str::dec-digit-char-list*p x)
+                   (str::dec-digit-char-list*p y)
                    (equal (len x) (len y)))
               (equal (equal (str::dec-digit-chars-value x) (str::dec-digit-chars-value y))
                      (equal (true-list-fix x) (true-list-fix y))))
      :hints (("goal" :induct (ind x y)
               :in-theory (enable str::dec-digit-chars-value
-                                 str::dec-digit-char-listp
+                                 str::dec-digit-char-list*p
                                  true-list-fix))
              (and stable-under-simplificationp
                   '(:cases ((consp (cdr x)))))))
@@ -272,7 +272,7 @@
   (defret <fn>-bound
     (<= count (len x))
     :rule-classes :linear))
-    
+
 
 
 (define scan-for-numeric ((i natp)
@@ -325,7 +325,7 @@
                     (let ((nonnum-count (count-non-numeric (nthcdr i (explode x)))))
                       (and (< nonnum-count (- (length x) (nfix i)))
                            (+ (nfix i) nonnum-count)))))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct <call>
             :in-theory (enable char)
             :expand ((count-non-numeric (nthcdr i (explode x)))))))
@@ -354,8 +354,8 @@
            (take (count-numeric x) x))
     :hints(("Goal" :in-theory (enable str::take-leading-dec-digit-chars))))
 
-  (defret <fn>-when-dec-digit-char-listp
-    (implies (str::dec-digit-char-listp x)
+  (defret <fn>-when-dec-digit-char-list*p
+    (implies (str::dec-digit-char-list*p x)
              (equal count (len x))))
 
   (defret <fn>-equal-0
@@ -372,12 +372,12 @@
     :rule-classes :linear)
 
   (defret <fn>-bound-strong
-    (implies (not (str::dec-digit-char-listp x))
+    (implies (not (str::dec-digit-char-list*p x))
              (< count (len x)))
     :rule-classes :linear)
 
-  (defret dec-digit-char-listp-take-of-<fn>
-    (str::dec-digit-char-listp (take count x))))
+  (defret dec-digit-char-list*p-take-of-<fn>
+    (str::dec-digit-char-list*p (take count x))))
 
 (define scan-for-nonnumeric ((i natp)
                           (xl (equal xl (length x)))
@@ -427,15 +427,15 @@
   (defthm scan-for-nonnumeric-under-iff
     (implies (stringp x)
              (iff (scan-for-nonnumeric xi xl x)
-                  (not (str::dec-digit-char-listp (nthcdr xi (explode x))))))
+                  (not (str::dec-digit-char-list*p (nthcdr xi (explode x))))))
     :hints(("Goal" :in-theory (enable scan-for-nonnumeric
-                                      str::dec-digit-char-listp
+                                      str::dec-digit-char-list*p
                                       char))))
 
   (defthm acl2-numberp-of-scan-for-nonnumeric
            (implies (stringp y)
                     (iff (acl2-numberp (scan-for-nonnumeric yi xl y))
-                         (not (str::dec-digit-char-listp (nthcdr yi (explode y))))))
+                         (not (str::dec-digit-char-list*p (nthcdr yi (explode y))))))
            :hints (("Goal" :use ((:instance scan-for-nonnumeric-under-iff
                                   (x y) (xi yi)))
                     :in-theory (disable scan-for-nonnumeric-under-iff)
@@ -469,7 +469,7 @@
 
    (defret <fn>-in-terms-of-count-numeric-when-value
      (implies (and (stringp x)
-                   (not (str::dec-digit-char-listp (nthcdr i (explode x)))))
+                   (not (str::dec-digit-char-list*p (nthcdr i (explode x)))))
               (equal nexti
                      (let ((num-count (count-numeric (nthcdr i (explode x)))))
                        (+ (nfix i) num-count))))
@@ -492,7 +492,7 @@
   :hints (("goal" ;:in-theory (disable scan-for-nonnumeric-under-iff)
            :in-theory (enable char)
            :do-not-induct t))
-  :prepwork ((local (in-theory (disable STR::DEC-DIGIT-CHAR-LISTP-WHEN-NOT-CONSP
+  :prepwork ((local (in-theory (disable STR::DEC-DIGIT-CHAR-LIST*P-WHEN-NOT-CONSP
                                         count-non-numeric-when-atom
                                         count-numeric-when-atom
                                         scan-for-numeric-when-value
@@ -625,9 +625,9 @@
            (equal (len (take n x)) (nfix n))
            :hints(("Goal" :in-theory (enable take len)))))
 
-  (local (defthm dec-digit-char-listp-take-when-equal-count-numeric
+  (local (defthm dec-digit-char-list*p-take-when-equal-count-numeric
            (implies (equal n (count-numeric x))
-                    (str::dec-digit-char-listp (take n x)))))
+                    (str::dec-digit-char-list*p (take n x)))))
 
   (defthm alphanum-<-aux-trichotomy
     (implies (and (not (alphanum-<-aux xi x yi y))
@@ -820,9 +820,9 @@ to alphanumeric comparison.</p>")
         ((mv rest state) (shuffle-list new-x (1- len) state)))
      (mv (cons next rest) state))))
 
-(assert-event 
+(assert-event
  (b* (((mv lst state) (shuffle-list *test-list* (len *test-list*) state)))
-   (mv 
+   (mv
     (equal (alphanum-sort lst)
            '("ab8de0" "ab8de1" "ab8def0" "ab8def1"
              "ab08de0" "ab08de1"

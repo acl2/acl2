@@ -1041,7 +1041,7 @@
                       ((member 'pathcond formals) 'pathcond)
                       ((member 'hyp$a formals) 'hyp$a)
                       ((member 'constr formals) 'constr)
-                      (t (er hard? 'hyp-congruences "~x0 does not appear to take a hyp as an argument~%"))))
+                      (t (er hard? 'hyp-congruences "~x0 does not appear to take a hyp as an argument~%" fn))))
        (hyp-var-equiv (intern-in-package-of-symbol
                        (concatenate 'string (symbol-name hyp-var) "-EQUIV")
                        hyp-var))

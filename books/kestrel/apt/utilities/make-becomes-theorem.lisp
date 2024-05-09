@@ -118,7 +118,7 @@
 (defun make-becomes-theorems (fns
                               function-renaming
                               thm-enable ; whether all the theorems should be enabled
-                              use-not-normalized-rulesp
+                              use-not-normalized-rulesp ; todo: drop since irrelevant
                               state)
   (declare (xargs :stobjs state :guard (and (symbol-listp fns)
                                             (function-renamingp function-renaming)

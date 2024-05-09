@@ -1,3 +1,7 @@
+WARNING: This directory is probably broken, since function
+topics-outside-dir uses "[books]/" in a way that was discontinued in
+October 2022.
+
 This directory was used in November, 2014 for converting to xdoc the
 remaining legacy documentation strings in the ACL2 community books.
 It was modified by Matt Kaufmann, with help from Jared Davis, from the

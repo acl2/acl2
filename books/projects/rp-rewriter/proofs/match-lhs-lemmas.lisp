@@ -355,11 +355,13 @@
   (local
    (defthm-valid-sc
      (defthm not-include-is-rp-means-valid-sc
-       (implies (not (include-rp term))
+       (implies (and (not (include-rp term))
+                     (not (include-fnc term 'equals)))
                 (and (valid-sc term a)))
        :flag valid-sc)
      (defthm not-include-is-rp-means-valid-sc-subterms
-       (implies (not (include-rp-subterms subterms))
+       (implies (and (not (include-rp-subterms subterms))
+                     (not (include-fnc-subterms subterms 'equals)))
                 (and (valid-sc-subterms subterms a)))
        :flag valid-sc-subterms)
      :hints (("Goal"
@@ -467,6 +469,7 @@
     (implies (and (should-term-be-in-cons rule-lhs term))
              (valid-sc (put-term-in-cons term) a))
     :hints (("Goal"
+             :expand ((:free (x) (IS-EQUALS (cons 'CONS x))))
              :in-theory (e/d (should-term-be-in-cons
                               put-term-in-cons) ()))))
 
@@ -557,6 +560,7 @@
   (local
    (defthm lemma9
      (implies (and (consp term)
+                   (not (equal (car term) 'equals))
                    (not (equal (car term) 'rp))
                    (not (equal (car term) 'quote))
                    (not (equal (car term) 'falist)))
@@ -566,7 +570,6 @@
               :use ((:instance valid-sc-ex-from-rp-all2))
               :in-theory (e/d (IS-RP-LOOSE)
                               (valid-sc-ex-from-rp-all2
-
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
 
   (defthm-rp-match-lhs
@@ -726,7 +729,7 @@
                                (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA4)
                                (:REWRITE DEFAULT-<-1)
                                (:DEFINITION SYMBOL-LISTP)
-                               (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                               (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                                (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA2)
                                (:TYPE-PRESCRIPTION RP-TERMP)
                                (:TYPE-PRESCRIPTION SUBSETP-EQUAL)
@@ -945,18 +948,19 @@
                                 A))
     :hints (("Goal"
              :in-theory (e/d (is-rp
+                              IS-EQUALS
                               ex-from-rp
                               context-from-rp)
                              (EX-FROM-RP-LEMMA1
                               (:DEFINITION RP-TERMP)
                               (:REWRITE CAR-OF-EX-FROM-RP-IS-NOT-RP)
                               (:REWRITE VALID-SC-CONS)
-                              (:DEFINITION INCLUDE-FNC)
+                              INCLUDE-FNC
 ; Obsolete (see Matt K. comment above):
 ;                             (:REWRITE SHOULD-TERM-BE-IN-CONS-LEMMA1)
                               (:REWRITE VALID-SC-CADR)
                               (:REWRITE EVL-OF-EXTRACT-FROM-RP-2)
-                              (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                              (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                               (:LINEAR ACL2::APPLY$-BADGEP-PROPERTIES . 1)
 ;;                              (:REWRITE ACL2::O-P-O-INFP-CAR)
                               )))))
@@ -983,13 +987,14 @@
    (defthm lemma3
      (implies (and (consp term)
                    (not (equal (car term) 'rp))
+                   (not (equal (car term) 'equals))
                    (not (equal (car term) 'quote))
                    (not (equal (car term) 'falist)))
               (VALID-SC-SUBTERMS (CDR (EX-FROM-RP-ALL2 term)) A))
      :hints (("Goal"
               :expand ((EX-FROM-RP-ALL2 term))
               :use ((:instance valid-sc-ex-from-rp-all2))
-              :in-theory (e/d (IS-RP-LOOSE)
+              :in-theory (e/d (IS-RP-LOOSE is-equals)
                               (valid-sc-ex-from-rp-all2
 
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
@@ -999,13 +1004,14 @@
      (implies (and (consp term)
                    (not (equal (car term) 'rp))
                    (not (equal (car term) 'quote))
+                   (not (equal (car term) 'equals))
                    (not (equal (car term) 'falist))
                    (rp-termp term))
               (rp-term-listp (CDR (EX-FROM-RP-ALL2 term))))
      :hints (("Goal"
               :expand ((EX-FROM-RP-ALL2 term))
               :use ((:instance valid-sc-ex-from-rp-all2))
-              :in-theory (e/d (IS-RP-LOOSE)
+              :in-theory (e/d (IS-RP-LOOSE is-equals)
                               (valid-sc-ex-from-rp-all2
 
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
@@ -1119,13 +1125,14 @@
    (defthm lemma5
      (implies (and (consp term)
                    (not (equal (car term) 'rp))
+                   (not (equal (car term) 'equals))
                    (not (equal (car term) 'quote))
                    (not (equal (car term) 'falist)))
               (VALID-SC-SUBTERMS (CDR (EX-FROM-RP-ALL2 term)) A))
      :hints (("Goal"
               :expand ((EX-FROM-RP-ALL2 term))
               :use ((:instance valid-sc-ex-from-rp-all2))
-              :in-theory (e/d (IS-RP-LOOSE)
+              :in-theory (e/d (IS-RP-LOOSE is-equals)
                               (valid-sc-ex-from-rp-all2
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
 
@@ -1133,6 +1140,7 @@
    (defthm lemma6
      (implies (and (consp term)
                    (not (equal (car term) 'rp))
+                   (not (equal (car term) 'equals))
                    (not (equal (car term) 'quote))
                    (not (equal (car term) 'falist))
                    (rp-termp term))
@@ -1140,7 +1148,7 @@
      :hints (("Goal"
               :expand ((EX-FROM-RP-ALL2 term))
               :use ((:instance valid-sc-ex-from-rp-all2))
-              :in-theory (e/d (IS-RP-LOOSE)
+              :in-theory (e/d (IS-RP-LOOSE is-equals)
                               (valid-sc-ex-from-rp-all2
 
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
@@ -1604,6 +1612,7 @@
    (defthm lemma5-lemma4
      (implies (and (consp term)
                    (not (equal (car term) 'rp))
+                   (not (equal (car term) 'equals))
                    (not (equal (car term) 'quote))
                    (not (equal (car term) 'falist))
                    (rp-termp term))
@@ -1611,7 +1620,7 @@
      :hints (("Goal"
               :expand ((EX-FROM-RP-ALL2 term))
               :use ((:instance valid-sc-ex-from-rp-all2))
-              :in-theory (e/d (IS-RP-LOOSE)
+              :in-theory (e/d (IS-RP-LOOSE is-equals)
                               (valid-sc-ex-from-rp-all2
 
                                EX-FROM-RP-ALL2-DOES-NOT-INCLUDE-RP))))))
@@ -1725,7 +1734,9 @@
      (implies (and (consp x)
                    (not (equal (car x) 'quote))
                    (not (equal (car x) 'list))
-                   (not (is-falist x)))
+                   (not (and (equal (car x) 'falist)
+                             (consp (cdr x))
+                             (consp (cddr x)))))
               (equal (rp-trans x)
                      (CONS (CAR x)
                            (RP-TRANS-LST (CDR x)))))
@@ -1908,7 +1919,9 @@
              :in-theory (e/d (rp-evlt-of-ex-from-falist
                               ;;rp-evlt-of-ex-from-rp-ex-from-falist-reverse
                               )
-                             (RP-TRANS-LST-OF-RP-APPLY-BINDINGS-SUBTERMS
+                             (rp-evlt-of-apply-bindings-to-evl
+                              rp-evlt-lst-of-apply-bindings-to-evl-lst
+                              RP-TRANS-LST-OF-RP-APPLY-BINDINGS-SUBTERMS
                               ;;rp-evl-of-ex-from-falist
                               rp-evlt-of-ex-from-rp))))))
 

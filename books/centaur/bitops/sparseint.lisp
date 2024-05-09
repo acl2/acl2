@@ -674,6 +674,7 @@ by redefining the constant.</p>")
 
 
 (defines sparseint$-concatenate-rebalance
+  :flag-local nil
   :prepwork ((local (defthm max-when-less
                       (implies (< a b)
                                (equal (max a b) b))))

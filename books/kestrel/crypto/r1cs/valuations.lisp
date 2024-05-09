@@ -1,6 +1,6 @@
 ; Valuations (maps from vars to field elements)
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,7 @@
 
 ;; A valuation is a map (alist) from vars to values that are field elements.
 (defund r1cs-valuationp (valuation prime)
-  (declare (xargs :guard (rtl::primep prime)))
+  (declare (xargs :guard (primep prime)))
   (and (alistp valuation)
        (var-listp (strip-cars valuation))
        (fe-listp (strip-cdrs valuation) prime)))
@@ -126,6 +126,11 @@
   (equal (valuation-binds-allp valuation (append vars1 vars2))
          (and (valuation-binds-allp valuation vars1)
               (valuation-binds-allp valuation vars2)))
+  :hints (("Goal" :in-theory (enable valuation-binds-allp))))
+
+(defthm valuation-binds-allp-of-nthcdr
+  (implies (valuation-binds-allp valuation vars)
+           (valuation-binds-allp valuation (nthcdr n vars)))
   :hints (("Goal" :in-theory (enable valuation-binds-allp))))
 
 (defthm valuation-binds-allp-of-cons

@@ -12,10 +12,8 @@ ACL2 !>>(INCLUDE-BOOK "checkpoints")
 Summary
 Form:  ( INCLUDE-BOOK "checkpoints" ...)
 Rules: NIL
- "checkpoints.lisp"
-ACL2 !>>(DEFMACRO
-         PRINT-AND-RUN
-         (FORM &OPTIONAL (PRINT 'T))
+ (:SYSTEM . "kestrel/utilities/checkpoints.lisp")
+ACL2 !>>(DEFMACRO PRINT-AND-RUN (FORM &OPTIONAL (PRINT 'T))
          (CONS
           'LET
           (CONS
@@ -37,8 +35,7 @@ ACL2 !>>(DEFMACRO
                              'NIL))
                  '(CHAN STATE NIL))))
               (CONS
-               (IF
-                PRINT
+               (IF PRINT
                 (CONS
                   'FMS
                   (CONS '"~x0~|----------~|~%"
@@ -60,24 +57,24 @@ Form:  ( DEFMACRO PRINT-AND-RUN ...)
 Rules: NIL
  PRINT-AND-RUN
 ACL2 !>>(DEFMACRO CHECKPOINT-TESTS NIL
-                  '(PPROGN (PRINT-AND-RUN (CHECKPOINT-LIST T STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-LIST NIL STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY T STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY NIL STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-INFO-LIST T STATE))
-                           (PRINT-AND-RUN (CHECKPOINT-INFO-LIST NIL STATE))
-                           (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST)
-                                          NIL)
-                           (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST T)
-                                          NIL)))
+          '(PPROGN (PRINT-AND-RUN (CHECKPOINT-LIST T STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-LIST NIL STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY T STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-LIST-PRETTY NIL STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-INFO-LIST T STATE))
+                   (PRINT-AND-RUN (CHECKPOINT-INFO-LIST NIL STATE))
+                   (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST)
+                                  NIL)
+                   (PRINT-AND-RUN (SHOW-CHECKPOINT-LIST T)
+                                  NIL)))
 
 Summary
 Form:  ( DEFMACRO CHECKPOINT-TESTS ...)
 Rules: NIL
  CHECKPOINT-TESTS
 ACL2 !>>(DEFTHM FOO
-                (EQUAL (APPEND (APPEND (IF A X Z) Y) X)
-                       (APPEND X Y X)))
+          (EQUAL (APPEND (APPEND (IF A X Z) Y) X)
+                 (APPEND X Y X)))
 Subgoal 2
 Subgoal 2'
 
@@ -111,9 +108,10 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  However, one of these is flawed and so we are
 left with one viable candidate.  
 
-We will induct according to a scheme suggested by (APPEND Y X).  This
-suggestion was produced using the :induction rule BINARY-APPEND.  If
-we let (:P A X Y Z) denote *1 above then the induction scheme we'll
+We will induct according to a scheme suggested by (APPEND Y X).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P A X Y Z) denote *1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ENDP Y)) (:P A X (CDR Y) Z))
               (:P A X Y Z))
@@ -257,10 +255,15 @@ The key checkpoint goals, below, may help you to debug this failure.
 See :DOC failure and see :DOC set-checkpoint-summary-limit.
 ---
 
-*** Key checkpoint at the top level: ***
+*** Key checkpoints before reverting to proof by induction: ***
 
-Goal
-<GOAL>
+Subgoal 2'
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+Subgoal 1'
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
 
 *** Key checkpoints under a top-level induction
     before generating a goal of NIL (see :DOC nil-goal): ***
@@ -295,7 +298,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST T STATE):
 
-((<GOAL>))
+(((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X))))
+ ((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X)))))
 ----------
 
 
@@ -330,7 +336,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST-PRETTY T STATE):
 
-(<GOAL>)
+((EQUAL (APPEND (APPEND X Y) X)
+        (APPEND X Y X))
+ (EQUAL (APPEND (APPEND Z Y) X)
+        (APPEND X Y X)))
 ----------
 
 
@@ -359,7 +368,14 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-INFO-LIST T STATE):
 
-(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+(((:CLAUSE-ID (0) (2) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED (((0) (2) . 1) 1)))
+ ((:CLAUSE-ID (0) (1) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED)))
 ----------
 
 
@@ -406,10 +422,16 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (SHOW-CHECKPOINT-LIST):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-(<GOAL>)
+Subgoal 2':
+((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
+
+Subgoal 1':
+((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -452,10 +474,16 @@ Subgoal *1/1.1':
 ----------
 (SHOW-CHECKPOINT-LIST T):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-<GOAL>
+Subgoal 2':
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+Subgoal 1':
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -501,8 +529,8 @@ Form:  ( DEFUN H ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  (:DEFUND H)
 ACL2 !>>(DEFTHM NULL-CDDR-H
-                (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
-                         (EQUAL (CDDR (H X Y)) NIL)))
+          (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
+                   (EQUAL (CDDR (H X Y)) NIL)))
 Goal'
 Goal''
 
@@ -519,10 +547,11 @@ Goal''
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (APPEND X Y).  This
-suggestion was produced using the :induction rule BINARY-APPEND.  If
-we let (:P X Y) denote *1 above then the induction scheme we'll use
-is
+We will induct according to a scheme suggested by (APPEND X Y).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P X Y) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y))
               (:P X Y))
      (IMPLIES (ENDP X) (:P X Y))).
@@ -829,9 +858,9 @@ Subgoal *1/1'':
 
 <state>
 ACL2 !>>(DEFTHM NULL-CDDR-H
-                (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
-                         (EQUAL (CDDR (H X Y)) NIL))
-                :HINTS (("Goal" :IN-THEORY (ENABLE H))))
+          (IMPLIES (FORCE (EQUAL (APPEND X Y) (APPEND Y X)))
+                   (EQUAL (CDDR (H X Y)) NIL))
+          :HINTS (("Goal" :IN-THEORY (ENABLE H))))
 
 Q.E.D.
 
@@ -846,7 +875,8 @@ Rules: ((:DEFINITION FORCE)
 ACL2 !>>(THM (NULL (CDDR (H X Y))))
 Goal'
 
-Forcing Round 1 is pending (caused first by Goal').
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Goal').
 
 q.e.d. (given one forced hypothesis)
 
@@ -870,9 +900,10 @@ We now undertake Forcing Round 1.
 Perhaps we can prove [1]*1 by induction.  Two induction schemes are
 suggested by this conjecture.  We will choose arbitrarily among these.
 
-We will induct according to a scheme suggested by (APPEND X Y).  This
-suggestion was produced using the :induction rule BINARY-APPEND.  If
-we let (:P X Y) denote [1]*1 above then the induction scheme we'll
+We will induct according to a scheme suggested by (APPEND X Y).
+
+This suggestion was produced using the :induction rule BINARY-APPEND.
+If we let (:P X Y) denote [1]*1 above then the induction scheme we'll
 use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X) Y))
               (:P X Y))
@@ -1097,7 +1128,8 @@ ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
                   (EQUAL (CAR X) X)))
 Subgoal 2
 
-Forcing Round 1 is pending (caused first by Subgoal 2).
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Subgoal 2).
 Subgoal 1
 Subgoal 1.2
 Subgoal 1.2'
@@ -1146,7 +1178,7 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST T STATE):
 
-((<GOAL>))
+(((EQUAL (CAR X) X)))
 ----------
 
 
@@ -1160,7 +1192,7 @@ NIL
 ----------
 (CHECKPOINT-LIST-PRETTY T STATE):
 
-(<GOAL>)
+((EQUAL (CAR X) X))
 ----------
 
 
@@ -1174,7 +1206,7 @@ NIL
 ----------
 (CHECKPOINT-INFO-LIST T STATE):
 
-(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+(((:CLAUSE-ID (0) (1) . 0) (:CLAUSE (EQUAL (CAR X) X)) (:PUSHED)))
 ----------
 
 
@@ -1188,10 +1220,11 @@ NIL
 ----------
 (SHOW-CHECKPOINT-LIST):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-(<GOAL>)
+Subgoal 1:
+((EQUAL (CAR X) X))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1206,10 +1239,11 @@ Goal:
 ----------
 (SHOW-CHECKPOINT-LIST T):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-<GOAL>
+Subgoal 1:
+(EQUAL (CAR X) X)
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1226,7 +1260,8 @@ ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
              :OTF-FLG T)
 Subgoal 2
 
-Forcing Round 1 is pending (caused first by Subgoal 2).
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Subgoal 2).
 Subgoal 1
 Subgoal 1.2
 Subgoal 1.2'
@@ -1425,7 +1460,7 @@ ACL2 !>>(INCLUDE-BOOK "tools/prove-dollar"
 Summary
 Form:  ( INCLUDE-BOOK "tools/prove-dollar" ...)
 Rules: NIL
- "[books]/tools/prove-dollar.lisp"
+ (:SYSTEM . "tools/prove-dollar.lisp")
 ACL2 !>>(PROVE$ '(EQUAL (APPEND (APPEND (IF A X Z) Y) X)
                         (APPEND X Y X)))
  NIL
@@ -1434,7 +1469,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST T STATE):
 
-((<GOAL>))
+(((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X))))
+ ((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+         (BINARY-APPEND X (BINARY-APPEND Y X)))))
 ----------
 
 
@@ -1469,7 +1507,10 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-LIST-PRETTY T STATE):
 
-(<GOAL>)
+((EQUAL (APPEND (APPEND X Y) X)
+        (APPEND X Y X))
+ (EQUAL (APPEND (APPEND Z Y) X)
+        (APPEND X Y X)))
 ----------
 
 
@@ -1498,7 +1539,14 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (CHECKPOINT-INFO-LIST T STATE):
 
-(((:CLAUSE-ID (0) NIL . 0) (:CLAUSE <GOAL>) (:PUSHED (((0) NIL . 0) 1))))
+(((:CLAUSE-ID (0) (2) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED (((0) (2) . 1) 1)))
+ ((:CLAUSE-ID (0) (1) . 1)
+  (:CLAUSE (EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+                  (BINARY-APPEND X (BINARY-APPEND Y X))))
+  (:PUSHED)))
 ----------
 
 
@@ -1545,10 +1593,16 @@ ACL2 !>>(CHECKPOINT-TESTS)
 ----------
 (SHOW-CHECKPOINT-LIST):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-(<GOAL>)
+Subgoal 2':
+((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
+
+Subgoal 1':
+((EQUAL (BINARY-APPEND (BINARY-APPEND Z Y) X)
+        (BINARY-APPEND X (BINARY-APPEND Y X))))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1591,10 +1645,16 @@ Subgoal *1/1.1':
 ----------
 (SHOW-CHECKPOINT-LIST T):
 
-++++++ Top-level checkpoint list: ++++++
+++++++ Top-level checkpoint list                 ++++++
+++++++ (before reverting to proof by induction): ++++++
 
-Goal:
-<GOAL>
+Subgoal 2':
+(EQUAL (APPEND (APPEND X Y) X)
+       (APPEND X Y X))
+
+Subgoal 1':
+(EQUAL (APPEND (APPEND Z Y) X)
+       (APPEND X Y X))
 
 ++++++ Non-top-level checkpoint list: ++++++
 
@@ -1755,12 +1815,12 @@ ACL2 !>>(CHECKPOINT-TESTS)
 
 <state>
 ACL2 !>>(DEFUN CHECKPOINT-LIST-BOTH (STATE)
-               (DECLARE (XARGS :STOBJS STATE
-                               :GUARD (CHECKPOINT-LIST-GUARD :BOTH STATE)))
-               (LET ((LST (CHECKPOINT-LIST T STATE)))
-                    (IF (EQ LST :UNAVAILABLE)
-                        NIL
-                        (LIST LST (CHECKPOINT-LIST NIL STATE)))))
+          (DECLARE (XARGS :STOBJS STATE
+                          :GUARD (CHECKPOINT-LIST-GUARD :BOTH STATE)))
+          (LET ((LST (CHECKPOINT-LIST T STATE)))
+            (IF (EQ LST :UNAVAILABLE)
+                NIL
+              (LIST LST (CHECKPOINT-LIST NIL STATE)))))
 
 Since CHECKPOINT-LIST-BOTH is non-recursive, its admission is trivial.
 We observe that the type of CHECKPOINT-LIST-BOTH is described by the
@@ -1781,8 +1841,8 @@ Goal
      (IMPLIES (AND (CHECKPOINT-LIST-GUARD :BOTH STATE)
                    (STATE-P STATE))
               (LET ((LST (CHECKPOINT-LIST T STATE)))
-                   (OR (EQ LST :UNAVAILABLE)
-                       (CHECKPOINT-LIST-GUARD NIL STATE))))).
+                (OR (EQ LST :UNAVAILABLE)
+                    (CHECKPOINT-LIST-GUARD NIL STATE))))).
 Subgoal 2
 Subgoal 1
 
@@ -1793,7 +1853,8 @@ CHECKPOINT-LIST-BOTH is compliant with Common Lisp.
 
 Summary
 Form:  ( DEFUN CHECKPOINT-LIST-BOTH ...)
-Rules: ((:DEFINITION BOUNDP-GLOBAL)
+Rules: ((:DEFINITION ABORT-INFO-STACK)
+        (:DEFINITION BOUNDP-GLOBAL)
         (:DEFINITION BOUNDP-GLOBAL1)
         (:DEFINITION CHECKPOINT-LIST)
         (:DEFINITION CHECKPOINT-LIST-GUARD)
@@ -1804,29 +1865,23 @@ Rules: ((:DEFINITION BOUNDP-GLOBAL)
         (:DEFINITION NOT)
         (:DEFINITION STATE-P)
         (:DEFINITION WEAK-GAG-STATE-P)
+        (:EXECUTABLE-COUNTERPART ASSOC-EQUAL)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:FORWARD-CHAINING CONSP-ASSOC-EQUAL)
-        (:FORWARD-CHAINING EQLABLE-ALISTP-FORWARD-TO-ALISTP)
-        (:FORWARD-CHAINING ORDERED-SYMBOL-ALISTP-FORWARD-TO-SYMBOL-ALISTP)
-        (:FORWARD-CHAINING STATE-P1-FORWARD)
-        (:FORWARD-CHAINING SYMBOL-ALISTP-FORWARD-TO-EQLABLE-ALISTP)
-        (:TYPE-PRESCRIPTION ALISTP)
-        (:TYPE-PRESCRIPTION EQLABLE-ALISTP)
-        (:TYPE-PRESCRIPTION ORDERED-SYMBOL-ALISTP)
+        (:REWRITE ALL-BOUNDP-INITIAL-GLOBAL-TABLE-ALT)
+        (:TYPE-PRESCRIPTION CHECKPOINT-LIST-REC)
         (:TYPE-PRESCRIPTION STATE-P1)
-        (:TYPE-PRESCRIPTION SYMBOL-ALISTP)
         (:TYPE-PRESCRIPTION WEAK-GAG-INFO-LISP))
  CHECKPOINT-LIST-BOTH
 ACL2 !>>(DEFUN MY-SET-LD-HISTORY-ENTRY-USER-DATA
                (INPUT ERROR-FLG STOBJS-OUT/VALUE STATE)
-               (DECLARE (IGNORE INPUT ERROR-FLG STOBJS-OUT/VALUE)
-                        (XARGS :STOBJS STATE :GUARD T))
-               (IF (CHECKPOINT-LIST-GUARD :BOTH STATE)
-                   (CHECKPOINT-LIST-BOTH STATE)
-                   (ER HARD? 'MY-SET-LD-HISTORY-ENTRY-USER-DATA
-                       "Unexpected violation of ~x0."
-                       '(CHECKPOINT-LIST-GUARD :BOTH STATE))))
+          (DECLARE (IGNORE INPUT ERROR-FLG STOBJS-OUT/VALUE)
+                   (XARGS :STOBJS STATE :GUARD T))
+          (IF (CHECKPOINT-LIST-GUARD :BOTH STATE)
+              (CHECKPOINT-LIST-BOTH STATE)
+            (ER HARD? 'MY-SET-LD-HISTORY-ENTRY-USER-DATA
+                "Unexpected violation of ~x0."
+                '(CHECKPOINT-LIST-GUARD :BOTH STATE))))
 
 Since MY-SET-LD-HISTORY-ENTRY-USER-DATA is non-recursive, its admission
 is trivial.  We observe that the type of MY-SET-LD-HISTORY-ENTRY-USER-DATA
@@ -1894,7 +1949,8 @@ ACL2 !>>(THM (AND (NULL (CDDR (H X Y)))
              :OTF-FLG T)
 Subgoal 2
 
-Forcing Round 1 is pending (caused first by Subgoal 2).
+Forcing Round 1 is pending (caused first by applying NULL-CDDR-H to
+Subgoal 2).
 Subgoal 1
 Subgoal 1.2
 Subgoal 1.2'

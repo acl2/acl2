@@ -11,7 +11,9 @@
    (erp val state)
    (thm-fn property
            state
+           nil
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
+           NIL
            NIL)
    (declare (ignore erp val))
    (if (eq 'valid (sat-cl-property-status $sat))
@@ -35,7 +37,9 @@
    (erp val state)
    (thm-fn property
            state
+           nil
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
+           NIL
            NIL)
    (declare (ignore erp val))
    (if (eq 'invalid (sat-cl-property-status $sat))
@@ -59,7 +63,9 @@
    (erp val state)
    (thm-fn property
            state
+           nil
            `(("Goal" :clause-processor (:function sat :hint ,hint-arg)))
+           NIL
            NIL)
    (declare (ignore erp val))
    (if (eq 'unknown (sat-cl-property-status $sat))

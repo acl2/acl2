@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,13 @@
 
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
@@ -22,6 +29,19 @@
   :short "Operations on the C abstract syntax."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unop-nonpointerp ((op unopp))
+  :returns (yes/no booleanp)
+  :short "Check if a unary operator does not involve pointers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are unary plus, unary minus, and bitwise/logical negation/complement.
+     The other two, address and indirection, involve pointers."))
+  (and (member-eq (unop-kind op) '(:plus :minus :bitnot :lognot)) t)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,6 +136,7 @@
    :array (b* (((mv id sub) (obj-declor-to-ident+adeclor declor.decl)))
             (mv id (make-obj-adeclor-array :decl sub :size declor.size))))
   :measure (obj-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -138,6 +159,7 @@
            :decl (ident+adeclor-to-obj-declor id adeclor.decl)
            :size adeclor.size))
   :measure (obj-adeclor-count adeclor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix)
   ///
@@ -146,12 +168,14 @@
     (b* (((mv id adeclor) (obj-declor-to-ident+adeclor declor)))
       (equal (ident+adeclor-to-obj-declor id adeclor)
              (obj-declor-fix declor)))
+    :induct t
     :enable obj-declor-to-ident+adeclor)
 
   (defrule obj-declor-to-ident+adeclor-of-ident+adeclor-to-obj-declor
     (equal (obj-declor-to-ident+adeclor
             (ident+adeclor-to-obj-declor id adeclor))
            (mv (ident-fix id) (obj-adeclor-fix adeclor)))
+    :induct t
     :enable obj-declor-to-ident+adeclor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,6 +196,7 @@
    :pointer (b* (((mv id sub) (fun-declor-to-ident+adeclor declor.decl)))
               (mv id (fun-adeclor-pointer sub))))
   :measure (fun-declor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -191,6 +216,7 @@
    :pointer (make-fun-declor-pointer
              :decl (ident+adeclor-to-fun-declor id adeclor.decl)))
   :measure (fun-adeclor-count adeclor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix)
   ///
@@ -199,12 +225,14 @@
     (b* (((mv id adeclor) (fun-declor-to-ident+adeclor declor)))
       (equal (ident+adeclor-to-fun-declor id adeclor)
              (fun-declor-fix declor)))
+    :induct t
     :enable fun-declor-to-ident+adeclor)
 
   (defrule fun-declor-to-ident+adeclor-of-ident+adeclor-to-fun-declor
     (equal (fun-declor-to-ident+adeclor
             (ident+adeclor-to-fun-declor id adeclor))
            (mv (ident-fix id) (fun-adeclor-fix adeclor)))
+    :induct t
     :enable fun-declor-to-ident+adeclor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -229,6 +257,7 @@
    :pointer (b* (((mv params sub) (fun-adeclor-to-params+declor declor.decl)))
               (mv params (make-obj-adeclor-pointer :decl sub))))
   :measure (fun-adeclor-count declor)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -356,22 +385,30 @@
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.ids
     (equal (len ids)
-           (len declons)))
+           (len declons))
+    :hints (("Goal" :induct t)))
 
   (defret len-of-param-declon-list-to-ident+tyname-lists.tynames
     (equal (len tynames)
-           (len declons))))
+           (len declons))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define obj-declon-to-ident+tyname+init ((declon obj-declonp))
-  :returns (mv (id identp) (tyname tynamep) (init initerp))
+(define obj-declon-to-ident+scspec+tyname+init ((declon obj-declonp))
+  :returns (mv (id identp)
+               (scspec scspecseqp)
+               (tyname tynamep)
+               (init initer-optionp))
   :short "Decompose an object declaration into
-          an identifier, a type name, and an initializer."
+          an identifier,
+          a storage class specifier sequence,
+          a type name,
+          and an optional initializer."
   (b* (((obj-declon declon) declon)
        ((mv id tyname) (tyspec+declor-to-ident+tyname declon.tyspec
                                                       declon.declor)))
-    (mv id tyname declon.init))
+    (mv id declon.scspec tyname declon.init?))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -389,6 +426,7 @@
     (ext-declon-case ext
                      :fundef (cons (ext-declon-fundef->get ext)
                                    (ext-declon-list->fundef-list (cdr exts)))
+                     :fun-declon (ext-declon-list->fundef-list (cdr exts))
                      :obj-declon (ext-declon-list->fundef-list (cdr exts))
                      :tag-declon (ext-declon-list->fundef-list (cdr exts))))
   :hooks (:fix))
@@ -411,4 +449,105 @@
   (fundef->name x)
   ///
   (fty::deffixequiv fundef-list->name-list
+    :args ((x fundef-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-constp ((e exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This concept is described in [C:6.6],
+     which does not provide a detailed definition,
+     but here we define a notion that should be
+     at least as strict as that (possibly stricter),
+     for our current C subset."))
+  (expr-case
+   e
+   :ident nil
+   :const t
+   :arrsub nil
+   :call nil
+   :member nil
+   :memberp nil
+   :postinc nil
+   :postdec nil
+   :preinc nil
+   :predec nil
+   :unary (and (member-eq (unop-kind e.op)
+                          '(:plus
+                            :minus
+                            :bitnot
+                            :lognot))
+               (expr-constp e.arg))
+   :cast (expr-constp e.arg)
+   :binary (and (member-eq (binop-kind e.op)
+                           '(:mul
+                             :div
+                             :rem
+                             :add
+                             :sub
+                             :shl
+                             :shr
+                             :lt
+                             :gt
+                             :le
+                             :ge
+                             :eq
+                             :ne
+                             :bitand
+                             :bitxor
+                             :bitior
+                             :logand
+                             :logor))
+                (expr-constp e.arg1)
+                (expr-constp e.arg2))
+   :cond (and (expr-constp e.test)
+              (expr-constp e.then)
+              (expr-constp e.else)))
+  :measure (expr-count e)
+  :hints (("Goal" :in-theory (enable o< o-finp o-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-constp (x)
+  :guard (expr-listp x)
+  :short "Lift @(tsee expr-constp) to lists."
+  (expr-constp x)
+  :true-listp nil
+  :elementp-of-nil nil
+  ///
+
+  (fty::deffixequiv expr-list-constp
+    :args ((x expr-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fundef-to-fun-declon ((fundef fundefp))
+  :returns (declon fun-declonp)
+  :short "Function declaration of a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As also explained in @(tsee fundef),
+     a function definition is essentially a function declaration plus a body,
+     but it is not quite defined like that
+     for the technical reasons explained there.
+     But this ACL2 function explicates that mapping."))
+  (make-fun-declon :tyspec (fundef->tyspec fundef)
+                   :declor (fundef->declor fundef))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection fundef-list-to-fun-declon-list (x)
+  :guard (fundef-listp x)
+  :returns (declons fun-declon-listp)
+  :short "Lift @(tsee fundef-to-fun-declon) to lists."
+  (fundef-to-fun-declon x)
+  ///
+  (fty::deffixequiv fundef-list-to-fun-declon-list
     :args ((x fundef-listp))))

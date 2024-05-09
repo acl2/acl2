@@ -32,6 +32,7 @@
 (in-package "SV")
 
 (include-book "eval")
+(include-book "vars")
 (include-book "centaur/fty/baselists" :dir :system)
 (local (include-book "std/lists/take" :dir :system))
 (local (include-book "std/lists/nthcdr" :dir :system))
@@ -447,4 +448,23 @@
   (defret svarlist-p-<fn>-of-svarlist-list
     (implies (svarlist-list-p x)
              (svarlist-p (append-lists x)))))
+
+
+(local (include-book "std/osets/element-list" :dir :system))
+(local (fty::deflist svarlist :elt-type svar-p :true-listp t :elementp-of-nil nil))
+
+;; move somewhere
+(define svex-alistlist-vars ((x svex-alistlist-p))
+  :returns (vars (and (svarlist-p vars)
+                      (set::setp vars)))
+  (if (atom x)
+      nil
+    (union (svex-alist-vars (car x))
+           (svex-alistlist-vars (cdr x)))))
+
+
+
+
+
+
 

@@ -1,11 +1,13 @@
 TOP_MODULE = FOO
 TOP_FILE = foo.v
 
+.PHONY: run
+
 run:
 	@echo "Using ACL2=$(ACL2)"
 	$(MAKE) diffs.out
 
-diffs.out: bvecp.cert
+diffs.out: bvecp.cert results/model.lisp results/bvecp.lisp results/model-eq.lisp
 	rm -f diffs.out
 	diff model.lisp results/model.lisp > diffs.out
 	diff bvecp.lisp results/bvecp.lisp >> diffs.out

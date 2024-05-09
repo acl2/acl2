@@ -37,11 +37,11 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
+                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-darg-listp
                                                          dargp-when-myquotep
                                                          dargp-less-than-when-myquotep)
                                                         (dargp myquotep natp)))))
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (if (endp rev-leaves)
       (mv (erp-nil) core-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
     (mv-let (erp core-nodenum dag-array dag-len dag-parent-array dag-constant-alist)
@@ -101,7 +101,7 @@
                               (true-listp rev-leaves)
                               (bounded-darg-listp rev-leaves dag-len))
                   :split-types t
-                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-all-dargp
+                  :guard-hints (("Goal" :in-theory (e/d (not-cddr-of-nth-when-darg-listp
                                                          dargp-less-than-when-myquotep
                                                          dargp-when-myquotep)
                                                         (dargp
@@ -110,7 +110,7 @@
                                                          natp
                                                          car-becomes-nth-of-0
                                                          pseudo-dag-arrayp)))))
-           (type (integer 0 2147483646) dag-len))
+           (type (integer 0 1152921504606846974) dag-len))
   (if (endp rev-leaves)
       ;; special case: no leaves:
       (mv (erp-nil)

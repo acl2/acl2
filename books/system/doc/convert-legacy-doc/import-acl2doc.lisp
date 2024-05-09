@@ -166,7 +166,7 @@
        ((when (and (consp val)
                    (string-listp val)))
         (b* ((bookname (car (last val)))
-             (bookname (normalize-bookname bookname state)))
+             (bookname (normalize-bookname bookname)))
           ;; (cw "~x0: ~x1~%" name bookname)
           (mv (acons :from bookname topic)
               state))))

@@ -114,11 +114,10 @@
 ; to a guard violation because (judging from the channel's name) there is an
 ; attempt to write to an input channel.  I'm working around this problem by
 ; introducing the following :program mode wrapper for print-object$-ser.  Note
-; that with one obscure exception (32-bit-integer-stack), fields of the state
-; do not get this special guard-coercion treatment; so the workaround is
-; successful.  Of course, it might be better to provide a "real" fix, to avoid
-; writing to an input channel; but I'm not inclined to put in the effort, since
-; I don't know the details of this work.
+; that fields of the state do not get this special guard-coercion treatment; so
+; the workaround is successful.  Of course, it might be better to provide a
+; "real" fix, to avoid writing to an input channel; but I'm not inclined to put
+; in the effort, since I don't know the details of this work.
 
 ; Matt K. mod, 7/2021: print-object$-ser is now print-object$-fn.
 (defun print-object$-fn-wrapper (x serialize-character channel state)

@@ -52,7 +52,7 @@
   (if (and (eq fn 'bvxor)
            ;; normalize-xors
            (consp (cdr (cdr simplified-args))) ; for guards
-           (quoted-natp (first simplified-args)) ; relax?
+           (darg-quoted-natp (first simplified-args)) ; relax?
            )
       ;;it's a bvxor. note that since the args are simplified, if they are bvxor nests they are *normalized* bvxor nests
       (b* ((bvxor-width (unquote (first simplified-args)))

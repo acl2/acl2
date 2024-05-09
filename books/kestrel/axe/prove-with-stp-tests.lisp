@@ -1,7 +1,7 @@
 ; Tests of prove-with-stp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,13 +14,15 @@
 
 ; cert_param: (uses-stp)
 
-(include-book "prove-with-stp" :ttags :all)
-(include-book "kestrel/bv/bv-tests" :dir :system)
+(include-book "prove-with-stp-tester" :ttags :all)
+(include-book "kestrel/bv/tests" :dir :system) ; for *min-sint-32*
 (include-book "std/testing/must-fail" :dir :system)
 
 ;If Axe ever tries to call STP and you don't have it, you may get an inscrutable error.
 
 ;TODO: Distinguish between STP failure to prove and a translation error
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-prove-with-stp test1 '(equal (bvxor 32 x y) (bvxor 32 y x)))
 (must-not-prove-with-stp test2 '(equal (bvxor 32 x y) (bvxor 32 x x)))
@@ -47,21 +49,25 @@
 (must-prove-with-stp test16 '(implies (and (equal y x) (booleanp x) (unsigned-byte-p 8 y)) (equal x y))) ;assumptions contradict
 (must-not-prove-with-stp test17 '(implies (and (booleanp x) (unsigned-byte-p 8 y)) (equal x y))) ;i suppose the equal could be translated to false (now is replaced with a boolean var)
 
+;; We should not decide that x is a single bit (consider x=3):
 (must-not-prove-with-stp test18 '(implies (not (equal 1 x)) (equal (getbit 0 x) 0)))
-(must-prove-with-stp test19 '(equal (bvmod 32 x 0) (bvchop ;$inline
-                                                    32 x)))
+(must-not-prove-with-stp test18b '(implies (and (unsigned-byte-p 2 x) (not (equal 1 x))) (equal (getbit 0 x) 0)))
+;; This one is valid:
+(must-prove-with-stp test18c '(implies (and (unsigned-byte-p 1 x) (not (equal 1 x))) (equal (getbit 0 x) 0)))
+;; Test that we don't incorrectly chose an induced type of bv8 for x, or at least that we then don't translate the equality:
+(must-not-prove-with-stp test18d '(boolif (equal x (bvchop 8 x)) (equal (bvxor 8 x x) 0) nil))
+
+(must-prove-with-stp test19 '(equal (bvmod 32 x 0) (bvchop 32 x)))
 (must-prove-with-stp test20 '(equal (bvmod 32 x 1) 0))
-;(must-prove-with-stp test '(equal (bvmod 32 x 'x) 0)) ;;this was an error - note the quote on the x... fixme should we catch that?
+;(must-prove-with-stp test '(equal (bvmod 32 x 'x) 0)) ;;this was an error - note the quote on the x.  Now we get a warning.
 (must-prove-with-stp test21 '(equal (bvmod 32 x x) 0))
 (must-prove-with-stp test22 '(equal (bvdiv 32 x 0) 0))
 (must-not-prove-with-stp test23 '(equal (bvdiv 32 x 1) 'x))
-(must-prove-with-stp test24 '(equal (bvdiv 32 x 1) (bvchop ;$inline
-                                                    32 x)))
+(must-prove-with-stp test24 '(equal (bvdiv 32 x 1) (bvchop 32 x)))
 ;(must-prove-with-stp test '(equal (bvdiv 32 x x) 1)) ;think about this (not true for 0)
 ;(must-prove-with-stp test24b '(implies (not (equal 0 x)) (equal (bvdiv 32 x x) 1))) ;this was an error - forget to quote the 0
 (must-not-prove-with-stp test24b '(implies (not (equal 0 x)) (equal (bvdiv 32 x x) 1))) ;false for x=t
-(must-prove-with-stp test24c '(implies (not (equal 0 (bvchop ;$inline
-                                                      32 x))) (equal (bvdiv 32 x x) 1))) ;fixme mentioned lgohead by mistake - could check that all fns are defined (and in logic mode)
+(must-prove-with-stp test24c '(implies (not (equal 0 (bvchop 32 x))) (equal (bvdiv 32 x x) 1))) ;fixme mentioned lgohead by mistake - could check that all fns are defined (and in logic mode)
 (must-not-prove-with-stp test25 '(binary-+ x y)) ;fails, since binary-+ is not a boolean (fixme bit we know it's not nil. right?)
 ;(must-not-prove-with-stp test26 '(binary-+ 3 4)) ;fails, since binary-+ is not a boolean -- this now proves since the ground term is evaluated
 (must-not-prove-with-stp test27 '(bvplus 32 x y)) ;fails, since bvplus is not a boolean
@@ -78,6 +84,16 @@
 (must-prove-with-stp array-padding-test '(equal (bv-array-read 8 10 0 (bv-array-write 5 10 0 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
 (must-not-prove-with-stp array-padding-test2 '(equal (bv-array-read 8 10 13 (bv-array-write 5 10 0 7 '(0 0 0 0 0 0 0 0 0 0))) 7))
 
+;; the array elements are narrower than the declared size of 8.  here the array constant probably is a darg of the bv-array-read.
+(must-prove-with-stp array-width-test1 '(equal (bvchop 3 i) (bv-array-read 8 8 (bvchop 3 i) '(0 1 2 3 4 5 6 7))) :print t)
+
+;;variant of the above.  now the constant array is a separate node  the read returns 3 bits and is padded to 8 bits.
+;; this shows why we must translate the array arg of a bv-array-read using widths-must-matchp=nil (the array is 3 bits, but the read is 8 bits).
+(must-prove-with-stp array-width-test2 '(implies (equal v '(0 1 2 3 4 5 6 7)) (equal (bvchop 3 i) (bv-array-read 8 8 (bvchop 3 i) v))) :print t)
+
+;; TODO: Can we get this to pass (array width is "wrong" since it is based on the data in the constant)?
+;; (must-prove-with-stp array-width-test3 '(implies (equal v '(0 1 2 3 4 5 6 7)) (equal v (bv-array-write 8 8 (bvchop 3 i) i v))) :print t)
+
 ;test of extensional arrays:
 (must-prove-with-stp array-test-1 '(implies (and (true-listp x)
                                                  (true-listp y)
@@ -92,7 +108,9 @@
                                             (equal x y)))
 
 ;; fails because it doesn't say that y is a true-list
+;; TODO: Should this pass, without even any type hyps, due to induced types?
 (must-not-prove-with-stp array-test-2 '(implies (and (true-listp x)
+                                                     ;; (true-listp y)
                                                      (equal 2 (len x))
                                                      (equal 2 (len y))
                                                      (all-unsigned-byte-p 32 x)
@@ -143,12 +161,15 @@
 (must-prove-with-stp leftrotate-example3 '(equal (leftrotate32 1 x) (leftrotate32 33 x)))
 (must-prove-with-stp leftrotate-example4 '(equal (leftrotate32 0 x) (leftrotate32 32 x)))
 (must-prove-with-stp leftrotate-example5 '(implies (unsigned-byte-p 32 x) (equal x (leftrotate32 32 x))))
+(must-prove-with-stp leftrotate-example5b '(equal (leftrotate32 32 x) (bvchop 32 x)))
 
 ;; (prove-clause-with-stp '((not (not (equal (bvplus 32 x y) (bvplus 32 y x))))))
 
 
+;; todo: the evaluation may happen here in these concrete tests before STP is even called:
 
-;; (equal (bvplus 32 0 0) 0)
+(must-prove-with-stp bvplus-concrete (equal (bvplus 32 0 0) 0))
+(must-prove-with-stp bvplus-concrete (equal (bvplus 32 1 -1) 0))
 
 (must-prove-with-stp test28 '(equal (sbvdiv 32 5 3) 1))
 ;; TODO: Add a rewriting pass to get tests like this working again?
@@ -334,8 +355,22 @@
 
 ;; Type mismatch (x is used as a boolean in the BVIF and as a bv in the BVXOR):
 (must-fail
- (must-prove-with-stp test1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
+ (must-prove-with-stp type-mismatch1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
+
+;; X is used as a boolean in the BVIF !
+(must-fail
+  (must-prove-with-stp type-mismatch2 '(implies (unsigned-byte-p 32 x) (equal (bvif 32 x y z) (bvxor 32 x w)))))
+
+(must-fail
+ (must-prove-with-stp type-mismatch3 '(equal 0 (bvxor 32 x (boolor y z)))))
 
 ;; ;; TODO: Why didn't this work?
 ;; (must-fail-with-hard-error
 ;;  (must-prove-with-stp test1 '(equal (bvif 32 x y z) (bvxor 32 x w))))
+
+(must-not-prove-with-stp type-issue1 '(equal (bvxor size y z) (bvxor size z y)))
+
+(must-prove-with-stp overlap '(if (equal (bitxor x y) 0) t (if (equal (bitxor x y) 1) t nil)))
+
+(must-prove-with-stp bvequal1 '(bvequal 32 x x))
+(must-prove-with-stp bvequal2 '(equal (bvequal 32 x y) (bvequal 32 y x)))

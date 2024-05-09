@@ -1,7 +1,7 @@
 ; Alternate tools to rebuild nodes with substitutions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,6 +15,7 @@
 (include-book "rebuild-nodes") ;todo: reduce
 (include-book "remove-duplicates-from-sorted-list")
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(local (include-book "numeric-lists"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -62,13 +63,13 @@
   (sortedp-<= (list x))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
 
-(defthmd <=-of-cadr-and-car-when-sortedp-<=
+(defthmd <-of-car-and-cadr-when-sortedp-<=
   (implies (and (sortedp-<= list)
                 (consp (cdr list))
-                (all-natp list)
+                (all-natp list) ; gen?
                 )
-           (equal (< (CAR LIST) (CADR LIST))
-                  (not (equal (CADR LIST) (CAR LIST)))))
+           (equal (< (car list) (cadr list))
+                  (not (equal (cadr list) (car list)))))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
 
 (defthm no-duplicatesp-equal-of-remove-duplicates-from-sorted-list
@@ -86,8 +87,8 @@
            :in-theory (enable no-duplicatesp-equal
                               remove-duplicates-from-sorted-list
                               not-<-of-car-when-<=-all
-                              <=-of-first-and-second-when-sortedp
-                              <=-of-cadr-and-car-when-sortedp-<=
+                              <=-of-car-and-cadr-when-sortedp-<=
+                              <-of-car-and-cadr-when-sortedp-<=
                               ))))
 
 
@@ -99,7 +100,7 @@
            :in-theory (enable nat-listp
                               remove-duplicates-from-sorted-list
                               not-<-of-car-when-<=-all
-                              <=-of-first-and-second-when-sortedp))))
+                              <=-of-car-and-cadr-when-sortedp-<=))))
 
 (defthm all-<-of-merge-<
   (equal (all-< (merge-< l1 l2 acc) bound)
@@ -113,7 +114,7 @@
 ;;          (and (all-> l1 bound)
 ;;               (all-> l2 bound)
 ;;               (all-> acc bound)))
-;;   :hints (("Goal" :in-theory (enable merge-< ALL-> REVAPPEND-LEMMA))))
+;;   :hints (("Goal" :in-theory (enable merge-< ALL-> REVAPPEND-BECOMES-APPEND-OF-REVERSE-LIST))))
 
 ;; (defthm all->-of-merge-sort-<
 ;;   (equal (all-> (merge-sort-< l1) bound)
@@ -175,7 +176,7 @@
   (equal (<-all a (revappend x y))
          (and (<-all a x)
               (<-all a y)))
-  :hints (("Goal" :in-theory (enable all-> revappend-lemma))))
+  :hints (("Goal" :in-theory (enable all-> revappend-becomes-append-of-reverse-list))))
 
 (defthm <-all-of-mv-nth-0-of-split-list-fast-aux
   (implies (and (<-all a lst)
@@ -570,7 +571,8 @@
   :hints (("Goal" :in-theory (enable rebuild-literals-with-substitution2))))
 
 (local (in-theory (enable all-integerp-when-all-natp
-                          natp-of-+-of-1-alt))) ;for the call of def-dag-builder-theorems just below
+                          ;natp-of-+-of-1-alt
+                          ))) ;for the call of def-dag-builder-theorems just below
 
 (local (in-theory (disable natp)))
 

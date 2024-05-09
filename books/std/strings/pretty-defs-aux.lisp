@@ -166,6 +166,16 @@
     make-pinst-indent
     patbind-pinst-indent
 
+    pinst-special-term
+    pinst-special-term->width
+    pinst-special-term->first
+    pinst-special-term->init-args-indent
+    pinst-special-term->init-args
+    pinst-special-term->body-args-indent
+    pinst-special-term->body-args
+    make-pinst-special-term
+    patbind-pinst-special-term
+
     pinst->width
     pinstlist->max-width
     pprdot
@@ -179,6 +189,9 @@
     keyword-param-valuep
     maybe-merge-flat
     cons-ppr1
+
+    *ppr-special-syms*
+    special-term-num
 
     ppr1
     ppr

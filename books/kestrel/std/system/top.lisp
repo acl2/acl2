@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,11 +15,13 @@
 (include-book "add-suffix-to-fn-or-const")
 (include-book "add-suffix-to-fn-or-const-lst")
 (include-book "arglistp")
+(include-book "constant-queries")
 (include-book "enhanced-utilities")
 (include-book "event-landmark-names")
 (include-book "event-name-queries")
 (include-book "fresh-logical-name-with-dollars-suffix")
 (include-book "function-queries")
+(include-book "genvar-dollar")
 (include-book "getprops")
 (include-book "included-books")
 (include-book "install-not-normalized-dollar")
@@ -28,6 +30,7 @@
 (include-book "known-packages-plus")
 (include-book "macro-queries")
 (include-book "maybe-pseudo-event-formp")
+(include-book "partition-rest-and-keyword-args")
 (include-book "plist-worldp-with-formals")
 (include-book "pseudo-command-landmark-listp")
 (include-book "pseudo-event-form-fix")
@@ -59,5 +62,5 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These extensions could be moved under @('[books]/std/system')
+    "These extensions could be moved under @('std/system')
      at some point.")))

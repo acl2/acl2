@@ -1,6 +1,6 @@
 ; A utility to combine IFs
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,7 +23,7 @@
 
 (in-theory (disable mv-nth))
 
-
+(local (in-theory (disable acl2-count)))
 
 ;; Returns (mv changep new-term) where if CHANGEP is then NEW-TERM is the new term.
 ;; If CHANGEP is nil, then NEW-TERM is irrelevant,
@@ -33,14 +33,16 @@
                               (pseudo-termp else-part))))
   (if (call-of 'if then-part) ;; (if <test> (if <test2> .. ..) ..)
       (if (equal (farg2 then-part) else-part)
+          ;; (if test1 (if test2 X Y) X) -> (if (and test (not test2)) Y X)
           (mv t `(if (if ,test ; an and
                          ,(negate-term (farg1 then-part))
                        'nil)
                      ,(farg3 then-part)
                    ,else-part))
-        (if (and (equal (farg3 then-part) else-part) ;; (if <test> (if <test2> .. else-part) else-part)
+        (if (and (equal (farg3 then-part) else-part)
                  (not (equal *nil* else-part)) ; avoids changing (IF X (IF Y Z 'NIL) 'NIL), which is (and x y z)
                  )
+            ;; (if test1 (if test2 x y) y) -> (if (and test1 test2) x y)
             (mv t `(if (if ,test ; an and
                            ,(farg1 then-part)
                          'nil)
@@ -55,6 +57,8 @@
                 (pseudo-termp else-part))
            (pseudo-termp (mv-nth 1 (combine-if-from-then-part test then-part else-part))))
   :hints (("Goal" :in-theory (enable combine-if-from-then-part))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv changep new-term) where if CHANGEP is then NEW-TERM is the new term.
 ;; If CHANGEP is nil, then NEW-TERM is irrelevant,
@@ -85,7 +89,7 @@
            (pseudo-termp (mv-nth 1 (combine-if-from-else-part test then-part else-part))))
   :hints (("Goal" :in-theory (enable combine-if-from-else-part))))
 
-(local (in-theory (disable acl2-count)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO Get rid of count in favor of a real measure
 (mutual-recursion
@@ -168,5 +172,5 @@
     (implies (pseudo-term-listp terms)
              (pseudo-term-listp (combine-ifs-in-then-and-else-branches-list terms count)))
     :flag combine-ifs-in-then-and-else-branches-list)
-  :hints (("Goal" :in-theory (enable COMBINE-IFS-IN-THEN-AND-ELSE-BRANCHES
-                                     COMBINE-IFS-IN-THEN-AND-ELSE-BRANCHES-LIST))))
+  :hints (("Goal" :in-theory (enable combine-ifs-in-then-and-else-branches
+                                     combine-ifs-in-then-and-else-branches-list))))

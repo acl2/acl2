@@ -50,21 +50,21 @@
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
 (include-book "centaur/gl/defthm-using-gl" :dir :system)
+
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))
+(local (include-book "std/alists/alistp" :dir :system))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 (defsection utils
   :parents (x86isa)
-  :short "Utilities for rest of the @('X86ISA') books"
-  )
+  :short "Utilities for rest of the @('X86ISA') books.")
 
 (defsection utilities
-  :parents (utils)
-  )
+  :parents (utils))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 (defsection mk-name
 
@@ -77,7 +77,7 @@
     ;; Note that the package is X86ISA here.
     `(acl2::packn-pos (list ,@x) 'x86isa::mk-name)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; Convenient forcing idiom:
 
@@ -90,7 +90,7 @@
 (defmacro forced-and (&rest x)
   `(and ,@(formal-force-list x)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 (defsection constants-conversions-and-bounds
   :parents (utilities)
@@ -151,26 +151,28 @@ constants and functions; it also proves some associated lemmas.</p>")
 ;; Lemmas to help in the MBE proof obligations
 ;; of the generated NTOI and ITON functions below:
 
-(defruledl logext-when-unsigned-byte-p-and-sign-changes
-  (implies (and (unsigned-byte-p size x)
-                (<= (expt 2 (1- size)) x))
-           (equal (logext size x) (- x (expt 2 size))))
-  :prep-books ((include-book "arithmetic-5/top" :dir :system))
-  :enable (logext logapp loghead))
+(local
+ (encapsulate ()
 
-(defruledl loghead-when-signed-byte-p-and-sign-changes
-  (implies (and (signed-byte-p size x)
-                (< x 0))
-           (equal (loghead size x) (+ (expt 2 size) x)))
-  :prep-books ((include-book "arithmetic-5/top" :dir :system))
-  :enable loghead
-  :prep-lemmas
-  ((defrule lemma
-     (implies (posp size)
-              (< (expt 2 (1- size))
-                 (expt 2 size)))
-     :rule-classes :linear
-     :prep-books ((include-book "arithmetic/top" :dir :system)))))
+   (local (include-book "arithmetic-5/top" :dir :system))
+
+   (defruled logext-when-unsigned-byte-p-and-sign-changes
+     (implies (and (unsigned-byte-p size x)
+                   (<= (expt 2 (1- size)) x))
+              (equal (logext size x) (- x (expt 2 size))))
+     :enable (logext logapp loghead))
+
+   (defruled loghead-when-signed-byte-p-and-sign-changes
+     (implies (and (signed-byte-p size x)
+                   (< x 0))
+              (equal (loghead size x) (+ (expt 2 size) x)))
+     :enable loghead
+     :prep-lemmas
+     ((defrule lemma
+        (implies (posp size)
+                 (< (expt 2 (1- size))
+                    (expt 2 size)))
+        :rule-classes :linear)))))
 
 (def-ruleset nwp-defs       nil)
 (def-ruleset nw-defs        nil)
@@ -239,7 +241,7 @@ constants and functions; it also proves some associated lemmas.</p>")
         (mbe :logic (logext ,n x)
              :exec (bitops::fast-logext ,n x)))
 
-     `(define ,ntoi
+     `(define ,ntoi ((x ,nXYp :type (unsigned-byte ,n)))
         ;; Convert natural number to integer
         :inline t
         :no-function t
@@ -248,14 +250,12 @@ constants and functions; it also proves some associated lemmas.</p>")
         :guard-hints (("Goal"
                        :in-theory
                        (enable logext-when-unsigned-byte-p-and-sign-changes)))
-        ((x ,nXYp :type (unsigned-byte ,n)))
-
         (mbe :logic (logext ,n x)
              :exec (if (< x ,(expt 2 (1- n)))
                        x
                      (- x ,(expt 2 n)))))
 
-     `(define ,iton
+     `(define ,iton ((x ,iXYp :type (signed-byte ,n)))
         ;; Convert integer to natural number
         :inline t
         :no-function t
@@ -264,8 +264,6 @@ constants and functions; it also proves some associated lemmas.</p>")
         :guard-hints (("Goal"
                        :in-theory
                        (enable loghead-when-signed-byte-p-and-sign-changes)))
-        ((x ,iXYp :type (signed-byte ,n)))
-
         (mbe :logic (loghead ,n x)
              :exec (if (>= x 0)
                        x
@@ -326,7 +324,7 @@ constants and functions; it also proves some associated lemmas.</p>")
     (16 (n128 x))
     (t (part-select x :low 0 :width n))))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 ;; Handy utility for turning a positional list into an array
 
@@ -338,13 +336,6 @@ constants and functions; it also proves some associated lemmas.</p>")
         (t (list-to-alist (cdr x)
                           (1+ i)
                           (acons i (car x) acc)))))
-
-(defthm alistp-revappend
-  (implies (true-listp x)
-           (equal (alistp (revappend x y))
-                  (and (alistp x)
-                       (alistp y))))
-  :hints (("Goal" :induct (revappend x y))))
 
 (defthm alistp-of-list-to-alist
   (implies (alistp acc)
@@ -376,7 +367,7 @@ constants and functions; it also proves some associated lemmas.</p>")
                               (true-listp x)
                               x
                               (< (length x)
-                                 acl2::*maximum-positive-32-bit-integer*))))
+                                 (acl2::array-maximum-length-bound)))))
   (let ((alist (list-to-alist x 0 nil))
         (len (length x)))
     (compress1 name
@@ -386,7 +377,7 @@ constants and functions; it also proves some associated lemmas.</p>")
                           :name ,name)
                  ,@alist))))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 ;; Maps a list of integers to a corresponding list of Booleans,
 ;; treating 0 as false.  Example: (ints-to-booleans '(0 1 0 0 1)) ==>
@@ -404,7 +395,7 @@ constants and functions; it also proves some associated lemmas.</p>")
   (declare (xargs :guard (integer-listp x)))
   (ints-to-booleans-acc x nil))
 
-;; =============================================================================
+;; ----------------------------------------------------------------------
 
 (defsection globally-disabled-events
   :parents (utilities)
@@ -448,7 +439,8 @@ disabledp) recursively on the events in
   (def-ruleset globally-disabled-events nil)
 
   (define globally-disable-fn
-    ((events "Can be a symbol (another ruleset) or a @('true-listp') (set of events)"))
+    ((events "Can be a symbol (another ruleset)
+              or a @('true-listp') (set of events)"))
     (b* ((events (if (true-listp events)
                      `(quote ,events)
                    events)))
@@ -474,7 +466,8 @@ disabledp) recursively on the events in
     (declare (xargs :stobjs (state)
                     :mode :program))
     (if (endp lst)
-        (mv (cw "~%~%Number of events in GLOBALLY-DISABLED-EVENTS: ~x0~%~%" count)
+        (mv (cw "~%~%Number of events in GLOBALLY-DISABLED-EVENTS: ~x0~%~%"
+                count)
             :invisible
             state)
 
@@ -490,7 +483,7 @@ disabledp) recursively on the events in
 
   (globally-disable '(logior logand logxor floor mod ash)))
 
-;; ======================================================================
+;; ----------------------------------------------------------------------
 
 ;; [Shilpi] slicing-operations are not needed anymore --- the :exec parts of
 ;; the accessor and updater macros have been incorporated in the
@@ -634,3 +627,5 @@ disabledp) recursively on the events in
 ;;                                      ,pos)))))))))
 
 ;;  ) ;; End of encapsulate
+
+;; ----------------------------------------------------------------------

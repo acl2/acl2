@@ -37,28 +37,6 @@
 (local (in-theory (disable pseudo-termp pseudo-term-listp)))
 ;; (include-book "primitives")
 
-(define variable-g-bindings ((vars pseudo-var-list-p))
-  :returns (bindings fgl-object-bindings-p)
-  (if (atom vars)
-      nil
-    (cons (cons (pseudo-var-fix (car vars))
-                (g-var (car vars)))
-          (variable-g-bindings (cdr vars))))
-  ///
-  (defret fgl-object-bindings-bfrlist-of-<fn>
-    (equal (fgl-object-bindings-bfrlist bindings) nil))
-
-  (defret alist-keys-of-<fn>
-    (equal (alist-keys bindings)
-           (pseudo-var-list-fix vars))
-    :hints(("Goal" :in-theory (enable alist-keys))))
-
-  (defret lookup-in-<fn>
-    (equal (hons-assoc-equal k bindings)
-           (and (member k (pseudo-var-list-fix vars))
-                (cons k (g-var k))))
-    :hints(("Goal" :in-theory (enable pseudo-var-list-fix)))))
-
 
 (defun def-cons-opener-fn (accessor wrld)
   (Declare (Xargs :mode :program))
@@ -130,6 +108,7 @@
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
        (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
+       (interp-st (update-interp-st->user-scratch nil interp-st))
        (constraint-db (table-alist 'fgl::fgl-bool-constraints (w state)))
        (interp-st (if (and (constraint-db-p constraint-db)
                            (not (constraint-db-bfrlist constraint-db)))
@@ -613,9 +592,6 @@
                                            major-frame-bfrlist)
                  :expand ((major-stack-bfrlist stack))))))
 
-(define fgl-toplevel-sat-check-config-wrapper (override)
-  (or override (fgl-toplevel-sat-check-config)))
-
 (local (defthm iff?-forall-extensions-of-nil
          (equal (iff?-forall-extensions nil obj term eval-alist)
                 (iff-forall-extensions obj term eval-alist))
@@ -640,6 +616,8 @@
        ((mv ans-interp interp-st state)
         (time$ (fgl-interp-test goal interp-st state)
                :msg "FGL interpreter completed: ~st sec, ~sa bytes~%"))
+       (- ;; Clear memoization tables that depend on e.g. the current world
+        (clear-memoize-table 'fgl-equivp))
        ((acl2::hintcontext-bind ((interp-interp-st interp-st)
                                  (interp-state state))))
        (- (and (interp-st-prof-enabledp interp-st)
@@ -692,7 +670,7 @@
                           above.~%" ans))
                 (t   (cw "Counterexample verified!~%"))))
        (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
-       (interp-st (update-interp-st->debug-info ctrex-bindings interp-st)))
+       (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv "Counterexample." interp-st state))
   ///
 

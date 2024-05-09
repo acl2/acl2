@@ -1,8 +1,7 @@
 ; A book about bool-fix, which coerces a value to a boolean.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
-; See also the copyright where bool-fix is defined.
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,28 +11,7 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
-
-;Changed this to match the version in the std library.
-;maybe this should not be hyphenated by analogy with nfix, etc.
-(DEFUND BOOL-FIX$INLINE (X)
-  (DECLARE (XARGS :GUARD T))
-  (AND X T))
-
-;Added to match the version in the std library.
-(DEFMACRO BOOL-FIX (X)
-  (LIST 'BOOL-FIX$INLINE X))
-
-(add-macro-alias bool-fix bool-fix$inline)
-
-;; ;; old:
-;; (defun bool-fix (x)
-;;   (declare (xargs :guard t))
-;;   (and x t))
-
-(defthm booleanp-of-bool-fix
-  (booleanp (bool-fix x))
-  :rule-classes :type-prescription)
+(include-book "bool-fix-def")
 
 (defthm bool-fix-when-booleanp
   (implies (booleanp x)
@@ -41,10 +19,20 @@
                   x))
   :hints (("Goal" :in-theory (enable bool-fix))))
 
+;use a congruence?
 (defthm not-of-bool-fix
   (equal (not (bool-fix x))
          (not x))
   :hints (("Goal" :in-theory (enable bool-fix))))
+
+(defthm if-of-bool-fix-arg1
+  (equal (if (bool-fix x) y z)
+         (if x y z))
+  :hints (("Goal" :in-theory (enable bool-fix))))
+
+(defthm bool-fix-of-bool-fix
+  (equal (bool-fix (bool-fix x))
+         (bool-fix x)))
 
 (defthm bool-fix-iff
   (iff (bool-fix x)
@@ -53,11 +41,3 @@
 
 ;; This helps justify some things that Axe does:
 (defcong iff equal (bool-fix$inline x) 1 :hints (("Goal" :in-theory (enable bool-fix))))
-
-(defthm if-of-bool-fix-arg1
-  (equal (if (bool-fix x) y z)
-         (if x y z)))
-
-(defthm bool-fix-of-bool-fix
-  (equal (bool-fix (bool-fix x))
-         (bool-fix x)))

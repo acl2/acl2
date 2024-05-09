@@ -1,0 +1,40 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    name: ${{ matrix.lisp }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        lisp: [sbcl-bin]
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Roswell (Ubuntu & macOS)
+        if: matrix.os != 'windows-latest'
+        env:
+          LISP: ${{ matrix.lisp }}
+        run: |
+          curl -L https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+      - name: Install Roswell (Windows)
+        if: matrix.os == 'windows-latest'
+        env:
+          LISP: ${{ matrix.lisp }}
+          ROSWELL_INSTALL_DIR: /usr
+          ROSWELL_BRANCH: master
+        run: |
+          curl -L https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
+      - name: Install Prove
+        run: ros install prove
+      - name: Run tests (Ubuntu & macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          PATH="~/.roswell/bin:$PATH"
+          run-prove quri-test.asd
+      - name: Run tests (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          ros -S . -s prove -e '(or (prove:run :quri-test) (uiop:quit -1))'

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,29 +15,40 @@
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ atc-let-designations
-  :parents (atc-implementation)
+  :parents (atc-shallow-embedding)
   :short "Designations of @(tsee let) and @(tsee mv-let) representations
           for ATC."
   :long
   (xdoc::topstring
    (xdoc::p
-    "ACL2's @(tsee let) is used to represent four different things in C:")
-   (xdoc::ul
+    "ACL2's @(tsee let) is used to represent different things in C:")
+   (xdoc::ol
     (xdoc::li
      "A local variable declaration with an initializer.")
     (xdoc::li
      "An assignment of an expression to a local variable.")
     (xdoc::li
-     "An assignment to an element of an array variable.")
+     "An assignment to an integer by pointer.")
     (xdoc::li
-     "A transformation of a (local or array) variable via statements."))
+     "An assignment to an element of an array.")
+    (xdoc::li
+     "An assignment to an integer member of a structure.")
+    (xdoc::li
+     "An assignment to an element of an array member of a structure.")
+    (xdoc::li
+     "A transformation of a variable via statements."))
    (xdoc::p
-    "The case of an array element assignment
-     is recognized by the presence of the array write functions,
-     according to the pattern described in the user documentation.
+    "The third, fourth, fifth, and sixth cases are recognized
+     by the presence of certain write functions,
+     according to the patterns described in the user documentation.
      The other three cases could be recognized
      by looking at the conditions that must hold in each cases,
      but in order to ease ATC's task,
@@ -45,28 +56,27 @@
      we use @(tsee declar) and @(tsee assign)
      to indicate the declaration and assignment cases,
      as explained in the user documentation.
-     Thus, the fourth case is what remains when the other three do not apply.")
+     Thus, the seventh case is what remains
+     when the others do not apply.")
    (xdoc::p
     "In all four cases above,
      the term to which the variable is bound must be single-valued.
      For multi-valued terms, we follow a similar approach for @(tsee mv-let),
      which is used to represent three different things in C:")
-   (xdoc::ul
+   (xdoc::ol
     (xdoc::li
      "A local variable declaration with an initializer
-      that side-effects some array(s)
+      that side-effects some variable(s)
       in addition to returning the value to initialize the variable with.")
     (xdoc::li
      "An assignment of an expression to a local variable
-      where the expression side-effects some array(s)
+      where the expression side-effects some variable(s)
       in addition to returning the value to assign to the variable.")
     (xdoc::li
-     "A transformation of two or more (local or array) variables
-      via statements."))
+     "A transformation of two or more variables via statements."))
    (xdoc::p
-    "These cases mirror three of the @(tsee let) cases described above,
-     with the exclusion of array writes, which are only for @(tsee let),
-     due to the restrictions on the ACL2 terms accepted by ATC.")
+    "These cases mirror the first, second, and last cases
+     described above for @(tsee let).")
    (xdoc::p
     "For these @(tsee mv-let) cases,
      we use a similiar approach to the @(tsee let) cases,
@@ -74,8 +84,12 @@
      But the functions @(tsee declar) and @(tsee assign)
      cannot be applied to multi-valued terms.
      Thus, we introduce macros @('declar<n>') and @('assign<n>'),
-     for @('<n>') equal to 2, 3, etc.
+     for @('<n>') equal to 1, 2, 3, etc.
      (we stop at some point, but it is easy to add more if needed).
+     Note that @('<n>') indicates the number of side-effected variables,
+     in addition to the declared or assigned variable;
+     it does not indicate the number of variables bound by @(tsee mv-let),
+     which are always @('<n> + 1').
      These must be macros, and cannot be functions,
      because function may be only applied to single-valued terms,
      while macros do not have that restriction;
@@ -115,192 +129,216 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ declar2 (x)
+(defmacro+ declar1 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 2 bound variables."
+          in an @(tsee mv-let) that side-effects 1 additional variable."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2)
+  `(mv-let (*0 *1)
      ,x
-     (mv (declar *1) *2)))
+     (mv (declar *0) *1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ assign1 (x)
+  :short "Wrapper to indicate a C local variable assignment
+          in an @(tsee mv-let) that side-effects 1 additional variable."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee atc-let-designations).")
+  `(mv-let (*0 *1)
+     ,x
+     (mv (assign *0) *1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro+ declar2 (x)
+  :short "Wrapper to indicate a C local variable declaration
+          in an @(tsee mv-let) that side-effects 2 additional variables."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee atc-let-designations).")
+  `(mv-let (*0 *1 *2)
+     ,x
+     (mv (declar *0) *1 *2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign2 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 2 bound variables."
+          in an @(tsee mv-let) that side-effects 2 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2)
+  `(mv-let (*0 *1 *2)
      ,x
-     (mv (assign *1) *2)))
+     (mv (assign *0) *1 *2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar3 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 3 bound variables."
+          in an @(tsee mv-let) that side-effects 3 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3)
+  `(mv-let (*0 *1 *2 *3)
      ,x
-     (mv (declar *1) *2 *3)))
+     (mv (declar *0) *1 *2 *3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign3 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 3 bound variables."
+          in an @(tsee mv-let) that side-effects 3 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3)
+  `(mv-let (*0 *1 *2 *3)
      ,x
-     (mv (assign *1) *2 *3)))
+     (mv (assign *0) *1 *2 *3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar4 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 4 bound variables."
+          in an @(tsee mv-let) that side-effects 4 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4)
+  `(mv-let (*0 *1 *2 *3 *4)
      ,x
-     (mv (declar *1) *2 *3 *4)))
+     (mv (declar *0) *1 *2 *3 *4)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign4 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 4 bound variables."
+          in an @(tsee mv-let) that side-effects 4 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4)
+  `(mv-let (*0 *1 *2 *3 *4)
      ,x
-     (mv (assign *1) *2 *3 *4)))
+     (mv (assign *0) *1 *2 *3 *4)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar5 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 5 bound variables."
+          in an @(tsee mv-let) that side-effects 5 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5)
+  `(mv-let (*0 *1 *2 *3 *4 *5)
      ,x
-     (mv (declar *1) *2 *3 *4 *5)))
+     (mv (declar *0) *1 *2 *3 *4 *5)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign5 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 5 bound variables."
+          in an @(tsee mv-let) that side-effects 5 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5)
+  `(mv-let (*0 *1 *2 *3 *4 *5)
      ,x
-     (mv (assign *1) *2 *3 *4 *5)))
+     (mv (assign *0) *1 *2 *3 *4 *5)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar6 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 6 bound variables."
+          in an @(tsee mv-let) that side-effects 6 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6)
      ,x
-     (mv (declar *1) *2 *3 *4 *5 *6)))
+     (mv (declar *0) *1 *2 *3 *4 *5 *6)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign6 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 6 bound variables."
+          in an @(tsee mv-let) that side-effects 6 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6)
      ,x
-     (mv (assign *1) *2 *3 *4 *5 *6)))
+     (mv (assign *0) *1 *2 *3 *4 *5 *6)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar7 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 7 bound variables."
+          in an @(tsee mv-let) that side-effects 7 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6 *7)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6 *7)
      ,x
-     (mv (declar *1) *2 *3 *4 *5 *6 *7)))
+     (mv (declar *0) *1 *2 *3 *4 *5 *6 *7)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign7 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 7 bound variables."
+          in an @(tsee mv-let) that side-effects 7 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6 *7)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6 *7)
      ,x
-     (mv (assign *1) *2 *3 *4 *5 *6 *7)))
+     (mv (assign *0) *1 *2 *3 *4 *5 *6 *7)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar8 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 8 bound variables."
+          in an @(tsee mv-let) that side-effects 8 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6 *7 *8)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6 *7 *8)
      ,x
-     (mv (declar *1) *2 *3 *4 *5 *6 *7 *8)))
+     (mv (declar *0) *1 *2 *3 *4 *5 *6 *7 *8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign8 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 8 bound variables."
+          in an @(tsee mv-let) that side-effects 8 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6 *7 *8)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6 *7 *8)
      ,x
-     (mv (assign *1) *2 *3 *4 *5 *6 *7 *8)))
+     (mv (assign *0) *1 *2 *3 *4 *5 *6 *7 *8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ declar9 (x)
   :short "Wrapper to indicate a C local variable declaration
-          in an @(tsee mv-let) for 8 bound variables."
+          in an @(tsee mv-let) that side-effects 9 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6 *7 *8 *9)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6 *7 *8 *9)
      ,x
-     (mv (declar *1) *2 *3 *4 *5 *6 *7 *8 *9)))
+     (mv (declar *0) *1 *2 *3 *4 *5 *6 *7 *8 *9)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ assign9 (x)
   :short "Wrapper to indicate a C local variable assignment
-          in an @(tsee mv-let) for 8 bound variables."
+          in an @(tsee mv-let) that side-effects 9 additional variables."
   :long
   (xdoc::topstring-p
    "See @(tsee atc-let-designations).")
-  `(mv-let (*1 *2 *3 *4 *5 *6 *7 *8 *9)
+  `(mv-let (*0 *1 *2 *3 *4 *5 *6 *7 *8 *9)
      ,x
-     (mv (assign *1) *2 *3 *4 *5 *6 *7 *8 *9)))
+     (mv (assign *0) *1 *2 *3 *4 *5 *6 *7 *8 *9)))

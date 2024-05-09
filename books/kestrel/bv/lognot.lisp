@@ -1,7 +1,7 @@
 ; BV Library: lognot
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,10 +16,10 @@
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/minus"))
-(local (include-book "../arithmetic-light/expt"))
+;(local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/integerp"))
-(local (include-book "../arithmetic-light/plus-and-times"))
+;(local (include-book "../arithmetic-light/plus-and-times"))
 
 (in-theory (disable lognot))
 
@@ -44,12 +44,24 @@
          (ifix i))
   :hints (("Goal" :in-theory (enable lognot))))
 
-(defthm <-of-lognot-and-0
-  (equal (< (lognot i) 0)
-         (if (integerp i)
-             (<= 0 i)
-           t))
-  :hints (("Goal" :in-theory (enable lognot))))
+(defthm <-of-lognot-arg1-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< (lognot i) k)
+                  ;; could say (<= (- k) (ifix i)) if we knew k was an integer
+                  (< (+ -1 (- k)) ; gets computed
+                     (ifix i))))
+  :hints (("Goal" :cases ((< (+ -1 (- k))
+                             (ifix i)))
+           :in-theory (enable lognot))))
+
+(defthm <-of-lognot-arg2-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< k (lognot i))
+                  (< (ifix i)
+                     (+ -1 (- k)) ; gets computed
+                     )))
+  :hints (("Goal" :cases ((< (ifix i) (+ -1 (- k))))
+           :in-theory (enable lognot))))
 
 (defthm lognot-of-all-ones
   (implies (natp n)
@@ -124,6 +136,13 @@
                   (+ (expt 2 n) (lognot (mod i (expt 2 n))))))
   :hints (("Goal" :in-theory (enable lognot mod-sum-cases))))
 
+(defthm mod-of-lognot-of-mod-of-expt-and-expt
+  (implies (and (integerp i)
+                (natp n))
+           (equal (mod (lognot (mod i (expt 2 n))) (expt 2 n))
+                  (mod (lognot i) (expt 2 n))))
+  :hints (("Goal" :in-theory (enable lognot mod-sum-cases))))
+
 (defthm floor-of-lognot-and-expt
   (implies (and (integerp i)
                 (natp n))
@@ -160,5 +179,11 @@
 
 (defthm signed-byte-p-of-lognot
   (implies (signed-byte-p size i)
-           (signed-byte-p size (lognot i)))
+           (signed-byte-p size (lognot i))))
+
+(defthm equal-of-lognot-and-lognot
+  (equal (equal (lognot i) (lognot j))
+         (equal (ifix i) (ifix j)))
   :hints (("Goal" :in-theory (enable lognot))))
+
+

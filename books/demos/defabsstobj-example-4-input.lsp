@@ -133,7 +133,7 @@
 (assert-event (equal (fld st) nil))
 
 ; Let's set things up to get a more informative error message:
-(local (set-absstobj-debug t))
+(set-absstobj-debug t)
 
 ; Again:
 (make-event

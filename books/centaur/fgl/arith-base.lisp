@@ -298,9 +298,12 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   (((fgl-toplevel-sat-check-config) => *))
   (local (defun fgl-toplevel-sat-check-config () nil)))
 
+(encapsulate
+  (((fgl-toplevel-vacuity-check-config) => *))
+  (local (defun fgl-toplevel-vacuity-check-config () nil)))
 
-(define fgl-sat-check ((params "Parameters for the SAT check -- depending on the
-                                attachment for the pluggable checker.")
+
+(define fgl-sat-check ((params "Parameters for the SAT check -- typically of type @(see fgl-sat-config).")
                        (x "Object to check for satisfiability."))
   :parents (fgl-solving)
   :short "Checking satisfiability of intermediate terms during FGL interpretation."
@@ -334,11 +337,32 @@ counterexample info for the stack frame from which it is called.</p>"
   (if x t nil))
 
 
+(define fgl-vacuity-check ((params "Parameters for the SAT check -- depending on the
+                                attachment for the pluggable checker.")
+                           (x "Object to check for vacuity"))
+  :parents (fgl-solving)
+  :short "Check that the given object is satisfiable and report an error if not."
+  :long "
+
+<p>Logically, @('(fgl-vacuity-check params x)') just returns @('x') fixed to a
+Boolean value.  But when FGL symbolic execution encounters an
+@('fgl-vacuity-check') term, it checks Boolean satisfiability of @('x') and if
+it is able to prove that all evaluations of @('x') are NIL, then it produces an
+error; otherwise, it returns @('x') unchanged. This is useful for checking that
+the hypotheses of a conjecture aren't contradictory.</p>"
+  (declare (ignore params))
+  (if x t nil))
+
+
 (defun show-counterexample (params msg)
   (declare (ignore params msg))
   nil)
 
 (defun show-top-counterexample (params msg)
+  (declare (ignore params msg))
+  nil)
+
+(defun run-counterexample (params msg)
   (declare (ignore params msg))
   nil)
 
@@ -351,3 +375,15 @@ counterexample info for the stack frame from which it is called.</p>"
 
 (defmacro fgl-validity-check (params x)
   `(not (fgl-sat-check ,params (not ,x))))
+
+
+(define +carry ((c booleanp)
+                (x integerp)
+                (y integerp))
+  (+ (bool->bit c)
+     (lifix x)
+     (lifix y)))
+
+
+(define binary-minus ((x integerp) (y integerp))
+  (- (lifix x) (lifix y)))

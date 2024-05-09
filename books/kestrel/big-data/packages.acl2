@@ -1,0 +1,254 @@
+; Portcullis commands for packages.lisp
+;
+; Copyright (C) 2022 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(ld "workshops/1999/mu-calculus/book/packages.lsp" :dir :system)
+(ld "workshops/2003/gamboa-cowles-van-baalen/support/defpkg.lsp" :dir :system)
+(ld "workshops/2004/sawada/support/defpkg.lsp" :dir :system)
+(ld "centaur/svl/portcullis.acl2" :dir :system)
+(ld "centaur/misc/graphviz.acl2" :dir :system)
+(ld "powerlists/defpkg.lsp" :dir :system)
+(ld "coi/types/package.lsp" :dir :system) ; no portcullis.lisp in that dir
+(ld "centaur/vl2014/package.lsp" :dir :system) ; portcullis.lisp in that dir has too much stuff
+(ld "demos/sort-by-car-pkg.lsp" :dir :system)
+
+;; from books/workshops/2006/cowles-gamboa-euclid/Euclid/ed4db.acl2:
+(defpkg "INT-RND-REM"
+  (set-difference-eq (union-eq
+                      *acl2-exports*
+                      *common-lisp-symbols-from-main-lisp-package*)
+; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
+                     '(nat-listp acl2-number-listp)))
+
+;;from books/workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac.acl2:
+(defpkg "POS"
+  (set-difference-eq
+   (union-eq *acl2-exports*
+             *common-lisp-symbols-from-main-lisp-package*)
+; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports*:
+   '(nat-listp acl2-number-listp)))
+
+;; from books/projects/paco/utilities.acl2:
+(defpkg "PACO"
+  '(
+
+; ACL2 primitives:
+
+    ACL2-NUMBERP BAD-ATOM BAD-ATOM<=
+    BINARY-* BINARY-+ UNARY-- UNARY-/ < CAR CDR
+    CHAR-CODE CHARACTERP CODE-CHAR COMPLEX COMPLEX-RATIONALP COERCE
+    CONS CONSP DENOMINATOR EQUAL IF IMAGPART INTEGERP
+    INTERN-IN-PACKAGE-OF-SYMBOL NUMERATOR RATIONALP REALPART STRINGP
+    SYMBOL-NAME SYMBOL-PACKAGE-NAME SYMBOLP NOT EQ LENGTH ATOM ACONS
+    ENDP NULL = /= ZP ZIP NTH CHAR CONJUGATE
+    STANDARD-CHAR-P STRING ALPHA-CHAR-P UPPER-CASE-P LOWER-CASE-P
+    CHAR-UPCASE CHAR-DOWNCASE STRING-DOWNCASE STRING-UPCASE CHAR-EQUAL
+    STRING-EQUAL KEYWORDP IDENTITY REVAPPEND
+    REVERSE
+
+; At one point I deleted from this list all the symbols that used
+; EQLABLEP in their guards.  I was then going to do the same for all
+; symbols that used EQ.  But then I realized that true-listp uses EQ.
+; Deleting it would mean defining my own TRUE-LISTP-EQUAL which annoys
+; me.  I've decided to live in an ACL2-like world: logically there is
+; no distinction between EQ and EQUAL and guards exist but are largely
+; ignored.
+
+   EQL MEMBER ASSOC RASSOC REMOVE REMOVE-DUPLICATES POSITION
+   SUBSTITUTE SUBSETP SUBLIS SUBST
+
+; These were omitted from the Posse East list.
+
+    floor ceiling truncate round mod rem evenp oddp zerop
+    plusp minusp min max abs signum lognot expt binary-append
+
+    nfix e0-ordinalp e0-ord-<
+
+    CHAR< CHAR> CHAR<= CHAR>= STRING< STRING> STRING<=
+    STRING>= ZPF INTEGER-LENGTH LOGNAND
+    LOGORC1 LOGORC2 LOGANDC1 LOGANDC2 LOGNOR LOGTEST SUBSEQ BUTLAST
+    ACL2-COUNT
+
+; Primitives that must be in ACL2 to be recognized by the ACL2 rule
+; builders.  These were omitted from the Posse East list.
+
+    implies
+    iff
+    true-listp
+    len
+; From *expandable-boot-strap-non-rec-fns*:
+    synp listp prog2$ force case-split
+
+; Macros and constants that are imported into Paco so that they
+; can be expanded into primitives:
+
+    quote
+    nil
+    t
+    lambda
+    declare
+    ignore
+    xargs
+    otherwise
+
+    int=
+    digit-char-p
+    intern
+    append
+    concatenate
+    first
+    second
+    third
+    fourth
+    fifth
+    sixth
+    seventh
+    eighth
+    ninth
+    tenth
+    rest
+    list*
+    the-fixnum
+    make-list
+    the-mv
+    the2s
+    i-limited
+    gc$
+
+    + * - / > >= <= 1- 1+
+    logand
+    logeqv
+    logior
+    logxor
+
+    let
+    let*
+    list
+    cond
+    case
+    caaaar caaadr caaar caadar caaddr caadr caar cadaar cadadr cadar caddar
+    cadddr caddr cadr cdaaar cdaadr cdaar cdadar cdaddr cdadr cdar cddaar
+    cddadr cddar cdddar cddddr cdddr cddr
+    mv
+    mv-let
+    mv-nth
+
+    and or
+    &rest
+
+    progn
+    the
+    integer
+
+; System level functions so the user can build an ACL2 logical world.
+
+    trace
+    untrace
+    lp
+    *main-lisp-package-name*
+    *common-lisp-symbols-from-main-lisp-package*
+    *common-lisp-specials-and-constants*
+
+    mutual-recursion
+    defun
+    defthm
+    defconst
+    defmacro
+    deflabel
+    in-package
+    verify-guards
+    in-theory
+    disable
+    enable
+
+; These symbols are used in :do-not hints.  Paco translates those
+; hints with ACL2's translation mechanism, so these symbols are
+; expected.  Paco may not support all these processes, but detects the
+; supported hint after translation.
+
+    preprocess
+    simplify
+    eliminate-destructors
+    fertilize
+    generalize
+    eliminate-irrelevance
+
+    ld
+    value
+    include-book
+    thm
+    local
+    encapsulate
+
+; Used in the nume tracker
+
+    wormhole
+    wormhole-eval
+    wormhole-input
+    wormhole-status
+    make-wormhole-status
+    wormhole-data
+    set-wormhole-data
+    er-progn
+    assign
+    @
+    cw
+    msg
+
+    ))
+
+
+;; From books/projects/taspi/proofs/sets.acl2:
+(defpkg "PROOF"
+        (union-eq *acl2-exports*
+                  *common-lisp-symbols-from-main-lisp-package*))
+
+;; From books/workshops/2006/cowles-gamboa-euclid/Euclid/ed5aa.acl2:
+(defpkg "GAUSS-INT"
+  (set-difference-eq (union-eq
+                      *acl2-exports*
+                      *common-lisp-symbols-from-main-lisp-package*)
+; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
+                     '(nat-listp acl2-number-listp)))
+
+;; From books/workshops/2006/cowles-gamboa-euclid/Euclid/ed4ba.acl2:
+(defpkg "INT-REM"
+  (set-difference-eq (union-eq
+                      *acl2-exports*
+                      *common-lisp-symbols-from-main-lisp-package*)
+; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
+                     '(nat-listp acl2-number-listp)))
+
+;; From books/misc/pigeonhole.acl2:
+(defpkg "PIGEONHOLE"
+  (append *acl2-exports*
+          *common-lisp-symbols-from-main-lisp-package*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; From books/workshops/2000/ruiz/multiset/examples/newman/local-confluence.acl2:
+
+(defconst *abstract-proofs-exports*
+  '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step
+             first-of-proof last-of-proof steps-up steps-down steps-valley
+             proof-before-valley proof-after-valley inverse-r-step inverse-proof
+             local-peak-p proof-measure proof-before-peak proof-after-peak
+             local-peak peak-element))
+
+(defconst *cnf-package-exports*
+  (union-eq *acl2-exports*
+            (union-eq
+             *common-lisp-symbols-from-main-lisp-package*
+             *abstract-proofs-exports*)))
+
+(defpkg "CNF" *cnf-package-exports*)
+
+(defpkg "NWM" (cons 'multiset-diff *cnf-package-exports*))
+
+(defpkg "LCNF" (cons 'multiset-diff *cnf-package-exports*))

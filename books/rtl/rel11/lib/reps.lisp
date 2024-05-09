@@ -2,7 +2,6 @@
 ;
 ; Contact:
 ;   David M. Russinoff
-;   1106 W 9th St., Austin, TX 78703
 ;   david@russinoff.com
 ;   http://www.russinoff.com/
 ;
@@ -158,7 +157,9 @@
 ;;Encoding function:
 
 (defund nencode (x f)
-  (declare (xargs :guard (nrepp x f)))
+  (declare (xargs :guard (and (rationalp x)
+                              (formatp f)
+                              (exactp x (prec f)))))
   (cat (if (= (sgn x) 1) 0 1)
        1
        (+ (expo x) (bias f))

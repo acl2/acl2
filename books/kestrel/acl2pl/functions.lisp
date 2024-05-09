@@ -1,10 +1,10 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,6 +50,15 @@
 
 (fty::defprod function
   :short "Fixtype of (defined) functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use our model of symbol values, and not ACL2 symbols directly,
+     because we want to represent all possible functions,
+     not just the ones whose name and parameters
+     are symbols in known packages.
+     This is similar to the use of symbol values in translated terms;
+     see @(tsee tterm)."))
   ((name symbol-value)
    (params symbol-value-list)
    (body tterm))
@@ -66,15 +75,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption maybe-function
+(fty::defoption function-option
   function
-  :short "Fixtype of functions and @('nil')."
-  :pred maybe-functionp)
+  :short "Fixtype of optional functions."
+  :pred function-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define function-lookup ((name symbol-valuep) (functions function-setp))
-  :returns (function? maybe-functionp)
+  :returns (function? function-optionp)
   :short "Look up a function in a set, by name."
   :long
   (xdoc::topstring
@@ -91,7 +100,7 @@
      is as good as returning any function with that name in the set,
      since there can be at most one."))
   (b* (((when (or (not (mbt (function-setp functions)))
-                  (empty functions)))
+                  (set::emptyp functions)))
         nil)
        (function (head functions))
        ((when (symbol-value-equiv name

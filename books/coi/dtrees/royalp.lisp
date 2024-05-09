@@ -41,12 +41,12 @@
 ;;   (1) p is in the dtree, i.e., (in p dtree)
 ;;
 ;;   (2) the localdeps of p are nonempty, i.e.,
-;;        (not (set::empty (localdeps (get p dtree))))
+;;        (not (set::emptyp (localdeps (get p dtree))))
 ;;
 ;;   (3) for all a, the following is true:
 ;;       (implies (and (in a dtree)
 ;;                     (strictly-dominates a p))
-;;                (set::empty (localdeps (get a dtree))))
+;;                (set::emptyp (localdeps (get a dtree))))
 ;;
 ;; In other words, royal paths are the "first" nodes that actually have
 ;; localdeps in the dtree.  Hence, the deps of the entire dtree can be
@@ -64,10 +64,10 @@
 (defund royalp (path dtree)
   (declare (xargs :guard (dtreep dtree)))
   (if (consp path)
-      (and (set::empty (localdeps dtree))
+      (and (set::emptyp (localdeps dtree))
            (map::in (car path) (children dtree))
            (royalp (cdr path) (map::get (car path) (children dtree))))
-    (not (set::empty (localdeps dtree)))))
+    (not (set::emptyp (localdeps dtree)))))
 
 (encapsulate
  ()
@@ -101,23 +101,23 @@
 (defthm royalp-when-not-consp
   (implies (not (consp path))
            (equal (royalp path dtree)
-                  (not (set::empty (localdeps dtree)))))
+                  (not (set::emptyp (localdeps dtree)))))
   :hints(("Goal" :in-theory (enable royalp))))
 
 (defthm empty-of-localdeps-of-get-when-royalp
   (implies (royalp path dtree)
-           (equal (set::empty (localdeps (get path dtree)))
+           (equal (set::emptyp (localdeps (get path dtree)))
                   nil))
   :hints(("Goal" :in-theory (enable royalp get))))
 
 (defthm empty-of-deps-of-get-when-royalp
   (implies (royalp path dtree)
-           (equal (set::empty (deps (get path dtree)))
+           (equal (set::emptyp (deps (get path dtree)))
                   nil)))
 
 (defthm empty-of-deps-when-royalp
   (implies (royalp path dtree)
-           (equal (set::empty (deps dtree))
+           (equal (set::emptyp (deps dtree))
                   nil))
   :hints(("Goal"
           :in-theory (disable empty-of-deps-when-nonempty-of-localdeps-of-get)
@@ -164,14 +164,14 @@
 
   (defthmd royalp-constraint-localdeps
     (implies (royalp-hyps)
-             (not (set::empty
+             (not (set::emptyp
                    (localdeps (get (royalp-path) (royalp-dtree)))))))
 
   (defthmd royalp-constraint-domination
     (implies (and (royalp-hyps)
                   (in royalp-member (royalp-dtree))
                   (cpath::strictly-dominates royalp-member (royalp-path)))
-             (set::empty (localdeps (get royalp-member (royalp-dtree)))))))
+             (set::emptyp (localdeps (get royalp-member (royalp-dtree)))))))
 
  ;; Suppose that (royalp-hyps) is true, that our constraints are true, and
  ;; suppose towards contradiction that the following is true:
@@ -183,7 +183,7 @@
 
  (local (defund find-royal (path dtree)
           (declare (xargs :guard (dtreep dtree)))
-          (if (not (set::empty (localdeps dtree)))
+          (if (not (set::emptyp (localdeps dtree)))
               nil
             (if (and (consp path)
                      (map::in (car path) (children dtree)))
@@ -212,7 +212,7 @@
 
  (local (defund voidp (path dtree)
           (declare (xargs :guard (dtreep dtree)))
-          (and (set::empty (localdeps dtree))
+          (and (set::emptyp (localdeps dtree))
                (or (atom path)
                    (and (map::in (car path) (children dtree))
                         (voidp (cdr path)
@@ -227,7 +227,7 @@
 
  ;; We observe that any path whose localdeps are nonempty is not void.
  (local (defthm voidp-when-get-of-localdeps-nonempty
-          (implies (not (set::empty (localdeps (get path dtree))))
+          (implies (not (set::emptyp (localdeps (get path dtree))))
                    (equal (voidp path dtree)
                           nil))
           :hints(("Goal" :in-theory (enable voidp get)))))
@@ -263,13 +263,13 @@
  ;;                            (royalp-path))
  ;; exactly when (not (voidp (royalp-path) (royalp-dtree))).  But by our
  ;; localdeps constraint, we know that:
- ;;  (not (set::empty (localdeps (get (royalp-path) (royalp-dtree)))))
+ ;;  (not (set::emptyp (localdeps (get (royalp-path) (royalp-dtree)))))
  ;; which we can use with voidp-when-get-of-localdeps-nonempty to conclude
  ;; that (voidp (royalp-path) (royalp-dtree)) is nil, and we are done.
 
  (local (defthm localdeps-of-find-royal-nonempty-when-input-nonempty
-          (implies (not (set::empty (localdeps (get path dtree))))
-                   (not (set::empty (localdeps
+          (implies (not (set::emptyp (localdeps (get path dtree))))
+                   (not (set::emptyp (localdeps
                                      (get (find-royal path dtree) dtree)))))
           :hints(("Goal" :in-theory (enable find-royal get)))))
 
@@ -297,7 +297,7 @@
   (declare (xargs :guard (and (set::setp paths)
                               (dtree::dtreep dtree))
                   :verify-guards nil))
-  (if (set::empty paths)
+  (if (set::emptyp paths)
       (set::emptyset)
     (if (royalp (set::head paths) dtree)
         (set::insert (set::head paths)

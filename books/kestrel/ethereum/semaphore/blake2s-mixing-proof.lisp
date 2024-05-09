@@ -1210,12 +1210,12 @@
                  ;; booleanp rules:
                  (acl2::booleanp-rules)
                  pfield::booleanp-of-fe-listp
-                 ;; usigned-byte-p rules:
+                 ;; unsigned-byte-p rules:
                  (acl2::unsigned-byte-p-rules)
                  acl2::unsigned-byte-p-of-bvcat
                  acl2::unsigned-byte-p-of-bvnot
                  ;; bitp rules:
-                 r1cs::bitp-of-bitxor
+                 acl2::bitp-of-bitxor
                  acl2::bitp-of-bitnot
                  acl2::bitp-of-getbit
                  ;; acl2::bitp-of-bvchop-of-1 ; drop?
@@ -1467,11 +1467,11 @@
                ;; ;; doing this earlier may interfere with bvcat reconstruction:
                (
                 ;;  ;; would be better to use these:
-                acl2::bvcat-trim-arg1-dag ;does not trim bvplus, etc
-                acl2::bvcat-trim-arg2-dag ;does not trim bvplus, etc
-                ;;  acl2::bvcat-trim-arg1-dag-all
-                ;;  acl2::bvcat-trim-arg2-dag-all
-                ;;  acl2::getbit-trim-dag-all-gen
+                acl2::bvcat-trim-arg2-axe ;does not trim bvplus, etc
+                acl2::bvcat-trim-arg4-axe ;does not trim bvplus, etc
+                ;;  acl2::bvcat-trim-arg2-axe-all
+                ;;  acl2::bvcat-trim-arg4-axe-all
+                ;;  acl2::getbit-trim-axe-all-gen
                 acl2::bvcat-equal-bvcat
                 acl2::bitxor-commutative-2-increasing-axe
                 acl2::bitxor-commutative-increasing-axe

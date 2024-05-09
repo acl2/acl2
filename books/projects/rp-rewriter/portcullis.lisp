@@ -42,4 +42,4 @@
 
 
 
-(include-book "std/strings/istrprefixp" :dir :system)
+;; (include-book "std/strings/istrprefixp" :dir :system)

@@ -754,8 +754,10 @@ ours or we would need to do more processing of them.</p>
      ;; match-tests-and-bindings takes a term, a case-match pattern, and a list
      ;; of tests and bindings; it returns a new version of tests and bindings
      ;; including the ones necessary to match the term to the pattern.
-     (mv-let (tests bindings)
-             (match-tests-and-bindings term (car args) tests bindings)
+; Matt K. mod, 4/2024: Account for new dups argument and return value.
+     (mv-let (tests bindings dups)
+             (match-tests-and-bindings term (car args) tests bindings nil)
+             (declare (ignore dups))
              ;; We then pass the new tests and bindings to
              ;; pattern-bindings-list.
              (pattern-bindings-list lhses rhses tests bindings pmstate))))
@@ -827,8 +829,10 @@ examples.</p>")
     ;; match-tests-and-bindings takes a term, a case-match pattern, and a list
     ;; of tests and bindings; it returns a new version of tests and bindings
     ;; including the ones necessary to match the term to the pattern.
-    (mv-let (tests bindings)
-            (match-tests-and-bindings term (car args) tests bindings)
+; Matt K. mod, 4/2024: Account for new dups argument and return value.
+    (mv-let (tests bindings dups)
+            (match-tests-and-bindings term (car args) tests bindings nil)
+            (declare (ignore dups))
             ;; We then pass the new tests and bindings to
             ;; pattern-bindings-list.
             (pattern-bindings-list lhses rhses tests bindings pmstate))))

@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation +.
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,49 +37,115 @@
                   (integerp (fix y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
+;; TODO: Drop (see fold-consts-in-+)
 (defthm +-combine-constants
   (implies (syntaxp (and (quotep k2) ;tested first to fail fast
                          (quotep k1)))
            (equal (+ k1 k2 i)
                   (+ (+ k1 k2) i))))
 
-(defthm equal-of-+-cancel-same
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; NOTE ON NAMES: In these names, "n+" (for any positive integer n) means x is
+;; the nth addend (1-based) and there are more addends, whereas "n" means x is
+;; the nth addend and there are no more.
+
+(defthm equal-of-+-cancel-1+
   (equal (equal (+ x y) x)
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
-(defthm equal-of-+-cancel-same-alt
+;; Only needed for Axe, as ACL2 can match equalities either way?
+(defthmd equal-of-+-cancel-1+-alt
   (equal (equal x (+ x y))
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
-(defthm equal-of-+-cancel-same-alt-2
-  (equal (equal x (+ y x))
-         (and (equal 0 (fix y))
-              (acl2-numberp x))))
-
-(defthm equal-of-+-cancel-same-3
+(defthm equal-of-+-cancel-same-2
   (equal (equal (+ y x) x)
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
-(defthm equal-of-+-and-+-cancel-1
+;; Only needed for Axe, as ACL2 can match equalities either way?
+(defthmd equal-of-+-cancel-same-2-alt
+  (equal (equal x (+ y x))
+         (and (equal 0 (fix y))
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-2+
+  (equal (equal (+ y1 x y2) x)
+         (and (equal (+ y1 y2) 0)
+              (acl2-numberp x))))
+
+;; Only needed for Axe, as ACL2 can match equalities either way?
+(defthmd equal-of-+-cancel-same-2+-alt
+  (equal (equal x (+ y1 x y2))
+         (and (equal (+ y1 y2) 0)
+              (acl2-numberp x))))
+
+(defthm equal-of-+-cancel-same-3
+  (equal (equal (+ y1 y2 x) x)
+         (and (equal (+ y1 y2) 0)
+              (acl2-numberp x))))
+
+;; Only needed for Axe, as ACL2 can match equalities either way?
+(defthmd equal-of-+-cancel-same-3-alt
+  (equal (equal x (+ y1 y2 x))
+         (and (equal (+ y1 y2) 0)
+              (acl2-numberp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm equal-of-+-and-+-cancel-1+-1+
   (equal (equal (+ x y1) (+ x y2))
          (equal (fix y1) (fix y2))))
 
-;rename
-(defthm equal-of-+-and-+-cancel-hack
-  (equal (equal (+ x y z) y)
-         (and (equal (+ x z) 0)
-              (acl2-numberp y)))
-  :hints (("Goal" :cases ((equal (+ x z) 0)))))
+(defthm equal-of-+-and-+-cancel-1+-2
+  (equal (equal (+ x y1) (+ y2 x))
+         (equal (fix y1) (fix y2))))
+
+;; Only needed for Axe, since ACL2 can match equalities either way?
+(defthmd equal-of-+-and-+-cancel-2-1+
+  (equal (equal (+ y1 x) (+ x y2))
+         (equal (fix y1) (fix y2))))
+
+(defthm equal-of-+-and-+-cancel-2-2
+  (equal (equal (+ y1 x) (+ y2 x))
+         (equal (fix y1) (fix y2))))
+
+(defthm equal-of-+-and-+-cancel-1+-2+
+  (equal (equal (+ x y1) (+ y2 x y3))
+         (equal (fix y1) (+ y2 y3))))
+
+(defthm equal-of-+-and-+-cancel-2+-2+
+  (equal (equal (+ y1 x y2) (+ y3 x y4))
+         (equal (+ y1 y2) (+ y3 y4))))
+
+(defthm equal-of-+-and-+-cancel-3-3
+  (equal (equal (+ y1 y2 x) (+ y3 y4 x))
+         (equal (+ y1 y2) (+ y3 y4))))
+
+(defthm equal-of-+-and-+-cancel-3-1+
+  (equal (equal (+ y1 y2 x) (+ x y3))
+         (equal (+ y1 y2) (fix y3))))
+
+(defthm equal-of-+-and-+-cancel-2-3
+  (equal (equal (+ y1 x) (+ y2 y3 x))
+         (equal (fix y1) (+ y2 y3))))
+
+(defthm equal-of-+-and-+-cancel-2-4
+  (equal (equal (+ y1 x) (+ y2 y3 y4 x))
+         (equal (fix y1) (+ y2 y3 y4))))
+
+;; TODO: Consider adding more like this, but we need a meta rule to handle all
+;; the cases.
 
 ;;;
 ;;; cancellation rules for < (TODO: Make this more systematic)
 ;;;
 
-;; In the name, "1+" means x is the first argument and there are more, whereas
-;; "1" means x is the first and last argument.
+;; See the NOTE ON NAMES above.
+
 (defthm <-of-+-cancel-1+-1
   (equal (< (+ x y) x)
          (< y 0))
@@ -97,8 +163,16 @@
 
 (defthm <-of-+-cancel-1-2
   (equal (< x (+ y x))
-         (< 0 y))
-  :hints (("Goal" :cases ((< 0 y)))))
+         (< 0 y)))
+
+(defthm <-of-+-cancel-1-2+
+  (equal (< x (+ y x z))
+         (< 0 (+ y z))))
+
+(defthm <-of-+-cancel-1+-2+
+  (equal (< (+ x w) (+ y x z))
+         (< w (+ y z)))
+  :hints (("Goal" :cases ((< w (+ y z))))))
 
 (defthm <-of-+-cancel-1+-2
   (equal (< (+ x y) (+ z x))
@@ -112,14 +186,17 @@
   (equal (< (+ y x) (+ x z))
          (< y z)))
 
+(defthm <-of-+-cancel-3-1
+  (equal (< (+ y (+ z x)) x)
+         (< (+ y z) 0)))
+
 (defthm <-of-+-cancel-3-1+
   (equal (< (+ y y2 x) (+ x z))
          (< (+ y y2) z)))
 
 (defthm <-of-+-cancel-2-1
   (equal (< (+ y x) x)
-         (< y 0))
-  :hints (("Goal" :cases ((< y 0)))))
+         (< y 0)))
 
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
@@ -135,13 +212,21 @@
                   (< x (- k2 k1))))
   :hints (("Goal" :cases ((< (+ k1 x) k2)))))
 
+(defthm <-of-+-and-+-combine-constants
+  (implies (syntaxp (and (quotep k2)
+                         (quotep k1)))
+           (equal (< (+ k1 x) (+ k2 y))
+                  (if (< k1 k2) ; ensure the new constant is non-negative
+                      (< x (+ (- k2 k1) y))
+                    (< (+ (- k1 k2) x) y))))
+  :hints (("Goal" :cases ((< (+ k1 x) (+ k2 y))))))
+
 (defthm equal-of-+-combine-constants
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)))
            (equal (equal k1 (+ k2 x))
                   (and (acl2-numberp k1)
-                       (equal (- k1 k2) (fix x)))))
-  :hints (("Goal" :cases ((equal k1 (+ k2 x))))))
+                       (equal (- k1 k2) (fix x))))))
 
 (defthm rationalp-of-+-when-rationalp-arg1
   (implies (rationalp x)
@@ -202,7 +287,24 @@
                   (+ x y))))
 
 ;; Could this be too expensive?
+;; Disabled since it can get rid of NATP even though that may be our normal form.
+(defthmd natp-of-+-when-integerp-and-integerp
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (natp (+ x y))
+                  (<= 0 (+ x y)))))
+
+;; Could this be too expensive?
 (defthm natp-of-+-when-natp-and-natp
   (implies (and (natp x)
                 (natp y))
            (natp (+ x y))))
+
+(defthm equal-of-+-and-+-cancel-constants
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)))
+           (equal (equal (+ k1 x) (+ k2 y))
+                  ;; computations with k1 and k2 here get computed:
+                  (if (< k1 k2)
+                      (equal (fix x) (+ (- k2 k1) y))
+                    (equal (+ (- k1 k2) x) (fix y))))))

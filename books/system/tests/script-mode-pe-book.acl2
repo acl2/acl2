@@ -1,0 +1,21 @@
+(include-book "tools/run-script" :dir :system)
+
+(defttag :script-mode-pe)
+(set-raw-mode t)
+(replace-project-dir-alist
+ (merge-sort-length>=-cdr
+  (put-assoc-eq :my-dir (cbd) (project-dir-alist (w state)))))
+(set-raw-mode nil)
+(defttag nil)
+
+(run-script "script-mode-pe")
+
+; Help dependency scanner.
+#||
+(include-book "arithmetic/top" :dir :system)
+(include-book "script-mode-pe-helper")
+(depends-on "script-mode-pe-input.lsp")
+(depends-on "script-mode-pe-log.txt")
+||#
+
+; cert-flags: ? t :ttags (:script-mode-pe)

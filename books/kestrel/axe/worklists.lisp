@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 ;; a book about arrays used in worklist algorithms to track whether nodes are
-;; handled (needed for termination).  SEE WORKLIST-ARRAY.LISP FOR A MORE
+;; handled (needed for termination).  SEE worklist-array.lisp FOR A MORE
 ;; MODERN APPROACH
 
 (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)

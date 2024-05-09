@@ -398,24 +398,24 @@
                                        (true-listp
                                         (,name-encrypt-bits key block))
                                        :rule-classes :type-prescription
-                                       :enable acl2::true-listp-when-bit-listp))
+                                       :enable acl2::true-listp-when-bit-listp-compound-recognizer))
        (true-listp-decrypt-bits-thm `(defrule ,true-listp-decrypt-bits
                                        (true-listp
                                         (,name-decrypt-bits key block))
                                        :rule-classes :type-prescription
-                                       :enable acl2::true-listp-when-bit-listp))
+                                       :enable acl2::true-listp-when-bit-listp-compound-recognizer))
        (true-listp-encrypt-bytes-thm `(defrule ,true-listp-encrypt-bytes
                                         (true-listp
                                          (,name-encrypt-bytes key block))
                                         :rule-classes :type-prescription
                                         :enable
-                                        acl2::true-listp-when-byte-listp))
+                                        acl2::true-listp-when-byte-listp-compound-recognizer))
        (true-listp-decrypt-bytes-thm `(defrule ,true-listp-decrypt-bytes
                                         (true-listp
                                          (,name-decrypt-bytes key block))
                                         :rule-classes :type-prescription
                                         :enable
-                                        acl2::true-listp-when-byte-listp))
+                                        acl2::true-listp-when-byte-listp-compound-recognizer))
        (consp-encrypt-bits-thm `(defrule ,consp-encrypt-bits
                                   (consp (,name-encrypt-bits key block))
                                   :rule-classes :type-prescription

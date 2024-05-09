@@ -1,7 +1,7 @@
 ; 32-bit right rotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,11 +33,38 @@
 
 ;gen
 (defthm rightrotate32-of-bvchop-32
-  (equal (rightrotate32 amd (bvchop 32 x))
-         (rightrotate32 amd x))
+  (equal (rightrotate32 amt (bvchop 32 x))
+         (rightrotate32 amt x))
   :hints (("Goal" :in-theory (enable rightrotate32 RIGHTROTATE))))
 
 (defthm rightrotate32-of-0
   (equal (rightrotate32 0 x)
          (bvchop 32 x))
   :hints (("Goal" :in-theory (enable rightrotate32))))
+
+;todo: gen the 32
+(defthmd bvcat-becomes-rightrotate
+  (implies (and (equal mid+1 (+ 1 mid))
+                (equal highsize (+ 1 mid))
+                (equal lowsize (- 31 mid))
+                (< mid 31)
+                (natp mid))
+           (equal (bvcat highsize
+                         (slice mid 0 x)
+                         lowsize
+                         (slice 31 mid+1 x))
+                  (rightrotate 32 (+ 1 mid) x)))
+  :hints (("Goal" :in-theory (enable rightrotate))))
+
+;usual case (slice down to 0 has become bvchop)
+(defthmd bvcat-becomes-rightrotate-2
+  (implies (and (equal highsize size)
+                (equal lowsize (- 32 size))
+                (< size 31)
+                (natp size))
+           (equal (bvcat highsize
+                         (bvchop size x) ;todo: won't the size here go away usually?
+                         lowsize
+                         (slice 31 size x))
+                  (rightrotate 32 size x)))
+  :hints (("Goal" :in-theory (enable rightrotate))))

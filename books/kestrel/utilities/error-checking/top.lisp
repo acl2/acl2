@@ -10,10 +10,28 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/std/system/all-non-gv-exec-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-non-gv-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/all-program-ffn-symbs" :dir :system)
+(include-book "kestrel/std/system/check-user-lambda" :dir :system)
+(include-book "kestrel/std/system/function-name-listp" :dir :system)
+(include-book "kestrel/std/system/guard-verified-exec-fnsp" :dir :system)
+(include-book "kestrel/std/system/guard-verified-fnsp" :dir :system)
+(include-book "kestrel/std/system/lambda-closedp" :dir :system)
+(include-book "kestrel/std/system/lambda-guard-verified-exec-fnsp" :dir :system)
+(include-book "kestrel/std/system/lambda-guard-verified-fnsp" :dir :system)
+(include-book "kestrel/std/system/lambda-logic-fnsp" :dir :system)
+(include-book "kestrel/std/system/logic-function-namep" :dir :system)
+(include-book "kestrel/std/system/macro-namep" :dir :system)
+(include-book "kestrel/std/system/macro-required-args" :dir :system)
+(include-book "kestrel/std/system/measure" :dir :system)
+(include-book "kestrel/std/system/no-stobjs-p" :dir :system)
+(include-book "kestrel/std/system/number-of-results" :dir :system)
+(include-book "kestrel/std/system/pseudo-lambdap" :dir :system)
+(include-book "kestrel/std/system/pseudo-termfnp" :dir :system)
 (include-book "kestrel/utilities/enumerations" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/system/numbered-names" :dir :system)
-(include-book "kestrel/utilities/system/terms" :dir :system)
 (include-book "std/typed-alists/symbol-truelist-alistp" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -348,7 +366,9 @@
            (b* ((args (macro-required-args x wrld))
                 (ulambda `(lambda ,args (,x ,@args)))
                 ((mv tlambda stobjs-out) (check-user-lambda ulambda wrld))
-                (stobjs-in (compute-stobj-flags args t wrld)))
+; Matt K. mod for df additions: Added nil below for df argument.
+; More work may be required here to handle dfs.
+                (stobjs-in (compute-stobj-flags args t nil wrld)))
              (value
               (list tlambda
                     stobjs-in
@@ -379,7 +399,9 @@
                     description x tlambda/msg))
                   (tlambda tlambda/msg)
                   (stobjs-in
-                   (compute-stobj-flags (lambda-formals tlambda) t wrld)))
+; Matt K. mod for df additions: Added nil below for df argument.
+; More work may be required here to handle dfs.
+                   (compute-stobj-flags (lambda-formals tlambda) t nil wrld)))
                (value (list tlambda
                             stobjs-in
                             stobjs-out

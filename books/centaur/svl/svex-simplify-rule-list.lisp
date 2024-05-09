@@ -36,14 +36,15 @@
            . SVL::SVEXL-NODE-EVAL-WOG)
     (:META SVL::SVEX-EVAL-WOG-META-MAIN
            . SVL::SVEX-EVAL-WOG)
-    (:META SVL::CONCAT-META . SV::4VEC-CONCAT)
-    (:META SVL::CONCAT-META . SVL::4VEC-CONCAT$)
-    (:META SVL::BITS-OF-META-FN . SVL::BITS)
-    (:META SVL::BITS-OF-META-FN
+    (:META SVL::CONCAT-META-fn . SV::4VEC-CONCAT)
+    (:META SVL::CONCAT-META-fn . SVL::4VEC-CONCAT$)
+    (:META SVL::BITS-OF-META-FN-fn . SVL::BITS)
+    (:META SVL::BITS-OF-META-FN-fn
            . SV::4VEC-PART-SELECT)
     (:META RP::MV-NTH-META . MV-NTH)
     (:META RP::RP-EQUAL-META . EQUAL)
     (:META RP::ASSOC-EQ-VALS-META . rp::ASSOC-EQ-VALS)
+    (:META RP::ASSOC-EQ-VALS-META . rp::assoc-equal)
     (:META RP::HONS-GET-META . HONS-GET)
     (:META RP::FAST-ALIST-FREE-META . FAST-ALIST-FREE)
     (:META RP::HONS-ACONS-META . HONS-ACONS)))
@@ -79,7 +80,7 @@
   (add-svex-simplify-rule 4vec-p-of-svex-env-fastlookup-wog)
   (add-svex-simplify-rule svex-eval-wog_opener-error)
   (add-svex-simplify-rule svexl-eval-is-svexl-eval-wog)
-  (add-svex-simplify-rule svexl-eval-wog-for-rp)
+  (add-svex-simplify-rule svexl-eval-wog)
   (add-svex-simplify-rule svexl-eval-aux-wog-nil)
   (add-svex-simplify-rule svexl-eval-aux-wog-cons)
   (add-svex-simplify-rule svexl-eval-aux-is-svexl-eval-aux-wog)
@@ -171,7 +172,7 @@
       (:rewrite bits-of-4vec-plus-is-4vec-plus-start=0)
       (:rewrite bits-of-4vec-plus-is-4vec-plus)
       (:rewrite 4vec-part-install-is-sbits)
-      (:rewrite sbits-of-bits)
+      (:rewrite sbits-of-bits-same-size)
       (:rewrite sbits-size=0)
       (:rewrite 4vec-concat$-of-term2=0)
       (:rewrite concat-of-size=0)
@@ -213,6 +214,8 @@
       (:rewrite bits-01-of-a-bit)
 
       ;; 4vec-lemmas.lisp:
+      (:rewrite bits-of-4vec-bit?!)
+      (:rewrite bits-of-4vec-bit?)
       (:rewrite integerp-implies-3vec-p)
       (:rewrite 4vec-bitand-of-3vec-fix)
       (:rewrite 4vec-part-select-of-4vec-reduction-and-when-amount=1)
@@ -317,7 +320,7 @@
       (:executable-counterpart fast-alist-free)
       (:executable-counterpart svexl-eval-wog)
       (:rewrite svexl-eval-is-svexl-eval-wog)
-      (:rewrite svexl-eval-wog-for-rp)
+      (:definition svexl-eval-wog)
       ;;(:rewrite rp::svexl-eval-wog-opener_lambda-opener)
       (:rewrite svexl-eval-aux-wog-nil)
 
@@ -407,7 +410,7 @@
       (:executable-counterpart sv::4vec-part-select)
       (:executable-counterpart sv::4vec-part-install)
 
-      (:rewrite svexllist-eval-wog-for-rp)
+      (:definition svexllist-eval-wog)
       ;(:rewrite rp::svexllist-eval-wog-opener_lambda-opener)
       (:executable-counterpart svexllist->top-nodelist$inline)
       (:executable-counterpart svexllist->node-array$inline)

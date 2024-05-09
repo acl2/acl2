@@ -1,6 +1,6 @@
 ; Top level book for JVM model
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,6 @@
 (in-package "ACL2")
 
 ;; The order of these roughly reflects the dependencies:
-(include-book "ieee-floats") ; todo: move to separate library
-(include-book "ieee-floats-as-bvs") ; todo: move to separate library
-(include-book "ieee-floats-validation") ; todo: move to separate library
 (include-book "types")
 (include-book "floats")
 (include-book "descriptors")
@@ -70,5 +67,6 @@
 (include-book "read-and-parse-class-file")
 (include-book "events-for-class")
 (include-book "class-and-path-utils")
-(include-book "load-class")
-(include-book "load-class-from-hierarchy")
+(include-book "read-class")
+(include-book "read-class-from-hierarchy")
+(include-book "read-jar") ; requires a ttag for quicklisp

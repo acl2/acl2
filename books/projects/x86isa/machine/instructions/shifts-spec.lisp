@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2018, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -36,10 +37,11 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
-; Alessandro Coglio   <coglio@kestrel.edu>
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 ;; This book contains the specification of the following instructions:
 ;; sal  sar  shl  shr
+;; sarx shlx shrx
 ;; shld shrd
 
 (in-package "X86ISA")
@@ -53,9 +55,9 @@
                        (bitops::logand-with-negated-bitmask
                         force (force)))))
 
-;; Note: SRC (for SAL/SAR/SHL/SHR) or CNT (for SHRD) operand is either an
-;; (unsigned-byte 6) or (unsigned-byte 5) since it is masked before the actual
-;; rotate or shift operations.
+;; Note: SRC (for SAL/SAR/SHL/SHR) or CNT (for SARX/SHLX/SHRX and SHLD/SHRD)
+;; operand is either an (unsigned-byte 6) or (unsigned-byte 5)
+;; since it is masked before the actual rotate or shift operations.
 
 ;; ----------------------------------------------------------------------
 
@@ -99,7 +101,7 @@
            :in-theory (e/d (rflagsbits-p) (rflagsbits-p-of-rflagsbits
                                            unsigned-byte-p)))))
 
-;;;;;;;;;; SAL/SHR:
+;;;;;;;;;; SAL/SHL:
 
 (define sal/shl-spec-gen ((size :type (member 8 16 32 64)))
   :verify-guards nil
@@ -107,7 +109,7 @@
   (b* ((size-1 (1- size))
        (neg-size-1 (- size-1))
        (fn-name (mk-name "SAL/SHL-SPEC-" size))
-       (?str-nbits (if (eql size 8) "08" size)))
+       (str-nbits (if (eql size 8) "08" size)))
 
     `(define ,fn-name
        ((dst :type (unsigned-byte ,size))
@@ -689,7 +691,7 @@ set to the most-significant bit of the original operand.</p>"
               by the caller of this function.")
         (input-rflags :type (unsigned-byte 32)))
 
-       :parents (sar-spec)       
+       :parents (sar-spec)
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
                                               (unsigned-byte-p
                                                (tau-system)))))
@@ -999,8 +1001,8 @@ most-significant bit of the original operand.</p>"
        :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
                                               (unsigned-byte-p
                                                (tau-system)))))
-       
-       :parents (shld-spec)       
+
+       :parents (shld-spec)
 
        (b* ((dst (mbe :logic (n-size ,size dst)
                       :exec dst))
@@ -1159,7 +1161,7 @@ most-significant bit of the original operand.</p>"
          (mv output-dst
              (> cnt ,size) ; result undefined if count exceeds operand size
              output-rflags
-             undefined-flags))       
+             undefined-flags))
 
        ///
 
@@ -1494,5 +1496,255 @@ most-significant bit of the original operand.</p>"
     :concl (mv-nth 3 (shrd-spec size dst src cnt input-rflags))
     :gen-type t
     :gen-linear t))
+
+;;;;;;;;;; SHLX:
+
+(define shlx-spec-gen ((size :type (member 32 64)))
+  :verify-guards nil
+
+  (b* ((fn-name (mk-name "SHLX-SPEC-" size)))
+
+    `(define ,fn-name
+       ;; There is no dst parameter because the result does not depend on it:
+       ;; the result is just stored in the destination operand.
+       ((src :type (unsigned-byte ,size))
+        (cnt :type (unsigned-byte 6)))
+
+       :parents (shlx-spec)
+
+       (b* ((src (mbe :logic (n-size ,size src)
+                      :exec src))
+            (cnt (mbe :logic (n-size 6 cnt)
+                      :exec cnt))
+
+            (raw-result (ash src cnt))
+            (result (the (unsigned-byte ,size) (n-size ,size raw-result))))
+
+         result)
+
+       :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
+
+       ///
+
+       (defthm-unsigned-byte-p ,(mk-name "N" size "-" fn-name)
+         :bound ,size
+         :concl (,fn-name src cnt)
+         :gen-type t
+         :gen-linear t))))
+
+; Only operand sizes 32 and 64 are suported.
+(make-event (shlx-spec-gen 32))
+(make-event (shlx-spec-gen 64))
+
+(define shlx-spec ((size :type (member 4 8))
+                   src
+                   (cnt (unsigned-byte-p 6 cnt)))
+  :guard (case size
+           (4 (n32p src))
+           (8 (n64p src))
+           (otherwise nil))
+
+  :inline t
+  :no-function t
+
+  :parents (instruction-semantic-functions)
+
+  :short "Specification for the @('SHLX') instruction."
+
+  :long
+  "<p>Since this instruction does not affect the flags,
+   this function does not take or return flags.</p>"
+
+  (case size
+    (4 (shlx-spec-32 src cnt))
+    (8 (shlx-spec-64 src cnt))
+    (otherwise 0))
+
+  ///
+
+  (defthm natp-shlx-spec
+    (natp (shlx-spec size src cnt))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;; SHRX:
+
+(define shrx-spec-gen ((size :type (member 32 64)))
+  :verify-guards nil
+
+  (b* ((size+1 (1+ size))
+       (fn-name (mk-name "SHRX-SPEC-" size)))
+
+    `(define ,fn-name
+       ;; There is no dst parameter because the result does not depend on it:
+       ;; the result is just stored in the destination operand.
+       ((src :type (unsigned-byte ,size))
+        (cnt :type (unsigned-byte 6)))
+
+       :parents (shrx-spec)
+
+       (b* ((src (mbe :logic (n-size ,size src)
+                      :exec src))
+            (cnt (mbe :logic (n-size 6 cnt)
+                      :exec cnt))
+            (neg-cnt (the (signed-byte ,size+1) (- cnt)))
+
+            (raw-result (the (unsigned-byte ,size)
+                             (ash (the (unsigned-byte ,size) src)
+                                  (the (signed-byte ,size+1) neg-cnt))))
+            (result (the (unsigned-byte ,size) (n-size ,size raw-result))))
+
+         result)
+
+       :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
+
+       ///
+
+       (defthm-unsigned-byte-p ,(mk-name "N" size "-" fn-name)
+         :bound ,size
+         :concl (,fn-name src cnt)
+         :gen-type t
+         :gen-linear t))))
+
+; Only operand sizes 32 and 64 are suported.
+(make-event (shrx-spec-gen 32))
+(make-event (shrx-spec-gen 64))
+
+(define shrx-spec ((size :type (member 4 8))
+                   src
+                   (cnt (unsigned-byte-p 6 cnt)))
+  :guard (case size
+           (4 (n32p src))
+           (8 (n64p src))
+           (otherwise nil))
+
+  :inline t
+  :no-function t
+
+  :parents (instruction-semantic-functions)
+
+  :short "Specification for the @('SHRX') instruction."
+
+  :long
+  "<p>Since this instruction does not affect the flags,
+   this function does not take or return flags.</p>"
+
+  (case size
+    (4 (shrx-spec-32 src cnt))
+    (8 (shrx-spec-64 src cnt))
+    (otherwise 0))
+
+  ///
+
+  (defthm natp-shrx-spec
+    (natp (shrx-spec size src cnt))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;; SARX:
+
+(define sarx-spec-gen ((size :type (member 32 64)))
+  :verify-guards nil
+
+  (b* ((size+1 (1+ size))
+       (size-1 (1- size))
+       (neg-size-1 (- size-1))
+       (fn-name (mk-name "SARX-SPEC-" size)))
+
+    `(define ,fn-name
+       ;; There is no dst parameter because the result does not depend on it:
+       ;; the result is just stored in the destination operand.
+       ((src :type (unsigned-byte ,size))
+        (cnt :type (unsigned-byte 6)))
+
+       :parents (sarx-spec)
+
+       (b* ((src (mbe :logic (n-size ,size src)
+                      :exec src))
+            (cnt (mbe :logic (n-size 6 cnt)
+                      :exec cnt))
+            (neg-cnt (the (signed-byte ,size+1) (- cnt)))
+
+            (raw-result
+             (if (eql (mbe :logic (logbit ,size-1 src)
+                           :exec (logand 1
+                                         (the (unsigned-byte 1)
+                                              (ash (the (unsigned-byte ,size)
+                                                        src)
+                                                   ,neg-size-1))))
+                      1)
+                 ;; If the operand is negative, shift its logext,
+                 ;; obtaining a non-positive value, which is then loghead'd.
+                 (loghead ,size
+                          (ash (mbe :logic (logext ,size src)
+                                    :exec (bitops::fast-logext ,size src))
+                               neg-cnt))
+               ;; If the operand is non-negative, shift it directly,
+               ;; obtaining a non-negative value.
+               (the (unsigned-byte ,size)
+                    (ash (the (unsigned-byte ,size) src)
+                         (the (signed-byte ,size+1) neg-cnt)))))
+            (result (mbe :logic (n-size ,size raw-result)
+                         :exec raw-result)))
+
+         result)
+
+       :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
+
+       :prepwork
+       ((local
+         (defthm verify-guards-lemma
+           (implies (unsigned-byte-p ,size src)
+                    (equal (logand ,(1- (expt 2 size)) (logtail cnt src))
+                           (logtail cnt src)))
+           :hints (("Goal"
+                    :do-not-induct t
+                    :use ((:instance unsigned-byte-p-of-logtail
+                                     (size1 ,size)
+                                     (size cnt)
+                                     (i src)))
+                    :in-theory (e/d* ()
+                                     (unsigned-byte-p
+                                      unsigned-byte-p-of-logtail)))))))
+
+       ///
+
+       (defthm-unsigned-byte-p ,(mk-name "N" size "-" fn-name)
+         :bound ,size
+         :concl (,fn-name src cnt)
+         :gen-type t
+         :gen-linear t))))
+
+; Only operand sizes 32 and 64 are suported.
+(make-event (sarx-spec-gen 32))
+(make-event (sarx-spec-gen 64))
+
+(define sarx-spec ((size :type (member 4 8))
+                   src
+                   (cnt (unsigned-byte-p 6 cnt)))
+  :guard (case size
+           (4 (n32p src))
+           (8 (n64p src))
+           (otherwise nil))
+
+  :inline t
+  :no-function t
+
+  :parents (instruction-semantic-functions)
+
+  :short "Specification for the @('SARX') instruction."
+
+  :long
+  "<p>Since this instruction does not affect the flags,
+   this function does not take or return flags.</p>"
+
+  (case size
+    (4 (sarx-spec-32 src cnt))
+    (8 (sarx-spec-64 src cnt))
+    (otherwise 0))
+
+  ///
+
+  (defthm natp-sarx-spec
+    (natp (sarx-spec size src cnt))
+    :rule-classes :type-prescription))
 
 ;; ----------------------------------------------------------------------

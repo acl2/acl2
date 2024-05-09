@@ -1,0 +1,27 @@
+os: linux
+dist: focal
+language: generic
+
+env:
+  jobs:
+    - LISP=sbcl
+    - LISP=ccl
+    - LISP=clisp
+    - LISP=ecl
+    - LISP=abcl
+    # - LISP=allegro
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: LISP=allegro
+    - env: LISP=clisp
+
+install:
+  # Install cl-travis
+  - curl -L https://raw.githubusercontent.com/lispci/cl-travis/master/install.sh | bash
+
+script:
+  - cl -e "(print (lisp-implementation-version))(terpri)
+           (ql:quickload :nibbles/tests :verbose t)
+           (uiop:quit (if (rt:do-tests) 0 1))"

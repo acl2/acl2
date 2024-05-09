@@ -42,14 +42,13 @@
    (and stable-under-simplificationp
         '(:expand ((svex-p x)))))
   :progn t
-  (cond ((if (atom x)
-             (or (stringp x)
-                 (and x (symbolp x)))
-           (eq (car x) :var))
-         :var)
-        ((or (atom x)
-             (integerp (car x)))
+  (cond ((if (consp x)
+             (integerp (car x))
+           (or (integerp x) (not x)))
          :quote)
+        ((or (atom x)
+             (eq (car x) :var))
+         :var)
         (t :call)))
 
 (def-rp-rule :disabled-for-acl2 t
@@ -315,8 +314,8 @@
 
 (def-rp-rule :disabled-for-acl2 t
   svex-eval-is-svex-eval-wog
-  (implies (and (svex-p x)
-                (svex-env-p env))
+  (implies (and (force (svex-p x))
+                (force (svex-env-p env)))
            (equal (svex-eval x env)
                   (svex-eval-wog x env)))
   :hints (("Goal"
@@ -324,8 +323,8 @@
 
 (def-rp-rule :disabled-for-acl2 t
   svexlist-eval-is-svexlist-eval-wog
-  (implies (and (svexlist-p x)
-                (svex-env-p env))
+  (implies (and (force (svexlist-p x))
+                (force (svex-env-p env)))
            (equal (svexlist-eval x env)
                   (svexlist-eval-wog x env)))
   :hints (("Goal"

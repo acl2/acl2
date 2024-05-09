@@ -35,6 +35,12 @@
 (include-book "pseudo-command-landmarkp")
 (include-book "pseudo-tests-and-calls-listp")
 
+; The following was added to support the devel-check target (see comments
+; the system definition of constant *system-verify-guards-alist*).
+; Specifically, the definition of stobj-listp below requires stobjp to be in
+; logic mode, which is taken care of by this book.
+(include-book "verified-termination-and-guards")
+
 ; -----------------------------------------------------------------
 
 ; This book is used by the book worldp-check.lisp to check the concept of a
@@ -188,6 +194,11 @@
 ; in w must be a multiple of *event-index-interval*; this follows from the case
 ; for i=0.
 
+(defabbrev safe-remove-local (x)
+  (if (and (consp x)
+           (eq (car x) 'local))
+      (cdr x)
+    x))
 
 (defun safe-access-event-tuple-number (x)
 
@@ -195,15 +206,16 @@
 ; always returns an integer.  The smallest actual value for
 ; access-event-tuple-number in a well-formed world is -1.
 
-  (if (consp x)
-      (if (integerp (car x))
-          (car x)
+  (let ((x (safe-remove-local x)))
+    (if (consp x)
+        (if (integerp (car x))
+            (car x)
           (if (consp (car x))
               (if (integerp (caar x))
                   (caar x)
-                  -2)
-              -2))
-      -2))
+                -2)
+            -2))
+      -2)))
 
 (defun pseudo-event-indexp (x w)
   (declare (xargs :guard (plist-worldp w)))
@@ -267,22 +279,6 @@
 
 ; EVENT-LANDMARK [GLOBAL-VALUE]
 
-(defun pseudo-function-symbolp (fn n)
-
-; The n above is just a placeholder to allow me to record the requirements on
-; the arity of fn.  These requirements cannot be checked in pseudo situation
-; because there is no world.  But my convention is that n = nil means no
-; requirement stated and otherwise n is a natural that must be the arity of fn.
-
-  (declare (ignore n))
-  (symbolp fn))
-
-(defun pseudo-function-symbol-listp (lst n)
-  (if (atom lst)
-      (null lst)
-      (and (pseudo-function-symbolp (car lst) n)
-           (pseudo-function-symbol-listp (cdr lst) n))))
-
 ; See pseudo-event-landmarkp in pseudo-event-landmarkp.lisp.
 ; That function was originally here in this file.
 
@@ -308,6 +304,22 @@
        (symbolp (cadr rune))
        (or (null (cddr rune))
            (natp (cddr rune)))))
+
+(defun pseudo-function-symbolp (fn n)
+
+; The n above is just a placeholder to allow me to record the requirements on
+; the arity of fn.  These requirements cannot be checked in pseudo situation
+; because there is no world.  But my convention is that n = nil means no
+; requirement stated and otherwise n is a natural that must be the arity of fn.
+
+  (declare (ignore n))
+  (symbolp fn))
+
+(defun pseudo-function-symbol-listp (lst n)
+  (if (atom lst)
+      (null lst)
+      (and (pseudo-function-symbolp (car lst) n)
+           (pseudo-function-symbol-listp (cdr lst) n))))
 
 (defun pseudo-well-founded-relation-alistp (val)
   (cond ((atom val) (null val))
@@ -538,11 +550,11 @@
 (defun pseudo-internal-signaturep (insig)
   (case-match insig
     ((fn formals stobjs-in stobjs-out)
-     (and (pseudo-function-symbolp fn nil)   ; should be a fn name
-          (pseudo-arglistp formals)          ; should be distinct vars
-          (symbol-listp stobjs-in)           ; both stobjs-in and -out should be
-          (symbol-listp stobjs-out)          ;       lists of stobj names or nil,
-          (equal (len formals) (len stobjs-in)))) ;  consistent with formals
+     (and (pseudo-function-symbolp fn nil) ; should be a fn name
+          (pseudo-arglistp formals)        ; should be distinct vars
+          (symbol-listp stobjs-in)         ; stobjs-in and -out should be lists
+          (symbol-listp stobjs-out)        ;   of stobj names, nil, or :df,
+          (equal (len formals) (len stobjs-in)))) ; consistent with formals
     (& nil)))
 
 (defun pseudo-internal-signature-listp (x)
@@ -570,7 +582,7 @@
            t)
        (if (eq (car ee-entry) 'include-book)
            (and (consp (cdr ee-entry))
-                (stringp (cadr ee-entry)))
+                (book-name-p (cadr ee-entry)))
            t)))
 
 
@@ -636,7 +648,7 @@
 ; The include-book-alist contains elements of the
 ; general form         example value
 
-; (full-book-name     ; "/usr/home/moore/project/arith.lisp"
+; (full-book-name     ; "/usr/home/moore/project/arith.lisp" ; could be sysfile
 ;  user-book-name     ; "project/arith.lisp"
 ;  familiar-name      ; "arith"
 ;  cert-annotations   ; ((:SKIPPED-PROOFSP . sp)
@@ -649,10 +661,6 @@
 ; Cert-annotationsp is defined in the source code and uses ttag-alistp.
 ; We need to admit guard-verified versions of each.
 
-(verify-termination sysfile-p) ; and guards
-
-(verify-termination sysfile-or-string-listp) ; and guards
-
 (verify-termination ttag-alistp) ; and guards
 
 (verify-termination cert-annotationsp) ; and guards
@@ -660,7 +668,7 @@
 (defun pseudo-include-book-alist-entryp (entry)
   (case-match entry
     ((full-name user-name familiar-name cert-annotations . chk-sum)
-     (and (stringp full-name)
+     (and (book-name-p full-name)
           (stringp user-name)
           (stringp familiar-name)
 
@@ -676,7 +684,7 @@
 ; is the natural predicate.
 
           (or (null cert-annotations)
-              (cert-annotationsp cert-annotations t))
+              (cert-annotationsp cert-annotations))
           (case-match chk-sum
             (((':BOOK-LENGTH . book-length)
               (':BOOK-WRITE-DATE . book-write-date))
@@ -717,18 +725,18 @@
 ; -----------------------------------------------------------------
 ; PCERT-BOOKS [GLOBAL-VALUE]
 
-; The pcert-books is a list of full book names.
+; The pcert-books is a list of full-book-names.
 
 (defun pseudo-pcert-booksp (val)
-  (string-listp val))
+  (book-name-listp val))
 
 ; -----------------------------------------------------------------
 ; INCLUDE-BOOK-PATH [GLOBAL-VALUE]
 
-; The include-book-path is a list of full book names.
+; The include-book-path is a list of full-book-names.
 
 (defun pseudo-include-book-pathp (val)
-  (string-listp val))
+  (book-name-listp val))
 
 ; -----------------------------------------------------------------
 ; CERTIFICATION-TUPLE [GLOBAL-VALUE]
@@ -739,27 +747,6 @@
 (defun certification-tuplep (val)
   (or (null val)
       (pseudo-include-book-alist-entryp val)))
-
-; -----------------------------------------------------------------
-; DOCUMENTATION-ALIST [GLOBAL-VALUE]
-
-(defun documentation-tuplep (x)
-  (case-match x
-    ((topic section citations doc-string)
-     (and (or (symbolp topic)
-              (stringp topic))
-          (or (symbolp section)
-              (stringp section))
-          (string-or-symbol-listp citations)
-          (stringp doc-string)))
-    (& nil)))
-
-
-(defun documentation-alistp (val)
-  (if (atom val)
-      (eq val nil)
-      (and (documentation-tuplep (car val))
-           (documentation-alistp (cdr val)))))
 
 ; -----------------------------------------------------------------
 ; PROVED-FUNCTIONAL-INSTANCES-ALIST [GLOBAL-VALUE]
@@ -914,7 +901,7 @@
       (and (true-listp val)
            (equal (len val) 2)
            (eq (car val) :include-book)
-           (stringp (cadr val)))
+           (book-name-p (cadr val)))
       (pseudo-event-formp val)))
 
 ; -----------------------------------------------------------------
@@ -1168,7 +1155,7 @@
 ; has been declared, and possibly nil, indicating that the ttag was declared at
 ; top-level.
 
-                (string-listp (remove1-eq 'nil (cdr (car val))))
+                (book-name-listp (remove1-eq 'nil (cdr (car val))))
                 (ttags-seenp (cdr val))))))
 
 ; -----------------------------------------------------------------
@@ -1344,6 +1331,12 @@
                 (pseudo-rewrite-quoted-constant-rulesp (cdr x))))))
 
 ;-----------------------------------------------------------------
+; EVALUATOR-CHECK-INPUTS [GLOBAL-VALUE]
+
+(defun pseudo-evaluator-check-inputs-p (val)
+  (true-listp val))
+
+;-----------------------------------------------------------------
 ; ABSOLUTE-EVENT-NUMBER
 
 (defun absolute-event-numberp (sym val)
@@ -1394,9 +1387,8 @@
   (or (pseudo-function-symbolp val nil)
       (and (consp val)
            (eq (car val) :attachment-disallowed)
-           (or (stringp (cdr val))
-               (and (true-listp (cdr val)) ; msg
-                    (stringp (cadr val)))))
+           (or (symbolp (cdr val))
+               (symbol-alistp (cdr val))))
 
 ; We really should check in the next case val associates
 ; pseudo-function-symbolps with pseudo-function-symbolp.
@@ -1618,14 +1610,14 @@
 ;-----------------------------------------------------------------
 ; CONSTRAINEDP
 
-; The value of this property is t, nil, or the name of the clause processor
-; whose trustworthiness depends on the constrained function sym.  Clause
+; The value of this property is t, nil, or a transparent-rec record.  Clause
 ; processors may have any non-0 number of arguments.
 
 (defun pseudo-constrainedpp (sym val)
   (declare (ignore sym))
   (or (booleanp val)
-      (pseudo-function-symbolp val nil)))
+      (eq val *unknown-constraints*)
+      (weak-transparent-rec-p val)))
 
 ;-----------------------------------------------------------------
 ; CONSTRAINT-LST
@@ -1705,9 +1697,9 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
-; ELIMINATE-DESTRUCTORS-RULE
+; ELIMINATE-DESTRUCTORS-RULES
 
-; This contains a single elim-rule:
+; This contains a list of elim-rules, each of this sort:
 ; (defrec elim-rule
 ;   (((nume . crucial-position) . (destructor-term . destructor-terms))
 ;    (hyps . equiv)
@@ -1734,9 +1726,11 @@
           (equal rhs (nth crucial-position (cdr destructor-term)))))
     (& nil)))
 
-(defun pseudo-eliminate-destructors-rulep (sym val)
-  (declare (ignore sym))
-  (pseudo-elim-rulep val))
+(defun pseudo-eliminate-destructors-rules (sym val)
+  (declare (irrelevant sym))
+  (cond ((atom val) (null val))
+        (t (and (pseudo-elim-rulep (car val))
+                (pseudo-eliminate-destructors-rules sym (cdr val))))))
 
 ;-----------------------------------------------------------------
 ; FORMALS
@@ -1829,7 +1823,6 @@
     (PCERT-BOOKS (pseudo-pcert-booksp val))
     (INCLUDE-BOOK-PATH (pseudo-include-book-pathp val))
     (CERTIFICATION-TUPLE (certification-tuplep val))
-    (DOCUMENTATION-ALIST (documentation-alistp val))
     (PROVED-FUNCTIONAL-INSTANCES-ALIST (proved-functional-instances-alistp val))
     (NONCONSTRUCTIVE-AXIOM-NAMES (nonconstructive-axiom-namesp val))
     (STANDARD-THEORIES (pseudo-standard-theoriesp val))
@@ -1867,6 +1860,11 @@
     (NEVER-IRRELEVANT-FNS-ALIST (never-irrelevant-fns-alistp val))
     (REWRITE-QUOTED-CONSTANT-RULES
      (pseudo-rewrite-quoted-constant-rulesp val))
+    (PROJECT-DIR-ALIST (and (alistp val)
+                            (keyword-listp (strip-cars val))
+                            (string-listp (strip-cdrs val))))
+    (PROJECTS/APPLY/BASE-INCLUDEDP (booleanp val))
+    (EVALUATOR-CHECK-INPUTS (pseudo-evaluator-check-inputs-p val))
     (otherwise nil)))
 
 ;-----------------------------------------------------------------
@@ -2563,22 +2561,11 @@
 ; STOBJ
 
 (defun pseudo-stobjp (sym val)
-  (declare (ignore sym))
+  (if (eq sym 'state)
+      (equal val '(*the-live-state*))
+    (or (null val)
+        (weak-stobj-property-p val))))
 
-; The other-names below contains the names of the field recognizers, accessors,
-; updaters, various names associated with array-type fields (like the resizer),
-; and the the names of the defconsts associating field names with position,
-; e.g., a stobj whose 3rd component is MEM causes (defconst *MEM* 3) to be
-; executed and for *MEM* to be among the other names.  For that reason, we do
-; not here insist that other-names be (pseudo) function symbols.
-
-  (case-match val
-    (('*the-live-state*) t)
-    ((live-var recog-name . other-names)
-     (and (symbolp live-var)
-          (pseudo-function-symbolp recog-name 1)
-          (symbol-listp other-names)))
-    (& nil)))
 ;-----------------------------------------------------------------
 ; STOBJ-CONSTANT
 
@@ -2908,8 +2895,8 @@
                 (pseudo-def-bodiesp sym val)))
           (DEFAXIOM-SUPPORTER (defaxiom-supporterp sym val))
           (DEFCHOOSE-AXIOM (pseudo-defchoose-axiomp sym val))
-          (ELIMINATE-DESTRUCTORS-RULE
-           (pseudo-eliminate-destructors-rulep sym val))
+          (ELIMINATE-DESTRUCTORS-RULES
+           (pseudo-eliminate-destructors-rules sym val))
           (FORMALS
            (or (eq val *acl2-property-unbound*)
                (pseudo-formalsp sym val)))
@@ -3052,11 +3039,15 @@
                                   "Violation of the command blocks invariant, ~
                                    specifically that every block contain at ~
                                    least one EVENT-LANDMARK, was detected at ~
-                                   triple ~x0."
-                                  pos))
+                                   triple ~x0.  The preceding ~
+                                   command-landmark, (with no event-landmark ~
+                                   found between that one and the one at ~
+                                   position ~x0) is:~|~x1"
+                                  pos
+                                  no-event-landmark-yetp))
                      (t (good-command-blocksp1 (+ 1 pos)
                                                t
-                                               t
+                                               (car w)
                                                (cdr w)))))
                    ((and (eq sym 'command-index)
                          (eq prop 'global-value))

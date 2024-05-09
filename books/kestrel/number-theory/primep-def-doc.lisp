@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "RTL")
+(in-package "ACL2")
 
 (include-book "primep-def")
 
@@ -16,13 +16,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc primep
+(defxdoc dm::primep
   :short "Recognizer of prime numbers."
   :parents (acl2::number-theory)
   :long
   (xdoc::topstring
    (xdoc::p
     "This is taken from the RTL library.")
-   (xdoc::@def "primep")
-   (xdoc::@def "least-divisor")
-   (xdoc::@def "divides")))
+   (xdoc::@def "dm::primep")
+   (xdoc::@def "dm::least-divisor")
+   (xdoc::@def "dm::divides")))

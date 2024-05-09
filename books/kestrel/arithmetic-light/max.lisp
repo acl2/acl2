@@ -47,3 +47,13 @@
   (implies (and (integerp x)
                 (integerp y))
            (integerp (max x y))))
+
+;rename
+(defthm less-than-max-hack
+  (implies (< z y)
+           (< z (MAX y x))))
+
+;rename
+(defthm less-than-max-hack-alt
+  (implies (< z x)
+           (< z (MAX y x))))

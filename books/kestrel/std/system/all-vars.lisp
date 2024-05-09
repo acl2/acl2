@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
 ;
-; License: A 3-clause BSD license. See the file [books]/3BSD-mod.txt.
+; License: A 3-clause BSD license. See the community books file /3BSD-mod.txt.
 ;
 ; Main Author: Eric Smith (eric.smith@kestrel.edu)
 ; Contributing Author: Alessandro Coglio (coglio@kestrel.edu)

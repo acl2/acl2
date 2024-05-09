@@ -60,25 +60,25 @@ represent numbers in the range [-2^(M-1), 2^(M-1)-1].  This matches
 the behavior of the ACL2 predicate signed-byte-p.)"))
 
 ;; (depends-on "bvchop-def.lisp")
-(acl2::gen-xdoc-for-file
+(gen-xdoc-for-file
  "bvchop-def.lisp"
  ((bvchop "Chop a value down to the given size."))
  (bv))
 
 ;; (depends-on "bvplus.lisp")
-(acl2::gen-xdoc-for-file
+(gen-xdoc-for-file
  "bvplus.lisp"
  ((bvplus "Bit-vector sum."))
  (bv))
 
 ;; (depends-on "bvminus.lisp")
-(acl2::gen-xdoc-for-file
+(gen-xdoc-for-file
  "bvminus.lisp"
  ((bvminus "Bit-vector difference."))
  (bv))
 
 ;; (depends-on "bvuminus.lisp")
-(acl2::gen-xdoc-for-file
+(gen-xdoc-for-file
  "bvuminus.lisp"
  ((bvuminus "Bit-vector additive inverse"))
  (bv))

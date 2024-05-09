@@ -282,7 +282,7 @@
      Two flavors exist, corresponding to the two cases in [YP:(285)]:
      one before and one after the `Spurious Dragon' hard fork "
     (xdoc::ahref "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-155.md"
-		 "[EIP155]") ".")
+                 "[EIP155]") ".")
    (xdoc::p
     "In both flavors,
      one starts with the first six components of a @(see transaction):

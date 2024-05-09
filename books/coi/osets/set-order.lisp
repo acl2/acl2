@@ -79,7 +79,7 @@
 
 (deftheory primitive-reasoning
   '(setp
-    empty
+    emptyp
     head
     tail
     sfix
@@ -118,24 +118,24 @@
 
 (defthmd head-insert
   (equal (head (insert a X))
-         (cond ((empty X) a)
+         (cond ((emptyp X) a)
                ((<< a (head X)) a)
                (t (head X)))))
 
 (defthmd tail-insert
   (equal (tail (insert a X))
-         (cond ((empty X) (sfix X))
-               ((<< a (head X)) (sfix X))
+         (cond ((emptyp X) nil)
+               ((<< a (head X)) X)
                ((equal a (head X)) (tail X))
                (t (insert a (tail X))))))
 
 (defthmd head-tail-order
-  (implies (not (empty (tail X)))
+  (implies (not (emptyp (tail X)))
            (<< (head X) (head (tail X)))))
 
 (defthmd head-tail-order-contrapositive
   (implies (not (<< (head X) (head (tail X))))
-           (empty (tail X))))
+           (emptyp (tail X))))
 
 (deftheory order-reasoning
   '(; <<-type ; see comment above about svn 1015
@@ -156,7 +156,7 @@
   (equal (setp (cons a X))
          (and (setp X)
               (or (<< a (head X))
-                  (empty X)))))
+                  (emptyp X)))))
 
 (defthmd cons-head
   (implies (setp (cons a X))
@@ -164,7 +164,7 @@
 
 (defthmd cons-to-insert-empty
   (implies (and (setp X)
-                (empty X))
+                (emptyp X))
            (equal (cons a X) (insert a X))))
 
 (defthmd cons-to-insert-nonempty
@@ -185,4 +185,3 @@
     cons-to-insert-empty
     cons-to-insert-nonempty
     cons-in))
-

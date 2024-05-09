@@ -46,6 +46,7 @@
 ;; Books we won't actually include, but would like cert.pl to build for us.
  (include-book "unsound-read")                 ;; omitted due to ttags
  (include-book "read-string")                  ;; omitted due to ttags
+ (include-book "read-string-light")            ;; omitted due to ttags
  (include-book "read-file-characters-no-error") ;; omitted due to weird license stuff
 ||#
 

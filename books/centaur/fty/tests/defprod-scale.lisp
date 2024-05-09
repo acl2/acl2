@@ -82,6 +82,9 @@
 ;; After kind-possibilities hacking:       0.16, 0.20, 0.31, 0.52, 1.00, 3.29, 15.45
 ;; After adding 100 deflists:              0.19, 0.19, 0.30, 0.49, 0.97, 3.48, 17.31
 ;; After adding remakers:                  0.22, 0.25, 0.38, 0.64, 1.30, 4.95, 24.45
+
+;; After 3/2023 change to theory/different machine:
+;;                                         0.32, 0.30, 0.34, 0.52, 1.13, 3.13, 16.32
 (tm (make-prod 1))
 (tm (make-prod 2))
 (tm (make-prod 5))
@@ -91,9 +94,11 @@
 (tm (make-prod 100))
 
 ;; After adding remakers: 21.07 seconds
+;; After 3/2023:          13.63
 (tm (make-prod 100 :layout :fulltree :prefix "FULL"))
 
 ;; Now trying with alist:                  0.26, 0.32, 0.61, 2.42, 23.15
+;; After 3/2023:                           0.43, 0.40, 0.52, 0.89, 1.86  (!)
 (tm (make-prod 1 :layout :alist :prefix "AL"))
 (tm (make-prod 2  :layout :alist :prefix "AL"))
 (tm (make-prod 5  :layout :alist :prefix "AL"))
@@ -101,7 +106,7 @@
 (tm (make-prod 20  :layout :alist :prefix "AL"))
 
 
-
+;; 3/2023: 1.22
 (tm (make-prod 20  :layout :list :prefix "LL"))
 ;; (tm (make-prod 50  :layout :alist :prefix "AL"))
 ;; (tm (make-prod 100  :layout :alist :prefix "AL"))

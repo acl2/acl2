@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,6 +28,7 @@
 (include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "renaming-array")
 (include-book "translation-array")
 (include-book "unify-tree-and-dag")
@@ -39,10 +40,9 @@
 (include-book "equivs")
 (include-book "rebuild-literals")
 (include-book "dag-array-printing")
-;(include-book "splitting")
-;(include-book "elim")
 (include-book "kestrel/booleans/boolor" :dir :system) ;since this book knows about boolor
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
+(include-book "kestrel/booleans/boolxor" :dir :system) ;since this book knows about boolxor
 (include-book "dag-size-sparse")
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -178,35 +178,39 @@
 ;; Currently only 'equal and 'iff are supported as equivs.
 ;; No entries are needed here for IF, MYIF, or BOOLIF, because all Axe provers handle them specially.
 ;; We could drop BVIF except the simple provers do not (yet) handle it specially.
+;; This is a fast-alist.
 (defconst *equiv-alist*
-  (acons 'iff ; outer equiv that must be preserved
-         (acons 'not '(iff)
-                (acons 'iff '(iff iff)
-                       (acons 'implies '(iff iff)
-                              (acons 'bool-to-bit '(iff)
-                                     (acons 'bool-fix$inline '(iff)
+  (make-fast-alist
+   (acons 'iff ; outer equiv that must be preserved
+          (make-fast-alist
+           (acons 'not '(iff)
+                  (acons 'iff '(iff iff)
+                         (acons 'implies '(iff iff)
+                                (acons 'bool-to-bit '(iff)
+                                       (acons 'bool-fix$inline '(iff)
                                             ;; TODO: Remove this?  A BVIF in an IFF context is just T:
                                             ;; (acons 'bvif '(equal iff equal equal)
-                                            (acons 'boolor '(iff iff)
-                                                   (acons 'boolxor '(iff iff)
-                                                          (acons 'booland '(iff iff)
-                                                                 nil)))
+                                              (acons 'boolor '(iff iff)
+                                                     (acons 'boolxor '(iff iff)
+                                                            (acons 'booland '(iff iff)
+                                                                   nil)))
                                             ;;)
-                                            )))))
-         (acons 'equal ; outer equiv that must be preserved
+                                              ))))))
+          (acons 'equal ; outer equiv that must be preserved
                 ;; We only include things here for which we can do better than using
                 ;; an equiv of EQUAL for all arguments:
-                (acons 'not '(iff)
-                       (acons 'iff '(iff iff)
-                              (acons 'implies '(iff iff)
-                                     (acons 'bool-to-bit '(iff)
-                                            (acons 'bool-fix$inline '(iff)
-                                                   (acons 'bvif '(equal iff equal equal)
-                                                          (acons 'boolor '(iff iff)
-                                                                 (acons 'boolxor '(iff iff)
-                                                                        (acons 'booland '(iff iff)
-                                                                               nil)))))))))
-                nil)))
+                 (make-fast-alist
+                  (acons 'not '(iff)
+                         (acons 'iff '(iff iff)
+                                (acons 'implies '(iff iff)
+                                       (acons 'bool-to-bit '(iff)
+                                              (acons 'bool-fix$inline '(iff)
+                                                     (acons 'bvif '(equal iff equal equal)
+                                                            (acons 'boolor '(iff iff)
+                                                                   (acons 'boolxor '(iff iff)
+                                                                          (acons 'booland '(iff iff)
+                                                                                 nil))))))))))
+                 nil))))
 
 (thm
  (equiv-alistp *equiv-alist*))
@@ -217,14 +221,15 @@
 ;; copies a segment of nodes from FROM-DAG-ARRAY to DAG-ARRAY and returns the new dag (including the auxiliary data structures) and a RENAMING-ARRAY
 ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array).
 ;fixme should this use a worklist instead of copying a segment?
+;; See also extract-dag-array and copy-array-values.
 (defund add-array-nodes-to-dag (nodenum ;smallest nodenum to copy
                                 max-nodenum ;largest nodenum to copy
                                 from-dag-array-name from-dag-array from-dag-array-len
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                 renaming-array)
-  (declare ;(type (integer 0 2147483646) dag-len)
-;(type (integer 0 2147483645) nodenum)
-;(type (integer -1 2147483645) max-nodenum)
+  (declare ;(type (integer 0 1152921504606846974) dag-len)
+;(type (integer 0 1152921504606846973) nodenum)
+;(type (integer -1 1152921504606846973) max-nodenum)
    (xargs :measure (nfix (+ 1 (- max-nodenum nodenum)))
           :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                       (integerp max-nodenum)
@@ -355,7 +360,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable all-natp all-integerp))))
 
-;; ;get the nodenums of all predicates that are the tests of an IF (or MYIF or BOOLIF or BVIF) - fffffixme what about booland and boolor?
+;; ;get the nodenums of all predicates that are the tests of an IF (or MYIF or BOOLIF or BVIF) - todo: what about booland and boolor?
 ;; ;now only counts predicates that are not probably equal to a constant or lower node
 ;; (defun get-tested-predicate-nodenums (nodenum dag-array-name dag-array acc tag-array2)
 ;;   (declare (xargs :measure (nfix (+ 1 nodenum))
@@ -755,7 +760,7 @@
 ;;            )
 ;;       (mv expr dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;     (if (variablep expr) ; BOZO this matches a nodenum too.  is that an error here?
-;;         (let ((possible-index (lookup-eq expr dag-variable-alist))) ;BOZO use hashing?
+;;         (let ((possible-index (lookup-in-dag-variable-alist expr dag-variable-alist))) ;BOZO use hashing?
 ;;           (if possible-index
 ;;               ;; if it's already present...
 ;;               (mv possible-index dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -766,7 +771,7 @@
 ;;                 dag-parent-array
 ;;                 dag-constant-alist
 ;;                 (if (not dont-add-permanently)
-;;                     (acons expr dag-len dag-variable-alist)
+;;                     (add-to-dag-variable-alist expr dag-len dag-variable-alist)
 ;;                   dag-variable-alist))))
 ;;       (if (all-consp (fargs expr)) ;; "constant" case
 ;;           (let ((possible-index (lookup-equal expr dag-constant-alist))) ;BOZO use hashing?
@@ -1031,8 +1036,8 @@
 
 ;; ;; Keep the args that are nodenums and that correspond to nil in merge-dag-array.
 ;; (defun get-args-to-merge (args array)
-;;   (declare (xargs :guard (and (true-listp args)
-;;                               (all-dargp args)
+;;   (declare (xargs :guard (and
+;;                               (darg-listp args)
 ;;                               (array1p 'merge-dag-array array)
 ;;                               (< (largest-non-quotep args) (alen1 'merge-dag-array array)))))
 ;;   (if (endp args)
@@ -1045,8 +1050,8 @@
 ;;           (cons arg (get-args-to-merge (cdr args) array)))))))
 
 ;; (defun lookup-args-in-merge-dag-array (args array)
-;;   (declare (xargs :guard (and (true-listp args)
-;;                               (all-dargp args)
+;;   (declare (xargs :guard (and
+;;                               (darg-listp args)
 ;;                               (array1p 'merge-dag-array array)
 ;;                               (< (largest-non-quotep args) (alen1 'merge-dag-array array)))))
 ;;   (if (endp args)
@@ -1403,36 +1408,73 @@
      ;;print the close paren:
      (cw ")~%"))))
 
-(defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len)
+;; Prints as a term if that term would not be too big.
+(defund print-negated-literal-nicely (literal-nodenum dag-array-name dag-array dag-len no-print-fns)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (natp literal-nodenum)
+                              (< literal-nodenum dag-len)
+                              (symbol-listp no-print-fns))))
+  (let* ((expr (aref1 dag-array-name dag-array literal-nodenum))
+         (core-expr (if (and (consp expr)
+                             (eq 'not (ffn-symb expr))
+                             (consp (dargs expr))
+                             (not (consp (darg1 expr))) ; check for nodenum
+                             )
+                        (aref1 dag-array-name dag-array (darg1 expr))
+                      expr)))
+    (if (and (consp core-expr) (member-eq (ffn-symb core-expr) no-print-fns))
+        (cw "..~%") ; don't print
+      (let ((term-size (nfix (size-of-node literal-nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
+        (if (< term-size 10000)
+            (let ((term (dag-to-term-aux-array dag-array-name dag-array literal-nodenum)))
+              (if (and (call-of 'not term)
+                       (consp (cdr term)))
+                  ;; strip the not:
+                  (cw "~x0~%" (farg1 term))
+                ;; add a not:
+                (cw "~x0~%" `(not ,term))))
+          (print-negated-literal literal-nodenum dag-array-name dag-array dag-len))))))
+
+(defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len no-print-fns)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
+                              (all-< literal-nodenums dag-len)
+                              (symbol-listp no-print-fns))))
   (if (endp literal-nodenums)
       nil
-    (progn$ (let* ((nodenum (first literal-nodenums))
-                   (term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
-              (if (< term-size 10000)
-                  (let ((term (dag-to-term-aux-array dag-array-name dag-array nodenum)))
-                    (if (and (call-of 'not term)
-                             (consp (cdr term)))
-                        (cw "~x0~%" (farg1 term))
-                      (cw "~x0~%" `(not ,term))))
-                (print-negated-literal nodenum dag-array-name dag-array dag-len)))
+    (progn$ (print-negated-literal-nicely (first literal-nodenums) dag-array-name dag-array dag-len no-print-fns)
             (cw "~%")
-            (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len))))
+            (print-axe-prover-case-aux (rest literal-nodenums) dag-array-name dag-array dag-len no-print-fns))))
 
 ;recall that the case is the negation of all the literals
 ;fixme similar name to print-negated-literal-list
-(defund print-axe-prover-case (literal-nodenums dag-array-name dag-array dag-len case-adjective)
+(defund print-axe-prover-case (literal-nodenums
+                               dag-array-name dag-array dag-len case-adjective print-as-clausesp
+                               no-print-fns ; we don't print literals that are calls of these (after stripping nots)
+                               )
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-natp literal-nodenums)
                               (true-listp literal-nodenums)
-                              (all-< literal-nodenums dag-len))))
-  (progn$
-   (cw "(Negated lits (~x0) for ~s1 case:~%" (len literal-nodenums) case-adjective)
-   (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len)
-   (cw ")~%")))
+                              (all-< literal-nodenums dag-len)
+                              (stringp case-adjective)
+                              (booleanp print-as-clausesp)
+                              (symbol-listp no-print-fns))))
+  (if (not (consp literal-nodenums))
+      (cw "(NOTE: No literals in clause.")
+    (prog2$ (print-dag-array-info dag-array-name dag-array dag-len case-adjective t)
+            (if print-as-clausesp
+                (progn$ (cw "~s0 clause:~%(OR " case-adjective)
+              ;; warning: can blow up:
+              ;; todo: should this respect the no-print-fns?  maybe not, if this is for debugging
+                        (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
+                        (cw ")~%"))
+              (progn$
+                (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
+                (and no-print-fns (cw " (NOTE: Not printing calls to ~x0)" no-print-fns))
+                (cw ":~%")
+                (print-axe-prover-case-aux literal-nodenums dag-array-name dag-array dag-len no-print-fns)
+                (cw ")~%"))))))
 
 (defthm <-of-+-1-of-maxelem
   (implies (and (all-< lst x)
@@ -1456,7 +1498,7 @@
 ;;   (declare (xargs :guard (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                               (symbolp equiv)
 ;;                               (symbolp var)
-;;                               ;(<= dag-len 2147483645)
+;;                               ;(<= dag-len 1152921504606846973) ; why not one more?
 ;;                               (all-natp nodenums-to-assume-false)
 ;;                               (true-listp nodenums-to-assume-false)
 ;;                               (all-< nodenums-to-assume-false dag-len)))
@@ -1566,17 +1608,51 @@
   `(mbe :logic (zp ,x)
         :exec (= 0 ,x)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund simple-prover-optionsp (options)
   (declare (xargs :guard t))
   (and (symbol-alistp options)
        (subsetp-eq (strip-cars options) '(:no-splitp ;whether to split into cases
-                                          ))))
+                                          :print-as-clausesp ;whether to print cases as clauses
+                                          :no-print-fns
+                                          :count-hits
+                                          ))
+       (booleanp (lookup-equal :print-as-clausesp options))
+       (member-equal (lookup-equal :count-hits options) '(t nil :brief))
+       (symbol-listp (lookup-equal :no-print-fns options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
   (implies (simple-prover-optionsp options)
            (symbol-alistp options))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-forward-to-booleanp-of-lookup-equal-of-print-as-clausesp
+  (implies (simple-prover-optionsp options)
+           (booleanp (lookup-equal :print-as-clausesp options)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-forward-to-symbol-list-of-lookup-equal-of-no-print-fns
+  (implies (simple-prover-optionsp options)
+           (symbol-listp (lookup-equal :no-print-fns options)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-of-acons-of-no-print-fns
+  (implies (simple-prover-optionsp options)
+           (equal (simple-prover-optionsp (acons :no-print-fns no-print-fns options))
+                  (symbol-listp no-print-fns)))
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-of-acons-of-count-hits
+  (implies (simple-prover-optionsp options)
+           (iff (simple-prover-optionsp (acons :count-hits count-hits options))
+                (member-equal count-hits '(t nil :brief))))
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm axe-tree-listp-of-wrap-all
   (equal (axe-tree-listp (wrap-all 'not atoms))

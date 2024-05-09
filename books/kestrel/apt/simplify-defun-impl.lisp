@@ -2,6 +2,9 @@
 ; Written by Matt Kaufmann (with inspiration from Alessandro Coglio and Eric Smith)
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "APT")
 
 ;;; TABLE OF CONTENTS
@@ -18,6 +21,7 @@
 ;;; Rewriting
 ;;; Return-last blockers
 ;;; Simplifying a term
+;;; Removing unused let/let* bindings
 ;;; Additional main utilities
 ;;; Putting it all together
 
@@ -99,6 +103,8 @@
 ;   supported.  See apt::simplify-failure (both the section on "Recursion and
 ;   equivalence relations" and the related comment in the defxdoc form) for
 ;   more information.
+; - Preserve all declare forms.  In particular, declare forms under LET seems
+;   to be dropped, as noted in simplify-defun-tests.lisp.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Introductory remarks
@@ -1725,6 +1731,53 @@
              (make-blocked-mbt new)
            new))))
 
+#!acl2
+(defun assume-true-false-hlp (term rrec wrld state)
+
+; This function is an interface to ACL2 source function
+; assume-true-false-heavy-linearp.
+
+  (declare (xargs :stobjs state))
+  (b* (((mv term notp)
+        (cond ((and (ffn-symb-p term 'if)
+                    (equal (fargn term 2) *nil*)
+                    (equal (fargn term 3) *t*))
+               (mv (fargn term  1) t))
+              (t (mv term nil))))
+       (rcnst (access rewrite$-record rrec :rcnst))
+       (type-alist (access rewrite$-record rrec :type-alist))
+       (pot-lst (access rewrite$-record rrec :pot-lst))
+       (gstack (access rewrite$-record rrec :gstack)))
+    (mv-let (step-limit must-be-true must-be-false
+                        true-type-alist false-type-alist
+                        true-pot-lst false-pot-lst
+                        ts-ttree)
+            (assume-true-false-heavy-linearp
+             term
+             (rewrite-stack-limit wrld) ; rdepth
+             *default-step-limit*
+             type-alist
+             '?           ; ignored obj
+             *geneqv-iff* ; geneqv ignored by add-terms-and-lemmas
+             nil          ; pequiv-info ignored by add-terms-and-lemmas
+             wrld state
+             nil ; fnstack = nil in rewrite$*
+             nil ; ancestors = nil in rewrite$*
+             (access rewrite-constant rcnst
+                     :backchain-limit-rw)
+             pot-lst
+             rcnst
+             gstack
+             nil ; ttree ignored by add-terms-and-lemmas
+             )
+            (declare (ignore step-limit))
+            (cond (notp (mv must-be-false must-be-true
+                            false-type-alist true-type-alist
+                            false-pot-lst true-pot-lst ts-ttree))
+                  (t    (mv must-be-true must-be-false
+                            true-type-alist false-type-alist
+                            true-pot-lst false-pot-lst ts-ttree))))))
+
 (defun rewrite-augmented-term-rec (aterm alist geneqv rrec runes ctx wrld
                                          state)
 
@@ -1739,25 +1792,17 @@
      (b* (((er (cons tst2 runes-tst))
            (rewrite1 tst alist *geneqv-iff* rrec ctx wrld state))
           (runes (union-equal? runes-tst runes))
-          (rcnst (access acl2::rewrite$-record rrec :rcnst))
-          (ens (access acl2::rewrite-constant rcnst
-                       :current-enabled-structure))
-          (ok-to-force (acl2::ok-to-force rcnst))
-          (type-alist (access acl2::rewrite$-record rrec :type-alist))
-          (pot-lst (access acl2::rewrite$-record rrec :pot-lst))
           ((mv must-be-true
                must-be-false
                true-type-alist
                false-type-alist
+               true-pot-lst
+               false-pot-lst
                ts-ttree)
-           (acl2::assume-true-false tst2 nil ok-to-force nil type-alist ens
-                                    wrld pot-lst nil nil)))
-       (cond (must-be-true
-              (rewrite-augmented-term-rec tbr alist geneqv rrec
-                                          (all-runes-in-ttree ts-ttree runes)
-                                          ctx wrld state))
-             (must-be-false
-              (rewrite-augmented-term-rec fbr alist geneqv rrec
+           (acl2::assume-true-false-hlp tst2 rrec wrld state)))
+       (cond ((or must-be-true must-be-false)
+              (rewrite-augmented-term-rec (if must-be-true tbr fbr)
+                                          alist geneqv rrec
                                           (all-runes-in-ttree ts-ttree runes)
                                           ctx wrld state))
              (t (b* (((er (cons tbr2 runes))
@@ -1765,21 +1810,31 @@
                                                   (change acl2::rewrite$-record
                                                           rrec
                                                           :type-alist
-                                                          true-type-alist)
+                                                          true-type-alist
+                                                          :pot-lst
+                                                          true-pot-lst)
                                                   runes ctx wrld state))
                      ((er (cons fbr2 runes))
                       (rewrite-augmented-term-rec fbr alist geneqv
                                                   (change acl2::rewrite$-record
                                                           rrec
                                                           :type-alist
-                                                          false-type-alist)
+                                                          false-type-alist
+                                                          :pot-lst
+                                                          false-pot-lst)
                                                   runes ctx wrld state))
+                     (rcnst (access acl2::rewrite$-record rrec :rcnst))
                      ((mv term ttree)
                       (rewrite-if1 (maybe-reconstruct-blocked-mbt tst tst2)
                                    tbr2 fbr2
                                    nil ; swapped-p
-                                   type-alist
-                                   geneqv ens ok-to-force wrld nil)))
+                                   (access acl2::rewrite$-record rrec
+                                           :type-alist)
+                                   geneqv
+                                   (access acl2::rewrite-constant rcnst
+                                           :current-enabled-structure)
+                                   (acl2::ok-to-force rcnst)
+                                   wrld nil)))
                   (value (cons term (all-runes-in-ttree ttree runes))))))))
     ((('LAMBDA formals body) . actuals)
      (b* (((er (cons rewritten-actuals runes-actuals))
@@ -1933,6 +1988,192 @@
    (t (value nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Removing unused let/let* bindings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun non-trivial-lambda-formals (formals args)
+
+; For a term ((lambda formals body) . args), return the list of formals that
+; equal their corresponding arg in args.
+
+  (cond ((endp formals) nil)
+        ((eq (car formals) (car args))
+         (non-trivial-lambda-formals (cdr formals) (cdr args)))
+        (t (cons (car formals)
+                 (non-trivial-lambda-formals (cdr formals) (cdr args))))))
+
+(defun remove-unused-vars-from-bindings (bindings term)
+
+; Bindings is a list of let-bindings.  We return (mv dropped new-bindings),
+; where dropped is the vars bound by new-bindings that do not occur in the
+; given term and new-bindings is the result of dropping those variables from
+; bindings.
+
+  (declare (xargs :guard (and (symbol-doublet-listp bindings)
+                              (pseudo-termp term))))
+  (cond ((endp bindings) (mv nil nil))
+        (t (mv-let (dropped new-bindings)
+             (remove-unused-vars-from-bindings (cdr bindings) term)
+             (cond ((dumb-occur-var (caar bindings) term)
+                    (mv dropped
+                        (cons (car bindings) new-bindings)))
+                   (t
+                    (mv (cons (caar bindings) dropped)
+                        new-bindings)))))))
+
+(defun remove-vars-from-let-dcls-lst (vars lst)
+  (cond ((endp lst) nil)
+        (t (let* ((d (car lst))
+                  (new-vars
+                   (case-match d
+                     (('ignore . ivars)
+                      (set-difference-eq ivars vars))
+                     (('ignorable . ivars)
+                      (set-difference-eq ivars vars))
+                     (('type & . tvars)
+                      (set-difference-eq tvars vars))
+                     (&
+                      (er hard 'remove-vars-from-let-dcls-lst
+                          "Implementation error: Unknown kind of declaration ~
+                           for let, ~x0."
+                          d)))))
+             (cond (new-vars (cons (if (eq (car d) 'type)
+                                       (list* 'type (cadr d) new-vars)
+                                     (cons (car d) new-vars))
+                                   (remove-vars-from-let-dcls-lst vars
+                                                                  (cdr lst))))
+                   (t (remove-vars-from-let-dcls-lst vars (cdr lst))))))))
+
+(defun remove-vars-from-let-dcls-1 (vars dcl)
+  (assert$ (eq (car dcl) 'declare)
+           (let ((x (remove-vars-from-let-dcls-lst vars (cdr dcl))))
+             (and x (cons 'declare x)))))
+
+(defun remove-vars-from-let-dcls-rec (vars dcls)
+  (cond ((endp dcls) nil)
+        (t (let ((x (remove-vars-from-let-dcls-1 vars (car dcls)))
+                 (y (remove-vars-from-let-dcls-rec vars (cdr dcls))))
+             (if x (cons x y) y)))))
+
+(defun remove-vars-from-let-dcls (vars dcls)
+
+; As per *acceptable-dcls-alist*, the only declare forms legal for a let
+; expression are ignore, ignorable, and type.
+
+  (cond ((null vars) dcls)
+        (t (remove-vars-from-let-dcls-rec vars dcls))))
+
+(mutual-recursion
+
+(defun remove-let-bindings-rec (uterm tterm wrld)
+  (declare (xargs :guard (and (pseudo-termp tterm)
+                              (plist-worldp wrld))))
+  (cond
+   ((or (variablep tterm)
+        (fquotep tterm)
+        (atom uterm))
+    uterm)
+   ((symbolp (ffn-symb tterm))
+    (cond
+     ((eq (car uterm) (car tterm))
+      (assert$
+       (= (length (cdr uterm)) (length (fargs tterm))) ; always true?
+       (cons (car uterm)
+             (remove-let-bindings-lst (cdr uterm) (fargs tterm) wrld))))
+     (t uterm)))
+
+; We have a lambda application: tterm is ((lambda formals body) . args).
+
+   ((or (eq (car uterm) 'let)
+        (and (eq (car uterm) 'let*)
+
+; We handle let* in a later case, except that here, we handle let* with at most
+; one binding just as we handle let.
+
+             (null (cdr (cadr uterm)))))
+
+; Note that we don't recur into let-bindings -- only into the let body.  That
+; could easily be remedied by making this function mutually recursive with
+; remove-unused-bindings, but that seems unlikely to make much difference in
+; practice so we keep this simple.
+
+    (cond
+     ((null (cadr uterm)) ; empty bindings: remove them
+      (car (last uterm)))
+     (t
+      (let* ((bindings (cadr uterm))
+             (body (car (last uterm)))
+             (dcls (butlast (cddr uterm) 1))
+             (lam (ffn-symb tterm))
+             (formals (lambda-formals lam))
+             (args (fargs tterm))
+             (nformals (non-trivial-lambda-formals formals args))
+             (tbody (lambda-body lam)))
+        (cond
+         ((equal (strip-cars bindings) nformals)
+          (let ((ubody (remove-let-bindings-rec body tbody wrld)))
+            (mv-let (dropped new-bindings)
+              (remove-unused-vars-from-bindings bindings tbody)
+              (cond (new-bindings
+                     `(,(car uterm) ; let or let*
+                       ,new-bindings
+                       ,@(remove-vars-from-let-dcls dropped dcls)
+                       ,ubody))
+                    (t ubody)))))
+         (t uterm))))))
+   ((and (eq (car uterm) 'let*)
+
+; We don't try to handle declare forms with let* at this point (unless there is
+; just one binding, as handled above).  That shouldn't be too difficult, but
+; it's not a priority at the moment; instead, since there are no declare forms,
+; we simply reduce to the preceding case.
+
+         (= (length uterm) 3))
+    (let* ((bindings (cadr uterm))
+           (var (caar bindings))
+           (val (cadar bindings))
+           (temp
+            (assert$
+             (consp bindings) ; otherwise previous case would apply
+             (remove-let-bindings-rec
+              `(let* ((,var ,val))
+                 (let* ,(cdr bindings) ,(caddr uterm)))
+              tterm
+              wrld))))
+      (case-match temp
+        (('let* ((!var val2))
+           ('let* bindings2 . rest))
+         `(let* ((,var ,val2) ,@bindings2)
+            ,@rest))
+        (& temp))))
+   (t uterm)))
+
+(defun remove-let-bindings-lst (uterm-lst tterm-lst wrld)
+  (declare (xargs :guard (and (true-listp uterm-lst)
+                              (pseudo-term-listp tterm-lst)
+                              (plist-worldp wrld))))
+  (cond
+   ((endp uterm-lst) nil)
+   (t (cons (remove-let-bindings-rec (car uterm-lst) (car tterm-lst) wrld)
+            (remove-let-bindings-lst (cdr uterm-lst) (cdr tterm-lst) wrld)))))
+)
+
+(defun remove-let-bindings (uterm wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (mv-let (erp tterm bindings)
+    (acl2::translate1-cmp uterm
+                          t ; stobjs-out
+                          nil ; logic-modep; could be t
+                          t   ; known-stobjs
+                          'remove-let-bindings-rec
+                          wrld
+                          (default-state-vars nil))
+    (declare (ignore bindings))
+    (cond
+     (erp uterm) ; impossible case for us, probably
+     (t (remove-let-bindings-rec uterm tterm wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Additional main utilities
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2060,6 +2301,93 @@
              (& `(:do-all (:dive 1)
                           ,s-cmd))))))
 
+(defun before-vs-after-lemmas-instruction (equality expand fn-runes all-hyps
+                                                    hints remove-forcep)
+  (let ((s-cmd
+         `(:then (:succeed
+                  (:s :repeat 3            ; somewhat arbitrary
+                      :backchain-limit 500 ; somewhat arbitrary
+                      :expand ,expand
+
+; We have seen an example where forcing made the proof fall apart.  That isn't
+; surprising: there may well not be enough context to avoid forcing something
+; that is false, e.g., in the case where we have (if tst1 (if tst2 ...) ...),
+; and truth or falsity of tst2 settles where a forced hyp is true when
+; rewriting tst1.
+
+; But when we tried to removing (:e force), i.e., acl2::*force-xrune*, a
+; different example failed that had formerly succeeded!
+
+; So we want it both ways.  On the first try in before-vs-after-lemmas, we do
+; what we've done for years (it's currently July 23, 2022) and use
+; remove-forcep = nil, i.e., we keep the theory as before, where all fn-runes
+; are enabled.  If that fails then we try again with remove-forcep = t.
+; (If none of those runes is (:e force) then that retry is futile because it
+; will do the same thing; maybe we'll improve this to avoid the retry in that
+; case.  But we expect failure on the first try to be extremely rare if forcing
+; is not involved.)
+
+                      ,@(and remove-forcep
+                             `(:in-theory (remove1-equal acl2::*force-xrune*
+                                                         ,fn-runes)))
+                      :normalize nil))
+                 (:prove ,@(and expand
+                                `(:hints (("Goal" :expand ,expand))))))))
+    `(:do-all
+      ,@(and all-hyps
+             `((:dive 1)
+               ,s-cmd
+               :top
+               :promote))
+      ,@(and (flambda-applicationp equality)
+
+; Thus, we have a lambda generated by equiv-from-geneqv.  We expand it to get
+; a term (if (equiv1 u1 u2) 't (if (equiv2 u1 u2) 't ... )).
+
+             '(:expand))
+      (:sd-simplify-equality ,s-cmd)
+      :top
+
+      (:orelse
+
+; We have attempted to replace each relevant equality (equal old new) by (equal
+; new new), but we might instead have (equal new' new) where new' is not
+; (quite?) equal to new.  It seems unrealistic to expect that our calls to the
+; expander and the like during simplification -- that is, our attempts to use
+; various pieces of the ACL2 prover -- would be replicated reliably by our
+; proof-builder commands.  So use use :orelse here so that if our initial
+; attempts fail, then we can fall back on a prover call.
+
+       (:protect
+        (:insist-all-proved
+
+; We have seen a case where a single :s-prop invocation here is not sufficient.
+; This seems to have been because the left-hand side had no LET expressions but
+; the right-hand side did.
+
+         (:succeed
+          (:do-all (:repeat :s-prop)
+
+; We have seen a case in which s-prop didn't suffice.  The remaining goal
+; looked like (or (foo x y) y (... (foo x nil) ...)), where the occurrences of
+; (foo x nil) are clearly false but this isn't clear to s-prop.
+
+                   :split))))
+       (:orelse (:prove ,@(and expand
+                               `(:hints (("Goal" :expand ,expand)))))
+
+; We have seen a case in which none of the above was sufficient, but it
+; sufficed to apply the theory supplied to the SIMPLIFY command.  (Note that
+; hints comes from a call of theory+expand-to-hints.)  This makes sense: even
+; though :DOC apt::simplify-defun says that "simplification will be performed
+; in the theory given by EXPR", the user might reasonably expect that even if
+; that rune was not used in simplification, then it would be used to validate
+; the simplification.  Anyhow, there is probably no real harm in trying here,
+; since otherwise we fail; the only downside could be a slower failure.
+
+                (:prove ,@(and hints
+                               `(:hints ,hints))))))))
+
 (defun before-vs-after-lemmas (fnsr hyps fn-hyps-name
                                     formals governors-lst
                                     subterm-equalities fn-runes expand
@@ -2082,15 +2410,7 @@
                             (1+ index)
                             wrld))
    (t
-    (let ((s-cmd
-           `(:then (:succeed
-                    (:s :repeat 3 ; somewhat arbitrary
-                        :backchain-limit 500 ; somewhat arbitrary
-                        :expand ,expand
-                        :normalize nil))
-                   (:prove ,@(and expand
-                                  `(:hints (("Goal" :expand ,expand)))))))
-          (all-hyps (append (and hyps
+    (let ((all-hyps (append (and hyps
                                  `((,fn-hyps-name ,@formals)))
                             (car governors-lst))))
       (assert$
@@ -2102,59 +2422,16 @@
              (car subterm-equalities))
            :instructions
            ((:in-theory ,fn-runes)
-            ,@(and all-hyps
-                   `((:dive 1)
-                     ,s-cmd
-                     :top
-                     :promote))
-            ,@(and (flambda-applicationp (car subterm-equalities))
 
-; Thus, we have a lambda generated by equiv-from-geneqv.  We expand it to get
-; a term (if (equiv1 u1 u2) 't (if (equiv2 u1 u2) 't ... )).
-
-                   '(:expand))
-            (:sd-simplify-equality ,s-cmd)
-            :top
+; See comment in before-vs-after-lemmas-instruction.
 
             (:orelse
-
-; We have attempted to replace each relevant equality (equal old new) by (equal
-; new new), but we might instead have (equal new' new) where new' is not
-; (quite?) equal to new.  It seems unrealistic to expect that our calls to the
-; expander and the like during simplification -- that is, our attempts to use
-; various pieces of the ACL2 prover -- would be replicated reliably by our
-; proof-builder commands.  So use use :orelse here so that if our initial
-; attempts fail, then we can fall back on a prover call.
-
-             (:protect
-              (:insist-all-proved
-
-; We have seen a case where a single :s-prop invocation here is not sufficient.
-; This seems to have been because the left-hand side had no LET expressions but
-; the right-hand side did.
-
-               (:succeed
-                (:do-all (:repeat :s-prop)
-
-; We have seen a case in which s-prop didn't suffice.  The remaining goal
-; looked like (or (foo x y) y (... (foo x nil) ...)), where the occurrences of
-; (foo x nil) are clearly false but this isn't clear to s-prop.
-
-                         :split))))
-             (:orelse (:prove ,@(and expand
-                                     `(:hints (("Goal" :expand ,expand)))))
-
-; We have seen a case in which none of the above was sufficient, but it
-; sufficed to apply the theory supplied to the SIMPLIFY command.  (Note that
-; hints comes from a call of theory+expand-to-hints.)  This makes sense: even
-; though :DOC apt::simplify-defun says that "simplification will be performed
-; in the theory given by EXPR", the user might reasonably expect that even if
-; that rune was not used in simplification, then it would be used to validate
-; the simplification.  Anyhow, there is probably no real harm in trying here,
-; since otherwise we fail; the only downside could be a slower failure.
-
-                      (:prove ,@(and hints
-                                     `(:hints ,hints))))))
+             (:protect ,(before-vs-after-lemmas-instruction
+                         (car subterm-equalities) expand fn-runes all-hyps
+                         hints nil))
+             ,(before-vs-after-lemmas-instruction
+               (car subterm-equalities) expand fn-runes all-hyps hints
+               t)))
 ;          :hints (("Goal" :in-theory ,fn-runes :expand ,expand))
            :rule-classes nil)
         (before-vs-after-lemmas fnsr hyps fn-hyps-name
@@ -2385,7 +2662,8 @@
                              (stobjs-out fn wrld)))
        (simp-body (cond
                    ((eq untranslate t)
-                    (untranslate new-body nil wrld))
+                    (remove-let-bindings (untranslate new-body nil wrld)
+                                         wrld))
                    ((eq untranslate nil)
                     new-body)
                    ((eq untranslate :nice-expanded)
@@ -3030,9 +3308,11 @@
 
 (defun simplify-defun-heuristics (alist)
 
+; Warning: Keep this in sync with with-simplify-setup-fn.
+
 ; It is a bit of overkill to make defattach-system local, since it already
-; expands to a local event.  But we use make it local anyhow, so that tools
-; will avoid printing these events to the screen.
+; expands to a local event.  But we make it local anyhow, so that tools will
+; avoid printing these events to the screen.
 
   `(local
     (with-output
@@ -3071,7 +3351,12 @@
         (defattach-system
          rewrite-if-avoid-swap
          ,(or (cdr (assoc-eq 'rewrite-if-avoid-swap alist))
-              'constant-t-function-arity-0))))))
+              'constant-t-function-arity-0))
+        (defattach-system
+          acl2::heavy-linear-p
+          constant-t-function-arity-0)
+        (set-default-hints nil)
+        (set-override-hints nil)))))
 
 (defun remove-final-hints-lst (lst)
 
@@ -3302,8 +3587,6 @@
              (encapsulate
                ()
                ,(simplify-defun-heuristics nil)
-               (local (set-default-hints nil))
-               (local (set-override-hints nil))
                ,@all-before-vs-after-lemmas)
              ,@hyps-preserved-thm-list
              (install-not-normalized$ ,(access fnsr fnsr :simp) :allp t)
@@ -3348,7 +3631,11 @@
 
 ; See with-simplify-setup.
 
+; Warning: Keep this in sync with simplify-defun-heuristics.
+
   `(b* ((wrld (w state))
+        (acl2::simplifiable-mv-nth-p-old
+         (cdr (attachment-pair 'acl2::simplifiable-mv-nth-p wrld)))
         (too-many-ifs-pre-rewrite-old
          (cdr (attachment-pair 'too-many-ifs-pre-rewrite wrld)))
         (too-many-ifs-post-rewrite-old
@@ -3357,6 +3644,22 @@
          (cdr (attachment-pair 'assume-true-false-aggressive-p wrld)))
         (rewrite-if-avoid-swap-old
          (cdr (attachment-pair 'rewrite-if-avoid-swap wrld)))
+        (default-hints-old (default-hints wrld))
+        (override-hints-old (override-hints wrld))
+        ((er -)
+
+; We are about to evaluate the form generated by the call
+; (apt::simplify-defun-heuristics nil).  But that sets up a local environment,
+; as we prefer when using apt::simplify-defun-heuristics in the event generated
+; by make-event expansion (see simplify-defun-form); and this can be
+; problematic when the default defun-mode is :program, where local events are
+; skipped.  In particular, we have seen a failure due to the skipping of
+; (set-override-hints nil) when the override-hints of the world include a
+; :backtrack hint (which is disallowed for rewrite$).  Since we are evaluating
+; during make-event expansion (as noted in a comment in with-simplify-setup),
+; it's OK to switch to :logic mode here.
+
+         (trans-eval-error-triple '(logic) ctx state))
         ((er -)
          (trans-eval-error-triple (apt::simplify-defun-heuristics nil)
                                   ctx state))
@@ -3369,18 +3672,22 @@
         ((er -)
          (trans-eval-error-triple
           (apt::simplify-defun-heuristics
-           `((too-many-ifs-pre-rewrite . ,too-many-ifs-pre-rewrite-old)
+           `((acl2::simplifiable-mv-nth-p . ,acl2::simplifiable-mv-nth-p-old)
+             (too-many-ifs-pre-rewrite . ,too-many-ifs-pre-rewrite-old)
              (too-many-ifs-post-rewrite . ,too-many-ifs-post-rewrite-old)
              (assume-true-false-aggressive-p
               . ,assume-true-false-aggressive-p-old)
-             (rewrite-if-avoid-swap . ,rewrite-if-avoid-swap-old)))
+             (rewrite-if-avoid-swap . ,rewrite-if-avoid-swap-old)
+             (default-hints . ,default-hints-old)
+             (override-hints . ,override-hints-old)))
           ctx state)))
      (value form)))
 
 #!acl2
 (defmacro with-simplify-setup (form)
 
-; This macro assumes that CTX and STATE are bound.
+; This macro assumes that CTX and STATE are bound.  We expect this macro to be
+; evaluated during make-event expansion.
 
   (with-simplify-setup-fn form))
 

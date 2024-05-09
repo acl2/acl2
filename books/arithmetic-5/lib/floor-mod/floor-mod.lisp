@@ -37,6 +37,8 @@
 ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (IN-PACKAGE "ACL2")
@@ -1357,7 +1359,8 @@ an easy reduction unless the above applies anyway.
 ;;; should be in axioms.lisp
 
 (defun get-the-ens-dangerously (mfc)
-  (cadr (cadddr (cddddr (cddr mfc)))))
+  (let ((rcnst (access metafunction-context mfc :rcnst)))
+    (access rewrite-constant rcnst :current-enabled-structure)))
 
 (defun gather-or-scatter-dangerously (mfc state)
   (declare (xargs :mode :program))

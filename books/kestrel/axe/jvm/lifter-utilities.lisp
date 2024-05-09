@@ -1,7 +1,7 @@
 ; Utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "../make-axe-rules") ; for make-axe-rules-from-theorem
+(include-book "../priorities")
 ;(include-book "../jvm/heap0")
 (include-book "kestrel/jvm/jvm" :dir :system) ;for JVM::CALL-STACK-SIZE
 (include-book "kestrel/jvm/method-designator-strings" :dir :system)
@@ -42,8 +43,8 @@
               (make-axe-rules-from-theorem! *ignore-exception-pseudo-rule-2* 'ignore-exceptions-2 nil nil t (w state)))))
 
 ;want these to fire before we lift the if
-(table axe-rule-priorities-table 'ignore-exceptions-1 -1)
-(table axe-rule-priorities-table 'ignore-exceptions-2 -1)
+(set-axe-rule-priority ignore-exceptions-1 -1)
+(set-axe-rule-priority ignore-exceptions-2 -1)
 
 ;; TODO: Pull these out as above.  We need a way to refer to named terms that are not actually theorems.
 ;; Note that these rules do not correspond to true theorems!  So we cannot make
@@ -65,8 +66,8 @@
                                             'run-until-exit-segment-of-error-state nil nil t (w state)))))
 
 ;want these to fire before we lift the if
-(table axe-rule-priorities-table 'ignore-error-state-1 -1)
-(table axe-rule-priorities-table 'ignore-error-state-2 -1)
+(set-axe-rule-priority ignore-error-state-1 -1)
+(set-axe-rule-priority ignore-error-state-2 -1)
 
 ;; (defun ignore-exceptions-and-errors-runes ()
 ;;   (prog2$ (cw "(WARNING: Ignoring exceptions and errors!)~%")
@@ -287,6 +288,7 @@
 ;TODO Flesh out (support floats, etc.)
 ;TODO: Does this exist elsewhere?
 ;; ;see also descriptor-to-predicate
+;; TODO: Rename, as this only supports scalar types
 (defun type-assumptions-for-param (type term)
   (declare (xargs :guard (jvm::primitive-typep type))) ;todo: gen? perhaps use addressp.
   (if (member-eq type '(:byte :boolean :char :short :int))
@@ -503,7 +505,7 @@
   (equal (all-local-var-for-pcp (rev acc))
          (all-local-var-for-pcp acc))
   :hints (("Goal" :in-theory (enable all-local-var-for-pcp rev))))
-(defmergesort merge-local-vars-for-pc merge-sort-local-vars-for-pc <-local-vars-for-pc local-var-for-pcp)
+(defmergesort merge-sort-local-vars-for-pc merge-local-vars-for-pc <-local-vars-for-pc local-var-for-pcp)
 
 ;show the local vars in scope for this PC:
 (defun local-vars-for-pc (pc local-variable-table)

@@ -27,6 +27,9 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+;
+; Modifications by Stephen Westfold <westfold@kestrel.edu> to work with sbcl ARM64
+; and improved efficiency with sbcl x86-64
 
 (in-package "FASTNUMIO")
 
@@ -375,7 +378,83 @@
     ;; we want to print and POS says how many we need.  So write them.
     (write-string arr stream)))
 
+;; Versions that are more efficient for 64 bit machines
+;; These need to be inline to avoid unnecessary boxing of 64-bit words to bignums
+(declaim (inline write-hex-u64-without-leading-zeroes))
+(defun write-hex-u64-without-leading-zeroes (val stream)
+  ;; Completely portable.
+  (declare (type (unsigned-byte 64) val))
+  (if (eql val 0)
+      (write-char #\0 stream)
+    (let ((pos    1) ;; **see below
+          (shift -60)
+          (nibble 0)
+          (arr (make-array 16 :element-type 'character)))
+      (declare (type string arr)
+               (dynamic-extent arr)
+               (type (unsigned-byte 64) pos)
+               (type fixnum             shift)
+               (type (unsigned-byte 4)  nibble))
+      ;; Skip past any leading zeroes.  Note that we already checked for the
+      ;; all-zero case above, so we know a nonzero digit exists and that we
+      ;; will eventually exit the loop.
+      (loop do
+            (setq nibble
+                  (the (unsigned-byte 4)
+                       (logand #xF (the (unsigned-byte 64)
+                                        (ash (the (unsigned-byte 64) val)
+                                             (the (integer -60 0) shift))))))
+            (incf shift 4)
+            (unless (eql nibble 0)
+              (loop-finish)))
+      ;; At this point we know we are standing at a nonzero digit and that
+      ;; its value is already in nibble.  Install its value into the array.
+      (setf (schar arr 0) (hex-digit-to-char nibble))
+      ;; ** above we initialized pos to 1, so we don't need to increment
+      ;; it here.  Shift has also already been incremented.
+      (loop do
+            (when (> shift 0)
+              (loop-finish))
+            (setq nibble
+                  (the (unsigned-byte 4)
+                       (logand #xF (the (unsigned-byte 64)
+                                        (ash (the (unsigned-byte 64) val)
+                                             (the (integer -60 0) shift))))))
+            (setf (schar arr pos) (hex-digit-to-char nibble))
+            (incf pos)
+            (incf shift 4))
+      ;; At the end of all of this, the array is populated with the digits
+      ;; we want to print and POS says how many we need.  So write them.
+      (write-string arr stream :end pos)))
+  stream)
 
+(declaim (inline write-hex-u64-with-leading-zeroes))
+(defun write-hex-u64-with-leading-zeroes (val stream)
+  ;; Completely portable.
+  (declare (type (unsigned-byte 64) val))
+  (let ((pos    0)
+        (shift -60)
+        (nibble 0)
+        (arr (make-array 16 :element-type 'character)))
+    (declare (type string arr)
+             (dynamic-extent arr)
+             (type fixnum pos)
+             (type fixnum shift)
+             (type (unsigned-byte 4) nibble))
+    (loop do
+          (when (> shift 0)
+            (loop-finish))
+          (setq nibble
+                (the (unsigned-byte 4)
+                     (logand #xF (the (unsigned-byte 64)
+                                      (ash (the (unsigned-byte 64) val)
+                                           (the (integer -60 0) shift))))))
+          (incf shift 4)
+          (setf (schar arr pos) (hex-digit-to-char nibble))
+          (incf pos))
+    ;; At the end of all of this, the array is populated with the digits
+    ;; we want to print and POS says how many we need.  So write them.
+    (write-string arr stream)))
 
 ; CCL specific bignum printing.
 ;
@@ -426,7 +505,6 @@
               (setq chunk (ccl::uvref val pos))
               (write-hex-u32-with-leading-zeroes chunk stream))))))
 
-
 ; SBCL specific bignum printing.
 ;
 ; Note: SBCL on Linux X86-64 represents bignums as vectors of 64-bit 'digits',
@@ -441,12 +519,24 @@
   (assert (equal sb-bignum::digit-size 64))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 0) (1- (expt 2 64))))
   (assert (equal (sb-bignum::%bignum-ref (1- (expt 2 80)) 1) (1- (expt 2 16))))
-  (assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+  ;(assert (typep (1- (expt 2 64)) 'sb-bignum::bignum-element-type))
+
+  ;; (declaim (inline digit-logical-shift-right))
+  ;; (defun digit-logical-shift-right (digit sh)
+  ;;   (sb-bignum::%digit-logical-shift-right digit sh))
+
+  (declaim (inline high32-bits))
+  (defun high32-bits (i)
+    (ldb (byte 32 32) i))
+
+  (declaim (inline low32-bits))
+  (defun low32-bits (i)
+    (ldb (byte 32 0) i))
 
   (let* ((x      #xfeedf00ddeadd00ddeadbeef99998888)
          (digit  (sb-bignum::%bignum-ref x 0))
-         (high32 (sb-bignum::%digit-logical-shift-right digit 32))
-         (low32  (logand digit #xFFFFFFFF)))
+         (high32 (high32-bits digit))
+         (low32  (low32-bits digit)))
     (assert (typep high32 'fixnum))
     (assert (typep low32 'fixnum))
     (assert (typep high32 '(unsigned-byte 32)))
@@ -541,30 +631,36 @@
   ;; good enough to let SBCL's compiler realize that it doesn't need to create
   ;; a bignum for the digit.
 
-  (declaim (inline write-nth-hex-bignum-digit-with-leading-zeroes))
-  (defun write-nth-hex-bignum-digit-with-leading-zeroes (n val stream)
-    (let ((high32 (sb-bignum::%digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
-          (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
-      (declare (type (unsigned-byte 32) high32 low32))
-      (write-hex-u32-with-leading-zeroes high32 stream)
-      (write-hex-u32-with-leading-zeroes low32 stream)))
+  ;; sjw: I obviated the need for these by introducing write-hex-u64-without-leading-zeroes
+  ;; and write-hex-u64-with-leading-zeroes which allow the extra step of splitting into high
+  ;; and low to be avoided. Declaring these be inline avoids the creation of ephemeral bignums.
 
-  (declaim (inline write-nth-hex-bignum-digit-without-leading-zeroes))
-  (defun write-nth-hex-bignum-digit-without-leading-zeroes (n val stream)
-    ;; If digit is nonzero, we print it and return T.
-    ;; If digit is zero,    we do not print anything and return NIL.
-    (let* ((high32 (sb-bignum::%digit-logical-shift-right (sb-bignum::%bignum-ref val n) 32))
-           (low32  (logand (sb-bignum::%bignum-ref val n) #xFFFFFFFF)))
-      (declare (type (unsigned-byte 32) high32 low32))
-      (if (eql high32 0)
-          (if (eql low32 0)
-              nil
-            (progn (write-hex-u32-without-leading-zeroes low32 stream)
-                   t))
-        (progn
-          (write-hex-u32-without-leading-zeroes high32 stream)
-          (write-hex-u32-with-leading-zeroes    low32 stream)
-          t))))
+  
+  ;; (declaim (inline write-nth-hex-bignum-digit-with-leading-zeroes))
+  ;; (defun write-nth-hex-bignum-digit-with-leading-zeroes (n val stream)
+  ;;   (let ((high32 (high32-bits (sb-bignum::%bignum-ref val n)))
+  ;;         (low32  (low32-bits (sb-bignum::%bignum-ref val n))))
+  ;;     (declare (type (unsigned-byte 32) high32 low32))
+  ;;     (write-hex-u32-with-leading-zeroes high32 stream)
+  ;;     (write-hex-u32-with-leading-zeroes low32 stream)))
+
+  ;; (declaim (inline write-nth-hex-bignum-digit-without-leading-zeroes))
+  ;; (defun write-nth-hex-bignum-digit-without-leading-zeroes (n val stream)
+  ;;   ;; If digit is nonzero, we print it and return T.
+  ;;   ;; If digit is zero,    we do not print anything and return NIL.
+  ;;   (let* ((high32 (high32-bits (sb-bignum::%bignum-ref val n)))
+  ;;          (low32  (low32-bits (sb-bignum::%bignum-ref val n))))
+  ;;     (declare (type (unsigned-byte 32)
+  ;;                    high32 low32))
+  ;;     (if (eql high32 0)
+  ;;         (if (eql low32 0)
+  ;;             nil
+  ;;           (progn (write-hex-u32-without-leading-zeroes low32 stream)
+  ;;                  t))
+  ;;       (progn
+  ;;         (write-hex-u32-without-leading-zeroes high32 stream)
+  ;;         (write-hex-u32-with-leading-zeroes    low32 stream)
+  ;;         t))))
 
   ;; Main bignum printing loop...
 
@@ -582,10 +678,12 @@
       ;; chunks and don't print them.
       (loop do
             (decf pos)
-            (when (write-nth-hex-bignum-digit-without-leading-zeroes pos val stream)
-              ;; Printed something, so subsequent chunks must be printed with
-              ;; zeroes enabled.
-              (loop-finish)))
+            (if (eql (sb-bignum::%bignum-ref val pos) 0)
+                nil
+              (progn (write-hex-u64-without-leading-zeroes (sb-bignum::%bignum-ref val pos) stream)
+                     ;; Printed something, so subsequent chunks must be printed with
+                     ;; zeroes enabled.
+                     (loop-finish))))
 
       ;; We have printed at least one chunk, skipping leading zeroes, so we
       ;; need to print the remaining chunks in full.
@@ -593,7 +691,7 @@
             (decf pos)
             (when (< pos 0)
               (loop-finish))
-            (write-nth-hex-bignum-digit-with-leading-zeroes pos val stream)))))
+            (write-hex-u64-with-leading-zeroes (sb-bignum::%bignum-ref val pos) stream)))))
 
 
 ; Wrap up:

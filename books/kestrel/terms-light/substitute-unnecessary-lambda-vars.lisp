@@ -23,6 +23,7 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;; TODO: Add tests, especially for lambdas
 (mutual-recursion
@@ -163,6 +164,20 @@
         (vars-bound-to-themselves (rest formals)
                                   (rest actuals))))))
 
+(defun vars-bound-to-mv-nths (formals actuals)
+  (declare (xargs :guard (and (symbol-listp formals)
+                              (true-listp actuals))))
+  (if (endp formals)
+      nil
+    (let ((formal (first formals))
+          (actual (first actuals)))
+      (if (and (consp actual)
+               (equal 'mv-nth (ffn-symb actual)))
+          (cons formal (vars-bound-to-mv-nths (rest formals)
+                                              (rest actuals)))
+        (vars-bound-to-mv-nths (rest formals)
+                               (rest actuals))))))
+
 ;; Returns the VARS whose corresponding terms in VAR-TERM-ALIST do not mention
 ;; any of the VARS-TO-AVOID.
 (defund vars-expressible-without-clashes (vars var-term-alist vars-to-avoid)
@@ -200,6 +215,7 @@
                   (lambda-body (substitute-unnecessary-lambda-vars-in-term lambda-body print))
                   (var-term-alist (pairlis$ vars args))
                   (vars-bound-to-themselves (vars-bound-to-themselves vars args))
+                  (vars-bound-to-mv-nths (vars-bound-to-mv-nths vars args))
                   (vars-not-bound-to-themselves (set-difference-eq vars vars-bound-to-themselves))
                   ;; We substitute for a lambda var if:
                   ;; 1) It appears only once in the lambda-body
@@ -207,10 +223,13 @@
                   ;; 2) It is not bound to itself (vars bound to themselves
                   ;; don't really "count against" us, since lambdas must be closed)
                   ;; and
-                  ;; 3) It is bound to a term that does not mention any variables that are bound by
+                  ;; 3) It is not bound to an mv-nth (to avoid messing up MV-LET patterns)
+                  ;; and
+                  ;; 4) It is bound to a term that does not mention any variables that are bound by
                   ;; the lambda, except variables that are bound to themselves.  This prevents clashes.
                   (vars-to-maybe-drop (vars-that-appear-only-once vars lambda-body))
                   (vars-to-maybe-drop (set-difference-eq vars-to-maybe-drop vars-bound-to-themselves))
+                  (vars-to-maybe-drop (set-difference-eq vars-to-maybe-drop vars-bound-to-mv-nths))
                   (vars-to-drop (vars-expressible-without-clashes vars-to-maybe-drop var-term-alist vars-not-bound-to-themselves))
 
                   ;; OLD:

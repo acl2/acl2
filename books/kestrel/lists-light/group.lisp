@@ -39,7 +39,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
 ;; todo: consider putting back the stuff that uses list::equiv
 
@@ -49,6 +49,14 @@
 (local (in-theory (disable equal-of-append)))
 
 ;todo: move some of these rules:
+
+;move
+(defthm items-have-len-of-myif
+  (equal (items-have-len n (myif test x y))
+         (myif test
+               (items-have-len n x)
+               (items-have-len n y)))
+  :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd integerp-of-small-helper
   (implies (and (< x n)
@@ -198,13 +206,6 @@
                   (not (equal 1 n))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-
-
-(defthm <-of-+-cancel-first-and-first
-  (equal (< (+ x y) (+ x z))
-         (< y z)))
-
-
 ;; (defthm cdr-of-firstn
 ;;   (implies (and (natp n)
 ;;                 (< n (len lst)) ;move to conc?
@@ -225,15 +226,6 @@
                   (subrange start (+ start i -1) lst))))
 
 ;; (LIST::EQUIV Y (CDR Y))
-
-(defthm <-of-times-of-floor-and-same
-  (implies (and (rationalp i)
-                (rationalp j)
-                (< 0 j))
-           (equal (< (* j (floor i j)) i)
-                  (not (integerp (/ i j)))))
-  :hints (("Goal" :use (:instance my-floor-upper-bound (x i) (y j))
-           :in-theory (disable my-floor-upper-bound))))
 
 (defthm <-of-times-of-floor-and-same-hack
   (implies (and (integerp i)
@@ -552,7 +544,7 @@
                                                   y))
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
-  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;+-BECOMES-BVPLUS-HACK
+  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                                                           MOD-TYPE
                                                                           MOD-bounded-by-modulus
                                                                           floor-bounded-by-/
@@ -575,7 +567,7 @@
                                                   y))
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
-  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;+-BECOMES-BVPLUS-HACK
+  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                                                           MOD-TYPE
                                                                           MOD-bounded-by-modulus
                                                                           floor-bounded-by-/

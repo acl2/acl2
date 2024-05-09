@@ -1,0 +1,31 @@
+language: common-lisp
+sudo: required
+
+env:
+  global:
+    - PATH=~/.roswell/bin:~/nginx/sbin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+  matrix:
+    - LISP=sbcl-bin
+    - LISP=ccl-bin
+    - LISP=clisp
+    - LISP=abcl
+    - LISP=ecl
+
+install:
+  # Install Roswell
+  - curl -L https://raw.githubusercontent.com/roswell/roswell/release/scripts/install-for-ci.sh | sh
+  - ros install prove
+  - git clone https://github.com/joyent/http-parser ~/http-parser
+  - cp $TRAVIS_BUILD_DIR/benchmark/http-parser.c ~/http-parser/mybench.c
+  - (cd ~/http-parser && make http_parser.o && gcc -Wall -Wextra -Werror -Wno-error=unused-but-set-variable -O3 http_parser.o mybench.c -o mybench)
+
+before_script:
+  - ros --version
+  - ros config
+
+script:
+  - ros -s fast-http-test
+  - run-prove fast-http-test.asd
+  - ros -s fast-http-test -e '(fast-http-test.benchmark:run-ll-benchmark)'
+  - ~/http-parser/mybench

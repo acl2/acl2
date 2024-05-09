@@ -1,7 +1,7 @@
 ; A tool to get info about a method
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,11 @@
 
 (in-package "JVM")
 
-(include-book "classes")
-(include-book "class-tables")
+(include-book "classes") ; for class-decl-methods
+;(include-book "class-tables")
 (include-book "method-designator-strings")
+(include-book "global-class-alist")
+;(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 
 ;; TODO: Deprecate:
 (defun acl2::get-method-info-fn (method-designator-string state)

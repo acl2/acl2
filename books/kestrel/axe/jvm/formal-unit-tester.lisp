@@ -1,7 +1,7 @@
 ; The formal unit testing tool
 ;
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/jvm/load-class-from-hierarchy" :dir :system)
+(include-book "kestrel/jvm/read-class-from-hierarchy" :dir :system)
 ;(include-book "../jvm/gather-relevant-classes2")
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroll-java-code")
@@ -33,7 +33,7 @@
 ;; Program must be in a single, self-contained file (more general support
 ;; coming soon).
 ;; No use of assertions (may be coming soon).
-;; The tester will test any method whose name starts with "test".
+;; The tester will test any method whose name starts with "test" or "fail_test".
 
 ;; The tool supports two methods of specifying correct behavior: having the
 ;; test method return a boolean or using asserts. In either case, encode
@@ -64,7 +64,7 @@
 ;; 3. Set the options as follows:
 ;; Name: Formal Unit Tester
 ;; Description: Formal Unit Tester
-;; Program: <insert the path to [books]/kestrel/axe/jvm/formal-unit-tester.sh>
+;; Program: <insert the path to community book kestrel/axe/jvm/formal-unit-tester.sh>
 ;; Arguments: $FilePath$
 
 ;; To run the tool in IntelliJ IDEA:
@@ -87,7 +87,7 @@
 ;;         (equal 0 (slice 15 8 x)))
 ;;  :hints (("Goal"
 ;;           :cases ((equal 0 (GETBIT 15 X)))
-;;           :use (:instance SPLIT-BV (y (slice 15 8 x)) (n 16) (m 8))
+;;           :use (:instance split-bv (x (slice 15 8 x)) (n 16) (m 8))
 ;;           :in-theory (e/d (bvsx) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
 ;;                                   )))))
 
@@ -181,8 +181,20 @@
            (parameter-name (lookup slot param-slot-to-name-alist))
            (assumptions (if (jvm::primitive-typep type)
                             (type-assumptions-for-param type parameter-name)
-                          nil ;todo: what about arrays?
-                          ))
+                          (if (jvm::is-one-dim-array-typep type)
+                              (let ((component-type (jvm::get-array-component-type type)))
+                                (if (and (jvm::bit-vector-typep component-type)
+                                         (not (eq type :boolean)) ; exclude for now, since we need to think about packed booleans (see baload)
+                                         )
+                                    ;; array of BVS:
+                                    (list `(true-listp ,parameter-name)
+                                          `(all-unsigned-byte-p ',(jvm::size-of-array-element component-type) ,parameter-name)
+                                          ;; can't put in anything about the length, since we don't know it
+                                          )
+                                  nil ; array of some other type (todo: can we do anything here?)
+                                  ))
+                            ;; something else (todo: can we do anything here?)
+                            nil)))
            (slot-count (jvm::type-slot-count type)))
       (append assumptions
               (param-var-assumptions-aux (+ slot slot-count)
@@ -206,20 +218,24 @@
     (param-var-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist ; array-length-alist
                                )))
 
+(defun sbvlt-of-bvif-rules ()
+  (declare (xargs :guard t))
+  '(sbvlt-of-bvif-when-sbvlt-arg3
+    sbvlt-of-bvif-when-sbvlt-arg4
+    sbvlt-of-bvif-when-not-sbvlt-arg3
+    sbvlt-of-bvif-when-not-sbvlt-arg4
+    sbvlt-of-bvif-when-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-sbvlt-arg4-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg4-alt))
+
 ;; Used during lifting and after
 (defun formal-unit-testing-extra-simplification-rules ()
   (declare (xargs :guard t))
-  (append '(bv-array-read-of-bv-array-write
+  (append (sbvlt-of-bvif-rules)
+          '(bv-array-read-of-bv-array-write
             ;;todo: when prove-with-tactics sees a not applied to a boolor, it should try to prove both cases
             ;;boolor  ;might have a loop
-            sbvlt-of-bvif-when-sbvlt-arg3
-            sbvlt-of-bvif-when-sbvlt-arg4
-            sbvlt-of-bvif-when-not-sbvlt-arg3
-            sbvlt-of-bvif-when-not-sbvlt-arg4
-            sbvlt-of-bvif-when-sbvlt-arg3-alt
-            sbvlt-of-bvif-when-sbvlt-arg4-alt
-            sbvlt-of-bvif-when-not-sbvlt-arg3-alt
-            sbvlt-of-bvif-when-not-sbvlt-arg4-alt
             equal-of-bvif
             equal-of-bvif-alt
             bvplus-of-bvif-arg2 ;perhaps restrict to the case when the duplicated term is a constant
@@ -301,7 +317,7 @@
 ;;        (defconst-name (pack$ '*lifted-program- method-name '-*))
 ;;        )
 ;;     `(progn
-;;        (load-class ,class-name :root ,root-of-class-hierarchy) ;; done so that unroll-java-code can find it
+;;        (read-class ,class-name :root ,root-of-class-hierarchy) ;; done so that unroll-java-code can find it
 ;;        (unroll-java-code ,defconst-name ,method-designator-string
 ;;                          :chunkedp t)
 ;;        (prove-with-tactics ,defconst-name
@@ -346,13 +362,15 @@
 ;;; Testing an entire file
 ;;;
 
-;; Decide which methods to test (default: all whose names start with "test").  TODO: What if not boolean?
-(defun select-method-ids-to-test (method-info-alist methods-to-test)
+;; Decides which methods to test (default: all whose names start with "test" or "fail_test").
+;; TODO: Check that every method to test returns a boolean.
+(defun select-method-ids-to-test (method-info-alist
+                                  methods-to-test ; either :auto, or a list of names (need to be elaborated to method-ids)
+                                  )
   (declare (xargs :guard (and (jvm::method-info-alistp method-info-alist)
                               (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test)))
-                  :guard-hints (("Goal" :in-theory (enable JVM::METHOD-INFO-ALISTP)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable jvm::method-info-alistp)))))
   (if (endp method-info-alist)
       nil
     (let* ((entry (first method-info-alist))
@@ -361,8 +379,10 @@
            ;;(signature (cdr method-id))
            (testp (if (eq :auto methods-to-test)
                       ;; todo: abstract this pattern as string-starts-with:
-                      (prefixp (explode-atom "test" 10)
-                               (explode-atom name 10))
+                      (or (prefixp (explode-atom "test" 10)
+                                   (explode-atom name 10))
+                          (prefixp (explode-atom "fail_test" 10)
+                                   (explode-atom name 10)))
                     (member-equal name methods-to-test))))
       (if testp
           (cons method-id (select-method-ids-to-test (rest method-info-alist) methods-to-test))
@@ -452,16 +472,35 @@
                       initial-heap)
            "java.lang.Class")))
 
+(defun method-should-failp (method-name methods-expected-to-fail)
+  (declare (xargs :guard (and (stringp method-name)
+                              (or (eq :auto methods-expected-to-fail)
+                                  (string-listp methods-expected-to-fail)))))
+  (if (eq :auto methods-expected-to-fail)
+      ;; Look at the name to decide whether the method should fail:
+      (prefixp (explode-atom "fail_test" 10)
+               (explode-atom method-name 10))
+    ;; We have an explicit list of the names of methds that should fail:
+    (member-equal method-name methods-expected-to-fail)))
+
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id methods-expected-to-fail method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules monitor state)
+(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
   (declare (xargs :stobjs (state)
                   :guard (and (jvm::method-idp method-id)
+                              (or (eq :any methods-expected-to-fail)
+                                  (eq :auto methods-expected-to-fail)
+                                  (string-listp methods-expected-to-fail))
+                              (booleanp error-on-unexpectedp)
                               (jvm::method-info-alistp method-info-alist)
                               (jvm::class-namep class-name)
                               ;; TODO: translate the assumptions!
                               (stringp root-of-class-hierarchy) ;a directory name
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely))
                               (symbol-listp monitor))
                   :mode :program ;; for several reasons
                   ))
@@ -485,7 +524,7 @@
        ;; TODO: Pull this out
        ;; TODO: Don't bother to submit this event, just add the class to an alist?
        (state ;(mv state constant-pool)
-        (submit-event-quiet `(load-class-from-hierarchy ,class-name :root ,root-of-class-hierarchy)
+        (submit-event-quiet `(read-class-from-hierarchy ,class-name :root ,root-of-class-hierarchy)
                             state))
        (output-indicator (if (eq variant :assert)
                              :all
@@ -504,12 +543,13 @@
                                  ;; extra-rules, to add to default set:
                                  (append (formal-unit-tester-extra-lifting-rules)
                                          extra-rules)
-                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning):
+                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
                                  (append '(MYIF-BECOMES-BOOLIF-T-ARG1
                                            MYIF-BECOMES-BOOLIF-T-ARG2
                                            MYIF-BECOMES-BOOLIF-NIL-ARG1
                                            MYIF-BECOMES-BOOLIF-NIL-ARG2
                                            MYIF-BECOMES-BOOLIF-AXE)
+                                         (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
                                          remove-rules)
                                  nil ;rule-alists
                                  monitor
@@ -523,7 +563,8 @@
                                  nil    ;print-interval
                                  t ;memoizep
                                  t      ;vars-for-array-elements
-                                 t      ;prune-branches
+                                 prune-branches-approximately
+                                 prune-branches-precisely
                                  nil    ;call-stp ;t, nil, or a max-conflicts
                                  :auto  ;steps
                                  :smart ;; (if (eq variant :assert) :split :smart)
@@ -545,7 +586,7 @@
         (simp-dag dag :rules (formal-unit-testing-extra-simplification-rules)
                   :check-inputs nil))
        ((when erp) (mv erp t state))
-       (- (cw "Done unrolling code)~%"))
+       (- (cw "Done unrolling code (~x0 nodes))~%" (len dag)))
        ;; Handle the :assert case, if applicable:
        ((mv erp dag state)
         (if (eq variant :assert)
@@ -601,6 +642,8 @@
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
                              t   ;call-stp-when-pruning
+                             t ; counterexamplep
+                             t ; print counterexamples as signed
                              (append extra-rules
                                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
                                                         remove-rules))
@@ -615,15 +658,19 @@
     (if (eq *valid* result)
         (progn$ (cw "PASSED test for method ~x0.)~%" method-designator-string)
                 (and (not (eq :any methods-expected-to-fail))
-                     (member-equal method-name methods-expected-to-fail)
-                     (er hard? 'run-formal-test-on-method "Method ~x0 was expected to fail but actually passed." method-name))
+                     (method-should-failp method-name methods-expected-to-fail)
+                     (if error-on-unexpectedp
+                         (er hard? 'run-formal-test-on-method "Method ~x0 was expected to fail but actually passed." method-name)
+                       (cw "ERROR: Method ~x0 was expected to fail but actually passed." method-name)))
                 (mv (erp-nil)
                     nil ;no failure
                     state))
       (progn$ (cw "FAILED test for method ~x0.)~%" method-designator-string)
               (and (not (eq :any methods-expected-to-fail))
-                   (not (member-equal method-name methods-expected-to-fail))
-                   (er hard? 'run-formal-test-on-method "Method ~x0 was expected to pass but actually failed." method-name))
+                   (not (method-should-failp method-name methods-expected-to-fail))
+                   (if error-on-unexpectedp
+                       (er hard? 'run-formal-test-on-method "Method ~x0 was expected to pass but actually failed." method-name)
+                     (cw "ERROR: Method ~x0 was expected to pass but actually failed." method-name)))
               (mv (erp-nil)
                   t ;failed
                   state)))))
@@ -643,28 +690,38 @@
          (fut-result-listp (rest results)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor results-acc state)
-  (declare (xargs :stobjs (state)
+(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor results-acc state)
+  (declare (xargs :guard ;; todo: flesh out:
+                  (and
+                   (or (eq :any methods-expected-to-fail)
+                       (eq :auto methods-expected-to-fail)
+                       (string-listp methods-expected-to-fail))
+                   (booleanp  error-on-unexpectedp)
+                   (or (booleanp prune-branches-approximately)
+                       (natp prune-branches-approximately))
+                   (or (booleanp prune-branches-precisely)
+                       (natp prune-branches-precisely)))
+                  :stobjs (state)
                   :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id methods-expected-to-fail method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules monitor state)
+        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
-                                       methods-expected-to-fail method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
 (defun print-test-results (results methods-expected-to-fail)
   (declare (xargs :guard (and (fut-result-listp results)
                               (or (eq :any methods-expected-to-fail)
+                                  (eq :auto methods-expected-to-fail)
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   ))
-                  :guard-hints (("Goal" :in-theory (enable jvm::stringp-when-method-namep)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable jvm::stringp-when-method-namep)))))
   (if (endp results)
       nil
     (let* ((result (first results))
@@ -679,9 +736,10 @@
                   ;; We don't know if the failure was expected, so just print the result:
                   (cw " ~s0.~%" res)
                 ;; Print the result and whether it is as expected:
-                (if (equal res (if (member-equal method-name methods-expected-to-fail) "FAILED" "PASSED"))
-                    (cw " ~s0, as expected.~%" res)
-                  (cw " ~s0 -- UNEXPECTED!~%" res)))
+                (let ((expected-res (if (method-should-failp method-name methods-expected-to-fail) "FAILED" "PASSED")))
+                  (if (equal res expected-res)
+                      (cw " ~s0, as expected.~%" res)
+                    (cw " ~s0 -- UNEXPECTED!~%" res))))
               (print-test-results (rest results) methods-expected-to-fail)))))
 
 ;; Returns (mv erp event state constant-pool), but the event is always an
@@ -689,10 +747,13 @@
 (defun test-file-fn (path-to-java-file ;; we prepend the cbd if this is not an absolute path (TODO: Perhaps instead just take the name of the class and use the classpath to find it?)
                      methods-to-test
                      methods-expected-to-fail ;todo: check that these are all methods in the class
+                     error-on-unexpectedp
                      ;;assumptions
                      print
                      extra-rules
                      remove-rules
+                     prune-branches-approximately
+                     prune-branches-precisely
                      monitor
                      state
                      constant-pool)
@@ -701,9 +762,15 @@
                   :guard (and (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test) ;these are just bare names, for now
                                   )
-                              (or (eq :any methods-expected-to-fail)
+                              (or (eq :any methods-expected-to-fail) ; no checking of whether methods that should fail actually do
+                                  (eq :auto methods-expected-to-fail) ; methods whose names start with "fail_test" should fail
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
-                                  ))))
+                                  )
+                              (booleanp error-on-unexpectedp)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely)))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
@@ -713,13 +780,13 @@
        ;; TODO: Should we save these when we build the FUT executable?
        ;; TODO: Any way to track these dependencies?
        (state
-        (submit-event-quiet `(load-class-from-hierarchy "java.lang.Object" :root ,java-bootstrap-classes-root)
+        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Object" :root ,java-bootstrap-classes-root)
                             state))
        (state
-        (submit-event-quiet `(load-class-from-hierarchy "java.lang.Class" :root ,java-bootstrap-classes-root)
+        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Class" :root ,java-bootstrap-classes-root)
                             state))
        (state
-        (submit-event-quiet `(load-class-from-hierarchy "java.lang.Math" :root ,java-bootstrap-classes-root)
+        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Math" :root ,java-bootstrap-classes-root)
                             state))
        (absolute-path-to-java-file
         (if (equal #\/ (char path-to-java-file 0))
@@ -743,7 +810,7 @@
                           class-name)))
         (er hard? 'test-file-fn "Class-name mismatch: ~x0 vs ~x1." class-name class-name-from-class-file)
         (mv :class-name-mismatch nil state constant-pool))
-       ;; We'll test any method whose name starts with "test":
+       ;; We'll test any method whose name starts with "test" or "fail_test": ;; todo: update all docs to mention "fail_test"
        (method-info-alist (jvm::class-decl-methods class-info))
        (test-method-ids (select-method-ids-to-test method-info-alist methods-to-test))
        ((when (endp test-method-ids))
@@ -765,7 +832,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules monitor
+        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state constant-pool))
@@ -779,37 +846,46 @@
        )
     (mv (erp-nil) '(progn) state constant-pool)))
 
-;; Test all methods in the given file whose names start with "test".  This
-;; variant of the tool should be called from within the ACL2 loop.
+;; Test all methods in the given file whose names start with "test" or
+;; "fail_test".  This variant of the tool should be called from within the ACL2
+;; loop, or in a book.
 (defmacro test-file (path-to-java-file &key
                                        ;;(assumptions 'nil)
-                                       (methods ':auto) ;;which methods to test (default is ones whose names start with "test")
-                                       (expected-failures 'nil)
+                                       (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                       (expected-failures ':auto)
+                                       (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (extra-rules 'nil)
                                        (remove-rules 'nil)
+                                       (prune-branches-approximately 't)
+                                       (prune-branches-precisely '10000) ; todo: can explode
                                        (monitor 'nil)
                                        (print 'nil))
   `(make-event-quiet (test-file-fn ,path-to-java-file
                                    ;;',assumptions
                                    ,methods
                                    ,expected-failures
+                                   ,error-on-unexpectedp
                                    ,print
                                    ,extra-rules
                                    ,remove-rules
+                                   ,prune-branches-approximately
+                                   ,prune-branches-precisely
                                    ,monitor
                                    state
                                    constant-pool)))
 
-;; Test all methods in the given file whose names start with "test".  This
+;; Test all methods in the given file whose names start with "test" or "fail_test".  This
 ;; variant of the tool should be called from the shell or from an IDE.  This
 ;; does not check whether the tests get the right answers (it allows any of the
 ;; tests to fail). By contrast, test-file lets you indicate which tests should
 ;; fail (and thus which tests must not fail).
 (defmacro test-file-and-exit (path-to-java-file &key
                                                 ;;(assumptions 'nil)
-                                                (methods ':auto) ;;which methods to test (default is ones whose names start with "test")
+                                                (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
+                                                (prune-branches-approximately 't)
+                                                (prune-branches-precisely '10000) ; todo: can explode
                                                 (monitor 'nil)
                                                 (print ':brief) ;(print 'nil)
                                                 )
@@ -817,10 +893,13 @@
      (test-file-fn ,path-to-java-file
                    ;;',assumptions
                    ,methods
-                   :any
+                   :auto ; methods-expected-to-fail
+                   nil ; error-on-unexpectedp, don't cause hard error on unexpected result
                    ,print
                    ,extra-rules
                    ,remove-rules
+                   ,prune-branches-approximately
+                   ,prune-branches-precisely
                    ,monitor
                    state
                    constant-pool)

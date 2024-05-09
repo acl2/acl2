@@ -38,7 +38,7 @@
 ; Warren A. Hunt, Jr. <hunt@cs.utexas.edu>
 
 ; [Shilpi Goel] This book is a generalized version of older books
-; present in [books]/projects/x86isa/tools/execution/exec-loaders.
+; present in projects/x86isa/tools/execution/exec-loaders.
 
 ;; ----------------------------------------------------------------------
 

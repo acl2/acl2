@@ -1,10 +1,10 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,62 +50,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ xdoc::evmac-section (title &rest content)
-  :short "Construct a section
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h3 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ xdoc::evmac-subsection (title &rest content)
-  :short "Construct a subsection
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h4 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ xdoc::evmac-subsubsection (title &rest content)
-  :short "Construct a subsubsection
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h5 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro+ xdoc::evmac-subsubsubsection (title &rest content)
-  :short "Construct a subsubsubsection
-          of the user documentation of an event macro."
-  :long
-  (xdoc::topstring-p
-   "This provides more abstraction than using a specific heading.")
-  `(xdoc::&&
-    (xdoc::h6 ,title)
-    ,@content))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defconst xdoc::*evmac-section-intro-title*
   "Introduction")
 
 (defmacro+ xdoc::evmac-section-intro (&rest content)
   :short "Construct the introduction section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-intro-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-intro-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,8 +67,8 @@
 (defmacro+ xdoc::evmac-section-form (&rest content)
   :short "Construct the general form section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-form-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-form-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,8 +78,8 @@
 (defmacro+ xdoc::evmac-section-inputs (&rest content)
   :short "Construct the inputs section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-inputs-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-inputs-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -150,7 +102,7 @@
                                 "`"
                                 xdoc::*evmac-section-inputs-title*
                                 "' section")))
-    `(xdoc::evmac-section
+    `(xdoc::section
       xdoc::*evmac-section-appconds-title*
       (xdoc::p
        "In order for "
@@ -180,8 +132,8 @@
 (defmacro+ xdoc::evmac-section-generated (&rest content)
   :short "Construct the generated events section
           of the user documentation of an event macro."
-  `(xdoc::evmac-section xdoc::*evmac-section-generated-title*
-                        ,@content))
+  `(xdoc::section xdoc::*evmac-section-generated-title*
+                  ,@content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +158,7 @@
      the @('macro-ref') variable is not a link."))
   (b* ((macro-name (string-downcase (symbol-name macro)))
        (macro-ref (concatenate 'string "@('" macro-name "')")))
-    `(xdoc::evmac-section
+    `(xdoc::section
       xdoc::*evmac-section-redundancy-title*
       (xdoc::p
        (concatenate
@@ -288,7 +240,10 @@
       "@(':print') &mdash; default @(':result')"
       (xdoc::p
        "Specifies what is printed on the screen
-        (see @(see acl2::event-macro-screen-printing)).")
+        (see "
+       (xdoc::seetopic "acl2::event-macro-screen-printing"
+                       "screen printing")
+       ").")
       (xdoc::p
        "It must be one of the following:")
       (xdoc::ul
@@ -538,10 +493,15 @@
       "The name of a "
       ,(if 1arg "unary " "")
       "logic-mode function.
-         This function must have no input or output @(see acl2::stobj)s."
+       This function must have no input or output "
+      (xdoc::seetopic "acl2::stobj" "stobjs")
+      "."
       ,(if 1res
-           " This function must return
-              a single (i.e. non-@(tsee acl2::mv)) result."
+           `(xdoc::&&
+             " This function must return
+              a single (i.e. non-"
+             (xdoc::seetopic "acl2::mv" "@('mv')")
+             " result.")
          "")
       ,(cond ((eq guard t) " This function must be guard-verified.")
              ((eq guard nil) "")
@@ -561,30 +521,44 @@
       "A "
       ,(if 1arg "unary " "")
       "closed lambda expression
-         that only references logic-mode functions.
-         This lambda expression must have
-         no input or output @(see acl2::stobj)s."
+       that only references logic-mode functions.
+       This lambda expression must have no input or output "
+      (xdoc::seetopic "acl2::stobj" "stobjs")
+      "."
       ,(if 1res
-           " This lambda expression must return
-              a single (i.e. non-@(tsee acl2::mv)) result."
+           `(xdoc::&&
+             " This lambda expression must return
+              a single (i.e. non-"
+             (xdoc::seetopic "acl2::mv" "@('mv')")
+             " result.")
          "")
-      ,(cond ((eq guard t) " The body of this lambda expression
-                              must only call guard-verified functions,
-                              except possibly
-                              in the @(':logic') subterms of @(tsee acl2::mbe)s
-                              or via @(tsee acl2::ec-call).")
+      ,(cond ((eq guard t)
+              `(xdoc::&&
+                " The body of this lambda expression
+                 must only call guard-verified functions,
+                 except possibly
+                 in the @(':logic') subterms of "
+                (xdoc::seetopic "acl2::mbe" "@('mbe')")
+                "s or via "
+                (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+                "."))
              ((eq guard nil) "")
              (t `(xdoc::&&
-                  " If " ,guard ", then the body of this lambda expression
-                     must only call guard-verified functions,
-                     except possibly
-                     in the @(':logic') subterms of @(tsee acl2::mbe)s
-                     or via @(tsee acl2::ec-call).")))
+                  " If "
+                  ,guard
+                  ", then the body of this lambda expression
+                   must only call guard-verified functions,
+                   except possibly
+                   in the @(':logic') subterms of "
+                  (xdoc::seetopic "acl2::mbe" "@('mbe')")
+                  "s or via "
+                  (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+                  ".")))
       " As an abbreviation, the name @('mac') of a macro stands for
-         the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
-         where @('z1'), @('z2'), ... are the required parameters of @('mac');
-         that is, a macro name abbreviates its eta-expansion
-         (considering only the macro's required parameters)."
+       the lambda expression @('(lambda (z1 z2 ...) (mac z1 z2 ...))'),
+       where @('z1'), @('z2'), ... are the required parameters of @('mac');
+       that is, a macro name abbreviates its eta-expansion
+       (considering only the macro's required parameters)."
       ,(if dont-be-or-call
            `(xdoc::&& " This lambda expression must not reference "
                       ,dont-be-or-call
@@ -598,7 +572,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ xdoc::evmac-desc-term (&key
-                                  (subject '"It")
+                                  (subject 'nil)
                                   (free-vars 'nil)
                                   (1res 'nil)
                                   (guard 'nil)
@@ -614,11 +588,13 @@
     "This utility provides some customization facilities:")
    (xdoc::ul
     (xdoc::li
-     "The @('subject') parameter must be XDOC text
-      that describes the subject of the assertion of the requirements.
-      The default is the string @('\"It\"'),
-      which should be appropriate if this text follows
-      some preceding text that describes what the input is for.")
+     "The @('subject') parameter must be either @('nil')
+      or XDOC text that describes
+      the subject of the assertion of the requirements.
+      The default is @('nil'), which means that there is no subject,
+      and the description starts with \"A term that...\".
+      If not @('nil'), the description starts with
+      \"<i>subject</i> must be a term...\".")
     (xdoc::li
      "The @('free-vars') parameter must be one of the following:
       (i) XDOC text that describes the allowed free variables in the term;
@@ -651,37 +627,53 @@
     "This utility may need to be extended and generalized in the future,
      in particular with more customization facilities."))
   `(xdoc::&&
-    (xdoc::p
-     ,subject
-     " must be a term that only references logic-mode functions"
-     ,(if free-vars
-          `(xdoc::&&
-            " and that includes no free variables other than "
-            ,free-vars)
-        "")
-     ". This term must have no output @(see acl2::stobj)s."
-     ,(if 1res
-          " This term must return
-              a single (i.e. non-@(tsee acl2::mv)) value."
-        "")
-     ,(cond ((eq guard t) " This term
-                             must only call guard-verified functions,
-                             except possibly
-                             in the @(':logic') subterms of @(tsee acl2::mbe)s
-                             or via @(tsee acl2::ec-call).")
-            ((eq guard nil) "")
-            (t `(xdoc::&&
-                 " If " ,guard ", then this term
-                    must only call guard-verified functions,
-                    except possibly
-                    in the @(':logic') subterms of @(tsee acl2::mbe)s
-                    or via @(tsee acl2::ec-call).")))
-     ,(if dont-call
-          `(xdoc::&& " This term must not reference " ,dont-call ".")
-        "")
-     ,(if additional
-          `(xdoc::&& " " ,additional)
-        ""))))
+    ,@(if subject
+          (list subject " must be a")
+        (list "A"))
+    " term that only references logic-mode functions"
+    ,(if free-vars
+         `(xdoc::&&
+           " and that includes no free variables other than "
+           ,free-vars)
+       "")
+    ". This term must have no output "
+    (xdoc::seetopic "acl2::stobj" "stobjs")
+    "."
+    ,(if 1res
+         `(xdoc::&&
+           " This term must return
+            a single (i.e. non-"
+           (xdoc::seetopic "acl2::mv" "@('mv')")
+           " value.")
+       "")
+    ,(cond ((eq guard t)
+            `(xdoc::&&
+              " This term
+               must only call guard-verified functions,
+               except possibly
+               in the @(':logic') subterms of "
+              (xdoc::seetopic "acl2::mbe" "@('mbe')")
+              "s or via "
+              (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+              "."))
+           ((eq guard nil) "")
+           (t `(xdoc::&&
+                " If "
+                ,guard
+                ", then this term
+                 must only call guard-verified functions,
+                 except possibly
+                 in the @(':logic') subterms of "
+                (xdoc::seetopic "acl2::mbe" "@('mbe')")
+                "s or via "
+                (xdoc::seetopic "acl2::ec-call" "@('ec-call')")
+                ".")))
+    ,(if dont-call
+         `(xdoc::&& " This term must not reference " ,dont-call ".")
+       "")
+    ,(if additional
+         `(xdoc::&& " " ,additional)
+       "")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -803,7 +795,7 @@
                   (xdoc::a :href ,notes-ref "these notes")
                   ", which use "
                   (xdoc::a :href "res/kestrel-design-notes/notation.pdf"
-                    "this notation")
+                           "this notation")
                   ".")
                  ,@(and correspondences
                         `((xdoc::p
@@ -838,7 +830,7 @@
    (xdoc::p
     "The topic lists the names used for arguments and results of functions,
      along with brief descriptions of the names.
-     This listing consists of bullets  in an unordered list.
+     This listing consists of bullets in an unordered list.
      The @(':items') argument must be a list of XDOC trees,
      each of which is wrapped into an @(tsee xdoc::li),
      and the so-wrapped items are put into an @(tsee xdoc::ul).")
@@ -850,8 +842,14 @@
    (xdoc::p
     "If there are no items, the list is omitted altogether.")
    (xdoc::p
-    "This macro also provide a @(':default-parent') option,
+    "This macro also provides a @(':default-parent') option,
      which is @('nil') by default and is passed to @(tsee defxdoc+).")
+   (xdoc::p
+    "This macro also provides a @(':additional') option,
+     which must be a list of XDOC trees (@('nil') by default),
+     which is added at the end of the @(tsee defxdoc+),
+     to provide additional information about
+     the implementation being documented.")
    (xdoc::@def "xdoc::evmac-topic-implementation"))
 
   (define xdoc::evmac-topic-implementation-li-wrap ((items true-listp))
@@ -861,30 +859,31 @@
           (t (cons `(xdoc::li ,(car items))
                    (xdoc::evmac-topic-implementation-li-wrap (cdr items))))))
 
-  (defmacro xdoc::evmac-topic-implementation (macro &key items default-parent)
+  (defmacro xdoc::evmac-topic-implementation (macro &key
+                                                    items
+                                                    default-parent
+                                                    additional)
     (declare (xargs :guard (symbolp macro)))
     (b* ((macro-name (string-downcase (symbol-name macro)))
          (macro-ref (concatenate 'string "@(tsee " macro-name ")"))
          (this-topic (add-suffix macro "-IMPLEMENTATION"))
          (parent-topic macro)
          (short (concatenate 'string "Implementation of " macro-ref "."))
-         (long (and items
+         (long (and (or items additional)
                     `(xdoc::topstring
                       (xdoc::p
-                       "The implementation functions have arguments,
-                        as well as results (in the "
-                       (xdoc::seetopic "std::returns-specifiers"
-                                       "@(':returns') specifiers")
-                       "), consistently named as follows
+                       "The implementation functions have arguments and results
+                        consistently named as follows
                         (unless otherwise stated, explicitly or implicitly,
-                        in he functions):")
+                        in the functions):")
                       (xdoc::ul
                        ,@(xdoc::evmac-topic-implementation-li-wrap items))
                       (xdoc::p
                        "Implementation functions' arguments and results
                         that are not listed above
                         are described in, or clear from,
-                        those functions' documentation.")))))
+                        those functions' documentation.")
+                      ,@additional))))
       `(defxdoc+ ,this-topic
          :parents (,parent-topic)
          :short ,short
@@ -1038,20 +1037,20 @@
              '((xdoc::p
                 "Some events are generated in two slightly different variants:
                  one that is local to the generated "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ", and one that is exported from the "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ". Proof hints are in the former but not in the latter,
                  thus keeping the ACL2 history ``clean'';
                  some proof hints may refer to events
                  that are generated only locally to the "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 "."))))
        (para-local?
         (and some-local-p
              '((xdoc::p
                 "Some events are generated only locally to the generated "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ". These are auxiliary events
                  needed to introduce the non-local (i.e. exported) events,
                  but whose presence in the ACL2 history is no longer needed
@@ -1063,7 +1062,7 @@
         (and some-nonlocal-p
              '((xdoc::p
                 "Some events are generated only non-locally to the generated "
-                (xdoc::seetopic "acl2::encapsulate" "@(tsee encapsulate)")
+                (xdoc::seetopic "acl2::encapsulate" "@('encapsulate')")
                 ", i.e. they are exported,
                  without local counterparts."))))
        (long? (and (or some-local-nonlocal-p

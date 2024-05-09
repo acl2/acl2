@@ -11,9 +11,10 @@
 (in-package "R1CS")
 
 (include-book "kestrel/crypto/r1cs/sparse/rule-lists" :dir :system)
+(include-book "kestrel/axe/priorities" :dir :system)
 
 ;; try this rule last since it has a free var (do we really need it at all?):
-(table acl2::axe-rule-priorities-table 'pfield::integerp-when-fep 10)
+(acl2::set-axe-rule-priority pfield::integerp-when-fep 10)
 
 (defun more-prime-fields-rules ()
   (declare (xargs :guard t))

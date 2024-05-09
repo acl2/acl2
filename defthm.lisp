@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -263,7 +263,7 @@
 
 (mutual-recursion
 
-(defun non-recursive-fnnames-alist-rec (term ens wrld acc)
+(defun non-recursive-fnnames-alist-rec (term ens wrld ilk acc)
 
 ; Accumulate, into acc, an alist that associates each enabled non-recursive
 ; function symbol fn of term either with the base-symbol of its most recent
@@ -278,15 +278,60 @@
                               (alistp acc))))
   (cond
    ((variablep term) acc)
-   ((fquotep term) acc)
+   ((fquotep term)
+
+; Below we look for calls of non-recursive functions that may be rewritten by
+; rewrite-lambda-object.  We don't consider the more general rewriting done by
+; rewrite-quoted-constant.  That's because we want our warnings to be
+; appropriate in most cases, yet rewriting of constants other than well-formed
+; lambda objects requires lemmas of class rewrite-quoted-constant, so
+; non-recursive function calls will generally not be opened up.
+
+    (cond ((or (eq ilk :FN?) ; for apply$, from ilks-per-argument-slot
+               (eq ilk :FN))
+           (let ((evg (unquote term)))
+             (cond ((and (not (symbolp evg))
+                         (well-formed-lambda-objectp evg wrld)
+                         (enabled-numep *rewrite-lambda-modep-xnume* ens)
+
+; Without the indicated enabled rule below, we only call
+; clean-up-dirty-lambda-object-body on the lambda-object's body rather than
+; rewriting it.  That same cleaning up takes place, or close enough to it, when
+; processing the rewrite rule; so we don't bother looking to warn here merely
+; for constructs that aren't cleaned up, as we don't expect to see much or any
+; of that.
+
+                         (enabled-numep *rewrite-lambda-modep-def-nume* ens))
+
+; We are ready to rewrite the body of the lambda object.  The present function,
+; non-recursive-fnnames-alist, is called (either directly or by way of
+; non-recursive-fnnames-alist-lst) by chk-rewrite-rule-warnings,
+; chk-acceptable-linear-rule2, chk-triggers, and
+; warned-non-rec-fns-alist-for-tp.  So rules of class :rewrite, :linear,
+; :forward-chaining, and :type-prescription (respectively) will provide
+; suitable warnings for non-recursive functions called within well-formed
+; lambda objects.
+
+                    (non-recursive-fnnames-alist-rec (lambda-object-body evg)
+                                                     ens wrld nil acc))
+                   (t acc))))
+          (t acc)))
    ((flambda-applicationp term)
     (non-recursive-fnnames-alist-rec-lst
-     (fargs term) ens wrld
+     (fargs term) ens wrld nil
      (if (assoc-equal (ffn-symb term) acc)
          acc
        (acons (ffn-symb term) nil acc))))
    (t (non-recursive-fnnames-alist-rec-lst
        (fargs term) ens wrld
+
+; The following call of ilks-per-argument-slot is responsible for considering
+; :FN? above, which it returns as a slot for for apply$.  So it might be nice
+; to have a version of ilks-per-argument-slot that does not make a special case
+; for apply$, using :FN in place of :FN?.  But the resulting trivial runtime
+; benefit and code simplification didn't seem worth making another definition.
+
+       (ilks-per-argument-slot (ffn-symb term) wrld)
        (cond
         ((assoc-eq (ffn-symb term) acc)
          acc)
@@ -304,15 +349,16 @@
                         acc)))
               (t acc)))))))))
 
-(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld acc)
+(defun non-recursive-fnnames-alist-rec-lst (lst ens wrld ilks acc)
   (declare (xargs :guard (and (pseudo-term-listp lst)
                               (enabled-structure-p ens)
                               (plist-worldp wrld)
                               (alistp acc))))
   (cond ((endp lst) acc)
         (t (non-recursive-fnnames-alist-rec-lst
-            (cdr lst) ens wrld
-            (non-recursive-fnnames-alist-rec (car lst) ens wrld acc)))))
+            (cdr lst) ens wrld (cdr ilks)
+            (non-recursive-fnnames-alist-rec (car lst) ens wrld (car ilks)
+                                             acc)))))
 )
 
 (defun non-recursive-fnnames-alist (term ens wrld)
@@ -320,8 +366,7 @@
 ; See non-recursive-fnnames-alist-rec.  (The present function reverses the
 ; result, to respect the original order of appearance of function symbols.)
 
-  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil)))
-
+  (reverse (non-recursive-fnnames-alist-rec term ens wrld nil nil)))
 
 (defun non-recursive-fnnames-alist-lst (lst ens wrld)
 
@@ -329,7 +374,7 @@
 ; terms; it also reverses the result, to respect the original order of
 ; appearance of function symbols.)
 
-  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil)))
+  (reverse (non-recursive-fnnames-alist-rec-lst lst ens wrld nil nil)))
 
 ; The alist just constructed is odd because it may contain some lambda
 ; expressions posing as function symbols.  We use the following function
@@ -1568,7 +1613,7 @@
                      (:rule-class ,token))
                    token name free-vars
                    inst-hyps
-                   (tilde-*-untranslate-lst-phrase inst-hyps t wrld))
+                   (tilde-*-untranslate-lst-phrase inst-hyps nil t wrld))
          (free-variable-error? token name ctx wrld state)))
        (t (value nil)))
       (pprogn
@@ -1597,8 +1642,8 @@
                     possibility that the free variables of this rewrite rule ~
                     were forced into the conjecture."
                    (if (null (cdr (forced-hyps inst-hyps))) 0 1)
-                   (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps) t
-                                                   wrld)))
+                   (tilde-*-untranslate-lst-phrase (forced-hyps inst-hyps)
+                                                   nil t wrld)))
         (t state))
        (cond
         ((set-difference-eq rhs-vars lhs-vars)
@@ -1610,7 +1655,7 @@
           ((set-difference-eq rhs-vars
                               (all-vars1-lst hyps lhs-vars))
            (warning$ ctx "Free"
-                     "A ~x0 rule generated from ~x1 contains the the free ~
+                     "A ~x0 rule generated from ~x1 contains the free ~
                       variable~#2~[~/s~] ~&2 on the right-hand side of the ~
                       rule, which ~#2~[is~/are~] not bound on the left-hand ~
                       side~#3~[~/ or in the hypothesis~/ or in any ~
@@ -2469,6 +2514,10 @@
   (let* ((concl (remove-guard-holders concl wrld))
          (xconcl (expand-inequality-fncall concl))
          (lst (and (null trigger-terms) ; optimization
+
+; By evaluating ground terms, we improve the chance that a trigger term matches
+; a rewritten target.
+
                    (external-linearize xconcl ens wrld state)))
          (hyps (preprocess-hyps hyps wrld))
          (all-vars-hyps (and (null trigger-terms) ; optimization
@@ -3309,7 +3358,7 @@
               ((and free-vars forced-hyps)
                (warning$ ctx "Free"
                          "Forward chaining rule ~x0 has forced (or ~
-                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2, ~
+                          case-split) ~#1~[hypothesis~/hypotheses~], ~*2 ~
                           which will be used to instantiate one or more free ~
                           variables.  We will search for suitable ~
                           instantiations (of the term inside the FORCE or ~
@@ -3336,8 +3385,8 @@
                           were forced into the conjecture."
                          name
                          (if (null (cdr forced-hyps)) 0 1)
-                         (tilde-*-untranslate-lst-phrase forced-hyps t
-                                                         wrld)))
+                         (tilde-*-untranslate-lst-phrase forced-hyps
+                                                         #\, t wrld)))
               (t state))
              (cond
               (non-rec-fns
@@ -3427,6 +3476,34 @@
           (t (mv (flatten-ands-in-lit (fargn term 1))
                  (flatten-ands-in-lit (fargn term 2)))))))
 
+(defun warn-on-synp-hyps1 (hyps name rule-class ctx wrld state)
+  (cond ((endp hyps) state)
+        ((ffn-symb-p (car hyps) 'synp)
+         (let ((uhyp (untranslate (car hyps) t wrld)))
+           (warning$ ctx ("Syntaxp/Bind-free Hypotheses")
+                     "For the rule-class ~x0, ~#1~[syntaxp ~
+                      hypotheses~/bind-free hypotheses~/hypotheses calling ~
+                      synp~] receive no special treatment; they are always ~
+                      simply true.  Thus, for proposed rule ~x2 it is ~
+                      recommended to remove the hypothesis ~x3."
+                     rule-class
+                     (cond ((and (consp uhyp)
+                                 (eq (car uhyp) 'syntaxp))
+                            0)
+                           ((and (consp uhyp)
+                                 (eq (car uhyp) 'bind-free))
+                            1)
+                           (t 2))
+                     name
+                     uhyp)))
+        (t (warn-on-synp-hyps1 (cdr hyps) name rule-class ctx wrld state))))
+
+(defun warn-on-synp-hyps (hyps name rule-class ctx wrld state)
+  (cond ((or (null hyps)
+             (warning-off-p "Syntaxp/Bind-free Hypotheses" state))
+         state)
+        (t (warn-on-synp-hyps1 hyps name rule-class ctx wrld state))))
+
 (defun chk-acceptable-forward-chaining-rule (name match-free trigger-terms term
                                                   ctx ens wrld state)
 
@@ -3444,9 +3521,10 @@
    (destructure-forward-chaining-term term wrld)
    (let ((hyps-vars (all-vars1-lst hyps nil))
          (concls-vars (all-vars1-lst concls nil)))
-     (chk-triggers name match-free hyps trigger-terms
-                   hyps-vars concls-vars
-                   ctx ens wrld state))))
+     (pprogn (warn-on-synp-hyps hyps name :forward-chaining ctx wrld state)
+             (chk-triggers name match-free hyps trigger-terms
+                           hyps-vars concls-vars
+                           ctx ens wrld state)))))
 
 (defun putprop-forward-chaining-rules-lst
   (rune nume triggers hyps concls match-free wrld)
@@ -4298,9 +4376,9 @@
           (t `(progn ,(defevaluator-check-form x evfn evfn-lst fn-args-lst)
                      ,form)))))
 
-(table term-table nil nil
-       :guard
-       (term-listp val world))
+(set-table-guard term-table
+                 (term-listp val world)
+                 :show t)
 
 (table term-table t '((binary-+ x y) (binary-* '0 y) (car x)))
 
@@ -4642,7 +4720,193 @@
   (canonical-ancestors-rec (collect-canonical-siblings fns wrld nil nil)
                            wrld t))
 
-(defun chk-evaluator-use-in-rule (name meta-fn hyp-fn extra-fns rule-type ev
+(defrec transparent-rec
+  names
+
+; WARNING: Do not change the following "cheap" flag to t!  It is important that
+; (make transparent-rec) return a non-nil value, since we set the 'constrainedp
+; property of a transparent constrained function to that value, and we need
+; 'constrainedp to be non-nil in that case.
+
+  nil)
+
+(defun transparent-fn-p (name wrld)
+
+; Warning: Name must be canonical!  That is because we store a transparent-rec
+; record as the 'constrained property only for a canonical function symbol.
+
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld)
+                              (eq (canonical-sibling name wrld)
+                                  name))))
+  (weak-transparent-rec-p (getpropc name 'constrainedp nil wrld)))
+
+(defun immediate-canonical-ancestors-tr (fn trp wrld)
+
+; This function is analogous to immediate-instantiable-ancestors, except:
+; - trp is t when fn is transparent, in which case attachment is returned;
+; - it traffics entirely in canonical functions;
+; - it is not concerned with the notion of instantiablep; and
+; - the rlp argument of immediate-canonical-ancestors is implicitly t here.
+
+  (cond
+   ((and trp
+
+; A transparent function with no attachment gets ancestors as as through it's
+; not transparent.
+
+         (let ((pair (attachment-pair fn wrld)))
+           (and pair
+                (list (canonical-sibling (cdr pair) wrld))))))
+   (t
+    (let ((guard-anc
+           (canonical-ffn-symbs (guard fn nil wrld) wrld nil fn t)))
+      (mv-let (name x) ; name could be t
+        (constraint-info+ fn wrld)
+        (cond
+         ((unknown-constraints-p x)
+          (collect-canonical-siblings (unknown-constraints-supporters x)
+                                      wrld guard-anc fn))
+         (name (canonical-ffn-symbs-lst x wrld guard-anc fn t))
+         (t (canonical-ffn-symbs x wrld guard-anc fn t))))))))
+
+(defun canonical-ancestors-tr-rec (fns wrld)
+
+; See canonical-ancestors-rec.  Unlike that function, this one includes fns in
+; the result, and it assumes that all functions in fns are canonical.  Also,
+; that function's rlp parameter is implicitly t here.
+
+  (cond
+   ((null fns) (mv nil nil))
+   (t (let* ((fn (car fns))
+             (trp (transparent-fn-p fn wrld))
+             (imm (immediate-canonical-ancestors-tr fn trp wrld)))
+        (mv-let (tr-lst1 ans1)
+          (canonical-ancestors-tr-rec imm wrld)
+          (mv-let (tr-lst2 ans2)
+            (canonical-ancestors-tr-rec (cdr fns) wrld)
+            (mv (if trp ; even if (car fns) has no attachment
+                    (add-to-set-eq fn (union-eq tr-lst1 tr-lst2))
+                  (union-eq tr-lst1 tr-lst2))
+                (add-to-set-eq fn (union-eq ans1 ans2)))))))))
+
+(defun canonical-ancestors-tr-lst (fns wrld)
+
+; Fns is a set of function symbols, not necessarily canonical.  Like
+; canonical-ancestors-lst, we return all canonical ancestors of fns -- except,
+; unlike that function, we pass through transparent functions that have
+; attachments.  We actually return (mv tr-lst anc), where anc is as described
+; above and tr-lst lists the transparent functions with attachments that are
+; passed through when collecting anc.
+
+  (canonical-ancestors-tr-rec (collect-canonical-siblings fns wrld nil nil)
+                              wrld))
+
+(mutual-recursion
+
+(defun some-canonical-ancestors-tr-path (lst btm wrld)
+  (declare (xargs :mode :program))
+  (cond ((endp lst) nil)
+        (t (or (canonical-ancestors-tr-path (car lst) btm wrld)
+               (some-canonical-ancestors-tr-path (cdr lst) btm wrld)))))
+
+(defun canonical-ancestors-tr-path (top btm wrld)
+; Top and btm are canonical.
+  (cond
+   ((eq top btm) (list top))
+   (t (let* ((trp (transparent-fn-p top wrld))
+             (imm (immediate-canonical-ancestors-tr top trp wrld))
+             (path (some-canonical-ancestors-tr-path imm btm wrld)))
+        (and path (cons top path))))))
+)
+
+(mutual-recursion
+
+(defun some-canonical-ancestors-path (lst btm wrld)
+  (declare (xargs :mode :program))
+  (cond ((endp lst) nil)
+        (t (or (canonical-ancestors-path (car lst) btm wrld)
+               (some-canonical-ancestors-path (cdr lst) btm wrld)))))
+
+(defun canonical-ancestors-path (top btm wrld)
+; Top and btm are canonical.
+  (cond
+   ((eq top btm) (list top))
+   (t (let* ((imm (immediate-canonical-ancestors top wrld t))
+             (path (some-canonical-ancestors-path imm btm wrld)))
+        (and path (cons top path))))))
+)
+
+(defun chk-meta-fn-attachments (name rule-class meta-fn-lst
+                                     ev-anc extra-anc ev-fns
+                                     newp ctx wrld state)
+
+; Newp is t when we are checking a rule.  It is nil when we are rechecking a
+; rule because an attachment has changed.
+
+  (mv-let (tr-fns meta-anc)
+    (canonical-ancestors-tr-lst meta-fn-lst wrld)
+    (let* ((common-anc-1 (intersection-eq ev-anc meta-anc))
+           (bad-attached-fns-1 (attached-fns common-anc-1 wrld))
+           (common-anc-2 (intersection-eq extra-anc meta-anc))
+           (bad-attached-fns-2 (attached-fns common-anc-2 wrld)))
+      (cond
+       ((or bad-attached-fns-1 bad-attached-fns-2)
+        (let* ((msg "because the attached function~#0~[~/s~] ~&0 ~
+                     ~#1~[is~/are~/would be~] ancestral in both the ~@2 and ~
+                     ~@3 functions")
+               (type-string
+                (if (eq rule-class :meta) "meta" "clause-processor"))
+               (btm (canonical-sibling (car (or bad-attached-fns-1
+                                                bad-attached-fns-2))
+                                       wrld))
+               (m-path (some-canonical-ancestors-tr-path
+                        (collect-canonical-siblings meta-fn-lst wrld nil nil)
+                        btm
+                        wrld))
+               (e-path (some-canonical-ancestors-path ev-fns btm wrld)))
+          (er soft ctx ; see comment in defaxiom-supporters
+              "The ~#0~[proposed~/existing~] ~x1 rule, ~x2, ~#0~[is ~
+               illegal~/would become illegal after the proposed defattach ~
+               event changes one or more attachments made to transparent ~
+               functions,~] ~@3~@4.  See :DOC evaluator-restrictions and see ~
+               :DOC transparent-functions.~@5~@6"
+              (if newp 0 1)
+              rule-class
+              name
+              (msg msg
+                   (or bad-attached-fns-1 bad-attached-fns-2)
+                   (cond ((not newp) 2)
+                         ((cdr (or bad-attached-fns-1 bad-attached-fns-2)) 1)
+                         (t 0))
+                   (if bad-attached-fns-1 "evaluator" "meta-extract")
+                   type-string)
+              (cond ((and bad-attached-fns-1 bad-attached-fns-2)
+                     (msg ", and ~@0"
+                          (msg msg
+                               bad-attached-fns-2
+                               (cond ((not newp) 2)
+                                     ((cdr bad-attached-fns-2) 1)
+                                     (t 0))
+                               "meta-extract"
+                               type-string)))
+                    (t ""))
+              (msg "~|~%The following ~#0~[is~/would be~] an ancestor path ~
+                    from ~x1 to the ~s2 function ~x3, i.e., each function ~
+                    symbol ~#0~[is~/would be~] a supporter of the ~
+                    next:~|~%~X45"
+                   (if newp 0 1) btm type-string (car m-path) (reverse m-path)
+                   nil)
+              (msg "~|~%The following ~#0~[is~/would be~] an ancestor path ~
+                    from ~x1 to the evaluator function ~x2, i.e., each ~
+                    function symbol ~#0~[is~/would be~] a supporter of the ~
+                    next:~|~%~X34"
+                   (if newp 0 1) btm (car e-path) (reverse e-path) nil))))
+       (t (value (and (or tr-fns common-anc-2 common-anc-1)
+                      (cons tr-fns
+                            (union-eq common-anc-2 common-anc-1)))))))))
+
+(defun chk-evaluator-use-in-rule (name meta-fn hyp-fn extra-fns rule-class ev
                                        ctx wrld state)
   (er-progn
    (let ((temp (context-for-encapsulate-pass-2 (decode-logical-name ev wrld)
@@ -4658,7 +4922,7 @@
              cases, a solution is to make the current ~x0 rule LOCAL, though ~
              the alleged evaluator will probably not be available for future ~
              :META or :CLAUSE-PROCESSOR rules."
-            rule-type
+            rule-class
             name
             ev))
        (maybe
@@ -4671,101 +4935,89 @@
                     alleged evaluator will probably not be available for ~
                     future :META or :CLAUSE-PROCESSOR rules. See :DOC ~
                     evaluator-restrictions."
-                   rule-type
+                   rule-class
                    name
                    ev)
          (value nil)))
        (otherwise (value nil))))
    (mv-let
-    (fn constraint)
-    (constraint-info ev wrld)
-    (declare (ignore fn))
-    (cond
-     ((unknown-constraints-p constraint)
-      (er soft ctx ; see comment in defaxiom-supporters
-          "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
-           function symbol, ~x2, has unknown-constraints.  See :DOC ~
-           partial-encapsulate."
-          rule-type
-          name
-          ev))
-     (t
-      (let* ((ev-lst (ev-lst-from-ev ev wrld))
-             (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
-             (ev-lst-prop (getpropc ev-lst 'defaxiom-supporter nil wrld))
-             (meta-fn-lst (if hyp-fn
-                              (list meta-fn hyp-fn)
-                            (list meta-fn)))
-             (meta-anc (canonical-ancestors-lst meta-fn-lst wrld))
-             (extra-anc (canonical-ancestors-lst extra-fns wrld))
-             (ev-anc (canonical-ancestors-lst (list ev) wrld)))
-        (cond
-         ((and extra-fns
-               (or (getpropc ev 'predefined nil wrld)
-                   (getpropc ev-lst 'predefined nil wrld)))
+     (fn constraint)
+     (constraint-info ev wrld)
+     (declare (ignore fn))
+     (cond
+      ((unknown-constraints-p constraint)
+       (er soft ctx ; see comment in defaxiom-supporters
+           "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
+            function symbol, ~x2, has unknown-constraints.  See :DOC ~
+            partial-encapsulate."
+           rule-class
+           name
+           ev))
+      (t
+       (let* ((ev-lst (ev-lst-from-ev ev wrld))
+              (ev-prop (getpropc ev 'defaxiom-supporter nil wrld))
+              (ev-lst-prop (getpropc ev-lst 'defaxiom-supporter nil wrld))
+              (meta-fn-lst (if hyp-fn
+                               (list meta-fn hyp-fn)
+                             (list meta-fn)))
+              (extra-anc
+
+; We could store ancestors of meta-extract-contextual-fact and
+; meta-extract-global-fact+, so that we can just retrieve them here.  But this
+; computation is probably cheap, so we opt for simplicity.
+
+               (canonical-ancestors-lst extra-fns wrld))
+              (ev-anc (canonical-ancestors-lst (list ev) wrld)))
+         (cond
+          ((and extra-fns
+                (or (getpropc ev 'predefined nil wrld)
+                    (getpropc ev-lst 'predefined nil wrld)))
 
 ; Note that since extra-fns are defined in the boot-strap world, this check
 ; guarantees that ev is not ancestral in extra-fns.
 
-          (er soft ctx
-              "The proposed evaluator function, ~x0, was defined in the ~
-               boot-strap world.  This is illegal when meta-extract hypotheses ~
-               are present, because for logical reasons our implementation ~
-               assumes that the evaluator is not ancestral in ~v1."
-              (if (getpropc ev 'predefined nil wrld)
-                  ev
-                ev-lst)
-              '(meta-extract-contextual-fact meta-extract-global-fact+)))
-         ((or ev-prop ev-lst-prop)
-          (er soft ctx ; see comment in defaxiom-supporters
-              "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
-               function symbol, ~x2, supports the formula of the defaxiom ~
-               event named ~x3.  See :DOC evaluator-restrictions."
-              rule-type
-              name
-              (if ev-prop ev ev-lst)
-              (or ev-prop ev-lst-prop)))
-         (t
+           (er soft ctx
+               "The proposed evaluator function, ~x0, was defined in the ~
+                boot-strap world.  This is illegal when meta-extract ~
+                hypotheses are present, because for logical reasons our ~
+                implementation assumes that the evaluator is not ancestral in ~
+                ~v1."
+               (if (getpropc ev 'predefined nil wrld)
+                   ev
+                 ev-lst)
+               '(meta-extract-contextual-fact meta-extract-global-fact+)))
+          ((or ev-prop ev-lst-prop)
+           (er soft ctx ; see comment in defaxiom-supporters
+               "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
+                function symbol, ~x2, supports the formula of the defaxiom ~
+                event named ~x3.  See :DOC evaluator-restrictions."
+               rule-class
+               name
+               (if ev-prop ev ev-lst)
+               (or ev-prop ev-lst-prop)))
+          (t
 
 ; We would like to be able to use attachments where possible.  However, the
 ; example at the end of :doc evaluator-restrictions shows that this is unsound
 ; in general and is followed by other relevant remarks.
 
-          (let ((bad-attached-fns-1
-                 (attached-fns (intersection-eq ev-anc meta-anc) wrld))
-                (bad-attached-fns-2
-
-; Although we need bad-attached-fns-2 to be empty (see the Essay on Correctness
-; of Meta Reasoning), we could at the very least store extra-anc in the world,
-; based on both meta-extract-contextual-fact and meta-extract-global-fact+, so
-; that we don't have to compute extra-anc every time.  But that check is
-; probably cheap, so we opt for simplicity.
-
-                 (attached-fns (intersection-eq extra-anc meta-anc) wrld)))
-              (cond
-               ((or bad-attached-fns-1 bad-attached-fns-2)
-                (let ((msg "because the attached function~#0~[~/s~] ~&0 ~
-                            ~#0~[is~/are~] ancestral in both the ~@1 and ~@2 ~
-                            functions")
-                      (type-string
-                       (if (eq rule-type :meta) "meta" "clause-processor")))
-                  (er soft ctx ; see comment in defaxiom-supporters
-                      "The proposed ~x0 rule, ~x1, is illegal ~@2~@3.  See ~
-                       :DOC evaluator-restrictions."
-                      rule-type
-                      name
-                      (msg msg
-                           (or bad-attached-fns-1 bad-attached-fns-2)
-                           (if bad-attached-fns-1 "evaluator" "meta-extract")
-                           type-string)
-                      (cond ((and bad-attached-fns-1 bad-attached-fns-2)
-                             (msg ", and because ~@0"
-                                  (msg msg
-                                       bad-attached-fns-2
-                                       "meta-extract"
-                                       type-string)))
-                            (t "")))))
-               (t (value nil))))))))))))
+           (er-let* ((ev-fns (value (collect-canonical-siblings
+                                     (cons ev extra-fns)
+                                     wrld nil nil)))
+                     (tr-fns/common-anc
+                      (chk-meta-fn-attachments name rule-class meta-fn-lst
+                                               ev-anc extra-anc
+                                               ev-fns
+                                               t ctx wrld state)))
+             (value (cond (tr-fns/common-anc
+                           (add-to-tag-tree
+                            'evaluator-check-for-rule
+                            (list (car tr-fns/common-anc)
+                                  (cdr tr-fns/common-anc)
+                                  rule-class meta-fn-lst ev-anc extra-anc
+                                  ev-fns)
+                            nil))
+                          (t nil))))))))))))
 
 (defun chk-rule-fn-guard (function-string rule-type fn ctx wrld state)
 
@@ -4915,68 +5167,92 @@
      (mv *t* eqv ev x a fn mfc-symbol))
     (& (mv *t* nil nil nil nil nil nil))))
 
+(defun chk-non-local-in-non-trivial-encapsulate (msg1 msg2p ctx wrld state)
+  (cond ((eq (context-for-encapsulate-pass-2 wrld
+                                             (f-get-global 'in-local-flg state))
+             'illegal)
+         (er soft ctx
+             "~@0 are illegal inside encapsulate events with non-empty ~
+              signatures unless the rules are local.  In this case such a ~
+              signature introduces the function symbol ~x1.~#2~[~/  You can ~
+              probably avoid this error easily by stating the theorem with a ~
+              different name, N, using :rule-classes nil, and then -- back at ~
+              the top level after the encapsulate event -- including your ~
+              original theorem with the hint, :by N.~]"
+             msg1
+             (caar (cadar (non-trivial-encapsulate-ee-entries
+                           (global-val 'embedded-event-lst wrld))))
+             (if msg2p 1 0)))
+        (t (value nil))))
+
 (defun chk-acceptable-meta-rule (name trigger-fns term ctx ens wrld state)
-  (if (member-eq 'IF trigger-fns)
-      (er soft ctx
-          "The function symbol IF is not an acceptable member of ~
-           :trigger-fns, because the ACL2 simplifier is not set up to apply ~
-           :meta rules to calls of IF.")
-    (let ((str "No :META rule can be generated from ~x0 because ~p1 does not ~
-                have the form of a metatheorem.  See :DOC meta."))
-      (mv-let
-       (hyp eqv ev x a fn mfc-symbol)
-       (interpret-term-as-meta-rule term)
-       (cond ((null eqv)
-              (er soft ctx str name (untranslate term t wrld)))
-             ((eq fn 'return-last)
+  (er-progn
+   (chk-non-local-in-non-trivial-encapsulate
+    "Rules of class :META"
+    t ctx wrld state)
+   (cond
+    ((member-eq 'IF trigger-fns)
+     (er soft ctx
+         "The function symbol IF is not an acceptable member of :trigger-fns, ~
+          because the ACL2 simplifier is not set up to apply :meta rules to ~
+          calls of IF."))
+    (t
+     (let ((str "No :META rule can be generated from ~x0 because ~p1 does not ~
+                 have the form of a metatheorem.  See :DOC meta."))
+       (mv-let
+         (hyp eqv ev x a fn mfc-symbol)
+         (interpret-term-as-meta-rule term)
+         (cond ((null eqv)
+                (er soft ctx str name (untranslate term t wrld)))
+               ((eq fn 'return-last)
 
 ; Ev-fncall-meta calls ev-fncall!.  We could make an exception for return-last,
 ; calling ev-fncall instead, but for now we avoid that runtime overhead by
 ; excluding return-last.  It's a bit difficult to imagine that anyone would
 ; use return-last as a metafunction anyhow.
 
-              (er soft ctx
-                  "It is illegal to use ~x0 as a metafunction, as specified ~
-                   by ~x1.  See :DOC meta."
-                  'return-last name))
-             ((not (and (not (flambdap eqv))
-                        (equivalence-relationp eqv wrld)
-                        (variablep x)
-                        (variablep a)
-                        (not (eq x a))
-                        (not (eq fn 'quote))
-                        (not (flambdap fn))
-                        (or (null mfc-symbol)
-                            (and (variablep mfc-symbol)
-                                 (no-duplicatesp (list x a mfc-symbol 'STATE))))))
+                (er soft ctx
+                    "It is illegal to use ~x0 as a metafunction, as specified ~
+                     by ~x1.  See :DOC meta."
+                    'return-last name))
+               ((not (and (not (flambdap eqv))
+                          (equivalence-relationp eqv wrld)
+                          (variablep x)
+                          (variablep a)
+                          (not (eq x a))
+                          (not (eq fn 'quote))
+                          (not (flambdap fn))
+                          (or (null mfc-symbol)
+                              (and (variablep mfc-symbol)
+                                   (no-duplicatesp (list x a mfc-symbol 'STATE))))))
 
 ; Note:  Fn must be a symbol, not a lambda expression.  That is because
 ; in rewrite-with-lemma, when we apply the metafunction, we use ev-fncall-meta.
 
-              (er soft ctx str name (untranslate term t wrld)))
-             ((not (member-equal (stobjs-in fn wrld)
-                                 '((nil)
-                                   (nil nil state))))
-              (er soft ctx
-                  "Metafunctions cannot take single-threaded object names ~
-                   other than STATE as formal parameters. The function ~x0 ~
-                   may therefore not be used as a metafunction."
-                  fn))
-             (t (er-progn
-                 (chk-rule-fn-guard "metafunction" :meta fn ctx wrld state)
-                 (mv-let
-                  (hyp-fn extra-fns)
-                  (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
-                  (let ((term-list
-                         (cdar (table-alist 'term-table (w state)))))
-                    (er-progn
-                     (cond
-                      ((null hyp-fn)
-                       (er soft ctx str name (untranslate term t wrld)))
-                      ((and (not (eq hyp-fn t))
-                            (not (member-equal (stobjs-in hyp-fn wrld)
-                                               '((nil)
-                                                 (nil nil state)))))
+                (er soft ctx str name (untranslate term t wrld)))
+               ((not (member-equal (stobjs-in fn wrld)
+                                   '((nil)
+                                     (nil nil state))))
+                (er soft ctx
+                    "Metafunctions cannot take single-threaded object names ~
+                     other than STATE as formal parameters. The function ~x0 ~
+                     may therefore not be used as a metafunction."
+                    fn))
+               (t (er-progn
+                   (chk-rule-fn-guard "metafunction" :meta fn ctx wrld state)
+                   (mv-let
+                     (hyp-fn extra-fns)
+                     (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
+                     (let ((term-list
+                            (cdar (table-alist 'term-table (w state)))))
+                       (er-progn
+                        (cond
+                         ((null hyp-fn)
+                          (er soft ctx str name (untranslate term t wrld)))
+                         ((and (not (eq hyp-fn t))
+                               (not (member-equal (stobjs-in hyp-fn wrld)
+                                                  '((nil)
+                                                    (nil nil state)))))
 
 ; It is tempting to avoid the check here that hyp-fn does not take
 ; stobjs in.  After all, we have already checked this for fn, and fn
@@ -4984,33 +5260,33 @@
 ; functions to traffic in stobjs even though they do not use STATE (or
 ; another stobj name) as a formal.  So, we play it safe and check.
 
-                       (er soft ctx
-                           "Hypothesis metafunctions cannot take single ~
-                           threaded object names as formal parameters.  The ~
-                           function ~x0 may therefore not be used as a ~
-                           hypothesis metafunction."
-                           hyp-fn))
-                      ((not (eq hyp-fn t))
-                       (er-progn
-                        (chk-evaluator-use-in-rule name
-                                                   fn hyp-fn extra-fns
-                                                   :meta ev ctx wrld state)
-                        (chk-rule-fn-guard "hypothesis function" :meta fn ctx
-                                           wrld state)))
-                      (t (chk-evaluator-use-in-rule name
-                                                    fn nil extra-fns
-                                                    :meta ev ctx wrld state)))
-                     (chk-evaluator ev wrld ctx state)
+                          (er soft ctx
+                              "Hypothesis metafunctions cannot take single ~
+                               threaded object names as formal parameters.  ~
+                               The function ~x0 may therefore not be used as ~
+                               a hypothesis metafunction."
+                              hyp-fn))
+                         ((not (eq hyp-fn t))
+                          (chk-rule-fn-guard "hypothesis function" :meta fn ctx
+                                             wrld state))
+                         (t (value nil)))
+                        (chk-evaluator ev wrld ctx state)
 
 ; In the code below, mfc-symbol is used merely as a Boolean indicating
 ; that this is an extended metafunction.
 
-                     (chk-meta-function fn name trigger-fns mfc-symbol
-                                        term-list ctx ens state)
-                     (if (eq hyp-fn t)
-                         (value nil)
-                       (chk-meta-function hyp-fn name trigger-fns mfc-symbol
-                                          term-list ctx ens state))))))))))))
+                        (chk-meta-function fn name trigger-fns mfc-symbol
+                                           term-list ctx ens state)
+                        (if (eq hyp-fn t)
+                            (value nil)
+                          (chk-meta-function hyp-fn name trigger-fns mfc-symbol
+                                             term-list ctx ens state))
+                        (chk-evaluator-use-in-rule name fn
+                                                   (if (eq hyp-fn t)
+                                                       nil
+                                                     hyp-fn)
+                                                   extra-fns :meta ev ctx wrld
+                                                   state)))))))))))))
 
 ; And to add a :META rule:
 
@@ -5037,49 +5313,102 @@
                      wrld)
                     (t (putprop symb key val wrld))))))))
 
-(defun mark-attachment-disallowed2 (fns msg wrld)
+(defun update-transparent-rec (tr-meta-anc name wrld)
+  (cond ((endp tr-meta-anc) wrld)
+        (t (let* ((fn (car tr-meta-anc))
+                  (old-prop (getpropc fn 'constrainedp nil wrld)))
+             (assert$
+              (weak-transparent-rec-p old-prop)
+              (update-transparent-rec
+               (cdr tr-meta-anc)
+               name
+               (putprop fn
+                        'constrainedp
+                        (change transparent-rec old-prop
+                                :names
+                                (cons name
+                                      (access transparent-rec old-prop :names)))
+                        wrld)))))))
 
-; It might be that we only need to disallow attachments to constrained
-; functions.  However, our theory (Essay on Correctness of Meta Reasoning, as
-; referenced in chk-evaluator-use-in-rule) doesn't address this possibility, so
-; until someone complains we'll keep this simple and disallow attachments for
-; each member of fns, whether or not its attachment is used in evaluation.
+(defun union-eq-cars (alist)
+  (cond ((null alist) nil)
+        (t (union-eq (caar alist) (union-eq-cars (cdr alist))))))
 
-  (cond ((endp fns) wrld)
-        (t (mark-attachment-disallowed2
-            (cdr fns)
-            msg
-            (let ((old-prop (getpropc (car fns) 'attachment nil wrld)))
-              (cond ((and (consp old-prop)
-                          (eq (car old-prop)
-                              :attachment-disallowed))
-                     wrld)
-                    (t (putprop (car fns)
-                                'attachment
-                                (cons :attachment-disallowed msg)
-                                wrld))))))))
+(defun mark-attachment-disallowed (common-anc name rule-class wrld installed-w)
 
-(defun mark-attachment-disallowed1 (canonical-fns msg wrld)
-  (cond ((endp canonical-fns) wrld)
-        (t (mark-attachment-disallowed1
-            (cdr canonical-fns)
-            msg
-            (mark-attachment-disallowed2 (siblings (car canonical-fns) wrld)
-                                         msg
-                                         wrld)))))
+; Common-anc lists the common ancestors of the evaluator and meta functions of
+; the :meta and :clause-processor rules stored under name.  Rule-class is t if
+; there is more than one such rule; otherwise it is the rule's rule-class.  We
+; add (name . rule-class) to the lst of reasons that each function in
+; common-anc is not allowed to have an attachment.
 
-(defun mark-attachment-disallowed (meta-fns ev msg wrld)
+; See also Appendix 2 of the Essay on Correctness of Meta Reasoning.
 
-; We mark as unattachable all functions ancestral in both meta-fns and ev.  We
-; obtain that set of common ancestors by restricting first to canonical
+  (cond
+   ((endp common-anc) wrld)
+   (t (let* ((fn (car common-anc))
+             (old-prop (getpropc fn 'attachment nil installed-w))
+             (pair (cons name rule-class))
+             (new-prop
+              (cond
+               (old-prop (assert$ ; checked in chk-meta-fn-attachments
+                          (and (consp old-prop)
+                               (eq (car old-prop) :attachment-disallowed))
+                          (list* :attachment-disallowed
+                                 pair
+                                 (cdr old-prop))))
+               (t (list :attachment-disallowed pair))))
+             (other-siblings
+              (if old-prop
+                  nil
+                (let ((siblings (siblings fn wrld)))
+                  (assert$ (eq (car siblings) fn) ; see canonical-sibling
+                           (cdr siblings)))))
+             (wrld1 (if other-siblings
+                        (putprop-x-lst1 other-siblings
+                                        'attachment
+                                        (cons :attachment-disallowed fn)
+                                        wrld)
+                      wrld)))
+        (mark-attachment-disallowed (cdr common-anc)
+                                    name
+                                    rule-class
+                                    (putprop fn 'attachment new-prop wrld1)
+                                    installed-w)))))
+
+(defun update-meta-props (name ttree wrld state)
+
+; See the Essay on Correctness of Meta Reasoning, in particular Appendix 2.
+
+; We mark as unattachable all non-transparent functions ancestral in the meta
+; function and evaluator functions.
+
+; We obtain that set of common ancestors by restricting first to canonical
 ; functions, and then taking all siblings (in mark-attachment-disallowed1)
 ; before marking (in mark-attachment-disallowed2).
 
-  (mark-attachment-disallowed1
-   (intersection-eq (canonical-ancestors-lst meta-fns wrld)
-                    (canonical-ancestors-lst (list ev) wrld))
-   msg
-   wrld))
+  (let ((lst (tagged-objects 'evaluator-check-for-rule ttree)))
+    (cond ((null lst) wrld)
+
+; Lst has members of the form (transparent-meta-anc common-anc rule-class
+; meta-fn-lst ev-anc extra-anc), as returned by chk-evaluator-use-in-rule.
+
+          (t (let* ((rule-class (if (null (cdr lst))
+                                    (caddr (car lst))
+                                  t))
+                    (tr-meta-anc (union-eq-cars lst))
+                    (lst-cdrs (strip-cdrs lst))
+                    (common-anc (union-eq-cars lst-cdrs))
+                    (entries (strip-cdrs lst-cdrs))
+                    (wrld1 (update-transparent-rec tr-meta-anc name wrld))
+                    (wrld2 (if tr-meta-anc
+                               (putprop name
+                                        'evaluator-check-inputs
+                                        (list* tr-meta-anc common-anc entries)
+                                        wrld1)
+                             wrld1)))
+               (mark-attachment-disallowed common-anc name rule-class wrld2
+                                           (w state)))))))
 
 (defun add-meta-rule (rune nume trigger-fns well-formedness-guarantee
                            term backchain-limit wrld)
@@ -5124,15 +5453,7 @@
                                      nil ; hyps (ignored for :meta)
                                      wrld
                                      :meta))
-                              (mark-attachment-disallowed
-                               (if (eq hyp-fn t)
-                                   (list fn)
-                                   (list hyp-fn fn))
-                               ev
-                               (msg "it supports both evaluator and meta functions ~
-                             used in :META rule ~x0"
-                                    (base-symbol rune))
-                               wrld)))
+                              wrld))
              (wrld2 (global-set 'never-untouchable-fns
                                 (add-new-never-untouchable-fns
                                  (strip-cars arity-alist)
@@ -5184,19 +5505,21 @@
         name
         (car dests)
         (set-difference-eq vars (fargs (car dests)))))
-   ((getpropc (ffn-symb (car dests)) 'eliminate-destructors-rule nil wrld)
-    (er soft ctx
-        "~x0 is an unacceptable destructor elimination rule because we ~
-         already have a destructor elimination rule for ~x1, namely ~x2, and ~
-         we do not support more than one elimination rule for the same ~
-         function symbol."
-        name
-        (ffn-symb (car dests))
-        (base-symbol (access elim-rule
-                             (getpropc (ffn-symb (car dests))
-                                       'eliminate-destructors-rule nil wrld)
-                             :rune))))
-   (t (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state))))
+   (t
+    (pprogn
+     (let ((rule (most-recent-enabled-elim-rule (ffn-symb (car dests)) wrld
+                                                (ens state))))
+       (cond
+        (rule (warning$ ctx "Elim-rule"
+                        "There is already an enabled destructor elimination ~
+                         rule for ~x0, namely ~x1.  Unless the new rule ~x2 ~
+                         is disabled, it will replace ~x1 as the destructor ~
+                         elimination rule to be used for ~x0."
+                        (ffn-symb (car dests))
+                        (base-symbol (access elim-rule rule :rune))
+                        name))
+        (t state)))
+     (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state)))))
 
 (defun chk-acceptable-elim-rule (name term ctx wrld state)
   (let ((lst (unprettyify term)))
@@ -5259,24 +5582,30 @@
 ; have not yet added a rule.  For each destructor in lst we add an elim
 ; rule to wrld.
 
-  (cond ((null lst) wrld)
-        (t (let* ((dest (car lst))
-                  (rule (make elim-rule
-                              :rune rune
-                              :nume nume
-                              :hyps hyps
-                              :equiv equiv
-                              :lhs lhs
-                              :rhs rhs
-                              :crucial-position
-                              (- (length (fargs dest))
-                                 (length (member-eq rhs (fargs dest))))
-                              :destructor-term dest
-                              :destructor-terms dests)))
-             (add-elim-rule1 rune nume hyps equiv lhs rhs (cdr lst) dests
-                             (putprop (ffn-symb dest)
-                                      'eliminate-destructors-rule
-                                      rule wrld))))))
+  (cond
+   ((null lst) wrld)
+   (t (let* ((dest (car lst))
+             (rule (make elim-rule
+                         :rune rune
+                         :nume nume
+                         :hyps hyps
+                         :equiv equiv
+                         :lhs lhs
+                         :rhs rhs
+                         :crucial-position
+                         (- (length (fargs dest))
+                            (length (member-eq rhs (fargs dest))))
+                         :destructor-term dest
+                         :destructor-terms dests)))
+        (add-elim-rule1 rune nume hyps equiv lhs rhs (cdr lst) dests
+                        (putprop (ffn-symb dest)
+                                 'eliminate-destructors-rules
+                                 (cons rule
+                                       (getpropc (ffn-symb dest)
+                                                 'eliminate-destructors-rules
+                                                 nil
+                                                 wrld))
+                                 wrld))))))
 
 (defun add-elim-rule (rune nume term wrld)
   (let* ((lst (unprettyify term))
@@ -5511,13 +5840,15 @@
 ; return a ttree that records our dependencies on lemmas.
 
   (declare (ignore backchain-limit-lst))
-  (mv-let
-   (erp hyps concl ts vars ttree)
-   (destructure-type-prescription name typed-term term ens wrld)
-   (declare (ignore ts concl vars))
-   (cond
-    (erp (er soft ctx "~@0" erp))
-    (t (let* ((warned-non-rec-fns-alist
+  (mv-let (erp hyps concl ts vars ttree)
+    (destructure-type-prescription name typed-term term ens wrld)
+    (declare (ignore ts concl vars))
+    (cond
+     (erp (er soft ctx "~@0" erp))
+     (t
+      (pprogn
+       (warn-on-synp-hyps hyps name :type-prescription ctx wrld state)
+       (let* ((warned-non-rec-fns-alist
                (and (not (warning-disabled-p "Non-rec"))
                     (warned-non-rec-fns-alist-tp-hyps hyps ens wrld)))
               (warned-non-rec-fns (strip-cars warned-non-rec-fns-alist))
@@ -5596,7 +5927,7 @@
                       (if (null (cdr (forced-hyps inst-hyps))) 0 1)
                       (forced-hyps inst-hyps)))
            (t state))
-          (value ttree)))))))
+          (value ttree))))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  Symbol generation utilities
@@ -5630,7 +5961,7 @@
         sym))))
 
 (defun pack-to-string (l)
-  (declare (xargs :guard (good-atom-listp l)))
+  (declare (xargs :guard (atom-listp l)))
   (coerce (packn1 l) 'string))
 
 (defun gen-sym-sym (l sym)
@@ -5638,7 +5969,7 @@
 ; This is a version of packn-pos that fixes the package (so that it's not
 ; *main-lisp-package-name*).
 
-  (declare (xargs :guard (and (good-atom-listp l)
+  (declare (xargs :guard (and (atom-listp l)
                               (symbolp sym))))
   (fix-intern-in-pkg-of-sym (pack-to-string l) sym))
 
@@ -7003,7 +7334,7 @@
                          :rune rune
                          :nume nume
                          :pattern pat-term
-                         :condition cond-term
+                         :condition (flatten-ands-in-lit cond-term)
                          :scheme scheme-term)
                    (getpropc fn 'induction-rules nil wrld))
              wrld)))
@@ -7198,108 +7529,114 @@
 ; Note that term has been translated (as it comes from a translated rule
 ; class), but not for execution.
 
-  (let ((str "No :CLAUSE-PROCESSOR rule can be generated from ~x0 ~
-              because~|~%~p1~|~%does not have the necessary form:  ~@2.  See ~
-              :DOC clause-processor."))
-    (mv-let
-     (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
-                            meta-extract-flg)
-     (destructure-clause-processor-rule term)
-     (cond
-      ((eq clauses-result-call-p :error)
-       (er soft ctx str name (untranslate term t wrld)
-           "it fails to satisfy basic syntactic criteria"))
-      ((not (and (symbolp cl-proc)
-                 (function-symbolp cl-proc wrld)))
-       (er soft ctx str name (untranslate term t wrld)
+  (er-progn
+   (chk-non-local-in-non-trivial-encapsulate "Rules of class :CLAUSE-PROCESSOR"
+                                             t ctx wrld state)
+   (let ((str "No :CLAUSE-PROCESSOR rule can be generated from ~x0 ~
+               because~|~%~p1~|~%does not have the necessary form:  ~@2.  See ~
+               :DOC clause-processor."))
+     (mv-let
+       (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
+                              meta-extract-flg)
+       (destructure-clause-processor-rule term)
+       (cond
+        ((eq clauses-result-call-p :error)
+         (er soft ctx str name (untranslate term t wrld)
+             "it fails to satisfy basic syntactic criteria"))
+        ((not (and (symbolp cl-proc)
+                   (function-symbolp cl-proc wrld)))
+         (er soft ctx str name (untranslate term t wrld)
 
 ; We may never see the following message, but it seems harmless to do this
 ; check.
 
-           (msg "the symbol ~x0 is not a function symbol in the current world"
-                cl-proc)))
-      (t
-       (mv-let
-        (erp t-cl-proc-call bindings state)
+             (msg "the symbol ~x0 is not a function symbol in the current world"
+                  cl-proc)))
+        (t
+         (mv-let
+           (erp t-cl-proc-call bindings state)
 
 ; Here we catch the use of the wrong stobjs.  Other checking is done below.
 
-        (translate1 cl-proc-call
-                    :stobjs-out ; clause-processor call must be executable
-                    '((:stobjs-out . :stobjs-out))
-                    t ctx wrld state)
-        (declare (ignore bindings))
-        (cond
-         (erp (er soft ctx str name (untranslate term t wrld)
-                  (msg "the clause-processor call is not in a form suitable ~
-                        for evaluation (as may be indicated by an error ~
-                        message above)")))
-         (t
-          (assert$ ; If translation changes cl-proc-call, we want to know!
-           (equal cl-proc-call t-cl-proc-call)
-           (let* ((stobjs-in (stobjs-in cl-proc wrld))
-                  (stobjs-out (stobjs-out cl-proc wrld)))
-             (er-progn
-              (cond ((if clauses-result-call-p ; expected: iff at least 2 args
-                         (equal stobjs-out '(nil))
-                       (not (equal stobjs-out '(nil))))
-                     (er soft ctx str name (untranslate term t wrld)
-                         (msg "~x0 returns ~#1~[only~/more than~] one value ~
-                               and hence there should be ~#1~[no~/a~] call of ~
-                               ~x2"
-                              cl-proc
-                              (if clauses-result-call-p 0 1)
-                              'clauses-result)))
-                    (t
-                     (let ((msg (tilde-@-illegal-clause-processor-sig-msg
-                                 cl-proc stobjs-in stobjs-out)))
-                       (cond (msg (er soft ctx str name
-                                      (untranslate term t wrld)
-                                      msg))
-                             (t (value nil))))))
-              (let* ((user-hints-p (cdr stobjs-in))
-                     (user-hints (cond (user-hints-p (car rest-args))
-                                       (t nil)))
-                     (stobjs-called (cond (user-hints-p (cdr rest-args))
-                                          (t rest-args)))
-                     (non-alist-vars
-                      (if user-hints
-                          (list* clause user-hints stobjs-called)
-                        (list* clause stobjs-called)))
-                     (vars (cons alist non-alist-vars))
-                     (bad-vars (collect-non-legal-variableps vars)))
-                (cond (bad-vars
-                       (er soft ctx str name (untranslate term t wrld)
-                           (msg "the clause-processor function must be ~
-                                 applied to a list of distinct variable and ~
-                                 stobj names, but ~&0 ~#0~[is~/are~] not"
-                                (untranslate-lst bad-vars nil wrld))))
-                      ((not (no-duplicatesp vars))
-                       (cond ((no-duplicatesp non-alist-vars)
-                              (er soft ctx str name (untranslate term t wrld)
-                                  (msg "the proposed :clause-processor rule ~
-                                        uses ~x0 as its alist variable, but ~
-                                        this variable also occurs in the ~
-                                        argument list of the clause-processor ~
-                                        function, ~x1"
-                                       alist
-                                       cl-proc)))
-                             (t
-                              (er soft ctx str name (untranslate term t wrld)
-                                  (msg "the clause-processor function must be ~
-                                        applied to a list of distinct ~
-                                        variable and stobj names, but the ~
-                                        list ~x0 contains duplicates"
-                                       non-alist-vars)))))
-                      (t (value nil))))
-              (chk-evaluator-use-in-rule name cl-proc nil
-                                         (and meta-extract-flg
-                                              '(meta-extract-global-fact+))
-                                         :clause-processor
-                                         ev ctx wrld state)
-              (chk-rule-fn-guard "clause-processor" :clause-processor cl-proc
-                                 ctx wrld state)
-              (chk-evaluator ev wrld ctx state))))))))))))
+           (translate1 cl-proc-call
+                       :stobjs-out ; clause-processor call must be executable
+                       '((:stobjs-out . :stobjs-out))
+                       t ctx wrld state)
+           (declare (ignore bindings))
+           (cond
+            (erp (er soft ctx str name (untranslate term t wrld)
+                     (msg "the clause-processor call is not in a form ~
+                           suitable for evaluation (as may be indicated by an ~
+                           error message above)")))
+            (t
+             (assert$ ; If translation changes cl-proc-call, we want to know!
+              (equal cl-proc-call t-cl-proc-call)
+              (let* ((stobjs-in (stobjs-in cl-proc wrld))
+                     (stobjs-out (stobjs-out cl-proc wrld)))
+                (er-progn
+                 (cond ((if clauses-result-call-p ; expected: iff at least 2 args
+                            (equal stobjs-out '(nil))
+                          (not (equal stobjs-out '(nil))))
+                        (er soft ctx str name (untranslate term t wrld)
+                            (msg "~x0 returns ~#1~[only~/more than~] one ~
+                                  value and hence there should be ~
+                                  ~#1~[no~/a~] call of ~x2"
+                                 cl-proc
+                                 (if clauses-result-call-p 0 1)
+                                 'clauses-result)))
+                       (t
+                        (let ((msg (tilde-@-illegal-clause-processor-sig-msg
+                                    cl-proc stobjs-in stobjs-out)))
+                          (cond (msg (er soft ctx str name
+                                         (untranslate term t wrld)
+                                         msg))
+                                (t (value nil))))))
+                 (let* ((user-hints-p (cdr stobjs-in))
+                        (user-hints (cond (user-hints-p (car rest-args))
+                                          (t nil)))
+                        (stobjs-called (cond (user-hints-p (cdr rest-args))
+                                             (t rest-args)))
+                        (non-alist-vars
+                         (if user-hints
+                             (list* clause user-hints stobjs-called)
+                           (list* clause stobjs-called)))
+                        (vars (cons alist non-alist-vars))
+                        (bad-vars (collect-non-legal-variableps vars)))
+                   (cond (bad-vars
+                          (er soft ctx str name (untranslate term t wrld)
+                              (msg "the clause-processor function must be ~
+                                    applied to a list of distinct variable ~
+                                    and stobj names, but ~&0 ~#0~[is~/are~] ~
+                                    not"
+                                   (untranslate-lst bad-vars nil wrld))))
+                         ((not (no-duplicatesp vars))
+                          (cond ((no-duplicatesp non-alist-vars)
+                                 (er soft ctx str name (untranslate term t wrld)
+                                     (msg "the proposed :clause-processor ~
+                                           rule uses ~x0 as its alist ~
+                                           variable, but this variable also ~
+                                           occurs in the argument list of the ~
+                                           clause-processor function, ~x1"
+                                          alist
+                                          cl-proc)))
+                                (t
+                                 (er soft ctx str name (untranslate term t wrld)
+                                     (msg "the clause-processor function must ~
+                                           be applied to a list of distinct ~
+                                           variable and stobj names, but the ~
+                                           list ~x0 contains duplicates"
+                                          non-alist-vars)))))
+                         (t (value nil))))
+                 (er-let* ((ttree (chk-evaluator-use-in-rule
+                                   name cl-proc nil
+                                   (and meta-extract-flg
+                                        '(meta-extract-global-fact+))
+                                   :clause-processor ev ctx wrld state)))
+                   (er-progn
+                    (chk-rule-fn-guard "clause-processor" :clause-processor
+                                       cl-proc ctx wrld state)
+                    (chk-evaluator ev wrld ctx state)
+                    (value ttree)))))))))))))))
 
 (defun add-clause-processor-rule (name well-formedness-guarantee term wrld)
 
@@ -7313,35 +7650,29 @@
 ; automatically.
 
   (mv-let
-   (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
-                          meta-extract-flg)
-   (destructure-clause-processor-rule term)
-   (declare (ignore clause alist rest-args cl-proc-call meta-extract-flg))
-   (assert$
-    (and (not (eq clauses-result-call-p :error))
-         (symbolp cl-proc)
-         (function-symbolp cl-proc wrld))
-    (putprop
-     cl-proc 'clause-processor
-     (or well-formedness-guarantee
-         t)
+    (clauses-result-call-p cl-proc clause alist rest-args ev cl-proc-call
+                           meta-extract-flg)
+    (destructure-clause-processor-rule term)
+    (declare (ignore clause alist rest-args ev cl-proc-call meta-extract-flg))
+    (assert$
+     (and (not (eq clauses-result-call-p :error))
+          (symbolp cl-proc)
+          (function-symbolp cl-proc wrld))
+     (putprop
+      cl-proc 'clause-processor
+      (or well-formedness-guarantee
+          t)
 
 ; We keep a global list of clause-processor-rules, simply in order to be
 ; able to print them.  But someone may find other uses for this list, in
 ; particular in order to code computed hints that look for applicable
 ; clause-processor rules.
 
-     (global-set 'clause-processor-rules
-                 (acons name
-                        term
-                        (global-val 'clause-processor-rules wrld))
-                 (mark-attachment-disallowed
-                  (list cl-proc)
-                  ev
-                  (msg "it supports both the evaluator and clause-processor ~
-                        function used in :CLAUSE-PROCESSOR rule ~x0"
-                       name)
-                  wrld))))))
+      (global-set 'clause-processor-rules
+                  (acons name
+                         term
+                         (global-val 'clause-processor-rules wrld))
+                  wrld)))))
 
 ; Finally, we develop code for trusted clause-processors.  This has nothing to
 ; do with defthm, but it seems reasonable to place it immediately below code
@@ -7626,8 +7957,7 @@
          true-list and ~x0 is not."
         instructions)))
 
-(defun translate-instructions (name instructions ctx wrld state)
-  (declare (ignore name wrld))
+(defun translate-instructions (instructions ctx state)
   (if (eq instructions t)
       (value t)
     (er-progn (chk-primitive-instruction-listp instructions ctx state)
@@ -7752,7 +8082,7 @@
         (t (er soft ctx
                "Each term in the :TRIGGER-TERMS of a :LINEAR rule should be a ~
                 legal trigger for the rule generated for each branch through ~
-                the corollary.  But the the proposed trigger ~p0 for the ~
+                the corollary.  But the proposed trigger ~p0 for the ~
                 :LINEAR rule ~x1 is illegal for the branch ~p2 because it ~
                 contains insufficient variables.  See :DOC linear."
                (untranslate term nil (w state))
@@ -8322,6 +8652,22 @@
                        token name fn thm-name1
                        expected-fn-form evisc))))))))))))
 
+(defun induction-rule-synp-sanityp (lst)
+
+; Lst is a list of terms, implicitly conjoined.  Some of those terms are calls
+; of synp (aka syntaxp).  But we make sure that the only calls of synp are
+; top-level conjuncts, i.e., that synp is not called in non-synp terms.
+
+  (cond
+   ((endp lst) t)
+   ((and (nvariablep (car lst))
+         (not (fquotep (car lst)))
+         (eq (ffn-symb (car lst)) 'synp))
+    (induction-rule-synp-sanityp (cdr lst)))
+   ((ffnnamep 'synp (car lst))
+    nil)
+   (t (induction-rule-synp-sanityp (cdr lst)))))
+
 (defun translate-rule-class-alist (token alist seen corollary name x ctx ens
                                          wrld state)
 
@@ -8531,6 +8877,34 @@
                        (reverse (set-difference-eq scheme-vars pat-vars))
                        pat-term
                        name))
+                  ((member-eq 'state cond-vars)
+                   (er soft ctx
+                       "The variable STATE may not appear in the :CONDITION ~
+                        term of an :INDUCTION rule because we have not ~
+                        implemented proper handling of STATE in SYNTAXP ~
+                        hypotheses of such rules.  But the condition ~x0 ~
+                        specified for ~x1 mentions STATE."
+                       cond-term
+                       name))
+                  ((member-eq 'mfc cond-vars)
+                   (er soft ctx
+                       "The variable MFC may not appear in the :CONDITION ~
+                        term of an :INDUCTION rule because we have not ~
+                        implemented proper handling of MFC in SYNTAXP ~
+                        hypotheses of such rules.  But the condition ~x0 ~
+                        specified for ~x1 mentions MFC."
+                       cond-term
+                       name))
+                  ((not (induction-rule-synp-sanityp
+                         (flatten-ands-in-lit cond-term)))
+                   (er soft ctx
+                       "The term ~x0 in the :CONDITION field of the ~
+                        :INDUCTION rule ~x1 violates the restriction that all ~
+                        occurrences of the SYNTAXP (aka SYNP) construct must ~
+                        be as top-level conjuncts of the term and not buried ~
+                        within other terms."
+                       cond-term
+                       name))
                   ((assoc-eq :condition seen)
                    (value (alist-to-keyword-alist seen nil)))
                   (t (value (alist-to-keyword-alist
@@ -8580,9 +8954,7 @@
                      (er-let* ((instrs (if assumep
                                            (value nil)
                                          (translate-instructions
-                                          (cons "Corollary of " name)
-                                          (cadr alist)
-                                          ctx wrld state))))
+                                          (cadr alist) ctx state))))
                        (value instrs)))))
                   (:OTF-FLG
                    (value (cadr alist)))
@@ -9844,15 +10216,36 @@
 
 (defun redundant-theoremp (name term classes event-form wrld)
 
-; We know name is a symbol, but it may or may not be new.  We return t if name
-; is already defined as the name of the theorem term with the given
-; rule-classes, or if event-form -- which is a defthm or defaxiom event -- is
-; an existing event in the world.  We do the first test first since perhaps it
-; is more efficient.
+; Name is a symbol naming a proposed defthm or defaxiom event with the given
+; name, term, (rule) classes, and event form.  We know name is a symbol, but it
+; may or may not be new.  We return t if the input name is defined as the name
+; of an existing defaxiom in the world, or of an existing defthm provided the
+; proposed event is also a defthm (not a defaxiom), when either of the
+; following two criteria hold of the inputs.  The first is that the existing
+; term and rule-classes are respectively the input term and the
+; truncate-classes of the input classes.  The second is when the input
+; event-form is the existing event for name.  We do the first test first since
+; perhaps it is more efficient.
 
-; Through Version_6.5 we had only the first test of this disjunction.  But
-; Jared Davis and Sol Swords sent us small examples including the following,
-; which failed because the translated rule-classes had changed.
+; As noted above, a defaxiom is never redundant with a defthm.  That
+; restriction guarantees that if a defaxiom occurs in a book, then that book's
+; certification requires certify-book to be called with :skip-proofs-okp t.
+; Here is an example of a book that could be certified in ACL2 Version_8.5
+; without :skip-proofs-okp t, when a defaxiom could still be redundant with a
+; defthm; also, this book could then be included without any warnings and
+; without supplying @(tsee include-book) with @(':skip-proofs-okp t.').
+
+;   (in-package "ACL2")
+;   (local (defthm foo (equal (car (cons x x)) x)))
+;   (defaxiom foo (equal (car (cons x x)) x))
+
+; Note that local defaxiom events are disallowed in books.  So if a defaxiom is
+; redundant in a book, then it is redundant with a non-local defaxiom and hence
+; a defaxiom will be observed during certification.
+
+; Through Version_6.5 we didn't do the fallback check that the two events are
+; identical.  But Jared Davis and Sol Swords sent us small examples including
+; the following, which failed because the translated rule-classes had changed.
 
 ;   (defund foop (x) (consp x))
 ;
@@ -9884,12 +10277,16 @@
 ; when a :corollary is implicit, then translate-rule-class generates the
 ; :corollary to be exactly the original theorem.
 
-  (or (and (equal term (getpropc name 'theorem 0 wrld))
-           (equal (truncate-classes classes term)
-                  (getpropc name 'classes 0 wrld)))
-      (assert$ event-form
-               (equal event-form
-                      (get-event name wrld)))))
+  (assert$ event-form
+           (let ((tmp (and (equal term (getpropc name 'theorem 0 wrld))
+                           (equal (truncate-classes classes term)
+                                  (getpropc name 'classes 0 wrld)))))
+             (or (and tmp
+                      (not (eq (car event-form) 'defaxiom)))
+                 (let ((old-event-form (get-event name wrld)))
+                   (or (and tmp ; so (eq (car event-form) 'defaxiom)
+                            (eq (car old-event-form) 'defaxiom))
+                       (equal event-form old-event-form)))))))
 
 ; The next part develops the functions for proving that each alleged
 ; corollary in a rule class follows from the theorem proved.
@@ -10176,35 +10573,39 @@
                 (info-for-linear-lemmas (cdr rules) numes ens wrld))
         (info-for-linear-lemmas (cdr rules) numes ens wrld)))))
 
-(defun info-for-eliminate-destructors-rule (rule numes ens wrld)
-  (let ((rune             (access elim-rule rule :rune))
-        (nume             (access elim-rule rule :nume))
-        (hyps             (access elim-rule rule :hyps))
-        (equiv            (access elim-rule rule :equiv))
-        (lhs              (access elim-rule rule :lhs))
-        (rhs              (access elim-rule rule :rhs))
-        (destructor-term  (access elim-rule rule :destructor-term))
-        (destructor-terms (access elim-rule rule :destructor-terms))
-        (crucial-position (access elim-rule rule :crucial-position)))
-    (if (or (eq numes t)
-            (member nume numes))
-        (list (list (list :rune rune
-                          :elim nume)
-                    (list :enabled          (and (enabled-runep rune ens wrld) t))
-                    (list :hyps             (untranslate-hyps hyps wrld)
-                          hyps)
-                    (list :equiv            equiv)
-                    (list :lhs              (untranslate lhs nil wrld)
-                          lhs)
-                    (list :rhs              (untranslate rhs nil wrld)
-                          rhs)
-                    (list :destructor-term  (untranslate destructor-term nil wrld)
-                          destructor-term)
-                    (list :destructor-terms (untranslate-lst destructor-terms nil
-                                                             wrld)
-                          destructor-terms)
-                    (list :crucial-position crucial-position)))
-      nil)))
+(defun info-for-eliminate-destructors-rules (rules numes ens wrld)
+  (if (null rules)
+      nil
+    (let* ((rule             (car rules))
+           (rune             (access elim-rule rule :rune))
+           (nume             (access elim-rule rule :nume))
+           (hyps             (access elim-rule rule :hyps))
+           (equiv            (access elim-rule rule :equiv))
+           (lhs              (access elim-rule rule :lhs))
+           (rhs              (access elim-rule rule :rhs))
+           (destructor-term  (access elim-rule rule :destructor-term))
+           (destructor-terms (access elim-rule rule :destructor-terms))
+           (crucial-position (access elim-rule rule :crucial-position)))
+      (if (or (eq numes t)
+              (member nume numes))
+          (cons (list (list :rune rune
+                            :elim nume)
+                      (list :enabled          (and (enabled-runep rune ens wrld) t))
+                      (list :hyps             (untranslate-hyps hyps wrld)
+                            hyps)
+                      (list :equiv            equiv)
+                      (list :lhs              (untranslate lhs nil wrld)
+                            lhs)
+                      (list :rhs              (untranslate rhs nil wrld)
+                            rhs)
+                      (list :destructor-term  (untranslate destructor-term nil wrld)
+                            destructor-term)
+                      (list :destructor-terms (untranslate-lst destructor-terms nil
+                                                               wrld)
+                            destructor-terms)
+                      (list :crucial-position crucial-position))
+                (info-for-eliminate-destructors-rules (cdr rules) numes ens wrld))
+        (info-for-eliminate-destructors-rules (cdr rules) numes ens wrld)))))
 
 (defun info-for-congruences (val numes ens wrld)
 
@@ -10309,7 +10710,7 @@
                       (list :enabled   (and (enabled-runep rune ens wrld) t))
                       (list :pattern   (untranslate pattern nil wrld)
                             pattern)
-                      (list :condition (untranslate condition t wrld)
+                      (list :condition (untranslate (conjoin condition) t wrld)
                             condition)
                       (list :scheme    (untranslate scheme nil wrld)
                             scheme))
@@ -10381,8 +10782,8 @@
        (info-for-lemmas val numes ens wrld))
       (linear-lemmas
        (info-for-linear-lemmas val numes ens wrld))
-      (eliminate-destructors-rule
-       (info-for-eliminate-destructors-rule val numes ens wrld))
+      (eliminate-destructors-rules
+       (info-for-eliminate-destructors-rules val numes ens wrld))
       (congruences
        (info-for-congruences val numes ens wrld))
       (pequivs
@@ -10487,16 +10888,27 @@
    (standard-co state)
    state))
 
-(defun pr-fn (name state)
-  (cond ((and (symbolp name)
-              (not (keywordp name)))
+(defun pr-fn (name0 state)
+  (cond ((and (symbolp name0)
+              (not (keywordp name0)))
          (let* ((wrld (w state))
-                (name (deref-macro-name name (macro-aliases wrld)))
-                (numes (strip-cars
-                        (getpropc name 'runic-mapping-pairs nil wrld)))
-                (wrld-segment (world-to-next-event
-                               (cdr (decode-logical-name name wrld)))))
-           (pr-body wrld-segment numes wrld state)))
+                (name (deref-macro-name name0 (macro-aliases wrld))))
+           (cond
+            ((assoc-eq name *primitive-formals-and-guards*)
+             (pprogn
+              (if (eq name name0)
+                  state
+                (fms "~x0 is a macro alias for ~x1."
+                     (list (cons #\0 name0)
+                           (cons #\1 name))
+                     (standard-co state) state nil))
+              (print-undefined-primitive-msg name (standard-co state) state)
+              (value :invisible)))
+            (t (let* ((numes (strip-cars
+                              (getpropc name 'runic-mapping-pairs nil wrld)))
+                      (wrld-segment (world-to-next-event
+                                     (cdr (decode-logical-name name wrld)))))
+                 (pr-body wrld-segment numes wrld state))))))
         (t (er soft 'pr
                "The argument to PR must be a non-keyword symbol.  Perhaps you ~
                 should use PR! instead."))))
@@ -10556,7 +10968,7 @@
 (defun disabledp-fn-lst (runic-mapping-pairs ens)
   (declare (xargs :guard ; see guard on enabled-runep
                   (and (enabled-structure-p ens)
-                       (nat-alistp runic-mapping-pairs))))
+                       (fixnat-alistp runic-mapping-pairs))))
   (cond ((endp runic-mapping-pairs) nil)
         ((enabled-numep (caar runic-mapping-pairs) ens)
          (disabledp-fn-lst (cdr runic-mapping-pairs) ens))
@@ -10578,7 +10990,7 @@
                                   (cond ((and (not (eq name2 :here))
                                               name2
                                               (logical-namep name2 wrld))
-                                         (nat-alistp
+                                         (fixnat-alistp
                                           (getpropc name2 'runic-mapping-pairs
                                                     nil wrld)))
                                         (t t))))
@@ -10588,7 +11000,7 @@
                                        (let ((rune (translate-abbrev-rune
                                                      name
                                                      (macro-aliases wrld))))
-                                         (nat-alistp
+                                         (fixnat-alistp
                                           (getpropc (base-symbol rune)
                                                     'runic-mapping-pairs
                                                     nil
@@ -10627,7 +11039,12 @@
          (cons (car rules) (collect-abbreviation-subclass (cdr rules))))
         (t (collect-abbreviation-subclass (cdr rules)))))
 
+; Note: In pre-Version_8.6 there were functions called monitor1 and unmonitor1,
+; which duplicated some code.  Those functions have been refactored and
+; eliminated in favor of compositions of new functions.
+
 (defun runes-to-monitor1 (runes x wrld ctx state
+                                quietp
                                 only-simple only-simple-count
                                 some-simple some-s-all some-s-bad
                                 acc)
@@ -10642,7 +11059,7 @@
      (t
       (pprogn
        (cond
-        (only-simple
+        ((and only-simple (not quietp))
          (warning$ ctx "Monitor"
                    "The rune~#0~[~/s~] ~&0 name~#0~[s~/~] only~#1~[ a~/~] ~
                     simple abbreviation rule~#1~[~/s~].  Monitors can be ~
@@ -10655,7 +11072,7 @@
                    (if (> only-simple-count 1) 1 0)))
         (t state))
        (cond
-        (some-simple
+        ((and some-simple (not quietp))
          (assert$
           (< 1 some-s-all)
           (warning$ ctx "Monitor"
@@ -10679,11 +11096,14 @@
         (let ((rules (find-rules-of-rune rune wrld)))
           (cond
            ((null rules)
-            (pprogn (warning$ ctx "Monitor"
-                              "No rules are named ~x0."
-                              rune)
+            (pprogn (if quietp
+                        state
+                        (warning$ ctx "Monitor"
+                                  "No rules are named ~x0."
+                                  rune))
                     (runes-to-monitor1
                      (cdr runes) x wrld ctx state
+                     quietp
                      only-simple
                      only-simple-count
                      some-simple some-s-all some-s-bad
@@ -10694,6 +11114,7 @@
                ((equal (length bad-rewrite-rules) (length rules))
                 (runes-to-monitor1
                  (cdr runes) x wrld ctx state
+                 quietp
                  (cons rune only-simple)
                  (+ (length rules) only-simple-count)
                  some-simple some-s-all some-s-bad
@@ -10701,16 +11122,19 @@
                (bad-rewrite-rules
                 (runes-to-monitor1
                  (cdr runes) x wrld ctx state
+                 quietp
                  only-simple only-simple-count
                  (cons rune some-simple)
                  (+ (length rules) some-s-all)
                  (+ (length bad-rewrite-rules) some-s-bad)
                  (cons rune acc)))
                (t (runes-to-monitor1 (cdr runes) x wrld ctx state
+                                     quietp
                                      only-simple only-simple-count
                                      some-simple some-s-all some-s-bad
                                      (cons rune acc)))))))))
        (t (runes-to-monitor1 (cdr runes) x wrld ctx state
+                             quietp
                              only-simple only-simple-count
                              some-simple some-s-all some-s-bad
                              (cons rune acc))))))))
@@ -10728,23 +11152,18 @@
 (defun monitorable-runes-from-mapping-pairs (sym wrld)
 
 ; Note: another function that deals in runic mapping pairs is
-; convert-theory-to-unordered-mapping-pairs1.  In both cases we are guided by
-; the discussion of runic designators in :doc theories.  However, here we do
-; not include :induction runes, and we do not accommodate theories because we
-; wonder what complexity that might introduce in providing useful errors and
-; warnings from :monitor, and we don't (yet?)  consider it likely that users
-; will want to monitor theories.
+; convert-theory-to-unordered-mapping-pairs1.
 
-; We accumulate runic mapping pairs of sym into ans, except in the case that
-; sym is a defined function, we only include the :definition rune and, if indp
-; is true, the induction rune.
+; Sym is runic designator, like a function or theorem name or a macro name
+; mapped to a function name by macro-aliases.  We collect the monitorable runes
+; associated with sym.
 
   (let ((temp (strip-cdrs
                (getpropc (deref-macro-name sym (macro-aliases wrld))
                          'runic-mapping-pairs nil wrld))))
     (monitorable-runes temp)))
 
-(defun runes-to-monitor (x ctx state)
+(defun runes-to-monitor (x ctx state quietp)
   (er-let* ((wrld (value (w state)))
             (runes
              (cond
@@ -10763,6 +11182,7 @@
                        rune))
                   (t (value (list rune)))))))))
     (runes-to-monitor1 runes x wrld ctx state
+                       quietp
                        nil 0
                        nil 0 0
                        nil)))
@@ -10779,26 +11199,15 @@
                                 (remove1-assoc-equal? (car lst) alist))
     alist))
 
-(defun monitor1 (x form ctx state)
-
-; The list of monitored runes modified by this function is a brr-global.
-; Thus, this function should only be evaluated within a wormhole.  The macro
-; monitor can be called in either a wormhole state or a normal state.
-
-  (er-let* ((runes (runes-to-monitor x ctx state))
-            (term (translate-break-condition form ctx state)))
-    (prog2$
-     (or (f-get-global 'gstackp state)
-         (cw "Note: Enable break-rewrite with :brr t.~%"))
-     (pprogn
-      (f-put-global 'brr-monitored-runes
-                    (append (pairlis-x2 runes (list term))
-                            (remove1-assoc-equal?-lst
-                             runes
-                             (get-brr-global 'brr-monitored-runes
-                                             state)))
-                    state)
-      (value (get-brr-global 'brr-monitored-runes state))))))
+(defun preserve-other-brr-criteria (args criteria-alist)
+  (cond
+   ((endp args) (revappend criteria-alist nil))
+   ((member-eq (car args) '(:condition :depth :abstraction :lambda))
+    (preserve-other-brr-criteria (cddr args) criteria-alist))
+   (t (preserve-other-brr-criteria (cddr args)
+                                   (cons (cons (car args)
+                                               (cadr args))
+                                         criteria-alist)))))
 
 (defun remove1-assoc-equal-lst (lst alist)
   (declare (xargs :guard (alistp alist)))
@@ -10815,124 +11224,241 @@
          (set-difference-assoc-equal (cdr lst) alist))
         (t (cons (car lst) (set-difference-assoc-equal (cdr lst) alist)))))
 
-(defun unmonitor1 (x ctx state)
-  (let* ((wrld (w state))
-         (runes (cond
-                 ((symbolp x)
-                  (monitorable-runes-from-mapping-pairs x wrld))
-                 (t (list (translate-abbrev-rune x (macro-aliases wrld)))))))
-    (cond
-     ((null runes)
-      (er soft ctx
-          "The value ~x0 does not specify any runes that could be monitored."
-          x))
-     (t
-      (let* ((monitored-runes-alist
-              (get-brr-global 'brr-monitored-runes state))
-             (bad-runes ; specified to unmonitor, but not monitored
-              (set-difference-assoc-equal runes monitored-runes-alist)))
-        (er-progn
-         (cond ((null bad-runes)
-                (value nil))
-               ((not (intersectp-equal runes (strip-cars monitored-runes-alist)))
-                (cond
-                 ((null (cdr runes)) ; common case
-                  (er soft ctx "~x0 is not monitored." (car runes)))
-                 (t
-                  (er soft ctx
-                      "None of the ~n0 runes specified to be unmonitored is ~
-                       currently monitored."
-                      (length runes)))))
-               (t
-                (pprogn (warning$ ctx "Monitor"
-                                  "Skipping the rune~#0~[~/s~] ~&0, as ~
-                                   ~#0~[it is~/they are~] not currently ~
-                                   monitored."
-                                  bad-runes)
-                        (value nil))))
-         (pprogn
-          (f-put-global 'brr-monitored-runes
-                        (remove1-assoc-equal-lst runes monitored-runes-alist)
-                        state)
-          (prog2$
-           (cond ((and (f-get-global 'gstackp state)
-                       (null monitored-runes-alist))
-                  (cw "Note:  No runes are being monitored.  Disable ~
-                       break-rewrite with :brr nil.~%"))
-                 (t nil))
-           (value monitored-runes-alist)))))))))
+(defun merge-new-and-old-monitors (new-lst old-lst)
 
-(defun monitor-fn (x expr quietp state)
+; Both arguments are lists of pairs (rune . criteria-alist).  In fact, old-lst
+; is the current value of brr-monitored-runes, and new-lst is an analogous
+; list.  We merge them to form a new value for brr-monitored-runes.  Note
+; however that we just form the list.  We don't install it.
 
-; If we are not in a wormhole, get into one.  Then we set brr-monitored-runes
-; appropriately.  We always print the final value of brr-monitored-runes to the
-; comment window and we always return (value :invisible).
+  (append new-lst
+          (remove1-assoc-equal?-lst (strip-cars new-lst)
+                                    old-lst)))
+
+(defun translate-rune-and-criteria (x args ctx state)
+
+; We translate x into a list of monitorable runes and args into an alist
+; pairing monitor criteria keywords and translated values.  We then pair each
+; rune with the criteria alist and return that list in an error triple.  If
+; args does not start with a keyword, we treat it as (:condition args).
+
+  (let ((args (cond ((and (consp args)
+                          (keywordp (car args)))
+                     args)
+                    (t (list :condition args)))))
+    (er-let* ((runes (runes-to-monitor x ctx state nil)))
+      (cond
+       ((and (keyword-value-listp args)
+             (no-duplicatesp-eq (evens args)))
+        (let* ((condition-spec (assoc-keyword :condition args))
+               (depth-spec (assoc-keyword :depth args))
+               (abstraction-spec (assoc-keyword :abstraction args))
+               (lambda-spec (assoc-keyword :lambda args)))
+          (cond
+           ((and depth-spec
+                 (not (natp (cadr depth-spec))))
+            (er soft 'monitor
+                "When supplied, the :depth value in MONITOR's second argument ~
+                 must be a natural and ~x0 is not!"
+                (cadr depth-spec)))
+           ((and lambda-spec
+                 (not (booleanp (cadr lambda-spec))))
+            (er soft 'monitor
+                "When supplied, the :lambda value in MONITOR's second ~
+                 argument must be a Boolean and ~x0 is not!"
+                (cadr lambda-spec)))
+           (t
+            (er-let* ((apat (if abstraction-spec
+                                (translate (cadr abstraction-spec)
+                                           '(nil) nil t ctx (w state) state)
+                                (value nil)))
+                      (condition (if condition-spec
+                                     (translate-break-condition
+                                      (cadr condition-spec)
+                                      ctx state)
+                                     (value *t*))))
+              (value
+               (pairlis-x2
+                 runes
+                 (preserve-other-brr-criteria
+                  args
+                  (append
+                   (if lambda-spec
+                       (list (cons :lambda (cadr lambda-spec)))
+                       nil)
+                   (if abstraction-spec
+                       (list (cons :abstraction apat))
+                       nil)
+                   (if depth-spec
+                       (list (cons :depth (cadr depth-spec)))
+                       nil)
+                   (list (cons :condition condition)))))))))))
+       (t (er soft 'monitor
+              "The second argument to MONITOR must satisfy ~
+               keyword-value-listp with no duplicate keys and ~x0 is not!"
+              args))))))
+
+(defun monitor-fn (x args ctx quietp state)
+
+; Expects and ensures Wormhole Coherence
+
+; X designates a list of runes and args is a keyword alist of monitoring
+; criteria.  E.g., x might be a theorem name and args might be (:depth 3
+; :condition (foop (brr@ x))) and, after translating them (producing an alist
+; from args), we pair all the runes with that one criteria alist.  We then
+; merge that list of monitors into the current value of brr-monitored-runes.
+; We update brr-monitored-runes in both persistent-whs and ephemeral-whs (if
+; we're in the brr wormhole).
+
+; If break-rewrite hasn't been turned on (i.e., (brr t)), we print a note that
+; it should be.  Otherwise we print nothing (but error messages) if quietp is t
+; and we return (value t).  If quietp is nil, we print the new current value of
+; brr-monitored-runes to the comment window and return (value :invisible)
+
+  (er-let* ((new-pairs (translate-rune-and-criteria x args ctx state)))
+    (progn$
+     (semi-initialize-brr-wormhole state)
+     (progn$
+      (or (f-get-global 'gstackp state)
+          (cw "Note: Enable break-rewrite with :brr t.~%~%"))
+      (wormhole-eval
+       'brr
+       '(lambda (whs)
+          (let* ((old-brr-monitored-runes
+                  (access brr-status whs :brr-monitored-runes))
+                 (new-brr-monitored-runes
+                  (merge-new-and-old-monitors new-pairs
+                                              old-brr-monitored-runes)))
+            (prog2$
+             (and (not quietp)
+; Note: we are not using (brr-evisc-tuple state) here.  This is
+; a deliberate but undebated choice!
+                  (cw "~Y01~|" new-brr-monitored-runes nil))
+             (change brr-status whs
+                     :brr-monitored-runes new-brr-monitored-runes))))
+       (list new-pairs quietp))
+      (pprogn
+       (sync-ephemeral-whs-with-persistent-whs 'brr state)
+       (value (if quietp t :invisible)))))))
+
+(defun all-keys-with-base-symbol (x alist)
+
+; X is a symbol.  Alist is an alist whose keys look like runes (but some may
+; not be runes in the current world).  We return return every key of alist that
+; has x as its base symbol.
 
   (cond
-   ((eq (f-get-global 'wormhole-name state) 'brr)
-    (er-progn
-     (monitor1 x expr 'monitor state)
-     (prog2$
-      (and (not quietp)
-           (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil))
-      (value (if quietp t :invisible)))))
-   (t (prog2$
-       (brr-wormhole
-        '(lambda (whs)
-           (set-wormhole-entry-code whs :ENTER))
-        nil
-        `(er-progn
-          (monitor1 ',x ',expr 'monitor state)
-          (prog2$
-           (and (not ',quietp)
-                (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil))
-           (value nil)))
-        nil)
-       (value (if quietp t :invisible))))))
+   ((endp alist) nil)
+   ((equal (base-symbol (car (car alist))) x)
+    (cons (car (car alist))
+          (all-keys-with-base-symbol x (cdr alist))))
+   (t (all-keys-with-base-symbol x (cdr alist)))))
+
+(defun all-monitored-runes-removed-reminder ()
+  (cw "Note:  No runes are being monitored.  Perhaps you should turn off ~
+       break-rewrite with (brr nil).~%~%"))
+
+(defun remove-runes-from-old-monitors (runes old-brr-monitored-runes
+                                             brr-reminder-flg)
+
+; Runes is a list of ``runes'' to remove from the current list of
+; monitored-runes (with their criteria).  Actually, not every element of runes
+; is a rune in the current world but we do know that every element of runes
+; occurs as a key in the alist old-brr-monitored-runes.
+
+; We create and return the new list of monitored-runes, but we do not install
+; it.  Brr-reminder-flg tells us whether we are to remind the user (when the
+; new monitored runes is empty) to disable brr.  That flag should only be t if
+; (f-get-global 'gstackp state) is t.  (But we don't have state here, so our
+; caller must tell us.)
+
+  (let* ((new-brr-monitored-runes
+          (remove1-assoc-equal-lst runes old-brr-monitored-runes)))
+    (prog2$
+     (if (and brr-reminder-flg (null new-brr-monitored-runes))
+         (all-monitored-runes-removed-reminder)
+         nil)
+     new-brr-monitored-runes)))
 
 (defun unmonitor-fn (x ctx state)
-  (cond
-   ((eq (f-get-global 'wormhole-name state) 'brr)
-    (er-progn
-     (cond ((eq x :all)
-            (pprogn (f-put-global 'brr-monitored-runes nil state)
-                    (value nil)))
-           (t (unmonitor1 x ctx state)))
-     (prog2$
-      (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-      (value :invisible))))
-   (t
-    (prog2$
-     (brr-wormhole
-      '(lambda (whs)
-         (set-wormhole-entry-code whs :ENTER))
-      nil
-      `(er-progn
-        (cond ((eq ',x :all)
-               (pprogn (f-put-global 'brr-monitored-runes nil state)
-                       (value nil)))
-              (t (unmonitor1 ',x ',ctx state)))
-        (prog2$
-         (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-         (value nil)))
-      nil)
-     (value :invisible)))))
+
+; Expects and ensures Wormhole Coherence
+
+; X is :all, another symbol, or something being used as a rune.  We remove from
+; the current value of brr-monitored-runes every pair ``indicated'' by x.  If x
+; is :all, we remove every pair.  If x is another symbol, we remove every pair
+; whose car has x as its base symbol.  If x is anything else we remove the
+; pair, if any, with x as its car.  If no runes were indicated by x we cause an
+; error.
+
+  (progn$
+   (semi-initialize-brr-wormhole state)
+   (er-let* ((whs (get-persistent-whs 'brr state)))
+     (let* ((old-brr-monitored-runes
+             (access brr-status whs :brr-monitored-runes))
+            (runes
+             (cond
+              ((eq x :all)
+               (strip-cars old-brr-monitored-runes))
+              ((symbolp x)
+               (all-keys-with-base-symbol x old-brr-monitored-runes))
+              ((assoc-equal x old-brr-monitored-runes)
+               (list x))
+              (t nil))))
+; Runes, above, is the list of runes ``indicated'' by x.  By construction,
+; every element of runes occurs as a key in old-brr-monitored-runes.  If no
+; runes are indicated by x, we cause an error.
+
+       (cond
+        ((null runes)
+         (cond
+          ((eq x :all)
+           (prog2$ (and (f-get-global 'gstackp state)
+                        (all-monitored-runes-removed-reminder))
+                   (value nil)))
+          ((symbolp x)
+           (er soft ctx
+               "No rune with base symbol ~x0 is being monitored.  Perhaps you ~
+                misspelled it?"
+               x))
+          (t (er soft ctx
+                 "~x0 is not being monitored.  Perhaps you misspelled it?"
+                 x))))
+        (t
+         (prog2$
+          (let ((brr-reminder-flg (f-get-global 'gstackp state)))
+            (wormhole-eval
+             'brr
+             '(lambda (whs)
+                (let ((new-brr-monitored-runes
+                       (remove-runes-from-old-monitors runes
+                                                       old-brr-monitored-runes
+                                                       brr-reminder-flg)))
+                  (prog2$
+; Note: we are not using (brr-evisc-tuple state) here.  This is
+; a deliberate but undebated choice!
+                   (cw "~Y01~|" new-brr-monitored-runes nil)
+                   (change brr-status whs
+                           :brr-monitored-runes new-brr-monitored-runes))))
+             (list runes brr-reminder-flg)))
+          (pprogn
+           (sync-ephemeral-whs-with-persistent-whs 'brr state)
+           (value :invisible)))))))))
 
 (defun monitored-runes-fn (state)
-  (cond
-   ((eq (f-get-global 'wormhole-name state) 'brr)
-    (prog2$ (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-            (value :invisible)))
-   (t
-    (prog2$
-     (brr-wormhole
-      '(lambda (whs)
-         (set-wormhole-entry-code whs :ENTER))
-      nil
-      `(prog2$ (cw "~Y01~|" (get-brr-global 'brr-monitored-runes state) nil)
-               (value nil))
-      nil)
-     (value :invisible)))))
+  (progn$
+   (semi-initialize-brr-wormhole state)
+   (prog2$
+    (wormhole-eval
+     'brr
+     '(lambda (whs)
+        (prog2$
+; Note: we are not using (brr-evisc-tuple state) here.  This is
+; a deliberate but undebated choice!
+         (cw "~Y01~|" (access brr-status whs :brr-monitored-runes) nil)
+         whs))
+     nil)
+    (value :invisible))))
 
 (defun brr-fn (flg quietp state)
   (cond
@@ -10942,19 +11468,32 @@
     (er soft 'brr
         "Brr is not supported in ACL2(p) with waterfall parallelism on.  See ~
          :DOC unsupported-waterfall-parallelism-features."))
+   ((eq (f-get-global 'gstackp state) :brr-data)
+    (cond (flg
+
+; This case allows gstackp to keep the value of :brr-data rather than
+; overwriting it with t.
+
+           (prog2$ (cw "No change: Break-rewrite is already enabled for ~
+                        brr-data.  See :DOC with-brr-data~|")
+                   (value nil)))
+          (t (er soft 'brr
+                 "It is illegal to exit break-rewrite using :brr when ~
+                  brr-data is being tracked.  See :DOC with-brr-data."))))
    (flg
-    (pprogn
-     (f-put-global 'gstackp t state)
-     (maybe-initialize-brr-evisc-tuple state)
-     (cond
-      (quietp (value t))
-      (t
-       (prog2$ (cw "Use :a! to exit break-rewrite.~|See :DOC ~
+    (prog2$
+     (semi-initialize-brr-wormhole state)
+     (pprogn
+      (f-put-global 'gstackp t state)
+      (cond
+       (quietp (value t))
+       (t
+        (prog2$ (cw "Use :a! to exit break-rewrite.~|See :DOC ~
                     set-brr-evisc-tuple and :DOC iprint to control ~
                     suppression of details when printing.~|~%The monitored ~
                     runes are:~%")
-               (er-progn (monitored-runes-fn state)
-                         (value t)))))))
+                (er-progn (monitored-runes-fn state)
+                          (value t))))))))
    (t (pprogn (f-put-global 'gstackp nil state)
               (value nil)))))
 
@@ -10971,6 +11510,7 @@
                                           :wonp
                                           :rewritten-rhs
                                           :poly-list
+                                          :pot-lst
                                           :failure-reason
                                           :lemma
                                           :type-alist
@@ -10984,22 +11524,49 @@
         (:wonp '(get-brr-local 'wonp state))
         (:rewritten-rhs '(get-brr-local 'brr-result state))
         (:poly-list '(brr-result state))
+        (:pot-list '(get-brr-local 'pot-list state))
         (:failure-reason '(get-brr-local 'failure-reason state))
         (:lemma '(get-brr-local 'lemma state))
         (:type-alist '(get-brr-local 'type-alist state))
         (:ancestors '(get-brr-local 'ancestors state))
         (:initial-ttree '(get-brr-local 'initial-ttree state))
         (:final-ttree '(get-brr-local 'final-ttree state))
-        (otherwise '(get-brr-global 'brr-gstack state))))
+        (otherwise '(access brr-status
+                            (f-get-global 'wormhole-status state)
+                            :brr-gstack))))
 
 (defmacro monitor (x expr &optional quietp)
-  `(monitor-fn ,x ,expr ,quietp state))
+  `(monitor-fn ,x ,expr 'monitor ,quietp state))
 
 (defmacro unmonitor (rune)
   `(unmonitor-fn ,rune 'unmonitor state))
 
 (defmacro monitored-runes ()
   `(monitored-runes-fn state))
+
+(defun unconditional-monitor-tuples (x-lst ctx state)
+
+; This function takes a list of base symbols and/or runes, converts it into a
+; list of monitorable runes, and then creates a criteria-alist for each rune,
+; in which the break :condition is *t*.  The alist can be appended to
+; brr-monitored-runes to monitor all of the runes derived from x-lst.  This
+; function causes an error, for example, if no monitorable runes are found
+; among the x-lst runes.
+
+; This function is only used when the brr commands :eval$, :go$, and :ok$ are
+; executed under brkpt1 and near-miss-brkpt1.  Those commands are defined in
+; *brkpt1-aliases* to call proceed-from-brkpt1 with a list of runes (or base
+; symbols) that are to be added to the list of monitored runes.  (Other brr
+; commands call proceed-from-brkpt1, but those commands supply t or :none as
+; the ``list of runes'' and those values are treated differently.)
+
+  (cond
+   ((endp x-lst) (value nil))
+   (t (er-let* ((runes (runes-to-monitor (car x-lst) ctx state nil))
+                (rest (unconditional-monitor-tuples (cdr x-lst) ctx state)))
+        (value (append
+                (pairlis-x2 runes (list (cons :condition *t*)))
+                rest))))))
 
 (defun proceed-from-brkpt1 (action runes ctx state)
 
@@ -11008,48 +11575,79 @@
 ; print -  exit brr after printing results of attempted application
 ; break -  do not exit brr
 
-; Runes is allegedly either t or a list of runes (or any runic designators
-; legal for monitoring) to be used as brr-monitored-runes after pairing every
-; rune with *t*.  If it is t, it means use the same brr-monitored-runes.
-; Otherwise, we check that they are all legal.  If not, we warn and do not
-; exit.  We may wish someday to provide the capability of proceeding with
-; conditions other than *t* on the various runes, but I haven't seen a nice
-; design for that yet.
+; Runes is allegedly t, :none, or a list of runes (or any runic designators
+; legal for monitoring) to be added to brr-monitored-runes after pairing every
+; rune with *t*.  If runes is t, it means use the same brr-monitored-runes.  If
+; runes is :none it means unmonitor all runes before proceeding.  Otherwise, we
+; check that all runes all legal.  If not, we warn and do not exit.  We may
+; wish someday to provide the capability of proceeding with conditions other
+; than *t* on the various runes or proceeding after unmonitoring some runes,
+; but I haven't seen a nice design for that yet.  One could always just
+; :monitor and/or :unmonitor before proceeding with exactly the same effect
+
+; Once upon a time we changed the monitored runes ``locally'' so that when
+; break-rewrite got back to this frame it was unchanged.  To do that we could
+; treat :brr-monitored-runes here like we do standard-oi: save the old value
+; below and restore it in brkpt2.  But why bother?  Nothing the user does in
+; brkpt2 is going to use the monitored runes (except a re-entrant call of thm
+; or something) and it might be more confusing to restore the old list --
+; leaving the user wondering if the :eval$ just done really changed it -- than
+; to allow the user to inspect the list as it stood when the :eval$ was done.
 
   (er-let*
-   ((lst (cond ((eq runes t)
-                (value nil))
-               ((eq runes nil)
+      ((tuples (cond ((eq runes t)
+                      (value nil))
+                     ((eq runes :none)
 
 ; This special case avoids getting an error when calling runes-to-monitor.
 
-                (value nil))
-               (t (runes-to-monitor runes ctx state)))))
-   (pprogn
-    (put-brr-local 'saved-standard-oi
-                   (f-get-global 'standard-oi state)
-                   state)
-    (put-brr-local 'saved-brr-monitored-runes
-                   (get-brr-global 'brr-monitored-runes state)
-                   state)
-    (put-brr-local 'saved-brr-evisc-tuple
-                   (get-brr-global 'brr-evisc-tuple state)
-                   state)
-    (if (eq runes t)
-        state
-        (f-put-global 'brr-monitored-runes lst state))
-    (put-brr-local 'action action state)
-    (exit-brr-wormhole state))))
+                      (value nil))
+                     (t (unconditional-monitor-tuples
+                         (if (or (symbolp runes)
+                                 (and (consp runes)
+                                      (keywordp (car runes))))
+; If runes is a symbol or starts with a keyword, it is coerced into a
+; singleton list.
+                             (list runes)
+                             runes)
+                         ctx state)))))
+    (pprogn
+     (let ((whs (f-get-global 'wormhole-status state)))
+       (set-persistent-whs-and-ephemeral-whs
+        'brr
+        (change brr-status whs
+                :brr-monitored-runes
+                (if (eq runes t)
+                    (access brr-status whs :brr-monitored-runes)
+                    (if (eq runes :none)
+                        nil
+                        (append tuples
+                                (remove1-assoc-equal?-lst
+                                 (strip-cars tuples)
+                                 (access brr-status whs
+                                         :brr-monitored-runes)))))
+                :brr-local-alist
+                (put-assoc-eq-alist
+                 (access brr-status whs :brr-local-alist)
+                 (list (cons 'saved-standard-oi
+                             (f-get-global 'standard-oi state))
+                       (cons 'action action))))
+        state))
+     (value :q))))
 
 (defun exit-brr (state)
 
 ; The assoc-eq on 'wonp below determines if we are in brkpt2 or brkpt1.
+; Note that we're testing the assoc-eq, not its cdr!
 
   (cond
-   ((assoc-eq 'wonp (get-brr-global 'brr-alist state))
-    (prog2$ (cw "~F0)~%" (get-brr-local 'depth state))
-            (pprogn (pop-brr-stack-frame state)
-                    (exit-brr-wormhole state))))
+   ((assoc-eq 'wonp
+              (access brr-status
+                      (f-get-global 'wormhole-status state)
+                      :brr-local-alist))
+    (prog2$ (cw "~F0)~%" (brr-depth state))
+            (pprogn (pop-brr-status state)
+                    (value :q))))
    (t (proceed-from-brkpt1 'silent t 'exit-brr state))))
 
 (defun ok-if-fn (term state)
@@ -11160,7 +11758,7 @@
   (when-logic-or-boot-strap
    "DEFAXIOM"
    (with-ctx-summarized
-    (make-ctx-for-event event-form (cons 'defaxiom name))
+    (cons 'defaxiom name)
 
 ; At one time we thought that event-form could be nil.  It is simplest, for
 ; checking redundancy, not to consider the case of manufacturing an event-form,
@@ -11178,6 +11776,13 @@
                   (classes (translate-rule-classes name rule-classes tterm ctx
                                                    ens wrld state)))
           (cond
+           ((or (assoc-eq :META classes)
+                (assoc-eq :CLAUSE-PROCESSOR classes))
+            (er soft ctx
+                "It is illegal for a defaxiom event to specify :RULE-CLASSES ~
+                 of type :META or :CLAUSE-PROCESSOR.  See :DOC defaxiom.  A ~
+                 reasonable alternative might be to use defthm with ~
+                 skip-proofs."))
            ((redundant-theoremp name tterm classes event-form wrld)
             (stop-redundant-event ctx state))
            (t
@@ -11199,8 +11804,8 @@
                (attached-fns
                 (er soft ctx
                     "The following function~#0~[ has an attachment, but is~/s ~
-                    have attachments, but are~] ancestral in the proposed ~
-                    axiom: ~&0. ~ See :DOC defattach."
+                     have attachments, but are~] ancestral in the proposed ~
+                     axiom: ~&0. ~ See :DOC defattach."
                     attached-fns))
                (t
                 (enforce-redundancy
@@ -11387,7 +11992,7 @@
                         event-form
                         #+:non-standard-analysis std-p)
   (with-ctx-summarized
-   (make-ctx-for-event event-form (cons 'defthm name))
+   (cons 'defthm name)
 
 ; At one time we thought that event-form could be nil.  It is simplest, for
 ; checking redundancy, not to consider the case of manufacturing an event-form,
@@ -11462,8 +12067,8 @@
                                              'include-book-with-locals)
                                          (eq ld-skip-proofsp 'initialize-acl2))
                                      (value nil)
-                                   (translate-instructions name instructions
-                                                           ctx wrld1 state)))
+                                   (translate-instructions instructions ctx
+                                                           state)))
 
 ; Observe that we do not translate the hints if ld-skip-proofsp is non-nil.
 ; Once upon a time we translated the hints unless ld-skip-proofsp was
@@ -11472,26 +12077,27 @@
 ; was not defined when it was first used in axioms.lisp.  This choice is
 ; a little unsettling because it means
 
-                   (hints (if (or (eq ld-skip-proofsp 'include-book)
-                                  (eq ld-skip-proofsp 'include-book-with-locals)
-                                  (eq ld-skip-proofsp 'initialize-acl2))
-                              (value nil)
-                            (translate-hints+ name
-                                              hints
+                   (thints (if (or (eq ld-skip-proofsp 'include-book)
+                                   (eq ld-skip-proofsp 'include-book-with-locals)
+                                   (eq ld-skip-proofsp 'initialize-acl2))
+                               (value nil)
+                             (translate-hints+ name
+                                               hints
 
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.
 
-                                              (and (null instructions)
-                                                   (default-hints wrld1))
-                                              ctx wrld1 state)))
+                                               (and (null instructions)
+                                                    (default-hints wrld1))
+                                               ctx wrld1 state)))
                    (ttree2 (cond (instructions
                                   (er-progn
-                                   (cond (hints (er soft ctx
-                                                    "It is not permitted to ~
-                                                 supply both :INSTRUCTIONS ~
-                                                 and :HINTS to DEFTHM."))
+                                   (cond (thints (er soft ctx
+                                                     "It is not permitted to ~
+                                                      supply both ~
+                                                      :INSTRUCTIONS and ~
+                                                      :HINTS to DEFTHM."))
                                          (t (value nil)))
                                    #+:non-standard-analysis
                                    (if std-p
@@ -11501,8 +12107,8 @@
 ; car, defthm, of that form.
 
                                        (er soft ctx
-                                           ":INSTRUCTIONS are not supported for ~
-                                        defthm-std events.")
+                                           ":INSTRUCTIONS are not supported ~
+                                            for defthm-std events.")
                                      (value nil))
                                    (proof-builder name term
                                                   tterm classes instructions
@@ -11511,7 +12117,7 @@
                                            (make-pspv ens wrld1 state
                                                       :displayed-goal term
                                                       :otf-flg otf-flg)
-                                           hints ens wrld1 ctx state))))
+                                           thints ens wrld1 ctx state))))
                    (ttree3 (cond (ld-skip-proofsp (value nil))
                                  (t (prove-corollaries name tterm0 classes
                                                        ens wrld1 ctx
@@ -11527,6 +12133,7 @@
                                    :fns (all-fnnames tterm0)
                                    :vars (state-globals-set-by tterm0 nil))
                                 wrld2))
+                       (wrld4 (update-meta-props name ttree1 wrld3 state))
                        (ttree4 (cons-tag-trees ttree1
                                                (cons-tag-trees ttree2
                                                                ttree3))))
@@ -11538,8 +12145,10 @@
                                   'defthm
                                   name
                                   ttree4
-                                  nil :protect ctx wrld3
-                                  state)))))))))))))))
+                                  nil :protect ctx wrld4
+                                  state)))))))))))))
+   :event-type 'defthm
+   :event event-form))
 
 (defun defthm-fn (name term state
                        rule-classes
@@ -11562,41 +12171,71 @@
      event-form
      #+:non-standard-analysis std-p)))
 
-(defun thm-fn (term state hints otf-flg)
-  (er-progn
-   (with-ctx-summarized
-    (make-ctx-for-event
-     (list* 'THM term (if (or hints otf-flg) '(irrelevant) nil))
-     "( THM ...)")
-    (cond
-     ((member-eq (ld-skip-proofsp state)
-                 '(include-book include-book-with-locals initialize-acl2))
-      (value nil))
-     (t
-      (let ((wrld (w state))
-            (ens (ens state)))
-        (er-let* ((hints (translate-hints+ 'thm
-                                           hints
-                                           (default-hints wrld)
-                                           ctx wrld state)))
-          (er-let* ((tterm (translate term t t t ctx wrld state))
+(defun thm-fn (term state instructions hints otf-flg event-form)
+  (let ((event-form (or event-form
+                        `(thm ,term
+                              ,@(and instructions
+                                     `(:instructions ,instructions))
+                              ,@(and hints
+                                     `(:hints ,hints))
+                              ,@(and otf-flg
+                                     `(:otf-flg ,otf-flg))))))
+    (er-progn
+     (with-ctx-summarized
+      "( THM ...)"
+      (cond
+       ((member-eq (ld-skip-proofsp state)
+                   '(include-book include-book-with-locals initialize-acl2))
+        (value nil))
+       (t
+        (let ((wrld (w state))
+              (ens (ens state)))
+          (er-let* ((instructions (translate-instructions instructions ctx
+                                                          state))
+                    (thints (translate-hints+ 'thm
+                                              hints
+                                              (default-hints wrld)
+                                              ctx wrld state)))
+            (er-let* ((tterm (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-                    (ttree (prove tterm
-                                  (make-pspv ens wrld state
-                                             :displayed-goal term
-                                             :otf-flg otf-flg)
-                                  hints ens wrld ctx state)))
-            (value nil)))))))
-   (pprogn (io? prove nil state
-                nil
-                (fms (if (ld-skip-proofsp state)
-                         "Proof skipped.~%"
-                       "Proof succeeded.~%")
-                     nil
-                     (proofs-co state) state nil))
-           (value :invisible))))
+                      (ttree
+                       (cond
+                        ((and instructions thints)
+                         (er soft ctx
+                             "It is not permitted to supply both ~
+                              :INSTRUCTIONS and :HINTS to THM."))
+                        (instructions
+                         (proof-builder nil ; name
+                                        term
+                                        tterm
+                                        nil ; classes
+                                        instructions
+                                        wrld state))
+                        (t
+                         (prove tterm
+                                (make-pspv ens wrld state
+                                           :displayed-goal term
+                                           :otf-flg otf-flg)
+                                thints ens wrld ctx state)))))
 
-(defmacro thm (term &key hints otf-flg)
+              (pprogn
+; Set accumulated-ttree to the ttree returned by prove, as is done in
+; install-event; see the comment there.
+               (f-put-global 'accumulated-ttree ttree state)
+               (value nil)))))))
+      :event-type 'thm
+      :event event-form)
+     (pprogn (io? prove nil state
+                  nil
+                  (fms (if (ld-skip-proofsp state)
+                           "Proof skipped.~%"
+                         "Proof succeeded.~%")
+                       nil
+                       (proofs-co state) state nil))
+             (value :invisible)))))
+
+(defmacro thm (&whole event-form
+                      term &key instructions hints otf-flg)
 
 ; We started using make-event here in January, 2019.  Instead of defining
 ; thm-fn above and generating a call of it below, we could presumably generate
@@ -11610,11 +12249,14 @@
      (make-event (er-progn (with-output :stack :pop
                              (thm-fn ',term
                                      state
+                                     ',instructions
                                      ',hints
-                                     ',otf-flg))
+                                     ',otf-flg
+                                     ',event-form))
                            (value '(value-triple :invisible)))
                  :expansion? (value-triple :invisible)
-                 :on-behalf-of :quiet!)))
+                 :on-behalf-of :quiet!
+                 :save-event-data t)))
 
 ; Note:  During boot-strapping the thm macro is unavailable because it is
 ; not one of the *initial-event-defmacros*.

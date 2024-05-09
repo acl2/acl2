@@ -56,6 +56,9 @@
 ; To certify this book:
 ; (certify-book "expander").
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 (include-book "xdoc/top" :dir :system)
 
@@ -183,7 +186,7 @@ directly with ACL2.</p>
 ; Adapted from prove.
 
   (prog2$
-   (initialize-brr-stack state)
+   (semi-initialize-brr-wormhole state)
    (sl-let (erp ttree1 clauses pairs new-pspv state)
            (prove-loop-clauses (list (list term))
                                (change prove-spec-var pspv
@@ -850,7 +853,7 @@ directly with ACL2.</p>
   (state-global-let*
    ((inhibit-output-lst (maybe-inhibit-output-lst inhibit-output state)))
    (prog2$
-    (initialize-brr-stack state)
+    (semi-initialize-brr-wormhole state)
     (er-let*
      ((thints (translate-hints 'tool2 hints ctx wrld state)))
      (tool2-fn1 term hyps g?equiv ctx ens wrld state thints prove-assumptions
@@ -1662,3 +1665,4 @@ x=0. Maybe we should think about how to do this and do it.
                            (value (list 'value-triple
                                         (list 'quote form)))))
           `(make-event ,form)))))
+

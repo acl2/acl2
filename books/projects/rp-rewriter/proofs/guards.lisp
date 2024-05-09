@@ -140,6 +140,7 @@
    (defthm guard-lemma7
        (implies (and (consp term)
                      (not (equal (car term) 'rp))
+                     (not (equal (car term) 'equals))
                      (not (equal (car term) 'quote))
                      (not (equal (car term) 'falist))
                      (rp-termp term))
@@ -386,11 +387,11 @@
 (local
  (defthm rp-rw-of-quotep-term
    (implies (quotep term)
-            (equal (equal (rp-rw term dont-rw context  iff-flg  limit rp-state state)
+            (equal (equal (rp-rw term dont-rw context  iff-flg backchain-limit limit rp-state state)
                           (list term rp-state))
                    t))
    :hints (("Goal"
-            :expand (rp-rw term dont-rw context iff-flg  limit rp-state state)
+            :expand (rp-rw term dont-rw context iff-flg backchain-limit  limit rp-state state)
             :do-not-induct t
             :in-theory (e/d (rp-ex-counterpart
                              quotep
@@ -444,12 +445,12 @@
    (equal (consp (MV-NTH
                   0
                   (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT 
-                                  LIMIT   rp-state STATE)))
+                                 backchain-limit LIMIT   rp-state STATE)))
           (consp subterms))
    :hints (("Goal"
             :induct (induct-1 subterms limit)
             :expand (RP-RW-SUBTERMS SUBTERMS DONT-RW CONTEXT
-                                     LIMIT  rp-state STATE)
+                                   backchain-limit  LIMIT  rp-state STATE)
             :in-theory (e/d (RP-RW-SUBTERMS) (RP-RW))))))
 
 (local
@@ -474,10 +475,10 @@
    (implies (is-rp term)
             (equal (MV-NTH
                     0
-                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
+                    (rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG backchain-limit LIMIT rp-state STATE))
                    (cadr term)))
    :hints (("Goal"
-            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG  LIMIT rp-state STATE))
+            :expand ((rp-rw (cadr term) RULES-FOR-TERM CONTEXT IFF-FLG backchain-limit LIMIT rp-state STATE))
             :in-theory (e/d (is-rp) (rp-rw-subterms
                                      rp-rw))))))
 
@@ -614,7 +615,7 @@
 (verify-guards calculate-dont-rw$inline)
 (verify-guards calculate-dont-rw-lst$inline)
 
-(local
+#|(local
  (defret unsigned-byte-p-of-GET-LIMIT-FOR-HYP-RW
    (implies (and (unsigned-byte-p 58 limit)
                  (not (zp limit))
@@ -624,7 +625,7 @@
    :fn GET-LIMIT-FOR-HYP-RW
    :hints (("Goal"
             :in-theory (e/d (GET-LIMIT-FOR-HYP-RW
-                             RP-STATEP) ())))))
+                             RP-STATEP) ())))))|#
 
 
 (verify-guards create-if-instance$inline)
@@ -656,6 +657,13 @@
                             rp-termp
                             )))))
 
+(local
+ (defthm integer-of-*RW-BACKCHAIN-LIMIT*
+   (implies (rp-statep rp-state)
+            (INTEGERP (NTH *RW-BACKCHAIN-LIMIT* RP-STATE)))
+   :hints (("Goal"
+            :in-theory (e/d (rp-statep) ())))))
+
 (verify-guards rp-rw
   :otf-flg nil
   :hints (("Goal"
@@ -686,7 +694,7 @@
                         (:DEFINITION EX-FROM-RP)
                         (:REWRITE NOT-INCLUDE-RP)
                         (:REWRITE NOT-QUOTEP-IMPLIES)
-                        (:DEFINITION INCLUDE-FNC)
+                        (:DEFINITION INCLUDE-FNC-fn)
                         (:REWRITE RP-EVL-OF-RP-EQUAL2)
                         (:DEFINITION RP-EQUAL2)
 ;;                        (:REWRITE ACL2::O-P-O-INFP-CAR)
@@ -694,7 +702,7 @@
                         (:REWRITE RP-EQUAL-IMPLIES-RP-EQUAL2)
                         (:REWRITE LEMMA11)
                         (:DEFINITION EVAL-AND-ALL)
-                        (:TYPE-PRESCRIPTION INCLUDE-FNC)
+                        (:TYPE-PRESCRIPTION INCLUDE-FNC-fn)
                         (:REWRITE LEMMA6)
                         FALIST-CONSISTENT
                         is-if
@@ -816,10 +824,10 @@
                  (:definition rp-equal)
                  (:rewrite rp-equal-implies-rp-equal2)
                  (:rewrite not-include-rp)
-                 (:definition include-fnc)
+                 (:definition include-fnc-fn)
                  (:linear acl2::apply$-badgep-properties . 1)
                  (:definition acl2::apply$-badgep)
-                 (:definition include-fnc-subterms)
+                 (:definition include-fnc-subterms-fn)
                  (:definition subsetp-equal)
                  (:definition member-equal)
                  (:definition falist-consistent)

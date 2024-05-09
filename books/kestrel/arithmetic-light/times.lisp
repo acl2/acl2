@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation *.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,15 +10,18 @@
 
 (in-package "ACL2")
 
-(local (include-book "plus"))
-(local (include-book "minus"))
+;(local (include-book "plus"))
+;(local (include-book "minus"))
 (local (include-book "less-than"))
 (local (include-book "realpart"))
 (local (include-book "imagpart"))
+(local (include-book "complex"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ; note that the rules associativity-of-*, commutativity-of-*, and unicity-of-1
 ; are built in to ACL2.
+
+;; TODO: Consider using real/rationalp in this book.
 
 (defthm integerp-of-*
   (implies (and (integerp x)
@@ -70,7 +73,6 @@
                                   (y z))
            :in-theory (disable integerp-of-*))))
 
-
 (defthm *-of---arg1
   (implies (syntaxp (not (quotep x))) ;prevent it from matching a constant
            (equal (* (- x) y)
@@ -109,6 +111,15 @@
   :hints (("Goal" :cases ((< x 0)
                           (and (< 0 X) (< Y 0))
                           (and (< 0 X) (< 0 Y))))))
+
+(defthm <-of-0-and-*
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (< 0 (* x y))
+                  (or (and (< x 0)
+                           (< y 0))
+                      (and (< 0 y)
+                           (< 0 x))))))
 
 ;; A stronger rewrite rule than <-of-*-and-*.  This is a cancellation rule.
 (defthm <-of-*-and-*-cancel
@@ -409,6 +420,7 @@
                                   (y x))
            :in-theory (disable <-of-*-and-*-cancel))))
 
+;why special?
 (defthm <-of-*-same-linear-special
   (implies (and (< 1 y)
                 (< 0 x)
@@ -420,7 +432,17 @@
   :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1 (x1 1) (x2 y) (y x))
            :in-theory (disable <-of-*-and-*-same-forward-1))))
 
-(defthm <-of-*-and-*
+(defthm <-of-*-same-linear-2
+  (implies (and (<= 1 y)
+                (<= 0 x)
+                (rationalp x)
+                ;; (rationalp y)
+                )
+           (<= x (* x y)))
+  :rule-classes :linear
+)
+
+(defthm <-of-*-and-*-linear
   (implies (and (< x1 x2)  ; strict
                 (<= y1 y2) ; weak
                 (<= 0 x1)
@@ -429,7 +451,31 @@
                 (rationalp x2)
                 (rationalp y1))
            (< (* x1 y1) (* x2 y2)))
-  :rule-classes (:rewrite :linear)
+  :rule-classes :linear
+  :hints (("Goal"
+           :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
+                            (y y1))
+                 (:instance <-OF-*-AND-*-SAME-LINEAR-1
+                            (x1 y1)
+                            (x2 y2)
+                            (y x2)))
+           :in-theory (disable <-of-*-and-*-cancel
+                               <-OF-*-AND-*-SAME-HELPER
+                               <-OF-*-AND-*-SAME-FORWARD-1
+                               <-OF-*-AND-*-SAME-FORWARD-2))))
+
+(defthm <-of-*-and-*
+  (implies (and (< x1 x2)  ; strict
+                (<= y1 y2) ; weak
+                (<= 0 x1)
+                (<= 0 y1) ; note this
+                ;; todo: try to drop these hyps?:
+                (rationalp x2)
+                (rationalp y1))
+           (equal (< (* x1 y1) (* x2 y2))
+                  (if (= 0 y1)
+                      (< 0 (* x2 y2))
+                    t)))
   :hints (("Goal"
            :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
                             (y y1))
@@ -512,8 +558,22 @@
                 (rationalp k2)
                 )
            (equal (< k1 (* k2 x))
-                  (and ;(acl2-numberp k1)
-                       (< (/ k1 k2) (fix x)))))
+                  (< (/ k1 k2) x)))
+  :hints (("Goal" :in-theory (disable inverse-of-*
+                                      associativity-of-*)
+           :use ((:instance inverse-of-* (x k2))
+                 (:instance associativity-of-* (x k2) (y (/ k2)) (z x))))))
+
+(defthm <-of-*-of-constant-and-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (< 0 k2) ;gen
+                (rationalp x)
+                (rationalp k1)
+                (rationalp k2)
+                )
+           (equal (< (* k2 x) k1)
+                  (< x (/ k1 k2))))
   :hints (("Goal" :in-theory (disable inverse-of-*
                                       associativity-of-*)
            :use ((:instance inverse-of-* (x k2))
@@ -528,8 +588,31 @@
                     (if (equal 0 i)
                         nil
                       (< j -1)))))
-  :hints (("Goal" :use (:instance acl2::<-of-*-and-*-cancel-gen
+  :hints (("Goal" :use (:instance <-of-*-and-*-cancel-gen
                                   (y i)
                                   (x1 1)
                                   (x2 (- j)))
-           :in-theory (disable acl2::<-of-*-and-*-cancel-gen))))
+           :in-theory (disable <-of-*-and-*-cancel-gen))))
+
+(defthm equal-of-*-cancel-arg1+
+  (equal (equal (* x y) x)
+         (and (acl2-numberp x)
+              (if (equal 0 x)
+                  t
+                (equal y 1))))
+  :hints (("Goal" :use (:instance equal-of-*-and-*-cancel (z 1))
+           :in-theory (disable equal-of-*-and-*-cancel))))
+
+;; (a + bi) * (c + di) = ac-bd + (ad+bc)i
+(defthm realpart-of-*
+  (equal (realpart (* x y))
+         (- (* (realpart x) (realpart y))
+            (* (imagpart x) (imagpart y))))
+  :hints (("Goal" :in-theory (enable complex-opener))))
+
+;; (a + bi) * (c + di) = ac-bd + (ad+bc)i
+(defthm imagpart-of-*
+  (equal (imagpart (* x y))
+         (+ (* (realpart x) (imagpart y))
+            (* (imagpart x) (realpart y))))
+  :hints (("Goal" :in-theory (enable complex-opener))))

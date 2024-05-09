@@ -164,7 +164,7 @@
         :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
                                                    '(,reps-function-name
                                                      (:type-prescription ,reps-function-name)
-                                                     NATP-MEANS-NON-NEG)))))
+                                                     not-<-of-0-when-natp)))))
 
       (defthm ,(concat-symbols reps-function-name '-when-exit)
         (implies (,exit-test-function-name x)

@@ -1570,6 +1570,28 @@ affect this operation and update the docs accordingly once it's fixed.</p>"
            (thens 4vec)
            (elses 4vec))))
 
+(define 4vec-1mask ((x 4vec-p))
+  :returns (1mask integerp)
+  (b* (((4vec x)))
+    (logand x.upper x.lower))
+  ///
+  (deffixequiv 4vec-1mask))
+
+(define 4vec-bitmux ((test integerp) (then 4vec-p) (else 4vec-p))
+  :returns (mux 4vec-p)
+  :guard-hints (("goal" :in-theory (enable logite)))
+  (b* (((4vec then))
+       ((4vec else)))
+    (mbe :logic (4vec (logite test then.upper else.upper)
+                      (logite test then.lower else.lower))
+         :exec (b* (((when (eql test -1)) then)
+                    ((when (eql test 0)) else))
+                 (4vec (logite test then.upper else.upper)
+                       (logite test then.lower else.lower)))))
+  ///
+  (deffixequiv 4vec-bitmux))
+
+
 (define 4vec-bit?! ((tests 4vec-p)
                     (thens 4vec-p)
                     (elses 4vec-p))
@@ -1596,24 +1618,7 @@ to:</p>
 <p>This way, if the override-test is left out of the environment (therefore its
 value is X), the regular value will go through.</p>"
 
-  (b* (((4vec tests))
-       ((4vec thens))
-       ((4vec elses))
-       (pick-then (logand tests.upper tests.lower)))
-    (mbe :logic (b* ((pick-else (lognot pick-then))
-                     (upper (logior (logand pick-then thens.upper)
-                                    (logand pick-else elses.upper)))
-                     (lower (logior (logand pick-then thens.lower)
-                                    (logand pick-else elses.lower))))
-                  (4vec upper lower))
-         :exec (b* (((when (eql pick-then -1)) thens)
-                    ((when (eql pick-then 0)) elses)
-                    (pick-else (lognot pick-then))
-                    (upper (logior (logand pick-then thens.upper)
-                                   (logand pick-else elses.upper)))
-                    (lower (logior (logand pick-then thens.lower)
-                                   (logand pick-else elses.lower))))
-                 (4vec upper lower))))
+  (4vec-bitmux (4vec-1mask tests) thens elses)
                  
   ///
   (deffixequiv 4vec-bit?!
@@ -2131,3 +2136,7 @@ relationship with @(see svex-xeval)."
     (eql -1 (logior (lognot x.upper) x.lower))))
 
 
+(define unsigned-4vec-p ((n natp) x)
+  (and (4vec-p x)
+       (unsigned-byte-p n (4vec->upper x))
+       (unsigned-byte-p n (4vec->lower x))))

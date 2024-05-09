@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,26 +39,20 @@
 ;; TODO: Return more helpful information in the case of errors.
 
 (include-book "tools/flag" :dir :system)
+(include-book "parsed-json")
 (include-book "kestrel/unicode-light/hex-digit-chars-to-code-point" :dir :system)
 (include-book "kestrel/unicode-light/code-point-to-utf-8-chars" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/prefixp" :dir :system))
 
-(local (in-theory (disable mv-nth)))
+(local (in-theory (disable mv-nth member-equal true-listp)))
 
-;dup
-(defund prefixp (x y)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp y)
-           (equal (car x) (car y))
-           (prefixp (cdr x) (cdr y)))
-    t))
-
-(local (in-theory (enable prefixp ;todo
-                          true-listp-when-character-listp2)))
+(local (in-theory (enable true-listp-when-character-listp2)))
 
 ;; Returns a suffix of chars.
 (defund skip-json-whitespace (chars)
@@ -339,41 +333,37 @@
   :hints (("Goal" :in-theory (enable parse-json-string-char))))
 
 ;; Returns (mv erp parsed-chars remaining-chars).
-(defund parse-json-string-chars-and-final-quote (chars)
-  (declare (xargs :guard (character-listp chars)
+(defund parse-json-string-chars-and-final-quote (chars acc)
+  (declare (xargs :guard (and (character-listp chars)
+                              (character-listp acc))
                   :measure (len chars)))
   (if (endp chars)
       (mv :no-closing-quote nil chars)
     (let ((first-char (first chars)))
       (if (eql first-char #\") ;found the end of the string
-          (mv nil nil (rest chars))
+          (mv nil (reverse acc) (rest chars))
         (mv-let (erp parsed-char chars)
           (parse-json-string-char chars)
           (if erp
               (mv erp nil chars)
-            (mv-let (erp parsed-chars chars)
-              (parse-json-string-chars-and-final-quote chars)
-              (if erp
-                  (mv erp nil chars)
-                (mv nil
-                    (append parsed-char parsed-chars)
-                    chars)))))))))
+            (parse-json-string-chars-and-final-quote chars (revappend parsed-char acc))))))))
 
 (defthm len-of-mv-nth-2-of-parse-json-string-chars-and-final-quote-bound
-  (implies (not (mv-nth 0 (parse-json-string-chars-and-final-quote chars)))
-           (< (len (mv-nth 2 (parse-json-string-chars-and-final-quote chars)))
+  (implies (not (mv-nth 0 (parse-json-string-chars-and-final-quote chars acc)))
+           (< (len (mv-nth 2 (parse-json-string-chars-and-final-quote chars acc)))
               (len chars)))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable parse-json-string-chars-and-final-quote))))
 
 (defthm character-listp-of-mv-nth-2-of-parse-json-string-chars-and-final-quote
   (implies (character-listp chars)
-           (character-listp (mv-nth 2 (parse-json-string-chars-and-final-quote chars))))
+           (character-listp (mv-nth 2 (parse-json-string-chars-and-final-quote chars acc))))
   :hints (("Goal" :in-theory (enable parse-json-string-chars-and-final-quote))))
 
 (defthm character-listp-of-mv-nth-1-of-parse-json-string-chars-and-final-quote
-  (implies (character-listp chars)
-           (character-listp (mv-nth 1 (parse-json-string-chars-and-final-quote chars))))
+  (implies (and (character-listp chars)
+                (character-listp acc))
+           (character-listp (mv-nth 1 (parse-json-string-chars-and-final-quote chars acc))))
   :hints (("Goal" :in-theory (enable parse-json-string-chars-and-final-quote))))
 
 ;; Parse a string, including the closing quote.  Returns (mv erp parsed-string
@@ -383,7 +373,7 @@
                               (eql #\" (first chars)))))
   (let ((chars (cdr chars))) ;Skip the opening double quote
     (mv-let (erp parsed-chars chars)
-      (parse-json-string-chars-and-final-quote chars)
+      (parse-json-string-chars-and-final-quote chars nil)
       (if erp
           (mv erp "" chars)
         (mv nil (coerce parsed-chars 'string) chars)))))
@@ -406,7 +396,8 @@
   :hints (("Goal" :in-theory (enable parse-json-string))))
 
 (defund char-value (char)
-  (declare (xargs :guard (member char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))))
+  (declare (xargs :guard (member char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+                  :guard-hints (("Goal" :in-theory (enable member-equal)))))
   (- (char-code char)
      (char-code #\0)))
 
@@ -445,7 +436,7 @@
 (defthm natp-of-mv-nth-0-of-parse-json-digits
   (natp (mv-nth 0 (parse-json-digits chars)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable parse-json-digits))))
+  :hints (("Goal" :in-theory (enable parse-json-digits member-equal))))
 
 (verify-guards parse-json-digits)
 
@@ -474,7 +465,8 @@
   (declare (xargs :guard (and (character-listp chars)
                               ;;(consp chars)
                               ;;(member (first chars) '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                              )))
+                              )
+                  :guard-hints (("Goal" :in-theory (enable member-equal)))))
   (if (not (consp chars))
       (mv :empty-number 0 chars)
     (let ((char (first chars)))
@@ -494,7 +486,7 @@
 (defthm natp-of-mv-nth-1-of-parse-integer-part-of-json-number
   (natp (mv-nth 1 (parse-integer-part-of-json-number chars)))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable parse-integer-part-of-json-number))))
+  :hints (("Goal" :in-theory (enable parse-integer-part-of-json-number member-equal))))
 
 ;todo: this sort of thing could be automated
 (defthm character-listp-of-mv-nth-2-of-parse-integer-part-of-json-number
@@ -1012,88 +1004,11 @@
            (< (len (mv-nth 2 (parse-json-value tokens)))
               (len tokens)))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :expand ((PARSE-JSON-VALUE TOKENS)))))
+  :hints (("Goal" :expand ((parse-json-value tokens)))))
 
 (verify-guards parse-json-object)
 
-;;;
-;;; Recognizer for parsed JSON objects
-;;;
-
-(mutual-recursion
- ;; Recognize the parsed form of a JSON array
- (defund parsed-json-arrayp (val)
-   (declare (xargs :guard t
-                   :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))
-   (and (true-listp val)
-        (= 2 (len val))
-        (eq :array (car val))
-        (parsed-json-valuesp (cadr val))))
-
- ;; Recognize a sequence of name/value pairs that appears in the parsed form of
- ;; a JSON object.
- (defund parsed-json-object-pairsp (val)
-   (declare (xargs :guard t
-                   :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))
-   (if (atom val)
-       (null val)
-     (let ((entry (first val)))
-       (and (consp entry)
-            (stringp (car entry))
-            (parsed-json-valuep (cdr entry))
-            (parsed-json-object-pairsp (rest val))))))
-
- ;; Recognize a parsed JSON object (in JSON parlance, and "object" is a map
- ;; from keys to values).
- (defund parsed-json-objectp (val)
-   (declare (xargs :guard t
-                   :measure (make-ord 1 (+ 1 (acl2-count val)) 0)))
-   (and (true-listp val)
-        (= 2 (len val))
-        (eq :object (car val))
-        (parsed-json-object-pairsp (cadr val))))
-
- ;; Recogize a true-list of parsed JSON values.
- (defund parsed-json-valuesp (vals)
-   (declare (xargs :guard t
-                   :measure (make-ord 1 (+ 1 (acl2-count vals)) 0)))
-   (if (atom vals)
-       (null vals)
-     (and (parsed-json-valuep (first vals))
-          (parsed-json-valuesp (rest vals)))))
-
- ;; Recogize a parsed JSON value (in JSON parlance, a "value" can be a scalar,
- ;; an array, or an object).
- (defund parsed-json-valuep (val)
-   (declare (xargs :guard t
-                   :measure (make-ord 1 (+ 1 (acl2-count val)) 1)))
-   (or (member-eq val '(:true :false :null))
-       (rationalp val)
-       (stringp val)
-       (parsed-json-arrayp val)
-       (parsed-json-objectp val))))
-
-(defthm parsed-json-object-pairsp-of-cons
-  (equal (parsed-json-object-pairsp (cons pair pairs))
-         (and (consp pair)
-              (stringp (car pair))
-              (parsed-json-valuep (cdr pair))
-              (parsed-json-object-pairsp pairs)))
-  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp))))
-
-(defthm parsed-json-object-pairsp-of-revappend
-  (implies (and (parsed-json-object-pairsp x)
-                (parsed-json-object-pairsp acc))
-           (parsed-json-object-pairsp (revappend x acc)))
-  :hints (("Goal" :in-theory (enable parsed-json-object-pairsp revappend))))
-
-(defthm parsed-json-valuesp-of-revappend
-  (implies (and (parsed-json-valuesp x)
-                (parsed-json-valuesp acc))
-           (parsed-json-valuesp (revappend x acc)))
-  :hints (("Goal" :in-theory (enable parsed-json-valuesp revappend))))
-
-;; Prove that we always get well-formed structures
+;; Prove that we always get well-formed structures:
 (defthm-flag-parse-json-object
   (defthm parsed-json-objectp-of-mv-nth-1-of-parse-json-object
     (implies (and (not (mv-nth 0 (parse-json-object tokens acc)))
@@ -1131,10 +1046,8 @@
 ;;; parse-json
 ;;;
 
-;; Returns (mv erp parsed-value).  where ERP is nil iff no error occured.
-;; PARSED-VALUE is a parsed representation of the JSON value, using lists
-;; (tagged with :array) for JSON arrays and alists (tagged with :object) for
-;; JSON objects.
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occured and
+;; PARSED-VALUE is a parsed-json-valuep.
 (defund parse-json (chars)
   (declare (xargs :guard (character-listp chars)))
   (mv-let (erp tokens)
@@ -1154,3 +1067,16 @@
                 (character-listp chars))
            (parsed-json-valuep (mv-nth 1 (parse-json chars))))
   :hints (("Goal" :in-theory (e/d (parse-json) (cdr-iff)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp parsed-value), where ERP is nil iff no error occured.
+(defund parse-string-as-json (string)
+  (declare (xargs :guard (stringp string)))
+  (parse-json (coerce string 'list)))
+
+(defthm parsed-json-valuep-of-mv-nth-1-of-parse-string-as-json
+  (implies (and (not (mv-nth 0 (parse-string-as-json string))) ; no error
+                (stringp string))
+           (parsed-json-valuep (mv-nth 1 (parse-string-as-json string))))
+  :hints (("Goal" :in-theory (enable parse-string-as-json))))

@@ -1,6 +1,6 @@
 ; A clause processor to simplify assumptions
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (include-book "clause-to-clause-list")
 (include-book "kestrel/terms-light/drop-clearly-implied-conjuncts" :dir :system)
 (include-book "kestrel/terms-light/strengthen-conjuncts" :dir :system)
-(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
+;(include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
 
 ;dup
 ;; just changes the evaluator
@@ -65,7 +65,7 @@
 (defthm all-eval-to-false-with-if-and-not-eval-of-simplify-assumptions-in-clause
   (iff (all-eval-to-false-with-if-and-not-eval (simplify-assumptions-in-clause clause) a)
        (all-eval-to-false-with-if-and-not-eval clause a))
-  :hints (("Goal" :in-theory (e/d (simplify-assumptions-in-clause) ()))))
+  :hints (("Goal" :in-theory (enable simplify-assumptions-in-clause))))
 
 ;; ;;move
 ;; ;; Correctness of simplify-assumptions.

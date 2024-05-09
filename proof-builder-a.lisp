@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -22,7 +22,7 @@
 
 ; PC globals are those that can be changed from inside the proof-builder's
 ; interactive loop, and whose values we want saved.  Note that state-stack can
-; also be changed outside the interactive loop (by use of :instruction), so we
+; also be changed outside the interactive loop (by use of :instructions), so we
 ; need to be careful.  We'll manage this by keeping state-stack as a PC global,
 ; updating pc-output upon entry to reflect the latest value of state-stack.
 
@@ -409,6 +409,9 @@
 
 (table pc-command-table nil nil
        :guard
+
+; Since there isn't any documentation particularlly relevant to this table, we
+; avoid using set-table-guard here.
 
 ; Before adding this table guard after Version_4.3, we were able to certify the
 ; following book.
@@ -1280,8 +1283,7 @@
                                       col))
                          state)
                        (value (car instr-list)))
-             (with-infixp-nil
-              (read-object instr-list state)))
+             (read-object instr-list state))
            (cond
             (erp
 

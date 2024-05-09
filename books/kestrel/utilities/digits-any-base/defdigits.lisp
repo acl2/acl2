@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Specific Digits in Specific Bases
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,7 +29,7 @@
    (xdoc::seetopic
     "digits-any-base"
     "the operations to convert between natural numbers and digits")
-   ", using specified recognizers and fixers for the digits.")
+   ", using specified existing recognizers and fixers for the digits.")
 
   :long
 
@@ -61,7 +61,7 @@
    (xdoc::p
     "These specialized operations,
      in combination with the unary recognizers and fixers,
-     may be easier to use and reason about
+     are easier to use and reason about
      than the general operations,
      when the base is known.")
 
@@ -70,12 +70,18 @@
    (xdoc::codeblock
     "(defdigits name"
     "           :base ..."
+    "           :digit-pred ..."
+    "           :digit-fix ..."
     "           :digits-pred ..."
     "           :digits-fix ..."
     "           :bendian-to-nat ..."
     "           :lendian-to-nat ..."
     "           :nat-to-bendian ..."
     "           :nat-to-lendian ..."
+    "           :digit-pred-hints ..."
+    "           :digit-fix-hints ..."
+    "           :digit-pred-guard-hints ..."
+    "           :digit-fix-guard-hints ..."
     "           :digits-pred-hints ..."
     "           :digits-fix-hints ..."
     "           :digits-pred-guard-hints ..."
@@ -103,6 +109,17 @@
 
    (xdoc::desc
     (list
+     "@(':digit-pred')"
+     "@(':digit-fix')")
+    (xdoc::p
+     "Symbols that name existing functions, or macros for inline functions,
+      to be used as specializations of
+      @(tsee dab-digitp) and @(tsee dab-digit-fix).")
+    (xdoc::p
+     "These must be part of an existing fixtype."))
+
+   (xdoc::desc
+    (list
      "@(':digits-pred')"
      "@(':digits-fix')")
     (xdoc::p
@@ -124,6 +141,10 @@
 
    (xdoc::desc
     (list
+     "@(':digit-pred-hints')"
+     "@(':digit-fix-hints')"
+     "@(':digit-pred-guard-hints')"
+     "@(':digit-fix-guard-hints')"
      "@(':digits-pred-hints')"
      "@(':digits-fix-hints')"
      "@(':digits-pred-guard-hints')"
@@ -133,8 +154,8 @@
       are equivalent to the general ones,
       when their base argument is @('base').
       Besides the equalities of the functions,
-      the guard of the recognizer must be @('t'),
-      and the guard of the fixer must be the recognizer."))
+      the guard of the recognizer must be equivalent to @('t'),
+      and the guard of the fixer must include the recognizer."))
 
    (xdoc::desc
     "@(':digits-description')"
@@ -159,6 +180,24 @@
 
    (xdoc::desc
     (list
+     "@('digit-pred-correct')"
+     "@('digit-fix-correct')")
+    (xdoc::p
+     "Two rewrite rules, disabled by default,
+      that equate @('digit-pred') and @('digit-fix')
+      with @(tsee dab-digitp) and @(tsee dab-digit-fix)
+      applied to the specified base."))
+
+   (xdoc::desc
+    "@('digit-pred-guard-correct')"
+    "@('digit-fix-guard-correct')"
+    (xdoc::p
+     "Two theorems, without rule classes,
+      asserting that the guard of @('digit-pred') is equivalent to @('t') and
+      that the guard of @('digit-fix') includes @('digit-pred')."))
+
+   (xdoc::desc
+    (list
      "@('digits-pred-correct')"
      "@('digits-fix-correct')")
     (xdoc::p
@@ -172,13 +211,13 @@
     "@('digits-fix-guard-correct')"
     (xdoc::p
      "Two theorems, without rule classes,
-      asserting that the guard of @('digits-pred') is (equivalent to) @('t') and
-      that the guard of @('digits-fix') is (equivalent to) @('digits-pred')."))
+      asserting that the guard of @('digits-pred') is equivalent to @('t') and
+      that the guard of @('digits-fix') includes @('digits-pred')."))
 
    (xdoc::desc
     (list
-     "@('nat-to-bendian')"
-     "@('nat-to-lendian')"
+     "@('bendian-to-nat')"
+     "@('lendian-to-nat')"
      "@('nat-to-bendian')"
      "@('nat-to-lendian')"
      "@('nat-to-bendian*')"
@@ -199,10 +238,20 @@
       The names of the first four are as specified by the respective inputs;
       the names for the second four are obtained by adding @('*') or @('+')
       after the names of the third and fourth function.
-      These new functions are accompanied by theorems corresponding to
-      the ones that accompany the original functions.
-      These theorems, and the guards, use @('digits-pred') and @('digits-fix')
-      instead of @(tsee dab-digit-listp) and @(tsee dab-digit-list-fix)."))
+      These new functions are accompanied by several theorems
+      corresponding to ones that accompany the original functions,
+      i.e. they are specialized versions of the general theorems;
+      we also generate some theory invariants that prevent
+      some of the generated rewrite rules from being simultaneously enabled.
+      These theorems, and the guards,
+      use @('digit-pred'), @('digit-fix'), @('digits-pred'), and @('digits-fix')
+      instead of @(tsee dab-digitp),
+      @(tsee dab-digit-fix),
+      @(tsee dab-digit-listp),
+      and @(tsee dab-digit-list-fix).
+      The generated theorems can be seen in the implementation,
+      which uses a readable backquote notation;
+      they can also be seen in the generated XDOC."))
 
    (xdoc::p
     "The generated events include XDOC documentation.
@@ -230,6 +279,8 @@
     The last two fields are the names of
     two theorems generated by @(tsee defdigits).")
   ((base dab-basep)
+   (digit-pred symbolp)
+   (digit-fix symbolp)
    (digits-pred symbolp)
    (digits-fix symbolp)
    (bendian-to-nat symbolp)
@@ -237,6 +288,8 @@
    (nat-to-bendian symbolp)
    (nat-to-lendian symbolp)
    (digits-description stringp)
+   (digit-pred-correct symbolp)
+   (digit-fix-correct symbolp)
    (digits-pred-correct symbolp)
    (digits-fix-correct symbolp))
   :pred defdigits-infop)
@@ -263,12 +316,18 @@
 
 (define defdigits-fn (name
                       base
+                      digit-pred
+                      digit-fix
                       digits-pred
                       digits-fix
                       bendian-to-nat
                       lendian-to-nat
                       nat-to-bendian
                       nat-to-lendian
+                      digit-pred-hints
+                      digit-fix-hints
+                      digit-pred-guard-hints
+                      digit-fix-guard-hints
                       digits-pred-hints
                       digits-fix-hints
                       digits-pred-guard-hints
@@ -284,11 +343,31 @@
   (b* (;; validate the NAME input:
        ((unless (symbolp name))
         (raise "The NAME input must be a symbol, ~
-                 but it is ~x0 instead." name))
+                but it is ~x0 instead." name))
        ;; validate the :BASE input:
        ((unless (dab-basep base))
         (raise "The :BASE input must be an integer greater than 1, ~
-                 but it is ~x0 instead." base))
+                but it is ~x0 instead." base))
+       ;; validate the :DIGIT-PRED input:
+       ((unless (symbolp digit-pred))
+        (raise "The :DIGIT-PRED input must be a symbol, ~
+                but it is ~x0 instead." digit-pred))
+       ((unless (or (getpropc digit-pred 'macro-args nil wrld)
+                    ;; above condition says macro symbol with 1+ args
+                    (function-symbolp digit-pred wrld)))
+        (raise "The symbol ~x0 must name an existing function, ~
+                or a macro for an inline function, ~
+                but it does not." digit-pred))
+       ;; validate the :DIGIT-FIX input:
+       ((unless (symbolp digit-fix))
+        (raise "The :DIGIT-FIX input must be a symbol, ~
+                but it is ~x0 instead." digit-fix))
+       ((unless (or (getpropc digit-fix 'macro-args nil wrld)
+                    ;; above condition says macro symbol with 1+ args
+                    (function-symbolp digit-fix wrld)))
+        (raise "The symbol ~x0 must name an existing function, ~
+                or a macro for an inline function, ~
+                but it does not." digit-fix))
        ;; validate the :DIGITS-PRED input:
        ((unless (symbolp digits-pred))
         (raise "The :DIGITS-PRED input must be a symbol, ~
@@ -337,12 +416,27 @@
        ;; names of the generated theorems that ensure that
        ;; the specified recognizer and fixer
        ;; are correct specialized versions of the general ones:
+       (digit-pred-correct (packn-pos (list digit-pred
+                                            '-is-dab-digitp-of-
+                                            base)
+                                      name))
+       (digit-fix-correct (packn-pos (list digit-fix
+                                           '-is-dab-digit-fix-of-
+                                           base)
+                                     name))
+       (digit-pred-guard-correct (packn-pos (list digit-pred
+                                                  '-guard-is-t)
+                                            name))
+       (digit-fix-guard-correct (packn-pos (list digit-fix
+                                                 '-guard-is-dab-digitp-of-
+                                                 base)
+                                           name))
        (digits-pred-correct (packn-pos (list digits-pred
                                              '-is-dab-digit-listp-of-
                                              base)
                                        name))
        (digits-fix-correct (packn-pos (list digits-fix
-                                            '-is-dab-digit-listp-of-
+                                            '-is-dab-digit-list-fix-of-
                                             base)
                                       name))
        (digits-pred-guard-correct (packn-pos (list digits-pred
@@ -457,6 +551,8 @@
        (trim-lendian*-of-nat-to-lendian* (packn-pos (list 'trim-lendian*-of
                                                           nat-to-lendian*)
                                                     name))
+       (bendian-to-nat-of-cons (add-suffix-to-fn bendian-to-nat "-OF-CONS"))
+       (lendian-to-nat-of-cons (add-suffix-to-fn lendian-to-nat "-OF-CONS"))
        (bendian-to-nat-of-append (add-suffix-to-fn bendian-to-nat "-OF-APPEND"))
        (lendian-to-nat-of-append (add-suffix-to-fn lendian-to-nat "-OF-APPEND"))
        (bendian-to-nat-of-all-zeros (packn-pos (list bendian-to-nat
@@ -469,11 +565,23 @@
                                                      "-UPPER-BOUND"))
        (lendian-to-nat-upper-bound (add-suffix-to-fn lendian-to-nat
                                                      "-UPPER-BOUND"))
+       (lendian-to-nat-as-bendian-to-nat (packn-pos (list lendian-to-nat
+                                                          '-as-
+                                                          bendian-to-nat)
+                                                    name))
+       (bendian-to-nat-as-lendian-to-nat (packn-pos (list bendian-to-nat
+                                                          '-as-
+                                                          lendian-to-nat)
+                                                    name))
+       (lendian-to-nat-of-rev (add-suffix-to-fn lendian-to-nat "-OF-REV"))
+       (bendian-to-nat-of-rev (add-suffix-to-fn bendian-to-nat "-OF-REV"))
        ;; names of the variables used in the generated events:
        (x (packn-pos (list "X") name))
        (digits (packn-pos (list "DIGITS") name))
        (digits1 (packn-pos (list "DIGITS1") name))
        (digits2 (packn-pos (list "DIGITS2") name))
+       (hidigit (packn-pos (list "HIDIGIT") name))
+       (lodigit (packn-pos (list "LODIGIT") name))
        (hidigits (packn-pos (list "HIDIGITS") name))
        (lodigits (packn-pos (list "LODIGITS") name))
        (nat (packn-pos (list "NAT") name))
@@ -485,6 +593,37 @@
        ;; used in the generated documentation:
        (base-string (coerce (explode-nonnegative-integer base 10 nil) 'string))
        ;; generated events:
+       (digit-pred-correct-event
+        `(defruled ,digit-pred-correct
+           (equal (,digit-pred ,x)
+                  (dab-digitp ,base ,x))
+           ,@(and digit-pred-hints
+                  (list :hints digit-pred-hints))))
+       (digit-fix-correct-event
+        `(defruled ,digit-fix-correct
+           (equal (,digit-fix ,x)
+                  (dab-digit-fix ,base ,x))
+           ,@(and digit-fix-hints
+                  (list :hints digit-fix-hints))))
+       (digit-pred-guard-correct-event
+        (b* ((fn (if (function-symbolp digit-pred wrld)
+                     digit-pred
+                   (add-suffix-to-fn digit-pred "$INLINE"))))
+          `(defrule ,digit-pred-guard-correct
+             ,(guard fn nil wrld)
+             :rule-classes nil
+             ,@(and digit-pred-guard-hints
+                    (list :hints digit-pred-guard-hints)))))
+       (digit-fix-guard-correct-event
+        (b* ((fn (if (function-symbolp digit-fix wrld)
+                     digit-fix
+                   (add-suffix-to-fn digit-fix "$INLINE"))))
+          `(defrule ,digit-fix-guard-correct
+             (implies (,digit-pred ,(car (formals fn wrld)))
+                      ,(guard fn nil wrld))
+             :rule-classes nil
+             ,@(and digit-fix-guard-hints
+                    (list :hints digit-fix-guard-hints)))))
        (digits-pred-correct-event
         `(defruled ,digits-pred-correct
            (equal (,digits-pred ,x)
@@ -511,8 +650,8 @@
                      digits-fix
                    (add-suffix-to-fn digits-fix "$INLINE"))))
           `(defrule ,digits-fix-guard-correct
-             (iff ,(guard fn nil wrld)
-                  (,digits-pred ,(car (formals fn wrld))))
+             (implies (,digits-pred ,(car (formals fn wrld)))
+                      ,(guard fn nil wrld))
              :rule-classes nil
              ,@(and digits-fix-guard-hints
                     (list :hints digits-fix-guard-hints)))))
@@ -1028,6 +1167,21 @@
                   (,nat-to-lendian* ,nat))
            :enable ,nat-to-lendian*
            :use (:instance trim-lendian*-of-nat=>lendian* (base ,base))))
+       (bendian-to-nat-of-cons-event
+        `(defruled ,bendian-to-nat-of-cons
+           (equal (,bendian-to-nat (cons ,hidigit ,lodigits))
+                  (+ (* (,digit-fix ,hidigit)
+                        (expt ,base (len ,lodigits)))
+                     (,bendian-to-nat ,lodigits)))
+           :enable (,bendian-to-nat ,digit-fix-correct)
+           :use (:instance bendian=>nat-of-cons (base ,base))))
+       (lendian-to-nat-of-cons-event
+        `(defruled ,lendian-to-nat-of-cons
+           (equal (,lendian-to-nat (cons ,lodigit ,hidigits))
+                  (+ (,digit-fix ,lodigit)
+                     (* ,base (,lendian-to-nat ,hidigits))))
+           :enable (,lendian-to-nat ,digit-fix-correct)
+           :use (:instance lendian=>nat-of-cons (base ,base))))
        (bendian-to-nat-of-append-event
         `(defruled ,bendian-to-nat-of-append
            (equal (,bendian-to-nat (append ,hidigits ,lodigits))
@@ -1070,6 +1224,50 @@
            :rule-classes ((:linear :trigger-terms ((,lendian-to-nat ,digits))))
            :enable ,lendian-to-nat
            :use (:instance lendian=>nat-upper-bound (base ,base))))
+       (lendian-to-nat-as-bendian-to-nat-event
+        `(defruled ,lendian-to-nat-as-bendian-to-nat
+           (equal (,lendian-to-nat ,digits)
+                  (,bendian-to-nat (rev ,digits)))
+           :enable (,lendian-to-nat
+                    ,bendian-to-nat
+                    lendian=>nat-as-bendian=>nat)))
+       (bendian-to-nat-as-lendian-to-nat-event
+        `(defruled ,bendian-to-nat-as-lendian-to-nat
+           (equal (,bendian-to-nat ,digits)
+                  (,lendian-to-nat (rev ,digits)))
+           :enable (,bendian-to-nat
+                    ,lendian-to-nat
+                    bendian=>nat)))
+       (lendian-to-nat-of-rev-event
+        `(defruled ,lendian-to-nat-of-rev
+           (equal (,lendian-to-nat (rev ,digits))
+                  (,bendian-to-nat ,digits))
+           :enable (,bendian-to-nat-as-lendian-to-nat)))
+       (bendian-to-nat-of-rev-event
+        `(defruled ,bendian-to-nat-of-rev
+           (equal (,bendian-to-nat (rev ,digits))
+                  (,lendian-to-nat ,digits))
+           :enable (,lendian-to-nat-as-bendian-to-nat)))
+       (invariant-event
+        `(progn
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite bendian-to-nat-as-lendian-to-nat)))
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite lendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite bendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite bendian-to-nat-as-lendian-to-nat)
+                          (:rewrite lendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite bendian-to-nat-as-lendian-to-nat)
+                          (:rewrite bendian-to-nat-of-rev)))
+           (theory-invariant
+            (incompatible (:rewrite lendian-to-nat-of-rev)
+                          (:rewrite bendian-to-nat-of-rev)))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))
@@ -1092,6 +1290,10 @@
     `(encapsulate
        ()
        (logic)
+       ,digit-pred-correct-event
+       ,digit-fix-correct-event
+       ,digit-pred-guard-correct-event
+       ,digit-fix-guard-correct-event
        ,digits-pred-correct-event
        ,digits-fix-correct-event
        ,digits-pred-guard-correct-event
@@ -1137,12 +1339,19 @@
        ,consp-pf-nat-to-lendian*-iff-not-zp-event
        ,trim-bendian*-of-nat-to-bendian*-event
        ,trim-lendian*-of-nat-to-lendian*-event
+       ,bendian-to-nat-of-cons-event
+       ,lendian-to-nat-of-cons-event
        ,bendian-to-nat-of-append-event
        ,lendian-to-nat-of-append-event
        ,bendian-to-nat-of-all-zeros-event
        ,lendian-to-nat-of-all-zeros-event
        ,bendian-to-nat-upper-bound-event
        ,lendian-to-nat-upper-bound-event
+       ,lendian-to-nat-as-bendian-to-nat-event
+       ,bendian-to-nat-as-lendian-to-nat-event
+       ,lendian-to-nat-of-rev-event
+       ,bendian-to-nat-of-rev-event
+       ,invariant-event
        ,name-event
        ,table-event)))
 
@@ -1152,12 +1361,18 @@
   (defmacro defdigits (name
                        &key
                        base
+                       digit-pred
+                       digit-fix
                        digits-pred
                        digits-fix
                        bendian-to-nat
                        lendian-to-nat
                        nat-to-bendian
                        nat-to-lendian
+                       digit-pred-hints
+                       digit-fix-hints
+                       digit-pred-guard-hints
+                       digit-fix-guard-hints
                        digits-pred-hints
                        digits-fix-hints
                        digits-pred-guard-hints
@@ -1169,12 +1384,18 @@
     `(make-event (defdigits-fn
                    ',name
                    ',base
+                   ',digit-pred
+                   ',digit-fix
                    ',digits-pred
                    ',digits-fix
                    ',bendian-to-nat
                    ',lendian-to-nat
                    ',nat-to-bendian
                    ',nat-to-lendian
+                   ',digit-pred-hints
+                   ',digit-fix-hints
+                   ',digit-pred-guard-hints
+                   ',digit-fix-guard-hints
                    ',digits-pred-hints
                    ',digits-fix-hints
                    ',digits-pred-guard-hints

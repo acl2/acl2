@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,13 @@
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "kestrel/std/system/install-not-normalized-event" :dir :system)
 (include-book "kestrel/std/system/ibody" :dir :system)
+(include-book "kestrel/std/system/irecursivep" :dir :system)
 (include-book "kestrel/std/system/mvify" :dir :system)
+(include-book "kestrel/std/system/non-executablep" :dir :system)
+(include-book "kestrel/std/system/pseudo-tests-and-call-listp" :dir :system)
+(include-book "kestrel/std/system/recursive-calls" :dir :system)
+(include-book "kestrel/std/system/unwrapped-nonexec-body" :dir :system)
+(include-book "kestrel/std/system/well-founded-relation" :dir :system)
 (include-book "kestrel/std/util/defsurj" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -3693,7 +3699,9 @@
                                                       old-fn-unnorm-name
                                                       newp-of-new$
                                                       wrld))
-       (event `(local (verify-guards ,new$ :hints ,hints))))
+       (event `(local (verify-guards ,new$
+                        :hints ,hints
+                        :guard-simplify :limited))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

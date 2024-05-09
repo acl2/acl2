@@ -1,6 +1,6 @@
 ; Checking for package conflicts
 
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,12 +11,14 @@
 (in-package "ACL2")
 
 ;; This book attempts to include as many different packages as possible, by
-;; including portcullis.lisp books.
-;; TODO: What about packages that do not correspond to portcullis.lisp files?
+;; including portcullis many books.  Packages that do not have portcullis.lisp
+;; files are brought in via packages.acl2 instead, so see that file as well.
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':
 
-;; TODO: Why does including this book bring in rev?
+;; TODO: Why does including this book bring in rev?  Maybe because of ./acl2/books/projects/async/package.lsp?
+
+;; TODO: Bring in M5 package once modernized
 
 (include-book "acl2s/portcullis" :dir :system)
 (include-book "build/portcullis" :dir :system)
@@ -44,10 +46,10 @@
 (include-book "centaur/meta/portcullis" :dir :system)
 (include-book "centaur/nrev/portcullis" :dir :system)
 (include-book "centaur/satlink/portcullis" :dir :system)
-(include-book "centaur/svl/portcullis" :dir :system)
+;(include-book "centaur/svl/portcullis" :dir :system) ; todo: this includes an include-book !
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/truth/portcullis" :dir :system)
-(include-book "centaur/vl2014/portcullis" :dir :system)
+;(include-book "centaur/vl2014/portcullis" :dir :system) ; todo: brings in extra stuff
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "coi/adviser/portcullis" :dir :system)
 (include-book "coi/alists/portcullis" :dir :system)
@@ -81,7 +83,6 @@
 (include-book "kestrel/crypto/keccak/portcullis" :dir :system)
 (include-book "kestrel/crypto/mimc/portcullis" :dir :system)
 (include-book "kestrel/crypto/padding/portcullis" :dir :system)
-(include-book "kestrel/crypto/pfcs/portcullis" :dir :system)
 (include-book "kestrel/crypto/portcullis" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "kestrel/crypto/salsa/portcullis" :dir :system)
@@ -95,6 +96,7 @@
 (include-book "kestrel/jvm/portcullis" :dir :system)
 (include-book "kestrel/number-theory/portcullis" :dir :system)
 (include-book "kestrel/prime-fields/portcullis" :dir :system)
+(include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/simpl-imp/portcullis" :dir :system)
 (include-book "kestrel/soft/portcullis" :dir :system)
 (include-book "kestrel/solidity/portcullis" :dir :system)
@@ -113,8 +115,9 @@
 (include-book "projects/irv/portcullis" :dir :system)
 ;; (include-book "projects/legacy-defrstobj/portcullis" :dir :system) ; conflict on RSTOBJ package
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system) ; error
+(include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "projects/regex/portcullis" :dir :system)
-(include-book "projects/rp-rewriter/meta/portcullis" :dir :system)
+;; (include-book "projects/rp-rewriter/meta/portcullis" :dir :system)  ; has an include book but brings in no new packages
 (include-book "projects/rp-rewriter/portcullis" :dir :system)
 (include-book "projects/sat/dimacs-reader/portcullis" :dir :system)
 (include-book "projects/sat/lrat/portcullis" :dir :system)
@@ -142,4 +145,5 @@
 (defconst *excluded-prefixes-due-to-packages*
   '("projects/apply-model/"
     "projects/legacy-defrstobj/"
+    ;; todo: old copies of coi, set-theory, osets
     "projects/milawa/ACL2/"))

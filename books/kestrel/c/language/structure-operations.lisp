@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,12 +12,18 @@
 (in-package "C")
 
 (include-book "values")
+(include-book "flexible-array-member-removal")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ structure-operations
   :parents (language)
-  :short "Some operations on C structures."
+  :short "Operations on C structures."
   :order-subtopics t
   :default-parent t)
 
@@ -67,6 +73,7 @@
                      (and (valuep val)
                           (equal (type-of-value val)
                                  type))))
+          :induct t
           :enable (value-struct-read-aux
                    member-type-lookup
                    member-types-of-member-values
@@ -84,7 +91,10 @@
     "We look up the members in order;
      given that the members have distinct names (see @(tsee value)),
      the search order is immaterial.
-     The new value must have the same type as the old value."))
+     The new value must have the same type as the old value.")
+   (xdoc::p
+    "Prior to storing the value, we remove its flexible array member, if any.
+     See @(tsee remove-flexible-array-member)."))
   (b* ((new-members
         (value-struct-write-aux name val (value-struct->members struct)))
        ((when (errorp new-members)) new-members))
@@ -100,6 +110,7 @@
       member-value-list-resultp
       :hints
       (("Goal"
+        :induct t
         :in-theory
         (enable
          member-value-listp-when-member-value-list-resultp-and-not-errorp))))
@@ -110,7 +121,9 @@
           ((when (equal member.name (ident-fix name)))
            (if (equal (type-of-value member.value)
                       (type-of-value val))
-               (cons (make-member-value :name name :value val)
+               (cons (make-member-value
+                      :name name
+                      :value (remove-flexible-array-member val))
                      (member-value-list-fix (cdr members)))
              (error (list :mistype-member (ident-fix name)
                           :old-value member.value
@@ -130,6 +143,7 @@
                        (equal (type-of-value new)
                               (type-of-value old)))
                   (member-value-listp memvals1)))
+       :induct t
        :enable value-struct-read-aux)
 
      (defruled member-value-list->name-list-of-struct-write-aux
@@ -140,6 +154,7 @@
                               (type-of-value old)))
                   (equal (member-value-list->name-list memvals1)
                          (member-value-list->name-list memvals))))
+       :induct t
        :enable value-struct-read-aux)
 
      (defruled value-struct-read-aux-of-value-struct-write-aux
@@ -150,8 +165,9 @@
                               (type-of-value old)))
                   (equal (value-struct-read-aux name1 memvals1)
                          (if (ident-equiv name1 name)
-                             (value-fix new)
+                             (remove-flexible-array-member new)
                            (value-struct-read-aux name1 memvals)))))
+       :induct t
        :enable value-struct-read-aux)
 
      (defruled value-struct-write-aux-when-member-type-lookup
@@ -177,6 +193,7 @@
                      (and (member-value-listp new-memvals)
                           (equal (member-types-of-member-values new-memvals)
                                  (member-types-of-member-values memvals)))))
+          :induct t
           :enable (value-struct-write-aux
                    member-type-lookup
                    member-types-of-member-values
@@ -207,7 +224,7 @@
                            (type-of-value old)))
                (equal (value-struct-read name1 struct1)
                       (if (ident-equiv name1 name)
-                          (value-fix new)
+                          (remove-flexible-array-member new)
                         (value-struct-read name1 struct)))))
     :enable (value-struct-read
              value-struct-read-aux-of-value-struct-write-aux)))

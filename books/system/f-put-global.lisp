@@ -49,7 +49,6 @@
                        timer-alistp
                        known-package-alistp
                        true-listp
-                       32-bit-integer-listp
                        integer-listp
                        file-clock-p
                        readable-files-p
@@ -151,9 +150,6 @@
   (list nil ;; open-input-channels
         nil ;; open-output-channels
         *initial-global-table* ;; global-table
-        nil ;; t-stack
-        nil ;; 32-bit-integer-stack
-        0   ;; big-clock-entry
         nil ;; idates
         nil ;; acl2-oracle
         0   ;; file-clock
@@ -161,7 +157,6 @@
         nil ;; written-files
         nil ;; read-files
         nil ;; writable-files
-        nil ;; list-all-package-names-lst
         nil ;; user-stobj-alist1
         ))
 

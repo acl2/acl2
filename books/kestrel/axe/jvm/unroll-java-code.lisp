@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,10 +26,13 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/check-boolean" :dir :system)
+(include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "../make-term-into-dag-basic")
 (include-book "../rewriter") ; for simp-dag (todo: use something better?)
-(include-book "../prune") ;brings in rewriter-basic
+(include-book "../prune-dag-approximately") ;brings in rewriter-basic
+(include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -57,11 +60,105 @@
                      (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil)))
       t)))
 
+;; Works for terms or dag-exprs
+(defun elide-make-frame-args (fn args)
+  (declare (xargs :guard t)) ;strengthen?
+  (if (and (eq fn 'jvm::make-frame)
+           (= 6 (len args))
+           ;; for termination:
+           (myquotep (fifth args))
+           (consp (unquote (fifth args)))
+           )
+      (list (first args)
+            (second args)
+            (third args)
+            (fourth args)
+            '':method-info-elided ;; (fifth args)
+            (sixth args))
+    args))
+
+(mutual-recursion
+ (defun elide-method-info-in-term (term)
+   (declare (xargs :guard t)) ; or require pseudo-termp, but that might take time to check?
+   (if (or (not (consp term)) ; var
+           (eq 'quote (ffn-symb term)))
+       term
+     (let* ((fn (ffn-symb term))
+            (args (elide-make-frame-args fn (fargs term)))
+            (new-args (elide-method-info-in-terms args)))
+       (cons fn new-args))))
+ (defun elide-method-info-in-terms (terms)
+   (declare (xargs :guard t)) ; or require pseudo-term-listp, but that might take time to check?
+   (if (not (consp terms))
+       nil
+     (cons (elide-method-info-in-term (first terms))
+           (elide-method-info-in-terms (rest terms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defund print-dag-array-with-elided-method-info-aux (nodenum dag-array-name dag-array first-elementp)
+;;   (declare (xargs :guard (and (integerp nodenum)
+;;                               (<= -1 nodenum)
+;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))
+;;                   :measure (+ 1 (nfix (+ 1 nodenum)))
+;; ;                  :guard-hints (("Goal" :in-theory (enable array1p-rewrite)))
+;;                   :split-types t)
+;;            (type integer nodenum))
+;;   (if (or (< nodenum 0)
+;;           (not (mbt (integerp nodenum))))
+;;       nil
+;;     (let* ((expr (aref1 dag-array-name dag-array nodenum))
+;;            (expr (or (not (consp expr))
+;;                      (eq 'quote (ffn-symb expr)))
+;;                  expr
+;;                  (let ((fn (ffn-symb expr)))
+;;                    (cons fn (elide-make-frame-args fn (cdr expr))))))
+;;       (progn$ (if (not first-elementp) (cw "~% ") nil)
+;;               (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
+;;               (print-dag-array-with-elided-method-info-aux (+ -1 nodenum)
+;;                                        dag-array-name
+;;                                        dag-array
+;;                                        nil)))))
+
+;; ;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
+;; (defund print-dag-array-with-elided-method-info (nodenum dag-array-name dag-array)
+;;   (declare (xargs :guard (and (integerp nodenum)
+;;                               (<= -1 nodenum)
+;;                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum)))))
+;;   (progn$ (cw "(")
+;;           (print-dag-array-with-elided-method-info-aux nodenum dag-array-name dag-array t)
+;;           (cw ")~%")))
+
+(defund print-dag-with-elided-method-info-aux (dag first-elementp)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (booleanp first-elementp))))
+  (if (endp dag)
+      nil
+    (let* ((entry (first dag))
+           (nodenum (car entry))
+           (expr (cdr entry))
+           (expr (if (or (not (consp expr))
+                         (eq 'quote (ffn-symb expr)))
+                     expr
+                   (let ((fn (ffn-symb expr)))
+                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
+      (progn$ (if (not first-elementp) (cw "~% ") nil)
+              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
+              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
+
+;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
+(defund print-dag-with-elided-method-info (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (progn$ (cw "(")
+          (print-dag-with-elided-method-info-aux dag t)
+          (cw ")~%")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or unsupported instruction is detected.  Returns (mv
-;; erp result-dag state).
-;; TODO: Consider adding an option to prune between chunks.
+;; erp result-dag-or-quotep state).
 (defun repeatedly-run (dag
                        steps-left
                        step-increment
@@ -73,6 +170,8 @@
                        print
                        print-interval
                        memoizep
+                       prune-branches-approximately ; currently pruning is too slow for proofs like DES
+                       prune-branches-precisely
                        total-steps
                        state)
   (declare (xargs :guard (and (natp steps-left)
@@ -84,30 +183,62 @@
 ;                              (booleanp use-internal-contextsp)
                               ;; print
                               (booleanp memoizep)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely))
                               (natp total-steps)
                               (booleanp normalize-xors))
                   :mode :program ;; because we call simp-dag-fn and untranslate
-                  :stobjs (state)
-                  ))
+                  :stobjs state))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
-         ((mv erp dag state)
+         ((mv erp dag-or-quotep state)
           (simp-dag dag
                     :assumptions assumptions
                     :rule-alists rule-alists
                     :use-internal-contextsp t ;new!
-                    :print print              ;(if monitored-rules t nil)
+                    :print (reduce-print-level print)         ;(if monitored-rules t nil)
                     :print-interval print-interval
                     :monitor rules-to-monitor
                     :normalize-xors normalize-xors
                     :memoizep memoizep
                     ;;:exhaustivep (if chunkedp t nil)
-                    :limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration))
+                    ;; todo: do we need both of these?:
+                    :limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
+                              (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration))
                     :check-inputs nil))
          ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep))
+          (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
+          (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; renames it, since we know it's not a quotep
+         ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
+         ((mv erp dag-or-quotep state) (maybe-prune-dag-approximately prune-branches-approximately dag print state)
+          )
+         ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep))
+          (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
+          (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; renames it, since we know it's not a quotep
+         ((mv erp dag-or-quotep state) (maybe-prune-dag-precisely prune-branches-precisely
+                                                                  dag
+                                                                  assumptions
+                                                                  nil ; todo: use some rules?
+                                                                  :none ; todo: pass a rule-alist here?
+                                                                  nil ; todo?
+                                                                  nil
+                                                                  t ; call-stp
+                                                                  print
+                                                                  state))
+         ((when erp) (mv erp nil state))
+         ((when (quotep dag-or-quotep))
+          (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
+          (mv (erp-nil) dag-or-quotep state))
+         (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          (dag-fns (dag-fns dag)))
       (if (not (or (member-eq 'run-until-return-from-stack-height dag-fns)
                    (member-eq 'jvm::run-n-steps dag-fns)
@@ -117,7 +248,7 @@
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag state))
-          (if (equivalent-dags dag old-dag)
+          (if (equivalent-dagsp dag old-dag)
               (progn$ (cw "Note: Stopping the run because nothing changed.~%")
                       (and print
                            (prog2$ (cw "(DAG:~%")
@@ -130,16 +261,19 @@
                            ;; Print as a term unless it would be huge:
                            (if (dag-or-quotep-size-less-thanp dag 1000)
                                (progn$ (cw "(Term after ~x0 steps:~%" total-steps)
-                                       (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil)
+                                       (cw "~X01" (untranslate (elide-method-info-in-term (dag-to-term dag)) nil (w state)) nil)
                                        (cw ")~%"))
                              (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
-                                     (cw "~X01)" dag nil)))))))
+                                     (print-dag-with-elided-method-info dag)
+                                     (cw ")")))))))
               (repeatedly-run dag
                               (- steps-left steps-for-this-iteration)
                               step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
                               print
                               print-interval
                               memoizep
+                              prune-branches-approximately
+                              prune-branches-precisely
                               total-steps
                               state))))))))
 
@@ -147,7 +281,7 @@
 ;; For example, we may have a test that ensures that a later loop terminates.
 
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
-;; This uses all classes currently in the global-class-table.
+;; This uses all classes currently in the global-class-alist.
 ;; Why does this return the dag-fns?
 (defun unroll-java-code-fn-aux (method-designator-string
                                 maybe-nice-output-indicator
@@ -165,7 +299,8 @@
                                 print-interval
                                 memoizep
                                 vars-for-array-elements
-                                prune-branches
+                                prune-branches-approximately ; todo: separate options for pruning during a run (can be slow) vs at the end?
+                                prune-branches-precisely
                                 call-stp ;t, nil, or a max-conflicts
                                 steps
                                 branches
@@ -183,7 +318,10 @@
                               (symbol-listp monitored-rules)
                               (array-length-alistp array-length-alist)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (booleanp prune-branches)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely))
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (or (eq :auto steps)
@@ -238,7 +376,7 @@
        ;;  (er hard? 'unroll-java-code-fn-aux "Disallowed variables in assumptions, ~x0.  The only allowed vars are ~x1." user-assumptions allowed-assumption-vars)
        ;;  (mv :bad-assumption-vars nil nil nil nil nil state))
        (user-assumptions (desugar-calls-of-contents-in-terms user-assumptions initial-heap-term))
-       ;; todo: have this return all the var names creates for array components/bits:
+       ;; todo: have this return all the var names created for array components/bits:
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
                                                      vars-for-array-elements
                                                      param-slot-to-name-alist
@@ -302,6 +440,7 @@
                            (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
+       ;; Decide which symbolic execution rule to use:
        (symbolic-execution-rules (if (eq :auto steps)
                                      (if (eq branches :smart)
                                          (run-until-return-from-stack-height-rules-smart)
@@ -310,20 +449,19 @@
                                          (er hard 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
                                    (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
                                    ))
-       ((mv erp default-rule-alist)
-        (make-rule-alist (append (unroll-java-code-rules)
-                                 symbolic-execution-rules)
-                         (w state)))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ;; todo: if rule-alists are applied, should we at least include the symbolic-execution-rules?
        (rule-alists (or rule-alists ;use user-supplied rule-alists, if any
                         ;; by default, we use 1 rule-alist:
-                        (list default-rule-alist)))
+                        ;; todo: pre-compute each possibility here (but what about priorities?)
+                        (list (make-rule-alist! (append (unroll-java-code-rules)
+                                                        symbolic-execution-rules)
+                                                (w state)))))
        ;; maybe add some rules (can't call add-to-rule-alists because these are not theorems in the world):
        (rule-alists (extend-rule-alists2 ;; Maybe include the ignore-XXX rules:
-                     (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
-                             (and ignore-errors *ignore-error-state-axe-rule-set*))
-                     rule-alists
-                     (w state)))
+                      (append (and ignore-exceptions *ignore-exception-axe-rule-set*)
+                              (and ignore-errors *ignore-error-state-axe-rule-set*))
+                      rule-alists
+                      (w state)))
        ;; Include any :extra-rules given:
        ((mv erp rule-alists) (add-to-rule-alists extra-rules rule-alists (w state)))
        ((when erp) (mv erp nil nil nil nil nil state))
@@ -334,7 +472,7 @@
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
        ((when erp) (mv erp nil nil nil nil nil state))
        (step-limit 1000000)
-       (step-increment (if chunkedp 100 1000000))
+       (step-increment (if chunkedp 100 1000000)) ; todo: let the chunk size be configurable
        ((mv erp dag state)
         (repeatedly-run dag-to-simulate
                         step-limit
@@ -346,23 +484,36 @@
                         print
                         print-interval
                         memoizep
+                        prune-branches-approximately
+                        prune-branches-precisely
                         0
                         state))
-       ;;todo: check for a quotep returned
        ((when erp)
         (er hard? 'unroll-java-code-fn "Error in unrolling.")
         (mv erp nil nil nil nil nil state))
+       ((when (quotep dag)) ; todo: test this case
+        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
+       ;;; Prune irrelevant branches, if instructed:
+       ;; TODO: Consider calling prune-dag-approximately here:
        ((mv erp dag state)
-        (if prune-branches
-            (prune-dag-with-rule-alist-new dag
-                                           all-assumptions ;are they all needed?
-                                           (first rule-alists) ;what should we use here?
-                                           nil ; interpreted-function-alist
-                                           monitored-rules
-                                           call-stp
-                                           state)
+        (if (if (booleanp prune-branches-precisely) ;todo: consider calling something like maybe-prune-dag-precisely, but we have a rule-alist here
+                prune-branches-precisely
+              ;; prune-branches is a natp (a limit on the size):
+              (dag-or-quotep-size-less-thanp dag prune-branches-precisely))
+            ;; todo: make a maybe version of this?:
+            (prune-dag-precisely-with-rule-alist dag
+                                                 all-assumptions ;are they all needed?
+                                                 (first rule-alists) ;what should we use here?
+                                                 nil ; interpreted-function-alist
+                                                 monitored-rules
+                                                 call-stp
+                                                 t ; check-fnsp
+                                                 print
+                                                 state)
           (mv nil dag state)))
        ((when erp) (mv erp nil nil nil nil nil state))
+       ((when (quotep dag)) ; todo: test this case
+        (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
        ;; Check whether symbolic execution failed:
        (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp (w state))))
     (mv (if (and (not dag-okp)
@@ -389,7 +540,8 @@
                              print-interval
                              memoizep
                              vars-for-array-elements
-                             prune-branches
+                             prune-branches-approximately
+                             prune-branches-precisely
                              call-stp ;t, nil, or a max-conflicts
                              produce-theorem
                              steps
@@ -411,7 +563,10 @@
                               (array-length-alistp array-length-alist)
                               (booleanp memoizep)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (booleanp prune-branches)
+                              (or (booleanp prune-branches-approximately)
+                                  (natp prune-branches-approximately))
+                              (or (booleanp prune-branches-precisely)
+                                  (natp prune-branches-precisely))
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (booleanp produce-theorem)
@@ -436,12 +591,16 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
+       ;; Record the start time:
+       ((mv start-time state) (acl2::get-real-time state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
-       ((mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
-        (unroll-java-code-fn-aux method-designator-string maybe-nice-output-indicator array-length-alist
+       ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
+        (unroll-java-code-fn-aux method-designator-string
+                                 maybe-nice-output-indicator
+                                 array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
                                  rule-alists
@@ -455,7 +614,8 @@
                                  print-interval
                                  memoizep
                                  vars-for-array-elements
-                                 prune-branches
+                                 prune-branches-approximately
+                                 prune-branches-precisely
                                  call-stp ;t, nil, or a max-conflicts
                                  steps
                                  branches
@@ -464,22 +624,26 @@
                                  t ;error on incomplete runs
                                  state))
        ((when erp) (mv erp nil state))
+       (- (and (quotep dag-or-quotep)
+               (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep)))
        ;; build the function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
                        (symbol-name (FRESH-NAME-IN-WORLD-WITH-$S (strip-stars-from-name defconst-name) nil (w state)))
                        defconst-name))
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
-       (dag-vars (sort-vars-with-guidance dag-vars parameter-names))
-       (function-body (if (dag-or-quotep-size-less-thanp dag 1000)
-                          (dag-to-term dag)
+       (dag-vars (if (quotep dag-or-quotep)
+                     nil
+                   ;;todo: check these (what should be allowed)?
+                   (sort-vars-with-guidance (dag-vars dag-or-quotep) parameter-names)))
+       (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
+                          (dag-to-term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
                                                      ,(make-acons-nest dag-vars)
                                                      ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
                                                      '0 ;array depth (not very important)
                                                      )))
        (theorem-name (pack$ function-name '-correct)) ;not always used
-       (event `(progn (defconst ,defconst-name ',dag)
+       (event `(progn (defconst ,defconst-name ',dag-or-quotep)
                       ,@(and produce-function `((defun ,function-name ,dag-vars ,function-body)))
                       ,@(and produce-theorem
                              `((skip-proofs
@@ -490,13 +654,25 @@
        (items-created (append (list defconst-name)
                               (if produce-function (list function-name) nil)
                               (if produce-theorem (list theorem-name) nil)))
-       (- (cw "Unrolling finished.~%"))
-       ;; (- (cw "Info on unrolled DAG:~%"))
-       (- (print-dag-info dag defconst-name nil)) ; maybe suppress with print arg?
-       (- (cw ")~%")))
+       ((mv end-time state) (acl2::get-real-time state))
+       (- (if (= 1 (len items-created))
+              (cw "Created ~x0.~%~%" (first items-created))
+            (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
+       (- (print-dag-info dag-or-quotep defconst-name nil)) ; maybe suppress with print arg?
+       (- (if (quotep dag-or-quotep)
+              nil
+            (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
+                (cw "~x0 is a pure dag.~%" defconst-name)
+              (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
+       (- (progn$ (cw "~%BYTECODE UNROLLING FINISHED (")
+                  (acl2::print-to-hundredths (- end-time start-time))
+                  (cw "s).") ; s = seconds
+                  ))
+       (- (cw ")~%~%")))
     (mv (erp-nil)
         (extend-progn (extend-progn event `(with-output :off :all (table unroll-java-code-table ',whole-form ',event)))
-                      `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                      ;; `(value-triple ',items-created) ;todo: use cw-event and then return :invisible here?
+                      '(value-triple :invisible)
                       )
         state)))
 
@@ -528,7 +704,8 @@
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
                                       (normalize-xors 'nil) ; defaults to nil, since it's better to normalize the xors of the spec and code dags together
-                                      (prune-branches 'nil) ;todo: make t the default
+                                      (prune-branches-approximately 'nil) ;todo: make t the default (but that slows down DES a lot)
+                                      (prune-branches-precisely 'nil) ; can blow up!
                                       (call-stp 'nil)
                                       ;; Options affecting performance:
                                       (memoizep 't)
@@ -559,7 +736,8 @@
                                      ,print-interval
                                      ,memoizep
                                      ,vars-for-array-elements
-                                     ',prune-branches
+                                     ',prune-branches-approximately
+                                     ',prune-branches-precisely
                                      ',call-stp
                                      ',produce-theorem
                                      ',steps
@@ -600,7 +778,8 @@
          (output                  "An indication of which state component to extract")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
          (normalize-xors           "Whether to normalize xor nests (t or nil)")
-         (prune-branches          "whether to aggressively prune unreachable branches in the result")
+         (prune-branches-approximately "Whether to prune unreachable branches, using approximate contexts, during and after lifting (t, nil, or a dag size threshold).  Can be slow but should not cause an exponential blowup.")
+         (prune-branches-precisely "Whether to prune unreachable branches, using precise contexts, during and after lifting (t, nil, or a dag size threshold).  Warning: Can take an exponential amount of time and space for DAGs with extensive sharing!")
          (call-stp                "whether to call STP when pruning (t, nil, or a number of conflicts before giving up)")
          (memoizep "Whether to memoize rewrites during unrolling (a boolean).")
          (branches "How to handle branches in the execution. Either :smart (try to merge at join points) or :split (split the execution and don't re-merge).")
@@ -611,8 +790,8 @@
          (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
          (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
          (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books."))
-  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including unrolling all loops."
-                "This event creates a @(see defconst) whose name is @('defconst-name')."
+  :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
+                "This event creates a @(see defconst) whose name is given by the @('defconst-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
 
 ;; Ensure all the rules needed by the unroller are included:

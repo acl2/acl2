@@ -287,8 +287,8 @@ use.</p>
 <p>Incidentally, if @('cert.pl') cannot determine the location of the books
 directory from one of the above two directives, it will first try to find a
 @('books') directory alongside the ACL2 executable.  If this fails, it will run
-the ACL2 executable and ask it for the value of the global variable
-@('system-books-dir').  If the response it receives does not point to a
+the ACL2 executable and ask it for the value of the expression
+@('(system-books-dir state)').  If the response it receives does not point to a
 directory that exists on the filesystem, @('cert.pl') finally chooses the
 parent directory of its own location.</p>")
 
@@ -1049,7 +1049,10 @@ corresponding update.</p>")
   :short "(Advanced) how to get @(see cert.pl) to use @(see save-exec) images
 to certify parts of your project."
 
-  :long "<p>In most ACL2 projects, each book uses @(see include-book) to load
+  :long
+  (concatenate
+   'string
+   "<p>In most ACL2 projects, each book uses @(see include-book) to load
 all of its dependencies, and the same, \"stock\" ACL2 executable is used to
 certify every book.  This generally works well and certainly keeps things
 simple.</p>
@@ -1078,6 +1081,55 @@ around a dozen images to certify various directories of files.</p>
 
 <h3>Image Creation</h3>
 
+<p>Currently there are two supported methods of managing image creation. Both
+currently only allow images to be stored in one user-configured directory. In
+the first method, cert.pl can manage the building of images and their
+dependencies seamlessly, but requires the source files used for building the
+images to be all placed in one user-configured directory, and places some
+restrictions on the forms of the source files used to build the images.  In the
+second method, cert.pl doesn't manage the building of images; instead, you need
+to wrap the cert.pl call inside a Makefile and add extra dependencies there.</p>
+
+<h4>Method 1 -- cert.pl native</h4>
+
+<p>In this method you must designate a directory where extended ACL2 images
+should be placed, given by the --bin command-line option or the ACL2_IMAGES
+environment variable; and additionally a directory for the source files used
+for building such images, given by the --image-sources option or
+ACL2_IMAGE_SRC_DIR environment variable. For each image file 'myimage' to be
+created, there must be a file 'myimage.lsp' in the image source file directory
+which contains the ACL2 commands to issue before saving the image.  The last
+form in the file should be a local defconst of @('acl2::*acl2-image-message*')
+giving a \"modification notice\" message to be printed when the image starts.</p>
+
+<p>Here is an example such .lsp file:</p>
+@({
+ (include-book \"centaur/fgl/portcullis\" :dir :system)
+ (include-book \"centaur/aignet/portcullis\" :dir :system)
+ (local (include-book \"centaur/fgl/top\" :dir :system))
+ (local (include-book \"centaur/aignet/transforms\" :dir :system))
+
+ (local (defconst *acl2-image-message*
+          \"This includes FGL books.  You'll need to include the ipasir-backend book separately.\"))
+ })
+
+<p>The items in the file don't always need to all be local events.  Calls of LD
+and non embedded-event forms are allowed.  Any nonlocal events will be in the
+portcullis of any books certified with the image.  The file (and any others
+read using LD, etc.) will be scanned by the build system to determine the
+dependencies of the saved image.</p>
+
+<p>The build system additionally defines another local constant in each image,
+@('acl2::*acl2-image-name*').  It is a good idea to put an assert-event at the
+top each book that uses an extended image to make sure that when run
+interactively, the book is loaded into the right starting image:</p>
+
+@({
+ (assert-event (equal acl2::*acl2-image-name* \"my-extended-image\"))
+ })
+
+
+<h4>Method 2 -- makefile integrated</h4>
 <p>Suppose you want to use @(see save-exec) to create an extended ACL2 image
 using the following script:</p>
 
@@ -1089,11 +1141,9 @@ using the following script:</p>
      (save-exec \"extended-acl2\" \"Supporting libraries pre-loaded.\")
 })
 
-<p>While @('cert.pl') does have good support for using the resulting image to
-certify particular books, there is currently no way to directly tell
-@('cert.pl') that it needs to run this script to create the @('extended-acl2')
-image.  Instead, if you want to use extended ACL2 images, you will probably
-need to put together a @('Makefile').  See @(see static-makefiles) for
+<p>In method 2, instead of letting cert.pl handle the dependencies and creation
+of saved images, we instead create a Makefile that wraps around the one cert.pl will create.
+See @(see static-makefiles) for
 information about how to use @('cert.pl') to do the dependency scanning for
 your @('Makefile').</p>
 
@@ -1121,19 +1171,28 @@ indicate which directory will contain images.</p>
 
 <h3>Specifying the Image for each Book</h3>
 
-<p>To decide what image to use to certify @('foo.lisp'), @('cert.pl') will
-first look for a file named @('foo.image').  This file should contain a single
-line that just gives the name of the ACL2 image to use.  For instance, if we
-want to certify @('foo.lisp') using @('extended-acl2'), then @('foo.image')
-should simply contain:</p>
+<p>To decide what image to use to certify @('foo.lisp'), @('cert.pl')
+scans for comments such as:</p>
+@({
+; cert-param: "
+   ;; note line break in order to prevent the build system from
+   ;; thinking this book should itself be built with a saved image
+   "(acl2-image=myfancyimage)
+ })
+<p>Such a comment can either be in the book itself, its .acl2 file, or the
+directory's cert.acl2 file.</p>
+
+
+<p>Alternatively, cert.pl will also look for files named @('foo.image') for a
+book named foo, or @('cert.image') for any book in the given directory. This
+file should contain a single line that just gives the name of the ACL2 image to
+use.  For instance, if we want to certify @('foo.lisp') using
+@('extended-acl2'), then @('foo.image') should simply contain:</p>
 
 @({
      extended-acl2
 })
-
-<p>You can also write a @('cert.image') file to indicate a directory-wide
-default image to use.  (This is exactly analogous to how @('cert.pl') looks for
-@('.acl2') files for @(see pre-certify-book-commands).)</p>")
+"))
 
 
 (defxdoc distributed-builds ; Step 8
@@ -1141,7 +1200,8 @@ default image to use.  (This is exactly analogous to how @('cert.pl') looks for
   :short "(Advanced) how to distribute ACL2 book building over a cluster
 of machines."
 
-  :long "<p>Warning: getting a cluster set up and running smoothly is a
+  :long (concatenate 'string
+                     "<p>Warning: getting a cluster set up and running smoothly is a
 significant undertaking.  Aside from hardware costs, it may take significant
 energy to install and administer the system, and you will need to learn how to
 effectively use the queuing system.  You'll probably also need to be ready to
@@ -1216,6 +1276,37 @@ distribute the jobs to your cluster.  A suitable command is one that:</p>
 redirection; we embed that into the command itself.</p>
 
 
+<h3>Setting environment variables visible to the queuing system</h3>
+
+<p>The build system scans books for lines containing the pattern</p>
+@({
+ ; cert-env: (varname1=value1, varname2, ...)
+ })
+
+<p>Each of these varname/value pairs are set in the environment before calling
+STARTJOB to build the book; these can therefore be set in such a way as to give
+information to the queuing system about how the book needs to be built.  If a
+varname is included without a corresponding value, the value defaults to 1.</p>
+
+<p>The build system also scan for some particular patterns to help define how
+much memory and time the book should need to be allocated. The following kinds
+of set-max-mem forms are recognized and used to generate the environment
+variable CERT_MAX_MEM:</p>
+
+@({
+ (" ;; note: string breaks here to prevent warnings about unsupported
+    ;; set-max-mem args when scanning this file
+                     "set-max-mem (expt 2 k))
+ (" "set-max-mem (* n (expt 2 30))) ;; N gigabytes
+ (" "set-max-mem (* (expt 2 30) n))
+ })
+
+<p>Additionally, the following pattern is scanned to set the environment variable CERT_MAX_TIME.
+Note this isn't a real ACL2 event, so it should occur in a comment:</p>
+@({
+ ; (set-max-time N)
+ })
+
 <h3>Support for NFS Lag</h3>
 
 <p>We originally found that our builds would often \"fail\" due to the
@@ -1234,7 +1325,7 @@ following scenario:</p>
 <p>To avoid this, @('cert.pl') now has special support for NFS lag.  We now use
 exit codes instead of files to determine success.  In cases where the exit code
 says the job completed successfully, we wait until @('A.cert') becomes visible
-to the head node before returning control to the Makefile.</p>")
+to the head node before returning control to the Makefile.</p>"))
 
 (xdoc::order-subtopics cert.pl
   (preliminaries certifying-simple-books pre-certify-book-commands
@@ -1342,7 +1433,11 @@ certification using @('make')."
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
- </ul>"))
+ </ul>
+
+ <p>There is currently no @('cert_param') related to ACL2(p) (see @(see
+ acl2::parallelism)), but see @(see acl2::non-parallel-book) for a related
+ utility </p>"))
 
 ; The following defpointer forms were added by Matt K., 7/14/2021.
 (acl2::defpointer acl2x cert_param)
@@ -1364,6 +1459,9 @@ certification using @('make')."
 (acl2::defpointer uses-smtlink cert_param)
 (acl2::defpointer uses-stp cert_param)
 (acl2::defpointer uses-quicklisp cert_param)
+
+;; Added by Eric Smith
+(acl2::defpointer cert-flags custom-certify-book-commands)
 
 (defxdoc acl2::ifdef
   :parents (cert.pl)
@@ -1461,4 +1559,49 @@ ifndef), persistent across include-book."
 setting also happens when the book in which this form occurs is included in
 another book.  The build system attempts to accurately track which variables
 are defined where, for use by @(see ifdef) and @(see ifndef).</p>"
+  :pkg "ACL2")
+
+
+(defxdoc acl2::include-events
+  :parents (cert.pl)
+  :short "A build-system-supported mechanism to include the events from a
+book as a @('progn') or @('encapsulate')."
+  :long "<p>Include-events reads the forms from a source file, which must begin
+with an @(see in-package) form, and submits those forms as a @('progn') or
+@('encapsulate').</p>
+
+<p>Usage:</p>
+@({
+ (include-book \"build/include-events\" :dir :system) ;; prerequisite
+
+ (include-events \"book-name\" :dir :system :encapsulate nil)
+ })
+
+<p>The @(':dir') argument works just like it does in @(see include-book).  The
+@(':encapsulate') argument says whether to submit the forms contained in the
+book as a @('progn') (if nil) or @('encapsulate nil') (if t).</p>
+
+<p>The name of the actual file to be loaded will be the filename argument with
+\".lisp\" appended. The related @(see include-src-events) does the same thing
+without adding the extension.</p>
+
+<p>The events read from the file are run in the current book's context. Among
+other things, this means that the connected book directory (see @(see cbd))
+remains the directory of the current book, not that of the loaded file, unless
+it is the same directory.  Include-event tries to compensate for this by
+rewriting @('include-book'), @('include-event'), and @('include-src-events')
+forms to correct the filenames.</p>
+
+<p>The cert.pl build system supports this in that if this form is in a book, it
+creates dependencies from that book on the source file that is included as well
+as any additional dependencies found in that source file.</p>
+
+<p>If a library has a book \"top\" that only includes other books, then \"top\"
+ could be included via @('include-events') rather than @('include-book') to
+save certification time.</p>"
+  :pkg "ACL2")
+
+(defxdoc acl2::include-src-events
+  :parents (cert.pl)
+  :short "Like @(see include-events) but allows an arbitrary file extension."
   :pkg "ACL2")

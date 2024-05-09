@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function truncate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,12 +11,16 @@
 
 (in-package "ACL2")
 
+;; Note that truncate is less well supported for reasonong than floor, so
+;; consider enabling truncate-becomes-floor.
+
 (local (include-book "floor"))
 (local (include-book "numerator"))
 (local (include-book "times"))
 (local (include-book "plus"))
-(local (include-book "divides"))
-(local (include-book "times-and-divides"))
+(local (include-book "divide"))
+(local (include-book "times-and-divide"))
+(local (include-book "nonnegative-integer-quotient"))
 
 (in-theory (disable truncate))
 
@@ -45,8 +49,6 @@
                   (floor i j)))
   :hints (("Goal" :in-theory (enable floor truncate)
            :do-not '(generalize eliminate-destructors))))
-
-(local (include-book "nonnegative-integer-quotient"))
 
 (defthm <=-of-truncate-and-0-when-nonnegative-and-nonnegative-type
   (implies (and (<= 0 i)
@@ -79,6 +81,26 @@
            (<= 0 (truncate i j)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable truncate))))
+
+;; todo: gen?
+(defthm truncate-upper-bound-linear
+  (implies (and (<= 0 i)
+                (<= 0 j)
+                (rationalp i)
+                (rationalp j))
+           ;; the phrasing of the * term matches our normal form
+           (<= (truncate i j) (* i (/ j))))
+  :rule-classes ((:linear :trigger-terms ((truncate i j))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor))))
+
+(defthm my-truncate-lower-bound-linear
+  (implies (and (<= 0 i)
+                (< 0 j)
+                (rationalp i)
+                (rationalp j))
+           (< (+ -1 (/ i j)) (truncate i j)))
+  :rule-classes ((:linear :trigger-terms ((truncate i j))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor))))
 
 (defthm <=-of-truncate-same-linear
   (implies (and (rationalp i)
@@ -179,7 +201,7 @@
 ;;  :hints (("Goal" :cases ((< x 0))
 ;;           :in-theory (enable truncate-becomes-floor-gen))))
 
-(defthmd nonnegative-integer-quotient-of---of-numerator-and-denominator
+(defthmd --of-nonnegative-integer-quotient-of---of-numerator-and-denominator
   (implies (and (rationalp x)
                 (< x 0))
            (equal (- (nonnegative-integer-quotient (- (numerator x))
@@ -210,10 +232,10 @@
                           (and (< i 0) (= 0 j))
                           (and (< i 0) (< 0 j))
                           (and (<= 0 i) (< 0 j)))
-           :in-theory (e/d (acl2::truncate-becomes-floor-gen
+           :in-theory (e/d (truncate-becomes-floor-gen
                             signed-byte-p
                             floor-when-integerp-of-quotient
-                            acl2::*-of-floor-of-same-when-multiple)
+                            *-of-floor-of-same-when-multiple)
                            (<-of-*-of-/-arg2
                             <-of-*-of-/-arg1)))))
 
@@ -223,3 +245,12 @@
              0
            1))
   :hints (("Goal" :in-theory (enable truncate))))
+
+(defthm truncate-bound-when-non-negative-and-integer-linear
+  (implies (and (integerp j)
+                (<= 0 i)
+                (rationalp i))
+           (<= (- i) (truncate i j)))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((< j 0))
+           :in-theory (enable truncate-becomes-floor-gen))))

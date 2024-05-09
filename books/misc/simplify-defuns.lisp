@@ -15,6 +15,9 @@
 ;;; Top Level Routines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (program)
@@ -30,7 +33,7 @@
 ; Adapted from tool2-fn in books/misc/expander.lisp.
 
   (prog2$
-   (initialize-brr-stack state)
+   (semi-initialize-brr-wormhole state)
    (let* ((ens (ens state))
           (saved-pspv (make-pspv ens wrld state
                                  :displayed-goal term ; from, e.g., thm-fn
@@ -1110,3 +1113,4 @@
                             defs-extra eq-extra thm-file-pairs)
   `(transform-defuns-fn ,in-defs-file ,out-defs ,equalities
                         ,defs-extra ,eq-extra ,thm-file-pairs state))
+

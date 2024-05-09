@@ -22,20 +22,20 @@
 (MUTUAL-RECURSION
 
 (defun out2$ (n $path)
-       (declare (xargs :normalize nil
-                       :measure (cons (1+ (nfix n)) 0)))
-       (if (zp n)
-           (reset 'out2 4)
-           (bits (+ 1 (ww (+ -1 n))) 3 0)))
+  (declare (xargs :normalize nil
+                  :measure (cons (1+ (nfix n)) 0)))
+  (if (zp n)
+      (reset 'out2 4)
+    (bits (+ 1 (ww (+ -1 n))) 3 0)))
 
 (defun out1$ (n $path)
-       (declare (xargs :normalize nil
-                       :measure (cons (1+ (nfix n)) 1)))
-       (cond1 ((log= 0 (sel n)) (in0 n))
-              ((log= 1 (sel n)) (in1 n))
-              ((log= 2 (sel n)) (in2 n))
-              ((log= 3 (sel n)) (in3 n))
-              (t 0)))
+  (declare (xargs :normalize nil
+                  :measure (cons (1+ (nfix n)) 1)))
+  (cond1 ((log= 0 (sel n)) (in0 n))
+         ((log= 1 (sel n)) (in1 n))
+         ((log= 2 (sel n)) (in2 n))
+         ((log= 3 (sel n)) (in3 n))
+         (t 0)))
 
 )
 

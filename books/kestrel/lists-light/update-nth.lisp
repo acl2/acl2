@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function update-nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,33 @@
 
 (in-package "ACL2")
 
+;; TODO: Make the var names in these rules more uniform, but note that the
+;; first formal of update-nth is named KEY rather than N for some reason, so
+;; consider not following our usual convention where we match the names of the
+;; formals as much as possible.
+
 (local (include-book "append"))
 
 (in-theory (disable update-nth))
+
+;; Note that the rule len-update-nth is built in to ACL2.  However, this rule
+;; seems better, because here the case split is essentially on (< n (len x)),
+;; which we will often know to be true.  By contrast, in len-update-nth, the
+;; case split is essentially on (> (+ 1 n) (len x)).  The rule
+;; len-of-update-nth from STD seems even worse, as it causes an unnecessary
+;; case split on whether n is equal to one less than the length.
+(defthm len-of-update-nth-2 ; avoid name conflict with STD
+  (equal (len (update-nth n val x))
+         (if (< (nfix n) (len x))
+             (len x)
+           (+ 1 (nfix n)))))
+(in-theory (disable len-update-nth))
+
+;; Avoids a case split
+(defthm <-of-len-of-update-nth
+  (implies (natp n)
+           (< n (len (update-nth n val l))))
+  :hints (("Goal" :in-theory (enable update-nth nfix))))
 
 ;; Match what's in STD
 (defthm update-nth-of-update-nth-same
@@ -51,7 +75,7 @@
                 (< n (len lst)))
            (equal (update-nth n val lst)
                   lst))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 ;rename
 (defthm cdr-of-update-nth-0
@@ -79,10 +103,7 @@
 (defthm true-list-fix-of-update-nth-2
   (equal (true-list-fix (update-nth key val l))
          (update-nth key val (true-list-fix l)))
-  :hints (("Goal" :in-theory (e/d (;repeat
-                                   update-nth)
-                                  (;list::list-equiv-hack
-                                   )))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
 ;todo dup?
 (defthm take-update-nth
@@ -94,12 +115,11 @@
                   (if (<= n n2)
                       (take n l)
                       (update-nth n2 v (take n l)))))
-  :hints
-  (("Goal" :in-theory (enable TAKE; repeat
-                              update-nth))))
+  :hints (("Goal" :in-theory (enable take update-nth))))
 
 ;; Often we'll know (true-listp l) and no case split will occur.
 ;; Not quite the same as true-listp-of-update-nth in std.
+;; Note that a related rule, true-listp-update-nth, is built-in but is a :type-prescription rule.
 (defthm true-listp-of-update-nth-2
   (equal (true-listp (update-nth key val l))
          (if (true-listp l)
@@ -154,3 +174,39 @@
              (append (update-nth n val x) y)
            (append x (update-nth (- n (len x)) val y))))
   :hints (("Goal" :in-theory (enable equal-of-append))))
+
+(local
+ (defun sub1-cdr-cdr-induct (n x y)
+  (if (zp n)
+      (list n x y)
+    (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y)))))
+
+(defthmd equal-of-update-nth-new
+  (implies (natp n)
+           (equal (equal y (update-nth n val x))
+                  (and (<= (+ 1 n) (len y))
+                       (equal (nth n y) val)
+                       (equal (take n y)
+                              (take n x))
+                       (equal (nthcdr (+ 1 n) x)
+                              (nthcdr (+ 1 n) y)))))
+  :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
+           :in-theory (enable update-nth))))
+
+(defthm update-nth-of-take-of-+-of-1-same
+  (implies (and (<= (len lst) n)
+                (integerp n))
+           (equal (update-nth n val (take (+ 1 n) lst))
+                  (update-nth n val lst)))
+  :hints (("Goal" :induct t
+           :in-theory (enable update-nth))))
+
+;; rename?
+;; Kept disabled by default.
+(defthmd update-nth-rw
+  (implies (and (natp n)
+                (< n (len lst)))
+           (equal (update-nth n val lst)
+                  (append (take n lst)
+                          (list val)
+                          (nthcdr (+ 1 n) lst)))))

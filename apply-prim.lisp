@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -182,17 +182,16 @@
 ; *system-verify-guards-alist-1*, defined below.
 
 (defun tails-ac (lst ac)
-  (declare (xargs :guard (and (true-listp lst)
-                              (true-listp ac))
+  (declare (xargs :guard (true-listp ac)
                   :mode :program))
-  (cond ((endp lst) (revappend ac nil))
+  (cond ((atom lst) (revappend ac nil))
         (t (tails-ac (cdr lst) (cons lst ac)))))
 
 (defun tails (lst)
-  (declare (xargs :guard (true-listp lst)
+  (declare (xargs :guard t
                   :mode :program))
   (mbe :logic
-       (cond ((endp lst) nil)
+       (cond ((atom lst) nil)
              (t (cons lst (tails (cdr lst)))))
        :exec (tails-ac lst nil)))
 
@@ -288,17 +287,6 @@
                  nil
                  (from-to-by-ac i (+ i (* k (floor (- j i) k))) k nil))))
 
-(defun revappend-true-list-fix (x ac)
-
-; This function is equivalent to (revappend (true-list-fix x) ac) but doesn't
-; copy x before reversing it onto ac.
-
-  (declare (xargs :guard t
-                  :mode :program))
-  (if (atom x)
-      ac
-      (revappend-true-list-fix (cdr x) (cons (car x) ac))))
-
 ; Handling the Primitives
 
 ; Note: The following list is used to determine ancestral dependence on
@@ -328,16 +316,21 @@
 ; check-built-in-constants.
 
   (union-eq
-   '(SYNP                   ; restricts arguments
-     WORMHOLE1              ; restricts arguments
-     WORMHOLE-EVAL          ; restricts arguments
-     SYS-CALL               ; bad -- requires trust tag
-     HONS-CLEAR!            ; bad -- requires trust tag
-     HONS-WASH!             ; bad -- requires trust tag
-     UNTOUCHABLE-MARKER     ; bad -- untouchable
-     ASET1-TRUSTED          ; bad -- untouchable
-     COERCE-OBJECT-TO-STATE ; bad -- creates live state
-     CREATE-STATE           ; bad -- creates live state
+   '(SYNP                                   ; restricts arguments
+     WORMHOLE1                              ; restricts arguments
+     WORMHOLE-EVAL                          ; restricts arguments
+     SYNC-EPHEMERAL-WHS-WITH-PERSISTENT-WHS ; restricts arguments
+     SET-PERSISTENT-WHS-AND-EPHEMERAL-WHS   ; restricts arguments
+     SYS-CALL                               ; bad -- requires trust tag
+     HONS-CLEAR!                            ; bad -- requires trust tag
+     HONS-WASH!                             ; bad -- requires trust tag
+     UNTOUCHABLE-MARKER                     ; bad -- untouchable
+     ASET1-TRUSTED                          ; bad -- untouchable
+     COERCE-OBJECT-TO-STATE                 ; bad -- creates live state
+     CREATE-STATE                           ; bad -- creates live state
+     INIT-IPRINT-FAL                        ; bad -- untouchable
+     UPDATE-IPRINT-FAL-REC                  ; bad -- untouchable
+     UPDATE-IPRINT-FAL                      ; bad -- untouchable
 
 ; At one time we considered disallowing these functions but we now allow them.
 ; We list them here just to document that we considered them and concluded that
@@ -426,12 +419,14 @@
 ; cd ACL2
 ; make devel-check ACL2=`pwd`/saved_acl2d
 
-  '((>=-LEN ACL2-COUNT X)
-    (ABBREV-EVISC-TUPLE)
+  '((ABBREV-EVISC-TUPLE)
+    (ABSTRACT-PAT)
+    (ABSTRACT-PAT1 ACL2-COUNT PAT)
+    (ABSTRACT-PAT1-LST ACL2-COUNT PATS)
     (ACCESS-COMMAND-TUPLE-NUMBER)
     (ADD-SUFFIX-TO-FN)
     (ALIST-TO-DOUBLETS ACL2-COUNT ALIST)
-    (ALL->=-LEN ACL2-COUNT LST)
+    (ALISTP-LISTP ACL2-COUNT X)
     (ALL-FNNAMES1 ACL2-COUNT X)
     (ALWAYS$ ACL2-COUNT LST)
     (ALWAYS$+ ACL2-COUNT LST)
@@ -440,6 +435,8 @@
     (APPEND$+-AC ACL2-COUNT LST)
     (APPEND$-AC ACL2-COUNT LST)
     (APPLY$ :? ARGS FN)
+    (APPLY$-BADGE-ALISTP-ILKS-T ACL2-COUNT ALIST)
+    (APPLY$-BADGE-P)
     (APPLY$-LAMBDA :? ARGS FN)
     (APPLY$-PRIM)
     (ARGLISTP)
@@ -447,21 +444,24 @@
     (ARITIES-OKP ACL2-COUNT USER-TABLE)
     (ARITY)
     (ARITY-ALISTP ACL2-COUNT ALIST)
+    (ASET1-LST ACL2-COUNT ALIST)
     (BACKCHAIN-LIMIT-LISTP ACL2-COUNT LST)
     (BADGE)
+    (BADGE-USERFN-STRUCTURE-ALISTP ACL2-COUNT X)
     (BIND-MACRO-ARGS)
     (BIND-MACRO-ARGS-AFTER-REST)
     (BIND-MACRO-ARGS-KEYS)
     (BIND-MACRO-ARGS-KEYS1 ACL2-COUNT ARGS)
     (BIND-MACRO-ARGS-OPTIONAL ACL2-COUNT ARGS)
     (BIND-MACRO-ARGS1 ACL2-COUNT ARGS)
+    (BRR-CRITERIA-ALISTP ACL2-COUNT ALIST)
+    (BUILT-IN-BRR-NEAR-MISSP)
     (CAR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
     (CDR-LOOP$-AS-TUPLE ACL2-COUNT TUPLE)
     (CERT-ANNOTATIONSP)
+    (CHAR?)
     (CHK-ALL-BUT-NEW-NAME-CMP)
     (CHK-LENGTH-AND-KEYS ACL2-COUNT ACTUALS)
-    (CLEAN-BRR-STACK)
-    (CLEAN-BRR-STACK1 ACL2-COUNT STACK)
     (COLLECT$ ACL2-COUNT LST)
     (COLLECT$+ ACL2-COUNT LST)
     (COLLECT$+-AC ACL2-COUNT LST)
@@ -469,8 +469,11 @@
     (COLLECT-BY-POSITION ACL2-COUNT FULL-DOMAIN)
     (COLLECT-LAMBDA-KEYWORDPS ACL2-COUNT LST)
     (COLLECT-NON-X ACL2-COUNT LST)
+    (COLLECT-POSP-INDICES-TO-HEADER ACL2-COUNT AR)
     (COMMENT-STRING-P)
     (COMMENT-STRING-P1 NFIX (BINARY-+ END (UNARY-- I)))
+    (CONS-PPR1)
+    (CONS-PPR1-GUARDP)
     (CONS-TERM1-MV2)
     (DEF-BODY)
     (DEFSTOBJ-FNNAME)
@@ -488,10 +491,38 @@
     (ENS)
     (EQUAL-X-CONSTANT)
     (ER-CMP-FN)
+    (ER-OFF-P)
+    (ER-OFF-P1)
+    (ERROR-FMS)
+    (ERROR-FMS-CHANNEL)
+    (ERROR1)
+    (ERROR1-SAFE)
+    (ERROR1-STATE-P)
     (EV$ :? A X)
     (EV$-LIST :? A X)
+    (EVISC-TUPLE)
+    (EVISCERATE)
+    (EVISCERATE-SIMPLE)
+    (EVISCERATE-TOP)
+    (EVISCERATE-TOP-STATE-P)
+    (EVISCERATE1 BINARY-+ '1
+                 (BINARY-* '2 (ACL2-COUNT X)))
+    (EVISCERATE1-LST BINARY-* '2
+                     (ACL2-COUNT LST))
+    (EVISCERATE1P BINARY-+ '1
+                  (BINARY-* '2 (ACL2-COUNT X)))
+    (EVISCERATE1P-LST BINARY-* '2
+                      (ACL2-COUNT LST))
+    (EXECUTABLE-BADGE)
+    (EXECUTABLE-SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)
+    (EXECUTABLE-TAMEP ACL2-COUNT X)
+    (EXECUTABLE-TAMEP-FUNCTIONP ACL2-COUNT FN)
+    (EXPAND-ALL-LAMBDAS ACL2-COUNT TERM)
+    (EXPAND-ALL-LAMBDAS-LST ACL2-COUNT TERMS)
     (FFNNAMEP ACL2-COUNT TERM)
     (FFNNAMEP-LST ACL2-COUNT L)
+    (FILENAME-TO-BOOK-NAME)
+    (FILENAME-TO-BOOK-NAME-1)
     (FIND-ALTERNATIVE-SKIP NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
     (FIND-ALTERNATIVE-START)
     (FIND-ALTERNATIVE-START1 NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
@@ -502,8 +533,98 @@
                   (BINARY-+ (LENGTH FULL-PATHNAME)
                             (UNARY-- I)))
     (FIND-FIRST-BAD-ARG ACL2-COUNT ARGS)
+    (FIND-WARRANT-FUNCTION-NAME)
+    (FLATTEN-ANDS-IN-LIT-LST ACL2-COUNT X)
+    (FLPR)
+    (FLPR1 BINARY-+ '1
+           (BINARY-* '2 (ACL2-COUNT X)))
+    (FLPR11 BINARY-* '2 (ACL2-COUNT X))
+    (FLSZ)
+    (FLSZ-ATOM IF (NOT (FIXNAT-GUARD ACC))
+               '0
+               (ACL2-COUNT X))
+    (FLSZ-INTEGER IF
+                  (NOT (IF (INTEGERP X)
+                           (IF (NATP ACC)
+                               (IF (< ACC '1152921504606846975)
+                                   (PRINT-BASE-P PRINT-BASE)
+                                   'NIL)
+                               'NIL)
+                           'NIL))
+                  '0
+                  (IF (< X '0)
+                      (BINARY-+ '1 (UNARY-- X))
+                      (IF (< X PRINT-BASE) '0 X)))
+    (FLSZ1 ACL2-COUNT X)
+    (FMS)
+    (FMS!)
+    (FMT)
+    (FMT!)
+    (FMT-ABBREV)
+    (FMT-ABBREV1)
     (FMT-CHAR)
+    (FMT-CTX)
+    (FMT-HARD-RIGHT-MARGIN)
+    (FMT-IN-CTX)
+    (FMT-PPR)
+    (FMT-SOFT-RIGHT-MARGIN)
+    (FMT-STATE-P)
+    (FMT-TILDE-CAP-S NFIX CLK)
+    (FMT-TILDE-CAP-S1
+     IF
+     (NOT (IF (FMT-STATE-P STATE)
+              (IF (FIXNAT-GUARD I)
+                  (IF (FIXNAT-GUARD MAXIMUM)
+                      (IF (FIXNAT-GUARD COL)
+                          (IF (STRINGP S)
+                              (IF (NOT (< (LENGTH S) MAXIMUM))
+                                  (IF (OPEN-OUTPUT-CHANNEL-P CHANNEL ':CHARACTER
+                                                             STATE)
+                                      (< I MAXIMUM)
+                                      'NIL)
+                                  'NIL)
+                              'NIL)
+                          'NIL)
+                      'NIL)
+                  'NIL)
+              'NIL))
+     '0
+     (NFIX (BINARY-+ MAXIMUM (UNARY-- I))))
+    (FMT-TILDE-S NFIX CLK)
+    (FMT-TILDE-S1
+     IF
+     (NOT (IF (FMT-STATE-P STATE)
+              (IF (FIXNAT-GUARD I)
+                  (IF (FIXNAT-GUARD MAXIMUM)
+                      (IF (FIXNAT-GUARD COL)
+                          (IF (STRINGP S)
+                              (IF (NOT (< (LENGTH S) MAXIMUM))
+                                  (IF (OPEN-OUTPUT-CHANNEL-P CHANNEL ':CHARACTER
+                                                             STATE)
+                                      (< I MAXIMUM)
+                                      'NIL)
+                                  'NIL)
+                              'NIL)
+                          'NIL)
+                      'NIL)
+                  'NIL)
+              'NIL))
+     '0
+     (IF (IF (< (FMT-HARD-RIGHT-MARGIN STATE) COL)
+             (NOT (WRITE-FOR-READ STATE))
+             'NIL)
+         (BINARY-+ '2
+                   (NFIX (BINARY-* '2
+                                   (BINARY-+ MAXIMUM (UNARY-- I)))))
+         (BINARY-+ '1
+                   (NFIX (BINARY-* '2
+                                   (BINARY-+ MAXIMUM (UNARY-- I)))))))
     (FMT-VAR)
+    (FMT0 NFIX CLK)
+    (FMT0&V NFIX CLK)
+    (FMT0* NFIX CLK)
+    (FMT1)
+    (FMT1!)
     (FMX!-CW-FN)
     (FMX-CW-FN)
     (FMX-CW-FN-GUARD)
@@ -515,15 +636,39 @@
     (FROM-TO-BY-AC FROM-TO-BY-MEASURE I J)
     (FSUBCOR-VAR ACL2-COUNT FORM)
     (FSUBCOR-VAR-LST ACL2-COUNT FORMS)
+    (GAG-MODE-EVISC-TUPLE)
+    (GENVAR)
+    (GENVAR-GUARDP)
+    (GENVAR1 :? CNT AVOID-LST CHAR-LST PKG-WITNESS)
+    (GENVAR1-GUARDP)
+    (GET-BRR-ONE-WAY-UNIFY-INFO)
+    (GET-SHARP-ATSIGN)
+    (GSYM)
     (ILKS-PER-ARGUMENT-SLOT)
     (ILKS-PLIST-WORLDP)
     (ILLEGAL-FMT-STRING)
     (IMPLICATE)
     (INCLUDE-BOOK-DIR)
+    (INIT-IPRINT-FAL)
+    (IPRINT-ALISTP)
+    (IPRINT-ALISTP1 ACL2-COUNT X)
+    (IPRINT-ALISTP1-WEAK ACL2-COUNT X)
+    (IPRINT-AR-AREF1)
+    (IPRINT-AR-ILLEGAL-INDEX)
+    (IPRINT-BLOCKEDP)
+    (IPRINT-EAGER-P)
+    (IPRINT-ENABLEDP)
+    (IPRINT-FAL-NAME)
+    (IPRINT-HARD-BOUND)
+    (IPRINT-LAST-INDEX)
+    (IPRINT-ORACLE-UPDATES?)
+    (IPRINT-SOFT-BOUND)
+    (KEYWORD-PARAM-VALUEP)
     (LAMBDA-KEYWORDP)
     (LAMBDA-SUBTERMP ACL2-COUNT TERM)
     (LAMBDA-SUBTERMP-LST ACL2-COUNT TERMLIST)
     (LATEST-BODY)
+    (LEFT-PAD-WITH-BLANKS)
     (LEGAL-CONSTANTP)
     (LEGAL-INITP)
     (LEGAL-VARIABLE-OR-CONSTANT-NAMEP)
@@ -543,15 +688,19 @@
     (MACRO-ARGLIST-OPTIONALP ACL2-COUNT ARGS)
     (MACRO-ARGLIST1P ACL2-COUNT ARGS)
     (MACRO-ARGS)
+    (MACRO-ARGS-ER-CMP)
     (MACRO-ARGS-STRUCTUREP)
     (MACRO-VARS ACL2-COUNT ARGS)
     (MACRO-VARS-AFTER-REST)
     (MACRO-VARS-KEY ACL2-COUNT ARGS)
     (MACRO-VARS-OPTIONAL ACL2-COUNT ARGS)
+    (MAKE-BUILT-IN-BRR-NEAR-MISS-MSG)
     (MAKE-LAMBDA-APPLICATION)
+    (MAKE-SHARP-ATSIGN)
     (MATCH-CLAUSE)
     (MATCH-CLAUSE-LIST ACL2-COUNT CLAUSES)
     (MATCH-TESTS-AND-BINDINGS ACL2-COUNT PAT)
+    (MAX-WIDTH ACL2-COUNT LST)
     (MERGE-SORT-SYMBOL< ACL2-COUNT L)
     (MERGE-SORT-TERM-ORDER ACL2-COUNT L)
     (MERGE-SYMBOL< BINARY-+ (LEN L1)
@@ -563,30 +712,85 @@
     (META-EXTRACT-RW+-TERM)
     (NEW-NAMEP)
     (NEWLINE)
+    (NUMBER-OF-DIGITS IF
+                      (NOT (IF (INTEGERP N)
+                               (PRINT-BASE-P PRINT-BASE)
+                               'NIL))
+                      '0
+                      (IF (< N '0)
+                          (BINARY-+ '1 (UNARY-- N))
+                          N))
     (OBSERVATION1-CW)
+    (ONE-WAY-UNIFY)
+    (ONE-WAY-UNIFY-RESTRICTIONS)
+    (ONE-WAY-UNIFY-RESTRICTIONS1 ACL2-COUNT RESTRICTIONS)
+    (ONE-WAY-UNIFY1 MAKE-ORD '1
+                    (BINARY-+ '1 (ACL2-COUNT PAT))
+                    '2)
+    (ONE-WAY-UNIFY1-EQUAL MAKE-ORD '1
+                          (BINARY-+ '2
+                                    (BINARY-+ (ACL2-COUNT PAT1)
+                                              (ACL2-COUNT PAT2)))
+                          '1)
+    (ONE-WAY-UNIFY1-EQUAL1 MAKE-ORD '1
+                           (BINARY-+ '2
+                                     (BINARY-+ (ACL2-COUNT PAT1)
+                                               (ACL2-COUNT PAT2)))
+                           '0)
+    (ONE-WAY-UNIFY1-LST MAKE-ORD '1
+                        (BINARY-+ '1 (ACL2-COUNT PL))
+                        '2)
+    (ONE-WAY-UNIFY1-QUOTEP-SUBPROBLEMS)
+    (OUT-OF-TIME-THE2S)
     (OVERRIDE-HINTS)
+    (PARTITION-REST-AND-KEYWORD-ARGS)
+    (PARTITION-REST-AND-KEYWORD-ARGS1 ACL2-COUNT X)
+    (PARTITION-REST-AND-KEYWORD-ARGS2 ACL2-COUNT KEYPART)
     (PLIST-WORLDP-WITH-FORMALS ACL2-COUNT ALIST)
+    (POSSIBLY-DIRTY-LAMBDA-OBJECTP)
+    (POSSIBLY-DIRTY-LAMBDA-OBJECTP1 ACL2-COUNT X)
+    (POSSIBLY-DIRTY-LAMBDA-OBJECTP1-LST ACL2-COUNT X)
+    (PPR)
+    (PPR-TUPLE-LST-P ACL2-COUNT LST)
+    (PPR-TUPLE-P ACL2-COUNT X)
+    (PPR1 BINARY-* '2 (ACL2-COUNT X))
+    (PPR1-LST BINARY-+ '1
+              (BINARY-* '2 (ACL2-COUNT LST)))
+    (PPR2 ACL2-COUNT X)
+    (PPR2-COLUMN ACL2-COUNT LST)
+    (PPR2-FLAT ACL2-COUNT X)
     (PRINT-CONTROL-P)
+    (PROJECT-DIR-PREFIX-ENTRY ACL2-COUNT PROJECT-DIR-ALIST)
+    (PUNCTP)
     (PUSH-IO-RECORD)
-    (RELATIVIZE-BOOK-PATH)
     (REMOVE-GUARD-HOLDERS-WEAK)
     (REMOVE-GUARD-HOLDERS1 ACL2-COUNT TERM)
     (REMOVE-GUARD-HOLDERS1-LST ACL2-COUNT LST)
     (REMOVE-LAMBDAS)
     (REMOVE-LAMBDAS-LST ACL2-COUNT TERMLIST)
     (REMOVE-LAMBDAS1 ACL2-COUNT TERM)
-    (REVAPPEND-TRUE-LIST-FIX ACL2-COUNT X)
+    (ROLLOVER-IPRINT-AR)
     (RUNEP)
     (SAVED-OUTPUT-TOKEN-P)
+    (SCAN-PAST-EMPTY-FMT-DIRECTIVES)
+    (SCAN-PAST-EMPTY-FMT-DIRECTIVES1 ACL2-COUNT CLK)
     (SCAN-PAST-WHITESPACE NFIX (BINARY-+ MAXIMUM (UNARY-- I)))
     (SCAN-TO-CLTL-COMMAND ACL2-COUNT WRLD)
     (SILENT-ERROR)
-    (STANDARD-EVISC-TUPLEP)
+    (SPACES)
+    (SPACES1 NFIX (BINARY-+ (BINARY-* '2 N) COL))
+    (SPECIAL-TERM-NUM)
+    (SPELL-NUMBER NFIX CLK)
+    (SPLAT BINARY-+ '1
+           (BINARY-* '2 (ACL2-COUNT X)))
+    (SPLAT-ATOM)
+    (SPLAT-ATOM!)
+    (SPLAT-STRING)
+    (SPLAT1 BINARY-* '2 (ACL2-COUNT X))
+    (STANDARD-CO)
+    (STATE-P+)
     (STOBJP)
-    (STRING-PREFIXP)
-    (STRING-PREFIXP-1 ACL2-COUNT I)
     (STRIP-CADDRS ACL2-COUNT X)
-    (STRIP-CADRS ACL2-COUNT X)
     (STRIP-NON-HIDDEN-PACKAGE-NAMES ACL2-COUNT KNOWN-PACKAGE-ALIST)
     (SUBCOR-VAR ACL2-COUNT FORM)
     (SUBCOR-VAR-LST ACL2-COUNT FORMS)
@@ -596,6 +800,7 @@
     (SUBLIS-VAR1 ACL2-COUNT FORM)
     (SUBLIS-VAR1-LST ACL2-COUNT L)
     (SUBSEQUENCEP ACL2-COUNT LST1)
+    (SUBST-EACH-FOR-VAR ACL2-COUNT NEW-LST)
     (SUBST-EXPR)
     (SUBST-EXPR-ERROR)
     (SUBST-EXPR1 ACL2-COUNT TERM)
@@ -607,12 +812,17 @@
     (SUM$+ ACL2-COUNT LST)
     (SUM$+-AC ACL2-COUNT LST)
     (SUM$-AC ACL2-COUNT LST)
-    (SYSFILE-OR-STRING-LISTP ACL2-COUNT X)
-    (SYSFILE-P)
+    (SYMBOL-ALIST-TO-KEYWORD-VALUE-LIST ACL2-COUNT ALIST)
+    (SYMBOL-TO-FIXNAT-ALISTP ACL2-COUNT X)
+    (SYNTACTICALLY-PLAUSIBLE-LAMBDA-OBJECTP ACL2-COUNT X)
+    (SYNTACTICALLY-PLAUSIBLE-LAMBDA-OBJECTP1 ACL2-COUNT EDCLS)
+    (SYNTACTICALLY-PLAUSIBLE-LAMBDA-OBJECTSP-WITHIN ACL2-COUNT BODY)
+    (SYNTACTICALLY-PLAUSIBLE-LAMBDA-OBJECTSP-WITHIN-LST ACL2-COUNT ARGS)
     (TAILS ACL2-COUNT LST)
     (TAILS-AC ACL2-COUNT LST)
     (TAMEP ACL2-COUNT X)
     (TAMEP-FUNCTIONP ACL2-COUNT FN)
+    (TERM-EVISC-TUPLE)
     (TERM-LIST-LISTP ACL2-COUNT L)
     (TERM-LISTP ACL2-COUNT X)
     (TERM-ORDER)
@@ -626,14 +836,29 @@
     (THROW-NONEXEC-ERROR-P)
     (THROW-NONEXEC-ERROR-P1)
     (TRANSLATE-ABBREV-RUNE)
+    (TRANSLATE-DECLARATION-TO-GUARD-GEN ACL2-COUNT X)
+    (TRANSLATE-DECLARATION-TO-GUARD-GEN-LST ACL2-COUNT L)
+    (TRANSLATE-DECLARATION-TO-GUARD/INTEGER-GEN)
+    (TRANSLATE-DECLARATION-TO-GUARD1-GEN)
     (TTAG-ALISTP ACL2-COUNT X)
+    (TYPE-EXPRESSIONS-FROM-TYPE-SPEC)
     (UNTIL$ ACL2-COUNT LST)
     (UNTIL$+ ACL2-COUNT LST)
     (UNTIL$+-AC ACL2-COUNT LST)
     (UNTIL$-AC ACL2-COUNT LST)
+    (UPDATE-IPRINT-ALIST-FAL)
+    (UPDATE-IPRINT-AR-FAL)
+    (UPDATE-IPRINT-FAL)
+    (UPDATE-IPRINT-FAL-REC ACL2-COUNT IPRINT-FAL-NEW)
     (WARNING-OFF-P1)
     (WARNING1-CW)
+    (WARRANTS-FOR-SUITABLY-TAMEP-LISTP ACL2-COUNT ARGS)
+    (WARRANTS-FOR-TAMEP ACL2-COUNT X)
+    (WARRANTS-FOR-TAMEP-FUNCTIONP ACL2-COUNT FN)
     (WEAK-BADGE-USERFN-STRUCTURE-ALISTP ACL2-COUNT X)
+    (WEAK-SPLO-EXTRACTS-TUPLE-LISTP ACL2-COUNT X)
+    (WELL-FORMED-LAMBDA-OBJECTP)
+    (WELL-FORMED-LAMBDA-OBJECTP1 ACL2-COUNT EXTRACTS)
     (WHEN$ ACL2-COUNT LST)
     (WHEN$+ ACL2-COUNT LST)
     (WHEN$+-AC ACL2-COUNT LST)
@@ -686,7 +911,7 @@
                (classicalp fn wrld)
 
                (not (member-eq fn avoid-fns))
-               (all-nils (getpropc fn 'stobjs-in nil wrld))
+               (all-nils-or-dfs (getpropc fn 'stobjs-in nil wrld))
 
 ; We considered removing the conjunct immediately above when we started
 ; allowing warrants for functions that traffic in stobjs, including state, in
@@ -710,7 +935,7 @@
 ; hence will fail the test just above.  So we don't need to give special
 ; treatment to such functions.
 
-               (all-nils (getpropc fn 'stobjs-out nil wrld)))
+               (all-nils-or-dfs (getpropc fn 'stobjs-out nil wrld)))
 
 ; Note that stobj creators take no stobjs in but return stobjs.  We don't want
 ; any such functions in our answer!
@@ -936,7 +1161,8 @@
                              :test 'eq)
                      fn)
                     (t (let ((*1*fn (*1*-symbol fn)))
-                         (assert (fboundp *1*fn))
+                         (or (fboundp *1*fn)
+                             (error "Not fboundp: ~s" *1*fn))
                          *1*fn)))))
         (setf (gethash fn ht)
               (list* fn-to-call
@@ -989,7 +1215,10 @@
 #+acl2-loop-only
 (defun apply$-prim (fn args)
   (declare (xargs :guard (true-listp args) :mode :program))
-  (make-apply$-prim-body))
+
+; We use non-exec here to get around issues with passing around :df values.
+
+  (non-exec (make-apply$-prim-body)))
 
 )
 

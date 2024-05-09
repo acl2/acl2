@@ -46,7 +46,7 @@
 ;; verify-guards-eagerness is EAGERNESS.  Note that the effect is local to the
 ;; enclosing book or encapsulate.
 (defun maybe-set-verify-guards-eagerness (eagerness wrld)
-  (declare (xargs :guard (and (member eagerness '(0 1 2))
+  (declare (xargs :guard (and (member eagerness '(0 1 2 3))
                               (plist-worldp wrld)
                               (alistp (table-alist 'acl2-defaults-table wrld)))))
   (if (not (equal eagerness (default-verify-guards-eagerness wrld)))

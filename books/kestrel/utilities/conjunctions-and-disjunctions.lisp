@@ -1,7 +1,7 @@
 ; Tools for representing conjunctions and disjunctions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,23 +15,33 @@
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
-;; A single conjunct of "false"
-(defconst *false-conjunction* (list *nil*))
-
 ;; The empty conjunction is equivalent to true
 (defconst *true-conjunction* nil)
 
-;; The empty disjunction is equivalent to false
-(defconst *false-disjunction* nil)
+;; A single conjunct of "false"
+(defconst *false-conjunction* (list *nil*))
 
 ;; A single disjunct of "true"
 (defconst *true-disjunction* (list *t*))
 
-(defun strip-nots-from-term (term)
+;; The empty disjunction is equivalent to false
+(defconst *false-disjunction* nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Removes any number of outer NOTs.
+(defund strip-nots-from-term (term)
   (declare (xargs :guard (pseudo-termp term)))
   (if (call-of 'not term)
       (strip-nots-from-term (farg1 term))
     term))
+
+(defthm strip-nots-from-term-of-list-of-not
+  (equal (strip-nots-from-term (list 'not x))
+         (strip-nots-from-term x))
+  :hints (("Goal" :in-theory (enable strip-nots-from-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A non-trivial logical term is a pseudo-term that is not a constant and not
 ;; a nest of NOTs applied to a constant.
@@ -60,10 +70,13 @@
               (non-trivial-logical-term-listp terms)))
   :hints (("Goal" :in-theory (enable non-trivial-logical-term-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund conjunct-listp (x)
   (declare (xargs :guard t))
   (or (equal x *false-conjunction*)
-      (non-trivial-logical-term-listp x)))
+      (non-trivial-logical-term-listp x) ; possibly empty
+      ))
 
 (defthm conjunct-listp-forward-to-pseudo-term-listp
   (implies (conjunct-listp x)
@@ -79,10 +92,13 @@
                   (non-trivial-logical-term-listp terms))))
   :hints (("Goal" :in-theory (enable conjunct-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund disjunct-listp (x)
   (declare (xargs :guard t))
   (or (equal x *true-disjunction*)
-      (non-trivial-logical-term-listp x)))
+      (non-trivial-logical-term-listp x) ; possibly empty
+      ))
 
 (defthm disjunct-listp-forward-to-pseudo-term-listp
   (implies (disjunct-listp x)
@@ -98,6 +114,8 @@
                   (non-trivial-logical-term-listp terms))))
   :hints (("Goal" :in-theory (enable disjunct-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; We expect each of x and y to be either 1) *false-conjunction*, or 2) a list of non-constant terms.
 (defund combine-conjuncts (x y)
   (declare (xargs :guard (and (conjunct-listp x)
@@ -107,6 +125,8 @@
   (if (or (equal *false-conjunction* x)
           (equal *false-conjunction* y))
       *false-conjunction*
+    ;; TODO: Consider using union-equal-alt, which keeps earlier occurrences
+    ;; instead of later ones when there is overlap between the lists:
     (union-equal x y)))
 
 (defthm pseudo-term-listp-of-combine-conjuncts
@@ -134,6 +154,8 @@
                                      conjunct-listp
                                      non-trivial-logical-term-listp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; We expect each of x and y to be either 1) the *true-disjunction*, or 2) a list of non-constant terms.
 (defund combine-disjuncts (x y)
   (declare (xargs :guard (and (disjunct-listp x)
@@ -143,6 +165,8 @@
   (if (or (equal *true-disjunction* x)
           (equal *true-disjunction* y))
       *true-disjunction*
+    ;; TODO: Consider using union-equal-alt, which keeps earlier occurrences
+    ;; instead of later ones when there is overlap between the lists:
     (union-equal x y)))
 
 (defthm pseudo-term-listp-of-combine-disjuncts

@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 8.4 Installation Guide: Miscellaneous Information</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 8.5 Installation Guide: Miscellaneous Information</TITLE></HEAD>
 
 <BODY TEXT="#000000" BGCOLOR="#FFFFFF" STYLE="font-family:'Verdana'">
 
@@ -55,7 +55,7 @@ extension and how to build it, and a warning about its experimental nature.
 
 If you care to use ACL2(r), you will need to build an executable image
 and you will probably want to certify books.  First, connect to your
-new <I>dir</I><code>/acl2-8.4/</code> directory and
+new <I>dir</I><code>/acl2-8.5/</code> directory and
 execute<BR><BR><CODE>make large-acl2r LISP=</CODE><I>xxx</I><BR>
 <BR>
 where <I>xxx</I> is the command to run your local Common Lisp.
@@ -66,43 +66,50 @@ Clozure Common Lisp (CCL), which can be obtained as explained <a
 href="obtaining-and-installing.html#Obtaining-CCL">in the Requirements document</a>.
 <P>
 This will create executable <code>saved_acl2r</code> in the
-<I>dir</I><code>/acl2-8.4</code> directory (notice the final
+<I>dir</I><code>/acl2-8.5</code> directory (notice the final
 letter <code>r</code> in the executable filename).
 
 <P>
 
 Finally, you can certify books under directory
-<code><I>dir</I>/acl2-8.4/books/nonstd/</code> with ACL2(r) in the usual
+<code><I>dir</I>/acl2-8.5/books/nonstd/</code> with ACL2(r) in the usual
 way; for example, see the documentation topic for
 <a href="../../manual/index.html?topic=ACL2____BOOKS-CERTIFICATION">BOOKS-CERTIFICATION</a>.
 
 <BR><HR><BR>
 <H3><A NAME="Addresses">Links and Mailing Lists</A></H3>
 
-There are several mailing lists for ACL2 users.  You can post messages to these
-lists only if you are a member.
-<ul>
-<li><CODE><A
-HREF="mailto:acl2-help@utlists.utexas.edu">acl2-help@utlists.utexas.edu</A></CODE><br>
-ACL2 help list, for questions about using
-  ACL2 <font color="red">(recommended for new users)</font></li>
-<li><CODE><A
-HREF="mailto:acl2@utlists.utexas.edu">acl2@utlists.utexas.edu</A></CODE><br>
-General ACL2 list for users and others interested in ACL2</li>
-<li><CODE><A
-HREF="mailto:acl2-books@googlegroups.com">acl2-books@googlegroups.com</A></CODE><br>
-Mailing list for discussion of cutting-edge developments in ACL2
-and the ACL2 Community Books</li>
-<li>ACL2 Seminar (University of Texas at Austin) mailing list: see below.</li>
-</ul>
+There are the following mailing lists for ACL2 users.  You can post messages to these
+lists only if you are a member, but anyone can view the archives.
 
-You may subscribe to or unsubscribe from these
-lists, or view their archives, at:
 <ul>
-<li>(<b>acl2-help</b> list) <code><a href="https://utlists.utexas.edu/sympa/info/acl2-help">https://utlists.utexas.edu/sympa/info/acl2-help</a></code></li>
-<li>(<b>acl2</b> list) <code><a href="https://utlists.utexas.edu/sympa/info/acl2">https://utlists.utexas.edu/sympa/info/acl2</a></code></li>
-<li>(<b>acl2-books Google Group</b>
-  list) <code><a href="https://groups.google.com/forum/#!forum/acl2-books">https://groups.google.com/forum/#!forum/acl2-books</a></code></li>
+<li><b>acl2 list</b>: General ACL2 list for users and others interested in ACL2
+  <ul>
+    <li>To post: <CODE><A HREF="mailto:acl2@utlists.utexas.edu">acl2@utlists.utexas.edu</A></CODE></li>
+    <li>To subscribe, unsubscribe, or view archives:
+      <code><a href="https://utlists.utexas.edu/sympa/info/acl2">https://utlists.utexas.edu/sympa/info/acl2</a></code></li>
+  </ul>
+</li>
+
+<li><b>acl2-help list</b>: ACL2 help list, for questions about using
+  ACL2 <font color="red">(recommended for new users)</font>
+  <ul>
+    <li>To post: <CODE><A HREF="mailto:acl2-help@utlists.utexas.edu">acl2-help@utlists.utexas.edu</A></CODE></li>
+    <li>To subscribe, unsubscribe, or view archives:
+      <code><a href="https://utlists.utexas.edu/sympa/info/acl2-help">https://utlists.utexas.edu/sympa/info/acl2-help</a></code></li>
+  </ul>
+</li>
+
+<li><b>acl2-books list</b>: Mailing list for discussion of
+cutting-edge developments in ACL2 and the ACL2 Community Books
+  <ul>
+    <li>To post: <CODE><A
+HREF="mailto:acl2-books@googlegroups.com">acl2-books@googlegroups.com</A></CODE></li>
+    <li>To subscribe, unsubscribe, or view archives:
+      <code><a href="https://groups.google.com/forum/#!forum/acl2-books">https://groups.google.com/forum/#!forum/acl2-books</a></code></li>
+  </ul>
+</li>
+
 </ul>
 
 <P>
@@ -119,7 +126,7 @@ the U. S. Department of the Treasury.
 <BR><HR><BR>
 <H3><A NAME="License-and-Copyright">License and Copyright</A></H3>
 
-ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp<BR>
+ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp<BR>
 Copyright (C) 2022, Regents of the University of Texas
 <P>
 This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -149,7 +156,21 @@ For more information on copyright, licensing, and authorship, see the
 documentation topic,
 <a href="../../manual/index.html?topic=ACL2____COPYRIGHT">COPYRIGHT</a>.
 
-<p>
+<BR><HR><BR>
+
+<p>Although releases are best obtained according to
+the <a href="installation.html">installation instructions</a> by fetching
+a <a href="https://github.com/acl2-devel/acl2-devel/releases/download/8.5/acl2-8.5.tar.gz">gzipped
+tar file from GitHub</a> containing ACL2 Version 8.5 and the
+corresponding Community Books, here we note that the git commit hash
+for Version 8.5 of <a href="https://github.com/acl2/acl2">ACL2 on
+github</a> is:</p>
+
+<pre>
+4fd2eb6bbb3e6a4c66dcbc8aa179272a7a21d51b
+</pre>
+
+<BR><HR><BR>
 
 <b><font size="+2">[<a href="installation.html">Back to Installation Guide.</a>]</font></b>
 

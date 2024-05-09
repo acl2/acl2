@@ -1,8 +1,9 @@
-(in-package "RTL")
+(in-package "DM")
 
 (include-book "rtl/rel11/lib/top" :dir :system)
+(include-book "projects/numbers/portcullis" :dir :system)
 
-(include-book "projects/quadratic-reciprocity/euclid" :dir :system)
+(include-book "projects/numbers/euclid" :dir :system)
 
 ;;---------------------------------------------------------------------------------------------------
 ;; Properties of Lists
@@ -1178,13 +1179,13 @@
 ;; op: the product of group elements x and y as a function of args
 
 (defmacro defgroup (name args cond elts op inv)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "RTL"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "RTL"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "RTL"))
-	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "RTL"))
-	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "RTL"))
-	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "RTL"))
-	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "RTL")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM"))
+	(groupp-name (intern$ (concatenate 'string "GROUPP-" (symbol-name name)) "DM"))
+	(name-elts (intern$ (concatenate 'string (symbol-name name) "-ELTS") "DM"))
+	(name-op-rewrite (intern$ (concatenate 'string (symbol-name name) "-OP-REWRITE") "DM"))
+	(name-inv-rewrite (intern$ (concatenate 'string (symbol-name name) "-INV-REWRITE") "DM")))
     `(encapsulate ()
        (set-ignore-ok t)
        (set-irrelevant-formals-ok t)
@@ -1252,9 +1253,9 @@
 ;; A version of defgroup that defines a family of groups but does not prove anything:
 
 (defmacro defgroup-light (name args elts op)
-  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "RTL"))
-        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "RTL"))
-	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "RTL")))
+  (let ((op-name (intern$ (concatenate 'string "OP-" (symbol-name name)) "DM"))
+        (name-row (intern$ (concatenate 'string (symbol-name name) "-ROW") "DM"))
+	(name-aux (intern$ (concatenate 'string (symbol-name name) "-AUX") "DM")))
     `(encapsulate ()
        (defun ,op-name (x y ,@args) ,op)
        (defun ,name-row (x m ,@args)
@@ -1337,8 +1338,8 @@
   :hints (("Goal" :use (member-ninit
                         (:instance member-ninit (x y))
 			(:instance member-ninit (x z))
-                        (:instance mod-sum (a x) (b (+ y z)))
-                        (:instance mod-sum (a z) (b (+ x y)))))))
+                        (:instance rtl::mod-sum (a x) (b (+ y z)) (n n))
+                        (:instance rtl::mod-sum (a z) (b (+ x y)) (n n))))))
 
 (defthm z+-inverse
   (implies (and (posp n)
@@ -1347,7 +1348,7 @@
 	        (equal (z+-op (z+-inv x n) x n) 0)))
   :hints (("Goal" :use (member-ninit
                         (:instance member-ninit (x (z+-inv x n)))
-			(:instance mod-sum (a x) (b (- x)))))))
+			(:instance rtl::mod-sum (a x) (b (- x)) (n n))))))
 
 (in-theory (disable z+-op z+-inv))
 
@@ -1367,57 +1368,57 @@
 		(divides (least-divisor 2 n) n)))
   :hints (("Goal" :use (primep-least-divisor (:instance least-divisor-divides (k 2))))))
 
-(defthmd g-c-d-symmetry
+(defthmd gcd-symmetry
   (implies (and (natp x) (natp y))
-           (equal (g-c-d x y) (g-c-d y x)))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd x y) (gcd y x)))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthmd prod-rel-prime
   (implies (and (posp n)
 		(integerp a)
 		(integerp b)
-		(= (g-c-d a n) 1)
-		(= (g-c-d b n) 1))
-	   (equal (g-c-d (* a b) n) 1))
-  :hints (("Goal" :use ((:instance least-divisor-prime-divides (n (g-c-d (* a b) n)))
-                        (:instance euclid (p (least-divisor 2 (g-c-d (* a b) n))))
-			(:instance divides-leq (x (least-divisor 2 (g-c-d (* a b) n))) (y 1))
-			(:instance g-c-d-pos (x (* a b)) (y n))
-			(:instance g-c-d-symmetry (x a) (y n))
-			(:instance g-c-d-symmetry (x b) (y n))
-			(:instance g-c-d-divides (x (* a b)) (y n))
-			(:instance divides-transitive (x (least-divisor 2 (g-c-d (* a b) n))) (y (g-c-d (* a b) n)) (z (* a b)))
-			(:instance divides-transitive (x (least-divisor 2 (g-c-d (* a b) n))) (y (g-c-d (* a b) n)) (z n))
-			(:instance divides-g-c-d (d (least-divisor 2 (g-c-d (* a b) n))) (x a) (y n))
-			(:instance divides-g-c-d (d (least-divisor 2 (g-c-d (* a b) n))) (x b) (y n))))))
+		(= (gcd a n) 1)
+		(= (gcd b n) 1))
+	   (equal (gcd (* a b) n) 1))
+  :hints (("Goal" :use ((:instance least-divisor-prime-divides (n (gcd (* a b) n)))
+                        (:instance euclid (p (least-divisor 2 (gcd (* a b) n))))
+			(:instance divides-leq (x (least-divisor 2 (gcd (* a b) n))) (y 1))
+			(:instance gcd-pos (x (* a b)) (y n))
+			(:instance gcd-symmetry (x a) (y n))
+			(:instance gcd-symmetry (x b) (y n))
+			(:instance gcd-divides (x (* a b)) (y n))
+			(:instance divides-transitive (x (least-divisor 2 (gcd (* a b) n))) (y (gcd (* a b) n)) (z (* a b)))
+			(:instance divides-transitive (x (least-divisor 2 (gcd (* a b) n))) (y (gcd (* a b) n)) (z n))
+			(:instance divides-gcd (d (least-divisor 2 (gcd (* a b) n))) (x a) (y n))
+			(:instance divides-gcd (d (least-divisor 2 (gcd (* a b) n))) (x b) (y n))))))
 
 (local-defthm divides-mod-n
   (implies (and (posp n) (integerp m) (posp k) (divides k n) (divides k (mod m n)))
            (divides k m))
   :rule-classes ()
   :hints (("Goal" :in-theory (enable divides)
-                  :use ((:instance mod-def (x m) (y n))))))
+                  :use ((:instance rtl::mod-def (x m) (y n))))))
 
 (local-defthmd mod-prod-rel-prime
   (implies (and (posp n)
 		(posp a)
 		(posp b)
-		(= (g-c-d a n) 1)
-		(= (g-c-d b n) 1))
-	   (equal (g-c-d (mod (* a b) n) n) 1))
+		(= (gcd a n) 1)
+		(= (gcd b n) 1))
+	   (equal (gcd (mod (* a b) n) n) 1))
   :hints (("Goal" :in-theory (enable divides)
                   :use (prod-rel-prime
-		        (:instance g-c-d-pos (x (* a b)) (y n))
-		        (:instance g-c-d-pos (x (mod (* a b) n)) (y n))
-		        (:instance divides-mod-n (k (g-c-d (mod (* a b) n) n)) (m (* a b)))
-                        (:instance g-c-d-divides (x (mod (* a b) n)) (y n))
-			(:instance divides-g-c-d (d (g-c-d (mod (* a b) n) n)) (x (* a b)) (y n))
-			(:instance divides-leq (x (g-c-d (mod (* a b) n) n)) (y 1))))))
+		        (:instance gcd-pos (x (* a b)) (y n))
+		        (:instance gcd-pos (x (mod (* a b) n)) (y n))
+		        (:instance divides-mod-n (k (gcd (mod (* a b) n) n)) (m (* a b)))
+                        (:instance gcd-divides (x (mod (* a b) n)) (y n))
+			(:instance divides-gcd (d (gcd (mod (* a b) n) n)) (x (* a b)) (y n))
+			(:instance divides-leq (x (gcd (mod (* a b) n) n)) (y 1))))))
 
 (defun rel-primes-aux (k n)
   (if (zp k)
       ()
-    (if (= (g-c-d k n) 1)
+    (if (= (gcd k n) 1)
         (append (rel-primes-aux (1- k) n) (list k))
       (rel-primes-aux (1- k) n))))
 
@@ -1435,7 +1436,7 @@
                 (posp j)
 		(<= j k))
 	   (iff (member j (rel-primes-aux k n))
-	        (= (g-c-d j n) 1))))
+	        (= (gcd j n) 1))))
 
 (local-defthmd member-rel-primes-aux-2
   (implies (and (posp k)
@@ -1448,7 +1449,7 @@
 	   (iff (member j (rel-primes-aux k n))
 	        (and (posp j)
 		     (<= j k)
-		     (= (g-c-d j n) 1))))
+		     (= (gcd j n) 1))))
   :hints (("Goal" :use (member-rel-primes-aux-1 member-rel-primes-aux-2))))
 
 (local-defthmd member-rel-primes-1
@@ -1456,29 +1457,29 @@
 	   (iff (member k (rel-primes n))
 	        (and (posp k)
 		     (<= k n)
-		     (= (g-c-d k n) 1))))
+		     (= (gcd k n) 1))))
   :hints (("Goal" :use ((:instance member-rel-primes-aux (k n) (j k))))))
 
-(defthm g-c-d-n-n
+(defthm gcd-n-n
   (implies (posp n)
-           (equal (g-c-d n n) n))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd n n) n))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthmd member-rel-primes
   (implies (and (posp n) (> n 1))
 	   (iff (member k (rel-primes n))
 	        (and (posp k)
 		     (< k n)
-		     (= (g-c-d k n) 1))))
+		     (= (gcd k n) 1))))
   :hints (("Goal" :in-theory (disable member-rel-primes-aux-<=) :use (member-rel-primes-1))))
 
-(defthm g-c-d-1
+(defthm gcd-1
   (implies (posp n)
-           (equal (g-c-d 1 n)
+           (equal (gcd 1 n)
 	          1))
-  :hints (("Goal" :use ((:instance g-c-d-divides (x 1) (y n))
-                        (:instance g-c-d-pos (x 1) (y n))
-                        (:instance divides-leq (x (g-c-d 1 n)) (y 1))))))
+  :hints (("Goal" :use ((:instance gcd-divides (x 1) (y n))
+                        (:instance gcd-pos (x 1) (y n))
+                        (:instance divides-leq (x (gcd 1 n)) (y 1))))))
 
 (local-defthm member-1-rel-primes-aux
   (implies (and (posp n) (posp k) (<= k n))
@@ -1534,10 +1535,10 @@
 	          x))
   :hints (("Goal" :use ((:instance member-rel-primes (k x))))))
 
-(defthm g-c-d-0
+(defthm gcd-0
   (implies (posp n)
-           (equal (g-c-d 0 n) n))
-  :hints (("Goal" :in-theory (enable g-c-d))))
+           (equal (gcd 0 n) n))
+  :hints (("Goal" :in-theory (enable gcd))))
 
 (defthm z*-closed
   (implies (and (posp n) (> n 1)
@@ -1548,7 +1549,7 @@
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k (z*-op x y n)))
 			(:instance mod-prod-rel-prime (a x) (b y))
-			(:instance g-c-d-divides (x (* x y)) (y n))))))
+			(:instance gcd-divides (x (* x y)) (y n))))))
 
 (defthm z*-assoc
   (implies (and (posp n)
@@ -1560,38 +1561,38 @@
   :hints (("Goal" :use ((:instance member-rel-primes (k x))
                         (:instance member-rel-primes (k y))
                         (:instance member-rel-primes (k z))
-			(:instance mod-mod-times (b x) (a (* y z)))
-			(:instance mod-mod-times (b z) (a (* x y)))))))
+			(:instance rtl::mod-mod-times (b x) (a (* y z)) (n n))
+			(:instance rtl::mod-mod-times (b z) (a (* x y)) (n n))))))
 
-;; The definition of z*-inv is based on the following lemma from books/projects/quadratic-reciprocity/euclid.lisp"
+;; The definition of z*-inv is based on the following lemma from books/projects/numbers/euclid.lisp"
 
-(defthm g-c-d-linear-combination
+(defthm gcd-linear-combination
     (implies (and (integerp x)
 		  (integerp y))
-	     (= (+ (* (r-int x y) x)
-		   (* (s-int x y) y))
-		(g-c-d x y)))
+	     (= (+ (* (r x y) x)
+		   (* (s x y) y))
+		(gcd x y)))
     :rule-classes ())
 
-(defun z*-inv (x n) (mod (r-int x n) n))
+(defun z*-inv (x n) (mod (r x n) n))
 
 (local-defthm hack
   (implies (and (integerp x)
                 (integerp n)
-                (equal (+ (* n (s-int x n)) (* x (r-int x n)))
+                (equal (+ (* n (s x n)) (* x (r x n)))
                        1))
-           (equal (+ 1 (- (* n (s-int x n))))
-	          (* x (r-int x n)))))
+           (equal (+ 1 (- (* n (s x n))))
+	          (* x (r x n)))))
 
 (local-defthmd z*-inverse-1
   (implies (and (posp n) (> n 1)
                 (member-equal x (rel-primes n)))
 	   (equal (z*-op (z*-inv x n) x n) 1))
   :hints (("Goal" :use (hack
-		        (:instance g-c-d-linear-combination (y n))
+		        (:instance gcd-linear-combination (y n))
                         (:instance member-rel-primes (k x))
-			(:instance mod-mod-times (a (r-int x n)) (b x))
-                        (:instance mod-mult (m 1) (a (- (s-int x n))))))))
+			(:instance rtl::mod-mod-times (a (r x n)) (b x) (n n))
+                        (:instance acl2::mod-mult (m 1) (a (- (s x n))) (n n))))))
 
 (local-defthmd z*-inverse-2
   (implies (and (posp n) (> n 1)
@@ -1599,11 +1600,11 @@
 		(posp k)
 		(divides k (z*-inv x n))
 		(divides k n))
-	  (and (divides k (* (r-int x n) x))
-	       (divides k (* (s-int x n) n))))
+	  (and (divides k (* (r x n) x))
+	       (divides k (* (s x n) n))))
   :hints (("Goal" :in-theory (enable divides)
                   :use ((:instance member-rel-primes (k x))
-                        (:instance divides-mod-n (m (r-int x n)))))))
+                        (:instance divides-mod-n (m (r x n)))))))
 
 (local-defthmd z*-inverse-3
   (implies (and (posp n) (> n 1)
@@ -1613,20 +1614,20 @@
 		(divides k n))
 	  (divides k 1))
   :hints (("Goal" :use (z*-inverse-2
-		        (:instance divides-sum (x k) (y (* (r-int x n) x)) (z (* (s-int x n) n)))
+		        (:instance divides-sum (x k) (y (* (r x n) x)) (z (* (s x n) n)))
 		        (:instance member-rel-primes (k x))
-			(:instance g-c-d-linear-combination (y n))
-                        (:instance divides-mod-n (m (r-int x n)))))))
+			(:instance gcd-linear-combination (y n))
+                        (:instance divides-mod-n (m (r x n)))))))
 
 (local-defthmd z*-inverse-4
   (implies (and (posp n) (> n 1)
                 (member-equal x (rel-primes n)))
-	   (equal (g-c-d (z*-inv x n) n) 1))
-  :hints (("Goal" :use ((:instance z*-inverse-3 (k (g-c-d (z*-inv x n) n)))
-                        (:instance divides-leq (x (g-c-d (z*-inv x n) n)) (y 1))
-		        (:instance g-c-d-pos (x (z*-inv x n)) (y n))
+	   (equal (gcd (z*-inv x n) n) 1))
+  :hints (("Goal" :use ((:instance z*-inverse-3 (k (gcd (z*-inv x n) n)))
+                        (:instance divides-leq (x (gcd (z*-inv x n) n)) (y 1))
+		        (:instance gcd-pos (x (z*-inv x n)) (y n))
 		        (:instance member-rel-primes (k x))
-			(:instance g-c-d-divides (x (z*-inv x n)) (y n))))))
+			(:instance gcd-divides (x (z*-inv x n)) (y n))))))
 
 (local-defthmd z*-inverse-5
   (implies (and (posp n) (> n 1)
@@ -2787,11 +2788,11 @@
 
 (defmacro defsubgroup (name args cond elts)
   (let ((g (car (last args)))
-        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "RTL"))
-        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "RTL"))
-        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "RTL"))
-        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "RTL"))
-        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "RTL")))
+        (non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "DM"))
+        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
+        (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "DM"))
+        (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "DM"))
+        (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "DM")))
     `(encapsulate ()
        (defthm ,non-nil-name
          (implies ,cond (not (member-equal () ,elts)))
@@ -3272,7 +3273,7 @@
   (implies (and (groupp g) (in a g) (natp n))
            (equal (power a n g) (power a (mod n (ord a g)) g)))
   :hints (("Goal" :use (ord<=order ord-power
-                        (:instance mod-def (x n) (y (ord a g)))
+                        (:instance rtl::mod-def (x n) (y (ord a g)))
 			(:instance power* (n (ord a g)) (m (fl (/ n (ord a g)))))
 			(:instance power+ (m (* (ord a g) (fl (/ n (ord a g))))) (n (mod n (ord a g))))))))
 

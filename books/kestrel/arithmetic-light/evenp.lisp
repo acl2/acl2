@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function evenp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 
 ;; See also even-and-oddp.lisp.  TODO: move some of that material here.
 
-(local (include-book "expt"))
+;(local (include-book "expt"))
 (local (include-book "times"))
 (local (include-book "mod"))
 (local (include-book "mod-and-expt"))

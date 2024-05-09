@@ -16,7 +16,8 @@
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-;; If this causes problems, you may want to include [books]/kestrel/lists-light/reverse.
+;; If this causes problems, you may want to include community book
+;; kestrel/lists-light/reverse.
 (in-theory (disable reverse))
 
 (defthm stringp-of-reverse

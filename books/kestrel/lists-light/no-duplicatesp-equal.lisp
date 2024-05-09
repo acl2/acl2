@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;See also the rule no-duplicatesp-equal-of-remove-duplicates-equal.
+
 (local (include-book "member-equal"))
 (local (include-book "intersection-equal"))
 
@@ -64,10 +66,16 @@
               (not (intersection-equal x y))))
   :hints (("Goal" :in-theory (enable append no-duplicatesp-equal))))
 
+(local
+  (defthm not-no-duplicatesp-equal-of-union-equal-when-not-no-duplicatesp-equal-arg2
+    (implies (not (no-duplicatesp-equal y))
+             (not (no-duplicatesp-equal (union-equal x y))))))
+
+;; could try to improve this, but consider (union-equal '(1 1) '(1)) = '(1).
 (defthm no-duplicatesp-equal-of-union-equal
-  (implies (and (no-duplicatesp-equal x)
-                (no-duplicatesp-equal y))
-           (no-duplicatesp-equal (union-equal x y)))
+  (implies (no-duplicatesp-equal x)
+           (equal (no-duplicatesp-equal (union-equal x y))
+                  (no-duplicatesp-equal y)))
   :hints (("Goal" :in-theory (enable union-equal no-duplicatesp-equal))))
 
 (defthm no-duplicatesp-equal-of-set-difference-equal

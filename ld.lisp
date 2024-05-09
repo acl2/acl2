@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -56,8 +56,7 @@
 ; Warning:  If you change the default prompt format, be sure to change it
 ; in eval-event-lst, where we print it by hand.
 
-  (let ((prompt-memo (and (f-boundp-global 'prompt-memo state)
-                          (f-get-global 'prompt-memo state))))
+  (let ((prompt-memo (f-get-global 'prompt-memo state)))
     (cond
      ((and prompt-memo
            (equal (access ld-prompt-memo prompt-memo :current-package)
@@ -159,24 +158,64 @@
    (set-timer 'proof-tree-time '(0) state)
    (set-timer 'other-time '(0) state)))
 
+(defun world-extended-p (old-wrld wrld)
+
+; This function returns nil if wrld = old-wrld; :trivial if wrld extends
+; old-wrld only with essentially no-op tuples; and t otherwise.  Note that it
+; would be extremely rare to be inside certify-book here, since we are doing
+; this in support of adding a command-landmark.
+
+; We considered asserting that old-wrld starts with (command-landmark
+; global-value . _), at least if we're not in the boot-strap.  But we have seen
+; that fail when make-event calls ld, as in
+; books/kestrel/utilities/verify-guards-program-tests.lisp.
+
+  (cond ((endp wrld)
+         (er hard 'world-extended-p1
+             "Implementation error: Unexpected empty world!"))
+        ((eq old-wrld wrld)
+
+; The EQ call just above is of course a guard violation.  We probably could use
+; equal without much loss of efficiency.
+
+         :trivial)
+        (t
+
+; See the Essay on Fast-cert for discussion of this case.
+
+         (let ((trip2 (car wrld)))
+           (case-match trip2
+             (('ACL2-SYSTEM-TABLE 'TABLE-ALIST ('EMPTY-EVENT-KEY . &))
+; Added by maybe-add-event-landmark.
+              (world-extended-p old-wrld (cdr wrld)))
+             (('EVENT-LANDMARK 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (('EVENT-INDEX 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (('TOP-LEVEL-CLTL-COMMAND-STACK 'GLOBAL-VALUE . &)
+              (world-extended-p old-wrld (cdr wrld)))
+             (& t))))))
+
 (defun maybe-add-command-landmark (old-wrld old-default-defun-mode form
                                             trans-ans state)
 
 ; Old-wrld is the world before the trans-evaluation of form.  That
 ; trans-evaluation returned trans-ans, which is thus of the form (stobjs-out
-; . valx).  If valx contains a state (then it must in fact contain the state
-; state), and the current world of that state is different from old-wrld and
-; does not end with a command landmark, we add a command landmark for form.
+; . valx).  If stobjs-out suggests that valx contains a state (so, it must in
+; fact contain the ACL2 state), and the current world of that state does not
+; end with a command landmark and is essentially different from old-wrld, we
+; add a command landmark for form.
 
 ; We pass in old-default-defun-mode as the default-defun-mode of old-wrld.
 ; This way, we can compute that value at a time that old-wrld is still
 ; installed, so that the corresponding getprop will be fast.
 
-  (let ((wrld (w state)))
-    (cond ((and (member-eq 'state (car trans-ans))
-                (not (and (eq (caar wrld) 'command-landmark)
-                          (eq (cadar wrld) 'global-value)))
-                (not (equal old-wrld wrld)))
+  (let* ((wrld (w state))
+         (ext (and (member-eq 'state (car trans-ans))
+                   (not (and (eq (caar wrld) 'command-landmark)
+                             (eq (cadar wrld) 'global-value)))
+                   (world-extended-p old-wrld wrld))))
+    (cond ((eq ext t)
            (er-progn
             (get-and-chk-last-make-event-expansion
 
@@ -215,6 +254,18 @@
                      wrld)
                     state)
              (value nil))))
+          ((eq ext :trivial)
+
+; See the Essay on Fast-cert; but here is a summary of the current situation.
+; In this case, the world was extended only to support the possibility that we
+; are constructing the certification world for the later use of fast-cert mode,
+; by extending the top-level-cltl-command-stack when encountering redundant
+; events within a progn or the second pass of an encapsulate.  But there were
+; no actual events added to the world, so there's no such information that is
+; appropriate to record.
+
+           (pprogn (set-w! old-wrld state)
+                   (value nil)))
           (t (value nil)))))
 
 (defun replace-last-cdr (x val)
@@ -351,6 +402,9 @@
                      (value pair)))
           (ld-missing-input-ok
            (er-progn (chk-ld-missing-input-ok val ctx state)
+                     (value pair)))
+          (ld-always-skip-top-level-locals
+           (er-progn (chk-ld-always-skip-top-level-locals val ctx state)
                      (value pair)))
           (ld-pre-eval-filter
            (er-progn (chk-ld-pre-eval-filter val ctx state)
@@ -496,19 +550,14 @@
                  (initial-useless-runes standard-oi0
                                         useless-runes-r/w useless-runes-r/w-p
                                         t 'ld state))))
-      (let* ((new-alist
+      (let ((new-alist
 
 ; We always put a useless-runes pair into the result, even if useless-runes is
 ; nil, since we do not want to inherit useless-runes (via the state global's
 ; value) from a superior call of certify-book (which for example can call
 ; wormhole, and hence ld, during a proof) or ld.
 
-              (put-assoc-eq 'useless-runes useless-runes new-alist))
-             (new-alist (cond ((eq ld-missing-input-ok :missing)
-                               (put-assoc-eq 'ld-verbose nil
-                                             (put-assoc-eq 'ld-prompt nil
-                                                           new-alist)))
-                              (t new-alist))))
+             (put-assoc-eq 'useless-runes useless-runes new-alist)))
         (value (cons new-alist channel-closing-alist)))))
    (t (mv-let
        (erp pair state)
@@ -518,46 +567,45 @@
         (erp (pprogn
               (close-channels channel-closing-alist state)
               (mv t nil state)))
+        ((null pair)
+         (assert$ (eq  (caar alist) 'standard-oi)
+                  (pprogn
+                   (close-channels channel-closing-alist state)
+                   (mv nil nil state))))
         (t
-         (mv-let
-          (pair ld-missing-input-ok)
-          (cond ((null pair)
-                 (assert$ (eq  (caar alist) 'standard-oi)
-                          (mv (cons 'standard-oi nil) :missing)))
-                (t (mv pair ld-missing-input-ok)))
-          (chk-acceptable-ld-fn1
-           (cdr alist) ld-missing-input-ok ctx state
-           (cond ((and (null co-string)
-                       (or (eq (car pair) 'standard-co)
-                           (eq (car pair) 'proofs-co))
-                       (stringp (cdr (car alist))))
-                  (extend-pathname
-                   (f-get-global 'connected-book-directory state)
-                   (cdr (car alist))
-                   state))
-                 (t co-string))
-           (cond ((and (null co-channel)
-                       (or (eq (car pair) 'standard-co)
-                           (eq (car pair) 'proofs-co))
-                       (stringp (cdr (car alist))))
-                  (cdr pair))
-                 (t co-channel))
-           (cons pair new-alist)
-           (cond
-            ((eq (car pair) 'standard-oi)
-             (cond ((stringp (cdr (car alist)))
-                    (cons (cons (cdr pair) 'oi) channel-closing-alist))
-                   ((and (consp (cdr (car alist)))
-                         (stringp (cdr (last (cdr (car alist))))))
-                    (cons (cons (cdr (last (cdr pair))) 'oi)
-                          channel-closing-alist))
-                   (t channel-closing-alist)))
-            ((and (or (eq (car pair) 'standard-co)
-                      (eq (car pair) 'proofs-co))
-                  (stringp (cdr (car alist))))
-             (cons (cons (cdr pair) 'co) channel-closing-alist))
-            (t channel-closing-alist))
-           standard-oi0))))))))
+         (chk-acceptable-ld-fn1
+          (cdr alist) ld-missing-input-ok ctx state
+          (cond ((and (null co-string)
+                      (or (eq (car pair) 'standard-co)
+                          (eq (car pair) 'proofs-co))
+                      (stringp (cdr (car alist))))
+                 (extend-pathname
+                  (f-get-global 'connected-book-directory state)
+                  (cdr (car alist))
+                  state))
+                (t co-string))
+          (cond ((and (null co-channel)
+                      (or (eq (car pair) 'standard-co)
+                          (eq (car pair) 'proofs-co))
+                      (stringp (cdr (car alist))))
+                 (cdr pair))
+                (t co-channel))
+          (cons pair new-alist)
+          (cond
+           ((eq (car pair) 'standard-oi)
+            (cond ((stringp (cdr (car alist)))
+                   (cons (cons (cdr pair) 'oi) channel-closing-alist))
+                  ((and (consp (cdr (car alist)))
+                        (stringp (cdr (last (cdr (car alist))))))
+                   (cons (cons (cdr (last (cdr pair))) 'oi)
+                         channel-closing-alist))
+                  (t channel-closing-alist)))
+           ((and (or (eq (car pair) 'standard-co)
+                     (eq (car pair) 'proofs-co))
+                 (stringp (cdr (car alist))))
+            (cons (cons (cdr pair) 'co) channel-closing-alist))
+           (t channel-closing-alist))
+          standard-oi0)))))))
 
 (defun chk-acceptable-ld-fn (alist standard-oi0 state)
 
@@ -658,6 +706,8 @@
          (f-put-global 'ld-prompt (cdar alist) state))
         (ld-missing-input-ok
          (f-put-global 'ld-missing-input-ok (cdar alist) state))
+        (ld-always-skip-top-level-locals
+         (f-put-global 'ld-always-skip-top-level-locals (cdar alist) state))
         (ld-pre-eval-filter
          (if (and (f-boundp-global 'ld-pre-eval-filter state); for boot-strap
                   (eq (f-get-global 'ld-pre-eval-filter state) :illegal-state))
@@ -718,6 +768,8 @@
               (f-get-global 'ld-prompt state))
         (cons 'ld-missing-input-ok
               (f-get-global 'ld-missing-input-ok state))
+        (cons 'ld-always-skip-top-level-locals
+              (f-get-global 'ld-always-skip-top-level-locals state))
         (cons 'ld-pre-eval-filter
               (f-get-global 'ld-pre-eval-filter state))
         (cons 'ld-pre-eval-print
@@ -871,29 +923,36 @@
 ; be (:kons x y).
 
   (pprogn
-   (iprint-oracle-updates state) ; even before the read
-   (mv-let (eofp val state)
-           (read-standard-oi state)
-           (pprogn
-            (cond ((int= (f-get-global 'ld-level state) 1)
-                   (let ((last-index (iprint-last-index state)))
-                     (cond ((> last-index (iprint-soft-bound state))
-                            (rollover-iprint-ar nil last-index state))
-                           (t state))))
-                  (t state))
-            (cond (eofp (mv t nil nil nil state))
-                  ((keywordp val)
-                   (mv-let (erp keyp form state)
-                           (ld-read-keyword-command val state)
-                           (mv nil erp keyp form state)))
-                  ((stringp val)
-                   (let ((upval (string-upcase val)))
-                     (cond ((find-non-hidden-package-entry
-                             upval
-                             (global-val 'known-package-alist (w state)))
-                            (mv nil nil nil `(in-package ,upval) state))
-                           (t (mv nil nil nil val state)))))
-                  (t (mv nil nil nil (ld-fix-command val) state)))))))
+
+; We need the following call, or the corresponding one in waterfall-step, or
+; both, for successful certification of community book
+; books/demos/brr-test-book.
+
+   (brr-evisc-tuple-oracle-update state)
+   (prog2$ (and (int= (f-get-global 'ld-level state) 1)
+                (semi-initialize-brr-wormhole state))
+           (mv-let (eofp val state)
+             (read-standard-oi state)
+             (pprogn
+              (cond ((int= (f-get-global 'ld-level state) 1)
+                     (let ((last-index (iprint-last-index state)))
+                       (cond ((> last-index (iprint-soft-bound state))
+                              (rollover-iprint-ar nil last-index state))
+                             (t state))))
+                    (t state))
+              (cond (eofp (mv t nil nil nil state))
+                    ((keywordp val)
+                     (mv-let (erp keyp form state)
+                       (ld-read-keyword-command val state)
+                       (mv nil erp keyp form state)))
+                    ((stringp val)
+                     (let ((upval (string-upcase val)))
+                       (cond ((find-non-hidden-package-entry
+                               upval
+                               (global-val 'known-package-alist (w state)))
+                              (mv nil nil nil `(in-package ,upval) state))
+                             (t (mv nil nil nil val state)))))
+                    (t (mv nil nil nil (ld-fix-command val) state))))))))
 
 (defun ld-print-command (keyp form col state)
   (with-base-10
@@ -963,39 +1022,95 @@
   (cond
    ((and (raw-mode-p state)
          (bad-lisp-objectp x))
-    (if (not (eq channel *standard-co*))
-        (error "Attempted to print LD results to other than *standard-co*!"))
-    (format t "[Note:  Printing non-ACL2 result.]")
-    (terpri)
-    (cond ((and (cdr stobjs-out)
-                (true-listp x)
-                (true-listp raw-x)
-                (let ((len (length stobjs-out)))
-                  (and (= (length x) len)
-                       (= (length raw-x) len))))
+    (let ((str (get-output-stream-from-channel channel)))
+      (format str "[Note:  Printing non-ACL2 result.]")
+      (terpri str)
+      (cond ((and (cdr stobjs-out)
+                  (true-listp x)
+                  (true-listp raw-x)
+                  (let ((len (length stobjs-out)))
+                    (and (= (length x) len)
+                         (= (length raw-x) len))))
 
 ; We eviscerate each bad-lisp-objectp in x-raw that is not already eviscerated
 ; in the corresponding position of x.
 
-           (princ "(")
-           (loop for y in x
-                 as y-raw in raw-x
-                 as i from 1
-                 with col+1 = (1+ col)
-                 do
-                 (progn (when (not (= i 1))
-                          (fms "~t0" (list (cons #\0 col+1))
-                               channel state nil))
-                        (cond ((and (not (and (consp y)
-                                              (evisceratedp t y)))
-                                    (bad-lisp-objectp y-raw))
-                               (prin1 y-raw))
-                              (t (ppr y col channel state t)))))
-           (princ ")"))
-          (t (prin1 raw-x)))
+             (princ "(" str)
+             (loop with col+1 = (1+ col)
+                   for y in x
+                   as y-raw in raw-x
+                   as i from 1
+                   do
+                   (progn (when (not (= i 1))
+                            (fms "~t0" (list (cons #\0 col+1))
+                                 channel state nil))
+                          (cond ((and (not (and (consp y)
+                                                (evisceratedp t y)))
+                                      (bad-lisp-objectp y-raw))
+                                 (prin1 y-raw str))
+                                (t (ppr y col channel state t)))))
+             (princ ")" str))
+            (t
+             (prin1 raw-x str))))
     state)
    (t
     (ppr x col channel state t))))
+
+(defun evisceration-stobj-mark (name val)
+
+; Warning: Keep this in sync with evisceration-stobj-mark-simple.
+
+; NAME is a stobj name or :DF.  We return an evisceration mark that prints as
+; ``<name>'' if NAME is a stobj name and with #d notation if name is :DF.  We
+; make a special case out of STATE.
+
+  (cond
+   ((eq name 'STATE)
+    *evisceration-state-mark*)
+   ((eq name :DF)
+
+; Val comes from a list (see evisceration-stobj-marks1), so val is not a :df.
+; Normally val should be a rational, but we check that; perhaps in raw-mode one
+; could arrange that val is a double-float, for example.
+
+    (and (rationalp val)
+         (cons *evisceration-mark*
+               (concatenate 'string "#d" (df-string (to-df val))))))
+   (t
+    (cons *evisceration-mark* (stobj-print-name name)))))
+
+(defun evisceration-stobj-marks1 (stobjs-flags lst)
+
+; See the comment in eviscerate-stobjs, below.
+
+  (cond ((endp stobjs-flags) nil)
+        ((car stobjs-flags)
+         (cons (evisceration-stobj-mark (car stobjs-flags) (car lst))
+               (evisceration-stobj-marks1 (cdr stobjs-flags) (cdr lst))))
+        (t
+         (cons nil
+               (evisceration-stobj-marks1 (cdr stobjs-flags) (cdr lst))))))
+
+(defun evisceration-stobj-marks (stobjs-flags lst)
+
+; Lst is a list of values corresponding to stobjs-flags except that if
+; stobjs-flags is a singleton, then lst is a single value.
+
+  (cond ((equal stobjs-flags *error-triple-sig*)
+         *evisceration-error-triple-marks*)
+        ((equal stobjs-flags '(nil)) '(nil))
+        ((equal stobjs-flags '(:df))
+
+; In this case, lst is a single value.  We need this case so that we don't cdr
+; it in evisceration-stobj-marks1!  Normally lst is a rational, but in raw mode
+; it might be a double-float, in which case we don't want to eviscerate it.
+
+         (and (rationalp lst)
+              (list (evisceration-stobj-mark :df lst))))
+        ((null (cdr stobjs-flags))
+         (assert$ (symbolp lst)
+                  (list (evisceration-stobj-mark (car stobjs-flags) lst))))
+        (t (evisceration-stobj-marks1 stobjs-flags lst))))
 
 (defun ld-print-results (trans-ans state)
 
@@ -1035,7 +1150,7 @@
              (hiding-cars (cadddr evisc-tuple)))
         (mv-let
          (eviscerated-valx state)
-         (eviscerate-stobjs-top (evisceration-stobj-marks stobjs-out nil)
+         (eviscerate-stobjs-top (evisceration-stobj-marks stobjs-out valx)
                                 valx
                                 print-level print-length evisc-alist
                                 (table-alist 'evisc-table (w state))
@@ -1044,7 +1159,8 @@
          (cond
           ((and (eq flg :command-conventions)
                 (ld-error-triples state)
-                (equal stobjs-out *error-triple-sig*))
+                (or (equal stobjs-out *error-triple-sig*)
+                    (equal stobjs-out *error-triple-df-sig*)))
 
 ; We get here if we are following command-conventions and the form
 ; returned triple (mv erp val state).  Note that erp must be a
@@ -1055,14 +1171,14 @@
              state)
             (t
              (pprogn
-              (princ$ (if (stringp (f-get-global 'triple-print-prefix state))
-                          (f-get-global 'triple-print-prefix state)
-                        "")
-                      output-channel state)
+              (if (stringp (f-get-global 'triple-print-prefix state))
+                  (princ$ (f-get-global 'triple-print-prefix state)
+                          output-channel
+                          state)
+                state)
 
 ; The following raw code is identical to the logic code below except that the
-; raw code handles infix and raw-mode printing (which are, at the moment,
-; entirely extra-logical).
+; raw code handles raw-mode printing (which is entirely extra-logical).
 
               #-acl2-loop-only
               (let ((col
@@ -1070,20 +1186,8 @@
                          (length (f-get-global 'triple-print-prefix state))
                        0))
                     (evg (cadr eviscerated-valx)))
-                (cond
-                 #+acl2-infix
-                 ((and (live-state-p state)
-                       (output-in-infixp state))
-                  (print-infix
-                   evg
-                   nil
-                   (- (fmt-hard-right-margin state) col)
-                   0 col
-                   (get-output-stream-from-channel output-channel)
-                   t)
-                  *the-live-state*)
-                 (t (ppr? evg (cadr valx) stobjs-out col output-channel
-                          state))))
+                (ppr? evg (cadr valx) stobjs-out col output-channel
+                      state))
               #+acl2-loop-only
               (ppr (cadr eviscerated-valx)
                    (if (stringp (f-get-global 'triple-print-prefix state))
@@ -1093,20 +1197,7 @@
               (newline output-channel state)))))
           (t (pprogn
               #-acl2-loop-only
-              (cond
-               #+acl2-infix
-               ((and (live-state-p state)
-                     (output-in-infixp state))
-                (print-infix
-                 eviscerated-valx
-                 nil
-                 (fmt-hard-right-margin state)
-                 0 0
-                 (get-output-stream-from-channel output-channel)
-                 t)
-                *the-live-state*)
-               (t (ppr? eviscerated-valx valx stobjs-out 0 output-channel
-                        state)))
+              (ppr? eviscerated-valx valx stobjs-out 0 output-channel state)
               #+acl2-loop-only
               (ppr eviscerated-valx 0 output-channel state t)
               (newline output-channel state))))))))))
@@ -1191,11 +1282,9 @@
   nil)
 
 (defun adjust-ld-history (x state)
-  (declare (xargs :stobjs state
-                  :guard (and (or (and (integerp x)
+  (declare (xargs :guard (and (or (and (integerp x)
                                        (not (zerop x)))
                                   (booleanp x))
-                              (f-boundp-global 'ld-history state)
                               (consp (f-get-global 'ld-history state)))))
   (let* ((ld-history (f-get-global 'ld-history state))
          (len (len ld-history))
@@ -1263,8 +1352,7 @@
 
 (defun extend-ld-history (input error-flg trans-ans state)
   (declare (xargs :stobjs state
-                  :guard (and (f-boundp-global 'ld-history state)
-                              (consp (f-get-global 'ld-history state)))))
+                  :guard (consp (f-get-global 'ld-history state))))
   (let* ((ld-history (f-get-global 'ld-history state))
          (new-entry (make ld-history-entry
                           :input input
@@ -1396,7 +1484,10 @@
                             (cond
                              (error-flg (mv t nil state))
                              ((and (ld-error-triples state)
-                                   (equal (car trans-ans) *error-triple-sig*)
+                                   (or (equal (car trans-ans)
+                                              *error-triple-sig*)
+                                       (equal (car trans-ans)
+                                              *error-triple-df-sig*))
                                    (car (cdr trans-ans)))
                               (mv t nil state))
                              (t (er-progn
@@ -1423,41 +1514,49 @@
                         (mv :return :exit state))
                        (t (pprogn
                            (ld-print-results trans-ans state)
-                           (cond
-                            ((and (ld-error-triples state)
-                                  (not (eq (ld-error-action state) :continue))
-                                  (equal (car trans-ans) *error-triple-sig*)
-                                  (let ((val (cadr (cdr trans-ans))))
-                                    (and (consp val)
-                                         (eq (car val) :stop-ld))))
-                             (mv :return
-                                 (list* :stop-ld
-                                        (f-get-global 'ld-level state)
-                                        (cdr (cadr (cdr trans-ans))))
-                                 state))
-                            (t
+                           (let ((action (ld-error-action state)))
+                             (cond
+                              ((and (ld-error-triples state)
+                                    (not (eq action :continue))
+                                    (equal (car trans-ans) *error-triple-sig*)
+                                    (let ((val (cadr (cdr trans-ans))))
+                                      (and (consp val)
+                                           (eq (car val) :stop-ld))))
+                               (cond
+                                ((and (consp action)
+                                      (eq (car action) :exit))
+                                 (mv action (good-bye-fn (cadr action)) state))
+                                (t
+                                 (mv :return
+                                     (list* :stop-ld
+                                            (f-get-global 'ld-level state)
+                                            (cdr (cadr (cdr trans-ans))))
+                                     state))))
+                              (t
 
 ; We make the convention of checking the new-namep filter immediately after
 ; we have successfully eval'd a form (rather than waiting for the next form)
 ; so that if the user has set the filter up he gets a satisfyingly
 ; immediate response when he introduces the name.
 
-                             (let ((filter (ld-pre-eval-filter state)))
-                               (cond
-                                ((and (not (eq filter :all))
-                                      (not (eq filter :query))
-                                      (not (eq filter :illegal-state))
-                                      (not (new-namep filter
-                                                      (w state))))
-                                 (er-progn
+                               (let ((filter (ld-pre-eval-filter state)))
+                                 (cond
+                                  ((and (not (eq filter :all))
+                                        (not (eq filter :query))
+                                        (not (eq filter :illegal-state))
+                                        (not (new-namep filter
+                                                        (w state))))
+                                   (er-progn
 
 ; We reset the filter to :all even though we are about to exit this LD
 ; with :return.  This just makes things work if "this LD" is the top-level
 ; one and LP immediately reenters.
 
-                                  (set-ld-pre-eval-filter :all state)
-                                  (mv :return :filter state)))
-                                (t (mv :continue nil state)))))))))))))))))))))))
+                                    (set-ld-pre-eval-filter :all state)
+                                    (mv :return :filter state)))
+                                  (t (mv :continue
+                                         nil
+                                         state))))))))))))))))))))))))
 
 (defun ld-loop (state)
 
@@ -1480,7 +1579,6 @@
 ; or any other wormhole; hence the condition above.
 
             (setq *trace-level* 0))
-          (setq *hcomp-loop$-alist* nil) ; could be modified in raw-mode
           (ld-read-eval-print state))
    (cond ((eq signal :continue)
           (ld-loop state))
@@ -1542,8 +1640,7 @@
                                   standard-oi0)
                                  *directory-separator-string*)
                     os 'update-cbd state)))
-             (f-put-global
-              'connected-book-directory
+             (set-cbd-state
               (if (absolute-pathname-string-p filename-dir nil os)
                   filename-dir
                 (our-merge-pathnames old-cbd filename-dir))
@@ -1626,8 +1723,7 @@
                        (cons #\l (f-get-global 'ld-level state))
                        (cons #\c (f-get-global 'connected-book-directory
                                                state))
-                       (cons #\b (f-get-global 'system-books-dir
-                                               state)))
+                       (cons #\b (project-dir-alist (w state))))
                  (standard-co state)
                  state
                  (ld-evisc-tuple state))))))
@@ -1663,33 +1759,36 @@
   (let* ((old-ld-level (f-get-global 'ld-level state))
          (new-ld-level (1+ old-ld-level))
          (old-cbd (f-get-global 'connected-book-directory state)))
-    (er-let*
-     ((pair (chk-acceptable-ld-fn alist standard-oi0 state)))
-     (let ((old-ld-specials-alist (f-get-ld-specials state))
-           (new-ld-specials-alist (car pair))
-           (channel-closing-alist (cdr pair)))
-       (if bind-flg
-           (acl2-unwind-protect
-            "ld-fn"
-            (pprogn
-             (f-put-global 'ld-level new-ld-level state)
-             (ld-fn-body standard-oi0 new-ld-specials-alist state))
-            (pprogn
+    (er-let* ((pair (chk-acceptable-ld-fn alist standard-oi0 state)))
+      (cond
+       ((null pair) ; missing input
+        (value :missing-input))
+       (t
+        (let ((old-ld-specials-alist (f-get-ld-specials state))
+              (new-ld-specials-alist (car pair))
+              (channel-closing-alist (cdr pair)))
+          (if bind-flg
+              (acl2-unwind-protect
+               "ld-fn"
+               (pprogn
+                (f-put-global 'ld-level new-ld-level state)
+                (ld-fn-body standard-oi0 new-ld-specials-alist state))
+               (pprogn
+                (f-put-global 'ld-level old-ld-level state)
+                (set-cbd-state old-cbd state)
+                (f-put-ld-specials old-ld-specials-alist t state)
+                (close-channels channel-closing-alist state))
+               (pprogn
+                (f-put-global 'ld-level old-ld-level state)
+                (set-cbd-state old-cbd state)
+                (f-put-ld-specials old-ld-specials-alist t state)
+                (close-channels channel-closing-alist state)))
+            (acl2-unwind-protect
+             "ld-fn"
+             (pprogn (f-put-global 'ld-level new-ld-level state)
+                     (ld-fn-body standard-oi0 new-ld-specials-alist state))
              (f-put-global 'ld-level old-ld-level state)
-             (f-put-global 'connected-book-directory old-cbd state)
-             (f-put-ld-specials old-ld-specials-alist t state)
-             (close-channels channel-closing-alist state))
-            (pprogn
-             (f-put-global 'ld-level old-ld-level state)
-             (f-put-global 'connected-book-directory old-cbd state)
-             (f-put-ld-specials old-ld-specials-alist t state)
-             (close-channels channel-closing-alist state)))
-         (acl2-unwind-protect
-          "ld-fn"
-          (pprogn (f-put-global 'ld-level new-ld-level state)
-                  (ld-fn-body standard-oi0 new-ld-specials-alist state))
-          (f-put-global 'ld-level old-ld-level state)
-          (f-put-global 'ld-level old-ld-level state)))))))
+             (f-put-global 'ld-level old-ld-level state)))))))))
 
 (defun ld-fn-alist (alist bind-flg state)
   (let* ((standard-oi (cdr (assoc 'standard-oi alist)))
@@ -1789,20 +1888,21 @@
                 (chk-acceptable-ld-fn alist standard-oi0 state)
                 (COND
                  (ERP (ACL2-UNWIND (1- *LD-LEVEL*) NIL) (MV ERP PAIR STATE))
-                 (T
+                 ((null pair) ; missing input
+                  (value :missing-input))
+                 (t
                   (let ((old-ld-specials-alist (f-get-ld-specials state))
                         (new-ld-specials-alist (car pair))
                         (channel-closing-alist (cdr pair)))
                     (PUSH-CAR
                      (CONS "ld-fn"
-                           (IF bind-flg
+                           (if bind-flg
                                (FUNCTION
                                 (LAMBDA
                                  NIL
                                  (pprogn
                                   (f-put-global 'ld-level old-ld-level state)
-                                  (f-put-global 'connected-book-directory
-                                                old-cbd state)
+                                  (set-cbd-state old-cbd state)
                                   (f-put-ld-specials old-ld-specials-alist
                                                      t ; update useless-runes
                                                      state)
@@ -1830,10 +1930,7 @@
                                                    new-ld-specials-alist state)
                                        (PROGN
                                         (WHEN bind-flg
-                                              (f-put-global
-                                               'connected-book-directory
-                                               old-cbd
-                                               state))
+                                              (set-cbd-state old-cbd state))
                                         (SETQ LD-ERP ERP)
                                         (SETQ LD-VAL VAL)
                                         NIL))))
@@ -1861,7 +1958,7 @@
 ; SETQ THROWN-VAL).  We make the convention that we always throw non-nil
 ; values to the tag so as to distinguish these two cases.
 
-                         #+akcl (si::RESET-STACK-LIMITS)
+                         #+gcl (si::RESET-STACK-LIMITS)
                          (COND ((EQ THROWN-VAL :ABORT)
 
 ; THROWN-VAL is always either NIL (meaning no throw occurred) or else the
@@ -1877,21 +1974,21 @@
 
 ; At *LD-LEVEL* = 1 we know *standard-co* is *STANDARD-OUTPUT*.
 
-                                       (PRINC "Abort to ACL2 top-level"
+                                       (PRINC "Abort to ACL2 top-level."
                                               *STANDARD-OUTPUT*)
                                        (TERPRI *STANDARD-OUTPUT*))
                                       (T
                                        (THROW 'LOCAL-TOP-LEVEL :ABORT))))
                                ((EQ THROWN-VAL :POP)
                                 (COND ((= *LD-LEVEL* 1)
-                                       (PRINC "Currently at ACL2 top-level"
+                                       (PRINC "Currently at ACL2 top-level."
                                               *STANDARD-OUTPUT*))
                                       (t
                                        (COND ((= *LD-LEVEL* 2)
-                                              (PRINC "Pop up to ACL2 top-level"
+                                              (PRINC "Pop up to ACL2 top-level."
                                                      *STANDARD-OUTPUT*))
                                              (t
-                                              (PRINC "Pop up one LD level"
+                                              (PRINC "Pop up one LD level."
                                                      *STANDARD-OUTPUT*)))
                                        (WHEN (NOT (EQ (LD-ERROR-ACTION STATE)
                                                       :ERROR))
@@ -1973,7 +2070,9 @@
       (cond (*load-compiled-stack*
              (error "It is illegal to call LD while loading a compiled book, ~
                      in this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
-                    (caar *load-compiled-stack*)))
+                    (book-name-to-filename (caar *load-compiled-stack*)
+                                           (w state)
+                                           'ld)))
             ((= *ld-level* 0)
              (return-from
               ld-fn
@@ -2008,6 +2107,9 @@
               (ld-redefinition-action 'same ld-redefinition-actionp)
               (ld-prompt 'same ld-promptp)
               (ld-missing-input-ok 'same ld-missing-input-okp)
+              (ld-always-skip-top-level-locals
+               'same
+               ld-always-skip-top-level-localsp)
               (ld-pre-eval-filter 'same ld-pre-eval-filterp)
               (ld-pre-eval-print 'same ld-pre-eval-printp)
               (ld-post-eval-print 'same ld-post-eval-printp)
@@ -2052,6 +2154,10 @@
                  nil)
              (if ld-missing-input-okp
                  (list `(cons 'ld-missing-input-ok ,ld-missing-input-ok))
+               nil)
+             (if ld-always-skip-top-level-localsp
+                 (list `(cons 'ld-always-skip-top-level-locals
+                              ,ld-always-skip-top-level-locals))
                nil)
              (if ld-pre-eval-filterp
                  (list `(cons 'ld-pre-eval-filter ,ld-pre-eval-filter))
@@ -2114,16 +2220,20 @@
        :ld-user-stobjs-modified-warning :same))
 
 (defun wormhole-prompt (channel state)
-  (fmt1 "Wormhole ~s0~sr ~@1~*2"
-        (list (cons #\0 (f-get-global 'current-package state))
-              (cons #\1 (defun-mode-prompt-string state))
-              (cons #\r
-                    #+:non-standard-analysis "(r)"
-                    #-:non-standard-analysis "")
-              (cons #\2
-                    (list "" ">" ">" ">"
-                          (make-list-ac (- (f-get-global 'ld-level state) 1) nil nil))))
-        0 channel state nil))
+  (the2s
+   #.*fixnat-type*
+   (fmt1 "Wormhole ~s0~sr ~@1~*2"
+         (list (cons #\0 (f-get-global 'current-package state))
+               (cons #\1 (defun-mode-prompt-string state))
+               (cons #\r
+                     #+:non-standard-analysis "(r)"
+                     #-:non-standard-analysis "")
+               (cons #\2
+                     (list "" ">" ">" ">"
+                           (make-list-ac (- (f-get-global 'ld-level state) 1)
+                                         nil
+                                         nil))))
+         0 channel state nil)))
 
 (defun reset-ld-specials-fn (reset-channels-flg state)
 
@@ -2299,38 +2409,44 @@
 ; Kwd is :ubt or :ubu.
 
   (let* ((wrld (w state))
-         (command-number-baseline
-          (access command-number-baseline-info
-                  (global-val 'command-number-baseline-info wrld)
-                  :current)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld kwd state)))
-             (cond ((if (eq kwd :ubt)
-                        (<= (access-command-tuple-number (cddar cmd-wrld))
-                            command-number-baseline)
-                      (< (access-command-tuple-number (cddar cmd-wrld))
-                         command-number-baseline))
-                    (cond
-                     ((let ((command-number-baseline-original
-                             (access command-number-baseline-info
-                                     (global-val 'command-number-baseline-info wrld)
-                                     :original)))
-                        (if (eq kwd :ubt)
-                            (<= (access-command-tuple-number (cddar cmd-wrld))
-                                command-number-baseline-original)
-                          (< (access-command-tuple-number (cddar cmd-wrld))
-                             command-number-baseline-original)))
-                      (er soft kwd "Can't undo into system initialization."))
-                     (t (er soft kwd
-                            "Can't undo into prehistory.  See :DOC ~
-                             reset-prehistory."))))
-                   ((and (eq kwd :ubu) (equal wrld cmd-wrld))
-                    (er soft kwd
-                        "Can't undo back to where we already are!"))
-                   (t
-                    (let ((pred-wrld (if (eq kwd :ubt)
-                                         (scan-to-command (cdr cmd-wrld))
-                                       cmd-wrld)))
-                      (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
+         (info (global-val 'command-number-baseline-info wrld))
+         (permanent-p (access command-number-baseline-info info :permanent-p))
+         (current (access command-number-baseline-info info :current)))
+    (er-let* ((cmd-wrld (er-decode-cd cd wrld kwd state))
+              (command-tuple-number (value (access-command-tuple-number
+                                            (cddar cmd-wrld)))))
+      (cond ((if (eq kwd :ubt)
+                 (<= command-tuple-number current)
+               (< command-tuple-number current))
+             (cond
+              ((let ((original (access command-number-baseline-info info
+                                       :original)))
+                 (if (eq kwd :ubt)
+                     (<= command-tuple-number original)
+                   (< command-tuple-number original)))
+               (er soft kwd "Can't undo into system initialization."))
+              (t (er soft kwd
+                     "Can't undo into prehistory.  See :DOC ~
+                      reset-prehistory."))))
+            ((and (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                  (if (eq kwd :ubt)
+                      (<= command-tuple-number (car permanent-p))
+                    (< command-tuple-number (car permanent-p))))
+             (er soft kwd
+                 "Can't undo a :disable-ubt event (at command ~x0).~@1  See ~
+                  :DOC disable-ubt."
+                 (absolute-to-relative-command-number (car permanent-p) wrld)
+                 (if (cdr permanent-p)
+                     (msg "  ~@0" (cdr permanent-p))
+                   "")))
+            ((and (eq kwd :ubu) (equal wrld cmd-wrld))
+             (er soft kwd
+                 "Can't undo back to where we already are!"))
+            (t
+             (let ((pred-wrld (if (eq kwd :ubt)
+                                  (scan-to-command (cdr cmd-wrld))
+                                cmd-wrld)))
+               (ubt-ubu-fn1 kwd wrld pred-wrld state)))))))
 
 (defun ubt-ubu-fn (kwd cd state)
 
@@ -2374,19 +2490,28 @@
          (command-number-baseline
           (access command-number-baseline-info
                   command-number-baseline-info
-                  :current)))
+                  :current))
+         (permanent-p (access command-number-baseline-info
+                              command-number-baseline-info
+                              :permanent-p)))
     (cond ((eql command-number-baseline
                 (access command-number-baseline-info
                         command-number-baseline-info
                         :original))
            (er soft ctx
                "There is no reset-prehistory event to undo."))
-          ((access command-number-baseline-info
-                   command-number-baseline-info
-                   :permanent-p)
+          ((eq permanent-p t)
            (er soft ctx
-               "It is illegal to undo a reset-prehistory event that had its ~
-                permanent-p flag set to t.  See :DOC reset-prehistory."))
+               "It is illegal to undo a (reset-prehistory t) event.  See :DOC ~
+                reset-prehistory."))
+          (permanent-p ; (cons cmd-no msg-or-nil)
+           (er soft ctx
+               "It is illegal to undo a reset-prehistory event with a non-nil ~
+                pflg argument.  See :DOC reset-prehistory.~@0"
+               (if (and (consp permanent-p)
+                        (cdr permanent-p))
+                   (msg "  ~@0" (cdr permanent-p))
+                 "")))
           (t (er-let* ((val (ubt-ubu-fn1
                              :ubt-prehistory
                              wrld
@@ -2475,8 +2600,7 @@
         (list (cons #\0 file))
         state)))
      (cond ((eq ans :until)
-            (with-infixp-nil
-             (read-object *standard-oi* state)))
+            (read-object *standard-oi* state))
            (t (value ans))))))
 
 (defun rebuild-fn (file filter filterp dir state)
@@ -2493,6 +2617,7 @@
           :ld-skip-proofsp t
           :ld-prompt nil
           :ld-missing-input-ok nil
+          :ld-always-skip-top-level-locals nil
           :ld-pre-eval-filter filter
           :ld-pre-eval-print nil
           :ld-post-eval-print :command-conventions
@@ -2508,7 +2633,15 @@
                         &key dir)
   `(rebuild-fn ,file ,filter ,filterp ,dir state))
 
-;           The Tall Texas Tale about  BIG-CLOCK
+;           The Tall Texas Tale about BIG-CLOCK
+
+; PREFACE.  The big-clock-entry field of the state is no longer present after
+; 4/2023.  We have left the essays below -- about big-clock and also about
+; "Common LISP IO" and "The ACL2 ld theorem" -- unchanged when removing that
+; field.  We might think of changes to the acl2-oracle field of state as taking
+; the place of changes to the big-clock-entry field of state, but it could be
+; useful to revisit these comments in light of removal of big-clock.  End of
+; PREFACE.
 
 ; Like any Lisp system, it may be said, loosely speaking, that ACL2
 ; typically reads a form, evaluates it in the current state, and
@@ -2559,17 +2692,16 @@
 ; There is a long comment in axioms.lisp under the heading STATE which
 ; describes the many fields that a state has.
 
-; At the beginning of any interaction with the top-level ACL2 ld-fn,
-; there is a ``partial current state'', which may be partially
-; perceived, without side-effect, in Common Lisp, but outside of ACL2,
-; by invoking (what-is-the-global-state).  This partial current-state
-; includes (a) the names, types, and times of the open input and
-; output channels (but not the characters read or written to those
-; channels), (b) the symbols in the global table, (c) the t-stack, (d)
-; the 32-bit stack, and (e) the file clock.  We say that an object o
-; satisfying state-p is ``consistent with the current partial state''
-; provided that every fact revealed by (what-is-the-global-state) and
-; by examination of the bound globals is true about o.
+; At the beginning of any interaction with the top-level ACL2 ld-fn, there is a
+; ``partial current state'', which may be partially perceived, without
+; side-effect, in Common Lisp, but outside of ACL2, by invoking
+; (what-is-the-global-state).  This partial current-state includes the names,
+; types, and times of the open input and output channels (but not the
+; characters read or written to those channels), the symbols in the global
+; table, and the file clock.  We say that an object o satisfying state-p is
+; ``consistent with the current partial state'' provided that every fact
+; revealed by (what-is-the-global-state) and by examination of the bound
+; globals is true about o.
 
 ; In Lisp (as opposed to Prolog) the input form has no explicit free
 ; variable.  In ACL2, however, one free variable is permitted, and
@@ -2614,8 +2746,7 @@
 ; In the extremely important degenerate case, old and new are
 ; consistent with the Common Lisp IO system's behavior over a time
 ; interval if all the fields of old and new are identical, excepting
-; only the global-table, stacks, and big-clock entries, and no IO
-; occurred in the time interval.
+; only the global-table, and no IO occurred in the time interval.
 
 
 ;                        The ACL2 ld theorem
@@ -2726,14 +2857,6 @@
                      (sweep-stack-entry-for-bad-symbol
                       name i (cdr obj) deceased-packages state)))))
 
-(defun sweep-t-stack (i deceased-packages state)
-  (cond ((> i (t-stack-length state))
-         (value nil))
-        (t (er-progn
-            (sweep-stack-entry-for-bad-symbol
-             "t-stack" i (aref-t-stack i state) deceased-packages state)
-            (sweep-t-stack (+ 1 i) deceased-packages state)))))
-
 (defun sweep-acl2-oracle (i deceased-packages state)
 
 ; A valid measure is (- (len (acl2-oracle state)) if we want to admit this
@@ -2755,10 +2878,10 @@
 ; *the-live-state* to verify that no symbol is contained in a package that we
 ; are about to delete.  This is sensible before we undo a defpkg, for example,
 ; which may ``orphan'' some objects held in, say, global variables in the
-; state.  We look in the global variables, the t-stack, and acl2-oracle.  If a
-; global variable, t-stack entry, or acl2-oracle entry contains such an object,
-; we cause an error.  This function is structurally similar to
-; what-is-the-global-state in axioms.lisp.
+; state.  We look in the global variables and acl2-oracle.  If a global
+; variable or acl2-oracle entry contains such an object, we cause an error.
+; This function is structurally similar to what-is-the-global-state in
+; axioms.lisp.
 
 ; The components of the state and their disposition are:
 
@@ -2775,23 +2898,15 @@
 
   (er-progn
    (sweep-global-lst (global-table-cars state) deceased-packages state)
-
-
-; t-stack - this stack may contain bad objects.
-
-   (sweep-t-stack 0 deceased-packages state)
    (sweep-acl2-oracle 0 deceased-packages state))
 
 ; The remaining fields contain no ``static'' objects.  The fields are:
-; 32-bit-integer-stack
-; big-clock
 ; idates
 ; file-clock
 ; readable-files
 ; written-files
 ; read-files
 ; writeable-files
-; list-all-package-names-lst
 
   )
 
@@ -3220,18 +3335,21 @@
 ; We puff an include-book simply by going to the file named by the include-book
 ; and return the events in it.  Recursive include-books are not flattened here.
 
-  (let ((full-book-name (access-event-tuple-namex (cddr (car wrld)))))
+  (let* ((full-book-string (access-event-tuple-namex (cddr (car wrld))))
+         (installed-wrld (w state))
+         (full-book-name (filename-to-book-name full-book-string
+                                                installed-wrld)))
     (cond
-     ((assoc-equal full-book-name (table-alist 'puff-included-books (w state)))
+     ((assoc-equal full-book-name (table-alist 'puff-included-books
+                                               installed-wrld))
       (value final-cmds))
      (t
       (er-progn
-       (chk-input-object-file full-book-name ctx state)
-       (chk-book-name full-book-name full-book-name ctx state)
+       (chk-input-object-file full-book-string ctx state)
        (er-let*
-           ((ev-lst (read-object-file full-book-name ctx state))
+           ((ev-lst (read-object-file full-book-string ctx state))
             (cert-obj (chk-certificate-file
-                       full-book-name
+                       full-book-string
                        nil
                        'puff
                        ctx
@@ -3264,7 +3382,7 @@
                            (access cert-obj cert-obj :cmds))))
            (er-let* ((ev-lst-book-hash
                       (if old-book-hash ; otherwise, don't care
-                          (book-hash old-book-hash full-book-name cmds
+                          (book-hash old-book-hash full-book-string cmds
                                      expansion-alist cert-data ev-lst state)
                         (value nil))))
              (cond
@@ -3285,7 +3403,7 @@
                     thus presumably been modified since it was last included ~
                     and we cannot now recover the events that created the ~
                     current logical world."
-                   full-book-name
+                   full-book-string
                    old-book-hash
                    ev-lst-book-hash))
               (t (let ((fixed-cmds
@@ -3310,11 +3428,11 @@
 
                        '((set-cbd
                           ,(directory-of-absolute-pathname
-                            full-book-name))
+                            full-book-string))
                          ,@fixed-cmds
                          ,@(and include-book-alist-entry ; always true?
                                 `((table puff-included-books
-                                         ,full-book-name
+                                         ',full-book-name
                                          ',include-book-alist-entry))))
                        :ld-error-action :error)
                       (maybe-install-acl2-defaults-table
@@ -3354,7 +3472,9 @@
        ((and (eq immediate 'certify-book)
              (eq event-type 'include-book)
              (equal (car include-book-alist-entry)
-                    (access-event-tuple-namex event-tuple)))
+                    (filename-to-book-name
+                     (access-event-tuple-namex event-tuple)
+                     (w state))))
 
 ; The include-book here represents the evaluation of all events after the final
 ; local event in the book common to the certify-book command and the current
@@ -3567,7 +3687,8 @@
                    (cond
                     (error-flg (mv t nil state))
                     ((and (ld-error-triples state)
-                          (equal (car trans-ans) *error-triple-sig*)
+                          (or (equal (car trans-ans) *error-triple-sig*)
+                              (equal (car trans-ans) *error-triple-df-sig*))
                           (car (cdr trans-ans)))
                      (mv t nil state))
                     (t (er-progn
@@ -3629,6 +3750,7 @@
                       (ld-verbose nil)
                       (ld-prompt nil)
                       (ld-missing-input-ok nil)
+                      (ld-always-skip-top-level-locals nil)
                       (ld-pre-eval-filter :all)
                       (ld-pre-eval-print :never)
                       (ld-post-eval-print nil)
@@ -3673,29 +3795,44 @@
 ; that requires a trust tag, so it's not our problem!
 
       t))
-    (let ((wrld (w state)))
-      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state)))
-        (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                   (access command-number-baseline-info
-                           (global-val 'command-number-baseline-info wrld)
-                           :current))
-
-; See the similar comment in ubt?-ubu?-fn.
-
+    (let* ((wrld (w state))
+           (info (global-val 'command-number-baseline-info wrld))
+           (permanent-p (access command-number-baseline-info info
+                                :permanent-p))
+           (current (access command-number-baseline-info info :current))
+           (barrier (if (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                        (max (car permanent-p) current)
+                      current)))
+      (er-let* ((cmd-wrld (er-decode-cd cd wrld ctx state))
+                (command-tuple-number (value (access-command-tuple-number
+                                              (cddar cmd-wrld)))))
+        (cond ((<= command-tuple-number barrier)
                (cond
-                ((<= (access-command-tuple-number (cddar cmd-wrld))
-                     (access command-number-baseline-info
-                             (global-val 'command-number-baseline-info wrld)
-                             :original))
+                ((<= command-tuple-number
+                     (access command-number-baseline-info info :original))
                  (er soft ctx
                      "Can't puff a command within the system initialization."))
-                (t
+                ((<= command-tuple-number current)
                  (er soft ctx
                      "Can't puff a command within prehistory.  See :DOC ~
-                     reset-prehistory."))))
+                      reset-prehistory."))
+                (t
+
+; Since (<= command-tuple-number barrier) but not (<= command-tuple-number
+; current), then barrier and current are distinct, so we know (consp
+; permanent-p) and current < command-tuple-number <= (car permanent-p).
+
+                 (er soft ctx
+                     "Can't puff a command executed at or before the ~
+                      reset-prehistory event (at command ~x0) that disabled ~
+                      undoing.~@1  See :DOC disable-ubt."
+                     (absolute-to-relative-command-number (car permanent-p)
+                                                          wrld)
+                     (if (cdr permanent-p)
+                         (msg "  ~@0" (cdr permanent-p))
+                       "")))))
               (t
-               (er-let*
-                   ((cmds (puffed-command-sequence cd ctx wrld state)))
+               (er-let* ((cmds (puffed-command-sequence cd ctx wrld state)))
                  (let* ((pred-wrld (scan-to-command (cdr cmd-wrld)))
                         (i (absolute-to-relative-command-number
                             (max-absolute-command-number cmd-wrld)
@@ -3793,37 +3930,50 @@
               state))
 
 (defun puff*-fn (cd state)
-  (let ((wrld (w state)))
-    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff* state)))
-             (cond ((<= (access-command-tuple-number (cddar cmd-wrld))
-                        (access command-number-baseline-info
-                                (global-val 'command-number-baseline-info wrld)
-                                :current))
+  (let* ((wrld (w state))
+         (info (global-val 'command-number-baseline-info wrld))
+         (permanent-p (access command-number-baseline-info info :permanent-p))
+         (current (access command-number-baseline-info info :current))
+         (barrier (if (consp permanent-p) ; (cons cmd-no msg-or-nil)
+                      (max (car permanent-p) current)
+                    current)))
+    (er-let* ((cmd-wrld (er-decode-cd cd wrld :puff* state))
+              (command-tuple-number (value (access-command-tuple-number
+                                            (cddar cmd-wrld)))))
+      (cond ((<= command-tuple-number barrier)
+             (cond
+              ((<= command-tuple-number
+                   (access command-number-baseline-info info :original))
+               (er soft :puff*
+                   "Can't puff* a command within the system initialization."))
+              ((<= command-tuple-number current)
+               (er soft :puff*
+                   "Can't puff* a command within prehistory.  See :DOC ~
+                    reset-prehistory."))
+              (t
 
-; See the similar comment in ubt?-ubu?-fn.
+; Since (<= command-tuple-number barrier) but not (<= command-tuple-number
+; current), then barrier and current are distinct, so we know (consp
+; permanent-p) and current < command-tuple-number <= (car permanent-p).
 
-                    (cond
-                     ((<= (access-command-tuple-number (cddar cmd-wrld))
-                          (access command-number-baseline-info
-                                  (global-val 'command-number-baseline-info wrld)
-                                  :original))
-                      (er soft :puff*
-                          "Can't puff* a command within the system ~
-                           initialization."))
-                     (t
-                      (er soft :puff*
-                          "Can't puff* a command within prehistory.  See :DOC ~
-                           reset-prehistory."))))
-                   (t
-                    (let* ((mx (absolute-to-relative-command-number
-                                (max-absolute-command-number wrld)
-                                wrld))
-                           (ptr (absolute-to-relative-command-number
-                                 (max-absolute-command-number cmd-wrld)
-                                 wrld))
-                           (k (- mx ptr)))
-                      (er-let*
-                       ((pair (puff*-fn1 ptr k state)))
+               (er soft :puff*
+                   "Can't puff* a command executed at or before :disable-ubt ~
+                    (at command ~x0).~@1  See :DOC disable-ubt."
+                   (absolute-to-relative-command-number (car permanent-p)
+                                                        wrld)
+                   (if (cdr permanent-p)
+                       (msg "  ~@0" (cdr permanent-p))
+                     "")))))
+            (t
+             (let* ((mx (absolute-to-relative-command-number
+                         (max-absolute-command-number wrld)
+                         wrld))
+                    (ptr (absolute-to-relative-command-number
+                          (max-absolute-command-number cmd-wrld)
+                          wrld))
+                    (k (- mx ptr)))
+               (er-let*
+                   ((pair (puff*-fn1 ptr k state)))
 
 ; The difference between puff and puff* is that puff* iterates puff across the
 ; region generated by the first puff until there are no more commands that are
@@ -3857,8 +4007,8 @@
 ; current maximum relative command number, inclusive.  Initially this region
 ; contains just one command, the one we are to puff first.  ;
 
-                      (puff-report :puff* (car pair) (cdr pair) cd
-                                   state))))))))
+                 (puff-report :puff* (car pair) (cdr pair) cd
+                              state))))))))
 
 (defmacro puff (cd)
   `(puff-fn ,cd state))
@@ -5002,12 +5152,12 @@
                        (convert-io-markers ,stop-markers)
                        state))
 
-(defmacro set-raw-proof-format (flg)
-  (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
-  (let ((flg (if (atom flg)
-                 (list 'quote flg)
-               flg)))
-    `(f-put-global 'raw-proof-format ,flg state)))
+(defun set-raw-proof-format-fn (val state)
+  (declare (xargs :guard (member-eq val '(t nil :clause))))
+  (f-put-global 'raw-proof-format val state))
+
+(defmacro set-raw-proof-format (val)
+  `(set-raw-proof-format-fn ,val state))
 
 (defmacro set-raw-warning-format (flg)
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
@@ -5015,10 +5165,6 @@
                  (list 'quote flg)
                flg)))
     `(f-put-global 'raw-warning-format ,flg state)))
-
-(defun-for-state set-standard-co (val state))
-
-(defun-for-state set-proofs-co (val state))
 
 (defmacro with-standard-co-and-proofs-co-to-file (filename form)
   `(mv-let
@@ -5096,6 +5242,11 @@
 
 (defun-for-state set-term-evisc-tuple (val state))
 
+(defun set-brr-evisc-tuple (val state)
+  (set-evisc-tuple val
+                   :sites :brr
+                   :iprint :same))
+
 (defun without-evisc-fn (form state)
   (state-global-let*
    ((abbrev-evisc-tuple nil set-abbrev-evisc-tuple-state)
@@ -5111,3 +5262,92 @@
 
 (defmacro without-evisc (form)
   `(without-evisc-fn ',form state))
+
+; We now introduce some definitions in support of establish-project-dir-alist.
+; Establish-project-dir-alist is called in LP, but the following can be
+; defined in ACL2 (not just raw Lisp).  Unfortunately unix-full-pathname is
+; defined only in raw Lisp at this point, so some of the functions supporting
+; establish-project-dir-alist cannot be defined here naturally.
+
+(defun keyword-value-string-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) (null l))
+        (t (and (keywordp (car l))
+                (consp (cdr l))
+                (stringp (cadr l))
+                (keyword-value-string-listp (cddr l))))))
+
+(defun project-dir-string-p (s pos bound)
+  (declare (type #.*fixnat-type* bound)
+           (xargs :measure (nfix (- bound pos))
+                  :guard (and (stringp s)
+                              (natp pos)
+                              (natp bound)
+                              (<= pos bound)
+                              (<= bound (length s)))))
+  (let ((pos (scan-past-whitespace s pos bound)))
+    (cond ((mbe :logic (or (not (natp pos))
+                           (>= pos bound))
+                :exec (= pos bound))
+           t)
+          ((eql (char s pos) #\;)
+           (let ((p0 (search *newline-string* s :start2 (1+ pos) :end2 bound)))
+             (or (null p0)
+                 (project-dir-string-p s p0 bound))))
+          (t (let* ((p0 (search *newline-string* s :start2 pos :end2 bound))
+                    (p (or p0 bound))
+                    (k (search ":" s :start2 pos :end2 p))
+                    (q (search "\"" s :start2 pos :end2 p))
+                    (q2 ; double-quote ending the filename
+                     (and q
+                          (search "\"" s :start2 (1+ q) :end2 p))))
+               (and k q2 (< k q)
+                    (= p (scan-past-whitespace s (1+ q2) p))
+                    (not (search ":" s :start2 (1+ q2) :end2 p))
+                    (not (search "\"" s :start2 (1+ q2) :end2 p))
+                    (project-dir-string-p s p bound)))))))
+
+(defun project-dir-file-p (filename state)
+
+; This function performs only a basic sanity check that the given file has
+; lines consisting of a keyword and a string.
+
+  (declare (xargs :stobjs state
+                  :guard (stringp filename)))
+  (let* ((s (read-file-into-string filename))
+         (len (length s)))
+      (and (stringp s)
+           (unsigned-byte-p *fixnat-bits* len)
+           (project-dir-string-p s 0 len))))
+
+(defun merge-length>=-cdr (l1 l2)
+  (declare (xargs :guard (and (alistp l1)
+                              (alistp l2))
+                  :measure (+ (length l1) (length l2))))
+  (cond ((endp l1) l2)
+        ((endp l2) l1)
+        ((>= (length (cdar l1)) (length (cdar l2)))
+         (cons (car l1) (merge-length>=-cdr (cdr l1) l2)))
+        (t (cons (car l2) (merge-length>=-cdr l1 (cdr l2))))))
+
+(defun merge-sort-length>=-cdr (l)
+  (declare (xargs :guard (alistp l)
+                  :measure (length l)
+                  :verify-guards nil))
+  (cond ((endp (cdr l)) l)
+        (t (merge-length>=-cdr (merge-sort-length>=-cdr (evens l))
+                               (merge-sort-length>=-cdr (odds l))))))
+
+(defun conflicting-symbol-alists (a1 a2)
+
+; Returns nil if some key has different values in a1 and a2; otherwise return
+; (key v1 . v2) where key is bound to vi in ai (i=1,2).  We consider only the
+; first binding of each key in a2.
+
+  (declare (xargs :guard (and (symbol-alistp a1)
+                              (symbol-alistp a2))))
+  (cond ((endp a1) nil)
+        (t (let ((pair (assoc-eq (caar a1) a2)))
+             (cond ((and pair (not (equal (cdr pair) (cdar a1))))
+                    (list* (car pair) (cdar a1) (cdr pair)))
+                   (t (conflicting-symbol-alists (cdr a1) a2)))))))

@@ -28,7 +28,7 @@
      along with the tests that lead to them.
      The induction machine is a value of type @('pseudo-tests-and-calls-listp'),
      which is defined in
-     @('[books]/system/pseudo-tests-and-calls-listp.lisp').")
+     @('system/pseudo-tests-and-calls-listp.lisp').")
    (xdoc::p
     "Note that
      induction is not directly supported for mutually recursive functions.")

@@ -13,26 +13,28 @@ Summary
 Form:  ( DEFSTOBJ SUB1 ...)
 Rules: NIL
  SUB1
-ACL2 !>>(DEFSTOBJ SUB2 SUB2-FLD
-                  :CONGRUENT-TO SUB1)
+ACL2 !>>(DEFSTOBJ SUB2
+          SUB2-FLD
+          :CONGRUENT-TO SUB1)
 
 Summary
 Form:  ( DEFSTOBJ SUB2 ...)
 Rules: NIL
  SUB2
-ACL2 !>>(DEFSTOBJ TOP1 (TOP1-FLD :TYPE SUB1)
-                  :RENAMING ((UPDATE-TOP1-FLD !TOP1-FLD)))
+ACL2 !>>(DEFSTOBJ TOP1
+          (TOP1-FLD :TYPE SUB1)
+          :RENAMING ((UPDATE-TOP1-FLD !TOP1-FLD)))
 
 Summary
 Form:  ( DEFSTOBJ TOP1 ...)
 Rules: NIL
  TOP1
 ACL2 !>>(DEFUN F1 (X TOP1)
-               (DECLARE (XARGS :STOBJS TOP1))
-               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
-                          (SUB1)
-                          (UPDATE-SUB1-FLD X SUB1)
-                          TOP1))
+          (DECLARE (XARGS :STOBJS TOP1))
+          (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
+                     (SUB1)
+                     (UPDATE-SUB1-FLD X SUB1)
+                     TOP1))
 
 
 ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
@@ -51,11 +53,11 @@ ACL2 Error [Failure] in ( DEFUN F1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (X TOP1)
-               (DECLARE (XARGS :STOBJS TOP1))
-               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
-                          (SUB1)
-                          (UPDATE-SUB1-FLD X SUB1)
-                          TOP1))
+          (DECLARE (XARGS :STOBJS TOP1))
+          (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
+                     (SUB1)
+                     (UPDATE-SUB1-FLD X SUB1)
+                     TOP1))
 
 
 ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
@@ -77,11 +79,11 @@ ACL2 Error [Failure] in ( DEFUN F1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (TOP1)
-               (DECLARE (XARGS :STOBJS TOP1))
-               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
-                          (VAL)
-                          (SUB1-FLD SUB1)
-                          VAL))
+          (DECLARE (XARGS :STOBJS TOP1))
+          (STOBJ-LET ((SUB1 (TOP1-FLD TOP1) UPDATE-TOP1-FLD))
+                     (VAL)
+                     (SUB1-FLD SUB1)
+                     VAL))
 
 
 ACL2 Error [Translate] in ( DEFUN F1 ...):  The stobj-let bindings
@@ -105,11 +107,11 @@ ACL2 Error [Failure] in ( DEFUN F1 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (TOP1)
-               (DECLARE (XARGS :STOBJS TOP1))
-               (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
-                          (VAL)
-                          (SUB1-FLD SUB1)
-                          VAL))
+          (DECLARE (XARGS :STOBJS TOP1))
+          (STOBJ-LET ((SUB1 (TOP1-FLD TOP1)))
+                     (VAL)
+                     (SUB1-FLD SUB1)
+                     VAL))
 
 Since F1 is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of F1.
@@ -125,7 +127,8 @@ Summary
 Form:  ( DEFUN F1 ...)
 Rules: NIL
  F1
-ACL2 !>>(DEFSTOBJ ST1 (HT1 :TYPE (HASH-TABLE EQ 70 T)))
+ACL2 !>>(DEFSTOBJ ST1
+          (HT1 :TYPE (HASH-TABLE EQ 70 T)))
 
 Summary
 Form:  ( DEFSTOBJ ST1 ...)
@@ -140,16 +143,16 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (HT1-GET 'A ST1) 17))
 ACL2 !>>(HT1-GET 3 ST1)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HT1-GET K ST1),
-which is (AND (ST1P ST1) (SYMBOLP K)), is violated by the arguments
-in the call (HT1-GET 3 ST1).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(HT1-GET K ST1), which is (AND (ST1P ST1) (SYMBOLP K)), is violated
+by the arguments in the call (HT1-GET 3 ST1).
 This error will be reported even if guard-checking is turned off, because
 a stobj argument of HT1-GET is the ``live'' ST1 and ACL2 does not support
 non-compliant live stobj manipulation.  To debug see :DOC print-gv,
 see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(DEFSTOBJ ST2
-                  (HT2 :TYPE (HASH-TABLE EQ NIL INTEGER)))
+          (HT2 :TYPE (HASH-TABLE EQ NIL INTEGER)))
 
 
 ACL2 Error in ( DEFSTOBJ ST2 ...):  The value specified by the :initially
@@ -165,8 +168,8 @@ ACL2 Error [Failure] in ( DEFSTOBJ ST2 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST2
-                  (HT2 :TYPE (HASH-TABLE = NIL INTEGER)
-                       :INITIALLY 0))
+          (HT2 :TYPE (HASH-TABLE = NIL INTEGER)
+               :INITIALLY 0))
 
 
 ACL2 Error in ( DEFSTOBJ ST2 ...):  A hash-table test must be EQ, EQL,
@@ -182,8 +185,8 @@ ACL2 Error [Failure] in ( DEFSTOBJ ST2 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST2
-                  (HT2 :TYPE (HASH-TABLE EQ NIL INTEGER)
-                       :INITIALLY 0))
+          (HT2 :TYPE (HASH-TABLE EQ NIL INTEGER)
+               :INITIALLY 0))
 
 Summary
 Form:  ( DEFSTOBJ ST2 ...)
@@ -194,9 +197,9 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST2) 0))
 ACL2 !>>(HT2-PUT 'A 'B ST2)
 
 
-ACL2 Error in TOP-LEVEL:  The guard for the function call (HT2-PUT K V ST2),
-which is (AND (ST2P ST2) (SYMBOLP K) (INTEGERP V)), is violated by
-the arguments in the call (HT2-PUT 'A 'B ST2).
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(HT2-PUT K V ST2), which is (AND (ST2P ST2) (SYMBOLP K) (INTEGERP V)),
+is violated by the arguments in the call (HT2-PUT 'A 'B ST2).
 This error will be reported even if guard-checking is turned off, because
 a stobj argument of HT2-PUT is the ``live'' ST2 and ACL2 does not support
 non-compliant live stobj manipulation.  To debug see :DOC print-gv,
@@ -204,7 +207,7 @@ see :DOC trace, and see :DOC wet.
 
 ACL2 !>>(ASSERT-EVENT (MV-LET (VAL BOUNDP)
                               (HT2-GET? 'A ST2)
-                              (AND (EQUAL VAL 0) (EQUAL BOUNDP NIL))))
+                        (AND (EQUAL VAL 0) (EQUAL BOUNDP NIL))))
  :PASSED
 ACL2 !>>(HT2-PUT 'A 17 ST2)
 <st2>
@@ -212,12 +215,12 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST2) 17))
  :PASSED
 ACL2 !>>(ASSERT-EVENT (MV-LET (VAL BOUNDP)
                               (HT2-GET? 'A ST2)
-                              (AND (EQUAL VAL 17) (EQUAL BOUNDP T))))
+                        (AND (EQUAL VAL 17) (EQUAL BOUNDP T))))
  :PASSED
 ACL2 !>>(DEFSTOBJ ST3
-                  (HT3 :TYPE (HASH-TABLE EQ NIL INTEGER)
-                       :INITIALLY 0)
-                  :CONGRUENT-TO ST2)
+          (HT3 :TYPE (HASH-TABLE EQ NIL INTEGER)
+               :INITIALLY 0)
+          :CONGRUENT-TO ST2)
 
 Summary
 Form:  ( DEFSTOBJ ST3 ...)
@@ -232,8 +235,8 @@ ACL2 !>>(HT2-CLEAR ST3)
 ACL2 !>>(ASSERT-EVENT (EQUAL (HT2-GET 'A ST3) 0))
  :PASSED
 ACL2 !>>(DEFSTOBJ ST4
-                  (HT4 :TYPE (HASH-TABLE EQ NIL SUB1)
-                       :INITIALLY NIL))
+          (HT4 :TYPE (HASH-TABLE EQ NIL SUB1)
+               :INITIALLY NIL))
 
 
 ACL2 Error in ( DEFSTOBJ ST4 ...):  The :initially keyword must be
@@ -250,7 +253,7 @@ ACL2 Error [Failure] in ( DEFSTOBJ ST4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST4
-                  (HT4 :TYPE (HASH-TABLE EQ NIL SUB1)))
+          (HT4 :TYPE (HASH-TABLE EQ NIL SUB1)))
 
 Summary
 Form:  ( DEFSTOBJ ST4 ...)
@@ -273,11 +276,11 @@ For a way to generate such a call, see :DOC stobj-let.  Note:  this
 error occurred in the context (HT4-PUT 'A 17 ST4).
 
 ACL2 !>>(DEFUN UPDATE-SUB1-FLD-IN-HT4 (KEY VAL ST4)
-               (DECLARE (XARGS :GUARD T :STOBJS ST4))
-               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
-                          (SUB1)
-                          (UPDATE-SUB1-FLD VAL SUB1)
-                          ST4))
+          (DECLARE (XARGS :GUARD T :STOBJS ST4))
+          (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                     (SUB1)
+                     (UPDATE-SUB1-FLD VAL SUB1)
+                     ST4))
 
 Since UPDATE-SUB1-FLD-IN-HT4 is non-recursive, its admission is trivial.
 We observe that the type of UPDATE-SUB1-FLD-IN-HT4 is described by
@@ -326,8 +329,9 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to two.
 One of these has a score higher than the other.  
 
-We will induct according to a scheme suggested by (LEN ST6).  This
-suggestion was produced using the :induction rules LEN and TRUE-LISTP.
+We will induct according to a scheme suggested by (LEN ST6).
+
+This suggestion was produced using the :induction rules LEN and TRUE-LISTP.
 If we let (:P KEY ST5 ST6) denote *1 above then the induction scheme
 we'll use is
 (AND (IMPLIES (NOT (CONSP ST6))
@@ -413,12 +417,12 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN UPDATE-SUB1-FLD-IN-HT4 (KEY VAL ST4)
-               (DECLARE (XARGS :GUARD (SYMBOLP KEY)
-                               :STOBJS ST4))
-               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
-                          (SUB1)
-                          (UPDATE-SUB1-FLD VAL SUB1)
-                          ST4))
+          (DECLARE (XARGS :GUARD (SYMBOLP KEY)
+                          :STOBJS ST4))
+          (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                     (SUB1)
+                     (UPDATE-SUB1-FLD VAL SUB1)
+                     ST4))
 
 Since UPDATE-SUB1-FLD-IN-HT4 is non-recursive, its admission is trivial.
 We observe that the type of UPDATE-SUB1-FLD-IN-HT4 is described by
@@ -437,12 +441,12 @@ Form:  ( DEFUN UPDATE-SUB1-FLD-IN-HT4 ...)
 Rules: ((:TYPE-PRESCRIPTION HT4-PUT))
  UPDATE-SUB1-FLD-IN-HT4
 ACL2 !>>(DEFUN READ-SUB1-FLD-IN-HT4 (KEY ST4)
-               (DECLARE (XARGS :GUARD (SYMBOLP KEY)
-                               :STOBJS ST4))
-               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
-                          (KEY)
-                          (SUB1-FLD SUB1)
-                          KEY))
+          (DECLARE (XARGS :GUARD (SYMBOLP KEY)
+                          :STOBJS ST4))
+          (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                     (KEY)
+                     (SUB1-FLD SUB1)
+                     KEY))
 
 
 ACL2 Error [Translate] in ( DEFUN READ-SUB1-FLD-IN-HT4 ...):  The index
@@ -462,11 +466,11 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN READ-SUB1-FLD-IN-HT4 (KEY ST4)
-               (DECLARE (XARGS :GUARD T :STOBJS ST4))
-               (STOBJ-LET ((SUB1 (HT4-GET (AND (SYMBOLP KEY) KEY) ST4)))
-                          (F)
-                          (SUB1-FLD SUB1)
-                          F))
+          (DECLARE (XARGS :GUARD T :STOBJS ST4))
+          (STOBJ-LET ((SUB1 (HT4-GET (AND (SYMBOLP KEY) KEY) ST4)))
+                     (F)
+                     (SUB1-FLD SUB1)
+                     F))
 
 
 ACL2 Error [Translate] in ( DEFUN READ-SUB1-FLD-IN-HT4 ...):  The index
@@ -487,12 +491,12 @@ failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN READ-SUB1-FLD-IN-HT4 (KEY ST4)
-               (DECLARE (XARGS :GUARD (SYMBOLP KEY)
-                               :STOBJS ST4))
-               (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
-                          (F)
-                          (SUB1-FLD SUB1)
-                          F))
+          (DECLARE (XARGS :GUARD (SYMBOLP KEY)
+                          :STOBJS ST4))
+          (STOBJ-LET ((SUB1 (HT4-GET KEY ST4)))
+                     (F)
+                     (SUB1-FLD SUB1)
+                     F))
 
 Since READ-SUB1-FLD-IN-HT4 is non-recursive, its admission is trivial.
 We could deduce no constraints on the type of READ-SUB1-FLD-IN-HT4.
@@ -517,15 +521,15 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (READ-SUB1-FLD-IN-HT4 'B ST4)
                              10))
  :PASSED
 ACL2 !>>(DEFUN SWAP-SUB1-FLDS-IN-HT4 (KEY1 KEY2 ST4)
-               (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY1)
-                                           (SYMBOLP KEY2)
-                                           (NOT (EQ KEY1 KEY2)))
-                               :STOBJS ST4))
-               (STOBJ-LET ((SUB1 (HT4-GET KEY1 ST4))
-                           (SUB2 (HT4-GET KEY2 ST4)))
-                          (SUB1 SUB2)
-                          (SWAP-STOBJS SUB1 SUB2)
-                          ST4))
+          (DECLARE (XARGS :GUARD (AND (SYMBOLP KEY1)
+                                      (SYMBOLP KEY2)
+                                      (NOT (EQ KEY1 KEY2)))
+                          :STOBJS ST4))
+          (STOBJ-LET ((SUB1 (HT4-GET KEY1 ST4))
+                      (SUB2 (HT4-GET KEY2 ST4)))
+                     (SUB1 SUB2)
+                     (SWAP-STOBJS SUB1 SUB2)
+                     ST4))
 
 Since SWAP-SUB1-FLDS-IN-HT4 is non-recursive, its admission is trivial.
 We observe that the type of SWAP-SUB1-FLDS-IN-HT4 is described by the

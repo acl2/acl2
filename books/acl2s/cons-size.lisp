@@ -2,7 +2,7 @@
 (include-book "std/lists/top" :dir :system)
 (include-book "std/alists/top" :dir :system)
 (include-book "std/strings/top" :dir :system)
-(include-book "defexec/other-apps/records/records" :dir :system)
+(include-book "acl2s/defdata/records" :dir :system)
 
 (defun cons-size (x)
   (declare (xargs :guard t))
@@ -12,7 +12,7 @@
 
 (defmacro tree-size (x)
   `(cons-size ,x))
-  
+
 (defthm cons-size-type
   (natp (cons-size x))
   :rule-classes
@@ -34,17 +34,17 @@
   :rule-classes :linear)
 
 (defthm head-cons-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (cons-size (set::head x))
               (cons-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::head)))
+  :hints (("Goal" :in-theory (enable set::emptyp set::head)))
   :rule-classes :linear)
 
 (defthm tail-cons-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (cons-size (set::tail x))
               (cons-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::tail)))
+  :hints (("Goal" :in-theory (enable set::emptyp set::tail)))
   :rule-classes :linear)
 
 (defthm cons-size-append
@@ -129,35 +129,27 @@
       (cons-size (std::prod-cons std::x std::y)))
   :rule-classes :linear)
 
-(defthm records-lemma-cons-size
-  (implies (and (acl2::ifmp v)
-                (acl2::well-formed-map v))
-           (< (cons-size (acl2::mget-wf x v))
-              (cons-size v)))
-  :hints (("goal" :in-theory (enable acl2::mget-wf)))
-  :rule-classes :linear)
-
 (defthm records-cons-size-linear-arith-<=
-  (<= (cons-size (mget k v))
-      (cons-size v))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  (<= (cons-size (mget k r))
+      (cons-size r))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-cons-size-linear-arith-<
-  (implies (and (not (equal k (acl2::ill-formed-key)))
-                (mget k v))
-           (< (cons-size (mget k v))
-              (cons-size v)))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  (implies (mget k r)
+           (< (cons-size (mget k r))
+              (cons-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-cons-size
-  (implies (and (consp v)
-                (not (equal x (acl2::ill-formed-key))))
-           (< (cons-size (mget x v))
-              (cons-size v)))
-  :hints (("goal" :induct (acl2::mget-wf x v)
-           :in-theory (enable mget acl2::acl2->map)))
+  (implies (consp r)
+           (< (cons-size (mget k r))
+              (cons-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm len-<=-cons-size

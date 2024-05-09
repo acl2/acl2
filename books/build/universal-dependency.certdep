@@ -2,7 +2,8 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-7/10/2022 Changed raw-Lisp definition of ACL2 function len, which
-no longer calls len1 (and len1 no longer exists).  This caused a
-regression failure for books/kestrel/doc, perhaps because len was
-inlined in function abnf::elementp.
+Forcing recertification 4/19/2024 for commit, "Increased ACL2 analogue
+of maximum fixnum from 2^29-1 to 2^60-1."  The value of *fixnum-bits*
+has changed (and thus so have at least *fixnat-bits*, the-fixnum,
+fixnum-bound, and *default-step-limit*), making it potentially unsound
+to books certified with an earlier ACL2 version.

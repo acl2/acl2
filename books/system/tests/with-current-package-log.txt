@@ -1,0 +1,76 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(REDEF+)
+ T
+ACL2 p!>>(MAKE-EVENT (CONS 'DEFCONST
+                           (CONS '*STANDARD-CO*
+                                 (CONS (CONS 'QUOTE
+                                             (CONS (STANDARD-CO STATE) 'NIL))
+                                       'NIL))))
+
+ACL2 Warning [Redef] in ( DEFCONST *STANDARD-CO* ...):  *STANDARD-CO*
+redefined.
+
+
+
+Summary
+Form:  ( DEFCONST *STANDARD-CO* ...)
+Rules: NIL
+Warnings:  Redef
+
+ACL2 Warning [Redef] in ( MAKE-EVENT (CONS ...)):  *STANDARD-CO* redefined.
+
+
+
+Summary
+Form:  ( MAKE-EVENT (CONS ...))
+Rules: NIL
+Warnings:  Redef
+ *STANDARD-CO*
+ACL2 p!>>(REDEF-)
+ NIL
+ACL2 !>>(WITH-CURRENT-PACKAGE "ACL2-USER" (VALUE (CW "~x0~%" 'ABCD)))
+ACL2::ABCD
+ NIL
+ACL2 !>>(WITH-CURRENT-PACKAGE "ACL2-USER" (VALUE (CW "~x0~%" 'DEFUN)))
+DEFUN
+ NIL
+ACL2 !>>(WITH-CURRENT-PACKAGE "ACL2-USER"
+                              (ER-PROGN (SET-CURRENT-PACKAGE "ACL2-PC" STATE)
+                                        (VALUE (CW "~x0~%" 'DEFUN))))
+COMMON-LISP::DEFUN
+ NIL
+ACL2 !>>(WITH-CURRENT-PACKAGE "FOO"
+                              (ER-PROGN (SET-CURRENT-PACKAGE "ACL2-PC" STATE)
+                                        (VALUE (CW "~x0~%" 'DEFUN))))
+
+
+ACL2 Error in SET-CURRENT-PACKAGE:  "FOO" is an illegal value for the
+state global variable CURRENT-PACKAGE.  See :DOC CURRENT-PACKAGE.
+
+
+
+HARD ACL2 ERROR in SET-CURRENT-PACKAGE:  An error message may have
+been printed above.
+
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  Evaluation aborted.  To debug
+see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(WITH-CURRENT-PACKAGE "MY-PKG" (VALUE (CW "~x0~%" 'ABCD)))
+ACL2::ABCD
+ NIL
+ACL2 !>>(UBT 2)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>Bye.

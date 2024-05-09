@@ -1,7 +1,7 @@
-; Base-2 integer logarithm (works on all positive rationals)
+; (Floor of) base-2 logarithm (works on all positive rationals)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,16 +13,26 @@
 
 ;; See also lg.lisp and ceiling-of-lg.lisp.
 
-;(include-book "power-of-2p")
-(include-book "integer-length")
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
-(local (include-book "divides"))
+(local (include-book "divide"))
 (local (include-book "times"))
+(local (include-book "times-and-divide"))
+
+;; TODO: Without these, some things below are very slow
+(local (in-theory (disable <-of-*-and-*-same-linear-3
+                           <-of-*-and-*-same-linear-1
+                           <-of-*-and-*-same-linear-2
+                           ;floor-upper-bound-linear
+                           ;my-floor-lower-bound-linear
+                           <-of-*-same-linear-special
+                           <=-of-*-and-*-same-alt-linear
+                           <=-of-*-and-*-same-linear)))
 
 ;; Returns the floor of the base 2 logarithm of the positive rational x.  Not meaningful for 0.
 ;; TODO: Rename log2 to floor-of-log2 ?
+;; TODO: Generalize the base?
 (defund log2 (x)
   (declare (xargs :guard (and (rationalp x)
                               (< 0 x))
@@ -44,36 +54,6 @@
         ;; x is in [1,2), so it's log2 is 0:
         0))))
 
-
-
-(defthm log2-of-*-of-2
-  (implies (and (< 0 x)
-                (rationalp x))
-           (equal (log2 (* 2 x))
-                  (+ 1 (log2 x))))
-  :hints (("Goal" :in-theory (enable log2))))
-
-(defthm log2-of-*-of-1/2
-  (implies (and (< 0 x)
-                (rationalp x))
-           (equal (log2 (* 1/2 x))
-                  (+ -1 (log2 x))))
-  :hints (("Goal" :in-theory (enable log2))))
-
-(defthm log2-of-expt
-  (implies (integerp i)
-           (equal (log2 (expt 2 i))
-                  i))
-  :hints (("Goal" :in-theory (enable log2 (:I expt) expt-of-+))))
-
-(defthmd log2-of-both-sides
-  (implies (equal x y)
-           (equal (log2 x) (log2 y))))
-
-
-
-;todo: log2 of mask?
-
 (defthm natp-of-log2-type
   (implies (and (<= 1 x)
                 (rationalp x))
@@ -88,35 +68,63 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable log2))))
 
-(defun log2-double-induct (x y)
-  (declare (xargs :measure (if (and (rationalp x)
-                                    (< 0 x))
-                               (if (<= 2 x)
-                                   (floor x 1)
-                                 (if (< x 1)
-                                     (floor (/ x) 1)
-                                   0))
-                             0)))
-  (if (not (mbt (and (rationalp x)
-                     (< 0 x))))
-      (list x y)
-    (if (<= 2 x)
-        (+ 1 (log2-double-induct (/ x 2) (/ y 2)))
-      (if (< x 1)
-          (+ -1 (log2-double-induct (* x 2) (* 2 y)))
-        ;; x is in [1,2), so it's log2 is 0:
-        0))))
+(defthm negative-of-log2-type
+  (implies (and (< x 1)
+                (< 0 x)
+                (rationalp x))
+           (< (log2 x) 0))
+  :rule-classes :type-prescription
+  :hints (("Goal"; :expand (log2 x)
+           :induct (log2 x)
+           :in-theory (enable log2))))
 
+;; Could loop with the definition?
+(defthm log2-of-*-of-2
+  (implies (and (< 0 x)
+                (rationalp x))
+           (equal (log2 (* 2 x))
+                  (+ 1 (log2 x))))
+  :hints (("Goal" :in-theory (enable log2))))
 
-;; TODO: Without these, some things below are very slow
-(local (in-theory (disable <-of-*-and-*-same-linear-3
-                           <-of-*-and-*-same-linear-1
-                           <-of-*-and-*-same-linear-2
-                           ;floor-upper-bound-linear
-                           ;my-floor-lower-bound-linear
-                           <-of-*-same-linear-special
-                           <=-of-*-and-*-same-alt-linear
-                           <=-of-*-and-*-same-linear)))
+;; Could loop with the definition?
+(defthm log2-of-*-of-1/2
+  (equal (log2 (* 1/2 x))
+         (if (and (rationalp x)
+                  (< 0 x))
+             ;; usual case:
+             (+ -1 (log2 x))
+           0))
+  :hints (("Goal" :in-theory (enable log2))))
+
+(defthm log2-of-expt
+  (implies (integerp i)
+           (equal (log2 (expt 2 i))
+                  i))
+  :hints (("Goal" :in-theory (enable log2 (:i expt) expt-of-+))))
+
+(defthmd log2-of-both-sides
+  (implies (equal x y)
+           (equal (log2 x) (log2 y))))
+
+(local
+ (defun log2-double-induct (x y)
+   (declare (xargs :measure (if (and (rationalp x)
+                                     (< 0 x))
+                                (if (<= 2 x)
+                                    (floor x 1)
+                                  (if (< x 1)
+                                      (floor (/ x) 1)
+                                    0))
+                              0)))
+   (if (not (mbt (and (rationalp x)
+                      (< 0 x))))
+       (list x y)
+     (if (<= 2 x)
+         (+ 1 (log2-double-induct (/ x 2) (/ y 2)))
+       (if (< x 1)
+           (+ -1 (log2-double-induct (* x 2) (* 2 y)))
+         ;; x is in [1,2), so it's log2 is 0:
+         0)))))
 
 (defthm log2-monotonic-weak
   (implies (and (<= x y)
@@ -129,21 +137,22 @@
            :in-theory (enable log2))))
 
 ;; Unlike power-of-2p, this isn't restricted to integers.  Rename that one?
-(defun rat-power-of-2p (x)
+(defund rat-power-of-2p (x)
   (declare (xargs :guard (and (rationalp x)
                               (< 0 x))))
   (equal (expt 2 (log2 x))
          x))
 
-(defthm equal-of-expt-and-constant-gen
+(defthm equal-of-expt2-and-constant-gen
   (implies (and (syntaxp (and (quotep k)
-                              (not (quotep size)) ;avoid loops if (:e expt) is disabled
+                              (not (quotep i)) ; avoids loops if (:e expt) is disabled
                               ))
-                (integerp size))
-           (equal (equal (expt 2 size) k)
+                (integerp i))
+           (equal (equal (expt 2 i) k)
                   (and (rat-power-of-2p k) ; gets evaluated
-                       (equal size (log2 k)))))
-  :hints (("Goal" :use ((:instance log2-of-both-sides (x (expt 2 size)) (y k))))))
+                       (equal i (log2 k)))))
+  :hints (("Goal" :in-theory (enable rat-power-of-2p)
+           :use ((:instance log2-of-both-sides (x (expt 2 i)) (y k))))))
 
 (defthm log2-monotonic-strong-when-power-of-2p
   (implies (and (< x y)
@@ -154,17 +163,7 @@
                 (rationalp y))
            (< (log2 x) (log2 y)))
   :hints (("Goal" :induct (log2-double-induct x y)
-           :in-theory (enable log2 expt-of-+))))
-
-(defthm negative-of-log2-type
-  (implies (and (< x 1)
-                (< 0 x)
-                (rationalp x))
-           (< (log2 x) 0))
-  :rule-classes :type-prescription
-  :hints (("Goal"; :expand (log2 x)
-           :induct (log2 x)
-           :in-theory (e/d (log2) (log2-of-*-of-2)))))
+           :in-theory (enable log2 expt-of-+ rat-power-of-2p))))
 
 (defthm equal-of-0-and-log2
   (implies (and (< 0 x)
@@ -227,7 +226,7 @@
                 (< 0 x))
            (equal (< (expt 2 (log2 x)) x)
                   (not (rat-power-of-2p x))))
-  :hints (("Goal" :in-theory (enable log2))))
+  :hints (("Goal" :in-theory (enable log2 rat-power-of-2p))))
 
 (defthm <-of-expt-2-of-log2-same-linear
   (implies (and (not (rat-power-of-2p x))
@@ -235,8 +234,11 @@
                 (< 0 x))
            (< (expt 2 (log2 x)) x))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable log2))))
+  :hints (("Goal" :in-theory (e/d (log2)
+                                  (<=-of-expt-2-of-log2-linear ; for speed
+                                   )))))
 
+;; todo: Gen to any constant
 (defthm <-of-log2-and-0
   (implies (and (rationalp x)
                 (< 0 x))
@@ -258,3 +260,121 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :hints (("Goal" :cases ((equal x 0))
            :in-theory (enable log2))))
+
+;todo: log2 of mask?
+
+(local
+  (defun log2i (x i)
+  (declare (xargs :measure
+                  (if (and (rationalp x) (< 0 x))
+                      (if (<= 2 x)
+                          (floor x 1)
+                        (if (< x 1) (floor (/ x) 1) 0))
+                    0)))
+  (if (not (mbt (and (rationalp x) (< 0 x))))
+      (list x i)
+    (if (<= 2 x)
+        (+ 1 (log2i (/ x 2) (+ -1 i)))
+      (if (< x 1) (+ -1 (log2i (* x 2) (+ 1 i))) 0)))))
+
+;quite powerful
+(defthm log2-must-be
+  (implies (and (<= (expt 2 i) x)
+                (< x (expt 2 (+ 1 i)))
+                (rationalp x)
+                (integerp i))
+           (equal (log2 x)
+                  i))
+  :hints (("Subgoal *1/4" :cases ((< i 0) (> i 0)))
+          ("Goal" :induct (log2i x i)
+           :in-theory (enable log2 expt-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthmd log2-of-+-of--1-when-power-of-2p
+    (implies (and (integerp n)
+                  (equal n (expt 2 (log2 n))) ; power of 2
+                  (<= 2 n) ; avoids log2 of 0
+                  )
+             (equal (log2 (+ -1 n))
+                    (+ -1 (log2 n))))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ -1 n))
+                                    (i (+ -1 (log2 n))))
+             :in-theory (disable log2-must-be)))))
+
+(local
+  (defthmd log2-of-+-of--1-when-not-power-of-2p
+    (implies (and (integerp n)
+                  (not (equal n (expt 2 (log2 n)))) ; not a power of 2
+                  (<= 2 n) ; avoids log2 of 0
+                  )
+             (equal (log2 (+ -1 n))
+                    (log2 n)))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ -1 n))
+                                    (i (log2 n)))
+           :in-theory (disable log2-must-be)))))
+
+(defthm log2-of-+-of--1
+  (implies (and (integerp n)
+                (<= 2 n) ; avoids log2 of 0
+                )
+           (equal (log2 (+ -1 n))
+                  (if (equal n (expt 2 (log2 n))) ;power of 2
+                      (+ -1 (log2 n))
+                    (log2 n))))
+  :hints (("Goal" :in-theory (enable log2-of-+-of--1-when-not-power-of-2p
+                                     log2-of-+-of--1-when-power-of-2p))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthmd log2-of-+-of-1-when-almost-power-of-2p
+    (implies (and (integerp n)
+                  (equal n (+ -1 (expt 2 (+ 1 (log2 n))))) ; almost the next power of 2
+                  (<= 1 n)
+                  )
+             (equal (log2 (+ 1 n))
+                    (+ 1 (log2 n))))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ 1 n))
+                                    (i (+ 1 (log2 n))))
+             :in-theory (disable log2-must-be)))))
+
+(local
+  (defthmd log2-of-+-of-1-when-not-almost-power-of-2p
+    (implies (and (integerp n)
+                  (not (equal n (+ -1 (expt 2 (+ 1 (log2 n)))))) ; not almost the next power of 2
+                  (<= 1 n)
+                  )
+             (equal (log2 (+ 1 n))
+                    (log2 n)))
+    :hints (("Goal" :use (:instance log2-must-be
+                                    (x (+ 1 n))
+                                    (i (log2 n)))
+             :in-theory (disable log2-must-be)))))
+
+(defthm log2-of-+-of-1
+  (implies (and (integerp n)
+                (<= 1 n))
+           (equal (log2 (+ 1 n))
+                  (if (equal n (+ -1 (expt 2 (+ 1 (log2 n))))) ;almost the next power of 2
+                      (+ 1 (log2 n))
+                    (log2 n))))
+  :hints (("Goal" :in-theory (enable log2-of-+-of-1-when-almost-power-of-2p
+                                     log2-of-+-of-1-when-not-almost-power-of-2p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm log2-of-floor-by-1
+  (implies (and (<= 1 x) ; avoids log2 of 0
+                (rationalp x))
+           (equal (log2 (floor x 1))
+                  (log2 x)))
+  :hints (("Goal" :use (:instance log2-must-be
+                                  (x (floor x 1))
+                                  (i (log2 x)))
+           :in-theory (disable log2-must-be))))

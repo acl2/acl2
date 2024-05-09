@@ -563,11 +563,14 @@ descriptions.</li>
                                 :defmap   defmap
                                 :bytes    bytes))
        ((unless successp)
-        (mv (vl-loadstate-fatal :type :vl-preprocess-failed
-                                :msg "Preprocessing failed for ~s0."
-                                :args (list filename)
-                                :st st)
-            state))
+        (b* ((st
+              ;; keep the old defines but make the fast alist again
+              (change-vl-loadstate st :defines (make-fast-alist st.defines))))
+          (mv (vl-loadstate-fatal :type :vl-preprocess-failed
+                                  :msg "Preprocessing failed for ~s0."
+                                  :args (list filename)
+                                  :st st)
+              state)))
 
        ((mv preprocessed state)
         (vl-preprocess-debug filename preprocessed st state))
@@ -610,7 +613,14 @@ descriptions.</li>
         ;; we want to add nothing but warnings to the parse state.  That means
         ;; unwinding and restoring the pstate-backup that we had.
         (b* ((new-warnings (vl-parsestate->warnings pstate))
-             (st           (change-vl-loadstate st :pstate pstate-backup))
+             (st           (change-vl-loadstate st
+                                                :pstate pstate-backup
+                                                ;; Keep the old defines from
+                                                ;; before preprocessing, but
+                                                ;; remake the fast alist
+                                                ;; because it may have gotten
+                                                ;; stolen
+                                                :defines (make-fast-alist st.defines)))
              (st           (vl-loadstate-set-warnings new-warnings))
              (st           (vl-loadstate-fatal :type :vl-parse-failed
                                                :msg "Parsing failed for ~s0."

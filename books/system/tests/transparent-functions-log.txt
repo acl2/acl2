@@ -1,0 +1,1819 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT T) (F2 (X) T))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
+
+
+ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The signature for
+F1 specifies :transparent t, but the signature for F2 does not.  This
+is illegal because if any signature in an encapsulate event specifies
+:transparent t, then all must do so.  See :DOC encapsulate.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F1 ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((F1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((F1 *) => *)
+                      ((F2 *) => * :TRANSPARENT T))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
+
+
+ACL2 Error in ( ENCAPSULATE (((F1 * ...) ...) ...) ...):  The signature
+for F2 specifies :transparent t, but the signature for F1 does not.
+This is illegal because if any signature in an encapsulate event specifies
+:transparent t, then all must do so.  See :DOC encapsulate.
+
+
+Summary
+Form:  ( ENCAPSULATE (((F1 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((F1 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE (((F1 *) => * :TRANSPARENT T)
+                      ((F2 *) => * :TRANSPARENT NIL))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
+
+
+ACL2 Error in ( ENCAPSULATE (((F1 * ...) ...) ...) ...):  The signature
+for F1 specifies :transparent t, but the signature for F2 does not.
+This is illegal because if any signature in an encapsulate event specifies
+:transparent t, then all must do so.  See :DOC encapsulate.
+
+
+Summary
+Form:  ( ENCAPSULATE (((F1 * ...) ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE (((F1 * ...) ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT T)
+                      (F2 (X) T :TRANSPARENT T))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (ENCAPSULATE ((F3 (X) T))
+            (LOCAL (DEFUN F3 (X) X))
+            (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+          (DEFTHM F1-IS-F2
+            (OR (EQUAL (F2 X) (F1 X))
+                (EQUAL (F2 X) (F2 X)))
+            :RULE-CLASSES NIL))
+
+To verify that the four encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F1 (X) X))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem (EQUAL (F1 X) X).  
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+F1
+
+
+ACL2 !>>>(LOCAL (DEFUN F2 (X) X))
+
+Since F2 is non-recursive, its admission is trivial.  We observe that
+the type of F2 is described by the theorem (EQUAL (F2 X) X).  
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: NIL
+F2
+
+
+ACL2 !>>>(ENCAPSULATE ((F3 (X) T))
+           (LOCAL (DEFUN F3 (X) X))
+           (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F3 (X) X))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (EQUAL (F3 X) X).  
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: NIL
+F3
+
+
+ACL2 !>>>(DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM F3-IS-F1 ...):  A :REWRITE rule
+generated from F3-IS-F1 will be triggered only by terms containing
+the function symbol F3, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F3-IS-F1 ...):  A newly proposed
+:REWRITE rule generated from F3-IS-F1 probably subsumes the previously
+added :REWRITE rule F3, in the sense that the new rule will now probably
+be applied whenever the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F3-IS-F1 ...):  The previously added
+rule F3 subsumes a newly proposed :REWRITE rule generated from F3-IS-F1,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F3-IS-F1 ...)
+Rules: ((:DEFINITION F1) (:DEFINITION F3))
+Warnings:  Subsume and Non-rec
+F3-IS-F1
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function F3:
+
+(EQUAL (F3 X) (F1 X))
+
+Summary
+Form:  ( ENCAPSULATE ((F3 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+F3
+
+
+ACL2 !>>>(DEFTHM F1-IS-F2
+           (OR (EQUAL (F2 X) (F1 X))
+               (EQUAL (F2 X) (F2 X)))
+           :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F1-IS-F2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+F1-IS-F2
+
+End of Encapsulated Events.
+
+
+ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The signatures of
+the proposed encapsulate event specify :transparent t (for F1 and F2).
+But function symbol F3 is not marked as transparent in its subsidiary
+encapsulate signature.  This is illegal; see :DOC transparent-functions.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F1 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((F1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE ((F1 (X) T) (F2 (X) T))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
+            (LOCAL (DEFUN F3 (X) X))
+            (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+          (DEFTHM F1-IS-F2
+            (OR (EQUAL (F2 X) (F1 X))
+                (EQUAL (F2 X) (F2 X)))
+            :RULE-CLASSES NIL))
+
+To verify that the four encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F1 (X) X))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem (EQUAL (F1 X) X).  
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+F1
+
+
+ACL2 !>>>(LOCAL (DEFUN F2 (X) X))
+
+Since F2 is non-recursive, its admission is trivial.  We observe that
+the type of F2 is described by the theorem (EQUAL (F2 X) X).  
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: NIL
+F2
+
+
+ACL2 !>>>(ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
+           (LOCAL (DEFUN F3 (X) X))
+           (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F3 (X) X))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (EQUAL (F3 X) X).  
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: NIL
+F3
+
+
+ACL2 !>>>(DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM F3-IS-F1 ...):  A :REWRITE rule
+generated from F3-IS-F1 will be triggered only by terms containing
+the function symbol F3, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F3-IS-F1 ...):  A newly proposed
+:REWRITE rule generated from F3-IS-F1 probably subsumes the previously
+added :REWRITE rule F3, in the sense that the new rule will now probably
+be applied whenever the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F3-IS-F1 ...):  The previously added
+rule F3 subsumes a newly proposed :REWRITE rule generated from F3-IS-F1,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F3-IS-F1 ...)
+Rules: ((:DEFINITION F1) (:DEFINITION F3))
+Warnings:  Subsume and Non-rec
+F3-IS-F1
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function F3:
+
+(EQUAL (F3 X) (F1 X))
+
+Summary
+Form:  ( ENCAPSULATE ((F3 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+F3
+
+
+ACL2 !>>>(DEFTHM F1-IS-F2
+           (OR (EQUAL (F2 X) (F1 X))
+               (EQUAL (F2 X) (F2 X)))
+           :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F1-IS-F2 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+F1-IS-F2
+
+End of Encapsulated Events.
+
+
+ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The signatures of
+the proposed encapsulate event do not specify :transparent t (for F1
+and F2).  But function symbol F3 is marked with :transparent t in its
+subsidiary encapsulate signature.  This is illegal; see :DOC transparent-
+functions.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F1 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((F1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE ((F1 (X) T))
+          (LOCAL (DEFUN F1 (X) X))
+          (ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
+            (LOCAL (DEFUN F3 (X) X))
+            (DEFTHM F3-IS-F1
+              (EQUAL (F3 X) (F1 X)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F1 (X) X))
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem (EQUAL (F1 X) X).  
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+F1
+
+
+ACL2 !>>>(ENCAPSULATE ((F3 (X) T :TRANSPARENT T))
+           (LOCAL (DEFUN F3 (X) X))
+           (DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F3 (X) X))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (EQUAL (F3 X) X).  
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: NIL
+F3
+
+
+ACL2 !>>>(DEFTHM F3-IS-F1 (EQUAL (F3 X) (F1 X)))
+
+ACL2 Warning [Non-rec] in ( DEFTHM F3-IS-F1 ...):  A :REWRITE rule
+generated from F3-IS-F1 will be triggered only by terms containing
+the function symbol F3, which has a non-recursive definition.  Unless
+this definition is disabled, this rule is unlikely ever to be used.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F3-IS-F1 ...):  A newly proposed
+:REWRITE rule generated from F3-IS-F1 probably subsumes the previously
+added :REWRITE rule F3, in the sense that the new rule will now probably
+be applied whenever the old rule would have been.
+
+
+ACL2 Warning [Subsume] in ( DEFTHM F3-IS-F1 ...):  The previously added
+rule F3 subsumes a newly proposed :REWRITE rule generated from F3-IS-F1,
+in the sense that the old rule rewrites a more general target.  Because
+the new rule will be tried first, it may nonetheless find application.
+
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F3-IS-F1 ...)
+Rules: ((:DEFINITION F1) (:DEFINITION F3))
+Warnings:  Subsume and Non-rec
+F3-IS-F1
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with the function F3:
+
+(EQUAL (F3 X) (F1 X))
+
+Summary
+Form:  ( ENCAPSULATE ((F3 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+F3
+
+End of Encapsulated Events.
+
+
+ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The signature of
+the proposed encapsulate event does not specify :transparent t (for
+F1).  But function symbol F3 is marked with :transparent t in its subsidiary
+encapsulate signature.  This is illegal; see :DOC transparent-functions.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F1 ...) ...) ...)
+Rules: NIL
+Warnings:  Subsume and Non-rec
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((F1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT 7) (F2 (X) T))
+          (LOCAL (DEFUN F1 (X) X))
+          (LOCAL (DEFUN F2 (X) X))
+          (DEFTHM F1-IS-F2
+            (EQUAL (F2 X) (F1 X))
+            :RULE-CLASSES NIL))
+
+
+ACL2 Error in ( ENCAPSULATE ((F1 ...) ...) ...):  The object 
+(F1 (X) T :TRANSPARENT 7) is not a legal signature.  The value of the
+:TRANSPARENT keyword must be Boolean; see :DOC signature.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F1 ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((F1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(PARTIAL-ENCAPSULATE ((F (X) T :TRANSPARENT T)
+                              (G (X) T :TRANSPARENT T))
+                             NIL
+                             (LOCAL (DEFUN F (X)
+                                      (DECLARE (XARGS :GUARD T))
+                                      (CONSP X)))
+                             (LOCAL (DEFUN G (X)
+                                      (DECLARE (XARGS :GUARD T))
+                                      (CONSP X)))
+                             (DEFTHM BOOLEANP-F
+                               (BOOLEANP (F X))
+                               :RULE-CLASSES :TYPE-PRESCRIPTION))
+
+To verify that the four encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X)
+                  (DECLARE (XARGS :GUARD T))
+                  (CONSP X)))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem 
+(OR (EQUAL (F X) T) (EQUAL (F X) NIL)).  
+
+Computing the guard conjecture for F....
+
+The guard conjecture for F is trivial to prove.  F is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+F
+
+
+ACL2 !>>>(LOCAL (DEFUN G (X)
+                  (DECLARE (XARGS :GUARD T))
+                  (CONSP X)))
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem 
+(OR (EQUAL (G X) T) (EQUAL (G X) NIL)).  
+
+Computing the guard conjecture for G....
+
+The guard conjecture for G is trivial to prove.  G is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+
+ACL2 !>>>(DEFTHM BOOLEANP-F
+           (BOOLEANP (F X))
+           :RULE-CLASSES :TYPE-PRESCRIPTION)
+
+ACL2 Observation in ( DEFTHM BOOLEANP-F ...):  Our heuristics choose
+(F X) as the :TYPED-TERM.
+
+Q.E.D.
+
+The storage of BOOLEANP-F depends upon the :compound-recognizer rule
+BOOLEANP-COMPOUND-RECOGNIZER.
+
+Summary
+Form:  ( DEFTHM BOOLEANP-F ...)
+Rules: ((:COMPOUND-RECOGNIZER BOOLEANP-COMPOUND-RECOGNIZER)
+        (:TYPE-PRESCRIPTION F))
+BOOLEANP-F
+
+
+ACL2 !>>>(SET-UNKNOWN-CONSTRAINTS-SUPPORTERS)
+
+Summary
+Form:  ( TABLE UNKNOWN-CONSTRAINTS-TABLE ...)
+Rules: NIL
+UNKNOWN-CONSTRAINTS-TABLE
+
+End of Encapsulated Events.
+
+
+ACL2 Error in ( ENCAPSULATE ((F ...) ...) ...):  A partial-encapsulate
+must not specify :transparent t in its signature.  However, the signature
+with list of names (F G) does just that.  See :DOC transparent-functions.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((F ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(DEFSTUB F0 (X) T)
+
+Summary
+Form:  (DEFSTUB F0 ...)
+Rules: NIL
+ F0
+ACL2 !>>(ENCAPSULATE ((F1 (X) T :TRANSPARENT T)
+                      ((F2 *) => * :TRANSPARENT T))
+          (LOCAL (DEFUN F1 (X) (F0 X)))
+          (LOCAL (DEFUN F2 (X) (F0 X)))
+          (DEFTHM F2-IS-F1
+            (IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
+            :RULE-CLASSES NIL))
+
+To verify that the three encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F1 (X) (F0 X)))
+
+Since F1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F1.
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+F1
+
+
+ACL2 !>>>(LOCAL (DEFUN F2 (X) (F0 X)))
+
+Since F2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of F2.
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: NIL
+F2
+
+
+ACL2 !>>>(DEFTHM F2-IS-F1
+           (IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
+           :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F2-IS-F1 ...)
+Rules: ((:DEFINITION F1)
+        (:DEFINITION F2)
+        (:EXECUTABLE-COUNTERPART IF))
+F2-IS-F1
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+The following constraint is associated with both of the functions F1
+and F2:
+
+(IMPLIES (F0 X) (EQUAL (F2 X) (F1 X)))
+
+Summary
+Form:  ( ENCAPSULATE ((F1 ...) ...) ...)
+Rules: NIL
+ (F1 F2)
+ACL2 !>>(DEFN F3 (X) X)
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem (EQUAL (F3 X) X).  
+
+Computing the guard conjecture for F3....
+
+The guard conjecture for F3 is trivial to prove.  F3 is compliant with
+Common Lisp.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: NIL
+ F3
+ACL2 !>>(DEFATTACH F0 F3)
+
+The guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+This concludes the guard proof.
+
+
+The attachment trivially satisfies the required constraints.
+
+
+Summary
+Form:  ( DEFATTACH F0 F3)
+Rules: NIL
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (DEFEVALUATOR EVL EVL-LIST ((F0 X))))
+Goal'
+Goal''
+Subgoal 3
+Subgoal 3'
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+Subgoal 1'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/2
+Subgoal *1/1
+Subgoal 2
+Subgoal 1
+Subgoal 2
+Subgoal 1
+Goal'
+Subgoal 2
+Subgoal 1
+ (EVL EVL-LIST)
+ACL2 !>>(DEFN META-FN1 (X) (IF (F1 X) X X))
+
+Since META-FN1 is non-recursive, its admission is trivial.  We observe
+that the type of META-FN1 is described by the theorem (EQUAL (META-FN1 X) X).
+
+Computing the guard conjecture for META-FN1....
+
+The guard conjecture for META-FN1 is trivial to prove.  META-FN1 is
+compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN META-FN1 ...)
+Rules: NIL
+ META-FN1
+ACL2 !>>(DEFTHM THM1
+          (EQUAL (EVL X A) (EVL (META-FN1 X) A))
+          :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+
+ACL2 Error in ( DEFTHM THM1 ...):  The proposed :META rule, THM1, is
+illegal because the attached function F0 is ancestral in both the evaluator
+and meta functions.  See :DOC evaluator-restrictions and see :DOC transparent-
+functions.
+
+The following is an ancestor path from F0 to the meta function META-FN1,
+i.e., each function symbol is a supporter of the next:
+
+(F0 F1 META-FN1)
+
+The following is an ancestor path from F0 to the evaluator function
+EVL, i.e., each function symbol is a supporter of the next:
+
+(F0 EVL)
+
+
+Summary
+Form:  ( DEFTHM THM1 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM THM1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F1 CONSP))
+
+
+ACL2 Error in ( DEFATTACH (F1 CONSP)):  A proposed defattach event
+attaches to F1 but not to F2, even though F1 and F2 are transparent
+function symbols that were introduced in the same encapsulate event.
+This is illegal; see :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP))
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH (F1 CONSP)):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F1 CONSP) (F2 NIL))
+
+ACL2 Warning [Attachment] in ( DEFATTACH (F1 CONSP) ...):  The function
+symbol F2 does not currently have an attachment, so the directive to
+remove its attachment will have no effect.
+
+
+
+ACL2 Error in ( DEFATTACH (F1 CONSP) ...):  When a defattach event
+specifies a transparent function symbol to be attached or unattached,
+then it is illegal for that same event to specify both an attachment
+and an erasure.  The proposed defattach event for transparent function
+symbol F1 is thus illegal.  See :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP) ...)
+Rules: NIL
+Warnings:  Attachment
+
+ACL2 Error [Failure] in ( DEFATTACH (F1 CONSP) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F1 CONSP)
+                   (F2 CONSP)
+                   (F0 F3))
+
+
+ACL2 Error in ( DEFATTACH (F1 CONSP) ...):  The function symbol F1
+was introduced as transparent, but both F1 and F0 are specified for
+attachment in a proposed defattach event even though F0 was not introduced
+in the same encapsulate event as F1.  This is illegal; see :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH (F1 CONSP) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F1 CONSP) (F2 CONSP))
+
+
+We first consider the two guard proof obligations.
+
+The first guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+The second (and last) guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+This concludes the two guard proofs.
+
+
+We now prove that the attachments satisfy the required constraint.
+The goal to prove is
+
+(IMPLIES (F0 X)
+         (EQUAL (CONSP X) (CONSP X))).
+
+Q.E.D.
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP) ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(DEFATTACH (F1 CONSP) (F2 NIL))
+
+
+ACL2 Error in ( DEFATTACH (F1 CONSP) ...):  When a defattach event
+specifies a transparent function symbol to be attached or unattached,
+then it is illegal for that same event to specify both an attachment
+and an erasure.  The proposed defattach event for transparent function
+symbol F1 is thus illegal.  See :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH (F1 CONSP) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFAXIOM THM1
+          (EQUAL (EVL X A) (EVL (META-FN1 X) A))
+          :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+
+ACL2 Error in ( DEFAXIOM THM1 ...):  It is illegal for a defaxiom event
+to specify :RULE-CLASSES of type :META or :CLAUSE-PROCESSOR.  See :DOC
+defaxiom.  A reasonable alternative might be to use defthm with skip-
+proofs.
+
+
+Summary
+Form:  ( DEFAXIOM THM1 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFAXIOM THM1 ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F1 NIL))
+
+
+ACL2 Error in ( DEFATTACH (F1 NIL)):  A proposed defattach event unattaches
+to F1 but not to F2, even though F1 and F2 are transparent function
+symbols that were introduced in the same encapsulate event.  This is
+illegal; see :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH (F1 NIL))
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH (F1 NIL)):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F1 NIL) (F2 NIL))
+
+Summary
+Form:  ( DEFATTACH (F1 NIL) ...)
+Rules: NIL
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(DEFATTACH (F1 CONSP) (F2 CONSP))
+
+
+We first consider the two guard proof obligations.
+
+The first guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+The second (and last) guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+This concludes the two guard proofs.
+
+
+The attachments trivially satisfy the required constraints.  Note that
+we are bypassing constraints that have been proved when processing
+previous events.
+
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP) ...)
+Rules: NIL
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(DEFATTACH (F1 CONSP) (F2 CONSP))
+
+
+We first consider the two guard proof obligations.
+
+The first guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+The second (and last) guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+This concludes the two guard proofs.
+
+
+The attachments trivially satisfy the required constraints.  Note that
+we are bypassing constraints that have been proved when processing
+previous events.
+
+
+ACL2 Observation in ( DEFATTACH (F1 CONSP) ...):  The pre-existing
+attachments are being removed for functions F1, F2, F1 and F2, before
+adding the requested attachments.
+
+Summary
+Form:  ( DEFATTACH (F1 CONSP) ...)
+Rules: NIL
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(DEFTHM THM1
+          (EQUAL (EVL X A) (EVL (META-FN1 X) A))
+          :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM THM1 ...)
+Rules: ((:DEFINITION META-FN1))
+ THM1
+ACL2 !>>(DEFATTACH (F1 NIL) (F2 NIL))
+
+
+ACL2 Error in ( DEFATTACH (F1 NIL) ...):  The existing :META rule,
+THM1, would become illegal after the proposed defattach event changes
+one or more attachments made to transparent functions, because the
+attached function F0 would be ancestral in both the evaluator and meta
+functions.  See :DOC evaluator-restrictions and see :DOC transparent-
+functions.
+
+The following would be an ancestor path from F0 to the meta function
+META-FN1, i.e., each function symbol would be a supporter of the next:
+
+(F0 F1 META-FN1)
+
+The following would be an ancestor path from F0 to the evaluator function
+EVL, i.e., each function symbol would be a supporter of the next:
+
+(F0 EVL)
+
+
+Summary
+Form:  ( DEFATTACH (F1 NIL) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH (F1 NIL) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE ((F4 (X) T :TRANSPARENT T)
+                      (F5 (X) T :TRANSPARENT T))
+          (LOCAL (DEFUN F4 (X) X))
+          (LOCAL (DEFUN F5 (X) X))
+          (DEFUN F6 (X) (F4 X))
+          (DEFTHM F5-IS-F6
+            (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X)))
+            :RULE-CLASSES NIL))
+
+To verify that the four encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F4 (X) X))
+
+Since F4 is non-recursive, its admission is trivial.  We observe that
+the type of F4 is described by the theorem (EQUAL (F4 X) X).  
+
+Summary
+Form:  ( DEFUN F4 ...)
+Rules: NIL
+F4
+
+
+ACL2 !>>>(LOCAL (DEFUN F5 (X) X))
+
+Since F5 is non-recursive, its admission is trivial.  We observe that
+the type of F5 is described by the theorem (EQUAL (F5 X) X).  
+
+Summary
+Form:  ( DEFUN F5 ...)
+Rules: NIL
+F5
+
+
+ACL2 !>>>(DEFUN F6 (X) (F4 X))
+
+Since F6 is non-recursive, its admission is trivial.  We observe that
+the type of F6 is described by the theorem (EQUAL (F6 X) X).  We used
+the :type-prescription rule F4.
+
+Summary
+Form:  ( DEFUN F6 ...)
+Rules: ((:TYPE-PRESCRIPTION F4))
+F6
+
+
+ACL2 !>>>(DEFTHM F5-IS-F6
+           (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X)))
+           :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM F5-IS-F6 ...)
+Rules: ((:DEFINITION F4)
+        (:DEFINITION F5)
+        (:DEFINITION F6)
+        (:EXECUTABLE-COUNTERPART IF))
+F5-IS-F6
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+In addition to F4 and F5, we export F6.
+
+The following constraint is associated with every one of the functions
+F6, F4 and F5:
+
+(AND (EQUAL (F6 X) (F4 X)) (IMPLIES (F6 X) (EQUAL (F5 X) (F6 X))))
+
+ACL2 Warning [Infected] in ( ENCAPSULATE ((F4 ...) ...) ...):  Note
+that the defining event for F6 infects the constraint of this encap-
+sulation.  That can be caused because a function ancestrally involves
+the constrained functions of an encapsulate and is ancestrally involved
+in the constraining theorems of those functions.  In any case, if at
+all possible, you should move this defining event out of the encapsulation.
+A constraint containing the formula of such an event is often hard
+to use in subsequent functional instantiations.  See :DOC infected-
+constraints and perhaps :DOC subversive-recursions for discussion of
+related issues.
+
+
+Summary
+Form:  ( ENCAPSULATE ((F4 ...) ...) ...)
+Rules: NIL
+Warnings:  Infected
+ (F4 F5)
+ACL2 !>>(DEFATTACH (F4 CONSP) (F5 CONSP))
+
+
+ACL2 Error in ( DEFATTACH (F4 CONSP) ...):  A proposed defattach event
+attaches to F4 but not to F6, even though F4 and F6 are transparent
+function symbols that were introduced in the same encapsulate event.
+This is illegal; see :DOC defattach.
+
+
+Summary
+Form:  ( DEFATTACH (F4 CONSP) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH (F4 CONSP) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH (F4 CONSP)
+                   (F5 CONSP)
+                   (F6 CONSP :ATTACH NIL))
+
+
+We first consider the two guard proof obligations.
+
+The first guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+The second (and last) guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+This concludes the two guard proofs.
+
+
+We now prove that the attachments satisfy the required constraint.
+The goal to prove is
+
+(AND (EQUAL (CONSP X) (CONSP X))
+     (IMPLIES (CONSP X)
+              (EQUAL (CONSP X) (CONSP X)))).
+
+Q.E.D.
+
+Summary
+Form:  ( DEFATTACH (F4 CONSP) ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ :ATTACHMENTS-RECORDED
+ACL2 !>>(UBT 'F0)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(PROGN (DEFSTUB G0 (X) T)
+               (WITH-OUTPUT :OFF
+                            :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+               (DEFUN META-FN2 (X) (IF (G0 X) X X))
+               (DEFATTACH G0 CONSP)
+               (DEFTHM THM2
+                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+
+
+ACL2 !>>>(DEFSTUB G0 (X) T)
+
+Summary
+Form:  (DEFSTUB G0 ...)
+Rules: NIL
+G0
+
+
+ACL2 !>>>(WITH-OUTPUT :OFF
+                      :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+Goal'
+Goal''
+Subgoal 3
+Subgoal 3'
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+Subgoal 1'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/2
+Subgoal *1/1
+Subgoal 2
+Subgoal 1
+Subgoal 2
+Subgoal 1
+Goal'
+Subgoal 2
+Subgoal 1
+(EVL EVL-LIST)
+
+
+ACL2 !>>>(DEFUN META-FN2 (X) (IF (G0 X) X X))
+
+Since META-FN2 is non-recursive, its admission is trivial.  We observe
+that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
+
+Summary
+Form:  ( DEFUN META-FN2 ...)
+Rules: NIL
+META-FN2
+
+
+ACL2 !>>>(DEFATTACH G0 CONSP)
+
+The guard proof obligation is
+
+(IMPLIES T T).
+
+Q.E.D.
+
+This concludes the guard proof.
+
+
+The attachment trivially satisfies the required constraints.
+
+
+Summary
+Form:  ( DEFATTACH G0 CONSP)
+Rules: NIL
+:ATTACHMENTS-RECORDED
+
+
+ACL2 !>>>(DEFTHM THM2
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+
+ACL2 Error in ( DEFTHM THM2 ...):  The proposed :META rule, THM2, is
+illegal because the attached function G0 is ancestral in both the evaluator
+and meta functions.  See :DOC evaluator-restrictions and see :DOC transparent-
+functions.
+
+The following is an ancestor path from G0 to the meta function META-FN2,
+i.e., each function symbol is a supporter of the next:
+
+(G0 META-FN2)
+
+The following is an ancestor path from G0 to the evaluator function
+EVL, i.e., each function symbol is a supporter of the next:
+
+(G0 EVL)
+
+
+Summary
+Form:  ( DEFTHM THM2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM THM2 ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( PROGN (DEFSTUB G0 ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( PROGN (DEFSTUB G0 ...) ...):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(PROGN (DEFSTUB G0 (X) T)
+               (WITH-OUTPUT :OFF
+                            :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+               (DEFUN META-FN2 (X) (IF (G0 X) X X))
+               (DEFTHM THM2
+                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+
+
+ACL2 !>>>(DEFSTUB G0 (X) T)
+
+Summary
+Form:  (DEFSTUB G0 ...)
+Rules: NIL
+G0
+
+
+ACL2 !>>>(WITH-OUTPUT :OFF
+                      :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+Goal'
+Goal''
+Subgoal 3
+Subgoal 3'
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+Subgoal 1'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/2
+Subgoal *1/1
+Subgoal 2
+Subgoal 1
+Subgoal 2
+Subgoal 1
+Goal'
+Subgoal 2
+Subgoal 1
+(EVL EVL-LIST)
+
+
+ACL2 !>>>(DEFUN META-FN2 (X) (IF (G0 X) X X))
+
+Since META-FN2 is non-recursive, its admission is trivial.  We observe
+that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
+
+Summary
+Form:  ( DEFUN META-FN2 ...)
+Rules: NIL
+META-FN2
+
+
+ACL2 !>>>(DEFTHM THM2
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM THM2 ...)
+Rules: ((:DEFINITION META-FN2))
+THM2
+
+Summary
+Form:  ( PROGN (DEFSTUB G0 ...) ...)
+Rules: NIL
+ THM2
+ACL2 !>>(DEFATTACH G0 CONSP)
+
+
+ACL2 Error in ( DEFATTACH G0 CONSP):  It is illegal to attach to the
+function symbol G0 because it is a common ancestor of the evaluator
+and meta functions of the :META rule, THM2.  See :DOC evaluator-restrictions
+and see :DOC transparent-functions.
+
+
+Summary
+Form:  ( DEFATTACH G0 CONSP)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH G0 CONSP):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UBT 'G0)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE ((G0 (X) T) (G1 (X) T))
+          (LOCAL (DEFUN G0 (X) X))
+          (LOCAL (DEFUN G1 (X) X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN G0 (X) X))
+
+Since G0 is non-recursive, its admission is trivial.  We observe that
+the type of G0 is described by the theorem (EQUAL (G0 X) X).  
+
+Summary
+Form:  ( DEFUN G0 ...)
+Rules: NIL
+G0
+
+
+ACL2 !>>>(LOCAL (DEFUN G1 (X) X))
+
+Since G1 is non-recursive, its admission is trivial.  We observe that
+the type of G1 is described by the theorem (EQUAL (G1 X) X).  
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: NIL
+G1
+
+End of Encapsulated Events.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE ((G0 ...) ...) ...)
+Rules: NIL
+ (G0 G1)
+ACL2 !>>(PROGN (WITH-OUTPUT :OFF
+                            :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+               (DEFUN META-FN2 (X) (IF (G0 X) X X))
+               (DEFTHM THM2
+                 (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+                 :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+
+
+ACL2 !>>>(WITH-OUTPUT :OFF
+                      :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+Goal'
+Goal''
+Subgoal 3
+Subgoal 3'
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+Subgoal 1'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/2
+Subgoal *1/1
+Subgoal 2
+Subgoal 1
+Subgoal 2
+Subgoal 1
+Goal'
+Subgoal 2
+Subgoal 1
+(EVL EVL-LIST)
+
+
+ACL2 !>>>(DEFUN META-FN2 (X) (IF (G0 X) X X))
+
+Since META-FN2 is non-recursive, its admission is trivial.  We observe
+that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
+
+Summary
+Form:  ( DEFUN META-FN2 ...)
+Rules: NIL
+META-FN2
+
+
+ACL2 !>>>(DEFTHM THM2
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM THM2 ...)
+Rules: ((:DEFINITION META-FN2))
+THM2
+
+Summary
+Form:  ( PROGN (WITH-OUTPUT :OFF ...) ...)
+Rules: NIL
+ THM2
+ACL2 !>>(DEFATTACH G0 CONSP)
+
+
+ACL2 Error in ( DEFATTACH G0 CONSP):  It is illegal to attach to the
+function symbol G0 because it is a common ancestor of the evaluator
+and meta functions of the :META rule, THM2.  See :DOC evaluator-restrictions
+and see :DOC transparent-functions.
+
+
+Summary
+Form:  ( DEFATTACH G0 CONSP)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH G0 CONSP):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(DEFATTACH G1 CONSP)
+
+
+ACL2 Error in ( DEFATTACH G1 CONSP):  It is illegal to attach to the
+function symbol G1 because it is a common ancestor of the evaluator
+and meta functions of the :META rule, THM2.  See :DOC evaluator-restrictions
+and see :DOC transparent-functions.
+
+
+Summary
+Form:  ( DEFATTACH G1 CONSP)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFATTACH G1 CONSP):  See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(UBT 'G0)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(DEFSTUB G0 (X) T)
+
+Summary
+Form:  (DEFSTUB G0 ...)
+Rules: NIL
+ G0
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (DEFEVALUATOR EVL EVL-LIST ((G0 X))))
+Goal'
+Goal''
+Subgoal 3
+Subgoal 3'
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+Subgoal 1'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/2
+Subgoal *1/1
+Subgoal 2
+Subgoal 1
+Subgoal 2
+Subgoal 1
+Goal'
+Subgoal 2
+Subgoal 1
+ (EVL EVL-LIST)
+ACL2 !>>(ENCAPSULATE ((G1 (X) T)
+                      ((G2 *) => *)
+                      (META-FN2 (X) T))
+          (LOCAL (DEFUN G1 (X) (G0 X)))
+          (LOCAL (DEFUN G2 (X) (G0 X)))
+          (DEFTHM G2-IS-G1
+            (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+            :RULE-CLASSES NIL)
+          (LOCAL (DEFUN META-FN2 (X)
+                   (IF (OR (G2 X) (G0 X)) X X)))
+          (DEFTHM THM2
+            (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+            :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+
+To verify that the five encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN G1 (X) (G0 X)))
+
+Since G1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G1.
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: NIL
+G1
+
+
+ACL2 !>>>(LOCAL (DEFUN G2 (X) (G0 X)))
+
+Since G2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G2.
+
+Summary
+Form:  ( DEFUN G2 ...)
+Rules: NIL
+G2
+
+
+ACL2 !>>>(DEFTHM G2-IS-G1
+           (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+           :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2-IS-G1 ...)
+Rules: ((:DEFINITION G1)
+        (:DEFINITION G2)
+        (:EXECUTABLE-COUNTERPART IF))
+G2-IS-G1
+
+
+ACL2 !>>>(LOCAL (DEFUN META-FN2 (X)
+                  (IF (OR (G2 X) (G0 X)) X X)))
+
+Since META-FN2 is non-recursive, its admission is trivial.  We observe
+that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
+
+Summary
+Form:  ( DEFUN META-FN2 ...)
+Rules: NIL
+META-FN2
+
+
+ACL2 !>>>(DEFTHM THM2
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+
+ACL2 Error in ( DEFTHM THM2 ...):  Rules of class :META are illegal
+inside encapsulate events with non-empty signatures unless the rules
+are local.  In this case such a signature introduces the function symbol
+G1.  You can probably avoid this error easily by stating the theorem
+with a different name, N, using :rule-classes nil, and then -- back
+at the top level after the encapsulate event -- including your original
+theorem with the hint, :by N.
+
+
+Summary
+Form:  ( DEFTHM THM2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM THM2 ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Warning in ( ENCAPSULATE ((G1 ...) ...) ...):  The attempted ENCAPSULATE
+has failed while trying to establish the admissibility of one of the
+(local or non-local) forms in the body of the ENCAPSULATE.
+
+
+Summary
+Form:  ( ENCAPSULATE ((G1 ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((G1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE ((G1 (X) T :TRANSPARENT T)
+                      ((G2 *) => * :TRANSPARENT T)
+                      (META-FN2 (X) T :TRANSPARENT T))
+          (LOCAL (DEFUN G1 (X) (G0 X)))
+          (LOCAL (DEFUN G2 (X) (G0 X)))
+          (DEFTHM G2-IS-G1
+            (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+            :RULE-CLASSES NIL)
+          (LOCAL (DEFUN META-FN2 (X)
+                   (IF (OR (G2 X) (G0 X)) X X)))
+          (DEFTHM THM2
+            (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+            :RULE-CLASSES ((:META :TRIGGER-FNS (NTH)))))
+
+To verify that the five encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN G1 (X) (G0 X)))
+
+Since G1 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G1.
+
+Summary
+Form:  ( DEFUN G1 ...)
+Rules: NIL
+G1
+
+
+ACL2 !>>>(LOCAL (DEFUN G2 (X) (G0 X)))
+
+Since G2 is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of G2.
+
+Summary
+Form:  ( DEFUN G2 ...)
+Rules: NIL
+G2
+
+
+ACL2 !>>>(DEFTHM G2-IS-G1
+           (IMPLIES (G0 X) (EQUAL (G2 X) (G1 X)))
+           :RULE-CLASSES NIL)
+
+Q.E.D.
+
+Summary
+Form:  ( DEFTHM G2-IS-G1 ...)
+Rules: ((:DEFINITION G1)
+        (:DEFINITION G2)
+        (:EXECUTABLE-COUNTERPART IF))
+G2-IS-G1
+
+
+ACL2 !>>>(LOCAL (DEFUN META-FN2 (X)
+                  (IF (OR (G2 X) (G0 X)) X X)))
+
+Since META-FN2 is non-recursive, its admission is trivial.  We observe
+that the type of META-FN2 is described by the theorem (EQUAL (META-FN2 X) X).
+
+Summary
+Form:  ( DEFUN META-FN2 ...)
+Rules: NIL
+META-FN2
+
+
+ACL2 !>>>(DEFTHM THM2
+           (EQUAL (EVL X A) (EVL (META-FN2 X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (NTH))))
+
+
+ACL2 Error in ( DEFTHM THM2 ...):  Rules of class :META are illegal
+inside encapsulate events with non-empty signatures unless the rules
+are local.  In this case such a signature introduces the function symbol
+G1.  You can probably avoid this error easily by stating the theorem
+with a different name, N, using :rule-classes nil, and then -- back
+at the top level after the encapsulate event -- including your original
+theorem with the hint, :by N.
+
+
+Summary
+Form:  ( DEFTHM THM2 ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM THM2 ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Warning in ( ENCAPSULATE ((G1 ...) ...) ...):  The attempted ENCAPSULATE
+has failed while trying to establish the admissibility of one of the
+(local or non-local) forms in the body of the ENCAPSULATE.
+
+
+Summary
+Form:  ( ENCAPSULATE ((G1 ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((G1 ...) ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>(UBT 'G0)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(DEFSTUB F NIL T)
+
+Summary
+Form:  (DEFSTUB F ...)
+Rules: NIL
+ F
+ACL2 !>>(WITH-OUTPUT :OFF
+                     :ALL (DEFEVALUATOR EVL EVL-LIST ((F))))
+Goal'
+Goal''
+Subgoal 3
+Subgoal 3'
+Subgoal 2
+Subgoal 2'
+Subgoal 1
+Subgoal 1'
+Subgoal *1/2
+Subgoal *1/1
+Subgoal *1/2
+Subgoal *1/1
+Subgoal 2
+Subgoal 1
+Subgoal 2
+Subgoal 1
+Goal'
+Subgoal 2
+Subgoal 1
+ (EVL EVL-LIST)
+ACL2 !>>(ENCAPSULATE ((MY-META-FN (X) X))
+          (LOCAL (DEFUN MY-META-FN (X)
+                   (IF (EQUAL X '(F))
+                       (LIST 'QUOTE (F))
+                     X)))
+          (DEFTHM MY-META-FN-CORRECT
+            (EQUAL (EVL X A) (EVL (MY-META-FN X) A))
+            :RULE-CLASSES ((:META :TRIGGER-FNS (F)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN MY-META-FN (X)
+                  (IF (EQUAL X '(F))
+                      (LIST 'QUOTE (F))
+                    X)))
+
+Since MY-META-FN is non-recursive, its admission is trivial.  We observe
+that the type of MY-META-FN is described by the theorem 
+(OR (AND (CONSP (MY-META-FN X))
+         (TRUE-LISTP (MY-META-FN X)))
+    (EQUAL (MY-META-FN X) X)).
+We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN MY-META-FN ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+MY-META-FN
+
+
+ACL2 !>>>(DEFTHM MY-META-FN-CORRECT
+           (EQUAL (EVL X A) (EVL (MY-META-FN X) A))
+           :RULE-CLASSES ((:META :TRIGGER-FNS (F))))
+
+
+ACL2 Error in ( DEFTHM MY-META-FN-CORRECT ...):  Rules of class :META
+are illegal inside encapsulate events with non-empty signatures unless
+the rules are local.  In this case such a signature introduces the
+function symbol MY-META-FN.  You can probably avoid this error easily
+by stating the theorem with a different name, N, using :rule-classes
+nil, and then -- back at the top level after the encapsulate event
+-- including your original theorem with the hint, :by N.
+
+
+Summary
+Form:  ( DEFTHM MY-META-FN-CORRECT ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFTHM MY-META-FN-CORRECT ...):  See :DOC
+failure.
+
+******** FAILED ********
+
+ACL2 Warning in ( ENCAPSULATE ((MY-META-FN ...) ...) ...):  The attempted
+ENCAPSULATE has failed while trying to establish the admissibility
+of one of the (local or non-local) forms in the body of the ENCAPSULATE.
+
+
+Summary
+Form:  ( ENCAPSULATE ((MY-META-FN ...) ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE ((MY-META-FN ...) ...) ...):
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>Bye.

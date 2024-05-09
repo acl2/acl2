@@ -1,0 +1,9 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "transparent-functions")
+
+; Help dependency scanner.
+#||
+(depends-on "transparent-functions-input.lsp")
+(depends-on "transparent-functions-log.txt")
+||#
+

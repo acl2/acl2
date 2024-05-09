@@ -1,0 +1,9 @@
+## About File-Attributes
+This is a small OS portability library to retrieve and set file attributes not supported by the Lisp standard functions.
+
+## How To
+Simply use the functions ``access-time``, ``modification-time``, and ``creation-time`` to access the relevant timestamps. Some stamps may not be accessible or modifiable depending on your OS or file system.
+
+In order to manage attribute information, use ``owner``, ``group``, and ``attributes``. The values used are OS specific for these functions, though the attributes flag can be decoded and encoded via a standardised form with ``decode-attributes`` and ``encode-attributes``.
+
+Any of the above operations may signal an error if the file does not exist, is inaccessible, the operation is not possible, or some other failure occurred.

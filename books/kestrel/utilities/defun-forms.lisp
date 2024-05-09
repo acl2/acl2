@@ -1,6 +1,6 @@
 ; Utilities for processing defun forms
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,10 +12,19 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "declares0")
+(include-book "declares0") ; for all-declarep
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/butlast" :dir :system))
 (local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+
+(local
+ (defthm butlast-of-append-helper
+   (implies (equal (len y) n)
+             (equal (butlast (append x y) n)
+                    (true-list-fix x)))
+   :hints (("Goal" :in-theory (enable butlast append)))))
 
 ;; (defthm symbol-listp-of-butlast
 ;;   (implies (and (SYMBOL-LISTP X)
@@ -28,23 +37,36 @@
   '(defun defund defun-nx defund-nx))
 
 ;add more to this!
-;; (<defun-type> <name> <formals> <declare> ... <declare> <body>)
+;; (<defun-type> <name> <formals> [doc-string] <declare>* <body>)
 (defund defun-formp (defun)
   (declare (xargs :guard t))
   (and (true-listp defun)
        (>= (len defun) 4)
        (member-eq (first defun) *defun-types*) ;TODO: Handle defun-inline, etc.?  define (maybe not)  Handle anything we might call fixup-defun on...
-       (symbolp (second defun))     ;the function name
-       (symbol-listp (third defun)) ;the formals
-       ;; not much to say about the body, since it is an untranslated term
-       ;; todo: should we allow a doc-string before the declares?
-       (all-declarep (butlast (cdr (cdr (cdr defun))) 1)) ;skip the defun-type, name, formals, and body.
-       ))
+       (let* ((args (fargs defun))
+              (name (first args))
+              (formals (second args))
+              (declares (if (stringp (third args))
+                            ;; there is a doc string present:
+                            (butlast (cdr (cdr (cdr args))) 1)
+                          ;; no doc string:
+                          (butlast (cdr (cdr args)) 1)))
+              ;; (body (car (last args))) ; not much to say about the body, since it is an untranslated term
+              )
+         (and (symbolp name)
+              (symbol-listp formals)
+              ;; doc-string is checked above
+              (all-declarep declares)))))
 
 (defund get-declares-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (butlast (cdr (cdr (cdr defun))) 1)) ; (defun <name> <formals> <declare> ... <declare> <body>)
+  (let ((args (fargs defun)))
+    (if (stringp (third args))
+        ;; there is a doc string present:
+        (butlast (cdr (cdr (cdr args))) 1)
+      ;; no doc string:
+      (butlast (cdr (cdr args)) 1))))
 
 (defthm all-declarep-of-get-declares-from-defun
   (implies (defun-formp defun)
@@ -68,22 +90,22 @@
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (second defun))
 
-(defund get-body-from-defun (defun)
-  (declare (xargs :guard (defun-formp defun)
-                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (car (last defun)))
-
 (defund get-formals-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
   (third defun))
 
+(defund get-body-from-defun (defun)
+  (declare (xargs :guard (defun-formp defun)
+                  :guard-hints (("Goal" :in-theory (enable defun-formp)))))
+  (car (last defun)))
+
 (defund get-arity-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)))
   (len (get-formals-from-defun defun)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; DEFUN is of the form (defun <name> <formals> <declare> ... <declare> <body>)
 (defund replace-declares-in-defun (defun declares)
   (declare (xargs :guard (and (defun-formp defun)
                               (true-listp declares)
@@ -91,11 +113,11 @@
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))
                   ))
   `(,(first defun) ;defun, defund, etc.
-    ,(second defun) ;name
-    ,(third defun) ;formals
+    ,(get-name-from-defun defun)
+    ,(get-formals-from-defun defun)
+    ;; TODO: Keep the doc-string, if present.
     ,@declares ;the new declares
-    ,(car (last defun)) ;body
-    ))
+    ,(get-body-from-defun defun)))
 
 (local (in-theory (disable all-declarep)))
 
@@ -104,7 +126,11 @@
                 (true-listp declares)
                 (all-declarep declares))
            (defun-formp (replace-declares-in-defun defun declares)))
-  :hints (("Goal" :in-theory (enable replace-declares-in-defun defun-formp))))
+  :hints (("Goal" :in-theory (enable replace-declares-in-defun
+                                     defun-formp
+                                     get-name-from-defun
+                                     get-formals-from-defun
+                                     get-body-from-defun))))
  ; (defun <name> <formals> <declare> ... <declare> <body>)
 
 ;; ;Check whether a defun form is recursive (TOOD: what about mutual recursion?)

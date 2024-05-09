@@ -1,3 +1,8 @@
+;;
+;; Copyright (C) 2014, David Greve
+;; License: A 3-clause BSD license.
+;; See the LICENSE file distributed with ACL2.
+;;
 (in-package "ACL2")
 
 ;; The (analyze-files flist state) function admitted at the bottom of
@@ -1293,7 +1298,9 @@ add: (z<-y)
 	 (pseudo-conflict (cdr set) from))))
 |#
 
-(include-book "str/strtok" :dir :system)
+; Matt K. mod, 8/6/2022: Apparently this book has been moved.
+; (include-book "str/strtok" :dir :system)
+(include-book "std/strings/strtok" :dir :system)
 
 ;; If any other entry is in your from set,
 

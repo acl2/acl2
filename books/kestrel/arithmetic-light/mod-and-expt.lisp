@@ -17,7 +17,7 @@
 (local (include-book "mod"))
 (local (include-book "expt2"))
 (local (include-book "times"))
-(local (include-book "times-and-divides"))
+(local (include-book "times-and-divide"))
 
 (defthmd mod-expt-split ;looped
   (implies (and (integerp x)
@@ -126,7 +126,8 @@
                 (integerp y))
            (equal (mod (expt (mod x y) i) y)
                   (mod (expt x i) y)))
-  :hints (("Goal" :in-theory (enable expt mod-of-*-subst-arg1))))
+  :hints (("Goal" :in-theory (e/d (expt mod-of-*-subst-arg1)
+                                  (floor-mod-elim-rule)))))
 
 (defthm mod-of-expt-when-equal-of-mod-subst-constant
   (implies (and (syntaxp (not (quotep r)))
@@ -196,3 +197,11 @@
                 (integerp i2))
            (equal (mod (expt 2 i1) (expt 2 i2))
                   0)))
+
+(defthm unsigned-byte-p-of-mod-of-expt
+  (implies (and (<= i size)
+                (integerp x)
+                (natp size)
+                (integerp i))
+           (unsigned-byte-p size (mod x (expt 2 i))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))

@@ -44,8 +44,7 @@
 ;; TODO: Put the bound second, to match dargp-less-than?
 (defund bounded-dag-exprp (nodenum expr)
   (declare (xargs :guard (natp nodenum)
-                  :split-types t
-                  :guard-debug t)
+                  :split-types t)
            (type (integer 0 *) nodenum))
   (mbe :logic (and (dag-exprp expr)
                    (if (and (consp expr)
@@ -143,12 +142,12 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
-(defthm bounded-dag-exprp-forward-to-all-dargp-of-dargs
+(defthm bounded-dag-exprp-forward-to-darg-listp-of-dargs
   (implies (and (bounded-dag-exprp nodenum expr)
                 (consp expr)
                 (not (equal 'quote (car expr)))
                 )
-           (all-dargp (dargs expr)))
+           (darg-listp (dargs expr)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
@@ -172,6 +171,18 @@
                 )
            (< (nth n (dargs expr)) nodenum))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp <-OF-NTH-WHEN-BOUNDED-DARG-LISTP))))
+
+;; Not tight.
+;; Disabled since hung on <
+(defthmd not-<-of-nth-of-dargs
+  (implies (and (bounded-dag-exprp nodenum expr)
+                (< n (len (dargs expr)))
+                (natp n)
+                (not (equal 'quote (car expr)))
+                (not (consp (nth n (dargs expr)))))
+           (not (< nodenum (nth n (dargs expr)))))
+  :hints (("Goal" :use (:instance <-of-nth-of-dargs)
+           :in-theory (disable <-of-nth-of-dargs))))
 
 (defthm symbolp-of-car-when-bounded-dag-exprp
   (implies (bounded-dag-exprp nodenum expr) ;nodenum is a free var

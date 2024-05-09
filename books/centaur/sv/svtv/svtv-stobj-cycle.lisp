@@ -68,7 +68,7 @@
      (equal (svex-eval (svex-lookup var nextst) env)
             (svex-env-lookup var (svtv-cycle-eval-nextst env
                                                        (svex-alist-eval prev-st env)
-                                                       phases x)))
+                                                       phases (fsm->nextstate x))))
      :hints (("goal" :use eval-nextsts-of-<fn>
               :in-theory (disable eval-nextsts-of-<fn>)))
      :fn svtv-cycle-compile)
@@ -78,20 +78,20 @@
       (iff (svex-lookup var nextst)
            (svex-env-boundp var (svtv-cycle-eval-nextst env
                                                       (svex-alist-eval prev-st env)
-                                                      phases x)))
+                                                      phases (fsm->nextstate x))))
       :hints (("goal" :use eval-nextsts-of-<fn>
                :in-theory (disable eval-nextsts-of-<fn>)))
       :fn svtv-cycle-compile))
 
-   (defthm base-fsm-eval-equiv-congruence-of-svtv-cycle-compile-outs
-     (implies (base-fsm-eval-equiv fsm fsm-equiv)
+   (defthm fsm-eval-equiv-congruence-of-svtv-cycle-compile-outs
+     (implies (fsm-eval-equiv fsm fsm-equiv)
               (svex-alist-eval-equiv (mv-nth 0 (svtv-cycle-compile prev-st phases fsm simp))
                                      (mv-nth 0 (svtv-cycle-compile prev-st phases fsm-equiv simp))))
      :hints((witness) (witness))
      :rule-classes :congruence)
 
-   (defthm base-fsm-eval-equiv-congruence-of-svtv-cycle-compile-nextst
-     (implies (base-fsm-eval-equiv fsm fsm-equiv)
+   (defthm fsm-eval-equiv-congruence-of-svtv-cycle-compile-nextst
+     (implies (fsm-eval-equiv fsm fsm-equiv)
               (svex-alist-eval-equiv! (mv-nth 1 (svtv-cycle-compile prev-st phases fsm simp))
                                      (mv-nth 1 (svtv-cycle-compile prev-st phases fsm-equiv simp))))
      :hints((witness) (witness))
@@ -115,26 +115,26 @@
             )
      :rule-classes :congruence)
 
-   (defthm base-fsm-eval-equiv-congruence-of-svtv-cycle-compile-outs
-     (implies (base-fsm-eval-equiv fsm fsm-equiv)
+   (defthm fsm-eval-equiv-congruence-of-svtv-cycle-compile-outs
+     (implies (fsm-eval-equiv fsm fsm-equiv)
               (svex-alist-eval-equiv (mv-nth 0 (svtv-cycle-compile prev-st phases fsm simp))
                                      (mv-nth 0 (svtv-cycle-compile prev-st phases fsm-equiv simp))))
      :hints((witness) (witness))
      :rule-classes :congruence)
 
 
-   (defcong svex-alist-eval-equiv base-fsm-eval-equiv (base-fsm values nextstate) 1
-     :hints(("Goal" :in-theory (enable base-fsm-eval-equiv))))
+   (defcong svex-alist-eval-equiv fsm-eval-equiv (fsm values nextstate) 1
+     :hints(("Goal" :in-theory (enable fsm-eval-equiv))))
 
-   (defcong svex-alist-eval-equiv! base-fsm-eval-equiv (base-fsm values nextstate) 2
-     :hints(("Goal" :in-theory (enable base-fsm-eval-equiv))))
+   (defcong svex-alist-eval-equiv! fsm-eval-equiv (fsm values nextstate) 2
+     :hints(("Goal" :in-theory (enable fsm-eval-equiv))))
 
 
 
    
 
-   (defcong base-fsm-eval-equiv base-fsm-eval-equiv (base-fsm-to-cycle phases fsm simp) 2
-     :hints(("Goal" :in-theory (enable base-fsm-to-cycle))))))
+   (defcong fsm-eval-equiv fsm-eval-equiv (fsm-to-cycle phases fsm simp) 2
+     :hints(("Goal" :in-theory (enable fsm-to-cycle))))))
 
   
 
@@ -142,33 +142,33 @@
 (local (in-theory (disable hons-dups-p)))
 
 
-(defthmd cycle-fsm-okp-of-base-fsm-to-cycle
-  (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
+(defthmd cycle-fsm-okp-of-fsm-to-cycle
+  (b* (((fsm fsm) (svtv-data$c->phase-fsm svtv-data))
        ((mv values nextstate)
         (svtv-cycle-compile (svex-identity-subst
-                             (svex-alist-keys base-fsm.nextstate))
+                             (svex-alist-keys fsm.nextstate))
                             (svtv-data$c->cycle-phases svtv-data)
-                            base-fsm simp)))
-    (svtv-data$c-cycle-fsm-okp svtv-data (make-base-fsm :values values :nextstate nextstate)))
+                            fsm simp)))
+    (svtv-data$c-cycle-fsm-okp svtv-data (make-fsm :values values :nextstate nextstate)))
   :hints(("Goal" :in-theory (enable svtv-data$c-cycle-fsm-okp))))
 
 (defthmd cycle-fsm-okp-implies-cycle-compile-values-equiv
   (implies (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
-           (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
+           (b* (((fsm fsm) (svtv-data$c->phase-fsm svtv-data))
                 ((mv ?values ?nextstate)
                  (svtv-cycle-compile (svex-identity-subst
-                                      (svex-alist-keys base-fsm.nextstate))
+                                      (svex-alist-keys fsm.nextstate))
                                      (svtv-data$c->cycle-phases svtv-data)
-                                     base-fsm simp)))
-             (base-fsm-eval-equiv (make-base-fsm :values values :nextstate nextstate) cycle-fsm)))
+                                     fsm simp)))
+             (fsm-eval-equiv (make-fsm :values values :nextstate nextstate) cycle-fsm)))
   :hints ((acl2::use-termhint
-           (b* (((base-fsm base-fsm) (svtv-data$c->phase-fsm svtv-data))
-                ((base-fsm cycle-fsm))
+           (b* (((fsm fsm) (svtv-data$c->phase-fsm svtv-data))
+                ((fsm cycle-fsm))
                 ((mv ?values ?nextstate)
                  (svtv-cycle-compile (svex-identity-subst
-                                      (svex-alist-keys base-fsm.nextstate))
+                                      (svex-alist-keys fsm.nextstate))
                                      (svtv-data$c->cycle-phases svtv-data)
-                                     base-fsm simp)))
+                                     fsm simp)))
              `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
                       (x ,(hq values))
                       (y ,(hq cycle-fsm.values)))
@@ -180,11 +180,11 @@
                       (svtv-data$c svtv-data)
                       (env (svex-alist-eval-equiv-envs-equivalent-witness
                             ,(hq values) ,(hq values1)))))
-               :in-theory (enable base-fsm-eval-equiv
+               :in-theory (enable fsm-eval-equiv
                                   svex-alist-eval-equiv!-when-svex-alist-eval-equiv))))))
 
 (local (in-theory (enable cycle-fsm-okp-implies-cycle-compile-values-equiv
-                          cycle-fsm-okp-of-base-fsm-to-cycle)))
+                          cycle-fsm-okp-of-fsm-to-cycle)))
          
          
 ;; (local (defthm cycle-fsm-okp-equivalent-values-and-nextstate
@@ -204,11 +204,11 @@
               (svtv-data->flatnorm-validp svtv-data)
               (not (svtv-data->pipeline-validp svtv-data)))
   :guard-hints (("goal" :do-not-induct t
-                 :in-theory (enable base-fsm-to-cycle)))
+                 :in-theory (enable fsm-to-cycle)))
   :returns new-svtv-data
   (time$
-   (b* (((base-fsm cycle-fsm)
-         (base-fsm-to-cycle (svtv-data->cycle-phases svtv-data)
+   (b* (((fsm cycle-fsm)
+         (fsm-to-cycle (svtv-data->cycle-phases svtv-data)
                             (svtv-data->phase-fsm svtv-data)
                             simp))
         (svtv-data (update-svtv-data->cycle-fsm cycle-fsm svtv-data)))
@@ -233,16 +233,17 @@
                                            &key (skip 'nil))
   :guard (and (svtv-data->phase-fsm-validp svtv-data)
               (svtv-data->flatnorm-validp svtv-data))
-  :returns new-svtv-data
+  :returns (mv updated new-svtv-data)
   (if (and (equal (svtv-cyclephaselist-fix phases)
                   (svtv-data->cycle-phases svtv-data))
            (svtv-data->cycle-fsm-validp svtv-data))
-      svtv-data
+      (mv nil svtv-data)
     (b* ((svtv-data (update-svtv-data->cycle-fsm-validp nil svtv-data))
          (svtv-data (update-svtv-data->cycle-phases phases svtv-data))
-         ((when skip) svtv-data)
-         (svtv-data (update-svtv-data->pipeline-validp nil svtv-data)))
-      (svtv-data-compute-cycle-fsm svtv-data simp)))
+         ((when skip) (mv t svtv-data))
+         (svtv-data (update-svtv-data->pipeline-validp nil svtv-data))
+         (svtv-data (svtv-data-compute-cycle-fsm svtv-data simp)))
+      (mv t svtv-data)))
   ///
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
@@ -260,6 +261,3 @@
   (defret cycle-phases-validp-of-<fn>
     (equal (svtv-data$c->cycle-phases new-svtv-data)
            (svtv-cyclephaselist-fix phases))))
-
-
-       

@@ -43,6 +43,7 @@ depends_on_event
 depends_rec_event
 loads_event
 cert_param_event
+cert_env_event
 ld_event
 ifdef_event
 endif_event
@@ -68,6 +69,7 @@ sub depends_on_event () { return 'depends-on'; }
 sub depends_rec_event () { return 'depends-rec'; }
 sub loads_event () { return 'loads'; }
 sub cert_param_event () { return 'cert_param'; }
+sub cert_env_event () { return 'cert_env'; }
 sub ld_event () { return 'ld'; }
 sub ifdef_event () { return 'ifdef'; }
 sub endif_event () { return 'endif'; }
@@ -143,7 +145,7 @@ sub scan_add_dir {
     my ($base,$the_line) = @_;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
-    # my $regexp = "^[^;]*\\([\\s]*add-include-book-dir!?[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
+    # Support directory supplied as (:key . "path") or just "path"
     my $res = $the_line =~
 	m/^[^;]* # not commented
           \(\s*
@@ -153,11 +155,15 @@ sub scan_add_dir {
             \s+
             :(?<name>[^\s]*)
             \s+
-            "(?<dir>[^"]*[^"\/])  # dir string except for possible trailing slash
-            \/?"
+            (?: (?: # "path":
+              "(?<dir>[^"]*[^"\/])  # dir string except for possible trailing slash
+              \/?"
+             ) | (?: # (:key . "path"):
+              \( \s* :(?<key>[^\s]*)  \s+ \. \s+ "(?<dir>[^"]*[^"\/]) \/?"
+            ))
          /xi;
     if ($res) {
-	my $ans = [add_dir_event, uc($+{name}), $+{dir}, ($+{nonloc} eq "!") ? 0 : 1 ];
+	my $ans = [add_dir_event, uc($+{name}), $+{key}, $+{dir}, ($+{nonloc} eq "!") ? 0 : 1 ];
 	debug_print_event($base, $ans);
 	return $ans;
     }
@@ -233,11 +239,40 @@ sub scan_depends_rec {
 
 sub scan_loads {
     my ($base,$the_line) = @_;
+    my @res = $the_line =~
+	m/ # may be commented -- no ^ directive
+          \(\s*
+            (?:[^\s():]*::)?   # package prefix
+            loads
+            \s+
+	    "(?<fname>[^"]*)"
+            (?:          # optional :dir argument
+              [^;]* :dir \s*
+              :(?<dirname>[^\s()]*))?
+         /xi;
 
-    my $regexp = "\\([\\s]*loads[\\s]*\"([^\"]*)\"(?:[^;]*:dir[\\s]*:([^\\s)]*))?";
-    my @res = $the_line =~ m/$regexp/i;
     if (@res) {
-	my $ans = [loads_event, $res[0], uc($res[1] || "")];
+	my $ans = [loads_event, $+{fname}, uc($+{dirname} || "")];
+	debug_print_event($base, $ans);
+	return $ans;
+    }
+
+    # Add support for include-events macro
+    @res = $the_line =~
+	m/^[^;]*?   # not commented
+          \(\s*
+            (?:[^\s():]*::)?   # package prefix
+            (?<cmd>include-events|include-src-events)
+            \s+
+	    "(?<fname>[^"]*)"
+            (?:          # optional :dir argument
+              [^;]* :dir \s*
+              :(?<dirname>[^\s()]*))?
+         /xi;
+    if (@res) {
+	my $book = "$+{cmd}" eq "include-events";
+	my $fname = $book ? "$+{fname}.lisp" : $+{fname};
+	my $ans = [loads_event, "$fname", uc($+{dirname} || "")];
 	debug_print_event($base, $ans);
 	return $ans;
     }
@@ -293,12 +328,22 @@ sub scan_cert_param {
 	}
 	return [cert_param_event, [["acl2x", 1]]];
     }
-    $regexp = "\\([\\s]*check-hons-enabled[\\s]+\\(:book";
-    if ($the_line =~ m/$regexp/) {
-	return [cert_param_event, [["hons-only", 1]]];
+    return 0;
+}
+
+sub scan_cert_env {
+    my ($base,$the_line) = @_;
+
+    my $regexp = "cert[-_]env[\\s]*:?[\\s]*\\(?([^)]*)\\)?";
+    my @match = $the_line =~ m/$regexp/;
+    if (@match) {
+	debug_print_event($base, ["cert_env", \@match]);
+	my $pairs = parse_params($match[0]);
+	return [cert_env_event, $pairs];
     }
     return 0;
 }
+
 
 
 sub scan_ld {
@@ -429,6 +474,7 @@ sub scan_src {
 	    } else {
 		my $event = scan_include_book($fname, $the_line, $islocal)
 		    || scan_cert_param($fname, $the_line)
+		    || scan_cert_env($fname, $the_line)
 		    || scan_depends_on($fname, $the_line)
 		    || scan_depends_rec($fname, $the_line)
 		    || scan_ifdef($fname, $the_line)
@@ -472,6 +518,8 @@ sub scan_src_run {
 		# just whitespace so skip, in particular don't remove $islocal or $acl2devel
 	    } else {
 		my $event = scan_include_book($fname, $the_line)
+		    || scan_cert_param($fname, $the_line)
+		    || scan_cert_env($fname, $the_line)
 		    || scan_max_mem($fname, $the_line)
 		    || scan_max_time($fname, $the_line)
 		    || scan_ifdef($fname, $the_line)

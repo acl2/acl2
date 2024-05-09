@@ -72,7 +72,7 @@
   :hints (("Goal" :in-theory (enable PFIELD::MUL-OF-ADD-ARG2))))
 
 (defthmd solve-for-u3
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (fep a p)
                 (fep b p)
                 (fep u3/num p))
@@ -87,7 +87,7 @@
   (implies (and (syntaxp (quotep y))
                 (fep z p)
                 (fep y p)
-                (rtl::primep p)
+                (primep p)
                 (< 2 p))
            (equal (equal x (div y z p))
                   (if (equal 0 z)
@@ -226,7 +226,7 @@
                 (fep c p)
                 (fep v3/num p)
                 (not (equal 0 c))
-                (RTL::PRIMEP P))
+                (PRIMEP P))
            (equal (equal '0 (add a (add b (mul v3/num c p) p) p))
                   (equal v3/num (div (neg (add a b p) p) c p))))
   :hints (("Goal" :in-theory (enable PFIELD::EQUAL-OF-DIV-ALT))))
@@ -237,7 +237,7 @@
 (defthmd collect-mults
   (implies (and (fep x p)
                 (fep y p)
-                (rtl::primep p))
+                (primep p))
            (equal (add x (mul k (mul x y p) p) p)
                   (mul x (add 1 (mul k y p) p) p))))
 
@@ -246,7 +246,7 @@
   (implies (and (fep x p)
                 (fep a p)
                 (fep b p)
-                (rtl::primep p)
+                (primep p)
                 (< 2 p)
                 (not (equal a 0)))
            (equal (equal a (div b x p))
@@ -263,6 +263,7 @@
           (zcash::edwards-add-spec u1/num v1/num u2/num v2/num u3/num v3/num))
  ;; todo: global rules ignored if no rule-lists given
  :NO-SPLITP nil
+ :var-ordering '(a_computation/product_num v3/num)
  :monitor '( solve-for-v3)
  :tactic '(:rep (:seq (:rep :rewrite) :subst))
  :global-rules '(pfield::fep-of-sub

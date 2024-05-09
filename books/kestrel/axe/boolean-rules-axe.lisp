@@ -30,54 +30,63 @@
 
 ;the axe-syntaxp is new
 (defthmd myif-becomes-boolif-axe
-  (implies (and (axe-syntaxp (syntactic-booleanp b dag-array)) ;could be optimized with a single call to an axe-syntaxp function that checks both
-                (axe-syntaxp (syntactic-booleanp c dag-array))
-                (booleanp b)
+  (implies (and (axe-syntaxp (and (syntactic-booleanp b dag-array) ;could be optimized with a single call to an axe-syntaxp function that checks both
+                                  (syntactic-booleanp c dag-array)))
+                (booleanp b) ; could use a scheme like we do for unsigned-byte-p-forced, for speed
                 (booleanp c))
            (equal (myif a b c)
                   (boolif a b c)))
   :hints (("Goal" :in-theory (enable myif boolif))))
 
+(defthmd if-becomes-boolif-axe
+  (implies (and (axe-syntaxp (and (syntactic-booleanp b dag-array) ;could be optimized with a single call to an axe-syntaxp function that checks both
+                                  (syntactic-booleanp c dag-array)))
+                (booleanp b)
+                (booleanp c))
+           (equal (if a b c)
+                  (boolif a b c)))
+  :hints (("Goal" :in-theory (enable myif boolif))))
+
 (defthmd equal-of-booleans-axe
-  (implies (and (axe-syntaxp (syntactic-booleanp x dag-array))
-                (axe-syntaxp (syntactic-booleanp y dag-array))
+  (implies (and (axe-syntaxp (and (syntactic-booleanp x dag-array)
+                                  (syntactic-booleanp y dag-array)))
                 (booleanp x)
                 (booleanp y))
            (equal (equal x y)
                   (iff x y))))
 
 (defthmd boolor-commutative-axe
-  (implies (axe-syntaxp (should-commute-args-dag 'boolor x y dag-array))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'boolor x y dag-array))
            (equal (boolor x y)
                   (boolor y x)))
   :hints (("Goal" :in-theory (enable boolor))))
 
 (defthmd boolor-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-args-dag 'boolor x y dag-array))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'boolor x y dag-array))
            (equal (boolor x (boolor y z))
                   (boolor y (boolor x z))))
   :hints (("Goal" :in-theory (enable boolor))))
 
 (defthmd booland-commutative-axe
-  (implies (axe-syntaxp (should-commute-args-dag 'booland x y dag-array))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'booland x y dag-array))
            (equal (booland x y)
                   (booland y x)))
   :hints (("Goal" :in-theory (enable booland))))
 
 (defthmd booland-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-args-dag 'booland x y dag-array))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'booland x y dag-array))
            (equal (booland x (booland y z))
                   (booland y (booland x z))))
   :hints (("Goal" :in-theory (enable booland))))
 
 (defthmd boolxor-commutative-axe
-  (implies (axe-syntaxp (should-commute-args-dag 'boolxor x y dag-array))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'boolxor x y dag-array))
            (equal (boolxor x y)
                   (boolxor y x)))
   :hints (("Goal" :in-theory (enable boolxor))))
 
 (defthmd boolxor-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-args-dag 'boolxor x y dag-array))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'boolxor x y dag-array))
            (equal (boolxor x (boolxor y z))
                   (boolxor y (boolxor x z))))
   :hints (("Goal" :in-theory (enable boolxor))))

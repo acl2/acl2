@@ -54,9 +54,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define return-string ((b booleanp))
+  :returns (s stringp)
+  (if b "true" "false"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define return-char ((b booleanp))
+  :returns (c characterp)
+  (if b #\T #\F))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (java::atj-main-function-type int-fact-loop (:jint :jint) :jint)
 
 (java::atj-main-function-type int-fact (:jint) :jint)
+
+(java::atj-main-function-type return-string (:aboolean) :astring)
+
+(java::atj-main-function-type return-char (:aboolean) :acharacter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,11 +89,23 @@
     ("IntFact9" (int-fact (java::int-value 0)))
     ("IntFact100" (int-fact (java::int-value 0)))))
 
+(defconst *return-string-tests*
+  '(("ReturnStringTrue" (return-string t))
+    ("ReturnStringFalse" (return-string nil))))
+
+(defconst *return-char-tests*
+  '(("ReturnCharT" (return-char t))
+    ("ReturnCharF" (return-char nil))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (java::atj int-fact
+           return-string
+           return-char
            :deep nil
            :guards t
            :no-aij-types t
            :java-class "NoAIJTypes"
-           :tests *int-fact-tests*)
+           :tests (append *int-fact-tests*
+                          *return-string-tests*
+                          *return-char-tests*))

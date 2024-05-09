@@ -4,6 +4,9 @@
   Author:    Lee Pike, Galois Connections, Inc. <leepike@galois.com>
 |#
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "symbol-manip")

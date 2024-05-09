@@ -52,28 +52,29 @@
     (union-eq (fn-formals (first fns) wrld)
               (formals-of-fns (rest fns) wrld))))
 
-
-
 ;; drop these?:
 
-(defthm symbolp-of-cdr-assoc-equal-symbol-symbol-alist
+(local
+ (defthm symbolp-of-cdr-assoc-equal-symbol-symbol-alist
   (implies (and (symbolp x)
                 (symbol-symbol-alistp alist)
                 (assoc-equal (car l) alist))
-           (symbolp (cdr (assoc-equal x alist)))))
+           (symbolp (cdr (assoc-equal x alist))))))
 
-(defthm symbol-listp-of-sublis-var-simple-lst
+(local
+ (defthm symbol-listp-of-sublis-var-simple-lst
   (implies (and (symbol-listp l)
                 (symbol-symbol-alistp alist))
            (symbol-listp (sublis-var-simple-lst alist l)))
   :hints (("Goal" :in-theory (enable sublis-var-simple
-                                     sublis-var-simple-lst))))
+                                     sublis-var-simple-lst)))))
 
-(defthm pseudo-termp-of-lookup-equal
-  (implies (and (symbolp x)
-                (symbol-symbol-alistp alist))
-           (pseudo-termp (lookup-equal x alist)))
-  :hints (("Goal" :in-theory (enable symbol-symbol-alistp))))
+(local
+ (defthm pseudo-termp-of-lookup-equal
+   (implies (and (symbolp x)
+                 (symbol-symbol-alistp alist))
+            (pseudo-termp (lookup-equal x alist)))
+   :hints (("Goal" :in-theory (enable symbol-symbol-alistp)))))
 
 ;returns a new defun
 (defun rename-params-in-defun (fn
@@ -87,7 +88,7 @@
                               (function-renamingp function-renaming)
                               (member-eq untranslate '(t nil :nice)))))
   (let* ((wrld (w state))
-         (body (fn-body fn t wrld))
+         (body (fn-body fn t wrld)) ; translated
          (ubody (get-body-from-event fn fn-event))
          (formals (sublis-var-simple-lst renaming (fn-formals fn wrld)))
          (declares (get-declares-from-event fn fn-event)) ;TODO: Think about all the kinds of declares that get passed through.
@@ -101,9 +102,9 @@
                            :use (:instance (:termination-theorem ,fn) :extra-bindings-ok ,@(alist-to-doublets renaming))))
                         declares)
                      declares))
-         (declares ; cheap way to deal with previous ignorable decls
+         (declares ; cheap way to deal with previous ignorable decls (TODO: Instead, put in the right ignore declares)
           (cons `(declare (ignorable ,@formals))
-                (remove-declares 'ignorable declares)))
+                (remove-declares 'ignorable (remove-declares 'ignore declares))))
          (new-body (rename-vars-in-term renaming body renaming))
          (new-body (rename-fns new-body function-renaming))
          (num-values (num-return-values-of-fn fn wrld))
@@ -152,29 +153,34 @@
 ;; Returns an event.
 ;; Similar to verify-guards-for-defun, but this one takes a param-renaming.
 ;; This requires the 'becomes theorems' to already exist.
-(defun verify-guards-for-rename-params (old-fn new-fn param-renaming function-renaming)
+(defun verify-guards-for-rename-params (old-fn new-fn param-renaming function-renaming guard-hints)
   (declare (xargs :guard (and (symbolp old-fn)
                               (symbolp new-fn)
                               (symbol-alistp param-renaming)
-                              (function-renamingp function-renaming))))
-  (let ((guard-hints ;;(if (eq :auto guard-hints)
-         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited) ; matches the :guard-simplify :limited below
-                                   :extra-bindings-ok
-                                   ;; account for the renaming:
-                                   ,@(alist-to-doublets param-renaming))
-            :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
-            ;; we use the becomes lemma(s):
-            :in-theory '(,@(becomes-theorem-names function-renaming)
-                         ;; because untranslate can
-                         ;; introduce CASE, which will have
-                         ;; EQLABLEP guard obligations that
-                         ;; may not be in the original
-                         ;; function:
-                         (:e eqlablep)
-                         (:e eqlable-listp) ; not sure whether this is needed, depends on what kinds of CASE untranslate can put in
-                         ))
-         ;; This can speed things up greatly.  See comments in verify-guards-for-defun:
-         ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause)))))
+                              (function-renamingp function-renaming)
+                              (or (eq :auto guard-hints)
+                                  (true-listp guard-hints)))))
+  (let ((guard-hints (if (eq :auto guard-hints)
+                         ;; I believe this can be very slow, if the old and new guard obligations are complex:
+                         `(("Goal" :use (:instance (:guard-theorem ,old-fn :limited) ; matches the :guard-simplify :limited below
+                                                   :extra-bindings-ok
+                                                   ;; account for the renaming:
+                                                   ,@(alist-to-doublets param-renaming))
+                            :do-not '(generalize eliminate-destructors) ;;TODO; Turn off more stuff:
+                            ;; we use the becomes lemma(s):
+                            :in-theory '(,@(becomes-theorem-names function-renaming)
+                                         ;; because untranslate can
+                                         ;; introduce CASE, which will have
+                                         ;; EQLABLEP guard obligations that
+                                         ;; may not be in the original
+                                         ;; function:
+                                         (:e eqlablep)
+                                         (:e eqlable-listp) ; not sure whether this is needed, depends on what kinds of CASE untranslate can put in
+                                         ))
+                           ;; This can speed things up greatly.  See comments in verify-guards-for-defun:
+                           ("goal'" :clause-processor (simplify-after-using-conjunction-clause-processor clause)))
+                       ;; use the given hints, perhaps often nil, to suppress the hints above
+                       guard-hints)))
     `(verify-guards$ ,new-fn
                      :hints ,guard-hints
                      :guard-simplify :limited ;; avoid simplification based on the current theory
@@ -183,7 +189,8 @@
 ;todo: combine with rename-params-event?
 (defun rename-params-fn-core (fn new-name
                                  param-renaming-alist
-                                 fn-event verify-guards
+                                 fn-event
+                                 verify-guards guard-hints
                                  untranslate
                                  state)
   (declare (xargs :stobjs state
@@ -192,6 +199,8 @@
                               ;; (symbolp new-name)
                               (var-renamingp param-renaming-alist)
                               (member-eq verify-guards '(t nil :auto))
+                              (or (eq :auto guard-hints)
+                                  (true-listp guard-hints))
                               (fn-definedp fn (w state))
                               (member-eq untranslate '(t nil :nice)))))
   (let ((verify-guards (if (eq :auto verify-guards)
@@ -215,7 +224,7 @@
              (local ,new-defun) ; has :verify-guards nil
              (local (install-not-normalized ,new-fn))
              (local ,becomes-theorem)
-             ,@(and verify-guards `((local ,(verify-guards-for-rename-params fn new-fn param-renaming-alist function-renaming))))
+             ,@(and verify-guards `((local ,(verify-guards-for-rename-params fn new-fn param-renaming-alist function-renaming guard-hints))))
              ,new-defun-to-export
              ,becomes-theorem-to-export))
       (if (fn-singly-recursivep fn state)
@@ -235,7 +244,7 @@
                (local ,new-defun)
                (local (install-not-normalized ,new-fn))
                (local ,becomes-theorem)
-               ,@(and verify-guards `((local ,(verify-guards-for-rename-params fn new-fn param-renaming-alist function-renaming))))
+               ,@(and verify-guards `((local ,(verify-guards-for-rename-params fn new-fn param-renaming-alist function-renaming guard-hints))))
                ,new-defun-to-export
                ,becomes-theorem-to-export))
         ;; we are operating on a mutually recursive nest of functions:
@@ -271,14 +280,16 @@
              (local ,make-flag-form)
              (local ,becomes-defthm-flag)
              ,@(clean-up-defthms becomes-theorems)
-             ,@(and verify-guards (list (verify-guards-for-rename-params fn new-fn param-renaming-alist function-renaming)))))))))
+             ,@(and verify-guards (list (verify-guards-for-rename-params fn new-fn param-renaming-alist function-renaming guard-hints)))))))))
 
 ;; Returns (mv erp event state).
 ;; todo: allow different renamings for mutual recursion
-(defun rename-params-event (fn param-renaming new-name verify-guards untranslate state)
+(defun rename-params-event (fn param-renaming new-name verify-guards guard-hints untranslate state)
   (declare (xargs :stobjs state
                   :guard (and (symbolp fn)
                               (member-eq verify-guards '(t nil :auto))
+                              (or (eq :auto guard-hints)
+                                  (true-listp guard-hints))
                               (member-eq untranslate '(t nil :nice)))
                   :mode :program)) ;because of the call to my-get-event
   (b* (((when (and (not (symbol-symbol-doubletp param-renaming))
@@ -306,7 +317,7 @@
        (event (rename-params-fn-core fn new-name
                                      param-renaming-alist
                                      fn-event
-                                     verify-guards untranslate state)))
+                                     verify-guards guard-hints untranslate state)))
     (mv nil event state)))
 
 (deftransformation rename-params
@@ -315,6 +326,7 @@
    )
   ((new-name ':auto)
    (verify-guards ':auto)
+   (guard-hints ':auto)
    (untranslate 't) ;todo: make :nice the default?
    )
   :short "Rename one or more parameters in a function."
@@ -323,4 +335,5 @@
    (param-renaming "A doublet or list of doublets")
    (new-name "New name to use for the function (if :auto, the transformation generates a name")
    (verify-guards "Whether to verify guards of the new function(s).")
+   (guard-hints "Hints to use for the guard proof, or :auto, where :auto means to do the guard proof by appealing to the original function's guard obligation -- this can be slow).")
    (untranslate "How to untranslate the function body after changing it.")))

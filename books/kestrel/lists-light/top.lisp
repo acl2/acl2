@@ -1,6 +1,6 @@
 ; Top-level book for the lightweight-lists library.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -44,12 +44,15 @@
 (include-book "resize-list")
 (include-book "make-list-ac")
 (include-book "list-sets")
+(include-book "position-equal-ac")
+(include-book "position-equal")
 
 ;; Books about non-built-in functions:
 (include-book "equiv-def")
 (include-book "find-index")
 (include-book "firstn-def")
 (include-book "firstn")
+(include-book "repeat-def")
 (include-book "repeat")
 (include-book "reverse-list-def")
 (include-book "reverse-list")
@@ -78,8 +81,11 @@
 (include-book "prefixp")
 (include-book "prefixp2")
 (include-book "remove-nth")
+(include-book "remove-duplicates-equal-alt")
 
 (include-book "len-at-least")
+
+(include-book "nth-to-unroll")
 
 (include-book "take2")
 (include-book "memberp2")
@@ -100,3 +106,6 @@
 (include-book "replace-item")
 
 (include-book "index-of-subseq")
+
+(include-book "filter-non-members")
+(include-book "union-equal-alt")

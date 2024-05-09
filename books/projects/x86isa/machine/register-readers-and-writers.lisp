@@ -4,6 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
+; Copyright (C) 2024, Kestrel Technology LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -35,6 +36,8 @@
 
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
+; Contributing Author:
+; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
 (include-book "rflags-spec")
@@ -133,11 +136,35 @@ prefix.</p>"
 
 ;; ----------------------------------------------------------------------
 
+(define vex-vvvv-reg-index ((vvvv :type (unsigned-byte 4)))
+  :returns (index natp)
+  :parents (register-readers-and-writers)
+  :short "Register index specified by the VEX.vvvv bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The VEX.vvvv bits specify a register index
+     in inverted (i.e. ones' complement) form:
+     see Intel Manual Volume 2 Section 2.3.6 (Dec 2023).
+     We introduce this function to perform the ones' complement,
+     for greater abstraction."))
+  (loghead 4 (lognot vvvv))
+  ///
+
+  (defthm-unsigned-byte-p n04p-of-vex-vvvv-reg-index
+    :hyp t
+    :bound 4
+    :concl (vex-vvvv-reg-index vvvv)
+    :gen-linear t
+    :gen-type t))
+
+;; ----------------------------------------------------------------------
+
 ;; [Jared] these rules broke something below
 (local (in-theory (disable bitops::logext-of-logand
                            bitops::logext-of-logior)))
 
-(defthm-signed-byte-p n08p-xr-rgf
+(defthm-signed-byte-p i64p-xr-rgf
   :hyp t
   :bound 64
   :concl (xr :rgf i x86)
@@ -532,7 +559,7 @@ are used to write natural numbers into the GPRs.</p>"
       :bound 64
       :concl (rr64 reg x86)
       :gen-linear t
-      :gen-type t))      
+      :gen-type t))
 
   (define wr64
     ((reg  :type (unsigned-byte  4))
@@ -1157,7 +1184,7 @@ pointer, or opcode registers\).</em></p>"
                              (force (force))))))
 
   (define zmmi-size
-    ((nbytes :type (unsigned-byte 5))
+    ((nbytes :type (unsigned-byte 7))
      (index  :type (unsigned-byte 5))
      x86)
     :enabled t
@@ -1175,7 +1202,7 @@ pointer, or opcode registers\).</em></p>"
        0)))
 
   (define !zmmi-size
-    ((nbytes :type (unsigned-byte 5))
+    ((nbytes :type (unsigned-byte 7))
      (index  :type (unsigned-byte 5))
      (val    :type integer)
      x86
@@ -1639,9 +1666,9 @@ values.</p>"
           (mbe :logic (n32 undefined-mask) :exec undefined-mask))
          ((the (unsigned-byte 32) input-rflags)
           (mbe :logic (n32 (rflags x86)) :exec (rflags x86))))
-    
-      (mbe 
-       :logic     
+
+      (mbe
+       :logic
        (b* ((x86 (if (equal (rflagsBits->cf undefined-mask) 1)
                      (!flgi-undefined :cf x86)
                    (!flgi :cf (rflagsBits->cf user-flags-vector) x86)))

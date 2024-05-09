@@ -1,7 +1,7 @@
 ; Rule about bvif together with other functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "bvsx")
 (include-book "bvmult")
 (include-book "bvshl")
+(include-book "kestrel/booleans/boolif" :dir :system)
 (local (include-book "bvplus"))
 
 ;let sizes differ?
@@ -115,12 +116,36 @@
                           (bvlt size x (bvchop size2 b)))))
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
+(defthm equal-of-bvif
+  (equal (equal x (bvif size test a b))
+         (boolif test (equal x (bvchop size a)) (equal x (bvchop size b))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm equal-of-bvif-alt
+  (equal (equal (bvif size test a b) x)
+         (boolif test (equal x (bvchop size a))
+                 (equal x (bvchop size b))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
 ;doesn't replicate any big terms
 (defthm equal-of-bvif-safe
   (implies (syntaxp (and (quotep x)
                          ;;could drop this one?:
                          (or (quotep a)
                              (quotep b))
+                         (quotep size)))
+           (equal (equal x (bvif size test a b))
+                  ;one of the branches here will be computed
+                  (boolif test
+                          (equal x (bvchop size a))
+                          (equal x (bvchop size b)))))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm equal-of-bvif-safe2 ; todo: replace the other?
+  (implies (syntaxp (and (quotep x)
+                         ;; ;;could drop this one?:
+                         ;; (or (quotep a)
+                         ;;     (quotep b))
                          (quotep size)))
            (equal (equal x (bvif size test a b))
                   ;one of the branches here will be computed

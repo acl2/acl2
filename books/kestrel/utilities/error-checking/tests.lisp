@@ -594,9 +594,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod, around August 2023: fmt is no longer in :program mode.
+#|
 (must-eval-to-t
  (b* (((er x) (ensure-function-program-mode 'fmt "This" t nil 'test state)))
    (value (equal x nil))))
+|#
 
 (must-eval-to-t
  (b* (((er x) (ensure-function-program-mode 'prove "This" t nil 'test state)))
@@ -924,6 +927,7 @@
 (must-succeed*
  (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
+ (local (include-book "kestrel/std/system/ubody" :dir :system))
  (must-eval-to-t
   (b* (((er x) (ensure-term-guard-verified-exec-fns
                 (ubody 'f (w state)) "This" t nil 'test state)))
@@ -1126,6 +1130,7 @@
 (must-succeed*
  (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
+ (local (include-book "kestrel/std/system/ubody" :dir :system))
  (must-eval-to-t
   (b* (((er x) (ensure-lambda-guard-verified-exec-fns
                 `(lambda (x) ,(ubody 'f (w state))) "This" t nil 'test state)))
@@ -1337,6 +1342,7 @@
 (must-succeed*
  (defun mycar (x) (declare (xargs :verify-guards nil)) (car x))
  (defun f (x) (mbe :logic (mycar x) :exec (if (consp x) (car x) nil)))
+ (local (include-book "kestrel/std/system/ubody" :dir :system))
  (must-eval-to-t
   (b* (((er x) (ensure-function/lambda-guard-verified-exec-fns
                 `(lambda (x) ,(ubody 'f (w state))) "This" t nil 'test state)))

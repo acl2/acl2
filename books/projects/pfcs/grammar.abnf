@@ -1,0 +1,68 @@
+; PFCS (Prime Field Constraint System) Library
+;
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (coglio@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexical Grammar
+
+line-feed = %x0a
+
+carriage-return = %x0d
+
+space = %x20
+
+line-terminator = [ carriage-return ] line-feed
+
+whitespace = space / line-terminator
+
+uppercase-letter = %x41-5a ; A-Z
+
+lowercase-letter = %x61-7a ; a-z
+
+letter = uppercase-letter / lowercase-letter
+
+digit = %x30-39 ; 0-9
+
+numeral = 1*digit
+
+integer = [ "-" ] numeral
+
+identifier = letter *( letter / digit / "_" )
+
+operator = "+" / "*" / ":=" / "=="
+
+separator = "(" / ")" / "{" / "}" / ","
+
+token = identifier / integer / operator / separator
+
+lexeme = token / whitespace
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Syntactic Grammar
+
+primary-expression = identifier / integer
+
+multiplication-expression = primary-expression
+                          / multiplication-expression "*" primary-expression
+
+addition-expression = multiplication-expression
+                    / addition-expression "+" multiplication-expression
+
+expression = addition-expression
+
+equality-constraint = expression "==" expression
+
+relation-constraint = identifier "(" [ expression *( "," expression ) ] ")"
+
+constraint = equality-constraint / relation-constraint
+
+definition = identifier "(" [ identifier *( "," identifier ) ] ")"
+             ":=" "{" [ constraint *( "," constraint ) ] "}"
+
+system = *definition *constraint

@@ -1,6 +1,6 @@
 ; Representation of Natural Numbers as Unsigned 11-Bit Byte Digits
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,12 +17,20 @@
 
 (defdigits ubyte11s-as-digits-in-base-2048
   :base 2048
+  :digit-pred ubyte11p
+  :digit-fix ubyte11-fix
   :digits-pred ubyte11-listp
   :digits-fix ubyte11-list-fix
   :bendian-to-nat beubyte11s=>nat
   :lendian-to-nat leubyte11s=>nat
   :nat-to-bendian nat=>beubyte11s
   :nat-to-lendian nat=>leubyte11s
+  :digit-pred-hints (("Goal" :in-theory (enable ubyte11p
+                                                dab-digitp)))
+  :digit-fix-hints (("Goal" :in-theory (enable ubyte11-fix
+                                               ubyte11p
+                                               dab-digit-fix
+                                               dab-digitp)))
   :digits-pred-hints (("Goal" :in-theory (enable ubyte11-listp
                                                  ubyte11p
                                                  dab-digit-listp

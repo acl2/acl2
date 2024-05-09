@@ -715,7 +715,7 @@
                    (:type-prescription set::setp-type)
                    (:type-prescription acl2::nonnil-symbol-listp)
                    (:type-prescription acl2::hons-duplicity-alist-p)
-                   (:type-prescription set::empty-type)
+                   (:type-prescription set::emptyp-type)
                    (:linear bsf-posp-strict-upper-bound)
                    (:rewrite signed-byte-p-limits-thm)
                    (:rewrite acl2::posp-redefinition)

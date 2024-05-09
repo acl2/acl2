@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 
 (include-book "rules")
 (include-book "overflow-and-underflow")
-(local (include-book "arith")) ; todo: drop
+(local (include-book "arith")) ; todo: drop (not easy)
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -26,19 +26,40 @@
 
 (local (in-theory (disable LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP))) ;for speed
 
-;move
-(defthm bvminus-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvminus size x y)
-                  (bvminus size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
+; move these:
+
+(defthm bvchop-of-+-of-expt-same-arg3
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x y (expt 2 size)))
+                  (bvchop size (+ x y)))))
+
+(defthm getbit-of-+-of-expt-same-arg1
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ (expt 2 n) x))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+
+(defthm getbit-of-+-of---of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (- (expt 2 n))))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+
+(defthm getbit-of-+-of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (expt 2 n)))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-plus))))
 
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
 ;we'd like.
+;; Slow proof!
 (defthmd sbvlt-add-to-both-sides-normal-case
   (implies (and (not (signed-addition-overflowsp size k x))
                 (not (signed-addition-overflowsp size k y))
@@ -47,18 +68,29 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
-                                          logext-cases
-                                          bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-                                          GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                          bvuminus bvcat logapp
-                                          ;expt-of-+
-                                          )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;PLUS-BVCAT-WITH-0-ALT ;looped!
-                                   ;PLUS-BVCAT-WITH-0 ;looped!
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (bvplus
+                                   bvchop-of-sum-cases
+                                   sbvlt
+                                   bvlt
+                                   getbit-of-plus
+                                   logext-cases
+                                   bvminus
+                                   bvchop-when-top-bit-1
+                                   getbit-when-val-is-not-an-integer
+                                   bvuminus
+                                   <-of-0-and-logext-alt
+                                   *-of-expt-of-one-less)
+                                  (bvminus-becomes-bvplus-of-bvuminus
+                                   ;;plus-bvcat-with-0-alt ;looped!
+                                   ;;plus-bvcat-with-0 ;looped!
+                                   ;; disables for speed:
+                                   bvchop-identity
+                                   expt-type-even-exponent-1
+                                   expt-type-even-exponent-2
+                                   expt-type-odd-exponent-negative-base
+                                   <=-of-bvchop-same-linear-2
+                                   expt-type-small-base-negative-exponent
+                                   )))))
 
 ;todo: add more versions
 (defthmd sbvlt-add-to-both-sides-normal-case-alt
@@ -249,7 +281,7 @@
                 (posp size))
            (equal (sbvlt size x (bvplus size x y))
                   (sbvlt size 0 y)))
-  :hints (("Goal" :use (:instance sbvlt-of-bvplus-same-arg2)
+  :hints (("Goal" :use sbvlt-of-bvplus-same-arg2
            :in-theory (e/d (signed-addition-overflowsp-symmetric
                             signed-addition-underflowsp-symmetric)
                            (SIGNED-ADDITION-OVERFLOWSP
@@ -269,14 +301,9 @@
                                           bvminus
                                           bvlt
                                           expt-of-+)
-                                  (bvlt-of-plus-arg1
-                                   bvlt-of-plus-arg2
-                                   bvminus-becomes-bvplus-of-bvuminus
-                                   <-becomes-bvlt-free
-                                   <-becomes-bvlt-free-alt
-                                   <-becomes-bvlt
-                                   ;collect-constants-over-<
-                                   <-becomes-bvlt-alt)))))
+                                  (bvminus-becomes-bvplus-of-bvuminus
+                                   ;;collect-constants-over-<
+                                   )))))
 
 (defthm unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt
   (implies (and (equal sizeplusone (+ 1 size))
@@ -285,7 +312,7 @@
                 (unsigned-byte-p size y))
            (equal (unsigned-byte-p size (bvplus sizeplusone y (bvuminus sizeplusone x)))
                   (bvle size x y)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger)
+  :hints (("Goal" :use unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger
            :in-theory (disable unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger))))
 
 (defthm unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt-signed

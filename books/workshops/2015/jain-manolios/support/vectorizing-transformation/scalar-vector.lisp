@@ -261,10 +261,10 @@
 ; in particular k = (len vecimem)
  (local
   ; alternate definition of scalarize starting from the first instruction
-  (defun S (L)
+  (defun Sc (L)
     (if (endp L)
         nil
-      (append (scalarize (car L)) (S (cdr L)))))
+      (append (scalarize (car L)) (Sc (cdr L)))))
   )
 
  (local
@@ -283,7 +283,7 @@
     (implies (and (vecimemp V)
                   (natp k))
              (equal (scalarize-mem k V)
-                    (S (seg k V))))
+                    (Sc (seg k V))))
     :hints (("goal" :in-theory (disable scalarize))))
   )
 
@@ -323,7 +323,7 @@
  (local
   (defthm S-sewgf
     (implies (vecimemp V)
-             (segmentp (S (seg k V)) (S V))))
+             (segmentp (Sc (seg k V)) (Sc V))))
   )
 
  (local
@@ -332,7 +332,7 @@
                   (vecimemp V)
                   (natp j)
                   (< j (len (scalarize-mem k V))))
-             (equal (nth j (S V))
+             (equal (nth j (Sc V))
                     (nth j (scalarize-mem k V)))))
   )
  
@@ -690,6 +690,7 @@
                   (ref-map u)))
   :hints (("goal" :use ((:instance lemma-5)
                         (:instance case-inst-exhaustive))
+           :in-theory (e/d (isa-state vecinst vecisa-state) ())
            :cases ((case-inst-1 s) (case-inst-2 s) (case-inst-3 s)))))
 
 (defun case-vinst-1 (s)
@@ -721,9 +722,11 @@
                 (equal w (ref-map s)))
            (equal (isa-step (isa-step w))
                   (ref-map u)))
-  :hints (("goal"   :use ((:instance case-vecinst-exhaustive)
-                          (:instance lemma-6)
-                          (:instance lemma-7))
+  :hints (("goal"
+           :use ((:instance case-vecinst-exhaustive)
+                 (:instance lemma-6)
+                 (:instance lemma-7))
+           :in-theory (e/d (isa-state vecinst vecisa-state inst) ())
            :cases ((case-vinst-1 s) (case-vinst-2 s) (case-vinst-3 s)))))
 
 (defun case-1-inst (k v)
@@ -758,7 +761,6 @@
           ("subgoal 3" :in-theory (disable case-1-inst case-2-inst))
           ("subgoal 1" :use (:instance simulation-inst))
           ("subgoal 2" :use (:instance simulation-vecinst))))
-
 
 (defthm impl-simulates-spec
   (implies (and (vecisa-statep s)

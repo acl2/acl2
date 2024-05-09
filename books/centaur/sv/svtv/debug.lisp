@@ -273,7 +273,7 @@
        `((design     :type (satisfies design-p)           :initially ,(make-design :top ""))
          (modidx     :type (integer 0 *)                  :initially 0)
          (assigns    :type (satisfies svex-alist-p)       :initially nil)
-         (delays     :type (satisfies svar-map-p)         :initially nil)
+         (delays     :type (satisfies svex-alist-p)       :initially nil)
          (updates    :type (satisfies svex-alist-p)       :initially nil)
          (nextstates :type (satisfies svex-alist-p)       :initially nil)
          (svtv       :type (satisfies svtv-p)             :initially ,(make-svtv :nphases 0))
@@ -731,7 +731,8 @@ nextstate and update functions given a timing diagram.</p>
                     ((filename  stringp) '"svtv-debug.vcd")
                     (state 'state))
   :parents (svex-stvs)
-  :short "Dump a VCD waveform showing the internal signals of an svex STV."
+  :short "(Deprecated) Dump a VCD waveform showing the internal signals of an svex STV."
+  :long "<p>This is deprecated in favor of @(see svtv-debug$).</p>"
   :prepwork ((local (in-theory (disable max))))
   :verbosep t
   (b* (((acl2::local-stobjs moddb aliases debugdata vcd-wiremap vcd-vals)

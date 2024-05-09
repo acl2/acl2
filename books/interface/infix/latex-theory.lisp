@@ -5,7 +5,7 @@
 ; Use of this software constitutes agreement with the terms of the
 ; license agreement, found in the file LICENSE.
 
-(in-package "user")
+(in-package "USER")
 
 (load-base "latex-init")
 

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,14 +34,14 @@
                                 (c::sintp |y|)
                                 (c::sintp |z|)
                                 ;; -10 <= x <= 10:
-                                (<= -10 (c::sint->get |x|))
-                                (<= (c::sint->get |x|) 10)
+                                (<= -10 (c::integer-from-sint |x|))
+                                (<= (c::integer-from-sint |x|) 10)
                                 ;; -10 <= y <= 10:
-                                (<= -10 (c::sint->get |y|))
-                                (<= (c::sint->get |y|) 10)
+                                (<= -10 (c::integer-from-sint |y|))
+                                (<= (c::integer-from-sint |y|) 10)
                                 ;; -10 <= z <= 10:
-                                (<= -10 (c::sint->get |z|))
-                                (<= (c::sint->get |z|) 10))
+                                (<= -10 (c::integer-from-sint |z|))
+                                (<= (c::integer-from-sint |z|) 10))
                     :guard-hints (("Goal"
                                    :in-theory
                                    (e/d (c::sint-integerp-alt-def
@@ -50,10 +50,10 @@
                                          c::mul-sint-sint-okp
                                          c::add-sint-sint
                                          c::sub-sint-sint)
-                                        (c::sint->get-upper-bound))))))
+                                        (c::integer-from-sint-upper-bound))))))
     (c::mul-sint-sint (c::add-sint-sint |x| |y|)
                       (c::sub-sint-sint |z| (c::sint-dec-const 3)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| :output-file "int.c")
+(c::atc |f| :file-name "int" :header t)

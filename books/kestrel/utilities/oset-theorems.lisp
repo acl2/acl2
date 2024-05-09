@@ -1,10 +1,10 @@
 ; Theorems about Osets
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection theorems-about-osets
-  :parents (acl2::theorems-about-non-kestrel-books)
+  :parents (acl2::kestrel-utilities)
   :short (xdoc::topstring
           "Theorems about "
           (xdoc::seetopic "std/osets" "finite sets")
@@ -30,7 +30,7 @@
 
   (std::defrule cardinality-of-tail
     (equal (cardinality (tail x))
-           (if (empty x)
+           (if (emptyp x)
                0
              (1- (cardinality x))))
     :enable cardinality)
@@ -44,4 +44,4 @@
     (implies (setp x)
              (iff (in a x)
                   (member-equal a x)))
-    :enable (setp in empty head tail)))
+    :enable (setp in emptyp head tail)))

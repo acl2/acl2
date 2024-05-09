@@ -1,7 +1,7 @@
 ; Utilities for unrolling Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/jvm/load-class" :dir :system)
 (include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "rule-lists-jvm")
 (include-book "rules-in-rule-lists-jvm")
@@ -28,6 +27,8 @@
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
+(include-book "kestrel/jvm/read-class" :dir :system) ; convenient to have, if not strictly needed
+(include-book "kestrel/jvm/read-jar" :dir :system) ; convenient to have, if not strictly needed
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 (local (in-theory (enable member-equal-becomes-memberp))) ;todo
@@ -40,7 +41,6 @@
             bvif-of-myif-arg3
             bvif-of-myif-arg4
             getbit-of-myif
-            not-equal-of-nil-and-s ;drop
             not-equal-nil-when-array-refp
             sbvlt-of-bvsx-and-0 ; todo; consider sbvlt-of-bvsx-and-0-new
             sbvlt-of-bvcat-and-0
@@ -55,6 +55,8 @@
             jvm::pop-operand-of-myif
             jvm::top-long-of-myif
             jvm::pop-long-of-myif
+            getbit-list-of-bv-array-write-too-high
+            ;map-packbv-constant-opener ; drop?
             )
           (leftrotate-intro-rules) ;; try to recognize rotation idioms when lifting
           (map-rules)
@@ -63,13 +65,12 @@
           (lookup-rules)
           (list-rules)
           (logext-rules) ;drop?
-          (jvm-rules-list)
-          (jvm-rules-alist)
+          (list-rules3)
+          (alist-rules)
+          (update-nth2-rules) ;since below we have rules to introduce update-nth2
+          (update-nth2-intro-rules)
           (jvm-rules-unfiled-misc)
           (more-rules-yuck) ;drop?
-          '(getbit-list-of-bv-array-write-too-high
-            ;map-packbv-constant-opener ; drop?
-            )
           (jvm-semantics-rules)
           (jvm-simplification-rules)))
 
@@ -137,7 +138,8 @@
                               (pseudo-termp heap-term)
                               (member-eq vars-for-array-elements '(t nil :bits))
                               (method-designator-stringp method-designator-string))
-                  :guard-hints (("Goal" :in-theory (e/d (symbolp-of-lookup-equal-when-param-slot-to-name-alistp)
+                  :guard-hints (("Goal" :in-theory (e/d (symbolp-of-lookup-equal-when-param-slot-to-name-alistp
+                                                         param-slot-to-name-alistp)
                                                         (natp))))))
   (if (endp parameter-types)
       nil
@@ -175,13 +177,18 @@
                                           (append (if vars-for-array-elements ;fixme: what about arrays of floats and doubles!
                                                       `((equal ,contents-term
                                                                ,(if (eq :bits vars-for-array-elements) ;todo: what if the element type is not blastable?
-                                                                    (bit-blasted-symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type))
+                                                                    (let ((element-size (jvm::size-of-array-element component-type)))
+                                                                      (if (= 1 element-size)
+                                                                          ;; todo: think about this case?  how are the booleans stored?
+                                                                          (symbolic-array parameter-name maybe-len element-size)
+                                                                        (bit-blasted-symbolic-array parameter-name maybe-len element-size)))
                                                                   (symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type)))))
                                                     ;; Don't put in individual vars for array elements:
                                                     `((equal ,contents-term
                                                              ,parameter-name)
                                                       (equal (len ,parameter-name)
                                                              ',maybe-len)
+                                                      ;; TODO: Should we also put in an all-unsigned-byte-p claim here, to support STP translation?
                                                       (true-listp ,parameter-name)))
                                                   ;;todo: what about type assumptions for individual vars?:
                                                   `((array-refp ,local-term
@@ -313,5 +320,3 @@
 ;; parameter-assumptions could return a map from the names of params to their
 ;; expressions.  then the user could specify that an additional input of
 ;; interest is (:field ... x)
-
-(in-theory (disable CDR-OF-TAKE-BECOMES-SUBRANGE-BETTER))

@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,30 +12,31 @@
 
 (include-book "unicode-characters")
 
-(include-book "kestrel/abnf/parser" :dir :system)
-(include-book "kestrel/abnf/abstractor" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
+(include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
-; (depends-on "lexical-grammar.txt")
-; (depends-on "syntactic-grammar.txt")
+; (depends-on "lexical-grammar.abnf")
+; (depends-on "syntactic-grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
   :parents (syntax)
-  :short "Grammar of the Java language [JLS]."
+  :short "Grammar of the Java language [JLS14]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "[JLS] presents the grammar of Java using the notation in [JLS:2.4],
+    "[JLS14] presents the grammar of Java using the notation in [JLS14:2.4],
      which is similar to EBNF (Extended Backus-Naur Form).
      But since we currently have a "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
     ", we use ABNF (Augmented Backus-Naur Form) to formalize the Java grammar.")
    (xdoc::p
     "The ABNF grammar of Java is in the files
-     @('lexical-grammar.txt') and @('syntactic-grammar.txt')
+     @('lexical-grammar.abnf') and @('syntactic-grammar.abnf')
      in this directory;
-     this splitting corresponds to [JLS:2.2] and [JLS:2.3].
+     this splitting corresponds to [JLS14:2.2] and [JLS14:2.3].
      Note that these files, according to ABNF,
      must have their lines terminated by carriage-return and line-feed pairs:
      see the notes "
@@ -46,7 +47,7 @@
      A difference is that EBNF has a construct for syntactic exception
      (e.g. @('consonant = letter - vowel')),
      while ABNF does not.
-     The notation in [JLS:2.4]
+     The notation in [JLS14:2.4]
      has a syntactic exception construct (@('but not'))
      that corresponds to EBNF's @('-') construct.
      However, the Java grammar alone is ambiguous anyhow,
@@ -55,19 +56,19 @@
      since ABNF does not capture them.")
    (xdoc::p
     "While ABNF lacks syntactic exceptions,
-     it has constructs that are not in EBNF or in the notation in [JLS:2.4],
+     it has constructs that are not in EBNF or in the notation in [JLS14:2.4],
      which actually allow us to capture more constraints in the grammar,
      or the same constraints slightly more concisely.
      In particular, ABNF has value range alternatives,
-     which allow us to define @('RawInputCharacter') [JLS:3.3]
+     which allow us to define @('RawInputCharacter') [JLS14:3.3]
      without using informal prose.
      ABNF also has case-insensitive string terminal notations,
      which allow us to list the letters just once
-     in the definition of @('HexDigit') [JLS:3.3],
+     in the definition of @('HexDigit') [JLS14:3.3],
      and similarly to express certain rules more concisely.")
    (xdoc::p
     "Besides the rule for @('RawInputCharacter') mentioned above,
-     the Java grammar in [JLS] includes two other rules
+     the Java grammar in [JLS14] includes two other rules
      defined entirely using informal prose,
      namely the rules for @('JavaLetter') and @('JavaLetterOrDigit').
      Even though ABNF includes prose notation,
@@ -88,56 +89,50 @@
      this would not be possible with prose notations,
      which are completely unconstrained.")
    (xdoc::p
-    "The Java grammar in [JLS] uses camelcase nonterminals.
+    "The Java grammar in [JLS14] uses camelcase nonterminals.
      Since rule names (i.e. nonterminals) are case-insensitive in ABNF,
      we systematically turn those camelcase nonterminals
      into dash-separated lowercase nonterminals.
      In the grammar files,
      we use ABNF comments for the @('but not') syntactic exceptions
-     in the Java grammar in [JLS];
+     in the Java grammar in [JLS14];
      this is just for documentation,
      because, as noted above, we formalize these syntactic exceptions
      via extra-grammatical predicates.
-     We also use ABNF comments for the prose notations in [JLS],
+     We also use ABNF comments for the prose notations in [JLS14],
      which, as explained above, we express as non-prose notations in ABNF.
      We also use ABNF comments to separate the files into sections,
-     and to reference the parts of [JLS] where the the rules appear.")
+     and to reference the parts of [JLS14] where the the rules appear.")
    (xdoc::p
     "The ABNF notation is documented in "
     (xdoc::a :href "https://www.rfc-editor.org/info/rfc5234" "RFC 5234")
     " and "
     (xdoc::a :href "https://www.rfc-editor.org/info/rfc7405" "RFC 7405")
-    ". The correspondence with the notation in [JLS] should be clear."))
+    ". The correspondence with the notation in [JLS14] should be clear."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *lexical-grammar*
+(abnf::defgrammar *lexical-grammar*
   :short "The Java lexical grammar, in ABNF."
   :long
   (xdoc::topstring-p
    "We parse the grammar file to obtain an ABNF grammar value.")
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "lexical-grammar.txt")
-                                    state)
-     (value `(defconst *lexical-grammar*
-               (abnf::abstract-rulelist ',tree))))))
+  :file "lexical-grammar.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *syntactic-grammar*
+(abnf::defgrammar *syntactic-grammar*
   :short "The Java syntactic grammar, in ABNF."
   :long
   (xdoc::topstring-p
    "We parse the grammar file to obtain an ABNF grammar value.")
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "syntactic-grammar.txt")
-                                    state)
-     (value `(defconst *syntactic-grammar*
-               (abnf::abstract-rulelist ',tree))))))
+  :file "syntactic-grammar.abnf"
+  :untranslate t
+  :well-formed t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,14 +154,14 @@
      to @(tsee in) and @(tsee list-in).")
    (xdoc::p
     "The goal symbol of the Java syntactic grammar is
-     @('CompilationUnit') [JLS:2.3] [JLS:7.3].
+     @('CompilationUnit') [JLS14:2.3] [JLS14:7.3].
      One might expect that the set of all strings derived from this goal symbol
      are a superset of all the syntactically valid Java programs
      (a superset, because the grammar does not capture all the requirements).
      However, that is not quite the case, for the following reasons:")
    (xdoc::ul
     (xdoc::li
-     "The syntactic grammar uses tokens as terminals [JLS:2.3].
+     "The syntactic grammar uses tokens as terminals [JLS14:2.3].
       No white space and no comments can be derived from @('CompilationUnit').
       The lexical and syntactic grammars must be considered ``separately''
       in order to define
@@ -175,7 +170,7 @@
      "Considering the lexical grammar as a whole would imply that
       terminal symbols like the three forming the keyword @('for')
       have to be exactly those ASCII characters.
-      However, [JLS:3.2] distinguishes three lexical translation steps,
+      However, [JLS14:3.2] distinguishes three lexical translation steps,
       where the first one turns Unicode escapes into Unicode characters,
       which in particular turns Unicode escapes for ASCII characters
       into the corresponding ASCII characters.
@@ -212,6 +207,10 @@
     :prep-books
     ((local
       (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *grammar* :prefix cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

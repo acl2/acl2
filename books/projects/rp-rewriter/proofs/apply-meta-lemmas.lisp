@@ -44,7 +44,6 @@
 (include-book "aux-function-lemmas")
 (include-book "proof-function-lemmas")
 (include-book "rp-state-functions-lemmas")
-(include-book "proof-functions")
 
 (defthm rp-rw-meta-rule-main-valid-eval
   (implies (and (rp-termp term)
@@ -53,7 +52,7 @@
                 (valid-sc-subterms context a)
                 (eval-and-all context a)
                 (rp-evl-meta-extract-global-facts)
-                (rp-formula-checks state)
+                (rp-meta-fnc-formula-checks state)
                 (rp-statep rp-state))
            (b* (((mv ?term-changed res-term ?dont-rw ?res-rp-state)
                  (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
@@ -66,7 +65,7 @@
 (defthm rp-rw-meta-rule-main-valid-rp-termp
   (implies (and (rp-termp term)
                 (rp-term-listp context)
-                (rp-statep rp-state))
+                (valid-rp-state-syntaxp rp-state))
            (b* (((mv ?term-changed res-term ?dont-rw ?rp-state)
                  (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (rp-termp res-term)))
@@ -81,13 +80,28 @@
   :hints (("Goal"
            :in-theory (e/d (rp-rw-meta-rule-main) ()))))
 
-(defthm rp-rw-meta-rule-main-valid-rp-state-preservedp
+#|(defthm rp-rw-meta-rule-main-valid-rp-state-preservedp
   (implies (rp-statep rp-state)
            (b* (((mv ?term-changed ?res-term ?dont-rw res-rp-state)
                  (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
              (rp-state-preservedp rp-state res-rp-state)))
   :hints (("Goal"
-           :in-theory (e/d (rp-rw-meta-rule-main) ()))))
+           :in-theory (e/d (rp-rw-meta-rule-main) ()))))|#
+
+(defthm rp-rw-meta-rule-main-returns-valid-rp-state
+  (b* (((mv ?term-changed ?res-term ?dont-rw res-rp-state)
+        (rp-rw-meta-rule-main term rule dont-rw context limit rp-state state)))
+  
+    (and (implies (and (rp-statep rp-state)
+                       (valid-rp-statep rp-state))
+                  (valid-rp-statep res-rp-state))
+         (implies (rp-statep rp-state)
+                  (rp-statep res-rp-state))
+         (implies (valid-rp-state-syntaxp rp-state)
+                  (valid-rp-state-syntaxp res-rp-state))))
+  :hints (("Goal"
+           :in-theory (e/d (rp-rw-meta-rule-main)
+                           (valid-rp-statep)))))
 
 #|(defthm rp-statep-rp-rw-meta-rule-main
   (implies (rp-statep rp-state)
@@ -99,32 +113,10 @@
                             RP-STATEP)
                            ()))))||#
 
-(defthm valid-rp-state-syntaxp-implies-rp-statep
+#|(defthm valid-rp-state-syntaxp-implies-rp-statep
   (implies (valid-rp-state-syntaxp rp-state)
            (rp-statep rp-state))
   :hints (("Goal"
-           :in-theory (e/d (valid-rp-state-syntaxp) ()))))
+           :in-theory (e/d (valid-rp-state-syntaxp) ()))))|#
 
-(defthm valid-rp-state-syntaxp-rp-rw-meta-rule-main
-  (implies (valid-rp-state-syntaxp rp-state)
-           (valid-rp-state-syntaxp (mv-nth 3 (rp-rw-meta-rule-main term rule
-                                                                   dont-rw context limit rp-state state))))
-  :hints (("Goal"
-           :in-theory (e/d (rp-rw-meta-rule-main
-                            ;;rp-stat-add-to-rules-used-meta-cnt
-                            ;;RP-STATE-PUSH-META-TO-RW-STACK
-                            )
-                           (RP-STATEP)))))
 
-(defthm valid-rp-statep-rp-rw-meta-rule-main
-  (implies (and (valid-rp-statep rp-state)
-                (rp-statep rp-state))
-           (valid-rp-statep (mv-nth 3 (rp-rw-meta-rule-main term rule dont-rw
-                                                            context limit rp-state state))))
-  :hints (("Goal"
-           :in-theory (e/d (;;rp-stat-add-to-rules-used-meta-cnt
-                            ;;RP-STATE-PUSH-META-TO-RW-STACK
-                            ;;valid-rp-statep
-                            )
-                           (RP-STATEP
-                            valid-rp-statep)))))

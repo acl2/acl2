@@ -25,9 +25,9 @@
              )
  })
 
- <p>where the keyword arguments are evaluated.
- For information on the keyword arguments, see @(tsee set-inhibited-summary-types),
- @(tsee set-inhibit-output-lst), and @(tsee ld-error-action).</p>
+ <p>where the keyword arguments are evaluated.  For information on the keyword
+ arguments, see @(tsee set-inhibited-summary-types), @(tsee
+ set-inhibit-output-lst), and @(tsee ld-error-action).</p>
 
  <p>Example form:</p>
 
@@ -38,6 +38,11 @@
  <p>When you call @('(run-script NAME)'), the forms in @('NAME-input.lsp')
  are evaluated and a transcript is written to @('NAME-log.out').
  Forms that are @(see command)s change the logical world.</p>
+
+ <p>NOTE: The @(see time-tracker) utility is disabled by @('run-script').
+ After a call of @('run-script'), you need to evaluate @('(time-tracker t)') if
+ you want to return to the default behavior (where the time-tracker capability
+ is enabled).</p>
 
  <p>To use @('run-script') for regression testing, you will need
  to create three files in addition to the input file, as described below.
@@ -108,10 +113,43 @@
  touch NAME-log.txt
  })
 
- <p>NOTE for ACL2(r) users: The prompt is set by @('run-script') so that the
- usual \"(r)\" is not printed.</p>")
+ <p><b>Remarks.</b></p>
+
+ <ul>
+
+ <li>Note for ACL2(r) users: The prompt is set by @('run-script') so that the
+ usual \"(r)\" is not printed.</li>
+
+ <li>If you want commands like @(':')@(tsee pe) to avoid printing event
+ numbers, put the form @('(assign script-mode 'skip-ldd-n)') into your
+ @('*-input.lsp') file.  See @(see community-book) file
+ @('demos/floating-point-input.lsp') for an example.</li>
+
+ </ul>")
 
 (include-book "xdoc/top" :dir :system)
+
+(include-book "show-diff-lines")
+
+(defun diff-msg (file1 file2 s1 s2)
+  (declare (type string file1 file2 s1 s2)
+           (xargs :guard-hints (("Goal" :in-theory (disable length)))))
+  (let* ((lines-before 5)
+         (lines-after 5)
+         (p (first-diff-position s1 s2)))
+    (msg "Showing (up to) ~x0 lines before and ~x1 lines after the line where ~
+          those files first differ.~|~%~
+          ############### ~s2 ###############~|~
+          ~s3~|~
+          ############### ~s4 ###############~|~
+          ~s5~|~
+          ##################################################~|"
+         lines-before
+         lines-after
+         file1
+         (surrounding-lines s1 p lines-before lines-after)
+         file2
+         (surrounding-lines s2 p lines-before lines-after))))
 
 (defun identical-files-p-fn (file1 file2 state)
   (declare (xargs :stobjs state
@@ -133,8 +171,10 @@
       t)
      (t
       (er hard? ctx
-          "Files ~x0 and ~x1 differ."
-          file1 file2)))))
+          "Files ~x0 and ~x1 differ.~|~@2~|"
+          file1
+          file2
+          (diff-msg file1 file2 str1 str2))))))
 
 (defmacro identical-files-p (file1 file2)
   `(identical-files-p-fn ,file1 ,file2 state))
@@ -160,14 +200,16 @@
 
   (let ((input-file (concatenate 'string name "-input.lsp"))
         (output-file (concatenate 'string name "-log.out")))
-    `(ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
-           (assign script-mode t)
-           (set-ld-prompt t state)
-           (set-inhibited-summary-types ,inhibited-summary-types)
-           (set-inhibit-output-lst ,inhibit-output-lst)
-           .
-           ,input-file)
-         :ld-prompt nil ; for (assign script-mode t)
-         :ld-verbose nil ; avoid absolute pathname printed for cbd
-         :ld-pre-eval-print t :ld-error-action ,ld-error-action
-         :standard-co ,output-file :proofs-co ,output-file)))
+    `(prog2$
+      (time-tracker nil)
+      (ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
+            (assign script-mode t)
+            (set-ld-prompt t state)
+            (set-inhibited-summary-types ,inhibited-summary-types)
+            (set-inhibit-output-lst ,inhibit-output-lst)
+            .
+            ,input-file)
+          :ld-prompt nil ; for (assign script-mode t)
+          :ld-verbose nil ; avoid absolute pathname printed for cbd
+          :ld-pre-eval-print t :ld-error-action ,ld-error-action
+          :standard-co ,output-file :proofs-co ,output-file))))

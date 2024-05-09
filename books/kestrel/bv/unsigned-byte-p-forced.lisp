@@ -18,3 +18,9 @@
 (defund unsigned-byte-p-forced (bits x)
   (declare (xargs :guard t))
   (unsigned-byte-p bits x))
+
+(defthm unsigned-byte-p-forced-forward-to-unsigned-byte-p
+  (implies (unsigned-byte-p-forced size x)
+           (unsigned-byte-p size x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))

@@ -113,11 +113,12 @@ syntax and features to cover, and we address them in turn.</p>
 
 <p>The formals have many features; see @(see extended-formals).  Besides the
 ordinary extended-formals utilities, they can also include @(':type')
-declarations; see @(see acl2::type-spec).  For instance:</p>
+declarations (see @(see acl2::type-spec)) and XDOC descriptions.  For instance:</p>
 
 @({
   (x oddp :type integer)
   (y evenp :type (integer 0 *))
+  (z stringp \"The name of something.\")
 })
 
 
@@ -1239,7 +1240,7 @@ examples.</p>")
                           ;; support the :non-executable xarg by wrapping the
                           ;; body in the required throw form
                           `(prog2$ (acl2::throw-nonexec-error
-                                    ',name (list . ,formal-names))
+                                    ',name-fn (list . ,formal-names))
                                    ,extended-body)
                         extended-body))
        ;; [Shilpi] Added to support :verify-guards :after-returns.
@@ -1548,9 +1549,11 @@ examples.</p>")
     `(with-output
        :stack :push
        ,@(and (not verbosep)
-              '(:on (acl2::error) :off :all))
+              '(:off (:other-than acl2::error)))
        (make-event
         (define-fn ',name ',args (w state))))))
+
+(table acl2::ppr-special-syms 'define 2)
 
 #!ACL2
 (progn
@@ -2332,7 +2335,8 @@ may not work with macros that generate names like @('args.extensions').</p>"
     :hooks ;; precedence: local to define > config > hooks table
     :ruler-extenders
     :verify-guards
-    :ret-patbinder))
+    :ret-patbinder
+    :parents))
 
 (local
  (defthm define-config-keywords-okp

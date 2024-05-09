@@ -1,0 +1,64 @@
+
+0 ;failure_count_hints
+0 ;total_count_hints
+1 ;failure_count_hypotheses
+1 ;total_count_hypotheses
+1 ;failure_count_book_runes
+1 ;total_count_book_runes
+1 ;failure_count_single_rune
+6 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test6.lisp"
+ (FOO
+    (:GOAL (IMPLIES (INTEGERP X)
+                    (< (MOD X '8) '8)))
+    (:HASH 1400597881)
+    (:EXPANSION-STACK NIL)
+    (:GOAL-CLAUSES (((NOT (INTEGERP X)) (< (MOD X '8) '8))))
+    (:EVENT (DEFTHM FOO
+              (IMPLIES (INTEGERP X) (< (MOD X 8) 8))))
+    (:RULE-CLASSES (:REWRITE))
+    (:USED-INDUCTION NIL)
+    (:HYP-ALIST (((INTEGERP X)
+                  (((NOT (ACL2-NUMBERP X))
+                    (RATIONALP X)
+                    (< X '8)))
+                  ((IMPLIES (AND (ACL2-NUMBERP X)
+                                 (NOT (RATIONALP X)))
+                            (< X 8)))
+                  NIL NIL (DEFTHM FOO (< (MOD X 8) 8))
+                  (INTEGERP X))))
+    (:HINT-SETTING-ALIST NIL)
+    (:BOOK-RUNES-ALIST
+         (((:SYSTEM .
+                    "arithmetic-5/lib/floor-mod/floor-mod-basic.lisp")
+           (((NOT (INTEGERP X)) (< (MOD X '8) '8)))
+           ((IMPLIES (INTEGERP X) (< (MOD X 8) 8)))
+           NIL NIL)))
+    (:RUNE-ALIST (((:LINEAR MOD-BOUNDS-1)
+                   (((NOT (INTEGERP X)) (< (MOD X '8) '8)))
+                   ((IMPLIES (INTEGERP X) (< (MOD X 8) 8)))
+                   NIL NIL)
+                  ((:EXECUTABLE-COUNTERPART RATIONALP)
+                   :REMOVE)
+                  ((:TYPE-PRESCRIPTION INTEGERP-MOD-1)
+                   :REMOVE)
+                  ((:EXECUTABLE-COUNTERPART <) :REMOVE)
+                  ((:EXECUTABLE-COUNTERPART INTEGERP)
+                   :REMOVE)
+                  ((:TYPE-PRESCRIPTION MOD-NONNEGATIVE)
+                   :REMOVE)))
+    (:SYMBOL-TABLE
+         ((RATIONALP . :BUILTIN)
+          (MOD-NONNEGATIVE :SYSTEM
+                           .
+                           "arithmetic-5/lib/floor-mod/floor-mod-basic.lisp")
+          (MOD-BOUNDS-1 :SYSTEM
+                        .
+                        "arithmetic-5/lib/floor-mod/floor-mod-basic.lisp")
+          (MOD . :BUILTIN)
+          (INTEGERP-MOD-1 :SYSTEM
+                          .
+                          "arithmetic-5/lib/floor-mod/floor-mod-basic.lisp")
+          (INTEGERP . :BUILTIN)
+          (IMPLIES . :BUILTIN)
+          (< . :BUILTIN)))))

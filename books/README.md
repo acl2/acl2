@@ -61,11 +61,11 @@ Alternatively you can obtain a copy of the latest release using
 (note the "." at the end).
 
 ```
-git clone -b 8.4 https://github.com/acl2-devel/acl2-devel .
+git clone -b 8.5 https://github.com/acl2-devel/acl2-devel .
 ```
 
 The new directory `/path/to/somewhere/acl2/` will now contain a copy of
-ACL2 Version 8.4.  Please see the [ACL2 home page][ACL2], specifically
+ACL2 Version 8.5.  Please see the [ACL2 home page][ACL2], specifically
 its [installation instructions][installation], for how to build an
 executable and certify books in your new directory.
 

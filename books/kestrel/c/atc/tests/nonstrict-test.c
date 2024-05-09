@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "nonstrict.h"
+
 void and_test(int x, int y) {
   int r = and(x, y);
   printf("and(%d, %d) = %d\n", x, y, r);
@@ -30,9 +32,9 @@ void condor_test(int x) {
   printf("condor(%d) = %d\n", x, r);
 }
 
-void notandor_test(int x) {
-  int r = notandor(x);
-  printf("notandor(%d) = %d\n", x, r);
+void andor_test(int x) {
+  int r = andor(x);
+  printf("andor(%d) = %d\n", x, r);
 }
 
 int main(void) {
@@ -52,7 +54,7 @@ int main(void) {
   condand_test(500);
   condor_test(-60);
   condor_test(3);
-  notandor_test(3);
-  notandor_test(150);
+  andor_test(3);
+  andor_test(150);
   return 0;
 }

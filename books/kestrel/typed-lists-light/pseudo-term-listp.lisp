@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pseudo-term-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -124,3 +124,10 @@
   (implies (pseudo-term-listp l)
            (pseudo-term-listp (take n l)))
   :hints (("Goal" :in-theory (enable pseudo-term-listp))))
+
+;; Avoids name clash with std
+(defthm pseudo-term-listp-of-update-nth-2
+  (implies (and (pseudo-term-listp x)
+                (pseudo-termp term))
+           (pseudo-term-listp (update-nth n term x)))
+  :hints (("Goal" :in-theory (enable update-nth))))

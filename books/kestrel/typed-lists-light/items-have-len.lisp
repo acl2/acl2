@@ -1,7 +1,7 @@
 ; A function to check that all elements of a list have a given length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -79,3 +79,10 @@
                       0
                     n)))
   :hints (("Goal" :in-theory (enable nth))))
+
+(defthm items-have-len-of-take
+  (implies (and (natp end)
+                (<= end (len lst))
+                (items-have-len n lst))
+           (items-have-len n (take end lst)))
+  :hints (("Goal" :in-theory (enable take))))

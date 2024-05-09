@@ -33,6 +33,8 @@
 ; cert_param: (uses-quicklisp)
 ; Matt K. mod, 12/16/2021 (see GitHub Issue #1332):
 ; cert_param: (non-lispworks)
+; Matt K. mod, 9/5/2023 (see GitHub Issue #1532)
+; cert_param: (non-cmucl)
 
 (make-event
  (mv-let (err override-dir state)
@@ -51,9 +53,13 @@
    ;; reason to want the Quicklisp files to live somewhere other than your ACL2
    ;; books directory.
    (getenv$ "QUICKLISP_ASDF_HOME" state)
-   (let ((dir (if err
-                  (er hard? 'getenv$ "getenv failed")
-                (or override-dir (cbd)))))
+   (let* ((dir (if err
+                   (er hard? 'getenv$ "getenv failed")
+                 (or override-dir (cbd))))
+          (dir-last (- (length dir) 1))
+          (dir (if (eql #\/ (char dir dir-last))
+                   (subseq dir 0 dir-last)
+                   dir)))
      (progn$
       (setenv$ "XDG_CONFIG_HOME" (concatenate 'string dir "/asdf-home/config"))
       (setenv$ "XDG_DATA_HOME"   (concatenate 'string dir "/asdf-home/data"))
@@ -74,6 +80,3 @@
 (local (include-raw "base-raw.lsp"
                     :host-readtable t
                     :do-not-compile t))
-
-
-

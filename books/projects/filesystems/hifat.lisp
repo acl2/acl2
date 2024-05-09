@@ -194,20 +194,20 @@
     (natp bytes2)
     (natp start1)
     (stringp (read-file-into-string2 filename (+ start1 bytes1)
-                                     bytes2 state))
+                                     bytes2 close state))
     (<=
      bytes2
      (len
       (explode
        (read-file-into-string2 filename (+ start1 bytes1)
-                               bytes2 state)))))
+                               bytes2 close state)))))
    (equal
     (string-append
-     (read-file-into-string2 filename start1 bytes1 state)
+     (read-file-into-string2 filename start1 bytes1 close state)
      (read-file-into-string2 filename (+ start1 bytes1)
-                             bytes2 state))
+                             bytes2 close state))
     (read-file-into-string2 filename start1 (+ bytes1 bytes2)
-                            state)))
+                            close state)))
   :hints
   (("goal"
     :in-theory (e/d (take-of-nthcdr)
@@ -245,20 +245,20 @@
       (natp start1)
       (stringp
        (read-file-into-string2 filename (+ start1 bytes1)
-                               bytes2 state))
+                               bytes2 close state))
       (<=
        bytes2
        (len
         (explode
          (read-file-into-string2 filename (+ start1 bytes1)
-                                 bytes2 state))))
+                                 bytes2 close state))))
       (equal start2 (+ start1 bytes1)))
      (equal
       (string-append
-       (read-file-into-string2 filename start1 bytes1 state)
-       (read-file-into-string2 filename start2 bytes2 state))
+       (read-file-into-string2 filename start1 bytes1 close state)
+       (read-file-into-string2 filename start2 bytes2 close state))
       (read-file-into-string2 filename start1 (+ bytes1 bytes2)
-                              state))))))
+                              close state))))))
 
 (defthm
   consecutive-read-file-into-string-2
@@ -267,13 +267,13 @@
     (natp bytes1)
     (natp start1)
     (stringp (read-file-into-string2 filename (+ start1 bytes1)
-                                     nil state)))
+                                     nil close state)))
    (equal
     (string-append
-     (read-file-into-string2 filename start1 bytes1 state)
+     (read-file-into-string2 filename start1 bytes1 close state)
      (read-file-into-string2 filename (+ start1 bytes1)
-                             nil state))
-    (read-file-into-string2 filename start1 nil state)))
+                             nil close state))
+    (read-file-into-string2 filename start1 nil close state)))
   :hints
   (("goal"
     :in-theory (e/d (take-of-nthcdr)
@@ -366,13 +366,13 @@
       (natp start1)
       (stringp
        (read-file-into-string2 filename (+ start1 bytes1)
-                               nil state))
+                               nil close state))
       (equal start2 (+ start1 bytes1)))
      (equal
       (string-append
-       (read-file-into-string2 filename start1 bytes1 state)
-       (read-file-into-string2 filename start2 nil state))
-      (read-file-into-string2 filename start1 nil state))))))
+       (read-file-into-string2 filename start1 bytes1 close state)
+       (read-file-into-string2 filename start2 nil close state))
+      (read-file-into-string2 filename start1 nil close state))))))
 
 (defthm
   subseq-of-implode-of-append

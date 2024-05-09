@@ -32,6 +32,7 @@
 (in-package "AIGNET")
 
 (include-book "sweep")
+(include-book "levels")
 (include-book "transform-utils")
 (include-book "centaur/aignet/ipasir" :dir :system)
 (include-book "equiv-classes")
@@ -67,9 +68,42 @@
    (ctrex-force-resim booleanp "Force resimulation of a counterexample before checking another node in the same equivalence class" :default t)
    (random-seed-name symbolp "Name to use for seed-random, or NIL to not reseed the random number generator")
    (outs-only booleanp "Only check the combinational outputs of the network" :default nil)
+   (miters-only booleanp
+                "Instead of starting with all nodes in a single equivalence
+class and refining them with random simulation, start with equivalence classes
+consisting of the mitered outputs of the network. That is, whenever an output contains
+an XOR under a top-level conjunction, put the inputs of that XOR into an
+equivalence class.  This is useful for checking equivalences when you know
+exactly which nodes in a network are supposed to be equivalent, because it
+avoids checking false equivalences."
+                :default nil)
+   (delete-class-on-fail
+    natp :default 0
+    "If set greater than 0, then if a SAT check fails, don't try to prove any
+     of the other equivalences in that node's equiv class (delete the class), unless
+     it was the constant class.  If set greater than 1, delete the class even if
+     it's the constant class (drastic!).")
    (gatesimp gatesimp-p :default (default-gatesimp)
              "Gate simplification parameters.  Warning: This transform will do
-              nothing good if hashing is turned off."))
+              nothing good if hashing is turned off.")
+   (level-limit natp :default 0
+                "If set greater than 0, we'll only try to check the current
+node's candidatae equivalence if its level (see @(see aignet-record-levels)) is
+less than or equal to the level limit.")
+
+   (n-outputs-are-initial-equiv-classes
+    acl2::maybe-natp
+    :default nil
+    "If set to a natural number N, then the initial equiv classes will be built
+by joining pairs of outputs @('(i, i+N)'). The range of @('i') depends on the
+setting of initial-equiv-classes-last.  If nonnil, then @('i') ranges from
+@('numOuts-2N') to @('numOuts-N-1'); if nil, then it ranges from @('0') to
+@('N-1').  Larger equivalence classes may be built by pairing the same node
+more than once.  Combinational equivalence is preserved for all outputs.  Not
+compatible with @(':miters-only').")
+   (initial-equiv-classes-last booleanp :default nil
+                               "See the n-outputs-are-initial-equiv-classes option."))
+
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."
   :tag :fraig-config)
@@ -92,6 +126,7 @@
                   (fraig-failed-checks :type (integer 0 *) :initially 0)
                   (fraig-class-lits-refined :type (integer 0 *) :initially 0)
                   (fraig-const-lits-refined :type (integer 0 *) :initially 0)
+                  (fraig-class-lits-deleted :type (integer 0 *) :initially 0)
                   (fraig-resims          :type (integer 0 *) :initially 0)
                   (fraig-classes-refined :type (integer 0 *) :initially 0)
                   (fraig-ipasir-recycles :type (integer 0 *) :initially 0)
@@ -1258,11 +1293,6 @@
     (equal (stobjs::2darr->ncols new-s32v)
            (stobjs::2darr->ncols s32v))))
 
-(local (defthm w-state-of-s32v-randomize-iter
-         (equal (w (mv-nth 1 (s32v-randomize-iter n out-id s32v state)))
-                (w state))
-         :hints(("Goal" :in-theory (enable s32v-randomize-iter)))))
-
 (define s32v-randomize-rows ((row natp) s32v state)
   :guard (<= row (s32v-nrows s32v))
   :measure (nfix (- (s32v-nrows s32v) (nfix row)))
@@ -1284,15 +1314,6 @@
   (defret w-state-of-<fn>
     (equal (w new-state) (w state))))
 
-(local (defthm w-state-of-s32v-randomize-regs
-         (equal (w (mv-nth 1 (s32v-randomize-regs n s32v aignet state)))
-                (w state))
-         :hints(("Goal" :in-theory (enable s32v-randomize-regs)))))
-
-(local (defthm w-state-of-s32v-randomize-inputs
-         (equal (w (mv-nth 1 (s32v-randomize-inputs n s32v aignet state)))
-                (w state))
-         :hints(("Goal" :in-theory (enable s32v-randomize-inputs)))))
 
 
 (define fraig-ctrexes-init ((ncols posp)
@@ -1988,7 +2009,43 @@
       (update-fraig-last-chance-refines-forced-proved
        (+ 1 (fraig-last-chance-refines-forced-proved fraig-stats)) fraig-stats)
     fraig-stats))
-               
+
+(define fraig-classes-maybe-delete-class ((delete-class-on-fail natp)
+                                          (node natp)
+                                          (classes)
+                                          (fraig-stats))
+  :returns (mv new-classes new-fraig-stats)
+  :guard (and (< node (classes-size classes))
+              (classes-wellformed classes))
+  (b* (((when (zp delete-class-on-fail))
+        (mv classes fraig-stats))
+       (head (node-head node classes))
+       ((when (and (eql 0 head)
+                   (eql 1 delete-class-on-fail)))
+        ;; don't delete the constant class unless delete-class-on-fail is set > 1
+        (mv classes fraig-stats))
+       ((mv classes ndeleted) (classes-delete-class-aux head 0 classes))
+       (fraig-stats (update-fraig-class-lits-deleted
+                     (+ ndeleted (fraig-class-lits-deleted fraig-stats))
+                     fraig-stats)))
+    (mv classes fraig-stats))
+  ///
+  (defret classes-wellformed-of-<fn>
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret classes-size-of-<fn>
+    (equal (classes-size new-classes)
+           (classes-size classes))))
+
+(define fraig-level-limit-ok ((node natp)
+                              (aignet-levels)
+                              (level-limit natp))
+  :guard (< node (u32-length aignet-levels))
+  (if (zp level-limit)
+      t
+    (<= (get-u32 node aignet-levels) level-limit)))
+
 (define fraig-sweep-node ((node natp "Current node ID")
                           (aignet  "Input aignet")
                           (aignet2 "New aignet")
@@ -1999,10 +2056,12 @@
                           (aignet-refcounts "refcounts for aignet2 for sat generation")
                           (sat-lits "sat lit mapping for aignet2")
                           (ipasir "sat solver on aignet2")
+                          (aignet-levels "levels record in case of a limit")
                           (fraig-stats "statistics collection")
                           (config fraig-config-p "options")
                           (state))
   :guard (and (<= (num-fanins aignet) (lits-length copy))
+              (<= (num-fanins aignet) (u32-length aignet-levels))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
               (equal (classes-size classes) (num-fanins aignet))
@@ -2063,6 +2122,9 @@
            ;; copy needs to be updated again if we prove an equivalence.
            (aignet-refcounts (aignet-maybe-update-refs prev-count aignet-refcounts aignet2))
            (copy (set-lit n and-lit copy))
+           ((unless (fraig-level-limit-ok n aignet-levels config.level-limit))
+            ;; past level limit, done
+            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
            (equiv-node (node-head n classes))
            ((when (>= equiv-node n))
             ;; no equivalent, done
@@ -2084,8 +2146,9 @@
            ((mv status sat-lits ipasir fraig-stats)
             (ipasir-check-aignet-equivalence and-lit equiv-copy config aignet2 aignet-refcounts sat-lits ipasir fraig-stats))
            ((when (eq status :failed))
-            ;; nothing to do really, maybe mark equivalence as failed?
-            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
+            (b* (((mv classes fraig-stats)
+                  (fraig-classes-maybe-delete-class config.delete-class-on-fail n classes fraig-stats)))
+            (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)))
            ((when (eq status :unsat))
             ;; nodes are equivalent! change copy so that it uses the equivalent rather than the new node.
             (b* ((fraig-stats (fraig-stats-increment-forced-proved forced-refinedp fraig-stats))
@@ -2311,6 +2374,7 @@
                          (aignet-refcounts "refcounts for aignet2 for sat generation")
                          (sat-lits "sat lit mapping for aignet2")
                          (ipasir "sat solver on aignet2")
+                         (aignet-levels "levels record in case of a limit")
                          (fraig-stats "statistics collection")
                          (config fraig-config-p)
                          (state))
@@ -2325,6 +2389,7 @@
                new-fraig-stats
                new-state)
   :guard (and (<= (num-fanins aignet) (lits-length copy))
+              (<= (num-fanins aignet) (u32-length aignet-levels))
               (aignet-copies-in-bounds copy aignet2)
               (classes-wellformed classes)
               (equal (classes-size classes) (num-fanins aignet))
@@ -2350,9 +2415,9 @@
              (ipasir (ipasir::ipasir-input ipasir)))
           (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)))
        ((mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)
-        (fraig-sweep-node node aignet aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats config state)))
+        (fraig-sweep-node node aignet aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir aignet-levels fraig-stats config state)))
     (fraig-sweep-aux
-     (+ 1 (lnfix node)) aignet aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats config state))
+     (+ 1 (lnfix node)) aignet aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir aignet-levels fraig-stats config state))
   ///
 
   (def-aignet-preservation-thms fraig-sweep-aux :stobjname aignet2)
@@ -2495,25 +2560,26 @@
   ;;                            (not (ipasir::ipasir$a->assumption ipasir))))
   ;;             (sat-lits-wfp sat-lits aignet2))
 
-  (b* (((acl2::local-stobjs fraig-ctrexes sat-lits aignet-refcounts fraig-stats)
-        (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits fraig-stats state))
+  (b* (((acl2::local-stobjs fraig-ctrexes sat-lits aignet-refcounts aignet-levels fraig-stats)
+        (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits aignet-levels fraig-stats state))
        ((ipasir::local-ipasir ipasir)
-        (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
+        (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir aignet-levels fraig-stats state))
        ((fraig-config config))
        (ipasir (ipasir-set-limit ipasir config.ipasir-limit))
        (fraig-ctrexes
         (fraig-ctrexes-init config.sim-words fraig-ctrexes aignet))
        (sat-lits (resize-aignet->sat (ash (num-fanins aignet) -1) sat-lits))
+       (aignet-levels (aignet-record-levels aignet aignet-levels))
        ((mv nclasses nconst-lits nclass-lits) (classes-counts classes))
        (fraig-stats (update-fraig-initial-nclasses nclasses fraig-stats))
        (fraig-stats (update-fraig-initial-nconst-lits nconst-lits fraig-stats))
        (fraig-stats (update-fraig-initial-nclass-lits nclass-lits fraig-stats))
        (- (print-fraig-stats-initial fraig-stats))
        ((mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state)
-        (fraig-sweep-aux 0 aignet aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats config state))
+        (fraig-sweep-aux 0 aignet aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir aignet-levels fraig-stats config state))
        (- (print-aignet-stats "Tmp" aignet2))
        (- (print-fraig-stats-noninitial classes ipasir fraig-stats)))
-    (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir fraig-stats state))
+    (mv aignet2 copy strash fraig-ctrexes classes aignet-refcounts sat-lits ipasir aignet-levels fraig-stats state))
   ///
   (def-aignet-preservation-thms fraig-sweep :stobjname aignet2)
 
@@ -2588,6 +2654,7 @@
 
 
 
+
 (define fraig-core-aux ((aignet  "Input aignet")
                         (aignet2 "New aignet -- will be emptied")
                         (config fraig-config-p)
@@ -2602,9 +2669,14 @@
        (- (and config.random-seed-name (acl2::seed-random$ config.random-seed-name)))
        (classes (mbe :logic (non-exec (create-classes))
                      :exec classes))
-       (classes (if config.outs-only
-                    (classes-init-outs classes aignet)
-                  (classes-init (num-fanins aignet) classes)))
+       (classes (cond (config.outs-only (classes-init-outs classes aignet))
+                      (config.miters-only (classes-init-out-miters classes aignet))
+                      (config.n-outputs-are-initial-equiv-classes
+                       (classes-init-n-outputs
+                        config.n-outputs-are-initial-equiv-classes
+                        config.initial-equiv-classes-last
+                        classes aignet))
+                      (t (classes-init (num-fanins aignet) classes))))
        (s32v (mbe :logic (non-exec (create-s32v))
                   :exec s32v))
        (s32v (s32v-resize-cols config.initial-sim-words s32v))

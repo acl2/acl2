@@ -39,7 +39,7 @@
       It also provides the ability to introduce local variables
       to abbreviate terms and make the formulas more concise and readable.")
     (xdoc::p
-     "See the file @('[books]/kestrel/isar/defisar-tests.lisp')
+     "See the community book @('kestrel/isar/defisar-tests.lisp')
       for examples of use of this macro."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

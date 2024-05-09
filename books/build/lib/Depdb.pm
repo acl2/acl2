@@ -50,7 +50,12 @@ use warnings;
 
 
 use Class::Struct Depdb => [ evcache => '%',   # event cache for src files
-			     certdeps => '%',  # certinfo for each book
+			     # Certinfo for each book (keys are paths ending in
+			     # .cert) and image (keys are filenames (without
+			     # path) ending in .image) A dependency on an image
+			     # is just based on its certinfo->image (which is
+			     # the bare image name, no path or extension).  For now, images are referenced without paths because we only use one directory for them
+			     certdeps => '%',  # certinfo for each book (.cert key) and image (.image key)
 			     sources => '%',   # set of source files
 			     others  => '%',   # set of non-book dependency files
 			     stack => '@',     # add_deps traversal stack

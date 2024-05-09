@@ -3,6 +3,9 @@
 (in-package "ACL2")
 (include-book "asymptotic-analysis-support")
 
+; Matt K. mod: Avoid ACL2(p) error from clause-processor that returns state.
+(set-waterfall-parallelism nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
 ;;                          LINEAR SEARCH                           ;;
@@ -118,14 +121,14 @@
 		(not (zp count))
 		(natp steps)
 		;; lst[i] == x
-		(exeval-status (exeval (list '< i (list 'len lst)) t vars)) 
+		(exeval-status (exeval (list '< i (list 'len lst)) t vars))
 		)
 	   (equal (run (linearsearch-while i x lst) stat vars steps count)
 		  (let ((exeval-<-steps (+ 3 steps
 					   (exeval-steps (exeval i t vars))
 					   (exeval-steps (exeval lst t vars)))))
 		    (if (exeval-value (exeval (list '< i (list 'len lst)) t vars))
-			(run (linearsearch-while i x lst) 
+			(run (linearsearch-while i x lst)
 			     (run-status
 			      (run (linearsearch-if-else i x lst)
 				   'ok vars exeval-<-steps count))
@@ -186,7 +189,7 @@
 		  (RUN (LINEARSEARCH-WHILE I X LST)
 		       'ok (STORE (param1 i) (1+ (lookup (param1 i) vars)) VARS)
 		       (+ 15 steps)
-		       (+ -1 COUNT)))) 
+		       (+ -1 COUNT))))
   :hints (("Goal" :in-theory (e/d (RUN-LS-WHILE-EXPANDER2
 				   LINEARSEARCH-IF-ELSE-LEMMA2)
 				  (linearsearch-while))
@@ -234,7 +237,7 @@
 			    (+ 5 (* (- (len lstval) ival) 15) steps))
 		      (mv 'ok vars (+ 5 steps))))))
   :hints (("goal" :instructions
-	   (:expand 
+	   (:expand
 		    (:in-theory (disable run-ls-while-expander4))
 		    (:induct (ls-while-ind0 n i l vars steps count))
 		    (:prove :hints (("Goal" :use (:instance run-ls-while-expander4))))
@@ -398,7 +401,7 @@
 		)
 	   (equal (run (linearsearch i x lst) stat vars steps count)
 		  ;; If the while returns with OK, then the while breaks
-		  ;; to the (return -1) statement. 
+		  ;; to the (return -1) statement.
 		  (if (okp (mv-nth 0 (run (linearsearch-while i x lst)
 					  'ok
 					  (store (cadr i) 0 vars)
@@ -462,7 +465,7 @@
 				 (store (cadr i) (len lstval) vars))
 			  (+ 9 (* 15 (len lstval))))))))
   :hints (("Goal" :INSTRUCTIONS
-	          (:EXPAND 
+	          (:EXPAND
 			   :PROMOTE (:CLAIM (NOT (ZP COUNT)))
 			   (:CASESPLIT (MEMBER-EQUAL (LOOKUP (CADR X) VARS)
 						     (LOOKUP (CADR LST) VARS)))
@@ -517,7 +520,7 @@
 
 (defun linearsearch2 (x lst)
   ;; This version just introduces i without
-  ;; parameterizing it. 
+  ;; parameterizing it.
   (linearsearch '(var i) x lst))
 
 (in-theory (disable linearsearch))
@@ -542,7 +545,7 @@
 
 (defthm linearsearch2-correct-steps-corollary
   ;; This characterizes how many steps linearsearch2 takes,
-  ;; in the two cases of key found and key not found. 
+  ;; in the two cases of key found and key not found.
   (let ((xval (lookup (param1 x) vars))
 	(lstval (lookup (param1 lst) vars)))
     (implies (and (varp lst)
@@ -562,18 +565,18 @@
 		      (+ 9 (* 15 (len lstval))))))))
 
 
-;;  COMPLEXITY OF LINEARSEARCH               
+;;  COMPLEXITY OF LINEARSEARCH
 
 ; For a given function g(n), we denote by O(g(n)) the set of
 ; functions:
-; 
+;
 ; O(g(n)) = {f(n): there exist positive constants c and n0 such
 ; that 0 <= f(n) <= c*g(n), for all n >= n0}.
-; 
+;
 ; We often write f(n) = O(g(n)) to mean f(n) element of O(g(n)).
-; 
+;
 ; We often write O(f(n)) = O(g(n)) to mean O(f(n)) \subseteq O(g(n)).
-; 
+;
 ; If f(n) = O(g(n)), then f(n) is \textitbf{asymptotically upper
 ; bounded} by g(n).  Think, f(n) ``is no larger than'' g(n).
 
@@ -581,17 +584,17 @@
 ;; A function f(n) is O(n) if there exist constants c and n0 such that
 ;;   0 <= f(n) <= c*n, for all n >= n0.
 
-;; Want to prove that (linearsearch) is linear. 
+;; Want to prove that (linearsearch) is linear.
 
 ;; There exist positive integers c and n0, such that
 ;;    for all n >= n, 0 <= f(n) <= c * n
-;; 
+;;
 ;; where f(n) is (run-steps (run (linearsearch2 x lst) 'ok vars 0 count))
 
 (defun-sk function-linear1 (program linear-in c n0 vars count)
   ;; This says that program (which is just a literal) can be run
-  ;; against the variable-alist vars with count.  It says that 
-  ;; the number of steps taken to run the program is linear 
+  ;; against the variable-alist vars with count.  It says that
+  ;; the number of steps taken to run the program is linear
   ;; in the size of parameter linear-in.  Params c and n0 are the two
   ;; variables in the definition of asymptotic complexity.
   (forall (n)
@@ -606,7 +609,7 @@
 (defun-sk function-linear2 (program linear-in vars count)
   ;; Since the definition of Big-O has nested quantifiers, in ACL2
   ;; we have to have two separate defun-sk events to capture it.  This
-  ;; is the top-level function. 
+  ;; is the top-level function.
   (exists (c n0)
 	  (and (posp c)
 	       (posp n0)

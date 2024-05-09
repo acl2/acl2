@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -42,6 +42,10 @@
 ; consider this sufficient, as the event that some package axiom will cause
 ; such bogus marking as guard-verified seems much less likely than the event
 ; that our system has other serious bugs!
+
+(verify-termination-boot-strap +f!-fn2$inline) ; and guards
+
+(verify-termination-boot-strap +f!-fn3$inline) ; and guards
 
 (verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
 
@@ -147,7 +151,6 @@
                         :DIR :SYSTEM
                         :UNCERTIFIED-OKP nil
                         :DEFAXIOMS-OKP nil
-                        :SKIP-PROOFS-OKP nil
                         :TTAGS nil)
           (assert-event
            (equal *system-verify-guards-alist*
@@ -348,6 +351,30 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachment: brr-near-missp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; It may seem that section belongs with similar sections in
+; boot-strap-pass-2-a.lisp.  However, we need to wait till brr-criteria-alistp
+; and built-in-brr-near-missp are in :logic mode, which is after the calls of
+; system-verify-guards above.
+
+; We avoid the acl2-devel case because brr-criteria-alistp is in :program mode
+; in that case.
+#+(and acl2-loop-only (not acl2-devel))
+(encapsulate
+  (((brr-near-missp * * * * *) => *
+    :formals (msgp lemma target rcnst criteria-alist)
+    :guard (and (or (weak-rewrite-rule-p lemma)
+                    (weak-linear-lemma-p lemma))
+                (pseudo-termp target)
+                (weak-rewrite-constant-p rcnst)
+                (brr-criteria-alistp criteria-alist))))
+  (local (defun brr-near-missp (msgp lemma target rcnst criteria-alist)
+           (declare (ignore msgp lemma target rcnst criteria-alist))
+           nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Finishing up with apply$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,6 +455,51 @@
 #-acl2-devel
 (encapsulate
   ()
+
+; Start proof of standard-string-p1-implies-standard-char-listp.
+
+  (local (defun badguy (lst)
+           (cond ((endp lst)
+                  0)
+                 ((not (standard-char-p (car lst)))
+                  0)
+                 (t (1+ (badguy (cdr lst)))))))
+
+  (local (in-theory (enable standard-char-listp)))
+
+  (local (defthm lemma-1-1 ; proved by induction
+           (implies (and (character-listp lst)
+                         (not (standard-char-listp lst)))
+                    (let ((k (badguy lst)))
+                      (and (< k (len lst))
+                           (not (standard-char-p (nth k lst))))))))
+
+  (local (defthm lemma-1
+           (implies (not (standard-char-listp (coerce s 'list)))
+                    (let ((k (badguy (coerce s 'list))))
+                      (and (< k (len (coerce s 'list)))
+                           (not (standard-char-p (char s k))))))
+           :rule-classes nil))
+
+  (local (defthm lemma-2
+           (implies (and (natp k)
+                         (natp m)
+                         (< k m)
+                         (not (standard-char-p (char s k))))
+                    (not (standard-string-p1 s m)))
+           :rule-classes nil))
+
+  (local (defthm standard-string-p1-implies-standard-char-listp
+           (implies (and (stringp s)
+                         (standard-string-p1 s (len (coerce s 'list))))
+                    (standard-char-listp (coerce s 'list)))
+           :hints (("Goal" :use (lemma-1
+                                 (:instance lemma-2
+                                            (m (len (coerce s 'list)))
+                                            (k (badguy (coerce s 'list)))))))))
+
+  (verify-termination-boot-strap stobj-print-name)
+  (verify-termination-boot-strap eviscerate-do$-alist)
   (local (defthm nfix-list-preserves-consp
            (implies (consp x)
                     (consp (nfix-list x)))))
@@ -486,7 +558,6 @@
  (defwarrant collect$)
  (defwarrant collect$+-ac)
  (defwarrant collect$+)
- (defwarrant revappend-true-list-fix)
  (defwarrant append$-ac)
  (defwarrant append$)
  (defwarrant append$+-ac)
@@ -497,6 +568,10 @@
  (defwarrant nfix-list)
  (defwarrant lex-fix)
  (defwarrant lexp)
+ (defwarrant stobj-print-name)
+ (defwarrant eviscerate-do$-alist)
+ (defwarrant loop$-default-values1)
+ (defwarrant loop$-default-values)
  (defwarrant do$)
 
  )
@@ -513,6 +588,10 @@
   (memoize 'fchecksum-obj :stats nil :forget t)
   (memoize 'immediate-canonical-ancestors :stats nil)
   (memoize 'canonical-ancestors-rec :stats nil)
+  (memoize 'immediate-canonical-ancestors-tr :stats nil)
+  (memoize 'canonical-ancestors-tr-rec :stats nil)
+  (memoize 'canonical-ancestors-path :stats nil)
+  (memoize 'canonical-ancestors-tr-path :stats nil)
 
 ; We no longer define pkg-names-memoize (other than to cause an error); see the
 ; comment there.
@@ -700,6 +779,63 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-theory
+; See the coment about this in the defun of all-boundp-initial-global-table.
+ (disable all-boundp-initial-global-table))
+
+; To see our reason for putting this here, see the comment containing this form
+; in boot-strap-pass-2-a.lisp.
+(verify-termination-boot-strap clear-brr-data-lst) ; and guards
+
+; With the conversion of eviscerate-top to guard-verified logic mode,
+; iprint-oracle-updates became much more complicated.  This increased the time
+; to certify lemma true-listp-mv-nth-1-parse-cube-file2 in
+; books/projects/sat/lrat/cube/cube.lisp from 7.76 seconds to more than 11,600
+; seconds before aborting.  After this disable the proof took 0.03 seconds.
+(in-theory (disable iprint-oracle-updates))
+
+; Above we disable iprint-oracle-updates.  But some books, for example in
+; books/std/io/base.lisp and books/projects/sat/lrat/cube/cube.lisp, enable
+; iprint-oracle-updates and take longer than necessary when array-order is also
+; enabled.  So we disable it here.  As of this writing, not many community
+; books seem to deal directly with array-order, but one that does is
+; books/kestrel/acl2-arrays/acl2-arrays.lisp, and it disables array-order.
+(in-theory (disable array-order))
+
+; The printing functions are complicated.  Eric Smith noticed this and asked
+; for the following functions to be disabled.  They are in :program mode in
+; #+acl2-devel builds; hence, the readtime conditional.
+#-acl2-devel
+(in-theory (disable error-fms
+                    error-fms-channel
+                    error1
+                    error1-state-p
+                    fms
+                    fmt
+                    fmt-abbrev1
+                    fmt-ppr
+                    fmt0
+                    fmt1
+                    fmt1!
+                    ppr
+                    ppr1
+                    ppr2))
+
+(defconst *df-pi*
+
+; This form would naturally be in float-a.lisp or float-b.lisp.  However, an
+; attempt to put it into float-b.lisp results in an erroneous attempt to
+; evaluate (constrained-df-pi).  So we punt and simply put this definition
+; here.
+
+  (from-df (df-pi)))
+
+; The following two are necessary because after the defun-inline in
+; basis-a.lisp for each of +f!-fn2 and +f!-fn3, the second pass of axioms.lisp
+; clears the macro-aliases-table.
+(add-macro-alias +f!-fn2 +f!-fn2$inline)
+(add-macro-alias +f!-fn3 +f!-fn3$inline)
 
 (deftheory ground-zero
 

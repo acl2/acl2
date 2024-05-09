@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,8 +16,6 @@
 ;; TODO: Now that we can rewrite an IF (which was not possible when we
 ;; introduced MYIF), perhaps MYIF could be used less or eliminated.
 
-;; TODO: Consider giving this a better name.
-
 (include-book "myif-def")
 
 ;; This is now a legal rewrite rule.
@@ -26,8 +24,16 @@
          (myif x y z))
   :hints (("Goal" :in-theory (enable myif))))
 
-;add myif when non nil?
-(defthm myif-of-t
+(defthm myif-of-constant-when-not-nil
+  (implies (and (syntaxp (quotep x))
+                (not (equal x nil)) ; todo: simplify?
+                )
+           (equal (myif x y z)
+                  y))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; disabled since we have myif-of-constant-when-not-nil
+(defthmd myif-of-t
   (equal (myif t thenpart elsepart)
          thenpart)
   :hints (("Goal" :in-theory (enable myif))))
@@ -80,8 +86,7 @@
 (defthm integerp-of-myif
   (implies (and (integerp a)
                 (integerp b))
-           (equal (integerp (myif test a b))
-                  t))
+           (integerp (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthm integerp-of-myif-strong
@@ -106,16 +111,23 @@
                   (myif test1 a c)))
   :hints (("Goal" :in-theory (enable myif))))
 
+;rename
 (defthm myif-nil-t
   (equal (myif test nil t)
          (not test))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthm myif-t-nil
+(defthm myif-of-t-and-nil-when-booleanp
   (implies (booleanp test)
            (equal (myif test t nil)
                   test))
   :hints (("Goal" :in-theory (enable myif))))
+
+;; todo: where should this go?
+;; (defthm myif-of-t-and-nil
+;;   (equal (myif test t nil)
+;;          (bool-fix test))
+;;   :hints (("Goal" :in-theory (enable myif))))
 
 ;used for inside-out rewriting
 (defthm myif-when-not-nil
@@ -129,13 +141,6 @@
   (implies (equal nil x) ;can be slow?
            (equal (myif x y z)
                   z))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm myif-of-constant-when-not-nil
-  (implies (and (syntaxp (quotep x))
-                (not (equal x nil)))
-           (equal (myif x y z)
-                  y))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd equal-of-myif-arg2
@@ -239,22 +244,101 @@
          (myif test (consp a) (consp b)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;strengthen?
 (defthm unsigned-byte-p-of-myif
   (implies (and (unsigned-byte-p n a)
                 (unsigned-byte-p n b))
-           (equal (unsigned-byte-p n (myif test a b))
-                  t))
+           (unsigned-byte-p n (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm unsigned-byte-p-of-myif-strong
+  (equal (unsigned-byte-p n (myif test a b))
+         (myif test
+               (unsigned-byte-p n a)
+               (unsigned-byte-p n b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm signed-byte-p-of-myif
+  (implies (and (signed-byte-p n a)
+                (signed-byte-p n b))
+           (signed-byte-p n (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm signed-byte-p-of-myif-strong
+  (equal (signed-byte-p n (myif test a b))
+         (myif test
+               (signed-byte-p n a)
+               (signed-byte-p n b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;strengthen?
 (defthm acl2-numberp-of-myif
   (implies (and (acl2-numberp a) (acl2-numberp b))
-           (equal (acl2-numberp (myif test a b)) t))
+           (acl2-numberp (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthmd myif-of-nil-special
   (implies (implies ep (not test))
            (equal (myif test nil ep)
                   ep))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;rename
+(defthm myif-of-myif-test
+  (equal (myif (myif test t nil) a b)
+         (myif test a b))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;i suppose we could use any predicate here in place of booleanp
+;shouldn't we turn myif into boolif in this case?
+(defthm booleanp-of-myif
+  (implies (and (booleanp y)
+                (booleanp z))
+           (booleanp (myif x y z)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm myif-x-x-t-not-nil
+  (implies (not (equal nil val))
+           (equal (equal nil (myif x x val))
+                  nil))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;move
+(defthmd not-of-myif
+  (equal (not (myif test tp ep))
+         (myif test (not tp) (not ep)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd <-of-myif-arg1
+  (equal (< (myif test a b) k)
+         (myif test (< a k) (< b k)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthmd <-of-myif-arg2
+  (equal (< k (myif test a b))
+         (myif test (< k a) (< k b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; could a and/or b to be constant as well
+(defthmd <-of-myif-arg1-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< (myif test a b) k)
+                  (myif test (< a k) (< b k))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;; could a and/or b to be constant as well
+(defthmd <-of-myif-arg2-when-constant
+  (implies (syntaxp (quotep k))
+           (equal (< k (myif test a b))
+                  (myif test (< k a) (< k b))))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+(defthm natp-of-myif2
+  (implies (and (natp a)
+                (natp b))
+           (natp (myif test a b)))
   :hints (("Goal" :in-theory (enable myif))))

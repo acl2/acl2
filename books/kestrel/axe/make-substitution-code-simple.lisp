@@ -36,7 +36,7 @@
         (defund ,sublis-var-and-eval-name (alist ;maps vars to nodenums/quoteps
                                               term interpreted-function-alist)
           (declare (xargs :guard (and (symbol-alistp alist)
-                                      (all-dargp (strip-cdrs alist))
+                                      (darg-listp (strip-cdrs alist))
                                       (pseudo-termp term)
                                       (interpreted-function-alistp interpreted-function-alist))
                           :verify-guards nil ;done below
@@ -70,7 +70,7 @@
                                (,apply-axe-evaluator-to-quoted-args-name fn args interpreted-function-alist)
                                (if erp
                                    (progn$ ;; This failure can be due to a sub-function not being in the interpreted-function-alist
-                                    (cw "Failed to apply ~x0 (or one of its subfunctions) to constant args.~%" fn) ;; Shows messages about ground calls that we cannot evaluate
+                                     (cw "Can't eval ~x0 (or a subfunction).~%" fn) ;; Shows messages about ground calls that we cannot evaluate
                                     ;; (cw "sub: Failed to apply ~x0 to constant args (er:~x1,ifns:~x2).~%" fn erp (strip-cars interpreted-function-alist) ;(len interpreted-function-alist))
                                     (cons fn args))
                                  (enquote res)))
@@ -79,7 +79,7 @@
         ;; Returns (mv ground-termp args).
         (defund ,sublis-var-and-eval-lst-name (alist terms interpreted-function-alist)
           (declare (xargs :guard (and (symbol-alistp alist)
-                                      (all-dargp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
+                                      (darg-listp (strip-cdrs alist)) ;gen?  really just need that things whose cars are 'quote are myquoteps
                                       (pseudo-term-listp terms)
                                       (interpreted-function-alistp interpreted-function-alist))))
           (if (atom terms)
@@ -104,13 +104,13 @@
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'myquotep-of- sublis-var-and-eval-name)
            (implies (and (eq 'quote (car (,sublis-var-and-eval-name alist term interpreted-function-alist)))
-                         (all-dargp (strip-cdrs alist))
+                         (darg-listp (strip-cdrs alist))
                          (pseudo-termp term))
                     (myquotep (,sublis-var-and-eval-name alist term interpreted-function-alist)))
            :flag ,sublis-var-and-eval-name)
          (defthm ,(pack$ 'all-myquotep-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
            (implies (and (mv-nth 0 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist)) ;means ground term
-                         (all-dargp (strip-cdrs alist))
+                         (darg-listp (strip-cdrs alist))
                          (pseudo-term-listp terms))
                     (all-myquotep (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
            :flag ,sublis-var-and-eval-lst-name)
@@ -126,12 +126,12 @@
 
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'axe-treep-of- sublis-var-and-eval-name)
-           (implies (and (all-dargp (strip-cdrs alist))
+           (implies (and (darg-listp (strip-cdrs alist))
                          (pseudo-termp term))
                     (axe-treep (,sublis-var-and-eval-name alist term interpreted-function-alist)))
            :flag ,sublis-var-and-eval-name)
          (defthm ,(pack$ 'axe-tree-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
-           (implies (and (all-dargp (strip-cdrs alist))
+           (implies (and (darg-listp (strip-cdrs alist))
                          (pseudo-term-listp terms))
                     (axe-tree-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
            :flag ,sublis-var-and-eval-lst-name)

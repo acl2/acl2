@@ -3587,7 +3587,7 @@
   :hints
   (("goal" :in-theory (enable l6-list-all-ok-indices))
    ("subgoal *1/4''"
-    :use ((:instance true-listp-when-nat-listp
+    :use ((:instance true-listp-when-nat-listp-compound-recognizer
                      (x (mv-nth 0
                                 (l6-file-index-list (cdr (car fs))
                                                     fa-table))))))))

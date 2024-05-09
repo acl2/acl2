@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,12 +27,13 @@
                                 (c::uintp |r|))
                     :guard-hints (("Goal" :in-theory (enable c::declar
                                                              c::assign)))
-                    :measure (c::uint->get |n|)
-                    :hints (("Goal" :in-theory (enable c::assign
-                                                       c::ne-uint-uint
-                                                       c::sub-uint-uint
-                                                       c::uint-integer-fix
-                                                       c::uint-mod)))))
+                    :measure (c::integer-from-uint |n|)
+                    :hints (("Goal"
+                             :in-theory (enable c::assign
+                                                c::ne-uint-uint
+                                                c::sub-uint-uint
+                                                c::uint-integer-fix
+                                                c::uint-from-integer-mod)))))
     (if (c::boolean-from-sint (c::ne-uint-uint |n| (c::uint-dec-const 0)))
         (let* ((|r| (c::assign (c::mul-uint-uint |r| |n|)))
                (|n| (c::assign (c::sub-uint-uint |n| (c::uint-dec-const 1)))))
@@ -49,4 +50,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f$loop| |f| :output-file "loops.c")
+(c::atc |f$loop| |f| :file-name "loops" :header t)

@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,10 +17,12 @@
 (include-book "close-lambdas")
 (include-book "conjoin")
 (include-book "conjoin-equalities")
+(include-book "dumb-negate-lit")
 (include-book "fapply-term")
 (include-book "fapply-terms-same-args")
 (include-book "fapply-unary-to-terms")
 (include-book "flatten-ands-in-lit")
+(include-book "fsubcor-var")
 (include-book "fsublis-fn")
 (include-book "fsublis-var")
 (include-book "fsublis-var-more-theorems")
@@ -34,6 +36,7 @@
 (include-book "remove-progn")
 (include-book "remove-trivial-vars")
 (include-book "remove-unused-vars")
+(include-book "untranslate-dollar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

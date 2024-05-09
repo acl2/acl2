@@ -1,6 +1,6 @@
 ; A utility to get the PID of the ACL2 process
 ;
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,10 @@
 
 (include-book "call-script") ;introduces a trust tag
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "w"))
+(local (include-book "read-acl2-oracle"))
 
-(local (in-theory (disable boundp-global get-global put-global)))
+(local (in-theory (disable boundp-global get-global put-global state-p1 w)))
 
 ; This is a stronger version of the built-in theorem
 ; UPDATE-ACL2-ORACLE-PRESERVES-STATE-P1. See also
@@ -37,7 +39,7 @@
                 (symbolp key)
                 (not (member-equal key '(current-acl2-world timer-alist))))
            (state-p1 (update-global-table (add-pair key value (global-table state)) state)))
-  :hints (("Goal" :in-theory (e/d (update-global-table global-table) ()))))
+  :hints (("Goal" :in-theory (enable update-global-table global-table))))
 
 (defthm state-p1-of-put-global
   (implies (and (state-p1 state)
@@ -105,3 +107,8 @@
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (get-process-id state))))
   :hints (("Goal" :in-theory (enable get-process-id))))
+
+(defthm w-of-mv-nth-1-of-get-process-id
+  (equal (w (mv-nth 1 (get-process-id state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (get-process-id) (put-global)))))

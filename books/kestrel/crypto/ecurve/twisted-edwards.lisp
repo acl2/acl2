@@ -1,10 +1,10 @@
 ; Elliptic Curve Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Authors: Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -31,7 +31,6 @@
     (xdoc::ahref
      "https://eprint.iacr.org/2008/013.pdf"
      "Bernstein, Birkner, Joye, Lange, and Peters's ``Twisted Edwards Curves''")
-    (xdoc::ahref "https://eprint.iacr.org/2008/013.pdf" "this paper")
     ".")
    (xdoc::p
     "Their definition is the following:")
@@ -75,11 +74,11 @@
    (xdoc::p
     "To fix the three components to satisfy the requirements above,
      we pick 3 for @($p$), 1 for @($a$), and 2 for @($d$)."))
-  ((p nat :reqfix (if (and (rtl::primep p)
+  ((p nat :reqfix (if (and (dm::primep p)
                            (> p 2))
                       p
                     3))
-   (a :reqfix (if (and (rtl::primep p)
+   (a :reqfix (if (and (dm::primep p)
                        (> p 2)
                        (fep a p)
                        (fep d p)
@@ -88,7 +87,7 @@
                        (not (equal d 0)))
                   a
                 1))
-   (d :reqfix (if (and (rtl::primep p)
+   (d :reqfix (if (and (dm::primep p)
                        (> p 2)
                        (fep a p)
                        (fep d p)
@@ -97,7 +96,7 @@
                        (not (equal d 0)))
                   d
                 2)))
-  :require (and (rtl::primep p)
+  :require (and (dm::primep p)
                 (> p 2)
                 (fep a p)
                 (fep d p)
@@ -157,11 +156,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The primality requirement in the guard of this function
-     is not strictly needed to define this function,
-     but in general we should only deal with well-formed curves.
-     In particular, curves whose @($p$) is prime.")
-   (xdoc::p
     "A point @($(x, y)$) is on the curve if and only if
      its components satisfy the curve equation.
      We require its components to be below the prime,
@@ -211,7 +205,7 @@
     (xdoc::seetopic "birational-montgomery-twisted-edwards"
                     "birational equivalence between
                      Montgomery and twisted Edwards curves")
-    ": points with @($x = 0$) or @($y = 0$) on a twisted Edwards curve
+    ": points with @($x = 0$) or @($y = 1$) on a twisted Edwards curve
      are not amenable to the rational mapping,
      because they make a denominator zero;
      thus, they have to be treated specially for the mapping.
@@ -356,7 +350,7 @@
 
   ;; First, for brevity, we introduce a function
   ;; that is the analogue of ECp,
-  ;; but the following one uses the prime field operations instead,
+  ;; but this newly introduced one uses the prime field operations instead,
   ;; and has no dependency on c.
   ;; The following function's body is copied from point-on-twisted-edwards-p.
 
@@ -465,7 +459,7 @@
   ;; they still have b as an explicit root of a.
 
   (defruledl d.x1.x2.y1.y2-not-one-explicit-root
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -483,14 +477,14 @@
              (not (equal (mul d (mul x1 (mul x2 (mul y1 y2 p) p) p) p)
                          1)))
     :use (:functional-instance d.x1.x2.y1.y2-not-one-constrained-prime
-          (prime (lambda () (if (and (rtl::primep p) (> p 2)) p 3))))
+          (prime (lambda () (if (and (dm::primep p) (> p 2)) p 3))))
     :prep-lemmas
     ((defrule primep-of-3
-       (rtl::primep 3)
-       :enable rtl::primep)))
+       (dm::primep 3)
+       :enable dm::primep)))
 
   (defruledl d.x1.x2.y1.y2-not-minus-one-explicit-root
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -508,11 +502,11 @@
              (not (equal (mul d (mul x1 (mul x2 (mul y1 y2 p) p) p) p)
                          (1- p))))
     :use (:functional-instance d.x1.x2.y1.y2-not-minus-one-constrained-prime
-          (prime (lambda () (if (and (rtl::primep p) (> p 2)) p 3))))
+          (prime (lambda () (if (and (dm::primep p) (> p 2)) p 3))))
     :prep-lemmas
     ((defrule primep-of-3
-       (rtl::primep 3)
-       :enable rtl::primep)))
+       (dm::primep 3)
+       :enable dm::primep)))
 
   ;; By instantiating b with the the witness square root of a,
   ;; we eliminate b and instead use (pfield-squarep a p) as hypothesis.
@@ -521,7 +515,7 @@
   ;; they are over the individual components of the curve and points.
 
   (defruledl d.x1.x2.y1.y2-not-one-on-components
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (fep a p)
                   (fep d p)
                   (fep x1 p)
@@ -541,7 +535,7 @@
     :enable pfield-squarep)
 
   (defruledl d.x1.x2.y1.y2-not-minus-one-on-components
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (fep a p)
                   (fep d p)
                   (fep x1 p)
@@ -635,7 +629,7 @@
   ;; which backchain to the conclusions of the two theorems above.
 
   (defruledl verify-guards-lemma1
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (fep x p)
                   (not (equal x (1- p))))
              (not (equal 0 (add 1 x p))))
@@ -644,7 +638,7 @@
      (include-book "arithmetic-3/top" :dir :system)))
 
   (defruledl verify-guards-lemma2
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (fep x p)
                   (not (equal x 1)))
              (not (equal 0 (add 1 (neg x p) p))))
@@ -701,7 +695,7 @@
     ((include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
     :prep-lemmas
     ((defrule lemma
-       (implies (rtl::primep p)
+       (implies (dm::primep p)
                 (equal (mod -1 p)
                        (- p 1)))
        :prep-books ((include-book "arithmetic-3/top" :dir :system)))))
@@ -745,7 +739,7 @@
     "The proof is explained in comments in this file."))
 
   ;; The closure proof is more complicated than it should be,
-  ;; due how the proof, and the twisted Edwards curve library,
+  ;; due to how the proof, and the twisted Edwards curve library,
   ;; have been developed over time.
   ;; In particular, the fixtype for twisted Edwards curve,
   ;; and the functions point-on-twisted-edwards-p and twisted-edwards-add,
@@ -994,7 +988,7 @@
                   (non-square-general d p)
                   (mod-= (sq sqrt{a}) a p)
                   (integerp sqrt{a})
-                  (rtl::primep p)
+                  (dm::primep p)
                   (> p 2)
                   (pointp pt1)
                   (pointp pt2)
@@ -1009,21 +1003,21 @@
               point-on-curve-p
               curve-add)
     :use ((:functional-instance closure-constrained-prime
-           (prime (lambda () (if (and (rtl::primep p)
+           (prime (lambda () (if (and (dm::primep p)
                                       (> p 2))
                                  p
                                3)))))
     :prep-lemmas
     ((defrule primep-of-3
-       (rtl::primep 3)
-       :enable rtl::primep)))
+       (dm::primep 3)
+       :enable dm::primep)))
 
   ;; While the theorem just above references non-square-general,
   ;; the completeness predicate references pfield-squarep.
   ;; The following rewrite rule shows their equivalence.
 
   (defruledl pfield-squarep-to-not-non-square-general
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (fep x p))
              (iff (pfield-squarep x p)
                   (not (non-square-general x p))))
@@ -1042,7 +1036,7 @@
   ;; as conveyed by the theorem name.
 
   (defruledl closure-explicit-root
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -1071,7 +1065,7 @@
   ;; of the curve, as conveyed by the name.
 
   (defruledl closure-on-components
-    (implies (and (rtl::primep p)
+    (implies (and (dm::primep p)
                   (> p 2)
                   (fep a p)
                   (fep d p)
@@ -1556,6 +1550,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule twisted-edwards-add-cancel-left
+  :short "If adding the same point on the left to two points P1 and P2
+          yields equal points, then P1 and P2 are equal."
   (implies (and (twisted-edwards-add-associativity)
                 (twisted-edwards-curve-completep curve)
                 (point-on-twisted-edwards-p point curve)
@@ -1568,42 +1564,42 @@
   :use lemma
   :prep-lemmas
   ((acl2::defisar
-    lemma
-    (implies (and (twisted-edwards-add-associativity)
-                  (twisted-edwards-curve-completep curve)
-                  (point-on-twisted-edwards-p point curve)
-                  (point-on-twisted-edwards-p point1 curve)
-                  (point-on-twisted-edwards-p point2 curve)
-                  (equal (twisted-edwards-add point point1 curve)
-                         (twisted-edwards-add point point2 curve)))
-             (equal (point-fix point1)
-                    (point-fix point2)))
-    :disable t
-    :proof
-    ((:assume (:associativity (twisted-edwards-add-associativity)))
-     (:assume (:complete (twisted-edwards-curve-completep curve)))
-     (:assume (:point (point-on-twisted-edwards-p point curve)))
-     (:assume (:point1 (point-on-twisted-edwards-p point1 curve)))
-     (:assume (:point2 (point-on-twisted-edwards-p point2 curve)))
-     (:assume (:equality (equal (twisted-edwards-add point point1 curve)
-                                (twisted-edwards-add point point2 curve))))
-     (:derive (:add-neg (equal
-                         (twisted-edwards-add
-                          (twisted-edwards-neg point curve)
-                          (twisted-edwards-add point point1 curve)
-                          curve)
-                         (twisted-edwards-add
-                          (twisted-edwards-neg point curve)
-                          (twisted-edwards-add point point2 curve)
-                          curve)))
-      :from (:equality))
-     (:derive (:same-point (equal (point-fix point1)
-                                  (point-fix point2)))
-      :from (:add-neg :associativity :complete :point :point1 :point2)
-      :hints (("Goal" :in-theory (e/d
-                                  (twisted-edwards-add-associative-left)
-                                  (twisted-edwards-add-associative-right)))))
-     (:qed)))))
+     lemma
+     (implies (and (twisted-edwards-add-associativity)
+                   (twisted-edwards-curve-completep curve)
+                   (point-on-twisted-edwards-p point curve)
+                   (point-on-twisted-edwards-p point1 curve)
+                   (point-on-twisted-edwards-p point2 curve)
+                   (equal (twisted-edwards-add point point1 curve)
+                          (twisted-edwards-add point point2 curve)))
+              (equal (point-fix point1)
+                     (point-fix point2)))
+     :disable t
+     :proof
+     ((:assume (:associativity (twisted-edwards-add-associativity)))
+      (:assume (:complete (twisted-edwards-curve-completep curve)))
+      (:assume (:point (point-on-twisted-edwards-p point curve)))
+      (:assume (:point1 (point-on-twisted-edwards-p point1 curve)))
+      (:assume (:point2 (point-on-twisted-edwards-p point2 curve)))
+      (:assume (:equality (equal (twisted-edwards-add point point1 curve)
+                                 (twisted-edwards-add point point2 curve))))
+      (:derive (:add-neg (equal
+                          (twisted-edwards-add
+                           (twisted-edwards-neg point curve)
+                           (twisted-edwards-add point point1 curve)
+                           curve)
+                          (twisted-edwards-add
+                           (twisted-edwards-neg point curve)
+                           (twisted-edwards-add point point2 curve)
+                           curve)))
+       :from (:equality))
+      (:derive (:same-point (equal (point-fix point1)
+                                   (point-fix point2)))
+       :from (:add-neg :associativity :complete :point :point1 :point2)
+       :hints (("Goal" :in-theory (e/d
+                                   (twisted-edwards-add-associative-left)
+                                   (twisted-edwards-add-associative-right)))))
+      (:qed)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

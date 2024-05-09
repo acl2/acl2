@@ -12,7 +12,10 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system) ; todo: reduce, for fn-recursive-partners
+(include-book "kestrel/world-light/defined-fns-in-term" :dir :system)
+(include-book "kestrel/world-light/fn-definedp" :dir :system)
+(include-book "kestrel/world-light/function-symbolsp" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/prove-dollar-plus" :dir :system)
@@ -33,7 +36,7 @@
 (include-book "std/util/defaggregate" :dir :system) ; reduce?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/alists-light/rassoc-equal" :dir :system))
 
 ;; TODO: Add more proof techniques!
@@ -58,15 +61,6 @@
 ;;; Library stuff
 ;;;
 
-(defun filter-defined-fns (fns wrld)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld))))
-  (if (endp fns)
-      nil
-    (let ((fn (first fns)))
-      (if (fn-definedp fn wrld)
-          (cons fn (filter-defined-fns (rest fns) wrld))
-        (filter-defined-fns (rest fns) wrld)))))
 
 ;dup?
 ;; Looks up all the KEYS in the ALIST, returning a list of the results (or nils, for absent keys).
@@ -456,7 +450,7 @@
       (if (eq :step-limit-reached failure-info)
           ;; Step limit reached, so record the fact that we worked harder on it:
           (mv nil :updated nil (change-open-problem prob :last-step-limit step-limit) nil nil name-map state)
-        ;; Didn't prove it but no limit reached, so we should have subgoals:
+        ;; Didn't prove it but no step-limit reached, so we should have subgoals:
         (b* ((non-top-checkpoints (checkpoint-list nil state)) ; these are clauses
              (non-top-checkpoints (clauses-to-implications non-top-checkpoints))
              ((when (not non-top-checkpoints))
@@ -727,8 +721,7 @@
        (parents (raw-problem->parents prob))
        (old-techniques (raw-problem->old-techniques prob))
        (subterms (find-all-fn-call-subterms formula nil))
-       (fns (all-fnnames formula)) ; todo: keep only defined ones?
-       (defined-fns (filter-defined-fns fns wrld))
+       (defined-fns (defined-fns-in-term formula wrld))
        (defined-rec-fns (filter-rec-fns defined-fns wrld))
        (defined-non-rec-fns (set-difference-eq defined-fns defined-rec-fns))
        ;; TODO: Consider using alternate definition rules for fns
@@ -993,7 +986,7 @@
 (defun h-fn (state)
   (declare (xargs :mode :program
                   :stobjs state))
-  (help-with-fn (most-recent-theorem state) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
+  (help-with-fn (most-recent-failed-command *theorem-event-types* state) ;throws an error if there isn't one, TODO: What if the theorem is in an encapsulate?  Better to look for the checkpoints?
                 state))
 
 ;; Call this to get help with the most recent thm or defthm attempt.

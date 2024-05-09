@@ -6,19 +6,62 @@
 (in-package "ACL2")
 
 ;record implementation
-(include-book "defexec/other-apps/records/records" :dir :system)
+(include-book "acl2s/defdata/records" :dir :system)
+(defconst *tag* :0tag)
+
 ;(include-book "finite-set-theory/osets/sets" :dir :system)
 ;; (include-book "std/osets/top" :dir :system)
 
 ;GETTING RECORDS TO behave nicely here are some
 ;;RECORDS THMS proven
 
+#|
+
+ mset-diff-mset1/2 are rules that replaces acl2::mset-diff-mset,
+ acl2::mset-diff-mset is a rule that has a loop-stopper and the
+ behavior of loop-stoppers makes it hard to determine how ss are
+ rewritten, so the only point of defdata-mset-diff-mset is to get rid
+ of that loop stopper and add more predictable behavior.
+
+ For example, with mset-diff-mset
+
+ (acl2s-defaults :set testing-enabled nil)
+
+ (thm
+   (equal x
+          (s :p 'a (s :ab 'b nil))))
+
+ Doesn't do any rewriting, but
+
+ (s :p 'a (s :ab 'b nil)) is ((:AB . B) (:P . A))
+
+ So there is a discrepancy between evaluation and theorem proving
+ that just makes it painful when debugging.
+
+ Now after looking at the documentation, it isn't really
+
+ (term-order ':ab ':p)
+
+ which is used to determine whether to apply the rule; if it was, then
+ the rule would be applied; it is:
+
+ (term-order '':ab '':p)
+
+ but that is based on pseudo-function application stuff described in
+ the documentation, which is complicated and then which uses lexorder,
+ so I want more predicable behavior.
+
+|#
+
+#|
+
 (defthm records-lemma-acl2-count
   (implies (and (ifmp v)
-                (well-formed-map v))
-           (< (acl2-count (mget-wf x v))
+                (well-formed-map v)
+                )
+           (< (acl2-count (g-wf x v))
               (acl2-count v)))
-  :hints (("goal" :in-theory (enable mget-wf)))
+  :hints (("goal" :in-theory (enable g-wf)))
   :rule-classes :linear)
 
 (defun non-empty-good-map (x)
@@ -26,27 +69,37 @@
   (and (consp x)
        (good-map x)))
 
-(defthm records-acl2-count-linear-arith-<=
-  (<= (acl2-count (mget k v))
-      (acl2-count v))
-  :hints (("goal" :in-theory (enable mget acl2->map)))
+|#
+
+(defthm records-lemma-acl2-count
+  (<= (acl2-count (mget k r))
+      (acl2-count r))
+  :hints (("goal" :in-theory
+           (enable minimal-records-theory)))
   :rule-classes :linear)
 
+(defun good-map (x)
+  (recordp x))
+
+(defun non-empty-good-map (x)
+  (declare (xargs :guard t))
+  (and (consp x)
+       (recordp x)))
+
 (defthm records-acl2-count-linear-arith-<
-  (implies (and (not (equal k (acl2::ill-formed-key)))
-                (mget k v))
-           (< (acl2-count (mget k v))
-              (acl2-count v)))
-  :hints (("goal" :in-theory (enable mget acl2->map)))
+  (implies (mget k r)
+           (< (acl2-count (mget k r))
+              (acl2-count r)))
+  :hints (("goal" :in-theory 
+           (enable minimal-records-theory)))
   :rule-classes :linear)
 
 (defthm records-acl2-count
-  (implies (and (consp v)
-                (not (equal x (ill-formed-key))))
-           (< (acl2-count (mget x v))
-              (acl2-count v)))
-  :hints (("goal" :induct (mget-wf x v)
-           :in-theory (enable mget acl2->map)))
+  (implies (consp r)
+           (< (acl2-count (mget k r))
+              (acl2-count r)))
+  :hints (("goal" :in-theory
+           (enable minimal-records-theory)))
   :rule-classes :linear)
 
 
@@ -62,40 +115,16 @@
   x)
 
 (defthmd map-elim-rule 
-  ;(implies (good-map x)
-           (equal (mset a (mget a x) (map-identity2 a x))
-                  x)
+  (implies (recordp r)
+           (equal (mset k (mget k r) (map-identity2 k r))
+                  r))
   :rule-classes :elim)
-
-
 
 (defun list-identity2 (a x) 
   "for list elim rule -- dummy destructor"
   (declare (ignore a))
   x)
-#|
-Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
-        (:DEFINITION ENDP)
-        (:DEFINITION LEN)
-        (:DEFINITION LIST-IDENTITY2)
-        (:DEFINITION NATP)
-        (:DEFINITION NOT)
-        (:DEFINITION NTH)
-        (:DEFINITION UPDATE-NTH)
-        (:EXECUTABLE-COUNTERPART <)
-        (:EXECUTABLE-COUNTERPART INTEGERP)
-        (:EXECUTABLE-COUNTERPART LEN)
-        (:EXECUTABLE-COUNTERPART NOT)
-        (:EXECUTABLE-COUNTERPART ZP)
-        (:FAKE-RUNE-FOR-LINEAR NIL)
-        (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:INDUCTION LEN)
-        (:INDUCTION NTH)
-        (:INDUCTION UPDATE-NTH)
-        (:REWRITE CONS-CAR-CDR)
-        (:TYPE-PRESCRIPTION LEN))
-Time:  0.08 seconds (prove: 0.06, print: 0.00, other: 0.02)
-|#
+
 (defthmd list-elim-rule 
   (implies (and (true-listp x)
                 (natp i)
@@ -127,52 +156,77 @@ Time:  0.08 seconds (prove: 0.06, print: 0.00, other: 0.02)
 
 ;Following lemmas are needed for record modifier theorems
 
-(defthm mset-non-nil-val-is-consp
-  (IMPLIES (AND (not (equal v nil))
-                (good-map x)
-                (wf-keyp a))
-           (consp (MSET A V x)))
-  :rule-classes :tau-system
-  :hints (("goal" :in-theory (enable mset extensible-records))))
+(defthm mset-aux-consp
+  (implies v
+           (consp (mset a v r)))
+  :hints (("goal" :in-theory
+           (enable minimal-records-theory)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset a v r)))
+                 (:rewrite :backchain-limit-lst 1)))
 
+(defthm s-nil-no-op
+  (implies (and (force (recordp r)) (not (mget a r)))
+           (equal (mset a nil r) r))
+  :hints (("goal" :in-theory
+           (enable minimal-records-theory)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset a nil r)))
+                 (:rewrite :backchain-limit-lst 1)))
 
-(local (defthm field-not-empty-implies-record-not-empty1
-   (implies (and (mget a x)
-                 (not (equal a (ill-formed-key))))
-            (consp x))
-   :hints (("goal" :in-theory (enable mset mget mget-wf mset-wf acl2->map)))
-   :rule-classes (:forward-chaining))
-   ;               (:rewrite :backchain-limit-lst 1)))
- )
+(defthm field-not-empty-implies-record-not-empty1
+  (implies (mget a r)
+           (consp r))
+  :hints (("goal" :in-theory
+           (enable minimal-records-theory)))
+  :rule-classes ((:forward-chaining)
+                 (:rewrite :backchain-limit-lst 0)))
 
-
-(defthmd mset-diff-entry-non-empty-good-map-is-consp
-  (implies (and ;(good-map r)
-                (mget a r)
-                (wf-keyp a)
-                (not (equal a b))) 
+(defthmd s-diff-entry-non-empty-good-map-is-consp2
+  (implies (and (not (equal a b))
+                (mget a r))
            (consp (mset b v r)))
-  :hints (("goal" ;:in-theory (disable good-map)
-                  :use ((:instance field-not-empty-implies-record-not-empty1
-                                   (x (mset b v r))))))
-  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+  :hints (("goal"
+           :in-theory
+           (enable mset mget recordp no-nil-val-alistp
+                   ordered-unique-key-alistp)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
+                 (:rewrite :backchain-limit-lst 1)))
 
-(defthmd mset-diff-entry-non-empty-good-map-is-non-nil
-  (implies (and ;(good-map r)
-                (mget a r)
-                (wf-keyp a)
+(defthmd s-diff-entry-non-empty-good-map-is-consp-tag
+  (implies (and (not (equal *tag* b))
+                (mget *tag* r))
+           (consp (mset b v r)))
+  :hints (("goal"
+           :in-theory
+           (enable mset mget recordp no-nil-val-alistp
+                   ordered-unique-key-alistp)))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
+                 (:rewrite :backchain-limit-lst 1)))
+
+(defthmd s-diff-entry-non-empty-good-map-is-non-nil
+  (implies (and (mget a r)
                 (not (equal a b))) 
            (mset b v r))
-  :hints (("goal" ;:in-theory (disable good-map)
-                  :use ((:instance mset-diff-entry-non-empty-good-map-is-consp))))
-  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+  :hints (("goal" :use
+           ((:instance s-diff-entry-non-empty-good-map-is-consp2))))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
+                 (:rewrite :backchain-limit-lst 1)))
 
+(defthmd s-diff-entry-tag-is-non-nil
+  (implies (and (mget *tag* r)
+                (not (equal b *tag*))) 
+           (mset b v r))
+  :rule-classes ((:forward-chaining :trigger-terms ((mset b v r)))
+                 (:rewrite :backchain-limit-lst 1)))
 
-(defthm non-empty-good-map-fc
-  (implies (good-map v1)
-           (and (implies v1 (consp v1))
-                (implies  (car v1) (consp (car v1)))))
-  :rule-classes :forward-chaining)
+(defthm non-empty-record-consp
+  (implies (and (recordp r) r)
+           (consp r))
+  :hints (("goal" :in-theory (enable recordp)))
+  :rule-classes ((:forward-chaining)))
 
-; In BAE books, Mitesh found that good-map is being opened up -- it shouldnt!
-(in-theory (disable good-map))
+(defthm non-empty-record-consp-car
+  (implies (and (recordp r) (car r))
+           (consp (car r)))
+  :hints (("goal" :in-theory (enable recordp)))
+  :rule-classes ((:forward-chaining)))
+

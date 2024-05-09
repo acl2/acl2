@@ -720,21 +720,6 @@
     acl2::read-object
     acl2::prin1-with-slashes
     acl2::may-need-slashes
-    acl2::t-stack-length1
-    acl2::extend-t-stack
-    acl2::shrink-t-stack
-    acl2::aref-t-stack
-    acl2::aset-t-stack
-    acl2::32-bit-integer-stack-length1
-    acl2::extend-32-bit-integer-stack
-    acl2::shrink-32-bit-integer-stack
-    acl2::aref-32-bit-integer-stack
-    acl2::aset-32-bit-integer-stack
-    acl2::f-big-clock-negative-p
-    acl2::f-decrement-big-clock
-    acl2::big-clock-negative-p
-    acl2::decrement-big-clock
-    acl2::list-all-package-names
     acl2::user-stobj-alist
     acl2::update-user-stobj-alist
     acl2::read-idate

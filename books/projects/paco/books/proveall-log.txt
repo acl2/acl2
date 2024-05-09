@@ -12,13 +12,13 @@ ACL2 !>>(INCLUDE-BOOK "../paco")
 Summary
 Form:  ( INCLUDE-BOOK "../paco" ...)
 Rules: NIL
- "../paco.lisp"
+ (:SYSTEM . "projects/paco/paco.lisp")
 ACL2 !>>(IN-PACKAGE "PACO")
  "PACO"
 PACO !>>(ACL2::SET-GAG-MODE :GOALS)
 <state>
 PACO !>>(ACL2::TABLE ACL2::THEORY-INVARIANT-TABLE
-                     NIL NIL :CLEAR)
+          NIL NIL :CLEAR)
 
 Summary
 Form:  ( ACL2::TABLE ACL2::THEORY-INVARIANT-TABLE ...)
@@ -27,8 +27,9 @@ Rules: NIL
 PACO !>>(ACL2::SET-MATCH-FREE-ERROR NIL)
 <state>
 PACO !>>(DEFUN APP (X Y)
-               (IF (ENDP X)
-                   Y (CONS (CAR X) (APP (CDR X) Y))))
+          (IF (ENDP X)
+              Y
+            (CONS (CAR X) (APP (CDR X) Y))))
 
 The admission of APP is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -41,8 +42,9 @@ Form:  ( DEFUN APP ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  APP
 PACO !>>(DEFUN RV (X)
-               (IF (ENDP X)
-                   NIL (APP (RV (CDR X)) (LIST (CAR X)))))
+          (IF (ENDP X)
+              NIL
+            (APP (RV (CDR X)) (LIST (CAR X)))))
 
 The admission of RV is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -173,11 +175,11 @@ Rules: NIL
 Warnings:  Subsume
  :QED
 PACO !>>(DEFUN INTERSECTION-EQUAL (X Y)
-               (COND ((ENDP X) NIL)
-                     ((MEMBER-EQUAL (CAR X) Y)
-                      (CONS (CAR X)
-                            (INTERSECTION-EQUAL (CDR X) Y)))
-                     (T (INTERSECTION-EQUAL (CDR X) Y))))
+          (COND ((ENDP X) NIL)
+                ((MEMBER-EQUAL (CAR X) Y)
+                 (CONS (CAR X)
+                       (INTERSECTION-EQUAL (CDR X) Y)))
+                (T (INTERSECTION-EQUAL (CDR X) Y))))
 
 The admission of INTERSECTION-EQUAL is trivial, using the relation
 ACL2::O< (which is known to be well-founded on the domain recognized
@@ -207,9 +209,9 @@ Form:  ( ACL2::DEFAXIOM MEMBER-EQUAL-INTERSECTION-EQUAL ...)
 Rules: NIL
  :QED
 PACO !>>(DEFUN FLATTEN (X)
-               (COND ((ATOM X) (LIST X))
-                     (T (APP (FLATTEN (CAR X))
-                             (FLATTEN (CDR X))))))
+          (COND ((ATOM X) (LIST X))
+                (T (APP (FLATTEN (CAR X))
+                        (FLATTEN (CDR X))))))
 
 The admission of FLATTEN is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -223,9 +225,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION APP))
  FLATTEN
 PACO !>>(DEFUN MC-FLATTEN (X A)
-               (COND ((ATOM X) (CONS X A))
-                     (T (MC-FLATTEN (CAR X)
-                                    (MC-FLATTEN (CDR X) A)))))
+          (COND ((ATOM X) (CONS X A))
+                (T (MC-FLATTEN (CAR X)
+                               (MC-FLATTEN (CDR X) A)))))
 
 The admission of MC-FLATTEN is trivial, using the relation ACL2::O<
 (which is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -271,9 +273,9 @@ Rules: NIL
 Warnings:  Subsume
  :QED
 PACO !>>(DEFUN INSERT (E X)
-               (COND ((ENDP X) (CONS E X))
-                     ((<= E (CAR X)) (CONS E X))
-                     (T (CONS (CAR X) (INSERT E (CDR X))))))
+          (COND ((ENDP X) (CONS E X))
+                ((<= E (CAR X)) (CONS E X))
+                (T (CONS (CAR X) (INSERT E (CDR X))))))
 
 The admission of INSERT is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -286,11 +288,11 @@ Form:  ( DEFUN INSERT ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  INSERT
 PACO !>>(DEFUN ORDEREDP (X)
-               (COND ((ENDP X) T)
-                     ((ENDP (CDR X)) T)
-                     ((<= (CAR X) (CADR X))
-                      (ORDEREDP (CDR X)))
-                     (T NIL)))
+          (COND ((ENDP X) T)
+                ((ENDP (CDR X)) T)
+                ((<= (CAR X) (CADR X))
+                 (ORDEREDP (CDR X)))
+                (T NIL)))
 
 The admission of ORDEREDP is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -303,7 +305,7 @@ Form:  ( DEFUN ORDEREDP ...)
 Rules: NIL
  ORDEREDP
 PACO !>>(DEFTHM ARITHMETIC-PROPERTY-1
-                (IMPLIES (< I J) (NOT (< J I))))
+          (IMPLIES (< I J) (NOT (< J I))))
 
 Q.E.D.
 
@@ -315,7 +317,8 @@ Rules: ((:DEFINITION NOT)
 PACO !>>(DTHM CAR-INSERT
               (EQUAL (CAR (INSERT E X))
                      (IF (ENDP X)
-                         E (IF (<= E (CAR X)) E (CAR X)))))
+                         E
+                       (IF (<= E (CAR X)) E (CAR X)))))
 
 Summary
 Form:  ( ACL2::DEFAXIOM CAR-INSERT ...)
@@ -333,8 +336,8 @@ Form:  ( ACL2::DEFAXIOM ORDERED-INSERT ...)
 Rules: ((:TYPE-PRESCRIPTION ORDEREDP))
  :QED
 PACO !>>(DEFUN ISORT (X)
-               (COND ((ENDP X) NIL)
-                     (T (INSERT (CAR X) (ISORT (CDR X))))))
+          (COND ((ENDP X) NIL)
+                (T (INSERT (CAR X) (ISORT (CDR X))))))
 
 The admission of ISORT is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -417,9 +420,9 @@ Form:  ( ACL2::DEFAXIOM IDEMPOTENT-ISORT ...)
 Rules: NIL
  :QED
 PACO !>>(DEFUN DEL (X LST)
-               (COND ((ATOM LST) NIL)
-                     ((EQUAL X (CAR LST)) (CDR LST))
-                     (T (CONS (CAR LST) (DEL X (CDR LST))))))
+          (COND ((ATOM LST) NIL)
+                ((EQUAL X (CAR LST)) (CDR LST))
+                (T (CONS (CAR LST) (DEL X (CDR LST))))))
 
 The admission of DEL is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -431,9 +434,9 @@ Form:  ( DEFUN DEL ...)
 Rules: NIL
  DEL
 PACO !>>(DEFUN MEM (X LST)
-               (COND ((ATOM LST) NIL)
-                     ((EQUAL X (CAR LST)) T)
-                     (T (MEM X (CDR LST)))))
+          (COND ((ATOM LST) NIL)
+                ((EQUAL X (CAR LST)) T)
+                (T (MEM X (CDR LST)))))
 
 The admission of MEM is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -446,10 +449,10 @@ Form:  ( DEFUN MEM ...)
 Rules: NIL
  MEM
 PACO !>>(DEFUN PERM (LST1 LST2)
-               (COND ((ATOM LST1) (ATOM LST2))
-                     ((MEM (CAR LST1) LST2)
-                      (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
-                     (T NIL)))
+          (COND ((ATOM LST1) (ATOM LST2))
+                ((MEM (CAR LST1) LST2)
+                 (PERM (CDR LST1) (DEL (CAR LST1) LST2)))
+                (T NIL)))
 
 The admission of PERM is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -475,7 +478,7 @@ PACO !>>(DTHM PERM-X-CONS-A-OPENER
                        (EQUAL (PERM X (CONS A Y))
                               (IF (MEM (CAR X) (CONS A Y))
                                   (PERM (CDR X) (DEL (CAR X) (CONS A Y)))
-                                  NIL))))
+                                NIL))))
 
 Summary
 Form:  ( ACL2::DEFAXIOM PERM-X-CONS-A-OPENER ...)
@@ -486,8 +489,8 @@ PACO !>>(DTHM CAR-DEL
                      (IF (CONSP X)
                          (IF (EQUAL A (CAR X))
                              (CAR (CDR X))
-                             (CAR X))
-                         NIL)))
+                           (CAR X))
+                       NIL)))
 
 Summary
 Form:  ( ACL2::DEFAXIOM CAR-DEL ...)
@@ -498,8 +501,8 @@ PACO !>>(DTHM CDR-DEL
                      (IF (CONSP X)
                          (IF (EQUAL A (CAR X))
                              (CDR (CDR X))
-                             (DEL A (CDR X)))
-                         NIL)))
+                           (DEL A (CDR X)))
+                       NIL)))
 
 Summary
 Form:  ( ACL2::DEFAXIOM CDR-DEL ...)
@@ -509,7 +512,7 @@ PACO !>>(DTHM CONSP-DEL
               (EQUAL (CONSP (DEL A X))
                      (IF (CONSP X)
                          (IF (EQUAL A (CAR X)) (CONSP (CDR X)) T)
-                         NIL)))
+                       NIL)))
 
 Summary
 Form:  ( ACL2::DEFAXIOM CONSP-DEL ...)
@@ -688,14 +691,14 @@ Form:  ( DEFUN XOR ...)
 Rules: NIL
  XOR
 PACO !>>(DEFUN ADDER (X Y C)
-               (DECLARE (XARGS :MEASURE (+ (ACL2-COUNT X) (ACL2-COUNT Y))))
-               (COND ((AND (ENDP X) (ENDP Y)) (LIST C))
-                     (T (CONS (XOR (CAR X) (XOR (CAR Y) C))
-                              (ADDER (CDR X)
-                                     (CDR Y)
-                                     (OR (AND (CAR X) (CAR Y))
-                                         (AND (CAR X) C)
-                                         (AND (CAR Y) C)))))))
+          (DECLARE (XARGS :MEASURE (+ (ACL2-COUNT X) (ACL2-COUNT Y))))
+          (COND ((AND (ENDP X) (ENDP Y)) (LIST C))
+                (T (CONS (XOR (CAR X) (XOR (CAR Y) C))
+                         (ADDER (CDR X)
+                                (CDR Y)
+                                (OR (AND (CAR X) (CAR Y))
+                                    (AND (CAR X) C)
+                                    (AND (CAR Y) C)))))))
 
 For the admission of ADDER we will use the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -741,10 +744,10 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION ENDP))
  ADDER
 PACO !>>(DEFUN NAT (X)
-               (IF (ENDP X)
-                   0
-                   (+ (IF (CAR X) 1 0)
-                      (* 2 (NAT (CDR X))))))
+          (IF (ENDP X)
+              0
+            (+ (IF (CAR X) 1 0)
+               (* 2 (NAT (CDR X))))))
 
 The admission of NAT is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -757,8 +760,8 @@ Form:  ( DEFUN NAT ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  NAT
 PACO !>>(DEFTHM NAT-ADDER-LEMMA1
-                (IMPLIES (EQUAL XXX (+ 1 N))
-                         (EQUAL (* 2 XXX) (+ 1 1 (* 2 N)))))
+          (IMPLIES (EQUAL XXX (+ 1 N))
+                   (EQUAL (* 2 XXX) (+ 1 1 (* 2 N)))))
 
 ACL2 Warning [Free] in ( DEFTHM NAT-ADDER-LEMMA1 ...):  A :REWRITE
 rule generated from NAT-ADDER-LEMMA1 contains the free variable N.
@@ -849,12 +852,12 @@ Rules: NIL
 Warnings:  Subsume and Double-rewrite
  :QED
 PACO !>>(DEFUN MULTIPLIER (X Y A)
-               (COND ((ENDP X) A)
-                     ((CAR X)
-                      (MULTIPLIER (CDR X)
-                                  (CONS NIL Y)
-                                  (ADDER Y A NIL)))
-                     (T (MULTIPLIER (CDR X) (CONS NIL Y) A))))
+          (COND ((ENDP X) A)
+                ((CAR X)
+                 (MULTIPLIER (CDR X)
+                             (CONS NIL Y)
+                             (ADDER Y A NIL)))
+                (T (MULTIPLIER (CDR X) (CONS NIL Y) A))))
 
 The admission of MULTIPLIER is trivial, using the relation ACL2::O<
 (which is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -878,8 +881,9 @@ Form:  ( ACL2::DEFAXIOM NAT-MULTIPLIER ...)
 Rules: NIL
  :QED
 PACO !>>(DEFUN CONC (X Y)
-               (IF (ENDP X)
-                   Y (CONS (CAR X) (CONC (CDR X) Y))))
+          (IF (ENDP X)
+              Y
+            (CONS (CAR X) (CONC (CDR X) Y))))
 
 The admission of CONC is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -892,9 +896,9 @@ Form:  ( DEFUN CONC ...)
 Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
  CONC
 PACO !>>(DEFUN RVE (X)
-               (IF (ENDP X)
-                   NIL
-                   (CONC (RVE (CDR X)) (LIST (CAR X)))))
+          (IF (ENDP X)
+              NIL
+            (CONC (RVE (CDR X)) (LIST (CAR X)))))
 
 The admission of RVE is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -908,8 +912,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:TYPE-PRESCRIPTION CONC))
  RVE
 PACO !>>(DEFUN RV1 (X A)
-               (IF (ENDP X)
-                   A (RV1 (CDR X) (CONS (CAR X) A))))
+          (IF (ENDP X)
+              A
+            (RV1 (CDR X) (CONS (CAR X) A))))
 
 The admission of RV1 is trivial, using the relation ACL2::O< (which
 is known to be well-founded on the domain recognized by ACL2::O-P)
@@ -1075,11 +1080,11 @@ PACO !>>(INCLUDE-BOOK "models/jvm/m5/jvm-fact-setup"
 Summary
 Form:  ( INCLUDE-BOOK "models/jvm/m5/jvm-fact-setup" ...)
 Rules: NIL
- "[books]/models/jvm/m5/jvm-fact-setup.lisp"
+ (:SYSTEM . "models/jvm/m5/jvm-fact-setup.lisp")
 PACO !>>(IN-PACKAGE "M5")
  "M5"
 M5 !>>(DEFTHM INT-LEMMA0-REWRITE
-              (IMPLIES (INTP X) (INTEGERP X)))
+        (IMPLIES (INTP X) (INTEGERP X)))
 
 ACL2 Warning [Subsume] in ( DEFTHM INT-LEMMA0-REWRITE ...):  A newly
 proposed :REWRITE rule generated from INT-LEMMA0-REWRITE probably subsumes
@@ -1104,8 +1109,8 @@ Rules: ((:FORWARD-CHAINING INT-LEMMA0)
 Warnings:  Subsume
  INT-LEMMA0-REWRITE
 M5 !>>(DEFTHM ZP-PROP1
-              (IMPLIES (AND (ZP X) (INTEGERP X))
-                       (EQUAL (< 0 X) NIL)))
+        (IMPLIES (AND (ZP X) (INTEGERP X))
+                 (EQUAL (< 0 X) NIL)))
 
 Q.E.D.
 

@@ -1,6 +1,6 @@
 ; A clause-processor that helps after :use-ing a conjunction
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,13 +13,13 @@
 ;(include-book "subst-flag")
 (include-book "flatten-literals") ; for flatten-disjuncts
 (include-book "simple-subsumption")
-(include-book "push-unary-functions")
+;(include-book "push-unary-functions")
 (include-book "simplify-assumptions")
-(include-book "kestrel/booleans/booland" :dir :system) ; why?
-(include-book "kestrel/booleans/boolor" :dir :system) ; why?
-(include-book "kestrel/booleans/boolif" :dir :system) ; why?
-(include-book "kestrel/utilities/myif-def" :dir :system) ; why?
-(local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
+;(include-book "kestrel/booleans/booland" :dir :system) ; why?
+;(include-book "kestrel/booleans/boolor" :dir :system) ; why?
+;(include-book "kestrel/booleans/boolif" :dir :system) ; why?
+;(include-book "kestrel/utilities/myif-def" :dir :system) ; why?
+;(local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 (local (include-book "kestrel/utilities/disjoin" :dir :system))
 
 ;; TODO: Have my-make-flag (or make-flag) put in the :ruler-extenders of the old function by default.
@@ -65,17 +65,6 @@
                         (con-and-dis-eval my-make-flag-eval)
                         (con-and-dis-eval-list my-make-flag-eval-list)))))
 
-;changes the evaluator
-(defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
-  (implies (and (symbol-listp unary-fns)
-                (alistp a)
-                (pseudo-term-listp clause))
-           (iff (my-make-flag-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
-                (my-make-flag-eval (disjoin clause) a)))
-  :hints (("Goal" :use (:functional-instance
-                        if-eval-of-disjoin-of-push-unary-functions-in-literals
-                        (if-eval my-make-flag-eval)
-                        (if-eval-list my-make-flag-eval-list)))))
 
 ;changes the evaluator
 (defthm my-make-flag-eval-of-conjoin-of-disjoin-lst-of-clause-to-clause-list
@@ -120,6 +109,6 @@
                                    simple-subsumption-clause-processor
                                    ;FLATTEN-LITERALS-CLAUSE-PROCESSOR
                                    ;SUBLIS-VAR-AND-SIMPLIFY-CLAUSE-PROCESSOR
-                                   PUSH-O-P-CLAUSE-PROCESSOR
+                                   ;PUSH-O-P-CLAUSE-PROCESSOR
                                    )
                                   (DISJOIN-LST)))))

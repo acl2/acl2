@@ -22,12 +22,13 @@
 (include-book "kestrel/bv/bvshr-def" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divides" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -470,6 +471,10 @@
   (all-unsigned-byte-p 8 (words-to-bytes words))
   :hints (("Goal" :in-theory (enable words-to-bytes))))
 
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (:e expt))))
+
 ;; See the function BLAKE2 in RFC 7693 Sec 3.3.
 ;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
 (defund blake2s-main (d ll kk nn)
@@ -485,7 +490,7 @@
                               (<= nn 32))
                   :guard-hints (("Goal" :expand ((wordp nn)
                                                  (unsigned-byte-p 64 (+ 64 ll)))
-                                 :in-theory (e/d (natp) ((:e expt)))))))
+                                 :in-theory (enable natp)))))
   (let* ((h (iv))
          (h (update-nth 0
                         (wordxor (nth 0 h)

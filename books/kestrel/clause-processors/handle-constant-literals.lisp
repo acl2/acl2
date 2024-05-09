@@ -1,6 +1,6 @@
 ; A clause processor that handles constant literals in a clause
 
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,7 @@
 (in-package "ACL2")
 
 (include-book "clause-to-clause-list")
-(include-book "kestrel/evaluators/equality-eval" :dir :system)
-(include-book "kestrel/evaluators/if-eval" :dir :system)
+;(include-book "kestrel/evaluators/if-eval" :dir :system)
 
 ;; Returns a new, equivalent clause.
 (defun handle-constant-literals (clause)

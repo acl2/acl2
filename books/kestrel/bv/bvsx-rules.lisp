@@ -1,7 +1,7 @@
 ; Rules that deal with both bvsx and other operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,12 @@
 
 (include-book "bvcat-rules")
 (include-book "bvsx")
+(include-book "bvand")
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "repeatbit2"))
+(local (include-book "unsigned-byte-p"))
 
 (defthm bvand-of-bvsx-low-arg2
   (implies (and (<= size old-size)
@@ -224,3 +230,36 @@
            (equal (bvif size test x (bvsx new-size old-size y))
                   (bvif size test x y)))
   :hints (("Goal" :in-theory (enable bvsx))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: make a "both" rule
+(defthm slice-of-bvsx
+  (implies (and (< low old-size) ;this case (there must be at least one bit to sign-extend?)
+                ;(< high new-size)
+                (<= old-size new-size)
+                (<= low high)
+                (natp high)
+                (natp low)
+                (posp old-size)
+                (natp new-size))
+           (equal (slice high low (bvsx new-size old-size x))
+                  (bvsx (+ (min new-size (+ 1 high)) (- low))
+                        (- old-size low)
+                        (slice high low x))))
+  :hints (("Goal" :in-theory (enable bvsx natp))))
+
+(defthm slice-of-bvsx-high
+  (implies (and (<= old-size low) ;this case
+                ;(< high new-size)
+                (<= old-size new-size)
+                (<= low high)
+                (natp high)
+                (natp low)
+                (posp old-size)
+                (natp new-size))
+           (equal (slice high low (bvsx new-size old-size x))
+                  (repeatbit (+ (min (+ 1 high) new-size)
+                                (- low))
+                             (getbit (+ -1 old-size) x))))
+  :hints (("Goal" :in-theory (enable bvsx natp))))

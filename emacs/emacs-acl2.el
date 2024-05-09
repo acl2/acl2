@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2023, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -539,7 +539,8 @@ current top-level form.  See the documentation for enter-theorem."
 
 (defun write-region-for-shell (beg end)
   "Writes the current region to the shell temp file, with the header
-   string at the top and the footer string at the bottom and <return> separating each.
+   string at the top and the footer string at the bottom and <return>
+   separating each.
    Assumes beg < end."
   (let ((flg (buffer-modified-p)))
     (save-excursion
@@ -736,7 +737,7 @@ then also ignore case if that argument is positive, else do not ignore case."
 
 ; Other modes can be put below as well (asm, c++, c, perl, emacs-lisp).
 (if (equal window-system 'x)
-    (add-hook 'lisp-mode-hook '(lambda () (font-lock-mode 1))))
+    (add-hook 'lisp-mode-hook #'(lambda () (font-lock-mode 1))))
 
 (defun acl2-sources-dir ()
   (let ((dir
@@ -769,8 +770,8 @@ then also ignore case if that argument is positive, else do not ignore case."
 
 ; Set the right margin (used when auto-fill-mode is on).
 (add-hook 'lisp-mode-hook
-          '(lambda ()
-             (setq fill-column 79)))
+          #'(lambda ()
+              (setq fill-column 79)))
 ; Formerly: (set-default 'fill-column 79)
 
 ; The function fill-format-string below probably originated from Bob

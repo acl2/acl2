@@ -49,8 +49,18 @@ fi
 
 if [ -z "$LISP" ]
 then
-    echo "Defaulting LISP to ccl"
-    LISP=ccl
+    if [ $(command -v sbcl) ]
+    then
+       echo "Defaulting LISP to sbcl"
+       LISP=sbcl
+    elif [ $(command -v ccl) ]
+    then
+       echo "Defaulting LISP to ccl"
+       LISP=ccl
+    else
+       echo "Can't find LISP: set \$LISP"
+       exit 1    
+    fi
 fi
 
 if [ -z "$STARTJOB" ]
@@ -66,8 +76,16 @@ rm -f quicklisp.lsp
 rm -rf temp-quicklisp-inst
 
 echo "Downloading Quicklisp..."
-#curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
-wget http://beta.quicklisp.org/quicklisp.lisp -O quicklisp.lsp
+if [ $(command -v curl) ]
+then
+    curl http://beta.quicklisp.org/quicklisp.lisp -o quicklisp.lsp
+elif [ $(command -v wget) ]
+then
+    wget http://beta.quicklisp.org/quicklisp.lisp -O quicklisp.lsp
+else
+    echo "** Error: Neither curl nor wget installed"
+fi
+
 $BUILD_DIR/wait.pl quicklisp.lsp
 
 echo "Cleaning Bundle..."
@@ -105,3 +123,22 @@ echo " -- Git add any new libraries, etc."
 echo " -- Make a preliminary commit"
 echo " -- Do a full ACL2 regression, etc"
 
+echo ""
+echo "-- PATCHES TO CHECK --"
+echo "For each patch mentioned here:"
+echo "if fixed upstream, remove the entry below;"
+echo "if still a problem, reapply patch to new bundle."
+echo "1. osicat make-fd-stream error on ccl"
+echo "   https://github.com/acl2/acl2/pull/1517"
+echo "   As of 2023-11-20,"
+echo "   the new version of osicat still has this problem"
+echo "   and another problem with c compilation (not recorded);"
+echo "   for this reason, after updating the libs,"
+echo "   the osicat version was reverted as in this commit:"
+echo "   https://github.com/acl2/acl2/commit/9a3fd9cd2a3319f137bbed86c9189c67a68e12da"
+echo "2. In the latest dexador (as of 2023-11-20), "
+echo "   two uses of the package bt2 didn't parse because the api v2"
+echo "   of bordeaux-threads didn't load (not investigated further)."
+echo "   Those were changed to use the previous bt: interface"
+echo "   as in this commit:"
+echo "   https://github.com/acl2/acl2/commit/68a1a4efe2e9e15a7fc3e94aa0f4bbf1dafc1bcd"

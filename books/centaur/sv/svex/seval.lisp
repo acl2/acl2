@@ -266,14 +266,12 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                (bit?!
                 (b* (((unless (eql (len x.args) 3))
                       (svex-s4apply x.fn (svexlist-s4eval x.args env)))
-                     (test (svex-s4eval (first x.args) env))
-                     ((s4vec test))
-                     ((when (and (sparseint-equal test.upper -1)
-                                 (sparseint-equal test.lower -1)))
+                     (test (s4vec-1mask (svex-s4eval (first x.args) env)))
+                     ((when (sparseint-equal test -1))
                       (svex-s4eval (second x.args) env))
-                     ((when (sparseint-equal (sparseint-bitand test.upper test.lower) 0))
+                     ((when (sparseint-equal test 0))
                       (svex-s4eval (third x.args) env)))
-                  (s4vec-bit?! test
+                  (s4vec-bitmux test
                                (svex-s4eval (second x.args) env)
                                (svex-s4eval (third x.args) env))))
                (bitand
@@ -397,19 +395,14 @@ s4veclist)s.  ``Safely'' causes a run-time error if @('n') is out of bounds."
                                 (4vec-fix then))))
            :hints(("Goal" :in-theory (enable 4vec-bit? 3vec-bit? s4vec->4vec)))))
 
-  (local (defthm s4vec-bit?!-cases
-           (and (implies  (equal (logand (sparseint-val (s4vec->upper test))
-                                         (sparseint-val (s4vec->lower test)))
-                                 0)
-                          (equal (4vec-bit?! (s4vec->4vec test) then else)
-                                 (4vec-fix else)))
-                (implies (and (equal (sparseint-val (s4vec->upper test)) -1)
-                              (equal (sparseint-val (s4vec->lower test)) -1))
-                         (equal (4vec-bit?! (s4vec->4vec test) then else)
-                                (4vec-fix then))))
-           :hints(("Goal" :in-theory (enable 4vec-bit?! s4vec->4vec)))))
+  (local (defthm 4vec-bitmux-cases
+           (and (equal (4vec-bitmux 0 then else)
+                       (4vec-fix else))
+                (equal (4vec-bitmux -1 then else)
+                       (4vec-fix then)))
+           :hints(("Goal" :in-theory (enable 4vec-bitmux logite)))))
 
-
+  (local (in-theory (enable 4vec-bit?!)))
 
   ;; (local (defthm s4vec-bitor-case
   ;;          (implies (equal test -1)

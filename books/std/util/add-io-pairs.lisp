@@ -71,7 +71,7 @@
  (add-io-pair (g 3 4) (mv 30 40))
 
  (add-io-pair
-  (rtl::primep (primes::bn-254-group-prime)) t
+  (primep (primes::bn-254-group-prime)) t
   :test eql
   :hints ((\"Goal\"
            :in-theory
@@ -117,9 +117,9 @@
                 ((g (/ 40 10) (/ 50 10)) (mv 40 50))))
 
  (add-io-pairs
-  (((rtl::primep (primes::secp256k1-field-prime)) t)
-   ((rtl::primep (primes::bn-254-group-prime)) t)
-   ((rtl::primep (primes::baby-jubjub-subgroup-prime)) t))
+  (((primep (primes::secp256k1-field-prime)) t)
+   ((primep (primes::bn-254-group-prime)) t)
+   ((primep (primes::baby-jubjub-subgroup-prime)) t))
   :debug t
   :hints ((\"Goal\"
            :in-theory
@@ -859,7 +859,7 @@
                                           (consp (cdr (stobjs-out fn wrld))))))
                    (get-io-pairs-fn1 (cdr fns) tbl wrld)))))
 
-(defun get-io-pairs-fn (fns wrld warnp)
+(defun get-io-pairs-fn (fns wrld warnp state)
 
 ; To see how this works, see the comment in get-io-pairs-fn2 and try running
 ; get-io-pairs after evaluating the following.
@@ -876,10 +876,12 @@
                   (t fns)))
        (- (and bad
                warnp
-               (warning$-cw 'get-io-pairs
-                            "There ~#0~[is no I/O pair for the symbol~/are no ~
-                             I/O pairs for the symbols~] ~&0."
-                            bad))))
+               (warning$-cw0 'get-io-pairs
+                             nil
+                             (default-state-vars t)
+                             "There ~#0~[is no I/O pair for the symbol~/are ~
+                              no I/O pairs for the symbols~] ~&0."
+                             bad))))
     (get-io-pairs-fn1 fns tbl wrld)))
 
 (defmacro get-io-pairs (&rest fns)
@@ -890,7 +892,7 @@
            "It is illegal to use :ALL with ~x0 except in the form ~x1."
            'get-io-pairs
            '(get-io-pairs :all))
-    `(get-io-pairs-fn ',fns (w state) t)))
+    `(get-io-pairs-fn ',fns (w state) t state)))
 
 (defun maybe-kwote-lst (x)
   (declare (xargs :guard (true-listp x) :mode :logic))
@@ -927,7 +929,7 @@
        (wrld (w state))
        (chan (standard-co state))
        (allp (equal fns '(:all)))
-       (pairs (get-io-pairs-fn (or fns '(:all)) wrld nil)))
+       (pairs (get-io-pairs-fn (or fns '(:all)) wrld nil state)))
     (pprogn
      (cond
       ((null pairs)

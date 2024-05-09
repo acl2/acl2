@@ -1,0 +1,48 @@
+language: common-lisp
+sudo: false
+
+env:
+  global:
+    - PATH=~/.roswell/bin:~/nginx/sbin:$PATH
+    - ROSWELL_INSTALL_DIR=$HOME/.roswell
+    - COVERAGE_EXCLUDE=t
+  matrix:
+    - LISP=sbcl-bin COVERALLS=true
+    - LISP=ccl-bin
+
+matrix:
+  allow_failures:
+    # there is some issue with clisp,
+    # roswell installs ASDF3, but clisp doesn't see it
+    - env: LISP=ccl-bin
+
+addons:
+  apt:
+    packages:
+      - default-jre
+
+install:
+  # Roswell
+  - curl -L https://raw.githubusercontent.com/roswell/roswell/release/scripts/install-for-ci.sh | sh
+  # nginx
+  - curl -L http://nginx.org/download/nginx-1.8.0.tar.gz | tar xzf -
+  - (cd nginx-1.8.0 && ./configure --prefix=$HOME/nginx && make && make install)
+  # rove
+  - ros install rove
+  - ros install fukamachi/clack
+  - ros install fukamachi/fast-http
+
+cache:
+  directories:
+    - $HOME/.roswell
+    - $HOME/nginx
+    - $HOME/.config/common-lisp
+
+before_script:
+  - nginx -c "$TRAVIS_BUILD_DIR/t/nginx.conf" -p "$HOME/nginx"
+  - ros --version
+  - ros config
+
+script:
+  - rove dexador-test.asd
+  - benchmark/bench

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,23 +68,9 @@
   :ok value
   :pred value-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-valuep
-  (implies (valuep x)
-           (not (resulterrp x)))
-  :enable (valuep resulterrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult value-list-result
   :short "Fixtype of errors and lists of values."
   :ok value-list
   :pred value-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-value-listp
-  (implies (value-listp x)
-           (not (resulterrp x)))
-  :enable (value-listp resulterrp))

@@ -1,0 +1,168 @@
+;; adds e to l if e doesn't already exist in l
+(definec add-if-needed (e :all l :tl) :tl
+  (cond
+   ((endp l) (list e))
+   ((== (car l) e) (cons e (cdr l)))
+   (t (cons (car l) (add-if-needed e (cdr l))))))
+
+;; this is what we want to prove!
+(property (l :tl e :all)
+  (=> (in e l)
+      (== (len (add-if-needed e l))
+          (len l))))
+
+Conjecture len-add-if-needed-preserved:
+(=> (^ (tlp l)
+         (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Proof by: induction on (add-if-needed e l)
+
+Base Case 1:
+(=> (! (tlp l))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+(=> (^ (! (tlp l))
+       (tlp l)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (! (tlp l))
+C2. (tlp l)
+C3. (in e l)
+
+Derived Context:
+D1. nil { C1, C2 }
+
+QED
+
+Base Case 2:
+(=> (^ (tlp l)
+       (endp l))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+(=> (^ (tlp l)
+       (endp l)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (tlp l)
+C2. (endp l)
+C3. (in e l)
+
+Derived Context:
+D1. nil { C2, C3, def in }
+
+QED
+
+Base Case 3:
+(=> (^ (tlp l)
+       (! (endp l))
+       (== (car l) e))
+    (=> (^ (tlp l)
+           (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+(=> (^ (tlp l)
+       (! (endp l))
+       (== (car l) e)
+       (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (tlp l)
+C2. (! (endp l))
+C3. (== (car l) e)
+C4. (in e l)
+
+Goal:
+(== (len (add-if-needed e l))
+    (len l))
+
+Proof:
+(len (add-if-needed e l))
+== { def add-if-needed, C2, C3 }
+(len (cons (car l) (cdr l)))
+== { cons axioms, C2 }
+(len l)
+
+QED
+
+Induction Case 1:
+(=> (^ (tlp l)
+         (! (endp l))
+         (! (== (car l) e))
+         (=> (^ (tlp (cdr l))
+                (in e (cdr l)))
+             (== (len (add-if-needed e (cdr l)))
+                 (len (cdr l)))))
+    (=> (^ (tlp l)
+             (in e l))
+        (== (len (add-if-needed e l))
+            (len l))))
+
+Exportation:
+(=> (^ (tlp l)
+         (! (endp l))
+         (! (== (car l) e))
+         (=> (^ (tlp (cdr l))
+                (in e (cdr l)))
+             (== (len (add-if-needed e (cdr l)))
+                 (len (cdr l))))
+         (in e l))
+    (== (len (add-if-needed e l))
+        (len l)))
+
+Context:
+C1. (tlp l)
+C2. (! (endp l))
+C3. (! (== (car l) e))
+C4. (=> (^ (tlp (cdr l))
+           (in e (cdr l)))
+        (== (len (add-if-needed e (cdr l)))
+            (len (cdr l))))
+C5. (in e l)
+
+Derived Context:
+D1. (tlp (cdr l)) { C1 }
+D2. (in e (cdr l)) { C2, C3, C5, def in }
+D3. (== (len (add-if-needed e (cdr l)))
+        (len (cdr l))) { C4, D1, D2, MP }
+
+Goal:
+(== (len (add-if-needed e l))
+    (len l))
+
+Proof:
+(len (add-if-needed e l))
+== { def add-if-needed, C2, C3 }
+(len (cons (car l) (add-if-needed e (cdr l))))
+== { def len, cons axioms }
+(1+ (len (add-if-needed e (cdr l))))
+== { D3 }
+(1+ (len (cdr l)))
+== { def len, C2, cons axioms }
+(len (cons (car l) (cdr l)))
+== { cons axioms, C2 }
+(len l)
+
+QED
+
+QED
+

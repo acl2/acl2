@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
 ;
-; License: A 3-clause BSD license. See the file [books]/3BSD-mod.txt.
+; License: A 3-clause BSD license. See the community-books file 3BSD-mod.txt.
 ;
 ; Author: Alessandro Coglio (coglio@kestrel.edu)
 

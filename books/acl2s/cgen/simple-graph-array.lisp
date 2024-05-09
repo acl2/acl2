@@ -7,7 +7,7 @@
 
 (in-package "CGEN")
 (include-book "utilities")
-(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
+;(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
 (defun make-n-upto-list (size ans)
 ;make a list of natural numbers upto (size-1)

@@ -1,0 +1,47 @@
+os: linux
+dist: focal
+language: generic
+
+env:
+  jobs:
+    - LISP=sbcl
+    - LISP=ccl
+    - LISP=ecl
+    - LISP=abcl
+    - LISP=clisp
+    - LISP=allegro
+    # - LISP=sbcl32
+    # - lisp=ccl32
+    # - LISP=cmucl
+
+jobs:
+  fast_finish: true
+  allow_failures:
+    - env: LISP=clisp
+    - env: LISP=allegro
+    # - env: LISP=sbcl32
+    # - env: LISP=ccl32
+    # - env: LISP=cmucl
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+  irc:
+    channels:
+      - "chat.freenode.net#iolib"
+    on_success: change
+    on_failure: always
+    use_notice: true
+    skip_join: true
+
+install:
+  - curl -L https://raw.githubusercontent.com/lispci/cl-travis/master/install.sh | sh
+
+script:
+  - cl -e "(cl:in-package :cl-user)
+           (prin1 (lisp-implementation-type)) (terpri) (prin1 (lisp-implementation-version)) (terpri)
+           (ql:quickload :bordeaux-threads/test :verbose t)
+           (5am:run! :bordeaux-threads)
+           (uiop:quit
+             (if (5am:run! :bordeaux-threads-2) 0 -1))"

@@ -1,0 +1,433 @@
+
+7 ;failure_count_hints
+16 ;total_count_hints
+0 ;failure_count_hypotheses
+0 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+10 ;failure_count_single_rune
+12 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"
+ (APP-ASSOC-REWRITE
+      (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                    (BINARY-APPEND X (BINARY-APPEND Y Z))))
+      (:HASH 38295251)
+      (:EXPANSION-STACK NIL)
+      (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                              (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+      (:EVENT (DEFTHM APP-ASSOC-REWRITE
+                (EQUAL (APPEND (APPEND X Y) Z)
+                       (APPEND X Y Z))
+                :HINTS (("Goal" :IN-THEORY (ENABLE* APPEND CAR-CONS NTH)))))
+      (:RULE-CLASSES (:REWRITE))
+      (:USED-INDUCTION T)
+      (:HYP-ALIST NIL)
+      (:HINT-SETTING-ALIST
+           (((:ENABLE BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL
+             (DEFTHM APP-ASSOC-REWRITE
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :HINTS (("Goal" :IN-THEORY (ENABLE* CAR-CONS NTH)))))
+            ((:ENABLE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CAR (CONS (CAR X)
+                                 (BINARY-APPEND (CDR X) Y)))
+                      (CAR X))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                              (CAR X))))
+             (DEFTHM APP-ASSOC-REWRITE
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :HINTS (("Goal" :IN-THEORY (ENABLE* APPEND NTH)))))
+            ((:ENABLE NTH)
+             :REMOVE
+             (DEFTHM APP-ASSOC-REWRITE
+               (EQUAL (APPEND (APPEND X Y) Z)
+                      (APPEND X Y Z))
+               :HINTS (("Goal" :IN-THEORY (ENABLE* APPEND CAR-CONS)))))))
+      (:BOOK-RUNES-ALIST NIL)
+      (:RUNE-ALIST
+           (((:REWRITE CDR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (CONS (CAR X) (BINARY-APPEND (CDR X) Y))
+                                     Z)
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (CONS (CAR X) (APPEND (CDR X) Y))
+                                      Z)
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:INDUCTION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             NIL NIL)
+            ((:REWRITE CAR-CONS)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((NOT (CONSP X))
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (CONS (CAR (CONS (CAR X)
+                                       (BINARY-APPEND (CDR X) Y)))
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z))
+                      (CONS (CAR X)
+                            (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                           Z)))))
+             ((IMPLIES (AND (CONSP X)
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (CONS (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                    (APPEND (APPEND (CDR X) Y) Z))
+                              (CONS (CAR X)
+                                    (APPEND (APPEND (CDR X) Y) Z))))))
+            ((:DEFINITION ENDP) :REMOVE)
+            ((:DEFINITION BINARY-APPEND)
+             (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((EQUAL (APPEND (APPEND X Y) Z)
+                     (APPEND X Y Z)))
+             (((ENDP X)
+               (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                          Z)
+                           (BINARY-APPEND (CDR X)
+                                          (BINARY-APPEND Y Z))))
+               (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                      (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+             ((IMPLIES (AND (NOT (ENDP X))
+                            (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                   (APPEND (CDR X) Y Z)))
+                       (EQUAL (APPEND (APPEND X Y) Z)
+                              (APPEND X Y Z)))))
+            ((:DEFINITION NOT) :REMOVE)))
+      (:SYMBOL-TABLE ((NTH . :BUILTIN)
+                      (NOT . :BUILTIN)
+                      (EQUAL . :BUILTIN)
+                      (ENDP . :BUILTIN)
+                      (CDR-CONS . :BUILTIN)
+                      (CAR-CONS . :BUILTIN)
+                      (BINARY-APPEND . :BUILTIN)
+                      (APPEND . :BUILTIN))))
+ (APP-ASSOC-BACKWARDS
+  (:GOAL (EQUAL (BINARY-APPEND X (BINARY-APPEND Y Z))
+                (BINARY-APPEND (BINARY-APPEND X Y) Z)))
+  (:HASH 1794091614)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND X (BINARY-APPEND Y Z))
+                          (BINARY-APPEND (BINARY-APPEND X Y)
+                                         Z)))))
+  (:EVENT (DEFTHM APP-ASSOC-BACKWARDS
+            (EQUAL (APPEND X Y Z)
+                   (APPEND (APPEND X Y) Z))
+            :HINTS (("Goal" :IN-THEORY (ENABLE* APPEND CAR-CONS NTH)))))
+  (:RULE-CLASSES (:REWRITE))
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:ENABLE BINARY-APPEND)
+         :REMOVE
+         (DEFTHM APP-ASSOC-BACKWARDS
+           (EQUAL (APPEND X Y Z)
+                  (APPEND (APPEND X Y) Z))
+           :HINTS (("Goal" :IN-THEORY (ENABLE* CAR-CONS NTH)))))
+        ((:ENABLE CAR-CONS)
+         :REMOVE
+         (DEFTHM APP-ASSOC-BACKWARDS
+           (EQUAL (APPEND X Y Z)
+                  (APPEND (APPEND X Y) Z))
+           :HINTS (("Goal" :IN-THEORY (ENABLE* APPEND NTH)))))
+        ((:ENABLE NTH)
+         :REMOVE
+         (DEFTHM APP-ASSOC-BACKWARDS
+           (EQUAL (APPEND X Y Z)
+                  (APPEND (APPEND X Y) Z))
+           :HINTS (("Goal" :IN-THEORY (ENABLE* APPEND CAR-CONS)))))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:REWRITE APP-ASSOC-REWRITE)
+                 (((EQUAL (BINARY-APPEND X (BINARY-APPEND Y Z))
+                          (BINARY-APPEND (BINARY-APPEND X Y) Z))))
+                 ((EQUAL (APPEND X Y Z)
+                         (APPEND (APPEND X Y) Z)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (CAR-CONS . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APPEND . :BUILTIN)
+    (APP-ASSOC-REWRITE
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+ (APP-ASSOC-1
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-1
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* (APPEND CAR-CONS NTH)
+                                             (APP-ASSOC-BACKWARDS))))
+            :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:ENABLE BINARY-APPEND)
+         :REMOVE
+         (DEFTHM APP-ASSOC-1
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* (CAR-CONS NTH)
+                                            (APP-ASSOC-BACKWARDS))))
+           :RULE-CLASSES NIL))
+        ((:ENABLE CAR-CONS)
+         :REMOVE
+         (DEFTHM APP-ASSOC-1
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* (APPEND NTH)
+                                            (APP-ASSOC-BACKWARDS))))
+           :RULE-CLASSES NIL))
+        ((:ENABLE NTH)
+         :REMOVE
+         (DEFTHM APP-ASSOC-1
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* (APPEND CAR-CONS)
+                                            (APP-ASSOC-BACKWARDS))))
+           :RULE-CLASSES NIL))
+        ((:DISABLE APP-ASSOC-BACKWARDS)
+         :FAIL
+         (DEFTHM APP-ASSOC-1
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* (APPEND CAR-CONS NTH) NIL)))
+           :RULE-CLASSES NIL))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:REWRITE APP-ASSOC-REWRITE)
+                 (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                 ((EQUAL (APPEND (APPEND X Y) Z)
+                         (APPEND X Y Z)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (CAR-CONS . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APPEND . :BUILTIN)
+    (APP-ASSOC-REWRITE
+        .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
+    (APP-ASSOC-BACKWARDS
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+ (APP-ASSOC-2
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-2
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* NIL (APP-ASSOC-BACKWARDS))))
+            :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST (((:DISABLE APP-ASSOC-BACKWARDS)
+                         :FAIL
+                         (DEFTHM APP-ASSOC-2
+                           (EQUAL (APPEND (APPEND X Y) Z)
+                                  (APPEND X Y Z))
+                           :RULE-CLASSES NIL))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:REWRITE APP-ASSOC-REWRITE)
+                 (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                 ((EQUAL (APPEND (APPEND X Y) Z)
+                         (APPEND X Y Z)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APP-ASSOC-REWRITE
+        .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
+    (APP-ASSOC-BACKWARDS
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+ (APP-ASSOC-3
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-3
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* NIL (NTH APP-ASSOC-BACKWARDS))))
+            :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:DISABLE NTH)
+         :REMOVE
+         (DEFTHM APP-ASSOC-3
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* NIL (APP-ASSOC-BACKWARDS))))
+           :RULE-CLASSES NIL))
+        ((:DISABLE APP-ASSOC-BACKWARDS)
+         :FAIL
+         (DEFTHM APP-ASSOC-3
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* NIL (NTH))))
+           :RULE-CLASSES NIL))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:REWRITE APP-ASSOC-REWRITE)
+                 (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                 ((EQUAL (APPEND (APPEND X Y) Z)
+                         (APPEND X Y Z)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APP-ASSOC-REWRITE
+        .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
+    (APP-ASSOC-BACKWARDS
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+ (APP-ASSOC-4
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-4
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* (NTH APP-ASSOC-REWRITE) NIL)))
+            :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST
+       (((:ENABLE NTH)
+         :REMOVE
+         (DEFTHM APP-ASSOC-4
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* (APP-ASSOC-REWRITE) NIL)))
+           :RULE-CLASSES NIL))
+        ((:ENABLE APP-ASSOC-REWRITE)
+         (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                  (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+         ((EQUAL (APPEND (APPEND X Y) Z)
+                 (APPEND X Y Z)))
+         NIL NIL
+         (DEFTHM APP-ASSOC-4
+           (EQUAL (APPEND (APPEND X Y) Z)
+                  (APPEND X Y Z))
+           :HINTS (("Goal" :IN-THEORY (E/D* (NTH) NIL)))
+           :RULE-CLASSES NIL))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:REWRITE APP-ASSOC-REWRITE)
+                 (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                 ((EQUAL (APPEND (APPEND X Y) Z)
+                         (APPEND X Y Z)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((NTH . :BUILTIN)
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APP-ASSOC-REWRITE
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp"))))
+ (APP-ASSOC-4A
+  (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                (BINARY-APPEND X (BINARY-APPEND Y Z))))
+  (:HASH 38295251)
+  (:EXPANSION-STACK NIL)
+  (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+  (:EVENT (DEFTHM APP-ASSOC-4A
+            (EQUAL (APPEND (APPEND X Y) Z)
+                   (APPEND X Y Z))
+            :HINTS (("Goal" :IN-THEORY (E/D* (R1) NIL)))
+            :RULE-CLASSES NIL))
+  (:RULE-CLASSES NIL)
+  (:USED-INDUCTION NIL)
+  (:HYP-ALIST NIL)
+  (:HINT-SETTING-ALIST (((:ENABLE* R1)
+                         (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                  (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                         ((EQUAL (APPEND (APPEND X Y) Z)
+                                 (APPEND X Y Z)))
+                         NIL NIL
+                         (DEFTHM APP-ASSOC-4A
+                           (EQUAL (APPEND (APPEND X Y) Z)
+                                  (APPEND X Y Z))
+                           :RULE-CLASSES NIL))))
+  (:BOOK-RUNES-ALIST NIL)
+  (:RUNE-ALIST (((:REWRITE APP-ASSOC-REWRITE)
+                 (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                          (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                 ((EQUAL (APPEND (APPEND X Y) Z)
+                         (APPEND X Y Z)))
+                 NIL NIL)))
+  (:SYMBOL-TABLE
+   ((R1 .
+        "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")
+    (EQUAL . :BUILTIN)
+    (BINARY-APPEND . :BUILTIN)
+    (APP-ASSOC-REWRITE
+     .
+     "/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test2a.lisp")))))

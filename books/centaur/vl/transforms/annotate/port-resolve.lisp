@@ -133,12 +133,11 @@
 
 (define vl-interface/type-warn-about-unexpected-lookup ((name stringp)
                                                         (lookup)
-                                                        (expected-tag symbolp))
+                                                        (expected-tags symbol-listp))
   :returns (warnings vl-warninglist-p)
   (b* ((warnings nil))
     (if (and (consp lookup)
-             (not (eq (tag lookup) (mbe :logic (acl2::symbol-fix expected-tag)
-                                        :exec expected-tag))))
+             (not (member-eq (tag lookup) (acl2::symbol-list-fix expected-tags))))
         (warn :type :vl-bad-type-or-interface
               :msg "Identifier ~a0 looks like it should be a type or ~
                   interface name, but we found ~a1 instead."
@@ -157,10 +156,12 @@
        (iface-lookup (vl-scopestack-find-definition x ss))
        (warnings nil)
        ((wmv warnings)
-        (vl-interface/type-warn-about-unexpected-lookup x type-lookup :vl-typedef))
+        (vl-interface/type-warn-about-unexpected-lookup x type-lookup '(:vl-typedef :vl-paramdecl)))
        ((wmv warnings)
-        (vl-interface/type-warn-about-unexpected-lookup x iface-lookup :vl-interface))
-       ((when (and type-lookup (eq (tag type-lookup) :vl-typedef)))
+        (vl-interface/type-warn-about-unexpected-lookup x iface-lookup '(:vl-interface)))
+       ((when (and type-lookup
+                   (or (eq (tag type-lookup) :vl-typedef)
+                       (eq (tag type-lookup) :vl-paramdecl))))
         (if (and iface-lookup (eq (tag iface-lookup) :vl-interface))
             (mv (warn :type :vl-ambiguous-type-or-interface
                       :msg "Identifier ~a0 refers to an interface but also to ~

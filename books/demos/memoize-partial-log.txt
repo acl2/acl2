@@ -15,9 +15,8 @@ ACL2 !>>(INCLUDE-BOOK "std/testing/must-fail"
 Summary
 Form:  ( INCLUDE-BOOK "std/testing/must-fail" ...)
 Rules: NIL
- "[books]/std/testing/must-fail.lisp"
-ACL2 !>>(DEFMACRO
-         MF (FORM &KEY (EXPECTED ':SOFT))
+ (:SYSTEM . "std/testing/must-fail.lisp")
+ACL2 !>>(DEFMACRO MF (FORM &KEY (EXPECTED ':SOFT))
          (CONS
           'MUST-FAIL
           (CONS
@@ -35,16 +34,16 @@ Rules: NIL
 ACL2 !>>(SET-COMPILE-FNS T)
  T
 ACL2 !>>(DEFUN FIB-LIMIT (N LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE INTEGER N))
-               (DECLARE (XARGS :MEASURE (NFIX LIMIT)))
-               (IF (ZP LIMIT)
-                   0
-                   (LET ((LIMIT (1- LIMIT)))
-                        (IF (OR (= N 0) (= N 1))
-                            1
-                            (+ (FIB-LIMIT (- N 1) LIMIT)
-                               (FIB-LIMIT (- N 2) LIMIT))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE INTEGER N))
+          (DECLARE (XARGS :MEASURE (NFIX LIMIT)))
+          (IF (ZP LIMIT)
+              0
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (= N 0) (= N 1))
+                  1
+                (+ (FIB-LIMIT (- N 1) LIMIT)
+                   (FIB-LIMIT (- N 2) LIMIT))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -94,16 +93,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB
 
 Summary
@@ -116,41 +105,41 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (FIB 100) 573147844013817084101))
  :PASSED
 ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
  T
-ACL2 !>>(ENCAPSULATE
-         NIL
-         (DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
-                    (N LIMIT)
-                    (AND (NATP LARGE)
-                         (<= LIMIT LARGE)
-                         (NOT (EQUAL (FIB-LIMIT N LIMIT)
-                                     (FIB-LIMIT N LARGE)))))
-         (DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
-                    (N)
-                    (AND (NATP LIMIT)
-                         (EQUAL (FIB-LIMIT N LIMIT)
-                                (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
-         (DEFUN FIB (N)
-                (DECLARE (TYPE INTEGER N)
-                         (XARGS :GUARD T))
-                (FIB-LIMIT N (NFIX (FIB-LIMIT-STABLE N))))
-         (TABLE
-            PARTIAL-FUNCTIONS-TABLE 'FIB-LIMIT
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFCHOOSE FIB-LIMIT-CHANGE (LARGE)
+                                      (N LIMIT)
+            (AND (NATP LARGE)
+                 (<= LIMIT LARGE)
+                 (NOT (EQUAL (FIB-LIMIT N LIMIT)
+                             (FIB-LIMIT N LARGE)))))
+          (DEFCHOOSE FIB-LIMIT-STABLE (LIMIT)
+                                      (N)
+            (AND (NATP LIMIT)
+                 (EQUAL (FIB-LIMIT N LIMIT)
+                        (FIB-LIMIT N (FIB-LIMIT-CHANGE N LIMIT)))))
+          (DEFUN FIB (N)
+            (DECLARE (TYPE INTEGER N)
+                     (XARGS :GUARD T))
+            (FIB-LIMIT N
+                       (NFIX (NON-EXEC (FIB-LIMIT-STABLE N)))))
+          (TABLE PARTIAL-FUNCTIONS-TABLE
+            'FIB-LIMIT
             '((FIB FIB-LIMIT
                    FIB-LIMIT-CHANGE FIB-LIMIT-STABLE
                    (DEFUN FIB (N)
-                          (DECLARE (IGNORABLE N))
-                          (DECLARE (TYPE INTEGER N))
-                          (FLET ((FIB-LIMIT (N LIMIT)
-                                            (DECLARE (IGNORE LIMIT))
-                                            (FIB N)))
-                                (DECLARE (INLINE FIB-LIMIT))
-                                (LET ((LIMIT 0))
-                                     (DECLARE (IGNORABLE LIMIT))
-                                     (IF (OR (= N 0) (= N 1))
-                                         1
-                                         (+ (FIB-LIMIT (- N 1) LIMIT)
-                                            (FIB-LIMIT (- N 2) LIMIT)))))))))
-         (MEMOIZE 'FIB :TOTAL 'FIB-LIMIT))
+                     (DECLARE (IGNORABLE N))
+                     (DECLARE (TYPE INTEGER N))
+                     (FLET ((FIB-LIMIT (N LIMIT)
+                                       (DECLARE (IGNORE LIMIT))
+                                       (FIB N)))
+                           (DECLARE (INLINE FIB-LIMIT))
+                           (LET ((LIMIT 0))
+                             (DECLARE (IGNORABLE LIMIT))
+                             (IF (OR (= N 0) (= N 1))
+                                 1
+                               (+ (FIB-LIMIT (- N 1) LIMIT)
+                                  (FIB-LIMIT (- N 2) LIMIT)))))))))
+          (MEMOIZE 'FIB :TOTAL 'FIB-LIMIT))
 
 The event ( DEFCHOOSE FIB-LIMIT-CHANGE ...) is redundant.  See :DOC
 redundant-events.
@@ -182,19 +171,6 @@ Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
-FIB
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE FIB-LIMIT-CHANGE ...)
@@ -208,18 +184,18 @@ Rules: NIL
 ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
  NIL
 ACL2 !>>(DEFUN FIB2-CLOCK (N CLOCK)
-               (DECLARE (XARGS :GUARD (NATP CLOCK))
-                        (XARGS :GUARD (INTEGERP N)
-                               :VERIFY-GUARDS NIL
-                               :GUARD-DEBUG T))
-               (DECLARE (XARGS :MEASURE (NFIX CLOCK)))
-               (IF (ZP CLOCK)
-                   0
-                   (LET ((CLOCK (1- CLOCK)))
-                        (IF (OR (= N 0) (= N 1))
-                            1
-                            (+ (FIB2-CLOCK (- N 1) CLOCK)
-                               (FIB2-CLOCK (- N 2) CLOCK))))))
+          (DECLARE (XARGS :GUARD (NATP CLOCK))
+                   (XARGS :GUARD (INTEGERP N)
+                          :VERIFY-GUARDS NIL
+                          :GUARD-DEBUG T))
+          (DECLARE (XARGS :MEASURE (NFIX CLOCK)))
+          (IF (ZP CLOCK)
+              0
+            (LET ((CLOCK (1- CLOCK)))
+              (IF (OR (= N 0) (= N 1))
+                  1
+                (+ (FIB2-CLOCK (- N 1) CLOCK)
+                   (FIB2-CLOCK (- N 2) CLOCK))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -281,59 +257,32 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( DEFUN FIB2-MEMOIZE-CONDITION ...)
-Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-FIB2-MEMOIZE-CONDITION
-
-Summary
-Form:  ( VERIFY-GUARDS FIB2-MEMOIZE-CONDITION)
-Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
-        (:EXECUTABLE-COUNTERPART EQL)
-        (:EXECUTABLE-COUNTERPART EQLABLEP)
-        (:EXECUTABLE-COUNTERPART NOT))
-FIB2-MEMOIZE-CONDITION
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB2
-
-Summary
-Form:  ( PROGN (DEFUN FIB2-MEMOIZE-CONDITION ...) ...)
-Rules: NIL
-
-Summary
-Form:  ( MAKE-EVENT (LET* ...))
-Rules: NIL
 FIB2
 
 Summary
 Form:  ( PROGN (MAKE-EVENT ...) ...)
 Rules: NIL
  FIB2
-ACL2 !>>(ENCAPSULATE
-          NIL (SET-ENFORCE-REDUNDANCY T)
+ACL2 !>>(ENCAPSULATE NIL
+          (SET-ENFORCE-REDUNDANCY T)
           (DEFCHOOSE FIB2-CLOCK-CHANGE0 (LARGE)
-                     (N CLOCK)
-                     (AND (NATP LARGE)
-                          (<= CLOCK LARGE)
-                          (NOT (EQUAL (FIB2-CLOCK N CLOCK)
-                                      (FIB2-CLOCK N LARGE)))))
-          (DEFCHOOSE
-               FIB2-CLOCK-STABLE0 (CLOCK)
-               (N)
-               (AND (NATP CLOCK)
-                    (EQUAL (FIB2-CLOCK N CLOCK)
-                           (FIB2-CLOCK N (FIB2-CLOCK-CHANGE0 N CLOCK)))))
-          (DEFUN
-               FIB2 (N)
-               (DECLARE (XARGS :GUARD (LET ((CLOCK 0))
-                                           (DECLARE (IGNORABLE CLOCK))
-                                           (AND (NATP CLOCK) (INTEGERP N)))))
-               (FIB2-CLOCK N (NFIX (FIB2-CLOCK-STABLE0 N)))))
+                                        (N CLOCK)
+            (AND (NATP LARGE)
+                 (<= CLOCK LARGE)
+                 (NOT (EQUAL (FIB2-CLOCK N CLOCK)
+                             (FIB2-CLOCK N LARGE)))))
+          (DEFCHOOSE FIB2-CLOCK-STABLE0 (CLOCK)
+                                        (N)
+            (AND (NATP CLOCK)
+                 (EQUAL (FIB2-CLOCK N CLOCK)
+                        (FIB2-CLOCK N (FIB2-CLOCK-CHANGE0 N CLOCK)))))
+          (DEFUN FIB2 (N)
+            (DECLARE (XARGS :GUARD
+                            (LET ((CLOCK 0))
+                              (DECLARE (IGNORABLE CLOCK))
+                              (AND (NATP CLOCK) (INTEGERP N)))))
+            (FIB2-CLOCK N
+                        (NFIX (NON-EXEC (FIB2-CLOCK-STABLE0 N))))))
 T
 
 The event ( DEFCHOOSE FIB2-CLOCK-CHANGE0 ...) is redundant.  See :DOC
@@ -368,20 +317,20 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2 30) (FIB2-CLOCK 30 50)))
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2 80) 37889062373143906))
  :PASSED
 ACL2 !>>(DEFUN FIB-MV-LIMIT (N LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE INTEGER N))
-               (DECLARE (XARGS :MEASURE (NFIX LIMIT)
-                               :VERIFY-GUARDS NIL))
-               (IF (ZP LIMIT)
-                   (MV 0 0)
-                   (LET ((LIMIT (1- LIMIT)))
-                        (IF (OR (= N 0) (= N 1))
-                            (MV 1 1)
-                            (MV-LET (X1 Y1)
-                                    (FIB-MV-LIMIT (- N 1) LIMIT)
-                                    (MV-LET (X2 Y2)
-                                            (FIB-MV-LIMIT (- N 2) LIMIT)
-                                            (MV (+ X1 X2) (+ Y1 Y2))))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE INTEGER N))
+          (DECLARE (XARGS :MEASURE (NFIX LIMIT)
+                          :VERIFY-GUARDS NIL))
+          (IF (ZP LIMIT)
+              (MV 0 0)
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (= N 0) (= N 1))
+                  (MV 1 1)
+                (MV-LET (X1 Y1)
+                        (FIB-MV-LIMIT (- N 1) LIMIT)
+                  (MV-LET (X2 Y2)
+                          (FIB-MV-LIMIT (- N 2) LIMIT)
+                    (MV (+ X1 X2) (+ Y1 Y2))))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -399,8 +348,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  FIB-MV-LIMIT
 ACL2 !>>(DEFTHM NATP-FIB-MV-LIMIT-0
-                (NATP (CAR (FIB-MV-LIMIT N LIMIT)))
-                :RULE-CLASSES :TYPE-PRESCRIPTION)
+          (NATP (CAR (FIB-MV-LIMIT N LIMIT)))
+          :RULE-CLASSES :TYPE-PRESCRIPTION)
 
 ACL2 Observation in ( DEFTHM NATP-FIB-MV-LIMIT-0 ...):  Our heuristics
 choose (CAR (FIB-MV-LIMIT N LIMIT)) as the :TYPED-TERM.
@@ -431,8 +380,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION FIB-MV-LIMIT))
  NATP-FIB-MV-LIMIT-0
 ACL2 !>>(DEFTHM NATP-FIB-MV-LIMIT-1
-                (NATP (MV-NTH 1 (FIB-MV-LIMIT N LIMIT)))
-                :RULE-CLASSES :TYPE-PRESCRIPTION)
+          (NATP (MV-NTH 1 (FIB-MV-LIMIT N LIMIT)))
+          :RULE-CLASSES :TYPE-PRESCRIPTION)
 
 ACL2 Observation in ( DEFTHM NATP-FIB-MV-LIMIT-1 ...):  Our heuristics
 choose (MV-NTH 1 (FIB-MV-LIMIT N LIMIT)) as the :TYPED-TERM.
@@ -511,16 +460,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB-MV
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB-MV
 
 Summary
@@ -529,25 +468,26 @@ Rules: NIL
  FIB-MV
 ACL2 !>>(ASSERT-EVENT (MV-LET (A B)
                               (FIB-MV 80)
-                              (AND (EQUAL A 37889062373143906)
-                                   (EQUAL B 37889062373143906))))
+                        (AND (EQUAL A 37889062373143906)
+                             (EQUAL B 37889062373143906))))
  :PASSED
-ACL2 !>>(MUTUAL-RECURSION (DEFUN EVENLP-BDD (X BOUND)
-                                 (DECLARE (XARGS :GUARD (NATP BOUND)))
-                                 (IF (ZP BOUND)
-                                     'OUCH
-                                     (LET ((BOUND (1- BOUND)))
-                                          (IF (CONSP X)
-                                              (ODDLP-BDD (CDR X) BOUND)
-                                              T))))
-                          (DEFUN ODDLP-BDD (X BOUND)
-                                 (DECLARE (XARGS :GUARD (NATP BOUND)))
-                                 (IF (ZP BOUND)
-                                     'OUCH
-                                     (LET ((BOUND (1- BOUND)))
-                                          (IF (CONSP X)
-                                              (EVENLP-BDD (CDR X) BOUND)
-                                              NIL)))))
+ACL2 !>>(MUTUAL-RECURSION
+          (DEFUN EVENLP-BDD (X BOUND)
+            (DECLARE (XARGS :GUARD (NATP BOUND)))
+            (IF (ZP BOUND)
+                'OUCH
+              (LET ((BOUND (1- BOUND)))
+                (IF (CONSP X)
+                    (ODDLP-BDD (CDR X) BOUND)
+                  T))))
+          (DEFUN ODDLP-BDD (X BOUND)
+            (DECLARE (XARGS :GUARD (NATP BOUND)))
+            (IF (ZP BOUND)
+                'OUCH
+              (LET ((BOUND (1- BOUND)))
+                (IF (CONSP X)
+                    (EVENLP-BDD (CDR X) BOUND)
+                  NIL)))))
 
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN EVENLP-BDD ...) ...)
@@ -606,27 +546,7 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 EVENLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-EVENLP
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-ODDLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 ODDLP
 
 Summary
@@ -635,75 +555,79 @@ Rules: NIL
  ODDLP
 ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
  T
-ACL2 !>>(ENCAPSULATE
-         NIL
-         (DEFCHOOSE EVENLP-BDD-CHANGE (LARGE)
-                    (X BOUND)
-                    (AND (NATP LARGE)
-                         (<= BOUND LARGE)
-                         (NOT (EQUAL (EVENLP-BDD X BOUND)
-                                     (EVENLP-BDD X LARGE)))))
-         (DEFCHOOSE EVENLP-BDD-STABLE (BOUND)
-                    (X)
-                    (AND (NATP BOUND)
-                         (EQUAL (EVENLP-BDD X BOUND)
-                                (EVENLP-BDD X (EVENLP-BDD-CHANGE X BOUND)))))
-         (DEFUN EVENLP (X)
-                (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (NATP BOUND))))
-                (EVENLP-BDD X (NFIX (EVENLP-BDD-STABLE X))))
-         (DEFCHOOSE ODDLP-BDD-CHANGE (LARGE)
-                    (X BOUND)
-                    (AND (NATP LARGE)
-                         (<= BOUND LARGE)
-                         (NOT (EQUAL (ODDLP-BDD X BOUND)
-                                     (ODDLP-BDD X LARGE)))))
-         (DEFCHOOSE ODDLP-BDD-STABLE (BOUND)
-                    (X)
-                    (AND (NATP BOUND)
-                         (EQUAL (ODDLP-BDD X BOUND)
-                                (ODDLP-BDD X (ODDLP-BDD-CHANGE X BOUND)))))
-         (DEFUN ODDLP (X)
-                (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (NATP BOUND))))
-                (ODDLP-BDD X (NFIX (ODDLP-BDD-STABLE X))))
-         (TABLE PARTIAL-FUNCTIONS-TABLE 'EVENLP-BDD
-                '((EVENLP EVENLP-BDD
-                          EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
-                          (DEFUN EVENLP (X)
-                                 (DECLARE (IGNORABLE X))
-                                 (FLET ((EVENLP-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (EVENLP X))
-                                        (ODDLP-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (ODDLP X)))
-                                       (DECLARE (INLINE EVENLP-BDD))
-                                       (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (IF (CONSP X)
-                                                (ODDLP-BDD (CDR X) BOUND)
-                                                T)))))
-                  (ODDLP ODDLP-BDD
-                         ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
-                         (DEFUN ODDLP (X)
-                                (DECLARE (IGNORABLE X))
-                                (FLET ((EVENLP-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (EVENLP X))
-                                       (ODDLP-BDD (X BOUND)
-                                                  (DECLARE (IGNORE BOUND))
-                                                  (ODDLP X)))
-                                      (DECLARE (INLINE ODDLP-BDD))
-                                      (LET ((BOUND 0))
-                                           (DECLARE (IGNORABLE BOUND))
-                                           (IF (CONSP X)
-                                               (EVENLP-BDD (CDR X) BOUND)
-                                               NIL)))))))
-         (MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
-         (MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD))
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFCHOOSE EVENLP-BDD-CHANGE (LARGE)
+                                       (X BOUND)
+            (AND (NATP LARGE)
+                 (<= BOUND LARGE)
+                 (NOT (EQUAL (EVENLP-BDD X BOUND)
+                             (EVENLP-BDD X LARGE)))))
+          (DEFCHOOSE EVENLP-BDD-STABLE (BOUND)
+                                       (X)
+            (AND (NATP BOUND)
+                 (EQUAL (EVENLP-BDD X BOUND)
+                        (EVENLP-BDD X (EVENLP-BDD-CHANGE X BOUND)))))
+          (DEFUN EVENLP (X)
+            (DECLARE (XARGS :GUARD
+                            (LET ((BOUND 0))
+                              (DECLARE (IGNORABLE BOUND))
+                              (NATP BOUND))))
+            (EVENLP-BDD X
+                        (NFIX (NON-EXEC (EVENLP-BDD-STABLE X)))))
+          (DEFCHOOSE ODDLP-BDD-CHANGE (LARGE)
+                                      (X BOUND)
+            (AND (NATP LARGE)
+                 (<= BOUND LARGE)
+                 (NOT (EQUAL (ODDLP-BDD X BOUND)
+                             (ODDLP-BDD X LARGE)))))
+          (DEFCHOOSE ODDLP-BDD-STABLE (BOUND)
+                                      (X)
+            (AND (NATP BOUND)
+                 (EQUAL (ODDLP-BDD X BOUND)
+                        (ODDLP-BDD X (ODDLP-BDD-CHANGE X BOUND)))))
+          (DEFUN ODDLP (X)
+            (DECLARE (XARGS :GUARD
+                            (LET ((BOUND 0))
+                              (DECLARE (IGNORABLE BOUND))
+                              (NATP BOUND))))
+            (ODDLP-BDD X
+                       (NFIX (NON-EXEC (ODDLP-BDD-STABLE X)))))
+          (TABLE PARTIAL-FUNCTIONS-TABLE
+            'EVENLP-BDD
+            '((EVENLP EVENLP-BDD
+                      EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
+                      (DEFUN EVENLP (X)
+                        (DECLARE (IGNORABLE X))
+                        (FLET ((EVENLP-BDD (X BOUND)
+                                           (DECLARE (IGNORE BOUND))
+                                           (EVENLP X))
+                               (ODDLP-BDD (X BOUND)
+                                          (DECLARE (IGNORE BOUND))
+                                          (ODDLP X)))
+                              (DECLARE (INLINE EVENLP-BDD))
+                              (LET ((BOUND 0))
+                                (DECLARE (IGNORABLE BOUND))
+                                (IF (CONSP X)
+                                    (ODDLP-BDD (CDR X) BOUND)
+                                  T)))))
+              (ODDLP ODDLP-BDD
+                     ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
+                     (DEFUN ODDLP (X)
+                       (DECLARE (IGNORABLE X))
+                       (FLET ((EVENLP-BDD (X BOUND)
+                                          (DECLARE (IGNORE BOUND))
+                                          (EVENLP X))
+                              (ODDLP-BDD (X BOUND)
+                                         (DECLARE (IGNORE BOUND))
+                                         (ODDLP X)))
+                             (DECLARE (INLINE ODDLP-BDD))
+                             (LET ((BOUND 0))
+                               (DECLARE (IGNORABLE BOUND))
+                               (IF (CONSP X)
+                                   (EVENLP-BDD (CDR X) BOUND)
+                                 NIL)))))))
+          (MEMOIZE 'EVENLP :TOTAL 'EVENLP-BDD)
+          (MEMOIZE 'ODDLP :TOTAL 'ODDLP-BDD))
 
 The event ( DEFCHOOSE EVENLP-BDD-CHANGE ...) is redundant.  See :DOC
 redundant-events.
@@ -758,33 +682,7 @@ Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
 EVENLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-EVENLP
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
-ODDLP
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 ODDLP
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE EVENLP-BDD-CHANGE
@@ -802,8 +700,7 @@ ACL2 !>>(ASSERT-EVENT (EVENLP '(1 2 3 4 5 6)))
  :PASSED
 ACL2 !>>(ASSERT-EVENT (NOT (ODDLP '(1 2 3 4 5 6))))
  :PASSED
-ACL2 !>>(DEFMACRO
-         XX-WORSE-THAN-BUILTIN-CLOCKED-BODY (CLK)
+ACL2 !>>(DEFMACRO XX-WORSE-THAN-BUILTIN-CLOCKED-BODY (CLK)
          (DECLARE (XARGS :GUARD (ATOM CLK)))
          (CONS
           'COND
@@ -830,73 +727,65 @@ Form:  ( DEFMACRO XX-WORSE-THAN-BUILTIN-CLOCKED-BODY ...)
 Rules: NIL
  XX-WORSE-THAN-BUILTIN-CLOCKED-BODY
 ACL2 !>>(MUTUAL-RECURSION
-         (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
-                (TERM1 TERM2 CLK)
-                (DECLARE (TYPE (INTEGER 0 *) CLK)
-                         (XARGS :GUARD (AND (PSEUDO-TERMP TERM1)
-                                            (PSEUDO-TERMP TERM2))
-                                :MEASURE (NFIX CLK)
-                                :WELL-FOUNDED-RELATION O<))
-                (COND ((ZP CLK) NIL)
-                      (T (LET ((CLK (1- CLK)))
-                              (XX-WORSE-THAN-BUILTIN-CLOCKED-BODY CLK)))))
-         (DEFUN
-             XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-             (TERM1 TERM2 CLK)
-             (DECLARE (TYPE (INTEGER 0 *) CLK)
-                      (XARGS :GUARD (AND (PSEUDO-TERMP TERM1)
-                                         (PSEUDO-TERMP TERM2))
-                             :MEASURE (NFIX CLK)
-                             :WELL-FOUNDED-RELATION O<))
-             (IF (ZP CLK)
-                 NIL
-                 (LET ((CLK (1- CLK)))
-                      (IF (PSEUDO-VARIANTP TERM1 TERM2)
-                          (EQUAL TERM1 TERM2)
-                          (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK)))))
-         (DEFUN
-          BASIC-XX-WORSE-THAN-LST1
-          (ARGS1 ARGS2 CLK)
-          (DECLARE (TYPE (INTEGER 0 *) CLK)
-                   (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS1)
-                                      (PSEUDO-TERM-LISTP ARGS2))
-                          :MEASURE (NFIX CLK)
-                          :WELL-FOUNDED-RELATION O<))
-          (COND ((ZP CLK) NIL)
-                (T (LET ((CLK (1- CLK)))
-                        (COND ((ENDP ARGS1) NIL)
-                              ((ENDP ARGS1) NIL)
-                              ((OR (AND (OR (VARIABLEP (CAR ARGS1))
-                                            (FQUOTEP (CAR ARGS1)))
-                                        (NOT (OR (VARIABLEP (CAR ARGS2))
-                                                 (FQUOTEP (CAR ARGS2)))))
-                                   (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
-                                                                  (CAR ARGS1)
-                                                                  CLK))
-                               T)
-                              (T (BASIC-XX-WORSE-THAN-LST1 (CDR ARGS1)
-                                                           (CDR ARGS2)
-                                                           CLK)))))))
-         (DEFUN
-              BASIC-XX-WORSE-THAN-LST2
-              (ARGS1 ARGS2 CLK)
-              (DECLARE (TYPE (INTEGER 0 *) CLK)
-                       (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS1)
-                                          (PSEUDO-TERM-LISTP ARGS2))
-                              :MEASURE (NFIX CLK)
-                              :WELL-FOUNDED-RELATION O<))
-              (COND ((ZP CLK) NIL)
-                    (T (LET ((CLK (1- CLK)))
-                            (COND ((ENDP ARGS1) NIL)
-                                  ((XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
-                                                                  (CAR ARGS2)
-                                                                  CLK)
-                                   T)
-                                  (T (BASIC-XX-WORSE-THAN-LST2 (CDR ARGS1)
-                                                               (CDR ARGS2)
-                                                               CLK)))))))
-         (DEFUN
-          BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+         (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
+           (DECLARE (TYPE (INTEGER 0 *) CLK)
+                    (XARGS :GUARD (AND (PSEUDO-TERMP TERM1)
+                                       (PSEUDO-TERMP TERM2))
+                           :MEASURE (NFIX CLK)
+                           :WELL-FOUNDED-RELATION O<))
+           (COND ((ZP CLK) NIL)
+                 (T (LET ((CLK (1- CLK)))
+                      (XX-WORSE-THAN-BUILTIN-CLOCKED-BODY CLK)))))
+         (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
+           (DECLARE (TYPE (INTEGER 0 *) CLK)
+                    (XARGS :GUARD (AND (PSEUDO-TERMP TERM1)
+                                       (PSEUDO-TERMP TERM2))
+                           :MEASURE (NFIX CLK)
+                           :WELL-FOUNDED-RELATION O<))
+           (IF (ZP CLK)
+               NIL
+             (LET ((CLK (1- CLK)))
+               (IF (PSEUDO-VARIANTP TERM1 TERM2)
+                   (EQUAL TERM1 TERM2)
+                 (XX-WORSE-THAN-BUILTIN-CLOCKED TERM1 TERM2 CLK)))))
+         (DEFUN BASIC-XX-WORSE-THAN-LST1 (ARGS1 ARGS2 CLK)
+           (DECLARE (TYPE (INTEGER 0 *) CLK)
+                    (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS1)
+                                       (PSEUDO-TERM-LISTP ARGS2))
+                           :MEASURE (NFIX CLK)
+                           :WELL-FOUNDED-RELATION O<))
+           (COND ((ZP CLK) NIL)
+                 (T (LET ((CLK (1- CLK)))
+                      (COND ((ENDP ARGS1) NIL)
+                            ((ENDP ARGS1) NIL)
+                            ((OR (AND (OR (VARIABLEP (CAR ARGS1))
+                                          (FQUOTEP (CAR ARGS1)))
+                                      (NOT (OR (VARIABLEP (CAR ARGS2))
+                                               (FQUOTEP (CAR ARGS2)))))
+                                 (XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS2)
+                                                                (CAR ARGS1)
+                                                                CLK))
+                             T)
+                            (T (BASIC-XX-WORSE-THAN-LST1 (CDR ARGS1)
+                                                         (CDR ARGS2)
+                                                         CLK)))))))
+         (DEFUN BASIC-XX-WORSE-THAN-LST2 (ARGS1 ARGS2 CLK)
+           (DECLARE (TYPE (INTEGER 0 *) CLK)
+                    (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS1)
+                                       (PSEUDO-TERM-LISTP ARGS2))
+                           :MEASURE (NFIX CLK)
+                           :WELL-FOUNDED-RELATION O<))
+           (COND ((ZP CLK) NIL)
+                 (T (LET ((CLK (1- CLK)))
+                      (COND ((ENDP ARGS1) NIL)
+                            ((XX-WORSE-THAN-BUILTIN-CLOCKED (CAR ARGS1)
+                                                            (CAR ARGS2)
+                                                            CLK)
+                             T)
+                            (T (BASIC-XX-WORSE-THAN-LST2 (CDR ARGS1)
+                                                         (CDR ARGS2)
+                                                         CLK)))))))
+         (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
           (DECLARE (TYPE (INTEGER 0 *) CLK)
                    (XARGS :GUARD (AND (PSEUDO-TERMP TERM1)
                                       (PSEUDO-TERMP TERM2))
@@ -905,8 +794,7 @@ ACL2 !>>(MUTUAL-RECURSION
           (COND
            ((ZP CLK) NIL)
            (T
-            (LET
-             ((CLK (1- CLK)))
+            (LET ((CLK (1- CLK)))
              (COND ((VARIABLEP TERM2)
                     (COND ((EQ TERM1 TERM2) NIL)
                           (T (OCCUR TERM2 TERM1))))
@@ -931,9 +819,7 @@ ACL2 !>>(MUTUAL-RECURSION
                                                                 (FARGS TERM2)
                                                                 CLK))))))
                    (T NIL))))))
-         (DEFUN
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-          (TERM1 TERM2 CLK)
+         (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (TERM1 TERM2 CLK)
           (DECLARE (TYPE (INTEGER 0 *) CLK)
                    (XARGS :GUARD (AND (PSEUDO-TERMP TERM1)
                                       (PSEUDO-TERMP TERM2))
@@ -942,39 +828,17 @@ ACL2 !>>(MUTUAL-RECURSION
           (COND
            ((ZP CLK) NIL)
            (T
-            (LET
-             ((CLK (1- CLK)))
+            (LET ((CLK (1- CLK)))
              (COND
                  ((VARIABLEP TERM1) (EQ TERM1 TERM2))
                  ((IF (PSEUDO-VARIANTP TERM1 TERM2)
                       (EQUAL TERM1 TERM2)
-                      (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
+                    (BASIC-XX-WORSE-THAN TERM1 TERM2 CLK))
                   T)
                  ((FQUOTEP TERM1) NIL)
                  (T (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST (FARGS TERM1)
                                                              TERM2 CLK)))))))
-         (DEFUN
-          SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-          (ARGS TERM2 CLK)
-          (DECLARE (TYPE (INTEGER 0 *) CLK)
-                   (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS)
-                                      (PSEUDO-TERMP TERM2))
-                          :MEASURE (NFIX CLK)
-                          :WELL-FOUNDED-RELATION O<))
-          (COND
-           ((ZP CLK) NIL)
-           (T
-            (LET
-             ((CLK (1- CLK)))
-             (COND
-              ((ENDP ARGS) NIL)
-              (T
-               (OR (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
-                                                        TERM2 CLK)
-                   (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST (CDR ARGS)
-                                                            TERM2 CLK))))))))
-         (DEFUN
-          XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+         (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST (ARGS TERM2 CLK)
           (DECLARE (TYPE (INTEGER 0 *) CLK)
                    (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS)
                                       (PSEUDO-TERMP TERM2))
@@ -984,6 +848,22 @@ ACL2 !>>(MUTUAL-RECURSION
            ((ZP CLK) NIL)
            (T
             (LET ((CLK (1- CLK)))
+             (COND
+              ((ENDP ARGS) NIL)
+              (T
+               (OR (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
+                                                        TERM2 CLK)
+                   (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST (CDR ARGS)
+                                                            TERM2 CLK))))))))
+         (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+          (DECLARE (TYPE (INTEGER 0 *) CLK)
+                   (XARGS :GUARD (AND (PSEUDO-TERM-LISTP ARGS)
+                                      (PSEUDO-TERMP TERM2))
+                          :MEASURE (NFIX CLK)
+                          :WELL-FOUNDED-RELATION O<))
+          (COND
+            ((ZP CLK) NIL)
+            (T (LET ((CLK (1- CLK)))
                  (COND ((ENDP ARGS) NIL)
                        (T (OR (SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (CAR ARGS)
                                                                    TERM2 CLK)
@@ -1052,7 +932,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:DEFINITION O<)
         (:DEFINITION PSEUDO-TERM-LISTP)
         (:DEFINITION PSEUDO-TERMP)
-        (:DEFINITION TRUE-LISTP)
         (:EXECUTABLE-COUNTERPART CAR)
         (:EXECUTABLE-COUNTERPART CDR)
         (:EXECUTABLE-COUNTERPART CONSP)
@@ -1065,6 +944,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART UNSIGNED-BYTE-P)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING PSEUDO-TERM-LISTP-FORWARD-TO-TRUE-LISTP)
+        (:FORWARD-CHAINING PSEUDO-TERMP-CONSP-FORWARD)
         (:TYPE-PRESCRIPTION FN-COUNT-EVG-REC-TYPE-PRESCRIPTION)
         (:TYPE-PRESCRIPTION OCCUR)
         (:TYPE-PRESCRIPTION PSEUDO-TERM-LISTP)
@@ -1239,93 +1119,13 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 XX-WORSE-THAN*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-XX-WORSE-THAN*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 BASIC-XX-WORSE-THAN-LST1*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-BASIC-XX-WORSE-THAN-LST1*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 BASIC-XX-WORSE-THAN-LST2*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-BASIC-XX-WORSE-THAN-LST2*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 BASIC-XX-WORSE-THAN*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-BASIC-XX-WORSE-THAN*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
 SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
-SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST*
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-XX-WORSE-THAN-LST*
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 XX-WORSE-THAN-LST*
 
 Summary
@@ -1347,28 +1147,24 @@ ACL2 !>>(ASSERT-EVENT
  :PASSED
 ACL2 !>>(U)
  V        23:x(MUTUAL-RECURSION
-                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
-                          (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                          (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN BASIC-XX-WORSE-THAN-LST1
-                          (ARGS1 ARGS2 CLK)
-                          ...)
-                   (DEFUN BASIC-XX-WORSE-THAN-LST2
-                          (ARGS1 ARGS2 CLK)
-                          ...)
-                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                          (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                          (ARGS TERM2 CLK)
-                          ...)
-                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                          ...))
+                (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                       (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN BASIC-XX-WORSE-THAN-LST1 (ARGS1 ARGS2 CLK)
+                  ...)
+                (DEFUN BASIC-XX-WORSE-THAN-LST2 (ARGS1 ARGS2 CLK)
+                  ...)
+                (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                       (ARGS TERM2 CLK)
+                  ...)
+                (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                  ...))
 ACL2 !>>(WITH-OUTPUT
          :OFF
          :ALL
@@ -1390,10 +1186,11 @@ ACL2 !>>(MF (ASSERT-EVENT (EQUAL (XX-WORSE-THAN* '(MEM (CAR (DEL A X)) X)
                                  NIL)))
 
 
-ACL2 Error in ASSERT-EVENT:  ACL2 cannot ev the call of non-executable
-function XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE on argument list:
+ACL2 Error [Evaluation] in ASSERT-EVENT:  ACL2 has been instructed
+to cause an error because of an attempt to evaluate the following form
+(see :DOC non-exec):
 
-((MEM (CAR (DEL A X)) X) (MEM (CAR (DEL A X)) Y))
+  (XX-WORSE-THAN-BUILTIN-CLOCKED-STABLE TERM1 TERM2).
 
 To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
 
@@ -1404,28 +1201,24 @@ Rules: NIL
  T
 ACL2 !>>(U)
  V        23:x(MUTUAL-RECURSION
-                   (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED
-                          (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
-                          (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN BASIC-XX-WORSE-THAN-LST1
-                          (ARGS1 ARGS2 CLK)
-                          ...)
-                   (DEFUN BASIC-XX-WORSE-THAN-LST2
-                          (ARGS1 ARGS2 CLK)
-                          ...)
-                   (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL
-                          (TERM1 TERM2 CLK)
-                          ...)
-                   (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
-                          (ARGS TERM2 CLK)
-                          ...)
-                   (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
-                          ...))
+                (DEFUN XX-WORSE-THAN-BUILTIN-CLOCKED (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN XX-WORSE-THAN-OR-EQUAL-BUILTIN-CLOCKED
+                       (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN BASIC-XX-WORSE-THAN-LST1 (ARGS1 ARGS2 CLK)
+                  ...)
+                (DEFUN BASIC-XX-WORSE-THAN-LST2 (ARGS1 ARGS2 CLK)
+                  ...)
+                (DEFUN BASIC-XX-WORSE-THAN (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL (TERM1 TERM2 CLK)
+                  ...)
+                (DEFUN SOME-SUBTERM-XX-WORSE-THAN-OR-EQUAL-LST
+                       (ARGS TERM2 CLK)
+                  ...)
+                (DEFUN XX-WORSE-THAN-LST (ARGS TERM2 CLK)
+                  ...))
 ACL2 !>>(WITH-OUTPUT
          :OFF
          :ALL
@@ -1456,17 +1249,17 @@ ACL2 !>>(ASSERT-EVENT
                     T))
  :PASSED
 ACL2 !>>(DEFUN BAD{WRONG-FORM}-LIMIT (N LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE (INTEGER 0 *) N)
-                        (XARGS :VERIFY-GUARDS NIL))
-               (IF (ZP LIMIT)
-                   0
-                   (LET ((LIMIT (1+ LIMIT)))
-                        (IF (OR (ZP N) (= N 1))
-                            1
-                            (+ (BAD{WRONG-FORM}-LIMIT (- N 1) LIMIT)
-                               (BAD{WRONG-FORM}-LIMIT (- N 2)
-                                                      LIMIT))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE (INTEGER 0 *) N)
+                   (XARGS :VERIFY-GUARDS NIL))
+          (IF (ZP LIMIT)
+              0
+            (LET ((LIMIT (1+ LIMIT)))
+              (IF (OR (ZP N) (= N 1))
+                  1
+                (+ (BAD{WRONG-FORM}-LIMIT (- N 1) LIMIT)
+                   (BAD{WRONG-FORM}-LIMIT (- N 2)
+                                          LIMIT))))))
 Subgoal 2
 Subgoal 2.2
 Subgoal 2.1
@@ -1529,18 +1322,18 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(DEFUN BAD{USES-LIMIT}-LIMIT (N LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE INTEGER N))
-               (DECLARE (XARGS :MEASURE (NFIX LIMIT)))
-               (IF (ZP LIMIT)
-                   0
-                   (LET ((LIMIT (1- LIMIT)))
-                        (IF (OR (= N 0) (= N 1))
-                            1
-                            (+ (BAD{USES-LIMIT}-LIMIT (+ LIMIT (- N 1))
-                                                      LIMIT)
-                               (BAD{USES-LIMIT}-LIMIT (- N 2)
-                                                      LIMIT))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE INTEGER N))
+          (DECLARE (XARGS :MEASURE (NFIX LIMIT)))
+          (IF (ZP LIMIT)
+              0
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (= N 0) (= N 1))
+                  1
+                (+ (BAD{USES-LIMIT}-LIMIT (+ LIMIT (- N 1))
+                                          LIMIT)
+                   (BAD{USES-LIMIT}-LIMIT (- N 2)
+                                          LIMIT))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -1568,9 +1361,9 @@ value  = ((BAD{USES-LIMIT} BAD{USES-LIMIT}-LIMIT
                            BAD{USES-LIMIT}-LIMIT-CHANGE
                            BAD{USES-LIMIT}-LIMIT-STABLE
                            (DEFUN BAD{USES-LIMIT} (N)
-                                  (DECLARE (IGNORABLE N))
-                                  (DECLARE (TYPE INTEGER N))
-                                  (FLET (#) (DECLARE #) (LET # # #)))))
+                             (DECLARE (IGNORABLE N))
+                             (DECLARE (TYPE INTEGER N))
+                             (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
 The limit variable LIMIT fails to occur free exactly where expected
 in the body of the definition of function BAD{USES-LIMIT}-LIMIT (essentially,
@@ -1590,8 +1383,8 @@ ACL2 !>>(DEFN BAD{ONE-FORMAL}-LIMIT (LIMIT)
               (DECLARE (XARGS :GUARD (NATP LIMIT)))
               (IF (ZP LIMIT)
                   LIMIT
-                  (LET ((LIMIT (1- LIMIT)))
-                       (BAD{ONE-FORMAL}-LIMIT LIMIT))))
+                (LET ((LIMIT (1- LIMIT)))
+                  (BAD{ONE-FORMAL}-LIMIT LIMIT))))
 
 Summary
 Form:  ( DEFUN BAD{ONE-FORMAL}-LIMIT ...)
@@ -1608,9 +1401,9 @@ key = BAD{ONE-FORMAL}-LIMIT
 value  = ((BAD{ONE-FORMAL} BAD{ONE-FORMAL}-LIMIT
                            BAD{ONE-FORMAL}-LIMIT-CHANGE
                            BAD{ONE-FORMAL}-LIMIT-STABLE
-                           (DEFUN BAD{ONE-FORMAL}
-                                  NIL (DECLARE (IGNORABLE))
-                                  (FLET (#) (DECLARE #) (LET # # #)))))
+                           (DEFUN BAD{ONE-FORMAL} NIL
+                             (DECLARE (IGNORABLE))
+                             (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
 The key is a guard-verified function symbol but it needs at least two
 formal parameters.
@@ -1626,26 +1419,24 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(MUTUAL-RECURSION
-             (DEFUN EVENLP{DIFFERENT-LIMIT-VARS}-BDD
-                    (X BOUND)
-                    (DECLARE (XARGS :GUARD (NATP BOUND)))
-                    (IF (ZP BOUND)
-                        'OUCH
-                        (LET ((BOUND (1- BOUND)))
-                             (IF (CONSP X)
-                                 (ODDLP{DIFFERENT-LIMIT-VARS}-BDD (CDR X)
-                                                                  BOUND)
-                                 T))))
-             (DEFUN ODDLP{DIFFERENT-LIMIT-VARS}-BDD
-                    (X BOUND2)
-                    (DECLARE (XARGS :GUARD (NATP BOUND2)))
-                    (IF (ZP BOUND2)
-                        'OUCH
-                        (LET ((BOUND2 (1- BOUND2)))
-                             (IF (CONSP X)
-                                 (EVENLP{DIFFERENT-LIMIT-VARS}-BDD (CDR X)
-                                                                   BOUND2)
-                                 NIL)))))
+          (DEFUN EVENLP{DIFFERENT-LIMIT-VARS}-BDD (X BOUND)
+            (DECLARE (XARGS :GUARD (NATP BOUND)))
+            (IF (ZP BOUND)
+                'OUCH
+              (LET ((BOUND (1- BOUND)))
+                (IF (CONSP X)
+                    (ODDLP{DIFFERENT-LIMIT-VARS}-BDD (CDR X)
+                                                     BOUND)
+                  T))))
+          (DEFUN ODDLP{DIFFERENT-LIMIT-VARS}-BDD (X BOUND2)
+            (DECLARE (XARGS :GUARD (NATP BOUND2)))
+            (IF (ZP BOUND2)
+                'OUCH
+              (LET ((BOUND2 (1- BOUND2)))
+                (IF (CONSP X)
+                    (EVENLP{DIFFERENT-LIMIT-VARS}-BDD (CDR X)
+                                                      BOUND2)
+                  NIL)))))
 
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN EVENLP{DIFFERENT-LIMIT-VARS}-BDD
@@ -1668,15 +1459,15 @@ value  = ((EVENLP{DIFFERENT-LIMIT-VARS}
                EVENLP{DIFFERENT-LIMIT-VARS}-BDD-CHANGE
                EVENLP{DIFFERENT-LIMIT-VARS}-BDD-STABLE
                (DEFUN EVENLP{DIFFERENT-LIMIT-VARS} (X)
-                      (DECLARE (IGNORABLE X))
-                      (FLET (# #) (DECLARE #) (LET # # #))))
+                 (DECLARE (IGNORABLE X))
+                 (FLET (# #) (DECLARE #) (LET # # #))))
           (ODDLP{DIFFERENT-LIMIT-VARS}
                ODDLP{DIFFERENT-LIMIT-VARS}-BDD
                ODDLP{DIFFERENT-LIMIT-VARS}-BDD-CHANGE
                ODDLP{DIFFERENT-LIMIT-VARS}-BDD-STABLE
                (DEFUN ODDLP{DIFFERENT-LIMIT-VARS} (X)
-                      (DECLARE (IGNORABLE X))
-                      (FLET (# #) (DECLARE #) (LET # # #)))))
+                 (DECLARE (IGNORABLE X))
+                 (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
 The formal parameter lists for function symbols 
 EVENLP{DIFFERENT-LIMIT-VARS}-BDD and ODDLP{DIFFERENT-LIMIT-VARS}-BDD
@@ -1693,23 +1484,23 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(DEFMACRO MY-IF (X Y Z)
-                  (CONS 'IF
-                        (CONS X (CONS Y (CONS Z 'NIL)))))
+          (CONS 'IF
+                (CONS X (CONS Y (CONS Z 'NIL)))))
 
 Summary
 Form:  ( DEFMACRO MY-IF ...)
 Rules: NIL
  MY-IF
 ACL2 !>>(DEFUN BAD{WRONG-IF}-LIMIT (N LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE (INTEGER 0 *) N))
-               (MY-IF (ZP LIMIT)
-                      0
-                      (LET ((LIMIT (1- LIMIT)))
-                           (IF (OR (ZP N) (= N 1))
-                               1
-                               (+ (BAD{WRONG-IF}-LIMIT (- N 1) LIMIT)
-                                  (BAD{WRONG-IF}-LIMIT (- N 2) LIMIT))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE (INTEGER 0 *) N))
+          (MY-IF (ZP LIMIT)
+                 0
+                 (LET ((LIMIT (1- LIMIT)))
+                   (IF (OR (ZP N) (= N 1))
+                       1
+                     (+ (BAD{WRONG-IF}-LIMIT (- N 1) LIMIT)
+                        (BAD{WRONG-IF}-LIMIT (- N 2) LIMIT))))))
 Subgoal 2
 Subgoal 2.2
 Subgoal 2.1
@@ -1751,15 +1542,15 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(DEFUN BAD{WRONG-ZP}-LIMIT (N LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE (INTEGER 0 *) N))
-               (IF (NOT (POSP LIMIT))
-                   0
-                   (LET ((LIMIT (1- LIMIT)))
-                        (IF (OR (ZP N) (= N 1))
-                            1
-                            (+ (BAD{WRONG-ZP}-LIMIT (- N 1) LIMIT)
-                               (BAD{WRONG-ZP}-LIMIT (- N 2) LIMIT))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE (INTEGER 0 *) N))
+          (IF (NOT (POSP LIMIT))
+              0
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (ZP N) (= N 1))
+                  1
+                (+ (BAD{WRONG-ZP}-LIMIT (- N 1) LIMIT)
+                   (BAD{WRONG-ZP}-LIMIT (- N 2) LIMIT))))))
 Subgoal 2
 Subgoal 2.2
 Subgoal 2.1
@@ -1814,11 +1605,11 @@ Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
 ACL2 !>>(DEFUN BAD{NON-REC}-LIMIT (X LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT))
-               (IF (ZP LIMIT)
-                   0
-                   (LET ((LIMIT (1- LIMIT)))
-                        (CONS X LIMIT))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT))
+          (IF (ZP LIMIT)
+              0
+            (LET ((LIMIT (1- LIMIT)))
+              (CONS X LIMIT))))
 
 Summary
 Form:  ( DEFUN BAD{NON-REC}-LIMIT ...)
@@ -1835,8 +1626,8 @@ value  = ((BAD{NON-REC} BAD{NON-REC}-LIMIT
                         BAD{NON-REC}-LIMIT-CHANGE
                         BAD{NON-REC}-LIMIT-STABLE
                         (DEFUN BAD{NON-REC} (X)
-                               (DECLARE (IGNORABLE X))
-                               (FLET (#) (DECLARE #) (LET # # #)))))
+                          (DECLARE (IGNORABLE X))
+                          (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
 The key is a non-recursive function symbol.
 
@@ -1863,8 +1654,8 @@ key = EVENLP-BDD
 value  = ((EVENLP EVENLP-BDD
                   EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
                   (DEFUN EVENLP (X)
-                         (DECLARE (IGNORABLE X))
-                         (FLET (#) (DECLARE #) (LET # # #)))))
+                    (DECLARE (IGNORABLE X))
+                    (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
 The strip-cadrs of the proposed value is not the list of function symbols,
 in order, defined by mutual-recursion with the key.  That expected
@@ -1889,8 +1680,8 @@ key = ODDLP-BDD
 value  = ((ODDLP ODDLP-BDD
                  ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
                  (DEFUN ODDLP (X)
-                        (DECLARE (IGNORABLE X))
-                        (FLET (#) (DECLARE #) (LET # # #)))))
+                   (DECLARE (IGNORABLE X))
+                   (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
 The strip-cadrs of the proposed value is not the list of function symbols,
 in order, defined by mutual-recursion with the key.  That expected
@@ -1916,13 +1707,13 @@ key = ODDLP-BDD
 value  = ((ODDLP ODDLP-BDD
                  ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
                  (DEFUN ODDLP (X)
-                        (DECLARE (IGNORABLE X))
-                        (FLET (# #) (DECLARE #) (LET # # #))))
+                   (DECLARE (IGNORABLE X))
+                   (FLET (# #) (DECLARE #) (LET # # #))))
           (EVENLP EVENLP-BDD
                   EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
                   (DEFUN EVENLP (X)
-                         (DECLARE (IGNORABLE X))
-                         (FLET (# #) (DECLARE #) (LET # # #)))))
+                    (DECLARE (IGNORABLE X))
+                    (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
 The strip-cadrs of the proposed value is not the list of function symbols,
 in order, defined by mutual-recursion with the key.  That expected
@@ -1938,22 +1729,23 @@ Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
-ACL2 !>>(MUTUAL-RECURSION (DEFUN EVENLP2-BDD (X BOUND)
-                                 (DECLARE (XARGS :GUARD (NATP BOUND)))
-                                 (IF (ZP BOUND)
-                                     'OUCH
-                                     (LET ((BOUND (1- BOUND)))
-                                          (IF (CONSP X)
-                                              (ODDLP2-BDD (CDR X) BOUND)
-                                              T))))
-                          (DEFUN ODDLP2-BDD (X BOUND)
-                                 (DECLARE (XARGS :GUARD (NATP BOUND)))
-                                 (IF (ZP BOUND)
-                                     'OUCH
-                                     (LET ((BOUND (1- BOUND)))
-                                          (IF (CONSP X)
-                                              (EVENLP2-BDD (CDR X) BOUND)
-                                              NIL)))))
+ACL2 !>>(MUTUAL-RECURSION
+          (DEFUN EVENLP2-BDD (X BOUND)
+            (DECLARE (XARGS :GUARD (NATP BOUND)))
+            (IF (ZP BOUND)
+                'OUCH
+              (LET ((BOUND (1- BOUND)))
+                (IF (CONSP X)
+                    (ODDLP2-BDD (CDR X) BOUND)
+                  T))))
+          (DEFUN ODDLP2-BDD (X BOUND)
+            (DECLARE (XARGS :GUARD (NATP BOUND)))
+            (IF (ZP BOUND)
+                'OUCH
+              (LET ((BOUND (1- BOUND)))
+                (IF (CONSP X)
+                    (EVENLP2-BDD (CDR X) BOUND)
+                  NIL)))))
 
 Summary
 Form:  ( MUTUAL-RECURSION ( DEFUN EVENLP2-BDD ...) ...)
@@ -1961,74 +1753,72 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  (EVENLP2-BDD ODDLP2-BDD)
-ACL2 !>>(MF
-         (ENCAPSULATE
-          NIL
-          (DEFCHOOSE EVENLP2-BDD-CHANGE (LARGE)
-                     (X BOUND)
-                     (AND (NATP LARGE)
-                          (<= BOUND LARGE)
-                          (NOT (EQUAL (EVENLP2-BDD X BOUND)
-                                      (EVENLP2-BDD X LARGE)))))
-          (DEFCHOOSE
-               EVENLP2-BDD-STABLE (BOUND)
-               (X)
-               (AND (NATP BOUND)
-                    (EQUAL (EVENLP2-BDD X BOUND)
-                           (EVENLP2-BDD X (EVENLP2-BDD-CHANGE X BOUND)))))
-          (DEFUN EVENLP2 (X)
-                 (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                             (DECLARE (IGNORABLE BOUND))
-                                             (NATP BOUND))))
-                 (EVENLP2-BDD X (NFIX (EVENLP2-BDD-STABLE X))))
-          (DEFCHOOSE ODDLP2-BDD-CHANGE (LARGE)
-                     (X BOUND)
-                     (AND (NATP LARGE)
-                          (<= BOUND LARGE)
-                          (NOT (EQUAL (ODDLP2-BDD X BOUND)
-                                      (ODDLP2-BDD X LARGE)))))
-          (DEFCHOOSE
-               ODDLP2-BDD-STABLE (BOUND)
-               (X)
-               (AND (NATP BOUND)
-                    (EQUAL (ODDLP2-BDD X BOUND)
-                           (ODDLP2-BDD X (ODDLP2-BDD-CHANGE X BOUND)))))
-          (TABLE
-               PARTIAL-FUNCTIONS-TABLE 'EVENLP2-BDD
-               '((EVENLP2 EVENLP2-BDD
-                          EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
-                          (DEFUN EVENLP2 (X)
-                                 (DECLARE (IGNORABLE X))
-                                 (FLET ((EVENLP2-BDD (X BOUND)
-                                                     (DECLARE (IGNORE BOUND))
-                                                     (EVENLP2 X))
-                                        (ODDLP2-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (ODDLP2 X)))
-                                       (DECLARE (INLINE EVENLP2-BDD))
-                                       (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (IF (CONSP X)
-                                                (ODDLP2-BDD (CDR X) BOUND)
-                                                T)))))
-                 (ODDLP2 ODDLP2-BDD
-                         ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
-                         (DEFUN ODDLP2 (X)
-                                (DECLARE (IGNORABLE X))
-                                (FLET ((EVENLP2-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (EVENLP2 X))
-                                       (ODDLP2-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (ODDLP2 X)))
-                                      (DECLARE (INLINE ODDLP2-BDD))
-                                      (LET ((BOUND 0))
-                                           (DECLARE (IGNORABLE BOUND))
-                                           (IF (CONSP X)
-                                               (EVENLP2-BDD (CDR X) BOUND)
-                                               NIL)))))))
-          (MEMOIZE 'EVENLP2 :TOTAL 'EVENLP2-BDD)
-          (MEMOIZE 'ODDLP2 :TOTAL 'ODDLP2-BDD)))
+ACL2 !>>(MF (ENCAPSULATE NIL
+              (DEFCHOOSE EVENLP2-BDD-CHANGE (LARGE)
+                                            (X BOUND)
+                (AND (NATP LARGE)
+                     (<= BOUND LARGE)
+                     (NOT (EQUAL (EVENLP2-BDD X BOUND)
+                                 (EVENLP2-BDD X LARGE)))))
+              (DEFCHOOSE EVENLP2-BDD-STABLE (BOUND)
+                                            (X)
+                (AND (NATP BOUND)
+                     (EQUAL (EVENLP2-BDD X BOUND)
+                            (EVENLP2-BDD X (EVENLP2-BDD-CHANGE X BOUND)))))
+              (DEFUN EVENLP2 (X)
+                (DECLARE (XARGS :GUARD
+                                (LET ((BOUND 0))
+                                  (DECLARE (IGNORABLE BOUND))
+                                  (NATP BOUND))))
+                (EVENLP2-BDD X
+                             (NFIX (NON-EXEC (EVENLP2-BDD-STABLE X)))))
+              (DEFCHOOSE ODDLP2-BDD-CHANGE (LARGE)
+                                           (X BOUND)
+                (AND (NATP LARGE)
+                     (<= BOUND LARGE)
+                     (NOT (EQUAL (ODDLP2-BDD X BOUND)
+                                 (ODDLP2-BDD X LARGE)))))
+              (DEFCHOOSE ODDLP2-BDD-STABLE (BOUND)
+                                           (X)
+                (AND (NATP BOUND)
+                     (EQUAL (ODDLP2-BDD X BOUND)
+                            (ODDLP2-BDD X (ODDLP2-BDD-CHANGE X BOUND)))))
+              (TABLE PARTIAL-FUNCTIONS-TABLE
+                'EVENLP2-BDD
+                '((EVENLP2 EVENLP2-BDD
+                           EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
+                           (DEFUN EVENLP2 (X)
+                             (DECLARE (IGNORABLE X))
+                             (FLET ((EVENLP2-BDD (X BOUND)
+                                                 (DECLARE (IGNORE BOUND))
+                                                 (EVENLP2 X))
+                                    (ODDLP2-BDD (X BOUND)
+                                                (DECLARE (IGNORE BOUND))
+                                                (ODDLP2 X)))
+                                   (DECLARE (INLINE EVENLP2-BDD))
+                                   (LET ((BOUND 0))
+                                     (DECLARE (IGNORABLE BOUND))
+                                     (IF (CONSP X)
+                                         (ODDLP2-BDD (CDR X) BOUND)
+                                       T)))))
+                  (ODDLP2 ODDLP2-BDD
+                          ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
+                          (DEFUN ODDLP2 (X)
+                            (DECLARE (IGNORABLE X))
+                            (FLET ((EVENLP2-BDD (X BOUND)
+                                                (DECLARE (IGNORE BOUND))
+                                                (EVENLP2 X))
+                                   (ODDLP2-BDD (X BOUND)
+                                               (DECLARE (IGNORE BOUND))
+                                               (ODDLP2 X)))
+                                  (DECLARE (INLINE ODDLP2-BDD))
+                                  (LET ((BOUND 0))
+                                    (DECLARE (IGNORABLE BOUND))
+                                    (IF (CONSP X)
+                                        (EVENLP2-BDD (CDR X) BOUND)
+                                      NIL)))))))
+              (MEMOIZE 'EVENLP2 :TOTAL 'EVENLP2-BDD)
+              (MEMOIZE 'ODDLP2 :TOTAL 'ODDLP2-BDD)))
 
 
 ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
@@ -2037,21 +1827,23 @@ key = EVENLP2-BDD
 value  = ((EVENLP2 EVENLP2-BDD
                    EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
                    (DEFUN EVENLP2 (X)
-                          (DECLARE (IGNORABLE X))
-                          (FLET (# #) (DECLARE #) (LET # # #))))
+                     (DECLARE (IGNORABLE X))
+                     (FLET (# #) (DECLARE #) (LET # # #))))
           (ODDLP2 ODDLP2-BDD
                   ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
                   (DEFUN ODDLP2 (X)
-                         (DECLARE (IGNORABLE X))
-                         (FLET (# #) (DECLARE #) (LET # # #)))))
+                    (DECLARE (IGNORABLE X))
+                    (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
 The following event is missing:
 
 (DEFUN ODDLP2 (X)
-       (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                   (DECLARE (IGNORABLE BOUND))
-                                   (NATP BOUND))))
-       (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
+  (DECLARE (XARGS :GUARD
+                  (LET ((BOUND 0))
+                    (DECLARE (IGNORABLE BOUND))
+                    (NATP BOUND))))
+  (ODDLP2-BDD X
+              (NFIX (NON-EXEC (ODDLP2-BDD-STABLE X)))))
 
 
 (See :DOC set-iprint to be able to see elided values in this message.)
@@ -2070,72 +1862,69 @@ Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
-ACL2 !>>(MF
-         (ENCAPSULATE
-          NIL
-          (DEFCHOOSE EVENLP2-BDD-CHANGE (LARGE)
-                     (X BOUND)
-                     (AND (NATP LARGE)
-                          (<= BOUND LARGE)
-                          (NOT (EQUAL (EVENLP2-BDD X BOUND)
-                                      (EVENLP2-BDD X LARGE)))))
-          (DEFCHOOSE
-               EVENLP2-BDD-STABLE (BOUND)
-               (X)
-               (AND (NATP BOUND)
-                    (EQUAL (EVENLP2-BDD X BOUND)
-                           (EVENLP2-BDD X (EVENLP2-BDD-CHANGE X BOUND)))))
-          (DEFUN EVENLP2 (X)
-                 (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                             (DECLARE (IGNORABLE BOUND))
-                                             (NATP BOUND))))
-                 X)
-          (DEFCHOOSE ODDLP2-BDD-CHANGE (LARGE)
-                     (X BOUND)
-                     (AND (NATP LARGE)
-                          (<= BOUND LARGE)
-                          (NOT (EQUAL (ODDLP2-BDD X BOUND)
-                                      (ODDLP2-BDD X LARGE)))))
-          (DEFCHOOSE
-               ODDLP2-BDD-STABLE (BOUND)
-               (X)
-               (AND (NATP BOUND)
-                    (EQUAL (ODDLP2-BDD X BOUND)
-                           (ODDLP2-BDD X (ODDLP2-BDD-CHANGE X BOUND)))))
-          (TABLE
-               PARTIAL-FUNCTIONS-TABLE 'EVENLP2-BDD
-               '((EVENLP2 EVENLP2-BDD
-                          EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
-                          (DEFUN EVENLP2 (X)
-                                 (DECLARE (IGNORABLE X))
-                                 (FLET ((EVENLP2-BDD (X BOUND)
-                                                     (DECLARE (IGNORE BOUND))
-                                                     (EVENLP2 X))
-                                        (ODDLP2-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (ODDLP2 X)))
-                                       (DECLARE (INLINE EVENLP2-BDD))
-                                       (LET ((BOUND 0))
-                                            (DECLARE (IGNORABLE BOUND))
-                                            (IF (CONSP X)
-                                                (ODDLP2-BDD (CDR X) BOUND)
-                                                T)))))
-                 (ODDLP2 ODDLP2-BDD
-                         ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
-                         (DEFUN ODDLP2 (X)
-                                (DECLARE (IGNORABLE X))
-                                (FLET ((EVENLP2-BDD (X BOUND)
-                                                    (DECLARE (IGNORE BOUND))
-                                                    (EVENLP2 X))
-                                       (ODDLP2-BDD (X BOUND)
-                                                   (DECLARE (IGNORE BOUND))
-                                                   (ODDLP2 X)))
-                                      (DECLARE (INLINE ODDLP2-BDD))
-                                      (LET ((BOUND 0))
-                                           (DECLARE (IGNORABLE BOUND))
-                                           (IF (CONSP X)
-                                               (EVENLP2-BDD (CDR X) BOUND)
-                                               NIL)))))))))
+ACL2 !>>(MF (ENCAPSULATE NIL
+              (DEFCHOOSE EVENLP2-BDD-CHANGE (LARGE)
+                                            (X BOUND)
+                (AND (NATP LARGE)
+                     (<= BOUND LARGE)
+                     (NOT (EQUAL (EVENLP2-BDD X BOUND)
+                                 (EVENLP2-BDD X LARGE)))))
+              (DEFCHOOSE EVENLP2-BDD-STABLE (BOUND)
+                                            (X)
+                (AND (NATP BOUND)
+                     (EQUAL (EVENLP2-BDD X BOUND)
+                            (EVENLP2-BDD X (EVENLP2-BDD-CHANGE X BOUND)))))
+              (DEFUN EVENLP2 (X)
+                (DECLARE (XARGS :GUARD
+                                (LET ((BOUND 0))
+                                  (DECLARE (IGNORABLE BOUND))
+                                  (NATP BOUND))))
+                X)
+              (DEFCHOOSE ODDLP2-BDD-CHANGE (LARGE)
+                                           (X BOUND)
+                (AND (NATP LARGE)
+                     (<= BOUND LARGE)
+                     (NOT (EQUAL (ODDLP2-BDD X BOUND)
+                                 (ODDLP2-BDD X LARGE)))))
+              (DEFCHOOSE ODDLP2-BDD-STABLE (BOUND)
+                                           (X)
+                (AND (NATP BOUND)
+                     (EQUAL (ODDLP2-BDD X BOUND)
+                            (ODDLP2-BDD X (ODDLP2-BDD-CHANGE X BOUND)))))
+              (TABLE PARTIAL-FUNCTIONS-TABLE
+                'EVENLP2-BDD
+                '((EVENLP2 EVENLP2-BDD
+                           EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
+                           (DEFUN EVENLP2 (X)
+                             (DECLARE (IGNORABLE X))
+                             (FLET ((EVENLP2-BDD (X BOUND)
+                                                 (DECLARE (IGNORE BOUND))
+                                                 (EVENLP2 X))
+                                    (ODDLP2-BDD (X BOUND)
+                                                (DECLARE (IGNORE BOUND))
+                                                (ODDLP2 X)))
+                                   (DECLARE (INLINE EVENLP2-BDD))
+                                   (LET ((BOUND 0))
+                                     (DECLARE (IGNORABLE BOUND))
+                                     (IF (CONSP X)
+                                         (ODDLP2-BDD (CDR X) BOUND)
+                                       T)))))
+                  (ODDLP2 ODDLP2-BDD
+                          ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
+                          (DEFUN ODDLP2 (X)
+                            (DECLARE (IGNORABLE X))
+                            (FLET ((EVENLP2-BDD (X BOUND)
+                                                (DECLARE (IGNORE BOUND))
+                                                (EVENLP2 X))
+                                   (ODDLP2-BDD (X BOUND)
+                                               (DECLARE (IGNORE BOUND))
+                                               (ODDLP2 X)))
+                                  (DECLARE (INLINE ODDLP2-BDD))
+                                  (LET ((BOUND 0))
+                                    (DECLARE (IGNORABLE BOUND))
+                                    (IF (CONSP X)
+                                        (EVENLP2-BDD (CDR X) BOUND)
+                                      NIL)))))))))
 
 
 ACL2 Error in ( TABLE PARTIAL-FUNCTIONS-TABLE ...):  Illegal partial-
@@ -2144,27 +1933,31 @@ key = EVENLP2-BDD
 value  = ((EVENLP2 EVENLP2-BDD
                    EVENLP2-BDD-CHANGE EVENLP2-BDD-STABLE
                    (DEFUN EVENLP2 (X)
-                          (DECLARE (IGNORABLE X))
-                          (FLET (# #) (DECLARE #) (LET # # #))))
+                     (DECLARE (IGNORABLE X))
+                     (FLET (# #) (DECLARE #) (LET # # #))))
           (ODDLP2 ODDLP2-BDD
                   ODDLP2-BDD-CHANGE ODDLP2-BDD-STABLE
                   (DEFUN ODDLP2 (X)
-                         (DECLARE (IGNORABLE X))
-                         (FLET (# #) (DECLARE #) (LET # # #)))))
+                    (DECLARE (IGNORABLE X))
+                    (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
 The following events are missing:
 
 (DEFUN EVENLP2 (X)
-       (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                   (DECLARE (IGNORABLE BOUND))
-                                   (NATP BOUND))))
-       (EVENLP2-BDD X (NFIX (EVENLP2-BDD-STABLE X))))
+  (DECLARE (XARGS :GUARD
+                  (LET ((BOUND 0))
+                    (DECLARE (IGNORABLE BOUND))
+                    (NATP BOUND))))
+  (EVENLP2-BDD X
+               (NFIX (NON-EXEC (EVENLP2-BDD-STABLE X)))))
 
 (DEFUN ODDLP2 (X)
-       (DECLARE (XARGS :GUARD (LET ((BOUND 0))
-                                   (DECLARE (IGNORABLE BOUND))
-                                   (NATP BOUND))))
-       (ODDLP2-BDD X (NFIX (ODDLP2-BDD-STABLE X))))
+  (DECLARE (XARGS :GUARD
+                  (LET ((BOUND 0))
+                    (DECLARE (IGNORABLE BOUND))
+                    (NATP BOUND))))
+  (ODDLP2-BDD X
+              (NFIX (NON-EXEC (ODDLP2-BDD-STABLE X)))))
 
 
 (See :DOC set-iprint to be able to see elided values in this message.)
@@ -2252,33 +2045,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( DEFUN FIB2-NEW-MEMOIZE-CONDITION ...)
-Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
-FIB2-NEW-MEMOIZE-CONDITION
-
-Summary
-Form:  ( VERIFY-GUARDS FIB2-NEW-MEMOIZE-CONDITION)
-Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
-        (:EXECUTABLE-COUNTERPART EQL)
-        (:EXECUTABLE-COUNTERPART EQLABLEP)
-        (:EXECUTABLE-COUNTERPART NOT))
-FIB2-NEW-MEMOIZE-CONDITION
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB2-NEW
-
-Summary
-Form:  ( PROGN (DEFUN FIB2-NEW-MEMOIZE-CONDITION ...) ...)
-Rules: NIL
-
-Summary
-Form:  ( MAKE-EVENT (LET* ...))
-Rules: NIL
 FIB2-NEW
 
 Summary
@@ -2452,20 +2218,20 @@ Form:  ( DEFSTOBJ ST ...)
 Rules: NIL
  ST
 ACL2 !>>(DEFUN FIB-ST-LIMIT (N ST LIMIT)
-               (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                        (TYPE INTEGER N))
-               (DECLARE (XARGS :MEASURE (NFIX LIMIT)
-                               :STOBJS ST))
-               (IF (ZP LIMIT)
-                   (PROG2$ (ER HARD? 'FIB-ST-LIMIT
-                               "Hit the limit: n=~x0 (fld st)=~x1."
-                               N (FLD ST))
-                           0)
-                   (LET ((LIMIT (1- LIMIT)))
-                        (IF (OR (= N 0) (= N 1))
-                            1
-                            (+ (FIB-ST-LIMIT (- N 1) ST LIMIT)
-                               (FIB-ST-LIMIT (- N 2) ST LIMIT))))))
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE INTEGER N))
+          (DECLARE (XARGS :MEASURE (NFIX LIMIT)
+                          :STOBJS ST))
+          (IF (ZP LIMIT)
+              (PROG2$ (ER HARD? 'FIB-ST-LIMIT
+                          "Hit the limit: n=~x0 (fld st)=~x1."
+                          N (FLD ST))
+                      0)
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (= N 0) (= N 1))
+                  1
+                (+ (FIB-ST-LIMIT (- N 1) ST LIMIT)
+                   (FIB-ST-LIMIT (- N 2) ST LIMIT))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -2497,7 +2263,9 @@ FIB-ST-LIMIT-STABLE
 
 Summary
 Form:  ( DEFUN FIB-ST ...)
-Rules: ((:TYPE-PRESCRIPTION FIB-ST-LIMIT))
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:TYPE-PRESCRIPTION FIB-ST-LIMIT)
+        (:TYPE-PRESCRIPTION NFIX))
 FIB-ST
 
 Summary
@@ -2513,16 +2281,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-FIB-ST
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 FIB-ST
 
 Summary
@@ -2532,23 +2290,22 @@ Rules: NIL
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB-ST 100 ST)
                              573147844013817084101))
  :PASSED
-ACL2 !>>(DEFUN
-             FIB-ST-OUT-LIMIT (N ST LIMIT)
-             (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                      (TYPE INTEGER N))
-             (DECLARE (XARGS :MEASURE (NFIX LIMIT)
-                             :STOBJS ST
-                             :VERIFY-GUARDS NIL))
-             (IF (ZP LIMIT)
-                 (MV 0 ST)
-                 (LET ((LIMIT (1- LIMIT)))
-                      (IF (OR (= N 0) (= N 1))
-                          (MV 1 ST)
-                          (MV-LET (X1 ST)
-                                  (FIB-ST-OUT-LIMIT (- N 1) ST LIMIT)
-                                  (MV-LET (X2 ST)
-                                          (FIB-ST-OUT-LIMIT (- N 2) ST LIMIT)
-                                          (MV (+ X1 X2) ST)))))))
+ACL2 !>>(DEFUN FIB-ST-OUT-LIMIT (N ST LIMIT)
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE INTEGER N))
+          (DECLARE (XARGS :MEASURE (NFIX LIMIT)
+                          :STOBJS ST
+                          :VERIFY-GUARDS NIL))
+          (IF (ZP LIMIT)
+              (MV 0 ST)
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (= N 0) (= N 1))
+                  (MV 1 ST)
+                (MV-LET (X1 ST)
+                        (FIB-ST-OUT-LIMIT (- N 1) ST LIMIT)
+                  (MV-LET (X2 ST)
+                          (FIB-ST-OUT-LIMIT (- N 2) ST LIMIT)
+                    (MV (+ X1 X2) ST)))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -2566,8 +2323,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  FIB-ST-OUT-LIMIT
 ACL2 !>>(DEFTHM NATP-FIB-ST-OUT-LIMIT-0
-                (NATP (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)))
-                :RULE-CLASSES :TYPE-PRESCRIPTION)
+          (NATP (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)))
+          :RULE-CLASSES :TYPE-PRESCRIPTION)
 
 ACL2 Observation in ( DEFTHM NATP-FIB-ST-OUT-LIMIT-0 ...):  Our heuristics
 choose (CAR (FIB-ST-OUT-LIMIT N LIMIT ST)) as the :TYPED-TERM.
@@ -2627,23 +2384,22 @@ Summary
 Form:  ( MAKE-EVENT (QUOTE ...) ...)
 Rules: NIL
  T
-ACL2 !>>(DEFUN
-           FIB-STATE-LIMIT (N STATE LIMIT)
-           (DECLARE (TYPE (INTEGER 0 *) LIMIT)
-                    (TYPE INTEGER N))
-           (DECLARE (XARGS :MEASURE (NFIX LIMIT)
-                           :STOBJS STATE
-                           :VERIFY-GUARDS NIL))
-           (IF (ZP LIMIT)
-               (MV 0 STATE)
-               (LET ((LIMIT (1- LIMIT)))
-                    (IF (OR (= N 0) (= N 1))
-                        (MV 1 STATE)
-                        (MV-LET (X1 STATE)
-                                (FIB-STATE-LIMIT (- N 1) STATE LIMIT)
-                                (MV-LET (X2 STATE)
-                                        (FIB-STATE-LIMIT (- N 2) STATE LIMIT)
-                                        (MV (+ X1 X2) STATE)))))))
+ACL2 !>>(DEFUN FIB-STATE-LIMIT (N STATE LIMIT)
+          (DECLARE (TYPE (INTEGER 0 *) LIMIT)
+                   (TYPE INTEGER N))
+          (DECLARE (XARGS :MEASURE (NFIX LIMIT)
+                          :STOBJS STATE
+                          :VERIFY-GUARDS NIL))
+          (IF (ZP LIMIT)
+              (MV 0 STATE)
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (OR (= N 0) (= N 1))
+                  (MV 1 STATE)
+                (MV-LET (X1 STATE)
+                        (FIB-STATE-LIMIT (- N 1) STATE LIMIT)
+                  (MV-LET (X2 STATE)
+                          (FIB-STATE-LIMIT (- N 2) STATE LIMIT)
+                    (MV (+ X1 X2) STATE)))))))
 Subgoal 2
 Subgoal 1
 Subgoal 1'
@@ -2661,8 +2417,8 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:FAKE-RUNE-FOR-TYPE-SET NIL))
  FIB-STATE-LIMIT
 ACL2 !>>(DEFTHM NATP-FIB-STATE-LIMIT-0
-                (NATP (CAR (FIB-STATE-LIMIT N LIMIT STATE)))
-                :RULE-CLASSES :TYPE-PRESCRIPTION)
+          (NATP (CAR (FIB-STATE-LIMIT N LIMIT STATE)))
+          :RULE-CLASSES :TYPE-PRESCRIPTION)
 
 ACL2 Observation in ( DEFTHM NATP-FIB-STATE-LIMIT-0 ...):  Our heuristics
 choose (CAR (FIB-STATE-LIMIT N LIMIT STATE)) as the :TYPED-TERM.
@@ -2723,20 +2479,18 @@ Rules: NIL
  T
 ACL2 !>>(SET-COMPILE-FNS NIL)
  NIL
-ACL2 !>>(DEFUN
-         COLLATZ-LIMIT (N LIMIT)
-         (DECLARE (XARGS :GUARD (AND (NATP N) (NATP LIMIT))
-                         :MEASURE (ACL2-COUNT LIMIT)))
-         (IF
-          (ZP LIMIT)
-          (PROG2$ (ER HARD? 'COLLATZ-LIMIT
-                      "Limit exceeded!")
-                  0)
-          (LET ((LIMIT (1- LIMIT)))
-               (IF (INT= N 1)
-                   0
-                   (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
-                                      LIMIT))))))
+ACL2 !>>(DEFUN COLLATZ-LIMIT (N LIMIT)
+          (DECLARE (XARGS :GUARD (AND (NATP N) (NATP LIMIT))
+                          :MEASURE (ACL2-COUNT LIMIT)))
+          (IF (ZP LIMIT)
+              (PROG2$ (ER HARD? 'COLLATZ-LIMIT
+                          "Limit exceeded!")
+                      0)
+            (LET ((LIMIT (1- LIMIT)))
+              (IF (INT= N 1)
+                  0
+                (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
+                                   LIMIT))))))
 
 Summary
 Form:  ( DEFUN COLLATZ-LIMIT ...)
@@ -2787,16 +2541,6 @@ Summary
 Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
 Rules: NIL
 PARTIAL-FUNCTIONS-TABLE
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-COLLATZ
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 COLLATZ
 
 Summary
@@ -2805,44 +2549,41 @@ Rules: NIL
  COLLATZ
 ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
  T
-ACL2 !>>(ENCAPSULATE
-         NIL
+ACL2 !>>(ENCAPSULATE NIL
          (DEFCHOOSE COLLATZ-LIMIT-CHANGE (LARGE)
-                    (N LIMIT)
-                    (AND (NATP LARGE)
-                         (<= LIMIT LARGE)
-                         (NOT (EQUAL (COLLATZ-LIMIT N LIMIT)
-                                     (COLLATZ-LIMIT N LARGE)))))
-         (DEFCHOOSE
-              COLLATZ-LIMIT-STABLE (LIMIT)
-              (N)
-              (AND (NATP LIMIT)
-                   (EQUAL (COLLATZ-LIMIT N LIMIT)
-                          (COLLATZ-LIMIT N (COLLATZ-LIMIT-CHANGE N LIMIT)))))
+                                         (N LIMIT)
+           (AND (NATP LARGE)
+                (<= LIMIT LARGE)
+                (NOT (EQUAL (COLLATZ-LIMIT N LIMIT)
+                            (COLLATZ-LIMIT N LARGE)))))
+         (DEFCHOOSE COLLATZ-LIMIT-STABLE (LIMIT)
+                                         (N)
+           (AND (NATP LIMIT)
+                (EQUAL (COLLATZ-LIMIT N LIMIT)
+                       (COLLATZ-LIMIT N (COLLATZ-LIMIT-CHANGE N LIMIT)))))
          (DEFUN COLLATZ (N)
-                (DECLARE (XARGS :GUARD (LET ((LIMIT 0))
-                                            (DECLARE (IGNORABLE LIMIT))
-                                            (AND (NATP N) (NATP LIMIT)))))
-                (COLLATZ-LIMIT N (NFIX (COLLATZ-LIMIT-STABLE N))))
-         (TABLE
-          PARTIAL-FUNCTIONS-TABLE 'COLLATZ-LIMIT
+           (DECLARE (XARGS :GUARD
+                           (LET ((LIMIT 0))
+                             (DECLARE (IGNORABLE LIMIT))
+                             (AND (NATP N) (NATP LIMIT)))))
+           (COLLATZ-LIMIT N
+                          (NFIX (NON-EXEC (COLLATZ-LIMIT-STABLE N)))))
+         (TABLE PARTIAL-FUNCTIONS-TABLE
+          'COLLATZ-LIMIT
           '((COLLATZ
              COLLATZ-LIMIT COLLATZ-LIMIT-CHANGE
              COLLATZ-LIMIT-STABLE
-             (DEFUN
-              COLLATZ (N)
+             (DEFUN COLLATZ (N)
               (DECLARE (IGNORABLE N))
               (FLET
                ((COLLATZ-LIMIT (N LIMIT)
                                (DECLARE (IGNORE LIMIT))
                                (COLLATZ N)))
                (DECLARE (INLINE COLLATZ-LIMIT))
-               (LET
-                ((LIMIT 0))
-                (DECLARE (IGNORABLE LIMIT))
-                (IF
-                   (INT= N 1)
-                   0
+               (LET ((LIMIT 0))
+                 (DECLARE (IGNORABLE LIMIT))
+                 (IF (INT= N 1)
+                     0
                    (1+ (COLLATZ-LIMIT (IF (EVENP N) (FLOOR N 2) (1+ (* 3 N)))
                                       LIMIT)))))))))
          (MEMOIZE 'COLLATZ
@@ -2878,19 +2619,6 @@ Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
 Rules: NIL
 :REDUNDANT
-
-The event ( TABLE MEMOIZE-TABLE ...) is redundant.  See :DOC redundant-
-events.
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-:REDUNDANT
-COLLATZ
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
 COLLATZ
 
 ACL2 Observation in ( ENCAPSULATE NIL (DEFCHOOSE COLLATZ-LIMIT-CHANGE
@@ -2905,11 +2633,11 @@ Rules: NIL
 ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
  NIL
 ACL2 !>>(DEFUN COLLATZ-SUM-REC (N ACC)
-               (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC))))
-               (IF (ZP N)
-                   ACC
-                   (COLLATZ-SUM-REC (1- N)
-                                    (+ (COLLATZ N) ACC))))
+          (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC))))
+          (IF (ZP N)
+              ACC
+            (COLLATZ-SUM-REC (1- N)
+                             (+ (COLLATZ N) ACC))))
 
 Summary
 Form:  ( DEFUN COLLATZ-SUM-REC ...)
@@ -2920,20 +2648,19 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION COLLATZ))
  COLLATZ-SUM-REC
 ACL2 !>>(DEFUN COLLATZ-SUM (N)
-               (COLLATZ-SUM-REC N 0))
+          (COLLATZ-SUM-REC N 0))
 
 Summary
 Form:  ( DEFUN COLLATZ-SUM ...)
 Rules: ((:TYPE-PRESCRIPTION COLLATZ-SUM-REC))
  COLLATZ-SUM
-ACL2 !>>(DEFUN
-             COLLATZ-LIMIT-SUM-REC (N ACC LIMIT)
-             (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC) (NATP LIMIT))))
-             (IF (ZP N)
-                 ACC
-                 (COLLATZ-LIMIT-SUM-REC (1- N)
-                                        (+ (COLLATZ-LIMIT N LIMIT) ACC)
-                                        LIMIT)))
+ACL2 !>>(DEFUN COLLATZ-LIMIT-SUM-REC (N ACC LIMIT)
+          (DECLARE (XARGS :GUARD (AND (NATP N) (NATP ACC) (NATP LIMIT))))
+          (IF (ZP N)
+              ACC
+            (COLLATZ-LIMIT-SUM-REC (1- N)
+                                   (+ (COLLATZ-LIMIT N LIMIT) ACC)
+                                   LIMIT)))
 
 Summary
 Form:  ( DEFUN COLLATZ-LIMIT-SUM-REC ...)
@@ -2943,7 +2670,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:TYPE-PRESCRIPTION COLLATZ-LIMIT))
  COLLATZ-LIMIT-SUM-REC
 ACL2 !>>(DEFUN COLLATZ-LIMIT-SUM (N)
-               (COLLATZ-LIMIT-SUM-REC N 0 (1- (EXPT 2 60))))
+          (COLLATZ-LIMIT-SUM-REC N 0 (1- (EXPT 2 60))))
 
 Summary
 Form:  ( DEFUN COLLATZ-LIMIT-SUM ...)

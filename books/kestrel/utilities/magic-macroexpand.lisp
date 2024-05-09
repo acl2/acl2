@@ -4,10 +4,14 @@
 
 ; Thanks to Eric Smith for the idea leading to this tool.
 
+; Eric Smith modified this tool in July, 2023 to call magic-ev-term instead of
+; magic-ev, after magic-ev stopped allowing :program mode functions.
+
+; (depends-on "build/defrec-certdeps/STATE-VARS.certdep" :dir :system)
+
 (in-package "ACL2")
 
-; For magic-ev:
-(include-book "clause-processors/meta-extract-user" :dir :system)
+(include-book "magic-ev-term")
 
 (include-book "system/bind-macro-args" :dir :system)
 
@@ -76,13 +80,14 @@
               "Ill-formed call for magic-macroexpand: ~x0"
               x))))
 
-(defun magic-ev-safe (x alist state hard-errp aokp)
-  (declare (xargs :stobjs state :guard t))
+(defun magic-ev-term-safe (x alist hard-error-returns-nilp aokp state)
+  (declare (xargs :stobjs state :guard (and (booleanp hard-error-returns-nilp)
+                                            (booleanp aokp))))
   (cond ((and (pseudo-termp x)
               (symbol-alistp alist))
-         (magic-ev x alist state hard-errp aokp))
+         (magic-ev-term x alist hard-error-returns-nilp aokp state))
         (t (er-cmp "Found magic-ev guard violation for the call:~|~%~x0"
-                   `(magic-ev-safe ,x ,alist state ,hard-errp ,aokp)))))
+                   `(magic-ev-term-safe ,x ,alist ,hard-error-returns-nilp ,aokp state)))))
 
 (defun magic-macroexpand1 (x macro-body ctx wrld state-vars state)
 
@@ -106,12 +111,11 @@
              "Impossible case in magic-macroexpand1 (not a symbol-alistp)."))
     (t
      (mv-let (erp guard-val)
-       (magic-ev (getpropc (car x) 'guard *t* wrld)
-                 alist
-                 state
-                 nil   ; hard-error-returns-nilp
-                 nil   ; aokp
-                 )
+       (magic-ev-term (getpropc (car x) 'guard *t* wrld)
+                      alist
+                      nil  ; hard-error-returns-nilp
+                      nil  ; aokp
+                      state)
        (cond
         (erp (er-cmp ctx
                      "In the attempt to macroexpand the form ~x0 evaluation ~
@@ -123,7 +127,7 @@
         ((null guard-val)
          (magic-macro-guard-er-msg x ctx wrld))
         (t (mv-let (erp expansion)
-             (magic-ev-safe macro-body alist state nil nil)
+             (magic-ev-term-safe macro-body alist nil nil state)
              (cond (erp
                     (er-cmp ctx
                             "In the attempt to macroexpand the form ~x0, ~
@@ -192,4 +196,3 @@
       (and (null erp)
            (equal val
                   '(BINARY-* X Y)))))))
-

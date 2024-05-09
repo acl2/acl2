@@ -41,7 +41,6 @@
 (in-package "RP")
 
 (include-Book "proof-functions")
-
 (include-Book "eval-functions-lemmas")
 
 (local (include-book "aux-function-lemmas"))
@@ -58,14 +57,7 @@
            :in-theory (e/d (eval-and-all
                             append) ()))))
 
-(defthm eval-sc-append
-  (equal (eval-sc (append x y) a)
-         (and (eval-sc x a)
-              (eval-sc y a)))
-  :hints (("Goal"
-           :in-theory (e/d (eval-sc
-                            append
-                            eval-and-all) ()))))
+
 
 #|(encapsulate
   nil
@@ -109,11 +101,15 @@
 
 (defthm-valid-sc
   (defthmd not-include-rp-means-valid-sc
-    (implies (not (include-fnc term 'rp))
+    (implies (and (not (include-fnc term 'rp))
+                  (or (not (include-fnc term 'equals 2))
+                      (not (include-fnc term 'equals))))
              (and (valid-sc term a)))
     :flag valid-sc)
   (defthmd not-include-rp-means-valid-sc-lst
-    (implies (not (include-fnc-subterms subterms 'rp))
+    (implies (and (not (include-fnc-subterms subterms 'rp))
+                  (or (not (include-fnc-subterms subterms 'equals 2))
+                      (not (include-fnc-subterms subterms 'equals))))
              (and (valid-sc-subterms subterms a)))
     :flag valid-sc-subterms)
   :hints (("Goal" 
@@ -122,11 +118,15 @@
 
 (defthm-valid-sc-nt
   (defthmd not-include-rp-means-valid-sc-nt
-    (implies (not (include-fnc term 'rp))
+    (implies (and (not (include-fnc term 'rp))
+                  (or (not (include-fnc term 'equals 2))
+                      (not (include-fnc term 'equals))))
              (and (valid-sc-nt term a)))
     :flag valid-sc-nt)
   (defthmd not-include-rp-means-valid-sc-nt-subterms
-    (implies (not (include-fnc-subterms subterms 'rp))
+    (implies (and (not (include-fnc-subterms subterms 'rp))
+                  (or (not (include-fnc-subterms subterms 'equals 2))
+                      (not (include-fnc-subterms subterms 'equals))))
              (and (valid-sc-nt-subterms subterms a)))
     :flag valid-sc-nt-subterms)
   :hints (("Goal" 
@@ -492,7 +492,8 @@
                    A)
            :in-theory (e/d (
                             EX-FROM-RP-ALL2
-                            IS-RP-LOOSE
+                            is-rp-loose
+                            IS-EQUALS
                             is-rp
                             is-if
                             ;;rp-termp-ex-from-rp-all2-lemma
@@ -713,7 +714,7 @@
             (valid-sc (trans-list lst) a))
    :hints (("goal" :do-not-induct t
             :induct (trans-list lst)
-            :in-theory (e/d (valid-sc is-if is-rp)
+            :in-theory (e/d (valid-sc is-if is-equals is-rp)
                             ()))))
 
 (defthm rp-state-preservedp-implies-valid-rp-statep

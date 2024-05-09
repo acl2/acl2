@@ -1,0 +1,8 @@
+#! /bin/bash
+
+# This file is intended to mimic what happens when someone who doesn't have glucose does a build (in case that build wrongly calls glucose):
+
+echo "ERROR: Glucose is being run, but we have been told to have such an attempt cause an error."
+
+# Return an error code so that when books/build/features.sh calls glucose it gets an error:
+exit 1

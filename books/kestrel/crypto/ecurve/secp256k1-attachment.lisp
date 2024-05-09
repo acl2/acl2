@@ -16,6 +16,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
+; generating guard conjectures.
+(local (in-theory (disable (:e secp256k1-field-prime))))
+
 (defsection secp256k1-attachment
   :parents (crypto::attachments elliptic-curves)
   :short (xdoc::topstring
@@ -97,7 +101,7 @@
       secp-result)
     :hooks (:fix)
     :guard-hints (("Goal" :in-theory (e/d (secp256k1-b fep)
-                                          ((:e secp256k1-field-prime))))))
+                                          ()))))
 
   (define secp256k1-mul-wrapper ((nat natp) (secp-point secp256k1-pointp))
     :returns (secp-result secp256k1-pointp)

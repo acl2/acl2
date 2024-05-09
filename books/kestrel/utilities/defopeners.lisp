@@ -76,22 +76,6 @@
 
 ;; end of library stuff
 
-(defun some-expr-calls-some-fn (fns exprs)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (pseudo-term-listp exprs))))
-  (if (atom fns)
-      nil
-    (or (some-expr-calls-fn (first fns) exprs)
-        (some-expr-calls-some-fn (rest fns) exprs))))
-
-(defun expr-calls-some-fn (fns expr)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (pseudo-termp expr))))
-  (if (atom fns)
-      nil
-    (or (expr-calls-fn (first fns) expr)
-        (expr-calls-some-fn (rest fns) expr))))
-
 ;; ;count the number of branches of the ITE nest that are base cases and the number that contain recursive calls
 ;; ;returns (mv base-case-count recursive-case-count)
 ;; (defun count-and-recursive-cases-bases-aux (fn term base-case-count recursive-case-count)
@@ -706,7 +690,7 @@
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
 (defmacro defopeners (fn &key
-                         (hyps 'nil)
+                         (hyps 'nil) ; untranslated terms
                          (disable 'nil)
                          (verbose 'nil)
                          (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
@@ -714,6 +698,8 @@
   (control-screen-output
    (if (member-eq verbose '(t 't)) t nil) ;verbose
    `(make-event (defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;for non-mut-rec.  Returns a list of names
 ;; KEEP IN SYNC WITH DEFOPENERS-FN.
@@ -740,31 +726,6 @@
                                (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
                                )
   `(defopeners-names-fn ',fn ',hyps ',disable ',suffix ',verbose state))
-
-;; Returns an event
-(defun defopeners-mut-rec-fn (fn hyps disable suffix verbose state)
-  (declare (xargs  :guard (and (symbolp fn)
-                               (not (eq 'quote fn))
-                               (true-listp hyps)
-                               (symbolp suffix))
-                   :stobjs state))
-  (mv-let (event names)
-    ;; Would like to call get-clique instead of fn-recursive-partners, but it's
-    ;; in :program mode (but see kestrel-acl2/community/verify-termination.lisp):
-    (make-unroll-and-base-theorems fn (fn-recursive-partners fn (w state)) hyps disable suffix verbose (w state))
-    (declare (ignore names))
-    event))
-
-;; TODO: Add defopeners-mut-rec-name, like defopeners-names.
-;TODO: Call control-screen-output here, as above?
-;TODO: Combine this with the non-mut-rec version (query the world to check whether it's a mut rec and what the other functions are)
-(defmacro defopeners-mut-rec (fn &key
-                                 (hyps 'nil)
-                                 (disable 'nil)
-                                 (verbose 'nil)
-                                 (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names)
-                                 )
-  `(make-event (defopeners-mut-rec-fn ',fn ',hyps ',disable ',suffix ',verbose state)))
 
 ;; Returns (mv events rule-names).
 ;; TODO: Change this and related fns to take wrld instead of state?

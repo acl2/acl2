@@ -2,7 +2,6 @@
 ;
 ; Contact:
 ;   David M. Russinoff
-;   1106 W 9th St., Austin, TX 78703
 ;   david@russinoff.com
 ;   http://www.russinoff.com
 ;

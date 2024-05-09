@@ -37,7 +37,7 @@
 ; Soumava Ghosh       <soumava@cs.utexas.edu>
 
 ; [Shilpi Goel] This book is a modified version of the one that used
-; to live in [books]/projects/x86isa/tools/execution/exec-loaders.
+; to live in projects/x86isa/tools/execution/exec-loaders.
 
 (in-package "EXLD")
 

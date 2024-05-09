@@ -6,6 +6,9 @@
 
 ; Note that because of must-fail, REBUILD doesn't work for this book.
 
+; (depends-on "build/defrec-certdeps/REWRITE-CONSTANT.certdep" :dir :system)
+; (depends-on "build/defrec-certdeps/PROVE-SPEC-VAR.certdep" :dir :system)
+
 (in-package "ACL2")
 
 (include-book "std/testing/must-fail" :dir :system)
@@ -1190,13 +1193,9 @@
       (and (consp pspv)
            (consp (car pspv))
            (consp (car (car pspv)))
-           (consp (cdr (car (car pspv))))
-           (consp (cdr (cdr (car (car pspv)))))
-           (consp (cdr (cdr (cdr (car (car pspv))))))
-           (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
-           (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
+           (consp (car (car (car pspv))))
+           (consp (car (car (car (car pspv)))))
+           (consp (cdr (car (car (car (car pspv)))))))))
     (cond (stable-under-simplificationp
            (if (not (access rewrite-constant
                             (access prove-spec-var pspv :rewrite-constant)
@@ -1240,15 +1239,11 @@
      (xargs
       :guard ; Guard change for tau after ACL2 Version 5.0 by J Moore:
       (and (consp pspv)
-           (consp (car pspv))
-           (consp (car (car pspv)))
-           (consp (cdr (car (car pspv))))
-           (consp (cdr (cdr (car (car pspv)))))
-           (consp (cdr (cdr (cdr (car (car pspv))))))
-           (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
-           (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
-           (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
+         (consp (car pspv))
+         (consp (car (car pspv)))
+         (consp (car (car (car pspv))))
+         (consp (car (car (car (car pspv)))))
+         (consp (cdr (car (car (car (car pspv)))))))))
     (cond (stable-under-simplificationp
            (if (not (access rewrite-constant
                             (access prove-spec-var pspv :rewrite-constant)

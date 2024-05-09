@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function strip-cdrs.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -85,3 +85,9 @@
          (revappend (strip-cdrs x)
                     (strip-cdrs y)))
   :hints (("Goal" :in-theory (enable strip-cdrs revappend))))
+
+(defthm <=-of-acl2-count-of-strip-cdrs-linear
+  (<= (acl2-count (strip-cdrs x))
+      (acl2-count x))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable strip-cdrs))))

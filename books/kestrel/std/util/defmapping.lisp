@@ -19,10 +19,13 @@
 (include-book "kestrel/event-macros/proof-preparation" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/std/system/apply-term" :dir :system)
 (include-book "kestrel/std/system/conjoin-equalities" :dir :system)
 (include-book "kestrel/std/system/make-mv-let-call" :dir :system)
 (include-book "kestrel/std/system/make-mv-nth-calls" :dir :system)
 (include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "kestrel/std/system/term-guard-obligation" :dir :system)
+(include-book "kestrel/std/system/uguard" :dir :system)
 (include-book "kestrel/utilities/defthmr" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -841,12 +844,16 @@
      (make-evmac-appcond?
       :doma-guard
       (cond ((symbolp doma$) (uguard doma$ wrld))
-            (t (term-guard-obligation (lambda-body doma$) state)))
+            (t (term-guard-obligation (lambda-body doma$)
+                                      :limited
+                                      state)))
       :when guard-thms$)
      (make-evmac-appcond?
       :domb-guard
       (cond ((symbolp domb$) (uguard domb$ wrld))
-            (t (term-guard-obligation (lambda-body domb$) state)))
+            (t (term-guard-obligation (lambda-body domb$)
+                                      :limited
+                                      state)))
       :when guard-thms$)
      (make-evmac-appcond?
       :alpha-guard
@@ -855,7 +862,9 @@
                   (t (lambda-formals alpha$))))
            (alpha-guard
             (cond ((symbolp alpha$) (uguard alpha$ wrld))
-                  (t (term-guard-obligation (lambda-body alpha$) state)))))
+                  (t (term-guard-obligation (lambda-body alpha$)
+                                            :limited
+                                            state)))))
         (implicate (apply-term doma$ a1...an)
                    (subcor-var alpha-formals
                                a1...an
@@ -868,7 +877,9 @@
                   (t (lambda-formals beta$))))
            (beta-guard
             (cond ((symbolp beta$) (uguard beta$ wrld))
-                  (t (term-guard-obligation (lambda-body beta$) state)))))
+                  (t (term-guard-obligation (lambda-body beta$)
+                                            :limited
+                                            state)))))
         (implicate (apply-term domb$ b1...bm)
                    (subcor-var beta-formals
                                b1...bm

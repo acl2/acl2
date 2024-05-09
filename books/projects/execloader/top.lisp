@@ -41,7 +41,7 @@
 (include-book "mach-o-reader")
 
 ;; [Shilpi] In Sept. 2020, I pulled out these books from the X86ISA
-;; library ([books]/projects/x86isa/tools/execution/exec-loaders) and
+;; library (projects/x86isa/tools/execution/exec-loaders) and
 ;; modified them a little. Now they are their own stand-alone library.
 
 ;; ----------------------------------------------------------------------

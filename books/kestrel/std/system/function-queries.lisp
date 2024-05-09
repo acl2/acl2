@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,8 @@
 (include-book "formals-plus")
 (include-book "fundef-disabledp")
 (include-book "fundef-enabledp")
+(include-book "guard-theorem-no-simplify")
+(include-book "guard-theorem-no-simplify-dollar")
 (include-book "guard-verified-p")
 (include-book "guard-verified-p-plus")
 (include-book "ibody")
@@ -46,6 +48,7 @@
 (include-book "stobjs-in-plus")
 (include-book "stobjs-out-plus")
 (include-book "tail-recursive-p")
+(include-book "termination-theorem-dollar")
 (include-book "ubody")
 (include-book "ubody-plus")
 (include-book "uguard")

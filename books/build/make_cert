@@ -126,3 +126,14 @@ export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/build/make_cert_help.pl
 
 %.acl2x : %.lisp
 	@$(MAKE_CERT_PL) '$*' $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes"
+
+
+# Note: the first prerequisite, $<, must be the .lsp file to be loaded before saving the image.
+# That file must be named imagename.lsp.  If $(@F) is foo, then $(<F) should be foo.lsp.
+# The location at which the image should be saved 
+define SAVED_IMAGE_RECIPE
+	@echo "Making $@"
+	@cd $(<D); ACL2_IMAGE_NAME=$(@F) ACL2_CUSTOMIZATION=NONE $(STARTJOB) -c "(time (($(ACL2) < $(ACL2_SYSTEM_BOOKS)/build/make-image.lsp 2>&1) >> $(@F).out)) 2> $(@F).time"
+	@cd $(@D); $(ACL2_SYSTEM_BOOKS)/build/wait.pl $(@F)
+	@ls -l $@
+endef

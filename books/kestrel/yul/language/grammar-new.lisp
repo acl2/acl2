@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,22 +10,25 @@
 
 (in-package "YUL")
 
-(include-book "kestrel/abnf/parser" :dir :system)
-(include-book "kestrel/abnf/abstractor" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "kestrel/abnf/grammar-definer/deftreeops" :dir :system)
+(include-book "kestrel/abnf/operations/in-terminal-set" :dir :system)
 
-; (depends-on "abnf-grammar-new.txt")
+(local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
+
+; (depends-on "grammar-new.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar-new
   :parents (concrete-syntax)
-  :short "ABNF new grammar of Yul."
+  :short "New ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use our "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
-    " to parse the ABNF grammar of Yul into a representation in ACL2.")
+    " to parse the new ABNF grammar of Yul into a representation in ACL2.")
    (xdoc::p
     "This is the new grammar of Yul; see @(see concrete-syntax)."))
   :order-subtopics t
@@ -33,8 +36,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection *grammar-new*
-  :short "The parsed ABNF grammar of Yul."
+(abnf::defgrammar *grammar-new*
+  :short "The parsed new ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -47,19 +50,11 @@
     ", and only "
     (xdoc::seetopic "abnf::in-terminal-set" "generates terminals")
     " in the ASCII character set."))
-
-  (make-event
-   (mv-let (tree state)
-     (abnf::parse-grammar-from-file (str::cat (cbd) "abnf-grammar-new.txt")
-                                    state)
-     (acl2::value `(defconst *grammar-new*
-                     (abnf::abstract-rulelist ',tree)))))
-
-  (defruled rulelist-wfp-of-*grammar-new*
-    (abnf::rulelist-wfp *grammar-new*))
-
-  (defruled rulelist-closedp-of-*grammar-new*
-    (abnf::rulelist-closedp *grammar-new*))
+  :file "grammar-new.abnf"
+  :untranslate t
+  :well-formed t
+  :closed t
+  ///
 
   (defruled ascii-only-*grammar-new*
     (abnf::rulelist-in-termset-p *grammar-new*
@@ -71,10 +66,11 @@
              abnf::char-val-in-termset-p
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))
-    :prep-books
-    ((local
-      (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)))))
+    :disable ((:e acl2::integers-from-to))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(abnf::deftreeops *grammar-new* :prefix cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

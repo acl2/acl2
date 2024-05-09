@@ -1,7 +1,7 @@
 ; Even more utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,6 +19,7 @@
 (include-book "rule-lists-jvm")
 (include-book "lifter-utilities") ;for standard-hyps-basic0
 (include-book "kestrel/utilities/unify" :dir :system)
+(include-book "kestrel/jvm/global-class-alist" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 

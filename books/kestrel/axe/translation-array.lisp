@@ -1,7 +1,7 @@
 ; Renumbering DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,9 +14,15 @@
 
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/erp" :dir :system)
+(include-book "kestrel/acl2-arrays/aref1-list" :dir :system) ; for some rules below
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+
+(local (in-theory (enable true-listp-when-dargp)))
+
+;; TODO: Can we define this with def-typed-acl2-array ?
+;(def-typed-acl2-array translation-arrayp (or (null val) (dargp val)))
 
 ;; A translation-array maps each node, up to a given node, to a nodenum,
 ;; myquotep, or nil (meaning no translation applies for that node).  See also
@@ -46,16 +52,6 @@
                 (< n (len items)))
            (not (< (binary-+ '-1 bound) (nth n items))))
   :hints (("Goal" :in-theory (e/d (all-< nth) (nth-of-cdr)))))
-
-;move
-(defthm bounded-darg-listp-when-bounded-darg-listp-of-cdr-cheap
-  (implies (bounded-darg-listp (cdr items) bound)
-           (equal (bounded-darg-listp items bound)
-                  (if (not (consp items))
-                      (null items)
-                    (dargp-less-than (car items) bound))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;; Checks that, for all indices from top-nodenum-to-check down to 0, the array
 ;; maps the index to either a quotep, a nodenum, or nil.  Allowing nil makes
@@ -89,7 +85,7 @@
   (implies (and (natp len)
                 (< n len)
                 (natp n)
-                (< len 2147483647))
+                (<= len *max-1d-array-length*))
            (translation-arrayp-aux n (make-empty-array 'translation-array len)))
   :hints (("Goal" :expand ((translation-arrayp-aux 0
                                                    (make-empty-array 'translation-array
@@ -210,6 +206,7 @@
 ;;;
 
 ;; A stronger version of translation-arrayp-aux.
+;; TODO: Remove -aux from name.
 (defund bounded-translation-arrayp-aux (top-nodenum-to-check array bound)
   (declare (xargs :measure (nfix (+ 1 top-nodenum-to-check))
                   :guard (and (array1p 'translation-array array)
@@ -252,7 +249,7 @@
   (implies (and (natp len)
                 (< n len)
                 (natp n)
-                (< len 2147483647))
+                (<= len *max-1d-array-length*))
            (bounded-translation-arrayp-aux n
                                            (make-empty-array 'translation-array
                                                              len)
@@ -339,11 +336,11 @@
               (er hard? 'translate-args "Node ~x0 did not translate to anything." arg)
             (cons res (translate-args (rest args) translation-array))))))))
 
-(defthm all-dargp-of-translate-args
+(defthm darg-listp-of-translate-args
   (implies (and (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
-           (all-dargp (translate-args args translation-array)))
+           (darg-listp (translate-args args translation-array)))
   :hints (("Goal" :in-theory (e/d (translate-args) (dargp)))))
 
 (local (in-theory (enable not-<-of-one-less-and-nth)))
@@ -401,12 +398,12 @@
   :hints (("Goal" :in-theory (enable translate-args-with-changep))))
 
 
-(defthm all-dargp-of-mv-nth-1-of-translate-args-with-changep
+(defthm darg-listp-of-mv-nth-1-of-translate-args-with-changep
   (implies (and (not (mv-nth 0 (translate-args-with-changep args translation-array)))
                 (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
-           (all-dargp (mv-nth 1 (translate-args-with-changep args translation-array))))
+           (darg-listp (mv-nth 1 (translate-args-with-changep args translation-array))))
   :hints (("Goal" :in-theory (e/d (translate-args-with-changep car-becomes-nth-of-0) (dargp)))))
 
 (defthm true-listp-mv-nth-1-of-translate-args-with-changep
@@ -457,11 +454,11 @@
             ;; no change to arg:
             (cons-with-hint arg (maybe-translate-args (rest args) translation-array) args)))))))
 
-(defthm all-dargp-of-maybe-translate-args
+(defthm darg-listp-of-maybe-translate-args
   (implies (and (translation-arrayp-aux (+ -1 (alen1 'translation-array translation-array)) translation-array)
                 (bounded-darg-listp args (alen1 'translation-array translation-array))
                 (array1p 'translation-array translation-array))
-           (all-dargp (maybe-translate-args args translation-array)))
+           (darg-listp (maybe-translate-args args translation-array)))
   :hints (("Goal" :in-theory (e/d (maybe-translate-args) (dargp)))))
 
 (defthm bounded-darg-listp-of-maybe-translate-args
@@ -471,5 +468,77 @@
                 (array1p 'translation-array translation-array))
            (bounded-darg-listp (maybe-translate-args args translation-array) bound))
   :hints (("Goal" :in-theory (e/d (maybe-translate-args CAR-BECOMES-NTH-OF-0
-                                                        EQUAL-OF-QUOTE-AND-NTH-0-OF-NTH-WHEN-ALL-DARGP)
+                                                        EQUAL-OF-QUOTE-AND-NTH-0-OF-NTH-WHEN-DARG-LISTP)
                                   (dargp-less-than)))))
+
+(defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux
+  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
+                (all-<= nodenums top-nodenum-to-check)
+                (all-natp nodenums)
+                (natp top-nodenum-to-check)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                (all-< acc bound)
+                )
+           (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
+                  bound))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+
+(defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux-gen
+  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
+                (<= bound bound2)
+                (all-<= nodenums top-nodenum-to-check)
+                (all-natp nodenums)
+                (natp top-nodenum-to-check)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                (all-< acc bound2)
+                )
+           (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
+                  bound2))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+
+(defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
+  (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
+                (<= bound bound2)
+                (all-<= nodenums top-nodenum-to-check)
+                (all-natp nodenums)
+                (natp top-nodenum-to-check)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                )
+           (all-< (aref1-list 'translation-array translation-array nodenums)
+                  bound2))
+  :hints (("Goal" :in-theory (enable aref1-list))))
+
+(defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-no-free
+  (implies (and (bounded-translation-arrayp-aux (maxelem nodenums) translation-array bound)
+                (consp nodenums) ;because of the call to maxelem
+                (all-natp nodenums)
+                ;(aref1 'translation-array translation-array nodenum)
+                ;(not (consp (aref1 'translation-array translation-array nodenum)))
+                (all-integerp (aref1-list 'translation-array translation-array nodenums))
+                )
+           (all-< (aref1-list 'translation-array translation-array nodenums)
+                  bound))
+  :hints (("Goal" :use (:instance all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
+                                  (bound2 bound)
+                                  (top-nodenum-to-check (maxelem nodenums))))))
+
+
+;; (defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux
+;;   (implies (and (bounded-translation-arrayp-aux nodenum2 translation-array bound2)
+;;                 (<= bound2 bound)
+;;                 (all-<= nodenums nodenum2)
+;;                 (all-natp nodenums)
+;;                 (natp nodenum2)
+;;                 ;(aref1 'translation-array translation-array nodenum)
+;;                 ;(not (consp (aref1 'translation-array translation-array nodenum)))
+;;                 (all-integerp (aref1-list 'translation-array translation-array nodenums))
+;;                 )
+;;            (all-< (aref1-list 'translation-array translation-array nodenums)
+;;                   bound))
+;;   :hints (("Goal" :in-theory (enable aref1-list))))

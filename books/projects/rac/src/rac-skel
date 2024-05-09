@@ -121,7 +121,9 @@ then
 
     $parseBin $basename -acl2 $basename.ast.lsp
 
-    $acl2Bin > $basename.acl2.log <<EOF
+    # Disable the loading of acl2-customization.lsp which could break the
+    # certification.
+    ACL2_CUSTOMIZATION="NONE" $acl2Bin > $basename.acl2.log <<EOF
       (include-book "$translateBook")
       (set-inhibit-output-lst '(prove event proof-tree))
       (translate-program "$basename.ast.lsp" "$basename.lisp" state)
@@ -130,5 +132,12 @@ then
       (include-book "rtl/rel11/lib/rac" :dir :system)
       (certify-book "$basename" 1)
 EOF
+
+cat $basename.acl2.log | grep 'ACL2 Error' &> /dev/null
+if [[ $? == "0" ]]
+then
+  echo "Certification failed ! Please check $basename.acl2.log for more details."
+  exit 1
+fi
 
 fi

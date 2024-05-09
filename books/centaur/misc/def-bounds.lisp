@@ -155,8 +155,8 @@
 
 (define defbounds-print-case-bounds-default (case term err lower-bound upper-bound state)
   :guard (or err
-             (and (rationalp lower-bound)
-                  (rationalp upper-bound)))
+             (and (maybe-rationalp lower-bound)
+                  (maybe-rationalp upper-bound)))
   (progn$
    (and case
         (cw-print-base-radix! 16 "Case: ~x0~%" case))
@@ -164,31 +164,41 @@
         (cw-print-base-radix! 16 "Term: ~x0~%" term))
    (if err
        (cw "Error: ~@0~%" err)
-     (b* ((upper-bound-adj (* upper-bound (fix (or (and (boundp-global 'boundrw-trace-multiply state)
-                                                        (rfix (f-get-global 'boundrw-trace-multiply state)))
-                                                  1))))
-         (lower-bound-adj (* lower-bound (fix (or (and (boundp-global 'boundrw-trace-multiply state)
-                                                       (rfix (f-get-global 'boundrw-trace-multiply state)))
-                                                  1))))
-         (upper-str (hexify-rational upper-bound-adj))
-         (lower-str (hexify-rational lower-bound-adj)))
-       (cw "Lower bound: ~t0~s1~%" (- 90 (length lower-str)) lower-str)
-       (cw "Upper bound: ~t0~s1~%" (- 90 (length upper-str)) upper-str))))
+     (b* ((upper-bound-adj (and upper-bound
+                                (* upper-bound (fix (or (and (boundp-global 'boundrw-trace-multiply state)
+                                                             (rfix (f-get-global 'boundrw-trace-multiply state)))
+                                                        1)))))
+          (lower-bound-adj (and lower-bound
+                                (* lower-bound (fix (or (and (boundp-global 'boundrw-trace-multiply state)
+                                                             (rfix (f-get-global 'boundrw-trace-multiply state)))
+                                                        1)))))
+         (upper-str (and upper-bound (hexify-rational upper-bound-adj)))
+         (lower-str (and lower-bound (hexify-rational lower-bound-adj)))
+         (margin (min (nfix (and (boundp-global 'fmt-hard-right-margin state)
+                                 (f-get-global 'fmt-hard-right-margin state)))
+                      120)))
+       (and lower-bound
+            (cw "Lower bound: ~t0~s1~%"
+                (nfix (- margin (length lower-str)))
+                lower-str))
+       (and upper-bound
+            (cw "Upper bound: ~t0~s1~%"
+                (nfix (- margin (length upper-str)))
+                upper-str)))))
   ///
-  (defattach (defbounds-print-case-bounds defbounds-print-case-bounds-default)))      
-       
+  (defattach (defbounds-print-case-bounds defbounds-print-case-bounds-default)))
 
-(define simplify-and-bound-case (term simp-hints case-conjunct hyp skip-lower skip-upper state)
+(define simplify-and-bound-case (term simp-hints user-bounds case-conjunct hyp skip-lower skip-upper state)
   :mode :program
   (b* (((er trans-conjunct) (bounds-translate-casesplit case-conjunct state))
-       
+
        (full-hyp `(and ,@trans-conjunct ,hyp))
        ((mv err simp-term state) (easy-simplify-sequence term simp-hints :hyp full-hyp))
        ((when err)
         (defbounds-print-case-bounds case-conjunct nil "couldn't simplify term" nil nil state)
         (value nil))
        ((mv err bound-terms state)
-        (acl2::rewrite-bounds-find-bounds-fn simp-term full-hyp nil nil nil t nil nil state))
+        (acl2::rewrite-bounds-find-bounds-fn simp-term full-hyp nil user-bounds nil t nil nil state))
        ((when err)
         (defbounds-print-case-bounds case-conjunct simp-term
           (if (msgp err)
@@ -209,9 +219,9 @@
           (msg "Upper bound wasn't a constant: ~x0~%" upper-bound-term)
           nil nil state)
         (value nil))
-       (upper-bound (unquote upper-bound-term))
-       (lower-bound (unquote lower-bound-term)))
-    (defbounds-print-case-bounds case-conjunct simp-term nil upper-bound lower-bound state)
+       (upper-bound (and (not skip-upper) (unquote upper-bound-term)))
+       (lower-bound (and (not skip-lower) (unquote lower-bound-term))))
+    (defbounds-print-case-bounds case-conjunct simp-term nil lower-bound upper-bound state)
     (value (cons lower-bound upper-bound))))
 
 
@@ -222,10 +232,11 @@
        ((when (atom bounds2)) bounds1)
        ((cons lower1 upper1) bounds1)
        ((cons lower2 upper2) bounds2))
-    (cons (min lower1 lower2) (max upper1 upper2))))
+    (cons (and lower1 lower2 (min lower1 lower2))
+          (and upper1 upper2 (max upper1 upper2)))))
 
 (defines simplify-and-bound-cases
-  (define simplify-and-bound-casesplit (cases1 full-cases1 rest-cases case-conjunct hyp term simp-hints skip-lower skip-upper state)
+  (define simplify-and-bound-casesplit (cases1 full-cases1 rest-cases case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state)
     ;; :measure (acl2::two-nats-measure (len rest-cases) (len cases1))
     ;; Cases1 is a tail of full-cases1.  Full-cases1 is a list of
     ;; possibilities to consider, along with the possibility that all are
@@ -233,21 +244,21 @@
     :mode :program
     (if (atom cases1)
         (b* ((case-conjunct (append (acl2::dumb-negate-lit-lst full-cases1) case-conjunct)))
-          (simplify-and-bound-cases rest-cases case-conjunct hyp term simp-hints skip-lower skip-upper state))
+          (simplify-and-bound-cases rest-cases case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state))
       (b* (((er bounds-rest)
-            (simplify-and-bound-casesplit (cdr cases1) full-cases1 rest-cases case-conjunct hyp term simp-hints skip-lower skip-upper state))
+            (simplify-and-bound-casesplit (cdr cases1) full-cases1 rest-cases case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state))
            (case-conjunct (cons (car cases1) case-conjunct))
            ((er bounds-first)
-            (simplify-and-bound-cases rest-cases case-conjunct hyp term simp-hints skip-lower skip-upper state)))
+            (simplify-and-bound-cases rest-cases case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state)))
         (value (combine-bounds bounds-first bounds-rest)))))
 
-  (define simplify-and-bound-cases (cases case-conjunct hyp term simp-hints skip-lower skip-upper state)
+  (define simplify-and-bound-cases (cases case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state)
     :mode :program
     (if (atom cases)
-        (simplify-and-bound-case term simp-hints case-conjunct hyp skip-lower skip-upper state)
+        (simplify-and-bound-case term simp-hints user-bounds case-conjunct hyp skip-lower skip-upper state)
       (b* ((case1 (bounds-cases-expand-range (car cases))))
         (simplify-and-bound-casesplit
-         case1 case1 (cdr cases) case-conjunct hyp term simp-hints skip-lower skip-upper state)))))
+         case1 case1 (cdr cases) case-conjunct hyp term simp-hints user-bounds skip-lower skip-upper state)))))
 
 (define bounds-casesplit-hints (cases)
   (if (atom cases)
@@ -299,6 +310,7 @@
                        cases
                        simp-hints
                        post-cases-hints
+                       user-bounds
                        integerp
                        skip-lower
                        skip-upper
@@ -309,7 +321,7 @@
   (b* (;; ((er trans-cases) (bounds-translate-cases cases state))
        ((er simp-term) (easy-simplify-sequence term simp-hints :hyp hyp))
        ((er (cons lower-bound upper-bound))
-        (simplify-and-bound-cases cases nil hyp simp-term post-cases-hints skip-lower skip-upper state))
+        (simplify-and-bound-cases cases nil hyp simp-term post-cases-hints user-bounds skip-lower skip-upper state))
        (- (cw-print-base-radix! 16 "Bounds: ~x0 ~x1~%" lower-bound upper-bound))
        (basename (if (str::strsuffixp "-BOUNDS" (symbol-name name))
                      (subseq (symbol-name name) 0 (- (length (symbol-name name)) (length "-BOUNDS")))
@@ -339,7 +351,7 @@
                         ,@(and (consp post-cases-hints)
                                `(',(car post-cases-hints)
                                  . ,(hint-seq-stable-under-simplification (cdr post-cases-hints))))
-                        (acl2::rewrite-bounds nil :clause-auto-bounds t ,@theory-override))))
+                        (acl2::rewrite-bounds ,user-bounds :clause-auto-bounds t ,@theory-override))))
        (thmname (intern-in-package-of-symbol
                  (concatenate 'string basename "-BOUNDS")
                  name))
@@ -349,8 +361,8 @@
        (thm-body (if (equal hyp t) thm-concl `(implies ,hyp ,thm-concl))))
     (value
      `(encapsulate nil
-        (defconst ,lower-bound-name ,(if integerp (ceiling lower-bound 1) lower-bound))
-        (defconst ,upper-bound-name ,(if integerp (floor upper-bound 1) upper-bound))
+        ,@(and (not skip-lower) `((defconst ,lower-bound-name ,(if integerp (ceiling lower-bound 1) lower-bound))))
+        ,@(and (not skip-upper) `((defconst ,upper-bound-name ,(if integerp (floor upper-bound 1) upper-bound))))
         (local
          (defthm ,lemmaname
            ,lemma-body
@@ -367,19 +379,22 @@
                            (cases)
                            (simp-hints)
                            (post-cases-hints)
+                           (user-bounds)
                            (hyp 't)
                            (integerp 't)
                            (skip-lower 'nil)
                            (skip-upper 'nil)
                            (in-theory-override 'nil)
                            (rule-classes ':linear))
-  `(make-event (def-bounds-fn ',name ',term ',hyp ',cases ',simp-hints ',post-cases-hints ',integerp ',skip-lower ',skip-upper ',in-theory-override ',rule-classes state)))
+  `(make-event (def-bounds-fn ',name ',term ',hyp ',cases ',simp-hints ',post-cases-hints ',user-bounds ',integerp ',skip-lower ',skip-upper ',in-theory-override ',rule-classes state)))
 
-
+(defstub check-bounds-override () nil)
+(defattach check-bounds-override constant-nil-function-arity-0)
 
 (defmacro check-lower-bound (name bound)
   `(with-output :off :all :on (error comment)
-     (progn (assert-event (>= ,name ,bound)
+     (progn (assert-event (or (check-bounds-override)
+                              (>= ,name ,bound))
                           :msg (msg "~x0 bounds check failed: ~s1 < ~s2~%" ',name
                                     (str::hexify ,name)
                                     (str::hexify ,bound)))
@@ -387,7 +402,8 @@
 
 (defmacro check-upper-bound (name bound)
   `(with-output :off :all :on (error comment)
-     (progn (assert-event (<= ,name ,bound)
+     (progn (assert-event (or (check-bounds-override)
+                              (<= ,name ,bound))
                           :msg (msg "~x0 bounds check failed: ~s1 > ~s2~%" ',name
                                     (str::hexify ,name)
                                     (str::hexify ,bound)))
@@ -408,11 +424,15 @@
     ;; Assumption (default t)
     :hyp (foo-input-p x)
 
-    
     ;; Simplification steps, each a hint keyword-value list
     :simp-hints
      ((:in-theory (enable foo-cancel))
       (:expand ((bar y))))
+
+    ;; User-provided bound suggestions
+    :user-bounds
+    ((< a 10) ;; upper-bound exact term A by 10
+     (:free (c) (>= (bar c) (foo c))) ;; lower-bound (bar x) for any x by (foo x) if it reduces to a constant
 
     ;; Case splits, each either a list of cases or a
     ;; :ranges or :ranges-from-to-by form.
@@ -444,3 +464,216 @@
 rewrite-bounds) to find an upper and lower bound for the resulting expression.
 Then it replicates these steps in a @('defthm') to prove the bounds, creating a
 linear rule by default (but the rule-classes may be overridden).</p>")
+
+; Matt K. mod 2/2/2024 to avoid ACL2(p) error:
+(set-waterfall-parallelism nil)
+
+;; Move to a tests book
+(local
+ (encapsulate nil
+   (local
+    (progn
+      (def-bounds case-split-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4)))
+
+      (def-bounds case-split-2-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges x 3)))
+
+
+      (def-bounds case-split-4-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges-from-to-by x 2 4 1/2)
+                ;; (:ranges x 5/2 3 7/2)
+                ;; (:ranges x 5/2 3 7/2)
+                )
+        :integerp nil)
+
+      (def-bounds case-split-64-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges-from-to-by x 2 4 1/32)
+                ;; (:ranges x 5/2 3 7/2)
+                ;; (:ranges x 5/2 3 7/2)
+                )
+        :integerp nil)
+
+      (def-bounds case-split-128-bounds
+        (- (* x x) (* 3 x))
+        :hyp (and (rationalp x)
+                  (<= 2 x)
+                  (<= x 4))
+        :cases ((:ranges-from-to-by x 2 4 1/64)
+                ;; (:ranges x 5/2 3 7/2)
+                ;; (:ranges x 5/2 3 7/2)
+                )
+        :integerp nil)))))
+
+
+;; test the user-bounds feature
+
+(local
+ (encapsulate nil
+   (local
+    (progn
+      (defund foo (x)
+        (+ (* (rfix x) (rfix x)) 3))
+
+      (defthm foo-minimum
+        (<= 3 (foo x))
+        :hints(("Goal" :in-theory (enable foo)))) ;; not a linear rule
+
+      (encapsulate nil
+        (local
+         (progn
+           (def-bounds foo-square-bad-bounds
+             (* (foo x) (foo x)) :skip-upper t)
+
+           (assert-event (equal *foo-square-bad-lower-bound* 0)))))
+
+      (encapsulate nil
+        (local
+         (progn
+           (def-bounds foo-square-good-bounds
+             (* (foo x) (foo x)) :skip-upper t
+             :user-bounds ((>= (foo x) 3)))
+
+           (assert-event (equal *foo-square-good-lower-bound* 9)))))
+
+      (encapsulate nil
+        (local
+         (progn
+           (def-bounds foo-square-good2-bounds
+             (* (foo x) (foo x)) :skip-upper t
+             :user-bounds ((:free (a) (>= (foo a) 3))))
+
+           (assert-event (equal *foo-square-good2-lower-bound* 9)))))))))
+
+
+(local
+ (encapsulate nil
+   (local
+    (progn
+
+(defund foo (x)
+  (- (* x x) (* 3 x)))
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))))
+
+(assert-event (and (equal *foo-lower-bound* -8)
+                   (equal *foo-upper-bound* 10)))
+)))
+
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-case-split-2-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo)))
+  :cases ((:ranges x 3)))
+
+(assert-event (and (equal *foo-case-split-2-lower-bound* -5)
+                   (equal *foo-case-split-2-upper-bound* 7)))
+)))
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-case-split-128-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo)))
+  :cases ((:ranges-from-to-by x 2 4 1/64))
+  :integerp nil)
+
+(assert-event (and (equal *foo-case-split-128-lower-bound* -131/64)
+                   (equal *foo-case-split-128-upper-bound* 259/64)))
+)))
+
+(encapsulate nil
+  (local
+   (progn
+
+(defthmd my-factor
+  (equal (+ (- (* 3 x)) (* x x))
+         (* x (- x 3))))
+
+(local (in-theory (disable distributivity)))
+
+(encapsulate nil
+  (local
+   (progn
+
+(def-bounds foo-better-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))
+               (:in-theory (enable my-factor))))
+
+(assert-event (and (equal *foo-better-lower-bound* -4)
+                   (equal *foo-better-upper-bound* 4)))
+)))
+
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-better-case-split-2-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))
+               (:in-theory (enable my-factor)))
+  :cases ((:ranges x 3)))
+
+(assert-event (and (equal *foo-better-case-split-2-lower-bound* -3)
+                   (equal *foo-better-case-split-2-upper-bound* 4)))
+)))
+
+
+(encapsulate nil
+  (local
+   (progn
+(def-bounds foo-better-case-split-128-bounds
+  (foo x)
+  :hyp (and (rationalp x)
+            (<= 2 x)
+            (<= x 4))
+  :simp-hints ((:in-theory (enable foo))
+               (:in-theory (enable my-factor)))
+  :cases ((:ranges-from-to-by x 2 4 1/64))
+  :integerp nil)
+
+(assert-event (and (equal *foo-better-case-split-128-lower-bound* -129/64)
+                   (equal *foo-better-case-split-128-upper-bound* 4)))
+)))
+)))
+))))

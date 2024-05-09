@@ -34,12 +34,18 @@
 (include-book "../svex/lists") ;fsm-base")
 (include-book "../svex/alist-equiv")
 
+(local (std::add-default-post-define-hook :fix))
+
 (defprod svtv-probe
   ((signal svar-p)
    (time natp)))
 
 (fty::defalist svtv-probealist :key-type svar :val-type svtv-probe :true-listp t)
 
+(defthm svarlist-p-of-alist-keys-when-svtv-probealist-p
+  (implies (svtv-probealist-p x)
+           (svarlist-p (alist-keys x)))
+  :hints(("Goal" :in-theory (enable svtv-probealist-p alist-keys))))
 
 (local (defthm svex-env-p-nth-of-svex-envlist
          (implies (svex-envlist-p x)
@@ -72,6 +78,11 @@
            (and (hons-assoc-equal (svar-fix name) (svtv-probealist-fix probes)) t))
     :hints(("Goal" :in-theory (enable svex-env-boundp svtv-probealist-fix))))
 
+
+  (defret alist-keys-of-<fn>
+    (equal (alist-keys result)
+           (svarlist-fix (alist-keys probes)))
+    :hints(("Goal" :in-theory (enable alist-keys))))
 
   (defcong svex-envlists-similar equal (svtv-probealist-extract probes vals) 2)
   (local (in-theory (enable svtv-probealist-fix))))
@@ -162,6 +173,12 @@
     :hints (("goal" :in-theory (disable svtv-probealist-extract-alist))
             (witness) (witness)))
 
+
+  (local (defthm nth-greater-than-len
+           (implies (<= (len x) (nfix n))
+                    (not (nth n x)))
+           :hints(("Goal" :in-theory (enable nth)))))
+  
   (local (in-theory (enable svtv-probealist-fix))))
 
 

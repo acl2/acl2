@@ -125,7 +125,7 @@
   (and (inst-memp l)
        (<= (len l) (ibuf-capacity))))
 
-(program)
+;(program)
 (defun nth-inst-buff-enum (n)
   (let ((imem (nth-inst-mem n)))
     (if (<= (len imem) (ibuf-capacity))
@@ -134,7 +134,7 @@
             (i2 (cadr imem))
             (i3 (caddr imem)))
         (list i1 i2 i3)))))
-(logic)
+;(logic)
 (verify-guards inst-buffp)
 (register-custom-type inst-buff t nth-inst-buff-enum inst-buffp)
  
@@ -218,13 +218,15 @@
             (nxt-ibuf nil))
         (istate imem nxt-pc nxt-stk nxt-ibuf)))))
 
+#|
 (defthm mset-ibuf-nil
   (equal (mset :ibuf
                nil (mset :imem (mget :imem s) nil))
          (mset :imem (mget :imem s) nil))
-  :hints (("goal" :use (:instance acl2::mset-diff-mset (b :ibuf) (a :imem) (x (mget :imem s)) (y nil)
+  :hints (("goal" :use (:instance acl2::mset-diff-mset1 (b :ibuf) (a :imem) (x (mget :imem s)) (y nil)
                                   (r nil))
-           :in-theory (disable acl2::mset-diff-mset))))
+           :in-theory (disable acl2::mset-diff-mset1))))
+|#
 
 (defun commited-state (s)
   (let* ((stk (istate-stk s))
@@ -262,11 +264,14 @@
            (good-statep (commited-state s)))
   :hints (("goal" :in-theory (e/d (istate istatep)(impl-step)))))
 
+(in-theory (disable acl2-count
+                    nth))
+
 (defthm good-state-inductive
   (implies (good-statep s)
            (good-statep (impl-step s)))
-  :hints (("goal" :in-theory (e/d (istatep)(instp)))))
-          
+  :hints (("goal" :in-theory (e/d (istatep istate)
+                                  (instp)))))
 
 (defun ref-map (s)
   "refinement map returns the observable state of istate. This version
@@ -308,6 +313,24 @@ instruction."
 ; takes 3 hours (in 2015), we comment it and let the
 ; interested user submit it themselves.
 
+; This should help speed things up.
+(in-theory (disable
+            good-statep-implies-istatep
+            istatep-stk-selector
+            stackp
+            istatep-imem-selector
+            (:type-prescription nat-listp)
+            defdata::nat-listp--nth--integerp
+            default-car
+            default-cdr
+            acl2::non-empty-record-consp
+            (:type-prescription sstatep-unique-tag)
+            acl2::mset-diff-mset2
+            acl2::field-not-empty-implies-record-not-empty1
+            acl2::non-empty-record-consp-car
+            ))
+
+
 (defthm bstk-skip-refines-stk
   (implies (and (good-statep s)
                 (equal w (ref-map s)) ; s and r.s are related
@@ -320,6 +343,8 @@ instruction."
                                                ; decreases
                           (< (rank u) (rank s)))))
            (spec-step-skip-rel w (ref-map u)))
-  :hints (("goal" :in-theory (e/d (stk-step-inst) (instp )))))
+  :hints (("goal" :in-theory (e/d (stk-step-inst
+                                   istate sstate)
+                                  (instp )))))
 
 |#

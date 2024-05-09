@@ -1,7 +1,7 @@
 ; A function to test whether a list is a prefix of another
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -248,4 +248,16 @@
   (implies (prefixp x y)
            (equal (take (len x) y)
                   (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable prefixp))))
+
+;; Disabled to avoid introducing prefixp when not relevant.
+(defthmd <=-of-len-and-len-when-prefixp
+  (implies (prefixp y x)
+           (<= (len y) (len x)))
+  :hints (("Goal" :in-theory (enable prefixp))))
+
+(defthm prefixp-forward-to-<=-of-len-and-len
+  (implies (prefixp y x)
+           (<= (len y) (len x)))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable prefixp))))

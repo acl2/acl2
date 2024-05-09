@@ -77,14 +77,37 @@
 ; assume that indent-many characters have already been printed, so the first
 ; line is not indented.
 
-(defun add-word-to-paragraph (x n xl col acc)
+(defconst *escape-char*
+  (code-char 27))
+
+(defconst *sgr-prefix*
+  (coerce (list *escape-char* #\[) 'string))
+
+(defun extend-col-for-sgr (x n col)
+  (let* ((n+1 (+ n 1))
+         (p (search "m" x :start2 n+1)))
+    (cond ((and p
+                (eql (char x n+1)
+                     #\[))
+           (+ col (1+ (- p n))))
+          (t (er acl2::hard 'word-wrap-paragraph-aux
+                 "Found unexpected escape character at position ~x0 in ~
+                  string:~|~x1"
+                 n
+                 x)))))
+
+(defun add-word-to-paragraph (x n xl col next-wrap-col acc)
   "Returns (MV N COL ACC)"
   (b* (((when (>= n xl))
-        (mv n col acc))
+        (mv n col next-wrap-col acc))
        (char-n (char x n))
        ((when (eql char-n #\Space))
-        (mv n col acc)))
-    (add-word-to-paragraph x (+ n 1) xl (+ 1 col) (cons char-n acc))))
+        (mv n col next-wrap-col acc)))
+    (add-word-to-paragraph x (+ n 1) xl (+ 1 col)
+                           (if (eql char-n *escape-char*)
+                               (extend-col-for-sgr x n next-wrap-col)
+                             next-wrap-col)
+                           (cons char-n acc))))
 
 (defun remove-spaces-from-front (x)
   (if (atom x)
@@ -93,28 +116,31 @@
         (remove-spaces-from-front (cdr x))
       x)))
 
-(defun word-wrap-paragraph-aux (x n xl col wrap-col indent acc)
+(defun word-wrap-paragraph-aux (x n xl col next-wrap-col wrap-col indent acc)
   (b* (((when (>= n xl))
         acc)
        (char-n (char x n))
        ((when (eql char-n #\Space))
         (word-wrap-paragraph-aux x (+ n 1) xl (+ col 1)
-                                 wrap-col indent (cons char-n acc)))
-       ((mv spec-n spec-col spec-acc)
-        (add-word-to-paragraph x n xl col acc))
-       ((when (or (< spec-col wrap-col)
+                                 next-wrap-col wrap-col indent
+                                 (cons char-n acc)))
+       ((mv spec-n spec-col next-wrap-col spec-acc)
+        (add-word-to-paragraph x n xl col next-wrap-col acc))
+       ((when (or (< spec-col next-wrap-col)
                   (= col indent)))
         ;; Either (1) it fits, or (2) we can't get any more space by moving to
         ;; the next line anyway, so accept this speculative addition.
-        (word-wrap-paragraph-aux x spec-n xl spec-col wrap-col indent spec-acc))
+        (word-wrap-paragraph-aux x spec-n xl spec-col next-wrap-col
+                                 wrap-col indent spec-acc))
        ;; Else, try again, starting on the next line.
        (acc (remove-spaces-from-front acc)) ;; deletes trailing spaces on this line
        (acc (cons #\Newline acc))
        (acc (append (make-list indent :initial-element #\Space) acc)))
-    (word-wrap-paragraph-aux x n xl indent wrap-col indent acc)))
+    (word-wrap-paragraph-aux x n xl indent wrap-col wrap-col indent acc)))
 
 (defun word-wrap-paragraph (x indent wrap-col)
-  (let* ((acc (word-wrap-paragraph-aux x 0 (length x) 0 wrap-col indent nil))
+  (let* ((acc (word-wrap-paragraph-aux x 0 (length x) 0 wrap-col wrap-col
+                                       indent nil))
          (acc (remove-spaces-from-front acc))
          (acc (reverse acc))
          (acc (remove-spaces-from-front acc)))

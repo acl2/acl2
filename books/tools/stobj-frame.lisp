@@ -370,3 +370,4 @@ generally they'll need induction to do the proofs (future work).</p>")
 
    (def-stobj-frame baz-to-bar-return-biz foo
      :ruleset foo-frame-thms)))
+

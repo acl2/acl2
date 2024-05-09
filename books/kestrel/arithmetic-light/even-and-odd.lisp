@@ -1,7 +1,7 @@
 ; Theorems about evenness and oddness
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -53,10 +53,17 @@
          (evenp x))
   :hints (("Goal" :in-theory (enable evenp))))
 
+;rename, strengthen
 (defthmd evenp-of-one-more
   (implies (and (oddp x)
                 (integerp x))
            (evenp (+ 1 x)))
+  :hints (("Goal" :in-theory (enable evenp oddp))))
+
+(defthm evenp-of-+-of--1
+  (implies (integerp x)
+           (equal (evenp (+ -1 x))
+                  (not (evenp x))))
   :hints (("Goal" :in-theory (enable evenp oddp))))
 
 ;wow, this isn't in the rtl even-odd book!

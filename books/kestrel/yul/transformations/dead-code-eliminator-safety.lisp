@@ -33,8 +33,8 @@
                      (check-safe-statement (statement-dead stmt)
                                            varset
                                            funtab)))
-                 (implies (not (resulterrp varsmodes))
-                          (and (not (resulterrp varsmodes-dead))
+                 (implies (not (reserrp varsmodes))
+                          (and (not (reserrp varsmodes-dead))
                                (equal
                                 (vars+modes->vars varsmodes-dead)
                                 (vars+modes->vars varsmodes))
@@ -52,8 +52,8 @@
                      (check-safe-statement-list (statement-list-dead stmts)
                                                 varset
                                                 funtab)))
-                 (implies (not (resulterrp varsmodes))
-                          (and (not (resulterrp varsmodes-dead))
+                 (implies (not (reserrp varsmodes))
+                          (and (not (reserrp varsmodes-dead))
                                (set::subset
                                 (vars+modes->modes varsmodes-dead)
                                 (vars+modes->modes varsmodes))))))
@@ -66,8 +66,8 @@
                     (modes-dead (check-safe-block (block-dead block)
                                                   varset
                                                   funtab)))
-                 (implies (not (resulterrp modes))
-                          (and (not (resulterrp modes-dead))
+                 (implies (not (reserrp modes))
+                          (and (not (reserrp modes-dead))
                                (set::subset modes-dead modes)))))
       :flag check-safe-block)
 
@@ -79,8 +79,8 @@
                      (check-safe-block-option (block-option-dead block?)
                                               varset
                                               funtab)))
-                 (implies (not (resulterrp modes))
-                          (and (not (resulterrp modes-dead))
+                 (implies (not (reserrp modes))
+                          (and (not (reserrp modes-dead))
                                (set::subset modes-dead modes)))))
       :flag check-safe-block-option)
 
@@ -91,8 +91,8 @@
                     (modes-dead (check-safe-swcase (swcase-dead case)
                                                    varset
                                                    funtab)))
-                 (implies (not (resulterrp modes))
-                          (and (not (resulterrp modes-dead))
+                 (implies (not (reserrp modes))
+                          (and (not (reserrp modes-dead))
                                (set::subset modes-dead modes)))))
       :flag check-safe-swcase)
 
@@ -103,16 +103,16 @@
                     (modes-dead (check-safe-swcase-list (swcase-list-dead cases)
                                                         varset
                                                         funtab)))
-                 (implies (not (resulterrp modes))
-                          (and (not (resulterrp modes-dead))
+                 (implies (not (reserrp modes))
+                          (and (not (reserrp modes-dead))
                                (set::subset modes-dead modes)))))
       :flag check-safe-swcase-list)
 
     (defthm check-safe-fundef-of-fundef-dead
       (implies (and (fundef-nofunp fundef)
                     (fundef-noloopinitp fundef)
-                    (not (resulterrp (check-safe-fundef fundef funtab))))
-               (not (resulterrp
+                    (not (reserrp (check-safe-fundef fundef funtab))))
+               (not (reserrp
                      (check-safe-fundef (fundef-dead fundef) funtab))))
       :flag check-safe-fundef)
 
@@ -147,8 +147,8 @@
                      swcase-list-noloopinitp
                      fundef-noloopinitp
                      set::subset-in-2
-                     not-resulterrp-when-mode-setp
-                     mode-setp-when-mode-set-resultp-and-not-resulterrp
+                     not-reserrp-when-mode-setp
+                     mode-setp-when-mode-set-resultp-and-not-reserrp
                      set::subset-of-union-and-union
                      set::union-subset-x
                      set::subset-transitive)

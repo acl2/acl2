@@ -1,7 +1,7 @@
 ; Signed bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,11 @@
 
 (include-book "bvchop")
 (include-book "logext") ;todo: include less?
-(include-book "kestrel/booleans/boolor" :dir :system) ;todo
+(include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "unsigned-byte-p"))
+(local (include-book "signed-byte-p"))
 
 ;;signed less-than
 (defund sbvlt (n x y)
@@ -167,28 +169,6 @@
            (not (sbvlt size x k)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant
-  (implies (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-           (equal (boolor (sbvlt size x k1)
-                          (sbvlt size x k2))
-                  (if (sbvle size k1 k2) ;gets computed
-                      (sbvlt size x k2)
-                    (sbvlt size x k1))))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
-(defthm boolor-of-sbvlt-of-constant-and-sbvlt-of-constant-2
-  (implies (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-           (equal (boolor (sbvlt size k1 x)
-                          (sbvlt size k2 x))
-                  (if (sbvle size k2 k1) ;gets computed
-                      (sbvlt size k2 x)
-                    (sbvlt size k1 x))))
-  :hints (("Goal" :in-theory (enable sbvlt))))
-
 (defthm sbvlt-when-not-integerp-arg2
   (implies (not (integerp x))
            (equal (sbvlt size x y)
@@ -230,7 +210,7 @@
                 (natp y))
            (equal (sbvlt n x y)
                   (< x y)))
-  :hints (("Goal" :in-theory (enable sbvlt bvchop-identity))))
+  :hints (("Goal" :in-theory (enable sbvlt logext-identity signed-byte-p))))
 
 ;gen
 (defthm not-sbvlt-of-maxint-32
@@ -356,10 +336,12 @@
   :hints (("Goal" ;:cases ((posp size))
            :in-theory (enable sbvlt))))
 
+;rename
 (defthm size-of--1-and-0
   (sbvlt size -1 0)
   :hints (("Goal" :in-theory (enable sbvlt))))
 
+;rename
 (defthm sbvlt-trim-constant-right
   (implies (and (syntaxp (and (quotep k) (quotep size)))
                 (not (unsigned-byte-p size k))
@@ -369,6 +351,7 @@
   :hints (("Goal" :in-theory (e/d (sbvlt) nil)
            :cases ((natp size)))))
 
+;rename
 (defthm sbvlt-trim-constant-left
   (implies (and (syntaxp (and (quotep k) (quotep size)))
                 (not (unsigned-byte-p size k))
@@ -434,3 +417,49 @@
   :hints (("Goal" :cases ((posp size))
            :in-theory (enable sbvlt
                               EQUAL-OF-LOGEXT-AND-LOGEXT))))
+
+(defthm sbvlt-of-minus-one
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (equal k (+ -1 (expt 2 size))) ;minus one
+                (unsigned-byte-p free x)
+                (< free size)
+                (natp size))
+           (sbvlt size k x))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;; When do we want this?
+(defthmd sbvlt-of-0-arg3
+  (implies (posp size)
+           (equal (sbvlt size x 0)
+                  (equal 1 (getbit (+ -1 size) x))))
+  :hints (("Goal" :in-theory (enable sbvlt logext-cases))))
+
+;; In case we don't want to rewrite the sbvlt.
+(defthm getbit-when-not-sbvlt-of-0-cheap
+  (implies (not (sbvlt 32 x 0))
+           (equal (getbit 31 x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;; In case we don't want to rewrite the sbvlt.
+(defthm getbit-when-sbvlt-of-0-cheap
+  (implies (sbvlt 32 x 0)
+           (equal (getbit 31 x)
+                  1))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;todo: gen the 0
+(defthm sbvlt-unique-weaken
+  (implies (and (syntaxp (want-to-weaken (sbvlt 32 i 0)))
+                (not (sbvlt 32 0 i)))
+           (equal (sbvlt 32 i 0)
+                  (not (equal 0 (bvchop 32 i)))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;gen
+(defthm sbvlt-of-maxint-when-sbvlt
+  (implies (sbvlt 32 n free)
+           (sbvlt 32 n 2147483647)))

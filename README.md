@@ -42,7 +42,7 @@ browsing the manual.
 
 [base-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/manual/index.html
 [full-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
-[dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html
+[dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html
 
 ### Obtaining the Source Code
 
@@ -57,16 +57,15 @@ which includes the [ACL2 system][ACL2] and the [community
 books][community books], from [the releases page][releases] on GitHub.
 
 Alternatively you can obtain a copy of the latest release using
-[`git`][git].  Do the following, after changing `/path/to/somewhere/` to
-some suitable path where the directory `/path/to/somewhere/acl2/` does
-not already exist.
+[`git`][git].  For example, do the following in a fresh directory
+(note the "." at the end).
 
 ```
-git clone -b 8.3 git://github.com/acl2-devel/acl2-devel.git /path/to/somewhere/acl2/
+git clone -b 8.5 https://github.com/acl2-devel/acl2-devel .
 ```
 
 The new directory `/path/to/somewhere/acl2/` will now contain a copy of
-ACL2 Version 8.3.  Please see the [ACL2 home page][ACL2], specifically
+ACL2 Version 8.5.  Please see the [ACL2 home page][ACL2], specifically
 its [installation instructions][installation], for how to build an
 executable and certify books in your new directory.
 
@@ -74,15 +73,16 @@ executable and certify books in your new directory.
 [installation]:    http://www.cs.utexas.edu/users/moore/acl2/current/HTML/installation/installation.html
 [releases]:        https://github.com/acl2-devel/acl2-devel/releases/
 [git]:             http://git-scm.com
-[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____COMMUNITY-BOOKS
+[community books]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____COMMUNITY-BOOKS
 
 #### Experimental Development Version
 
 To check out the latest development version of the repository using
-`git`, do the following:
+`git`, you can (for example) do the following in a fresh directory
+(note the "." at the end):
 
 ```
-git clone git://github.com/acl2/acl2.git
+git clone https://github.com/acl2/acl2 .
 ```
 
 ### Contributing
@@ -97,7 +97,7 @@ system.  (If you have suggestions for system changes, they should be
 emailed to [Matt or J](mailto:kaufmann@cs.utexas.edu), as has been done
 in the past.)
 
-[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____GIT-QUICK-START
+[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____GIT-QUICK-START
 
 ### Staying Informed
 
@@ -116,7 +116,7 @@ If you would like to contribute to this repository, see the
 documentation topic [git-quick-start].  Please note the [guidelines for
 book development][books guidelines].
 
-[git-quick-start]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____GIT-QUICK-START
+[git-quick-start]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/?topic=ACL2____GIT-QUICK-START
 [wiki]:             https://github.com/acl2/acl2/wiki
 [bugtracker]:       https://github.com/acl2/acl2/issues
 [books guidelines]: https://github.com/acl2/acl2/wiki/Committing-code:-guidelines

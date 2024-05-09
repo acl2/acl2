@@ -1,6 +1,6 @@
 ; Idioms for expressing BV ops in terms of more common ones
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2024 Kestrel Institute
 ; Copyright (C) 2017-2018 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,7 @@
 (include-book "rules") ;for BVAND-OF-EXPT, todo reduce
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
 ;;
 ;; library material
@@ -35,26 +36,6 @@
                        n)))
   :hints (("Goal" :in-theory (enable bvshr))))
 
-(defthmd bvand-with-mask-of-ones
-  (implies (and (natp size)
-                (natp n)
-                (<= n size)
-                )
-           (equal (bvand size (+ -1 (expt 2 n)) x)
-                  (bvchop n x)))
-  :hints (("Goal" :in-theory (e/d (bvand) (;logand-with-mask
-                                           )))))
-
-(defthmd bvand-with-mask-of-ones-alt
-  (implies (and (natp size)
-                (natp n)
-                (<= n size)
-                )
-           (equal (bvand size x (+ -1 (expt 2 n)))
-                  (bvchop n x)))
-  :hints (("Goal" :in-theory (e/d (bvand) (;logand-with-mask
-                                           )))))
-
 ;; Shows how to express bit slicing as masking followed by shifting.
 ;todo: use a better mask?
 (defthmd slice-becomes-shift-of-mask
@@ -70,7 +51,7 @@
                                  (+ -1 (expt 2 (+ 1 (- high low)))))
                               x)
                        low)))
-  :hints (("Goal" :in-theory (e/d (bvshr bvand-with-mask-of-ones-alt)
+  :hints (("Goal" :in-theory (e/d (bvshr)
                                   (;slice-of-bvand
                                    DISTRIBUTIVITY
                                    )))))
@@ -93,9 +74,9 @@
                 (<= n 32))
            (equal (bvchop n x)
                   (bvand 32 x (+ -1 (expt 2 n)))))
-  :hints (("Goal" :use (:instance bvand-with-mask-of-ones-alt
+  :hints (("Goal" :use (:instance bvand-with-mask-arg2-gen
                                   (size 32))
-           :in-theory (disable bvand-with-mask-of-ones-alt))))
+           :in-theory (disable bvand-with-mask-arg2-gen))))
 
 (defthmd bvshr-extend-to-32bits
   (implies (natp amt)
@@ -133,18 +114,6 @@
                   (bvshl 32 x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
 
-;move to library
-;also conside n > size (easy)
-(defthm unsigned-byte-p-of-bvshl-gen
-  (implies (and ;(< n size)
-                (<= amt size)
-                (natp amt)
-                (unsigned-byte-p (- n amt) x)
-                (natp n)
-                (natp size))
-           (unsigned-byte-p n (bvshl size x amt)))
-  :hints (("Goal" :in-theory (enable bvshl))))
-
 ;these undo the shifting/masking changes
 (in-theory (disable bvand-of-expt
                     bvand-128-hack
@@ -154,22 +123,10 @@
                     bvand-8-hack
                     bvand-4-hack
                     bvand-2-hack
-                    bvand-with-mask-better-eric
-                    bvand-with-mask-better
-                    bvand-with-mask
+                    bvand-with-constant-mask-arg2
+                    bvand-with-constant-mask-arg3
                     ;bvand-of-constant-tighten
                     ;bvshl-rewrite-for-constant-shift-amount
                     ;bvshl-rewrite-with-bvchop-for-constant-shift-amount
                     ;bvshl-rewrite-with-bvchop
-                    bvand-with-mask-better-eric-alt))
-
-(defthm bvand-with-mask-drop
-  (implies (and (syntaxp (quotep mask))
-                (logmaskp mask)
-                (<= (integer-length mask) size)
-                (natp size)
-                (unsigned-byte-p (integer-length mask) y)
-                )
-           (equal (bvand size mask y)
-                  y))
-  :hints (("Goal" :use (:instance bvand-with-mask-better-eric (size size) (i y)))))
+                    ))

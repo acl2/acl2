@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -55,10 +55,3 @@
   :short "Fixtype of errors and osets of modes."
   :ok mode-set
   :pred mode-set-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-mode-setp
-  (implies (mode-setp x)
-           (not (resulterrp x)))
-  :enable (mode-setp resulterrp))

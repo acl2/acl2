@@ -33,6 +33,7 @@
 (include-book "centaur/gl/portcullis" :dir :system)
 (set-deferred-ttag-notes t state)
 (set-inhibit-warnings! "ttags")
+; (depends-on "../xdoc/fancy/xdoc.js")
 ; cert-flags: ? t :ttags :all :skip-proofs-okp t
 
 

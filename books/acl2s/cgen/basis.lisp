@@ -589,8 +589,8 @@ General form: ~
     translate-and-test intersectp check-vars-not-free position
     collect-cdrs-when-car-eq restrict-alist substitute sublis
     ;; added remove1-assoc here, after the change in commit 374edd977999637845227330eb8e99985529b1fc:
-    remove1-assoc function-symbolp the 32-bit-integerp
-    32-bit-integer-listp with-live-state state-global-let*
+    remove1-assoc function-symbolp the
+    with-live-state state-global-let*
     integer-range-p signed-byte-p unsigned-byte-p boole$
     make-var-lst the-mv nth-aliases fix-true-list
     duplicates evens odds resize-list conjoin2

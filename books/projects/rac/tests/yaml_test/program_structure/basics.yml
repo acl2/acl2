@@ -1,0 +1,162 @@
+# Dummy test to show available keys.
+- name: no-checks
+  description: "An example"
+
+  # Optional values
+  args:                            # default value: ['acl2'], if provided the
+                                   # cpp wont be run.
+  input: empty.cpp                 # default value: NAME.cpp
+  has_failed:                      # default value: 0, non zero integer is true
+  exit_code:                       # default value: 0
+  ref_generated:                   # default value: NAME.ref.ast.lsp
+  ref_stderr:                      # default value: NAME.ref.stderr
+  ref_stdout:                      # default value: NAME.ref.stdout
+  stderr_not_empty:                # default value: false, Instead of checking
+                                   # the content of stderr, only check is
+                                   # somethings was written.
+  bug:                             # default value: false
+
+  # By default all checks are enabled.
+  disabled-checks:
+    - has_failed
+    - exit_code
+    - stdout
+    - stderr
+    - generated_code
+
+- name: rac-pseudo-code-option
+  args: ['guards.cpp', '-rac']
+  disabled-checks:
+    - generated_code
+
+- name: missing-file
+  args: ['missing-file.cpp', '-acl2']
+  has_failed: true
+  exit_code: 1
+  disabled-checks:
+    - generated_code
+
+- name: basic
+
+- name: help
+  args: []
+  disabled-checks:
+    - generated_code
+
+- name: empty
+  has_failed: true
+  bug: true
+  exit_code: 1
+  stderr_not_empty: true
+  ref_stdout: "Warning: no function definitions found, maybe you forgot the `// RAC begin` guard"
+  ref_stderr: "empty.cpp:1: syntax error, unexpected $end"
+  description: "Exit with an error code but without diagnostic"
+
+
+- name: comment
+- name: multiline-comment
+
+- name: unterminated-comment
+  description: Unterminated comment not detected
+  args: ['unterminated-comment.cpp']
+  has_failed: true
+  exit_code: 1
+
+# Those tests are directly taken the RAC specification as decribed in the
+# Chapter 15 of Formal verification of floating-point hardware design
+#
+- name: guards
+- name: guards-2
+
+- name: rac-in-comment-but-not-a-guard
+  exit_code: 0
+
+- name: missing-guards-begin
+  has_failed: true
+  stderr_not_empty: true
+  exit_code: 1
+  ref_stdout: "Warning: no function definitions found, maybe you forgot the `// RAC begin` guard"
+  ref_stderr: "missing-guards-begin.cpp:8: syntax error, unexpected $end"
+
+- name: missing-guards-end
+  bug: true
+  description: "For now, program can compile without end guads"
+
+- name: function-call
+- name: function-duplicate
+  has_failed: true
+  exit_code: 1
+
+- name: recursive-call
+  description: >
+                Recursive function are illegal. But instead of failling on
+                the call, the parser breaks on the declaration before defintion
+                or on the recursive call: we can't call a function util it was
+                been definied.
+  has_failed: true
+  exit_code: 1
+
+- name: mutually-recursive-function
+  description: Same as above (recursive-call)
+  exit_code: 1
+  has_failed: true
+
+- name: tie
+- name: tie-array
+- name: tie-big-array
+
+- name: tie-immediate
+  bug: true
+  has_failed: true
+  exit_code: 1
+  disabled-checks:
+    - stderr
+    - generated_code
+
+- name: structured-binding-like
+  bug: true
+  description: >
+               This is illegal syntax in C++. The valid way is using tie or
+               structured binding syntax: auto [a,b] = foo() (not implemented)
+  disabled-checks:
+    - generated_code
+
+- name: variable-decl
+- name: multiple-variable-decl
+
+- name: unknown-variable
+  bug: true
+  has_failed: true
+  description: Instead of reporting an error, segfault.
+  disabled-checks:
+    - stderr
+    - generated_code
+    - exit_code
+
+- name: empty-return
+  bug: true
+  has_failed: true
+  description: >
+               This case should not exist since RAC function can't return void.
+               This should be detected as a syntax error, but the parser will
+               usually segfault (exit code -11) or sometimes it will succeed and
+               return 0.
+  disabled-checks:
+    - exit_code
+    - stderr
+    - generated_code
+
+- name: hello
+  input: ../../../examples/hello.cpp
+
+- name: variable-mix-upper-lower-case
+  bug: true
+  description: Invalid code when two identifiers have the same name but one in
+               lower case and the other in upper case, Lisp is not sensible to
+               case so the RAC parser should not be case sensible.
+
+- name: variable-redeclaration
+  has_failed: true
+  exit_code: 1
+
+- name: builtin

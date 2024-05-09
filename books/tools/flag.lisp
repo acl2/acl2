@@ -127,7 +127,9 @@ more discussion below.</p>
                :flag-var flag
                :body :last                     ; use last body, not original
                :hints ((\"Goal\" ...))         ; for the measure theorem
-                                               ; usually not necessary
+                                               ; (usually not necessary)
+               :expand-with-original-defs t    ; for the equivalence thm
+                                               ; (usually not necessary)
                )
 })
 
@@ -147,9 +149,7 @@ but it's usually nice to pick shorter names since you'll have to mention them
 in the theorems you prove.  The argument, if supplied and non-@('nil'), should
 be a list that specifies a short name for every function in the clique.  Each
 member of that list should be of the form @('(old new)') where (of course)
-@('old') and @('new') are symbols, except that for backward compatibility the
-form @('(old . new)') is allowed (but deprecated after March, 2021, ultimately
-to be eliminated).</li>
+@('old') and @('new') are symbols.</li>
 
 <li>@(':defthm-macro-name') lets you name the new macro that will be generated
 for proving theorems by inducting with the flag function.  By default it is
@@ -170,11 +170,21 @@ is used when extracting the body of each function.  The most recent definition
 rule is used if @(':body') is @(':last').  Otherwise @(':body') should be a
 list with members of the form @('(fn1 fn2)'), indicating that the definition
 associated with a rule named @('fn2'), if there is one, should be used as the
-definition for the function symbol, @('fn1').  See the community book
-@('books/tools/flag-tests.lisp') for an example of using such a alist for
-@(':body'), in particular for the purpose of using definitions installed with
-@(tsee acl2::install-not-normalized).</li>
+definition for the function symbol, @('fn1') &mdash; and in that case, the
+formal parameters list specified by @('fn2') must equal the formal parameters
+list for @('fn1').  See the community book @('books/tools/flag-tests.lisp') for
+an example of using such a alist for @(':body'), in particular for the purpose
+of using definitions installed with @(tsee acl2::install-not-normalized).</li>
 
+<li>@(':expand-with-original-defs') slightly changes the hints given to the
+theorem proving that each invocation of the new flag function is equal to the
+appropriate call of one of the functions of the clique. After induction on the
+flag function, this theorem uses an expand hint on any call in the conclusion
+of one of the functions. Normally it doesn't specify what definition to expand
+with, but if the @(':expand-with-original-defs') keyword is given then it says
+to expand with the function symbol itself (i.e., the function's original
+definition) in each case. This helps in cases where the proof is disrupted by
+some other definition rule.</li>
 </ul>
 
 
@@ -461,9 +471,9 @@ one such form may affect what you might think of as the proof of another.</p>
   (getprop fn 'formals :none 'current-acl2-world world))
 
 (defun get-body (fn last-body world)
-  ;; If latest-def is nil (the default for make-flag), this gets the original,
+  ;; If last-body is nil (the default for make-flag), this gets the original,
   ;; normalized or non-normalized body based on what the user typed for the
-  ;; :normalize xarg.  The use of "last" skips past any other :definition rules
+  ;; :normalize xarg.  The use of :last skips past any other :definition rules
   ;; that have been added since then.
   (let* ((bodies (getprop fn 'def-bodies nil 'current-acl2-world world))
          (body (cond ((eq last-body :last)
@@ -491,7 +501,19 @@ one such form may affect what you might think of as the proof of another.</p>
               "Attempt to call get-body for an equivalence relation other ~
                than equal, ~x0"
               (access def-body body :equiv))
-        (access def-body body :concl)))))
+        (if (not (equal (formals fn world)
+                        (access def-body body :formals)))
+            (er hard 'get-body
+                "The formal parameters list for ~x0 is ~x1, which differs ~
+                 from the formal parameters list of ~x2 derived from the ~
+                 alternative definition given by event ~x3 (as specified by ~
+                 the :BODY argument of a call of ~x4)."
+                fn
+                (formals fn world)
+                (access def-body body :formals)
+                (acl2::base-symbol (access def-body body :rune))
+                'make-flag)
+          (access def-body body :concl))))))
 
 (defun get-measure (fn world)
   (access justification
@@ -1034,18 +1056,25 @@ one such form may affect what you might think of as the proof of another.</p>
 
 ; NEW HINT: this more limited hint seems to be better.
 
-(defun flag-expand-computed-hint (stable-under-simplificationp clause fns)
+(defun flag-expand-computed-hint (stable-under-simplificationp
+                                  clause fns
+                                  expand-with-original-defs)
   (and stable-under-simplificationp
        (let ((conclusion (car (last clause))))
          (case-match conclusion
            (('equal lhs rhs)
             (let* ((expands (if (and (consp lhs)
                                      (member (car lhs) fns))
-                                (list lhs)
+                                (list (if expand-with-original-defs
+                                          `(:with ,(car lhs) ,lhs)
+                                        lhs))
                               nil))
                    (expands (if (and (consp rhs)
                                      (member (car rhs) fns))
-                                (cons rhs expands)
+                                (cons (if expand-with-original-defs
+                                          `(:with ,(car rhs) ,rhs)
+                                        rhs)
+                                      expands)
                               expands)))
               (and expands
                    `(:expand (:lambdas . ,expands)))))
@@ -1092,8 +1121,8 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun convert-flag-mapping (x x-original)
   (let ((str "The :flag-mapping argument of make-flag should be a true-list, ~
-              each of whose members is ideally of the forms (name1 name2).  ~
-              The value ~x0 is thus illegal."))
+              each of whose members is of the form (name1 name2).  The value ~
+              ~x0 is thus illegal."))
     (cond ((null x) nil)
           ((atom x) (er hard 'make-flag str x-original))
           (t (b* ((old (car x))
@@ -1101,9 +1130,6 @@ one such form may affect what you might think of as the proof of another.</p>
                          ((s1 s2) (and (symbolp s1)
                                        (symbolp s2)
                                        (cons s1 s2)))
-                         ((s1 . s2) (and (symbolp s1)
-                                         (symbolp s2)
-                                         old))
                          (& (er hard 'make-flag str x-original)))))
                (cons new
                      (convert-flag-mapping (cdr x) x-original)))))))
@@ -1111,7 +1137,9 @@ one such form may affect what you might think of as the proof of another.</p>
 (defun make-flag-fn (flag-fn-name clique-member-name flag-var flag-mapping hints
                                   defthm-macro-name
                                   formals-subst
-                                  local ruler-extenders last-body world)
+                                  local ruler-extenders last-body
+                                  expand-with-original-defs
+                                  world)
   (let* ((flag-var (or flag-var
                        (intern-in-package-of-symbol "FLAG" flag-fn-name)))
          (alist (if flag-mapping
@@ -1196,7 +1224,8 @@ one such form may affect what you might think of as the proof of another.</p>
                                                       ACL2::clause
                                                       ',(cons flag-fn-name
                                                               (strip-cars
-                                                               alist))))))
+                                                               alist))
+                                                      ',expand-with-original-defs))))
           (defthm ,equiv-thm-name
             (and . ,(equiv-theorem-cases flag-fn-name formals alist world))
             :hints(("Goal" :in-theory (union-theories
@@ -1218,6 +1247,7 @@ one such form may affect what you might think of as the proof of another.</p>
     :defthm-macro-name
     :local
     :ruler-extenders
+    :expand-with-original-defs
     :body))
 
 (defun make-flag-dwim (args world)
@@ -1256,6 +1286,7 @@ one such form may affect what you might think of as the proof of another.</p>
                   (cdr (assoc :local kwd-alist))
                   (cdr (assoc :ruler-extenders kwd-alist))
                   (cdr (assoc :body kwd-alist))
+                  (cdr (assoc :expand-with-original-defs kwd-alist))
                   world)))
 
 (defmacro make-flag (&rest args)

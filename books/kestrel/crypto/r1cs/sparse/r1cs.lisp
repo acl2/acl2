@@ -1,10 +1,11 @@
 ; R1CSes in sparse form
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
+; Supporting Author: Alessandro Coglio (coglio@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,11 +29,12 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 
 ;; ;; A coefficient is an element of the field.  TODO: Consider, for readability,
 ;; ;; allowing large coefficients to be represented by negative numbers.
 ;; (defun coefficientp (coeff prime)
-;;   (declare (xargs :guard (rtl::primep prime)))
+;;   (declare (xargs :guard (primep prime)))
 ;;   (fep coeff prime))
 
 ;; A "pseudo-variable" is either a variable or the constant 1.
@@ -92,6 +94,12 @@
               (equal 2 (len x))
               (integerp (first x))
               (pseudo-varp (second x))
+              (sparse-vectorp y)))
+  :hints (("Goal" :in-theory (enable sparse-vectorp))))
+
+(defthm sparse-vectorp-of-append
+  (equal (sparse-vectorp (append x y))
+         (and (sparse-vectorp (true-list-fix x))
               (sparse-vectorp y)))
   :hints (("Goal" :in-theory (enable sparse-vectorp))))
 
@@ -268,7 +276,7 @@
 ;; intermediate vars, and output vars), and a list of constraints.  TODO:
 ;; Consider indicating which vars are inputs and which are outputs.
 (std::defaggregate r1cs
-  ((prime rtl::primep)
+  ((prime primep)
    (vars var-listp)
    (constraints r1cs-constraint-listp))
   :require ((constraints-ok (good-r1cs-constraint-listp constraints
@@ -277,7 +285,7 @@
   ;; We have our own xdoc topic called r1cs:
   :suppress-xdoc t)
 
-;; Since checking the guards if very slow when the prime is large:
+;; Since checking the guards is very slow when the prime is large:
 (in-theory (disable (:e r1cs)))
 
 ;; Compute the dot product of the vector of coefficients and the vector of
@@ -287,7 +295,7 @@
 ;; corresponding products.
 (defund dot-product (vec valuation prime)
   (declare (xargs :guard (and (sparse-vectorp vec)
-                              (rtl::primep prime)
+                              (primep prime)
                               (r1cs-valuationp valuation prime)
                               (good-sparse-vectorp vec (strip-cars valuation)))
                   :verify-guards nil ;done below
@@ -306,11 +314,7 @@
            prime))))
 
 (defthm fep-of-dot-product
-  (implies (and (sparse-vectorp vec)
-                (rtl::primep prime)
-                (r1cs-valuationp valuation prime)
-                (good-sparse-vectorp vec (strip-cars valuation)) ;drop?
-                )
+  (implies (posp prime)
            (fep (dot-product vec valuation prime) prime))
   :hints (("Goal" :expand (good-sparse-vectorp vec (strip-cars valuation))
            :in-theory (e/d (dot-product r1cs-valuationp sparse-vectorp valuation-bindsp)
@@ -318,11 +322,19 @@
 
 (verify-guards dot-product
   :hints (("Goal" :in-theory (e/d (valuation-bindsp)
-                                  (strip-cars)))))
+                                  (strip-cars acl2::floor-mod-elim-rule)))))
+
+(defthm dot-product-of-append
+  (implies (posp prime)
+           (equal (dot-product (append vec1 vec2) valuation prime)
+                  (add (dot-product vec1 valuation prime)
+                       (dot-product vec2 valuation prime)
+                       prime)))
+  :hints (("Goal" :in-theory (enable dot-product append))))
 
 ;; Check whether the VALUATION satisfies the CONSTRAINT.
 (defund r1cs-constraint-holdsp (constraint valuation prime)
-  (declare (xargs :guard (and (rtl::primep prime)
+  (declare (xargs :guard (and (primep prime)
                               (r1cs-constraintp constraint)
                               (r1cs-valuationp valuation prime)
                               (good-r1cs-constraintp constraint (strip-cars valuation)))))
@@ -342,7 +354,7 @@
 
 ;; Check whether the valuation satisfies all of the constraints.
 (defun r1cs-constraints-holdp (constraints valuation prime)
-  (declare (xargs :guard (and (rtl::primep prime)
+  (declare (xargs :guard (and (primep prime)
                               (r1cs-constraint-listp constraints)
                               (r1cs-valuationp valuation prime)
                               (good-r1cs-constraint-listp constraints (strip-cars valuation)))))

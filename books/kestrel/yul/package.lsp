@@ -30,12 +30,12 @@
                         defxdoc+
                         nat
                         nat-resultp
-                        fty::err
                         fty::info
-                        fty::ok
-                        fty::resulterr
-                        fty::resulterrp
-                        fty::resulterr-optionp
+                        fty::okf
+                        fty::reserr
+                        fty::reserrf
+                        fty::reserrp
+                        fty::reserr-optionp
                         fty::stack
                         std::define-sk
                         str::hex-digit-char

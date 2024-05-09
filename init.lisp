@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -18,8 +18,8 @@
 ; University of Texas at Austin
 ; Austin, TX 78712 U.S.A.
 
-; This file, init.lisp, is the standard KCL init file.  We use this
-; tiny init file, which indirects to akcl-init.lisp, so that we can
+; This file, init.lisp, is the standard init file.  We use this tiny
+; init file, which mainly indirects to acl2-init.lisp, so that we can
 ; avoid loading in the full init file if it has already been loaded.
 
 ; This file need not be distributed with ACL2 and is unimportant for
@@ -40,10 +40,6 @@
 ;(setq ccl:*trace-print-length* 10)
 ;(setq ccl::*backtrace-print-length* 10)
 ;(setq ccl::*backtrace-print-level* 10)
-
-; The following should be unnecessary, but we leave it for now in case some
-; proprietary books depend on it.
-(push :hons *features*)
 
 (unless (find-package "ACL2")
 

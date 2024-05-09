@@ -39,19 +39,9 @@
           (cons elem
                 (remove-duplicates-from-grouped-list (cdr lst))))))))
 
-(defthm true-listp-of-remove-duplicates-from-grouped-list
-  (implies (true-listp lst)
-           (true-listp (remove-duplicates-from-grouped-list lst)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
-
-(defthm eqlable-listp-of-remove-duplicates-from-grouped-list
-  (implies (eqlable-listp lst)
-           (eqlable-listp (remove-duplicates-from-grouped-list lst)))
-  :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
-
-(defthm all-natp-of-remove-duplicates-from-grouped-list
-  (implies (all-natp x)
-           (all-natp (remove-duplicates-from-grouped-list x)))
+(defthm nat-listp-of-remove-duplicates-from-grouped-list
+  (implies (nat-listp x)
+           (nat-listp (remove-duplicates-from-grouped-list x)))
   :hints (("Goal" :in-theory (enable remove-duplicates-from-grouped-list))))
 
 (defthm all-<-of-remove-duplicates-from-grouped-list
@@ -69,7 +59,7 @@
 
 ;strip off any number of nested calls to not
 ;returns the "core" nodenum, or nil if the "core" is a constant
-(defund strip-nots (nodenum-or-quotep dag-array-name dag-array)
+(defund strip-all-nots (nodenum-or-quotep dag-array-name dag-array)
   (declare (xargs :guard (if (natp nodenum-or-quotep)
                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                            t)
@@ -88,32 +78,32 @@
                           (mbt (< (darg1 expr) nodenum-or-quotep))))
                 :error
               ;; keep looking:
-              (strip-nots (darg1 expr) dag-array-name dag-array))
+              (strip-all-nots (darg1 expr) dag-array-name dag-array))
           nodenum-or-quotep ;we've found the "core" node
           )))))
 
-(defthm natp-of-strip-nots
-  (implies (and (strip-nots nodenum-or-quotep dag-array-name dag-array)
+(defthm natp-of-strip-all-nots
+  (implies (and (strip-all-nots nodenum-or-quotep dag-array-name dag-array)
                 (if (natp nodenum-or-quotep)
                     (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                   t))
-           (natp (strip-nots nodenum-or-quotep dag-array-name dag-array)))
-  :hints (("Goal" :in-theory (enable strip-nots car-becomes-nth-of-0))))
+           (natp (strip-all-nots nodenum-or-quotep dag-array-name dag-array)))
+  :hints (("Goal" :in-theory (enable strip-all-nots car-becomes-nth-of-0))))
 
-(defthm strip-nots-when-consp
+(defthm strip-all-nots-when-consp
   (implies (consp nodenum-or-quotep)
-           (equal (strip-nots nodenum-or-quotep dag-array-name dag-array)
+           (equal (strip-all-nots nodenum-or-quotep dag-array-name dag-array)
                   nil))
-  :hints (("Goal" :in-theory (enable strip-nots))))
+  :hints (("Goal" :in-theory (enable strip-all-nots))))
 
-(defthm <-of-strip-nots
+(defthm <-of-strip-all-nots
   (implies (and (dargp-less-than nodenum-or-quotep dag-len)
                 (if (natp nodenum-or-quotep)
                     (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                   t)
-                (strip-nots nodenum-or-quotep dag-array-name dag-array))
-           (< (strip-nots nodenum-or-quotep dag-array-name dag-array) dag-len))
-  :hints (("Goal" :in-theory (enable strip-nots))))
+                (strip-all-nots nodenum-or-quotep dag-array-name dag-array))
+           (< (strip-all-nots nodenum-or-quotep dag-array-name dag-array) dag-len))
+  :hints (("Goal" :in-theory (enable strip-all-nots))))
 
 ;;;
 ;;; strip-nots-and-maybe-extend
@@ -124,63 +114,67 @@
   (declare (xargs :guard (if (natp nodenum-or-quotep)
                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
                            t)))
-  (let ((res (strip-nots nodenum-or-quotep dag-array-name dag-array)))
+  (let ((res (strip-all-nots nodenum-or-quotep dag-array-name dag-array)))
     (if res
         (cons res acc)
       acc)))
 
-(defthm strip-nots-and-maybe-extend-when-consp
-  (implies (consp nodenum-or-quotep)
-           (equal (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc)
-                  acc))
-  :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend))))
+(local
+  (defthm strip-nots-and-maybe-extend-when-consp
+    (implies (consp nodenum-or-quotep)
+             (equal (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc)
+                    acc))
+    :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend)))))
 
-(defthm true-listp-of-strip-nots-and-maybe-extend
-  (equal (true-listp (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc))
-         (true-listp acc))
-  :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend))))
+(local
+  (defthm true-listp-of-strip-nots-and-maybe-extend
+    (equal (true-listp (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc))
+           (true-listp acc))
+    :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend)))))
 
-(defthm all-natp-of-strip-nots-and-maybe-extend
-  (implies (and (dargp nodenum-or-quotep)
-                (if (not (consp nodenum-or-quotep))
-                    (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
-                  t))
-           (equal (all-natp (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc))
-                  (all-natp acc)))
-  :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend))))
+(local
+  (defthm nat-listp-of-strip-nots-and-maybe-extend
+    (implies (and (dargp nodenum-or-quotep)
+                  (if (not (consp nodenum-or-quotep))
+                      (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
+                    t))
+             (equal (nat-listp (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc))
+                    (nat-listp acc)))
+    :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend)))))
 
-(defthm all-<-of-strip-nots-and-maybe-extend
-  (implies (and (all-< acc dag-len)
-                (dargp-less-than nodenum-or-quotep dag-len)
-                (if (natp nodenum-or-quotep)
-                    (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
-                  t))
-           (all-< (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc) dag-len))
-  :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend))))
+(local
+  (defthm all-<-of-strip-nots-and-maybe-extend
+    (implies (and (all-< acc dag-len)
+                  (dargp-less-than nodenum-or-quotep dag-len)
+                  (if (natp nodenum-or-quotep)
+                      (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum-or-quotep))
+                    t))
+             (all-< (strip-nots-and-maybe-extend nodenum-or-quotep dag-array-name dag-array acc) dag-len))
+    :hints (("Goal" :in-theory (enable strip-nots-and-maybe-extend)))))
 
 ;;;
-;;; strip-nots-lst
+;;; strip-all-nots-lst
 ;;;
 
 ;returns a list of nodenums (omits constants and nodenums of constants)
-(defund strip-nots-lst (nodenums dag-array-name dag-array dag-len)
+(defund strip-all-nots-lst (nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (nat-listp nodenums)
                               (all-< nodenums dag-len))))
   (if (endp nodenums)
       nil
-    (let ((res (strip-nots (first nodenums) dag-array-name dag-array)))
+    (let ((res (strip-all-nots (first nodenums) dag-array-name dag-array)))
       (if res
           (cons res
-                (strip-nots-lst (rest nodenums) dag-array-name dag-array dag-len))
-        (strip-nots-lst (rest nodenums) dag-array-name dag-array dag-len)))))
+                (strip-all-nots-lst (rest nodenums) dag-array-name dag-array dag-len))
+        (strip-all-nots-lst (rest nodenums) dag-array-name dag-array dag-len)))))
 
-(defthm all-natp-of-strip-nots-lst
+(defthm nat-listp-of-strip-all-nots-lst
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (nat-listp nodenums)
                 (all-< nodenums dag-len))
-           (all-natp (strip-nots-lst nodenums dag-array-name dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable strip-nots-lst nat-listp))))
+           (nat-listp (strip-all-nots-lst nodenums dag-array-name dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable strip-all-nots-lst nat-listp))))
 
 ;;;
 ;;; maybe-add-split-candidates
@@ -259,12 +253,12 @@
          (true-listp acc))
   :hints (("Goal" :in-theory (enable maybe-add-split-candidates))))
 
-(defthm all-natp-of-maybe-add-split-candidates
+(defthm natp-listp-of-maybe-add-split-candidates
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (bounded-dag-exprp dag-len ;upper bound
                            expr)
-                (all-natp acc))
-           (all-natp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)))
+                (nat-listp acc))
+           (nat-listp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)))
   :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
@@ -290,12 +284,12 @@
                             NATP-OF-+-OF-1-ALT)
                            (dargp natp)))))
 
-;; (defthm all-natp-of-maybe-add-split-candidates
+;; (defthm nat-listp-of-maybe-add-split-candidates
 ;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                 (bounded-dag-exprp dag-len ;upper bound
 ;;                            expr))
-;;            (equal (all-natp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc))
-;;                   (all-natp acc)))
+;;            (equal (nat-listp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc))
+;;                   (nat-listp acc)))
 ;;   :hints (("Goal" :in-theory (enable maybe-add-split-candidates BOUNDED-DAG-EXPRP DAG-EXPRP))))
 
 ;; Similar to get-args-not-done and especially to get-unexamined-nodenum-args.
@@ -314,7 +308,7 @@
 
 (defthm nat-listp-of-extend-with-not-done-args
   (implies (and (nat-listp acc)
-                (all-dargp args))
+                (darg-listp args))
            (nat-listp (extend-with-not-done-args args result-array-name result-array acc)))
   :hints (("Goal" :in-theory (enable nat-listp extend-with-not-done-args))))
 
@@ -364,23 +358,45 @@
                                                    (aset1 'done-array done-array nodenum t)
                                                    acc))))))
 
-(defthm true-listp-of-find-node-to-split-candidates-work-list
-  (equal (true-listp (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len done-array acc))
-         (true-listp acc))
-  :hints (("Goal" :in-theory (enable find-node-to-split-candidates-work-list))))
+(local
+  (defthm true-listp-of-find-node-to-split-candidates-work-list
+    (equal (true-listp (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len done-array acc))
+           (true-listp acc))
+    :hints (("Goal" :in-theory (enable find-node-to-split-candidates-work-list)))))
 
-(defthm all-natp-of-find-node-to-split-candidates-work-list
-  (implies (and (all-natp acc)
-                (nat-listp worklist)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (array1p 'done-array done-array)
-                (all-< worklist (alen1 'done-array done-array))
-                (all-< worklist dag-len))
-           (all-natp (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len done-array acc)))
-  :hints (("Goal" :in-theory (enable find-node-to-split-candidates-work-list))))
+(local
+  (defthm nat-listp-of-find-node-to-split-candidates-work-list
+    (implies (and (nat-listp acc)
+                  (nat-listp worklist)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (array1p 'done-array done-array)
+                  (all-< worklist (alen1 'done-array done-array))
+                  (all-< worklist dag-len))
+             (nat-listp (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len done-array acc)))
+    :hints (("Goal" :in-theory (enable find-node-to-split-candidates-work-list)))))
+
+(local
+  (defthm all-<-of-find-node-to-split-candidates-work-list
+    (implies (and (all-< worklist dag-len)
+                  (all-< acc dag-len)
+                  (nat-listp worklist)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (array1p 'done-array done-array)
+                  (all-< worklist (alen1 'done-array done-array)))
+             (all-< (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len
+                                                             done-array ;tracks which nodenums we have already considered
+                                                             acc)
+                    dag-len))
+    :hints (("Goal" :in-theory (e/d (find-node-to-split-candidates-work-list
+                                     car-becomes-nth-of-0)
+                                    (dargp-less-than
+;member-of-cons ;todo
+                                     ))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund smallest-size-node-aux (nodenums current-smallest-size current-smallest-node size-array size-array-len)
-  (declare (xargs :guard (and (all-natp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (true-listp nodenums)
                               (array1p 'size-array size-array)
                               (natp size-array-len)
@@ -397,40 +413,42 @@
           (smallest-size-node-aux (rest nodenums) next-size next-nodenum size-array size-array-len)
         (smallest-size-node-aux (rest nodenums) current-smallest-size current-smallest-node size-array size-array-len)))))
 
-(defthm natp-of-smallest-size-node-aux
-  (implies (and (all-natp nodenums)
-                (true-listp nodenums)
-                (array1p 'size-array size-array)
-                (natp size-array-len)
-                (<= size-array-len
-                    (alen1 'size-array size-array))
-                (all-< nodenums size-array-len)
-                (natp current-smallest-size)
-                (natp current-smallest-node)
-                )
-           (natp (smallest-size-node-aux nodenums current-smallest-size current-smallest-node size-array size-array-len)))
-  :hints (("Goal" :in-theory (e/d (smallest-size-node-aux) (natp)))))
+(local
+  (defthm natp-of-smallest-size-node-aux
+    (implies (and (nat-listp nodenums)
+                  (true-listp nodenums)
+                  (array1p 'size-array size-array)
+                  (natp size-array-len)
+                  (<= size-array-len
+                      (alen1 'size-array size-array))
+                  (all-< nodenums size-array-len)
+                  (natp current-smallest-size)
+                  (natp current-smallest-node)
+                  )
+             (natp (smallest-size-node-aux nodenums current-smallest-size current-smallest-node size-array size-array-len)))
+    :hints (("Goal" :in-theory (e/d (smallest-size-node-aux) (natp))))))
 
-(defthm <-of-smallest-size-node-aux
-  (implies (and (all-< nodenums bound)
-                (all-natp nodenums)
-                (true-listp nodenums)
-                (array1p 'size-array size-array)
-                (natp size-array-len)
-                (<= size-array-len
-                    (alen1 'size-array size-array))
-                (all-< nodenums size-array-len)
-                (natp current-smallest-size)
-                (< current-smallest-node bound)
-                )
-           (< (smallest-size-node-aux nodenums current-smallest-size current-smallest-node size-array size-array-len)
-              bound))
-  :hints (("Goal" :in-theory (e/d (smallest-size-node-aux) (natp)))))
+(local
+  (defthm <-of-smallest-size-node-aux
+    (implies (and (all-< nodenums bound)
+                  (nat-listp nodenums)
+                  (true-listp nodenums)
+                  (array1p 'size-array size-array)
+                  (natp size-array-len)
+                  (<= size-array-len
+                      (alen1 'size-array size-array))
+                  (all-< nodenums size-array-len)
+                  (natp current-smallest-size)
+                  (< current-smallest-node bound)
+                  )
+             (< (smallest-size-node-aux nodenums current-smallest-size current-smallest-node size-array size-array-len)
+                bound))
+    :hints (("Goal" :in-theory (e/d (smallest-size-node-aux) (natp))))))
 
 ;nodenums must be non-nil
 ;returns a nodenum
 (defund smallest-size-node (nodenums size-array size-array-len)
-  (declare (xargs :guard (and (all-natp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (true-listp nodenums)
                               (consp nodenums)
                               (array1p 'size-array size-array)
@@ -444,48 +462,35 @@
          (first-size (nfix (aref1 'size-array size-array first-node)))) ;todo: drop the nfix?
     (smallest-size-node-aux (rest nodenums) first-size first-node size-array size-array-len)))
 
-(defthm natp-of-smallest-size-node
-  (implies (and (all-natp nodenums)
-                (true-listp nodenums)
-                (consp nodenums)
-                (array1p 'size-array size-array)
-                (natp size-array-len)
-                (<= size-array-len
-                    (alen1 'size-array size-array))
-                (all-< nodenums size-array-len))
-           (natp (smallest-size-node nodenums size-array size-array-len)))
-  :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp)))))
+(local
+  (defthm natp-of-smallest-size-node
+    (implies (and (nat-listp nodenums)
+                  (true-listp nodenums)
+                  (consp nodenums)
+                  (array1p 'size-array size-array)
+                  (natp size-array-len)
+                  (<= size-array-len
+                      (alen1 'size-array size-array))
+                  (all-< nodenums size-array-len))
+             (natp (smallest-size-node nodenums size-array size-array-len)))
+    :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp))))))
 
-(defthm <-of-smallest-size-node
-  (implies (and (all-< nodenums bound)
-                (all-natp nodenums)
-                (true-listp nodenums)
-                (consp nodenums)
-                (array1p 'size-array size-array)
-                (natp size-array-len)
-                (<= size-array-len
-                    (alen1 'size-array size-array))
-                (all-< nodenums size-array-len))
-           (< (smallest-size-node nodenums size-array size-array-len)
-              bound))
-  :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp)))))
+(local
+  (defthm <-of-smallest-size-node
+    (implies (and (all-< nodenums bound)
+                  (nat-listp nodenums)
+                  (true-listp nodenums)
+                  (consp nodenums)
+                  (array1p 'size-array size-array)
+                  (natp size-array-len)
+                  (<= size-array-len
+                      (alen1 'size-array size-array))
+                  (all-< nodenums size-array-len))
+             (< (smallest-size-node nodenums size-array size-array-len)
+                bound))
+    :hints (("Goal" :in-theory (e/d (smallest-size-node) (natp))))))
 
-(defthm all-<-of-find-node-to-split-candidates-work-list
-  (implies (and (all-< worklist dag-len)
-                (all-< acc dag-len)
-                (nat-listp worklist)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (array1p 'done-array done-array)
-                (all-< worklist (alen1 'done-array done-array)))
-           (all-< (find-node-to-split-candidates-work-list worklist dag-array-name dag-array dag-len
-                                                           done-array ;tracks which nodenums we have already considered
-                                                           acc)
-                  dag-len))
-  :hints (("Goal" :in-theory (e/d (find-node-to-split-candidates-work-list
-                                   car-becomes-nth-of-0)
-                                  (dargp-less-than
-                                   ;member-of-cons ;todo
-                                   )))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a nodenum to split on, or nil.
 ;can we speed this up?
@@ -501,14 +506,15 @@
                               (consp literal-nodenums)
                               (all-< literal-nodenums dag-len))
                   :guard-hints (("Goal" :cases ((equal 0 dag-len))
-                                 :in-theory (enable all-rationalp-when-all-natp)))))
+                                 :in-theory (enable all-rationalp-when-nat-listp
+                                                    true-listp-when-nat-listp-rewrite)))))
   (let* ((max-literal-nodenum (maxelem literal-nodenums))
          (done-array (make-empty-array 'done-array (+ 1 max-literal-nodenum)))
          ;;won't include any nodes that are calls to not:
          (candidate-nodenums (find-node-to-split-candidates-work-list literal-nodenums dag-array-name dag-array dag-len done-array nil))
          (candidate-nodenums (merge-sort-< candidate-nodenums))
          (candidate-nodenums (remove-duplicates-from-grouped-list candidate-nodenums))
-         (literals-after-stripping-nots (strip-nots-lst literal-nodenums dag-array-name dag-array dag-len))
+         (literals-after-stripping-nots (strip-all-nots-lst literal-nodenums dag-array-name dag-array dag-len))
          (literals-after-stripping-nots (merge-sort-< literals-after-stripping-nots))
          ;remove dups from literals-after-stripping-nots?
          ;;fixme take advantage of the sorting to call a linear-time version of this:

@@ -1871,6 +1871,17 @@ functions) and that it is being given the right number of arguments.</p>
 
 
 (define svex-simpconfig-p (x)
+  :parents (rewriting)
+  :short "Describe a level of simplification to use when creating SVEX function call objects"
+  :long "<p>The possible values for this object:</p>
+
+<ul>
+<li>NIL, meaning no simplification is done</li>
+<li>T, meaning constants are propagated and simple rewrites are done on constant shifts and concatenations</li>
+<li>a natural number, meaning rewriting using the full set of SVEX rewrite rules (see @(see rewriting)) limited to that number of recursive nested calls.</li>
+</ul>
+"
+
   (or (natp x) ;; recursion limit on svex-rewrite-fncall
       (eq x t) ;; use svex-call* for rsh/concat simplification and constant prop
       (eq x nil)) ;; no simplification

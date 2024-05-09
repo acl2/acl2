@@ -401,323 +401,380 @@
 
 
 
-(define 3valued-syntaxp ((x (or (svex-p x) (not x))))
-  :measure (svex-count x)
-  :prepwork ((local (in-theory (e/d* ()
-                                     (bitops::LOGAND->=-0-LINEAR-2
-                                      bitops::UPPER-BOUND-OF-LOGAND
-                                      bitops::LOGAND-NATP-TYPE-2
-                                      bitops::LOGAND-NATP-TYPE-1
-                                      bitops::LOGNOT-NEGP
-                                      bitops::LOGIOR-NATP-TYPE
-                                      bitops::LOGNOT-NATP
-                                      double-containment
-                                      default-car
-                                      default-cdr
-                                      (:t natp)
-                                      (:t negp))))))
-  (or (not x)
-      (svex-case x
-        :quote (3vec-p x.val)
-        :var nil
-        :call
-        (case x.fn
-          ((unfloat
-            bitnot
-            onp
-            offp
-            bitand
-            bitor
-            bitxor
-            uand
-            uor
-            uxor
-            +
-            b-
-            u-
-            xdet
-            countones
-            onehot
-            onehot0
-            *
-            <
-            clog2
-            pow
-            ==
-            ==?
-            ===*
-            safer-==?
-            ==??
-            ===) t)
-          (id (3valued-syntaxp (first x.args)))
-          ((res
-            resand
-            resor
-            override)
-           (or (3valued-syntaxp (first x.args))
-               (3valued-syntaxp (second x.args))))
-          ((zerox
-            signx
-            bitsel
-            rsh
-            lsh)
-           (3valued-syntaxp (second x.args)))
-          ((concat ? ?* ?! bit? bit?!)
-           (and (3valued-syntaxp (second x.args))
-                (3valued-syntaxp (third x.args))))
-          ((partsel)
-           (3valued-syntaxp (third x.args)))
-          ((partinst)
-           (and (3valued-syntaxp (third x.args))
-                (3valued-syntaxp (fourth x.args))))
-          ((blkrev)
-           (3valued-syntaxp (third x.args)))
-          (otherwise t))))
-  ///
+;; just for use in a make-event below
+(local (defun append-cars (x)
+         (if (atom x)
+             nil
+           (append (caar x) (append-cars (cdr x))))))
 
-  (memoize '3valued-syntaxp
-           :condition '(and x
-                            (eq (svex-kind x) :call)
-                            (member (svex-call->fn x)
-                                    '(res resand resor concat ? partinst))))
+(defsection 3valued-syntaxp-def
+  (defconst *3valued-syntaxp-memo-cases*
+    '(((res
+        resand
+        resor
+        override)
+       (or (3valued-syntaxp (first x.args))
+           (3valued-syntaxp (second x.args))))
+      ((concat ? ?* ?! bit? bit?!)
+       (and (3valued-syntaxp (second x.args))
+            (3valued-syntaxp (third x.args))))
+      ((partinst)
+       (and (3valued-syntaxp (third x.args))
+            (3valued-syntaxp (fourth x.args))))))
 
-  (defthm 3vec-p-of-4vec-res
-    (implies (or (3vec-p x)
-                 (3vec-p y))
-             (3vec-p (4vec-res x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-res))
-            (bitops::logbitp-reasoning)))
+  (defconst *3valued-syntaxp-nonmemo-cases*
+    '(((unfloat
+        bitnot
+        onp
+        offp
+        bitand
+        bitor
+        bitxor
+        uand
+        uor
+        uxor
+        +
+        b-
+        u-
+        xdet
+        countones
+        onehot
+        onehot0
+        *
+        <
+        clog2
+        pow
+        ==
+        ==?
+        ===*
+        safer-==?
+        ==??
+        ===) t)
+      (id (3valued-syntaxp (first x.args)))
+      ((zerox
+        signx
+        bitsel
+        rsh
+        lsh)
+       (3valued-syntaxp (second x.args)))
+      ((partsel)
+       (3valued-syntaxp (third x.args)))
+      ((blkrev)
+       (3valued-syntaxp (third x.args)))))
 
-  (defthm 3vec-p-of-4vec-resand
-    (implies (or (3vec-p x)
-                 (3vec-p y))
-             (3vec-p (4vec-resand x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-resand))
-            (bitops::logbitp-reasoning)
-            (and stable-under-simplificationp
-                 '(:bdd (:vars nil)))))
+  (make-event
+   `(defconst *3valued-syntaxp-memo-fns* ',(append-cars *3valued-syntaxp-memo-cases*)))
 
-  (defthm 3vec-p-of-4vec-resor
-    (implies (or (3vec-p x)
-                 (3vec-p y))
-             (3vec-p (4vec-resor x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-resor))
-            (bitops::logbitp-reasoning)))
+  (defconst *3valued-syntaxp-all-cases*
+    (append *3valued-syntaxp-memo-cases* *3valued-syntaxp-nonmemo-cases*))
+  
+  (make-event
+   `(defines 3valued-syntaxp
+      (define 3valued-syntaxp ((x (or (svex-p x) (not x))))
+        :measure (svex-count x)
+        :prepwork ((local (in-theory (e/d* ()
+                                           (bitops::LOGAND->=-0-LINEAR-2
+                                            bitops::UPPER-BOUND-OF-LOGAND
+                                            bitops::LOGAND-NATP-TYPE-2
+                                            bitops::LOGAND-NATP-TYPE-1
+                                            bitops::LOGNOT-NEGP
+                                            bitops::LOGIOR-NATP-TYPE
+                                            bitops::LOGNOT-NATP
+                                            double-containment
+                                            default-car
+                                            default-cdr
+                                            (:t natp)
+                                            (:t negp))))))
+        (mbe :logic (or (not x)
+                        (svex-case x
+                          :quote (3vec-p x.val)
+                          :var nil
+                          :call
+                          (case x.fn
+                            ,@*3valued-syntaxp-all-cases*
+                            (otherwise t))))
+             :exec (or (not x)
+                       (svex-case x
+                         :quote (3vec-p x.val)
+                         :var nil
+                         :call
+                         (case x.fn
+                           (,*3valued-syntaxp-memo-fns*
+                            (3valued-syntaxp-memoize x))
+                           ,@*3valued-syntaxp-nonmemo-cases*
+                           (otherwise t))))))
+      (define 3valued-syntaxp-memoize ((x svex-p))
+        :measure (svex-count x)
+        :guard (svex-case x :call)
+        (b* (((unless (mbt (svex-case x :call))) nil)
+             ((svex-call x)))
+          (case x.fn
+            ,@*3valued-syntaxp-memo-cases*
+            (otherwise t))))
+    
 
-  (defthm 3vec-p-of-4vec-override
-    (implies (or (3vec-p x)
-                 (3vec-p y))
-             (3vec-p (4vec-override x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-override))
-            (bitops::logbitp-reasoning)))
+      ///
 
-  (defthm 3vec-p-of-4vec-signx
-    (implies (3vec-p y)
-             (3vec-p (4vec-sign-ext x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-sign-ext))
-            (bitops::logbitp-reasoning)))
+      (local
+       (make-event
+        `(defun 3valued-syntaxp-ind (x)
+           (declare (xargs :measure (svex-count x)))
+           (or (not x)
+               (svex-case x
+                 :quote (3vec-p x.val)
+                 :var nil
+                 :call
+                 (case x.fn
+                   ,@(subst '3valued-syntaxp-ind '3valued-syntaxp
+                            (subst 'list 'or
+                                   (subst 'list 'and *3valued-syntaxp-all-cases*)))
+                   (otherwise t)))))))
 
-  (defthm 3vec-p-of-4vec-onset
-    (3vec-p (4vec-onset x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-onset))
-           (bitops::logbitp-reasoning)))
+      (local (defthm 3valued-syntaxp-induct
+               t
+               :rule-classes ((:induction :pattern (3valued-syntaxp x)
+                               :scheme (3valued-syntaxp-ind x)))))
+  
+  
+      (memoize '3valued-syntaxp-memoize)
 
-  (defthm 3vec-p-of-4vec-offset
-    (3vec-p (4vec-offset x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-offset))
-           (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-res
+        (implies (or (3vec-p x)
+                     (3vec-p y))
+                 (3vec-p (4vec-res x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-res))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-zerox
-    (implies (3vec-p y)
-             (3vec-p (4vec-zero-ext x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-zero-ext))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-resand
+        (implies (or (3vec-p x)
+                     (3vec-p y))
+                 (3vec-p (4vec-resand x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-resand))
+                (bitops::logbitp-reasoning)
+                (and stable-under-simplificationp
+                     '(:bdd (:vars nil)))))
 
-  (defthm 3vec-p-of-4vec-bitsel
-    (implies (3vec-p y)
-             (3vec-p (4vec-bit-extract x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-bit-extract 4vec-bit-index))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-resor
+        (implies (or (3vec-p x)
+                     (3vec-p y))
+                 (3vec-p (4vec-resor x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-resor))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-rsh
-    (implies (3vec-p y)
-             (3vec-p (4vec-rsh x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-rsh 4vec-shift-core))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-override
+        (implies (or (3vec-p x)
+                     (3vec-p y))
+                 (3vec-p (4vec-override x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-override))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-lsh
-    (implies (3vec-p y)
-             (3vec-p (4vec-lsh x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-lsh 4vec-shift-core))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-signx
+        (implies (3vec-p y)
+                 (3vec-p (4vec-sign-ext x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-sign-ext))
+                (bitops::logbitp-reasoning)))
 
+      (defthm 3vec-p-of-4vec-onset
+        (3vec-p (4vec-onset x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-onset))
+               (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-?
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (4vec-? c x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-? 3vec-? 3vec-fix))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-offset
+        (3vec-p (4vec-offset x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-offset))
+               (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-?*
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (4vec-?* c x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-?* 3vec-?* 3vec-fix))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-zerox
+        (implies (3vec-p y)
+                 (3vec-p (4vec-zero-ext x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-zero-ext))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-?!
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (4vec-?! c x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-?!))
-            (bitops::logbitp-reasoning)))
+      (defthm 3vec-p-of-4vec-bitsel
+        (implies (3vec-p y)
+                 (3vec-p (4vec-bit-extract x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-bit-extract 4vec-bit-index))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-bit?
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (4vec-bit? c x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-bit? 3vec-bit? 3vec-fix))
-            (bitops::logbitp-reasoning)
-            (and stable-under-simplificationp
-                 '(:bdd (:vars nil)))))
+      (defthm 3vec-p-of-4vec-rsh
+        (implies (3vec-p y)
+                 (3vec-p (4vec-rsh x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-rsh 4vec-shift-core))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-4vec-bit?!
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (4vec-bit?! c x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-bit?! 3vec-fix))
-            (bitops::logbitp-reasoning)
-            (and stable-under-simplificationp
-                 '(:bdd (:vars nil)))))
-
-  (defthm 3vec-p-of-4vec-concat
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (4vec-concat n x y)))
-    :hints (("goal" :in-theory (enable 3vec-p 4vec-concat))
-            (bitops::logbitp-reasoning)))
-
-  (defthm 3vec-p-of-4vec-uminus
-    (3vec-p (4vec-uminus x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-uminus))))
-
-  (defthm 3vec-p-of-4vec-xdet
-    (3vec-p (4vec-xdet x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-xdet))))
-
-  (defthm 3vec-p-of-4vec-countones
-    (3vec-p (4vec-countones x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-countones))))
-
-  (defthm 3vec-p-of-4vec-onehot
-    (3vec-p (4vec-onehot x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-onehot))))
-
-  (defthm 3vec-p-of-4vec-onehot0
-    (3vec-p (4vec-onehot0 x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-onehot0))))
-
-  (defthm 3vec-p-of-4vec-minus
-    (3vec-p (4vec-minus x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-minus))))
-
-  (defthm 3vec-p-of-4vec-plus
-    (3vec-p (4vec-plus x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-plus))))
-
-  (defthm 3vec-p-of-4vec-times
-    (3vec-p (4vec-times x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-times))))
-
-  (defthm 3vec-p-of-4vec-quotient
-    (3vec-p (4vec-quotient x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-quotient))))
-
-  (defthm 3vec-p-of-4vec-remainder
-    (3vec-p (4vec-remainder x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-remainder))))
-
-  (defthm 3vec-p-of-3vec-==
-    (implies (and (3vec-p x)
-                  (3vec-p y))
-             (3vec-p (3vec-== x y)))
-    :hints(("Goal" :in-theory (enable 3vec-==))))
-
-  (defthm 3vec-p-of-2vec
-    (3vec-p (2vec x))
-    :hints(("Goal" :in-theory (enable 3vec-p))))
-
-  (defthm 3vec-p-of-4vec-wildeq
-    (3vec-p (4vec-wildeq x y))
-  :hints(("Goal" :in-theory (enable 4vec-wildeq))))
-
-  (defthm 3vec-p-of-4vec-wildeq-safe
-    (3vec-p (4vec-wildeq-safe x y))
-  :hints(("Goal" :in-theory (enable 4vec-wildeq-safe))))
-
-  (defthm 3vec-p-of-4vec-symwildeq
-    (3vec-p (4vec-symwildeq x y))
-  :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
-
-  (defthm 3vec-p-of-4vec-===*
-    (3vec-p (4vec-===* x y))
-  :hints(("Goal" :in-theory (enable 4vec-===*))))
-
-  (defthm 3vec-p-of-4vec-==
-    (3vec-p (4vec-== x y))
-    :hints(("Goal" :in-theory (enable 4vec-==))))
-
-  (defthm 3vec-p-of-4vec-===
-    (3vec-p (4vec-=== x y))
-    :hints(("Goal" :in-theory (enable 4vec-===))))
-
-  (defthm 3vec-p-of-4vec-<
-    (3vec-p (4vec-< x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-<))))
-
-  (defthm 3vec-p-of-4vec-rev-blocks
-    (implies (3vec-p x)
-             (3vec-p (4vec-rev-blocks nbits bsz x)))
-    :hints(("Goal" :in-theory (enable 4vec-rev-blocks 3vec-p))
-           (bitops::logbitp-reasoning)))
-
-  (defthm 3vec-p-of-4vec-clog2
-    (3vec-p (4vec-clog2 x))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-clog2))))
-
-  (defthm 3vec-p-of-4vec-pow
-    (3vec-p (4vec-pow x y))
-    :hints(("Goal" :in-theory (enable 3vec-p 4vec-pow))))
-
-  (defthm 3vec-p-of-4vec-fix
-    (equal (3vec-p (4vec-fix x)) (3vec-p x))
-    :hints(("Goal" :in-theory (enable 3vec-p))))
-
-  (defthm 3vec-p-of-4vec-part-select
-    (implies (3vec-p in)
-             (3vec-p (4vec-part-select lsb width in)))
-    :hints(("Goal" :in-theory (enable 4vec-part-select))))
-
-  (defthm 3vec-p-of-4vec-part-install
-    (implies (and (3vec-p in)
-                  (3vec-p val))
-             (3vec-p (4vec-part-install lsb width in val)))
-    :hints(("Goal" :in-theory (enable 4vec-part-install))))
+      (defthm 3vec-p-of-4vec-lsh
+        (implies (3vec-p y)
+                 (3vec-p (4vec-lsh x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-lsh 4vec-shift-core))
+                (bitops::logbitp-reasoning)))
 
 
+      (defthm 3vec-p-of-4vec-?
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (4vec-? c x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-? 3vec-? 3vec-fix))
+                (bitops::logbitp-reasoning)))
 
-  (defthm 3vec-p-of-eval-when-3valued-syntaxp
-    (implies (3valued-syntaxp x)
-             (3vec-p (svex-eval x env)))
-    :hints (("Goal" :expand ((svex-eval x env)
-                             (3valued-syntaxp x)
-                             (:free (x) (svex-eval (list 'quote x) env)))
-             :induct (3valued-syntaxp x)
-             :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth-safe)
-                             ((:d 3valued-syntaxp))))))
+      (defthm 3vec-p-of-4vec-?*
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (4vec-?* c x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-?* 3vec-?* 3vec-fix))
+                (bitops::logbitp-reasoning)))
 
-  (deffixequiv 3valued-syntaxp :args ((x svex))))
+      (defthm 3vec-p-of-4vec-?!
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (4vec-?! c x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-?!))
+                (bitops::logbitp-reasoning)))
+
+      (defthm 3vec-p-of-4vec-bit?
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (4vec-bit? c x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-bit? 3vec-bit? 3vec-fix))
+                (bitops::logbitp-reasoning)
+                (and stable-under-simplificationp
+                     '(:bdd (:vars nil)))))
+
+      (defthm 3vec-p-of-4vec-bit?!
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (4vec-bit?! c x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-bit?! 3vec-fix 4vec-bitmux))
+                (bitops::logbitp-reasoning)
+                (and stable-under-simplificationp
+                     '(:bdd (:vars nil)))))
+
+      (defthm 3vec-p-of-4vec-concat
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (4vec-concat n x y)))
+        :hints (("goal" :in-theory (enable 3vec-p 4vec-concat))
+                (bitops::logbitp-reasoning)))
+
+      (defthm 3vec-p-of-4vec-uminus
+        (3vec-p (4vec-uminus x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-uminus))))
+
+      (defthm 3vec-p-of-4vec-xdet
+        (3vec-p (4vec-xdet x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-xdet))))
+
+      (defthm 3vec-p-of-4vec-countones
+        (3vec-p (4vec-countones x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-countones))))
+
+      (defthm 3vec-p-of-4vec-onehot
+        (3vec-p (4vec-onehot x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-onehot))))
+
+      (defthm 3vec-p-of-4vec-onehot0
+        (3vec-p (4vec-onehot0 x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-onehot0))))
+
+      (defthm 3vec-p-of-4vec-minus
+        (3vec-p (4vec-minus x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-minus))))
+
+      (defthm 3vec-p-of-4vec-plus
+        (3vec-p (4vec-plus x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-plus))))
+
+      (defthm 3vec-p-of-4vec-times
+        (3vec-p (4vec-times x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-times))))
+
+      (defthm 3vec-p-of-4vec-quotient
+        (3vec-p (4vec-quotient x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-quotient))))
+
+      (defthm 3vec-p-of-4vec-remainder
+        (3vec-p (4vec-remainder x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-remainder))))
+
+      (defthm 3vec-p-of-3vec-==
+        (implies (and (3vec-p x)
+                      (3vec-p y))
+                 (3vec-p (3vec-== x y)))
+        :hints(("Goal" :in-theory (enable 3vec-==))))
+
+      (defthm 3vec-p-of-2vec
+        (3vec-p (2vec x))
+        :hints(("Goal" :in-theory (enable 3vec-p))))
+
+      (defthm 3vec-p-of-4vec-wildeq
+        (3vec-p (4vec-wildeq x y))
+        :hints(("Goal" :in-theory (enable 4vec-wildeq))))
+
+      (defthm 3vec-p-of-4vec-wildeq-safe
+        (3vec-p (4vec-wildeq-safe x y))
+        :hints(("Goal" :in-theory (enable 4vec-wildeq-safe))))
+
+      (defthm 3vec-p-of-4vec-symwildeq
+        (3vec-p (4vec-symwildeq x y))
+        :hints(("Goal" :in-theory (enable 4vec-symwildeq))))
+
+      (defthm 3vec-p-of-4vec-===*
+        (3vec-p (4vec-===* x y))
+        :hints(("Goal" :in-theory (enable 4vec-===*))))
+
+      (defthm 3vec-p-of-4vec-==
+        (3vec-p (4vec-== x y))
+        :hints(("Goal" :in-theory (enable 4vec-==))))
+
+      (defthm 3vec-p-of-4vec-===
+        (3vec-p (4vec-=== x y))
+        :hints(("Goal" :in-theory (enable 4vec-===))))
+
+      (defthm 3vec-p-of-4vec-<
+        (3vec-p (4vec-< x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-<))))
+
+      (defthm 3vec-p-of-4vec-rev-blocks
+        (implies (3vec-p x)
+                 (3vec-p (4vec-rev-blocks nbits bsz x)))
+        :hints(("Goal" :in-theory (enable 4vec-rev-blocks 3vec-p))
+               (bitops::logbitp-reasoning)))
+
+      (defthm 3vec-p-of-4vec-clog2
+        (3vec-p (4vec-clog2 x))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-clog2))))
+
+      (defthm 3vec-p-of-4vec-pow
+        (3vec-p (4vec-pow x y))
+        :hints(("Goal" :in-theory (enable 3vec-p 4vec-pow))))
+
+      (defthm 3vec-p-of-4vec-fix
+        (equal (3vec-p (4vec-fix x)) (3vec-p x))
+        :hints(("Goal" :in-theory (enable 3vec-p))))
+
+      (defthm 3vec-p-of-4vec-part-select
+        (implies (3vec-p in)
+                 (3vec-p (4vec-part-select lsb width in)))
+        :hints(("Goal" :in-theory (enable 4vec-part-select))))
+
+      (defthm 3vec-p-of-4vec-part-install
+        (implies (and (3vec-p in)
+                      (3vec-p val))
+                 (3vec-p (4vec-part-install lsb width in val)))
+        :hints(("Goal" :in-theory (enable 4vec-part-install))))
+
+
+
+      (defthm 3vec-p-of-eval-when-3valued-syntaxp
+        (implies (3valued-syntaxp x)
+                 (3vec-p (svex-eval x env)))
+        :hints (("Goal" :expand ((svex-eval x env)
+                                 (3valued-syntaxp x)
+                                 (:free (x) (svex-eval (list 'quote x) env)))
+                 :induct (3valued-syntaxp x)
+                 :in-theory (e/d (svex-apply svexlist-eval 4veclist-nth-safe)
+                                 ((:d 3valued-syntaxp))))))
+
+      (deffixequiv 3valued-syntaxp :args ((x svex))))))
 
 
 (def-svex-rewrite unfloat-of-float-free
@@ -1079,7 +1136,7 @@
 (def-svex-rewrite bit?!-of-unfloat
   :lhs (bit?! (unfloat x) y z)
   :rhs (bit?! x y z)
-  :hints(("Goal" :in-theory (enable 4vec-bit?! svex-apply svexlist-eval 3vec-fix))))
+  :hints(("Goal" :in-theory (enable 4vec-bit?! svex-apply svexlist-eval 3vec-fix 4vec-bitmux 4vec-1mask))))
 
 (def-svex-rewrite uand-of-unfloat
   :lhs (uand (unfloat x))
@@ -2560,7 +2617,7 @@
              (not (sparseint-test-bitandc2 mask (int-to-sparseint (4vec->upper (svex-quote->val c)))))
              (not (sparseint-test-bitandc2 mask (int-to-sparseint (4vec->lower (svex-quote->val c))))))
     :rhs x
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -2574,7 +2631,7 @@
                                                (int-to-sparseint (4vec->upper (svex-quote->val c)))
                                                (int-to-sparseint (4vec->lower (svex-quote->val c)))))))
     :rhs y
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -2587,7 +2644,7 @@
              (not (sparseint-test-bitandc2 mask (s4vec->upper cval)))
              (not (sparseint-test-bitandc2 mask (s4vec->lower cval))))
     :rhs x
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -2601,7 +2658,7 @@
              ;; so we just need to check that the upper under the mask is 0.
              (not (sparseint-test-bitand mask (s4vec->upper cval))))
     :rhs y
-    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask))
+    :hints(("Goal" :in-theory (enable svex-apply 4vec-bit?! 4vec-mask 4vec-bitmux 4vec-1mask))
            (bitops::logbitp-reasoning
             ;; :prune-examples nil
             :add-hints (:in-theory (enable* bitops::bool->bit
@@ -4233,6 +4290,37 @@
   (def-svex-rewrite ?-of-uor
     :lhs (? (uor test) x y)
     :rhs (? test x y)
+    :hints(("Goal" :in-theory (enable 4vec-reduction-or
+                                      3vec-reduction-or
+                                      4vec-?
+                                      3vec-? 3vec-fix
+                                      4vec-mask
+                                      svex-apply))
+           (svex-generalize-lookups)))
+
+  (local (defthm logior-lower-upper-when-3vec-p
+           (implies (3vec-p x)
+                    (equal (logior (4vec->lower x)
+                                   (4vec->upper x))
+                           (4vec->upper x)))
+           :hints(("Goal" :in-theory (enable 3vec-p))
+                  (logbitp-reasoning))))
+
+  (local (defthm logand-lower-upper-when-3vec-p
+           (implies (3vec-p x)
+                    (equal (logand (4vec->lower x)
+                                   (4vec->upper x))
+                           (4vec->lower x)))
+           :hints(("Goal" :in-theory (enable 3vec-p))
+                  (logbitp-reasoning))))
+  
+  (def-svex-rewrite ?-of-same
+    :lhs (? test x x)
+    ;; Unfortunately this isn't unconditionally either x or (unfloat x) -- if
+    ;; test is all-0 or has a 1, then it's x, else (a mix of 0s and Xs/Zs) it's
+    ;; (unfloat x).  But for 3valued x it's all the same.
+    :checks ((3valued-syntaxp x))
+    :rhs x
     :hints(("Goal" :in-theory (enable 4vec-reduction-or
                                       3vec-reduction-or
                                       4vec-?

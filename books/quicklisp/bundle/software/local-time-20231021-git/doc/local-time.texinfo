@@ -1,0 +1,805 @@
+\input texinfo   @c -*- Mode: Texinfo; Mode: auto-fill -*-
+@c %**start of header
+@setfilename local-time.info
+@settitle The local-time Manual
+@exampleindent 2
+
+@c @documentencoding utf-8
+
+@macro name {}
+@code{local-time}
+@end macro
+
+@macro mathx {tex, non-tex}
+@iftex
+@math{\tex\}
+@end iftex
+@ifnottex
+@emph{\non-tex\}
+@end ifnottex
+@end macro
+
+@macro impnote {text}
+@quotation Implementor's note
+@emph{\text\}
+@end quotation
+@end macro
+
+@c Set ROMANCOMMENTS to get comments in roman font.
+@ifset ROMANCOMMENTS
+@alias lispcmt = r
+@end ifset
+@ifclear ROMANCOMMENTS
+@alias lispcmt = asis
+@end ifclear
+
+@c Index for public api.
+@defindex it
+
+@macro pub {name}
+@itindex \name\
+@c
+@end macro
+
+@macro k {what}
+@code{\what\}
+@end macro
+
+@iftex
+@alias v = asis
+@alias cl = code
+@end iftex
+
+@ifnottex
+@alias v = var
+@alias cl = strong
+@end ifnottex
+
+@c Show variables, clauses, and concepts in the same index.
+@syncodeindex it cp
+@syncodeindex vr cp
+
+@copying
+Copyright @copyright{} 2012 Daniel Lowe <dlowe dlowe.net> @*
+Copyright @copyright{} 2012 Attila Lendvai <attila.lendvai gmail.com> @*
+
+@quotation
+This manual describes the @name{} Common Lisp library which is
+based on Erik Naggum's  @emph{The Long, Painful History of Time}
+[NaggumPaper] paper.
+
+@end quotation
+@end copying
+@c %**end of header
+
+@titlepage
+@title The @name{} Manual
+@subtitle Version 1.0.0
+@author Daniel Lowe
+@author Attila Lendvai
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top @name{}
+@insertcopying
+@end ifnottex
+
+@menu
+* Introduction::
+* Public API::
+* Other Features::
+* References::
+* Comprehensive Index::
+@end menu
+
+@c ===================================================================
+@node Introduction
+@chapter Introduction
+
+@menu
+* Portability::
+@end menu
+
+The @name{} library is a Common Lisp library for the manipulation of
+dates, times and intervals. It was originally based almost entirely
+upon Erik Naggum's paper @emph{The Long Painful History of Time}
+[NaggumPaper].  Many of the core concepts originated from this paper,
+such as the seperation of days and seconds, the choice of 2000-03-01
+as the standard epoch, and the timestring format.
+
+@c ===================================================================
+@node Portability
+@section Portability
+
+This implementation assumes that time zone information is stored in
+the tzfile format. The default timezone is loaded from
+/etc/localtime. On non-POSIX systems, this will certainly give
+different results than the system time handling.
+
+local-time currently supports sub-second precision clocks with ABCL,
+Allegro, CMUCL, CCL, SBCL, and LispWorks for Linux or Darwin.  All
+others will be able to retrieve the time with second precision using
+@code{get-universal-time}. You may add support for your own
+implementation by implementing the clock generic protocol documented
+here.
+
+@c ===================================================================
+@node Public API
+@chapter Public API
+
+@menu
+* Types::
+* Timezones::
+* Creating timestamp Objects::
+* Querying timestamp Objects::
+* Manipulating Date and Time Values::
+* Parsing and Formatting::
+* Clocks::
+@end menu
+
+@c ===================================================================
+@node Types
+@section Types
+
+It's a good idea to treat all values as immutable objects. @name{}
+will not modify any object it was given unless explicitly asked to by
+the @code{:into} keyword argument.
+
+@itindex timestamp
+@deftp Class timestamp day sec nsec
+
+@code{timestamp} values can represent either a @emph{date},
+a @emph{daytime} or a @emph{time} value. It has the following slots:
+
+@lisp
+(defclass timestamp ()
+  ((day :type integer)
+   (sec :type integer)
+   (nsec :type (integer 0 999999999))))
+@end lisp
+
+The following constraints apply to the specific types:
+@itemize
+
+@item
+@emph{date}: must have a @var{+utc-zone+} timezone and the @var{sec}
+slot must be the first second of a day; In other words, the time
+elements of the @code{timestamp} value must have their least possible
+values.
+
+@item
+@emph{time}: the @var{day} slot must be zero.
+
+@end itemize
+@end deftp
+
+@deftp Struct timezone path name loaded
+
+@code{timezone} objects represent timezones - local and political
+modifications to the time representation.  Timezones are responsible
+for storing offsets from GMT, abbreviations for different
+sub-timezones, and the times each sub-timezone is to be in effect.
+
+@end deftp
+
+@c ===================================================================
+@node Timezones
+@section Timezones
+
+@itindex *default-timezone*
+@defvr Default *default-timezone*
+
+The variable @var{*default-timezone*} contains the timezone that will
+be used by default if none is specified.  It is loaded from
+@emph{/etc/localtime} when the library is loaded.  If
+@emph{/etc/localtime} is not present, it will default to UTC.
+
+@end defvr
+
+@itindex +utc-zone+
+@defvr Constant +utc-zone+
+
+The variable @var{+utc-zone+} contains a timezone corresponding to
+UTC.
+
+@end defvr
+
+
+@itindex define-timezone
+@defmac define-timezone zone-name zone-file &key (load nil)
+
+Define @var{zone-name} (a symbol or a string) as a new timezone,
+lazy-loaded from @var{zone-file} (a pathname designator relative to
+the zoneinfo directory on this system.  If @var{load} is true, load
+immediately.
+
+@end defmac
+
+@itindex zone-name
+@defmac zone-name timezone
+
+Returns timezone name.
+
+@end defmac
+
+
+@itindex find-timezone-by-location-name
+@defun find-timezone-by-location-name name
+
+Returns the timezone found at the location name (such as
+@code{US/Eastern}).  @code{reread-timezone-repository} must be called
+before this function is used.
+
+@end defun
+
+@itindex timezones-matching-subzone
+@defun timezones-matching-subzone abbreviated-name timestamp
+
+Returns list of lists of active timezone, matched subzone and last transition time
+for timezones that have subzone matching specified @code{ABBREVIATED-NAME} as of @code{TIMESTAMP} moment if provided.
+
+@code{reread-timezone-repository} must be called before this function
+is used.
+
+@end defun
+
+@itindex all-timezones-matching-subzone
+@defun all-timezones-matching-subzone abbreviated-name
+
+Returns list of lists of timezone, matched subzone and last transition time
+for timezones that have subzone matching specified @code{ABBREVIATED-NAME}.
+Includes both active and historical timezones.
+
+@code{reread-timezone-repository} must be called before this function
+is used.
+
+@end defun
+
+@itindex reread-timezone-repository
+@defun reread-timezone-repository &key (timezone-repository *default-timezone-repository-path*)
+
+Walks the current repository, reading all tzinfo files updating
+indexes.  The default timezone repository is set to the zoneinfo/
+directory of the local-time system.
+
+@end defun
+
+@c ===================================================================
+@node Creating timestamp Objects
+@section Creating @code{timestamp} Objects
+
+@itindex universal-to-timestamp
+@defun universal-to-timestamp universal &key (nsec 0)
+
+Produces a @code{timestamp} instance from the provided universal time
+@var{universal}.  Universal time is defined in the Common Lisp
+Specification as the number of seconds since 1900-01-01T00:00:00Z.
+@end defun
+
+
+@itindex unix-to-timestamp
+@defun unix-to-timestamp unix &key (nsec 0)
+
+Produces a @code{timestamp} instance from the provided unix time
+@var{unix}.  Unix time is defined by POSIX as the number of seconds
+since 1970-01-01T00:00:00Z.
+@end defun
+
+
+@itindex now
+@defun now
+
+Produces a @code{timestamp} instance with the current time.  With
+Allegro, CMUCL, CCL, SBCL, and LispWorks for Linux or Darwin, the new
+timestamp will be precise to the microsecond (usec); with ABCL, to the
+millisecond (ms).  Otherwise, the precision is limited to the second.
+@end defun
+
+
+@itindex today
+@defun today
+
+Produces a @code{timestamp} instance that corresponds to today's
+date, which is the midnight of the current day in the UTC zone.
+@end defun
+
+
+@itindex encode-timestamp
+@defun encode-timestamp nsec sec minute hour day month year &key timezone offset into
+
+Returns a new @code{timestamp} instance corresponding to the specified
+time elements.  The @var{offset} is the number of seconds offset from
+UTC of the locale.  If @var{offset} is not specified, the offset will
+be guessed from the @var{timezone}.  If a @code{timestamp} is passed
+as the @var{into} argument, its value will be set and that
+@code{timestamp} will be returned.  Otherwise, a new @code{timestamp}
+is created.
+@end defun
+
+
+@itindex make-timestamp
+@defmac make-timestamp &key :day :sec :nsec
+
+Expands to an expression that creates an instance of a
+@code{timestamp} exactly as specified.
+@end defmac
+
+
+@itindex clone-timestamp
+@defun clone-timestamp timestamp
+
+Expands to an expression that creates another copy of @var{timestamp}
+that is @code{timestamp=} to it.
+@end defun
+
+
+@c ===================================================================
+@node Querying timestamp Objects
+@section Querying @code{timestamp} Objects
+
+@itindex day-of
+@defun day-of timestamp
+
+Returns the day component of @var{timestamp}.  Although Naggum's paper
+specifies that the day should be a signed fixnum, it is left unbounded
+for flexibility reasons.
+@end defun
+
+@itindex sec-of
+@defun sec-of timestamp
+
+Returns the 'seconds' component of the time.  Valid values for the
+seconds range from 0 to 86399.
+@end defun
+
+@itindex nsec-of
+@defun nsec-of timestamp
+
+Returns the 'microseconds' component of the time.  Valid values for
+the nanoseconds range from 0 to 999999999.
+@end defun
+
+@itindex timestamp-to-universal
+@defun timestamp-to-universal timestamp
+
+This returns the date/time specified in @var{timestamp} encoded as
+the number of seconds since January 1st, 1900 12:00am UTC.
+@end defun
+
+@itindex timestamp-to-unix
+@defun timestamp-to-unix timestamp
+
+This returns the date/time specified in @var{timestamp} encoded as
+the number of seconds since January 1st, 1970 12:00am UTC.  It
+corresponds with the time received from the POSIX call @code{time()}.
+@end defun
+
+@itindex timestamp-subtimezone
+@defun timestamp-subtimezone timestamp timezone
+
+Returns as multiple values the time zone applicable at the given time
+as the number of seconds east of UTC, a boolean daylight-saving-p, and
+the customary abbreviation of the timezone.
+@end defun
+
+
+@itindex with-decoded-timestamp
+@defmac with-decoded-timestamp (&key nsec sec minute hour day month year day-of-week daylight-p timezone) timestamp &body body
+
+This macro binds variables to the decoded elements of @var{timestamp}.
+The timezone argument is used for decoding the timestamp, and is not
+bound by the macro. The value of @var{day-of-week} starts from 0 which
+means Sunday.
+@end defmac
+
+
+@itindex decode-timestamp
+@defun decode-timestamp timestamp
+
+Returns the decoded time as @code{(values ns ss mm hh day month
+year day-of-week daylight-saving-time-p timezone-offset timezone-abbreviation)}.
+@end defun
+
+
+@itindex timestamp<
+@itindex timestamp<=
+@itindex timestamp>
+@itindex timestamp>=
+@itindex timestamp=
+@itindex timestamp/=
+@defun timestamp< time-a time-b
+@defunx timestamp<= time-a time-b
+@defunx timestamp> time-a time-b
+@defunx timestamp>= time-a time-b
+@defunx timestamp= time-a time-b
+@defunx timestamp/= time-a time-b
+
+These comparison functions act like their string and char counterparts.
+@end defun
+
+
+@itindex timestamp-minimum
+@defun timestamp-minimum timestamp &rest timestamps
+
+Returns the earliest timestamp passed to it.
+@end defun
+
+
+@itindex timestamp-maximum
+@defun timestamp-maximum timestamp &rest timestamps
+
+Returns the latest timestamp passed to it.
+@end defun
+
+
+@itindex timestamp-day-of-week
+@defun timestamp-day-of-week timestamp
+
+This returns the index of the day of the week,
+starting at 0 which means Sunday.
+@quotation Note
+''Day of the week'' is ambigous and locale dependent.
+@end quotation
+@end defun
+
+
+@itindex universal-to-timestamp
+@defun universal-to-timestamp timestamp
+
+Returns the UNIVERSAL-TIME corresponding to @var{timestamp}.
+@quotation Note
+Subsecond precision is not preserved.
+@end quotation
+@end defun
+
+
+@itindex timestamp-millennium
+@itindex timestamp-century
+@itindex timestamp-decade
+@defun timestamp-millennium timestamp &key timezone
+@defunx timestamp-century timestamp &key timezone
+@defunx timestamp-decade timestamp &key timezone
+
+Returns the ordinal millennium, century or decade upon which the
+timestamp falls.  Ordinal time values start at 1, so the
+(timestamp-century (now)) will return 21.
+
+@end defun
+
+@itindex timestamp-year
+@itindex timestamp-month
+@itindex timestamp-day
+@itindex timestamp-hour
+@itindex timestamp-minute
+@itindex timestamp-second
+@itindex timestamp-millisecond
+@itindex timestamp-microsecond
+@defun timestamp-year timestamp &key timezone
+@defunx timestamp-month timestamp &key timezone
+@defunx timestamp-day timestamp &key timezone
+@defunx timestamp-hour timestamp &key timezone
+@defunx timestamp-minute timestamp &key timezone
+@defunx timestamp-second timestamp &key timezone
+@defunx timestamp-millisecond timestamp &key timezone
+@defunx timestamp-microsecond timestamp &key timezone
+@defunx timestamp-microsecond timestamp &key timezone
+
+Returns the decoded part of the timestamp.
+@end defun
+
+
+@c ===================================================================
+@node Manipulating Date and Time Values
+@section Manipulating Date and Time Values
+
+@itindex timestamp+
+@itindex timestamp-
+@defun timestamp+ time amount unit
+@defunx timestamp- time amount unit
+
+Add or subtract the @var{amount} to the @var{time} using the specified
+@var{unit}.  @var{unit} may be one of ( @code{:nsec} @code{:sec}
+@code{:minute} @code{:hour} @code{:day} @code{:month} @code{:year}).
+The value of the parts of the timestamp of higher resolution than the
+UNIT will never be touched.  If you want a precise number of seconds
+from a time, you should specify the offset in seconds.
+@end defun
+
+@itindex timestamp-maximize-part
+@defun timestamp-maximize-part timestamp part &key offset timezone into
+
+Returns a timestamp with its parts maximized up to @var{part}.  @var{part} can be
+any of (:nsec :sec :min :hour :day :month).  If @var{into} is specified, it
+will be modified and returned, otherwise a new timestamp will be
+created.
+@end defun
+
+
+@itindex timestamp-minimize-part
+@defun timestamp-minimize-part timestamp part &key offset timezone into
+
+Returns a timestamp with its parts minimized up to @var{part}.  @var{part} can be
+any of (:nsec :sec :min :hour :day :month).  If @var{into} is specified, it
+will be modified and returned, otherwise a new timestamp will be
+created.
+@end defun
+
+
+@itindex adjust-timestamp
+@defmac adjust-timestamp timestamp &body changes
+
+Alters various parts of @var{timestamp}, given a list of changes.  The
+changes are in the format @code{(offset part value)} and @code{(set
+part value)}.
+
+@lisp
+;; Return a new @code{timestamp} value that points to the Monday in
+;; the week of @code{(today)}
+(adjust-timestamp (today) (offset :day-of-week :monday))
+
+;; Return a new @code{timestamp} value that points three days ahead from now
+(adjust-timestamp (today) (offset :day 3))
+@end lisp
+
+Keep in mind that @code{adjust-timestamp} is not a mere setter for
+fields but instead it handles overflows and timezone conversions as
+expected. Also note that it's possible to specify multiple commands.
+
+The list of possible places to manipulate are: @code{:nsec}
+@code{:sec} @code{:sec-of-day} @code{:minute} @code{:hour}
+@code{:day} @code{:day-of-month} @code{:month} @code{:year}.
+@end defmac
+
+
+@itindex adjust-timestamp!
+@defmac adjust-timestamp! timestamp &body changes
+
+Just like @code{adjust-timestamp}, but instead of returning a freshly
+constructed value, it alters the provided @var{timestamp} value (and
+returns it).
+@end defmac
+
+
+@itindex timestamp-whole-year-difference
+@defun timestamp-whole-year-difference time-a time-b
+
+Returns the number of whole years elapsed between @var{time-a} and @var{time-b}.
+@quotation Note
+This is useful for calculating anniversaries and birthdays.
+@end quotation
+@end defun
+
+
+@itindex days-in-month
+@defun days-in-month month year
+
+Returns the number of days in a given month of the specified year.
+@end defun
+
+
+@c ===================================================================
+@node Parsing and Formatting
+@section Parsing and Formatting
+
+
+@itindex +iso-8601-format+
+@defvr Constant +iso-8601-format+
+
+The constant @var{+iso-8601-format+} is bound to a description of the ISO 8601 format.  An output with this format will look like this: @samp{2008-03-01T19:42:34.608506+01:00}.  This is the default format for the @code{format-timestring} function.
+
+@end defvr
+
+@itindex +asctime-format+
+@defvr Constant +asctime-format+
+
+The constant @var{+asctime-format+} is bound to a format mirroring the output of the POSIX asctime() function.  An output with this format will look like this: @samp{Sat Mar  1 19:42:34 2008}.
+
+@end defvr
+
+@itindex +rfc-1123-format+
+@defvr Constant +rfc-1123-format+
+
+The constant @var{+rfc-1123-format+} is bound to a description of the format defined in RFC 1123 for Internet timestamps.  An output with this format will look like this: @samp{Sat, 01 Mar 2008 19:42:34 -0500}.
+
+@end defvr
+
+@itindex +iso-week-date-format+
+@defvr Constant +iso-week-date-format+
+
+The constant @var{+iso-week-date-format+} is bound to a description of the ISO 8601 Week Date format.  An output with this format will look like this: @samp{2009-W53-5}.
+
+@end defvr
+
+@itindex parse-timestring
+@defun parse-timestring timestring &key (start 0) end (fail-on-error t) (offset 0)
+
+Parses a timestring and returns the corresponding @code{timestamp}.
+Parsing begins at @var{start} and stops at the @var{end}
+position. If there are invalid characters within @code{timestring}
+and @var{fail-on-error} is @code{T}, then an @code{invalid-timestring}
+error is signaled, otherwise @code{NIL} is returned.
+
+If there is no timezone specified in @code{timestring} then
+@var{offset} is used as the default timezone offset (in seconds).
+@end defun
+
+
+@itindex format-timestring
+@defun format-timestring (destination timestamp &key (format +iso-8601-format+) (timezone *default-timezone*))
+
+Constructs a string representation of TIMESTAMP according to FORMAT and returns it.  If destination is @code{T}, the string is written to @code{*standard-output*}.  If destination is a stream, the string is written to the stream.
+
+FORMAT is a list containing one or more of strings, characters, and keywords.  Strings and characters are output literally, while keywords are replaced by the values here:
+
+@table @code
+@item :year
+*year
+@item :month
+*numeric month
+@item :day
+*day of month
+@item :weekday
+*numeric day of week, starting from 0 which means Sunday
+@item :hour
+*hour
+@item :min
+*minutes
+@item :sec
+*seconds
+@item :msec
+*milliseconds
+@item :usec
+*microseconds
+@item :nsec
+*nanoseconds
+@item :iso-week-year
+*year for ISO week date (can be different from regular calendar year)
+@item :iso-week-number
+*ISO week number (i.e. 1 through 53)
+@item :iso-week-day
+*ISO compatible weekday number (i.e. monday=1, sunday=7)
+@item :ordinal-day
+day of month as an ordinal (e.g. 1st, 23rd)
+@item :long-weekday
+long form of weekday (e.g. Sunday, Monday)
+@item :short-weekday
+short form of weekday (e.g. Sun, Mon)
+@item :minimal-weekday
+minimal form of weekday (e.g. Su, Mo)
+@item :short-year
+short form of year (last 2 digits, e.g. 41, 42 instead of 2041, 2042)
+@item :long-month
+long form of month (e.g. January, February)
+@item :short-month
+short form of month (e.g. Jan, Feb)
+@item :hour12
+hour on a 12-hour clock
+@item :ampm
+am/pm marker in lowercase
+@item :gmt-offset
+the gmt-offset of the time, in +00:00 form
+@item :gmt-offset-or-z
+like :gmt-offset, but is Z when UTC
+@item :gmt-offset-hhmm
+like :gmt-offset, but in +0000 form
+@item :timezone
+timezone abbrevation for the time
+@end table
+
+Elements marked by * can be placed in a list in the form:
+@lisp
+(:keyword padding &optional (padchar #\0))
+@end lisp
+The string representation of the value will be padded with the padchar.
+
+You can see examples by examining the values in @var{+iso-8601-format+}, @var{+asctime-format+}, and @var{+rfc-1123-format+}.
+
+Produces on @var{stream} the timestring corresponding to the @var{timestamp} with
+the given options.  If @var{stream} is @code{nil}, only returns a string containing what
+would have been the output.  If @var{stream} is @code{t}, prints the string to
+@var{*standard-output*}.
+
+Example output:
+@lisp
+LOCAL-TIME> (format-timestring nil (now))
+"2008-03-01T19:42:34.608506+01:00"
+@end lisp
+@end defun
+
+
+@itindex format-rfc3339-timestring
+@defun format-rfc3339-timestring (destination timestamp &key omit-date-part omit-time-part omit-timezone-part (use-zulu t))
+
+Formats the time like format-timestring, but in RFC 3339 format. The options control valid options in the RFC.
+@end defun
+
+
+@itindex format-rfc1123-timestring
+@defun format-rfc1123-timestring (destination timestamp &key (timezone *default-timezone*))
+
+Formats the time like format-timestring, but in RFC 1123 format.
+@end defun
+
+@c ===================================================================
+@node Clocks
+@section Clocks
+
+@defvr Default *clock*
+
+The *clock* special variable and the following generic functions are
+exposed so that applications may re-define the current time or date as
+required.  This can be used for testing or to support alternate clocks.
+
+The currently supported values are:
+
+@itemize
+@item @code{t} - Use the standard system clock with no adjustments
+@item @code{leap-second-adjusted} - The system clock, adjusted for leap seconds using the information in *default-timezone*.
+@end itemize
+
+@end defvr
+
+@defun clock-now (clock)
+
+Specialize this generic function to re-define the present moment
+@end defun
+
+@defun clock-today (clock)
+
+Specialize this generic function to re-define the present day
+@end defun
+
+@c ===================================================================
+@node Other Features
+@chapter Other Features
+
+@section Reader Macros
+
+@itindex enable-read-macros
+@defun enable-read-macros
+
+Adds @@TIMESTRING and #@@UNIVERSAL-TIME as reader macros.
+@end defun
+
+
+@section Support for non-Gregorian Calendars
+
+@itindex astronomical-julian-date
+@defun astronomical-julian-date timestamp
+
+Returns the julian date of the date portion of @var{timestamp}.
+@end defun
+
+
+@itindex modified-julian-date
+@defun astronomical-julian-date timestamp
+
+Returns the modified julian date of the date portion of @var{timestamp}.
+@end defun
+
+@c ===================================================================
+@node References
+@chapter References
+
+@itemize
+
+@item
+[NaggumPaper] Erik Naggum. @emph{The Long Painful History of Time}
+@url{http://naggum.no/lugm-time.html}, 1999.
+
+@end itemize
+
+
+@c ===================================================================
+@node Comprehensive Index
+@unnumbered Index
+@printindex cp
+
+@bye

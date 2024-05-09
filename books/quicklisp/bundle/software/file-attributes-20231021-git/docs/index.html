@@ -1,0 +1,126 @@
+<!DOCTYPE html> <html lang="EN"> <head> <meta charset="utf-8"> <title>File Attributes</title> <style>html body{margin:0 auto 0 auto;padding:20px;max-width:1024px;font-family:sans-serif;font-size:14pt;overflow-y:scroll;}html body a{text-decoration:none;}html body a[href]{color:#0055AA;}html body a[href]:hover{color:#0088EE;}html body pre{background:#FAFAFA;border:1px solid #DDDDDD;padding:0.75em;overflow-x:auto;}html body pre >code a[href]{color:#223388;}article.project h1{font-size:1.7em;}article.project h1,article.project h2,article.project h3,article.project h4,article.project h5,article.project h6{margin:0.2em 0 0.1em 0;text-indent:1em;}article.project >header{text-align:center;}article.project >header img.logo{display:block;margin:auto;max-height:170px;}article.project >header h1{display:inline-block;text-indent:0;font-size:2.5em;}article.project >header .version{vertical-align:bottom;}article.project >header .languages{margin-top:-0.5em;text-transform:capitalize;}article.project >header .description{margin:0;}article.project >header .pages{margin-top:0.5em;font-size:1.2em;text-transform:capitalize;}article.project >header .pages a{display:inline-block;padding:0 0.2em;}article.project >section{margin:1em 0 1em 0;}article.project #index >ul{list-style:none;margin:0;padding:0;}article.project .row label{display:inline-block;min-width:8em;}article.project #system .row{display:flex;}article.project #system #dependencies{display:inline;margin:0;padding:0;}article.project #system #dependencies li{display:inline;padding:0 0.2em;}article.definition{margin:1em 0 0 0;}article.definition >header h1,article.definition >header h2,article.definition >header h3,article.definition >header h4,article.definition >header h5,article.definition >header h6{text-indent:0;display:inline-block;}article.definition >header ul{display:inline-block;list-style:none;margin:0;padding:0;}article.definition >header ul li{display:inline-block;padding:0 0.2em 0 0;}article.definition >header .visibility{display:none;}article.definition >header .visibility,article.definition >header .type{text-transform:lowercase;}article.definition >header .source-link{visibility:hidden;float:right;}article.definition >header .source-link:after{visibility:visible;content:"[SRC]";}article.definition .docstring{margin:0 0 0 1em;}article.definition .docstring pre{font-size:0.8em;white-space:pre-wrap;}.definition.package >header ul.nicknames{display:inline-block;list-style:none;margin:0;padding:0 0 0 1em;}.definition.package >header ul.nicknames li{display:inline;}.definition.package >header ul.nicknames:before{content:"(";}.definition.package >header ul.nicknames:after{content:")";}.definition.package ul.definitions{margin:0;list-style:none;padding:0 0 0 0.5em;}.definition.callable >header .name:before,.definition.type >header .name:before{content:"(";font-weight:normal;}.definition.callable >header .arguments:after,.definition.type >header .arguments:after{content:")";}.definition.callable >header .arguments .arguments:before,.definition.type >header .arguments .arguments:before{content:"(";}.definition.callable >header .arguments .argument,.definition.type >header .arguments .argument{padding:0;}.definition.callable >header .arguments .argument.lambda-list-keyword,.definition.type >header .arguments .argument.lambda-list-keyword{color:#991155;}.definition li>mark{background:none;border-left:0.3em solid #0088EE;padding-left:0.3em;display:block;} </style> </head> <body> <article class="project"> <header>  <h1>file attributes</h1>  <span class="version">1.0.0</span>  <nav class="languages">  <a href="index.html">English</a>  </nav>  <p class="description">Access to file attributes (uid, gid, atime, mtime, mod)</p>  <nav class="pages">  <a href="index.html">file attributes</a>  </nav> </header> <section id="documentation"><article><h2 id="About File-Attributes">About File-Attributes</h2><p>This is a small OS portability library to retrieve and set file attributes not supported by the Lisp standard functions.</p><h2 id="How To">How To</h2><p>Simply use the functions <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AACCESS-TIME" class="xref">access-time</a></code>, <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AMODIFICATION-TIME" class="xref">modification-time</a></code>, and <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3ACREATION-TIME" class="xref">creation-time</a></code> to access the relevant timestamps. Some stamps may not be accessible or modifiable depending on your OS or file system.</p><p>In order to manage attribute information, use <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AOWNER" class="xref">owner</a></code>, <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AGROUP" class="xref">group</a></code>, and <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AATTRIBUTES" class="xref">attributes</a></code>. The values used are OS specific for these functions, though the attributes flag can be decoded and encoded via a standardised form with <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3ADECODE-ATTRIBUTES" class="xref">decode-attributes</a></code> and <code><a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AENCODE-ATTRIBUTES" class="xref">encode-attributes</a></code>.</p><p>Any of the above operations may signal an error if the file does not exist, is inaccessible, the operation is not possible, or some other failure occurred.</p></article></section>   <section id="system"> <h2>System Information</h2>  <div class="row"> <label for="version">Version:</label> <a id="version">1.0.0</a> </div>   <div class="row"> <label for="dependencies">Dependencies:</label> <ul id="dependencies"><li><a class="external">trivial-features</a></li><li><a class="external" href="https://Shinmera.github.io/documentation-utils/">documentation-utils</a></li><li><a class="external">cffi</a></li></ul> </div>   <div class="row"> <label for="author">Author:</label> <a id="author" href="mailto:shinmera@tymoon.eu">Nicolas Hafner</a> </div>   <div class="row"> <label for="license">License:</label> <a id="license" href="https://github.com/shinmera/file-attributes/blob/master/LICENSE">zlib</a> </div>   <div class="row"> <label for="homepage">Homepage:</label> <a id="homepage" href="https://shinmera.github.io/file-attributes">https://shinmera.github.io/file-attributes</a> </div>   <div class="row"> <label for="sources">Sources:</label> <a id="sources" href="https://github.com/Shinmera/file-attributes.git">https://github.com/Shinmera/file-attributes.git</a> </div>  </section>    <section id="index"> <h2>Definition Index</h2> <ul> <li> <article class="definition package" id="PACKAGE ORG.SHIRAKUMO.FILE-ATTRIBUTES"> <header> <h3> <a href="#PACKAGE%20ORG.SHIRAKUMO.FILE-ATTRIBUTES">ORG.SHIRAKUMO.FILE-ATTRIBUTES</a> </h3> <ul class="nicknames"></ul>  </header> <div class="docstring"><i>No documentation provided.</i></div> <ul class="definitions"> <li> <article class="definition special-variable" id="VARIABLE ORG.SHIRAKUMO.FILE-ATTRIBUTES:*SYSTEM*"> <header> <span class="visibility">EXTERNAL</span> <span class="type">SPECIAL-VARIABLE</span> <h4 class="name"> <a href="#VARIABLE%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%2ASYSTEM%2A">*SYSTEM*</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments"></ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/protocol.lisp#L46">Source</a>  </header> <div class="docstring"><pre>The default system as recognised through feature flags.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:ACCESS-TIME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AACCESS-TIME">ACCESS-TIME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L81">Source</a>  </header> <div class="docstring"><pre>Accesses the last time this file was accessed.
+
+Signals an error if retrieving or setting the information is not
+possible.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:(SETF ACCESS-TIME)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%28SETF%20ACCESS-TIME%29">(SETF ACCESS-TIME)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L84">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:ATTRIBUTES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AATTRIBUTES">ATTRIBUTES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L109">Source</a>  </header> <div class="docstring"><pre>Accesses the attributes of this file.
+
+The attributes are expressed as a positive integer.
+
+Signals an error if retrieving or setting the information is not
+possible.
+
+The contents of the file attributes are highly system specific and may
+contain things such as user permissions or file kind information.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AENCODE-ATTRIBUTES" class="xref">ENCODE-ATTRIBUTES</a>
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3ADECODE-ATTRIBUTES" class="xref">DECODE-ATTRIBUTES</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:(SETF ATTRIBUTES)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%28SETF%20ATTRIBUTES%29">(SETF ATTRIBUTES)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L112">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:CREATION-TIME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3ACREATION-TIME">CREATION-TIME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/linux.lisp#L50">Source</a>  </header> <div class="docstring"><pre>Accesses the time this file was created.
+
+Signals an error if retrieving or setting the information is not
+possible.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:(SETF CREATION-TIME)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%28SETF%20CREATION-TIME%29">(SETF CREATION-TIME)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/protocol.lisp#L25">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:DECODE-ATTRIBUTES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3ADECODE-ATTRIBUTES">DECODE-ATTRIBUTES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ATTRIBUTES</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">SYSTEM</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/protocol.lisp#L71">Source</a>  </header> <div class="docstring"><pre>Decodes an integer for attributes of the requested system into a standardised plist of file attributes.
+
+Which flags are be produced is highly dependent on the system, but the
+following may appear:
+
+  :ARCHIVED
+  :COMPRESSED
+  :DEVICE
+  :DIRECTORY
+  :ENCRYPTED
+  :FIFO
+  :GROUP-EXECUTE
+  :GROUP-READ
+  :GROUP-WRITE
+  :HIDDEN
+  :INTEGRITY
+  :LINK
+  :NO-SCRUB
+  :NORMAL
+  :NOT-INDEXED
+  :OFFLINE
+  :OTHER-EXECUTE
+  :OTHER-READ
+  :OTHER-WRITE
+  :OWNER-EXECUTE
+  :OWNER-READ
+  :OWNER-WRITE
+  :READ-ONLY
+  :RECALL
+  :SET-GROUP
+  :SET-USER
+  :SOCKET
+  :SPARSE
+  :STICKY
+  :SYSTEM-FILE
+  :TEMPORARY
+  :VIRTUAL
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AENCODE-ATTRIBUTES" class="xref">ENCODE-ATTRIBUTES</a>
+See <a href="#VARIABLE%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%2ASYSTEM%2A" class="xref">*SYSTEM*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:ENCODE-ATTRIBUTES"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AENCODE-ATTRIBUTES">ENCODE-ATTRIBUTES</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">ATTRIBUTES</li>    <li class="argument lambda-list-keyword">&amp;KEY</li>    <li class="argument">SYSTEM</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/protocol.lisp#L78">Source</a>  </header> <div class="docstring"><pre>Encodes a plist of file attributes into an integer suitable for the requested system.
+
+See <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3ADECODE-ATTRIBUTES" class="xref">DECODE-ATTRIBUTES</a>
+See <a href="#VARIABLE%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%2ASYSTEM%2A" class="xref">*SYSTEM*</a></pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:GROUP"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AGROUP">GROUP</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L95">Source</a>  </header> <div class="docstring"><pre>Accesses the owning group of this file.
+
+The group is expressed as a positive integer.
+
+Signals an error if retrieving or setting the information is not
+possible.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:(SETF GROUP)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%28SETF%20GROUP%29">(SETF GROUP)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L98">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:MODIFICATION-TIME"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AMODIFICATION-TIME">MODIFICATION-TIME</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L88">Source</a>  </header> <div class="docstring"><pre>Accesses the last time this file was modified.
+
+Signals an error if retrieving or setting the information is not
+possible.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:(SETF MODIFICATION-TIME)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%28SETF%20MODIFICATION-TIME%29">(SETF MODIFICATION-TIME)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L91">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:OWNER"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3AOWNER">OWNER</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L102">Source</a>  </header> <div class="docstring"><pre>Accesses the owning user of this file.
+
+The user is expressed as a positive integer.
+
+Signals an error if retrieving or setting the information is not
+possible.</pre></div> </article> </li>  <li> <article class="definition function callable" id="FUNCTION ORG.SHIRAKUMO.FILE-ATTRIBUTES:(SETF OWNER)"> <header> <span class="visibility">EXTERNAL</span> <span class="type">FUNCTION</span> <h4 class="name"> <a href="#FUNCTION%20ORG.SHIRAKUMO.FILE-ATTRIBUTES%3A%28SETF%20OWNER%29">(SETF OWNER)</a> </h4> <ul class="qualifiers"></ul> <ul class="arguments">  <li class="argument">VALUE</li>    <li class="argument">FILE</li>  </ul>  <a class="source-link" href="https://github.com/shinmera/file-attributes/blob/master/posix.lisp#L105">Source</a>  </header> <div class="docstring"><i>No documentation provided.</i></div> </article> </li> </ul> </article> </li> </ul> </section>  </article> <script>window.addEventListener("DOMContentLoaded", function(){
+    var unmarkElement = function(el){
+        if(el.tagName === "mark" || el.tagName === "MARK"){
+            [].forEach.call(el.childNodes, function(child){
+                el.parentNode.insertBefore(child, el);
+            });
+            el.parentNode.removeChild(el);
+        }else if(el.parentNode.tagName === "mark"){
+            return unmarkElement(el.parentNode);
+        }
+        return null;
+    }
+
+    var unmarkAll = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("mark"), unmarkElement);
+    }
+    
+    var markElement = function(el){
+        if(el.parentNode.tagName === "mark" || el.parentNode.tagName === "MARK"){
+            return el.parentNode;
+        } else {
+            unmarkAll();
+            var marked = document.createElement("mark");
+            el.parentNode.insertBefore(marked, el);
+            marked.appendChild(el);
+            return marked;
+        }
+    }
+
+    var markFragmented = function(){
+        if(window.location.hash){
+            var el = document.getElementById(decodeURIComponent(window.location.hash.substr(1)));
+            if(el) markElement(el);
+        }
+    }
+
+    var registerXrefLink = function(link){
+        var el = document.getElementById(decodeURIComponent(link.getAttribute("href").substr(1)));
+        if(el){
+            link.addEventListener("click", function(){
+                markElement(el);
+            });
+        }
+    }
+
+    var registerXrefLinks = function(root){
+        root = root || document;
+        [].forEach.call(root.querySelectorAll("a.xref"), registerXrefLink);
+    }
+
+    markFragmented();
+    registerXrefLinks();
+}); </script> </body> </html> 

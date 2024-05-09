@@ -75,3 +75,12 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable append
                               ))))
+;;rename
+(defthm alists-equiv-on-of-cons-same
+  (implies (alists-equiv-on keys
+                            a2
+                            a)
+           (alists-equiv-on keys
+                            (cons (cons key (cdr (assoc-equal key a))) a2)
+                            a))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))

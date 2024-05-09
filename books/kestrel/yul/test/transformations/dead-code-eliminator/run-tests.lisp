@@ -30,7 +30,7 @@
   `(assert-event
     (b* (((mv in-block out-block state)
           (PARSE-YUL-OPTIMIZER-PAIR ,before-filename ,after-filename state))
-         ((when (or (resulterrp in-block) (resulterrp out-block)))
+         ((when (or (reserrp in-block) (reserrp out-block)))
           (mv nil nil state)) )
       (if (equal (BLOCK-DEAD in-block) out-block)
           (mv nil t state)

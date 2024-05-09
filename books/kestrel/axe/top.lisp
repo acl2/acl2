@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,10 @@
 
 (in-package "ACL2")
 
+;; Note that this file brings in all 3 versions of Axe (JVM, x86, and R1CS).
+;; Instead of including this file, consider just including the parts of Axe
+;; that you need.
+
 ;; Supporting utilities:
 (include-book "add-and-normalize-expr")
 (include-book "add-bitxor-nest-to-dag-array")
@@ -18,7 +22,6 @@
 (include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "add-to-dag")
 (include-book "alist-suitable-for-hypsp")
-(include-book "all-dargp")
 (include-book "arrays-of-alists")
 (include-book "assumption-array")
 (include-book "axe-bind-free-evaluator-basic")
@@ -42,6 +45,7 @@
 (include-book "bv-list-rules-axe")
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "bv-intro-rules")
 (include-book "cars-increasing-by-1")
 (include-book "check-equivs")
 (include-book "concretize-with-contexts")
@@ -57,6 +61,7 @@
 (include-book "dag-array-builders2")
 (include-book "dag-array-builders3")
 (include-book "dag-array-builders")
+(include-book "dag-array-info")
 (include-book "dag-array-printing2")
 (include-book "dag-array-printing")
 (include-book "dag-arrays")
@@ -72,6 +77,7 @@
 (include-book "dag-size-sparse")
 (include-book "dag-size-fast")
 (include-book "dag-size")
+(include-book "dag-stobj")
 (include-book "dag-to-term")
 (include-book "dag-to-term-with-lets")
 (include-book "dag-variable-alist")
@@ -91,7 +97,11 @@
 (include-book "equivs")
 (include-book "evaluator-basic")
 (include-book "extract-dag-array")
+(include-book "evaluate-test-case")
+(include-book "evaluate-test-case-simple")
+(include-book "find-probable-facts-common")
 (include-book "find-probable-facts")
+(include-book "find-probable-facts-simple")
 (include-book "fixup-context")
 (include-book "get-args-not-done")
 (include-book "get-disjuncts")
@@ -141,6 +151,7 @@
 (include-book "math-rules")
 (include-book "memoization")
 (include-book "merge-and-remove-dups")
+(include-book "merge-less-than-and-remove-dups")
 (include-book "merge-dag-into-dag-quick")
 (include-book "merge-nodes-into-dag-array")
 (include-book "merge-sort-by-cdr-greater")
@@ -150,7 +161,6 @@
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
 (include-book "sublis-var-and-eval-basic")
-(include-book "no-atoms")
 (include-book "node-replacement-alist")
 (include-book "node-info")
 (include-book "node-replacement-array")
@@ -159,13 +169,16 @@
 (include-book "nodenum-type-alists")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
+(include-book "possibly-negated-nodenums")
 (include-book "print-constant")
-(include-book "print-levels")
 (include-book "print-dag-to-file")
 (include-book "print-dag-array-to-file")
 (include-book "prover-common")
 (include-book "prover-stress-test")
 (include-book "prune-with-contexts")
+(include-book "prune-term")
+(include-book "prune-dag-precisely")
+(include-book "prune-dag-approximately")
 (include-book "rational-lists")
 (include-book "rebuild-literals")
 (include-book "rebuild-nodes2")
@@ -200,6 +213,7 @@
 (include-book "substitute-vars")
 (include-book "supporting-nodes")
 (include-book "supporting-vars")
+(include-book "sweep-and-merge-support")
 (include-book "tailtohead")
 (include-book "term-equal-dag")
 (include-book "test-cases")
@@ -223,6 +237,7 @@
 ;; Newest top-level Axe tools ("basic" means that these are for general-purpose
 ;; use, rather than specialized for the JVM, or for x86, etc.):
 (include-book "rewriter-basic")
+;; (include-book "rewriter-basic-code-only") ; not worth including here?
 (include-book "prover-basic")
 (include-book "prover-basic-clause-processor")
 (include-book "def-simplified")
@@ -233,6 +248,7 @@
 (include-book "stp-counterexamples")
 (include-book "translate-dag-to-stp")
 (include-book "prove-with-stp")
+(include-book "prove-with-stp-tester")
 (include-book "stp-clause-processor")
 (include-book "defthm-stp")
 
@@ -241,7 +257,6 @@
 (include-book "instantiate-hyp")
 (include-book "dagify")
 (include-book "sublis-var-and-eval")
-(include-book "prune")
 (include-book "result-array-stobj")
 (include-book "defconst-computed2")
 (include-book "strengthen-facts")

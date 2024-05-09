@@ -26,7 +26,7 @@
   :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 (defruled solve-by-div
-  (implies (and (rtl::primep p)
+  (implies (and (primep p)
                 (fep x p)
                 (fep a p)
                 (fep b p)
@@ -85,7 +85,7 @@
      This point plays a role in the proofs of
      other properties about @(tsee jubjub-r-pointp).")
    (xdoc::p
-    "This is part of Theorem 5.4.7 in [ZPS]."))
+    "This is part of Theorem 5.4.3 in [ZPS]."))
   (ecurve::point-finite 0 (1- (jubjub-q)))
   ///
 
@@ -130,7 +130,7 @@
      and therefore the point does not have order @(tsee jubjub-r).
      The point itself is not the zero point, which is @($(0,1)$).")
    (xdoc::p
-    "This is part of Theorem 5.4.7 in [ZPS]."))
+    "This is part of Theorem 5.4.3 in [ZPS]."))
 
   (defisar not-jubjub-r-pointp-when-0-ordinate
     (implies (and (ecurve::twisted-edwards-add-associativity)
@@ -424,7 +424,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is Theorem 4.5.7 in [ZPS].
+    "This is Theorem 5.4.3 in [ZPS].
      The proof here follows the one in [ZPS].
      It makes use of some of the preceding theorems."))
   (implies (and (ecurve::twisted-edwards-add-associativity)
@@ -575,7 +575,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is Theorem 5.4.8 in [ZPS].
+    "This is Theorem 5.4.4 in [ZPS].
      This ACL2 proof follows the proof in [ZPS]."))
   (implies (and (ecurve::twisted-edwards-add-associativity)
                 (jubjub-r-pointp point)
@@ -588,7 +588,7 @@
   :prep-lemmas
 
   ((defisar d-square-when-1-d-usquare-is-zero
-     (implies (and (rtl::primep q)
+     (implies (and (primep q)
                    (fep u q)
                    (fep d q)
                    (not (equal d 0))
@@ -600,7 +600,7 @@
                           0))
               (ecurve::pfield-squarep d q))
      :proof
-     ((:assume (:q (rtl::primep q)))
+     ((:assume (:q (primep q)))
       (:assume (:u (fep u q)))
       (:assume (:d (and (fep d q) (not (equal d 0)))))
       (:assume (:1-d.u^2=0 (equal (sub 1

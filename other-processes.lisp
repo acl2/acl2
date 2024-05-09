@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -379,6 +379,25 @@
 
 )
 
+(defun most-recent-enabled-elim-rule1 (lst ens)
+
+; This function finds the first elim-rule in lst whose whose :nume is
+; enabled-numep.
+
+  (cond ((endp lst) nil)
+        ((enabled-numep (access elim-rule (car lst) :nume) ens)
+         (car lst))
+        (t (most-recent-enabled-elim-rule1 (cdr lst) ens))))
+
+(defun most-recent-enabled-elim-rule (fn wrld ens)
+
+; This function finds the first elim-rule for fn whose whose :nume is
+; enabled-numep.
+
+  (let ((lst (getpropc fn 'eliminate-destructors-rules nil wrld)))
+    (and lst ; optimization
+         (most-recent-enabled-elim-rule1 lst ens))))
+
 (defun nominate-destructor-candidate
   (term eliminables type-alist clause ens wrld votes nominations)
 
@@ -420,11 +439,9 @@
 
   (cond
    ((flambda-applicationp term) nominations)
-   (t (let ((rule (getpropc (ffn-symb term) 'eliminate-destructors-rule nil
-                            wrld)))
+   (t (let ((rule (most-recent-enabled-elim-rule (ffn-symb term) wrld ens)))
         (cond
-         ((or (null rule)
-              (not (enabled-numep (access elim-rule rule :nume) ens)))
+         ((null rule)
           nominations)
          (t (let ((crucial-arg (nth (access elim-rule rule :crucial-position)
                                     (fargs term))))
@@ -619,8 +636,7 @@
      ((null nominations) nil)
      (t
       (let* ((dterm (pick-highest-sum-level-nos nominations wrld nil -1))
-             (rule (getpropc (ffn-symb dterm) 'eliminate-destructors-rule
-                             nil wrld))
+             (rule (most-recent-enabled-elim-rule (ffn-symb dterm) wrld ens))
              (alist (pairlis$ (fargs (access elim-rule rule :destructor-term))
                               (fargs dterm))))
         (change elim-rule rule
@@ -1412,8 +1428,20 @@
          (tilde-*-elim-phrase1 lst 1 nil wrld)
          nil))
 
-(defun tilde-*-untranslate-lst-phrase (lst flg wrld)
-  (list* "" "~p*" "~p* and " "~p*, "
+(defun tilde-*-untranslate-lst-phrase (lst final-punct flg wrld)
+
+; Final-punct must be a character or nil and is the punctuation (if any) after
+; the last item in lst.  To save conses, we make special cases for when the
+; final-punct is period or comma.
+
+  (list* ""
+         (cond ((eql final-punct #\.) "~p*.")
+               ((eql final-punct #\,) "~p*,")
+               (final-punct (coerce (append '(#\~ #\p #\*) (list final-punct))
+                                    'string))
+               (t "~p*"))
+         "~p* and "
+         "~p*, "
          (untranslate-lst lst flg wrld)
          nil))
 
@@ -1434,7 +1462,7 @@
              the following ~n6 goals.~]~|"
             (list (cons #\p (nth 3 (car lst)))
                   (cons #\0 (tilde-*-untranslate-lst-phrase
-                             (strip-cars (nth 3 (car lst))) nil wrld))
+                             (strip-cars (nth 3 (car lst))) nil nil wrld))
                   (cons #\1 (base-symbol (nth 0 (car lst))))
                   (cons #\2 (nth 1 (car lst)))
                   (cons #\3 (untranslate (nth 2 (car lst)) nil wrld))
@@ -1457,7 +1485,7 @@
             (list (cons #\p (nth 3 (car lst)))
                   (cons #\0 (tilde-*-untranslate-lst-phrase
                              (strip-cars (nth 3 (car lst)))
-                             nil wrld))
+                             nil nil wrld))
                   (cons #\1 (length lst))
                   (cons #\2 (tilde-*-elim-phrase lst wrld))
                   (cons #\3 (zero-one-or-more n))
@@ -1474,7 +1502,7 @@
   (cond ((variablep term) t)
         ((fquotep term) t)
         ((flambda-applicationp term)
-         (and (almost-quotep1 (lambda-body term))
+         (and (almost-quotep1 (lambda-body (ffn-symb term)))
               (almost-quotep1-listp (fargs term))))
         ((eq (ffn-symb term) 'cons)
          (and (almost-quotep1 (fargn term 1))
@@ -1502,21 +1530,14 @@
 
 (defun destructor-applied-to-varsp (term ens wrld)
 
-; We determine whether term is of the form (destr v1 ... vn)
-; where destr has an enabled 'eliminate-destructors-rule
-; and all the vi are variables.
+; We return non-nil when term is of the form (destr v1 ... vn) where destr has
+; an enabled 'eliminate-destructors-rule and all the vi are variables.
 
   (cond ((variablep term) nil)
         ((fquotep term) nil)
         ((flambda-applicationp term) nil)
         (t (and (all-variablep (fargs term))
-                (let ((rule (getpropc (ffn-symb term)
-                                      'eliminate-destructors-rule
-                                      nil
-                                      wrld)))
-                  (and rule
-                       (enabled-numep (access elim-rule rule :nume)
-                                      ens)))))))
+                (most-recent-enabled-elim-rule (ffn-symb term) wrld ens)))))
 
 (defun dumb-occur-lst-except (term lst lit)
 
@@ -2023,11 +2044,7 @@
 
   (cond ((flambdap fn) nil)
         ((eq fn 'cons) nil)
-        (t (let ((rule (getpropc fn 'eliminate-destructors-rule nil wrld)))
-             (cond ((and rule
-                         (enabled-numep (access elim-rule rule :nume) ens))
-                    nil)
-                   (t t))))))
+        (t (not (most-recent-enabled-elim-rule fn wrld ens)))))
 
 (mutual-recursion
 

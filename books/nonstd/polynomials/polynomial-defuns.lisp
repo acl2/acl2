@@ -1,7 +1,6 @@
 (in-package "ACL2")
 
-; cert_param: (uses-acl2r)
-
+#+non-standard-analysis
 (defun real-polynomial-p (poly)
   (if (consp poly)
       (and (realp (car poly))
@@ -14,6 +13,12 @@
            (rational-polynomial-p (cdr poly)))
     (null poly)))
 
+(defmacro real/rational-polynomial-p (poly)
+  #+non-standard-analysis
+  `(real-polynomial-p ,poly)
+  #-non-standard-analysis
+  `(rational-polynomial-p ,poly))
+
 (defun integer-polynomial-p (poly)
   (if (consp poly)
       (and (integerp (car poly))
@@ -21,21 +26,21 @@
     (null poly)))
 
 (defun non-trivial-polynomial-p (poly)
-  (and (real-polynomial-p poly)
+  (and (real/rational-polynomial-p poly)
        (< 1 (len poly))
        (not (equal 0 (car (last poly))))))
 
 (defun eval-polynomial (poly x)
-  (if (and (real-polynomial-p poly)
-	   (realp x)
+  (if (and (real/rational-polynomial-p poly)
+	   (real/rationalp x)
 	   (consp poly))
       (+ (* x (eval-polynomial (cdr poly) x))
          (car poly))
     0))
 
 (defun eval-polynomial-expt-aux (poly x n)
-  (if (and (real-polynomial-p poly)
-	   (realp x)
+  (if (and (real/rational-polynomial-p poly)
+	   (real/rationalp x)
 	   (natp n)
 	   (consp poly))
       (+ (* (car poly) (expt x n))
@@ -46,7 +51,7 @@
   (eval-polynomial-expt-aux poly x 0))
 
 (defun polynomial-root-p (poly x)
-  (and (realp x)
+  (and (real/rationalp x)
        (equal (eval-polynomial poly x) 0)))
 
 (defun non-trivial-polynomial-root-p (poly x)
@@ -73,4 +78,3 @@
       (polynomial-+ (scale-polynomial poly2 (car poly1))
 		    (cons 0 (polynomial-* (cdr poly1) poly2)))
     nil))
-

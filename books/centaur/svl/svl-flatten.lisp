@@ -348,39 +348,39 @@
               rest)))))
 
 (acl2::defines
- free-svl-aliasdb
- :hints (("Goal"
-          :in-theory (e/d (rp::measure-lemmas
-                           svl-aliasdb->sub
-                           SVL-ALIASDB-FIX
-                           SVL-ALIASDB-p
-                           svl-aliasdb-alist-p
-                           svl-aliasdb-alist-fix) ())))
- :prepwork
- ((local
-   (defthm lemma1
-     (implies (consp x)
-              (o< (cons-count (cdr (car x)))
-                  (cons-count x)))
-     :hints (("goal"
-              :in-theory (e/d (cons-count) ()))))))
+  free-svl-aliasdb
+  :hints (("Goal"
+           :in-theory (e/d (rp::measure-lemmas
+                            svl-aliasdb->sub
+                            SVL-ALIASDB-FIX
+                            SVL-ALIASDB-p
+                            svl-aliasdb-alist-p
+                            svl-aliasdb-alist-fix) ())))
+  :prepwork
+  ((local
+    (defthm lemma1
+      (implies (consp x)
+               (o< (cons-count (cdr (car x)))
+                   (cons-count x)))
+      :hints (("goal"
+               :in-theory (e/d (cons-count) ()))))))
 
- (define free-svl-aliasdb ((svl-aliasdb svl-aliasdb-p))
-   :measure (cons-count (svl-aliasdb-fix svl-aliasdb))
-   (b* ((svl-aliasdb (mbe :logic (svl-aliasdb-fix svl-aliasdb)
-                          :exec svl-aliasdb))
-        (- (fast-alist-free (svl-aliasdb->this svl-aliasdb)))
-        (- (fast-alist-free (svl-aliasdb->sub svl-aliasdb)))
-        (- (free-svl-aliasdb-alist (svl-aliasdb->sub svl-aliasdb))))
-     nil))
- (define free-svl-aliasdb-alist ((subs svl-aliasdb-alist-P))
-   :measure (cons-count (svl-aliasdb-alist-fix subs))
-   (b* ((subs (mbe :logic (svl-aliasdb-alist-fix subs)
-                   :exec subs)))
-     (if (atom subs)
-         nil
-       (b* ((- (free-svl-aliasdb (cdar subs))))
-         (free-svl-aliasdb-alist (cdr subs)))))))
+  (define free-svl-aliasdb ((svl-aliasdb svl-aliasdb-p))
+    :measure (cons-count (svl-aliasdb-fix svl-aliasdb))
+    (b* ((svl-aliasdb (mbe :logic (svl-aliasdb-fix svl-aliasdb)
+                           :exec svl-aliasdb))
+         (- (fast-alist-free (svl-aliasdb->this svl-aliasdb)))
+         (- (fast-alist-free (svl-aliasdb->sub svl-aliasdb)))
+         (- (free-svl-aliasdb-alist (svl-aliasdb->sub svl-aliasdb))))
+      nil))
+  (define free-svl-aliasdb-alist ((subs svl-aliasdb-alist-P))
+    :measure (cons-count (svl-aliasdb-alist-fix subs))
+    (b* ((subs (mbe :logic (svl-aliasdb-alist-fix subs)
+                    :exec subs)))
+      (if (atom subs)
+          nil
+        (b* ((- (free-svl-aliasdb (cdar subs))))
+          (free-svl-aliasdb-alist (cdr subs)))))))
 
 (define update-var-with-trace ((var1 sv::svar-p)
                                (trace trace-p))
@@ -401,10 +401,10 @@
 
 #|
 (update-var-with-trace '(:VAR (:ADDRESS "padded_multiplier" NIL 3)
-                              . 0)
-                       '(("m1" "m2" . "m3")
-                         ("m1" . "m2")
-                         "m1"))
+. 0)
+'(("m1" "m2" . "m3")
+("m1" . "m2")
+"m1"))
 ||#
 
 (local
@@ -417,40 +417,40 @@
                             ())))))
 
 (acl2::defines
- update-svex-vars-with-trace
- :prepwork
- ((local
-   (in-theory (e/d (svex-kind
-                    svex-p
-                    sv::svar-p)
-                   ()))))
+  update-svex-vars-with-trace
+  :prepwork
+  ((local
+    (in-theory (e/d (svex-kind
+                     svex-p
+                     sv::svar-p)
+                    ()))))
 
- (define update-svex-vars-with-trace ((svex sv::svex-p)
-                                      (trace trace-p))
+  (define update-svex-vars-with-trace ((svex sv::svex-p)
+                                       (trace trace-p))
 
-   :hints (("Goal"
-            :in-theory (e/d (svex-kind) ())))
+    :hints (("Goal"
+             :in-theory (e/d (svex-kind) ())))
 
-   :returns (res sv::svex-p :hyp (and (sv::svex-p svex)
-                                      (trace-p trace)))
+    :returns (res sv::svex-p :hyp (and (sv::svex-p svex)
+                                       (trace-p trace)))
 
-   (b* ((kind (sv::svex-kind svex)))
-     (case-match kind
-       (':var
-        (update-var-with-trace svex trace))
-       (':quote
-        svex)
-       (& (cons (car svex)
-                (update-svex-vars-with-trace-lst (cdr svex)
-                                                 trace))))))
- (define update-svex-vars-with-trace-lst ((svex-lst svexlist-p)
-                                          (trace trace-p))
-   :returns (res-lst sv::svexlist-p :hyp (and (svexlist-p svex-lst)
-                                              (trace-p trace)))
-   (if (atom svex-lst)
-       nil
-     (cons (update-svex-vars-with-trace (car svex-lst) trace)
-           (update-svex-vars-with-trace-lst (cdr svex-lst) trace)))))
+    (b* ((kind (sv::svex-kind svex)))
+      (case-match kind
+        (':var
+         (update-var-with-trace svex trace))
+        (':quote
+         svex)
+        (& (cons (car svex)
+                 (update-svex-vars-with-trace-lst (cdr svex)
+                                                  trace))))))
+  (define update-svex-vars-with-trace-lst ((svex-lst svexlist-p)
+                                           (trace trace-p))
+    :returns (res-lst sv::svexlist-p :hyp (and (svexlist-p svex-lst)
+                                               (trace-p trace)))
+    (if (atom svex-lst)
+        nil
+      (cons (update-svex-vars-with-trace (car svex-lst) trace)
+            (update-svex-vars-with-trace-lst (cdr svex-lst) trace)))))
 
 ;; (update-svex-vars-with-trace '(CONCAT 65
 ;;                                  (RSH 1040
@@ -545,25 +545,25 @@
 #|
 
 (aliaspair->alias '((3 :VAR
-                       ("partial_product_mux" . "multiplier_bits")
-                       . 0))
-                  '((2 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
-                             . 0)
-                       . 25)
-                    ((:VAR (:ADDRESS "padded_multiplier" NIL 3)
-                             . 0)
-                       . 27))
-                  '(("m1" "m2" . "m3")
-                    ("m1" . "m2")
-                    "m1")
-                    (make-svl-aliasdb))
+("partial_product_mux" . "multiplier_bits")
+. 0))
+'((2 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
+. 0)
+. 25)
+((:VAR (:ADDRESS "padded_multiplier" NIL 3)
+. 0)
+. 27))
+'(("m1" "m2" . "m3")
+("m1" . "m2")
+"m1")
+(make-svl-aliasdb))
 
 (aliaspair->alias '((65 :VAR 16 . 0))
-                  '((65 :SELF . 1040))
-                  '(("m1" "m2" . "m3")
-                    ("m1" . "m2")
-                    "m1")
-                  (make-svl-aliasdb))
+'((65 :SELF . 1040))
+'(("m1" "m2" . "m3")
+("m1" . "m2")
+"m1")
+(make-svl-aliasdb))
 ||#
 
 (define insert-into-svl-aliasdb ((place)
@@ -618,62 +618,62 @@
 
 #|
 (wet
- (aliaspair-lst->svl-aliasdb '((((65 :var 16 . 0)) (65 :self . 1040))
-                       (((65 :var 15 . 0)) (65 :self . 975))
-                       (((65 :var 14 . 0)) (65 :self . 910))
-                       (((65 :var 13 . 0)) (65 :self . 845))
-                       (((65 :var 12 . 0)) (65 :self . 780))
-                       (((65 :var 11 . 0)) (65 :self . 715))
-                       (((65 :var 10 . 0)) (65 :self . 650))
-                       (((65 :var 9 . 0)) (65 :self . 585))
-                       (((65 :var 8 . 0)) (65 :self . 520))
-                       (((65 :var 7 . 0)) (65 :self . 455))
-                       (((65 :var 6 . 0)) (65 :self . 390))
-                       (((65 :var 5 . 0)) (65 :self . 325))
-                       (((65 :var 4 . 0)) (65 :self . 260))
-                       (((65 :var 3 . 0)) (65 :self . 195))
-                       (((65 :var 2 . 0)) (65 :self . 130))
-                       (((65 :var 1 . 0)) (65 :self . 65))
-                       (((65 :var 0 . 0)) (65 . :self)))
-                     '(("m1" "m2" . "m3")
-                       ("m1" . "m2")
-                       "m1")))
+(aliaspair-lst->svl-aliasdb '((((65 :var 16 . 0)) (65 :self . 1040))
+(((65 :var 15 . 0)) (65 :self . 975))
+(((65 :var 14 . 0)) (65 :self . 910))
+(((65 :var 13 . 0)) (65 :self . 845))
+(((65 :var 12 . 0)) (65 :self . 780))
+(((65 :var 11 . 0)) (65 :self . 715))
+(((65 :var 10 . 0)) (65 :self . 650))
+(((65 :var 9 . 0)) (65 :self . 585))
+(((65 :var 8 . 0)) (65 :self . 520))
+(((65 :var 7 . 0)) (65 :self . 455))
+(((65 :var 6 . 0)) (65 :self . 390))
+(((65 :var 5 . 0)) (65 :self . 325))
+(((65 :var 4 . 0)) (65 :self . 260))
+(((65 :var 3 . 0)) (65 :self . 195))
+(((65 :var 2 . 0)) (65 :self . 130))
+(((65 :var 1 . 0)) (65 :self . 65))
+(((65 :var 0 . 0)) (65 . :self)))
+'(("m1" "m2" . "m3")
+("m1" . "m2")
+"m1")))
 
 (aliaspair-lst->svl-aliasdb '((((3 :VAR
-                           ("partial_product_mux" . "multiplier_bits")
-                           . 0))
-                       (3 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
-                                . 0)
-                          . 25))
-                      (((64 :VAR
-                            ("partial_product_mux" . "multiplicand")
-                            . 0))
-                       (64 :VAR (:ADDRESS "multiplicand" NIL 3)
-                           . 0))
-                      (((:VAR ("partial_product_mux" . "multiplicand_sign")
-                              . 0))
-                       (:VAR (:ADDRESS "multiplicand_sign" NIL 3)
-                             . 0))
-                      (((:VAR ("partial_product_mux" . "partial_product_sign")
-                              . 0))
-                       ((:VAR (:ADDRESS "partial_product_signs" NIL 3)
-                              . 0)
-                        . 13))
-                      (((:VAR ("partial_product_mux" . "partial_product_inverted")
-                              . 0))
-                       ((:VAR (:ADDRESS "partial_product_increments" NIL 3)
-                              . 0)
-                        . 13))
-                      (((65 :VAR
-                            ("partial_product_mux" . "partial_product")
-                            . 0))
-                       (65 (:VAR (:ADDRESS "partial_products" NIL 1)
-                                 . 0)
-                           . 845)))
-                    '(
-                      ("m1" "m2" . "m3")
-                      ("m1" . "m2")
-                      "m1"))
+("partial_product_mux" . "multiplier_bits")
+. 0))
+(3 (:VAR (:ADDRESS "padded_multiplier" NIL 3)
+. 0)
+. 25))
+(((64 :VAR
+("partial_product_mux" . "multiplicand")
+. 0))
+(64 :VAR (:ADDRESS "multiplicand" NIL 3)
+. 0))
+(((:VAR ("partial_product_mux" . "multiplicand_sign")
+. 0))
+(:VAR (:ADDRESS "multiplicand_sign" NIL 3)
+. 0))
+(((:VAR ("partial_product_mux" . "partial_product_sign")
+. 0))
+((:VAR (:ADDRESS "partial_product_signs" NIL 3)
+. 0)
+. 13))
+(((:VAR ("partial_product_mux" . "partial_product_inverted")
+. 0))
+((:VAR (:ADDRESS "partial_product_increments" NIL 3)
+. 0)
+. 13))
+(((65 :VAR
+("partial_product_mux" . "partial_product")
+. 0))
+(65 (:VAR (:ADDRESS "partial_products" NIL 1)
+. 0)
+. 845)))
+'(
+("m1" "m2" . "m3")
+("m1" . "m2")
+"m1"))
 
 ||#
 
@@ -692,24 +692,12 @@
      :hints (("Goal"
               :in-theory (e/d (alias-alist-p) ()))))
 
-   (defthm ALIAS-ALIST-P-of-FAST-ALIST-clean
-     (implies (and (alias-alist-p f))
-              (alias-alist-p (fast-alist-clean f)))
-     :hints (("Goal"
-              :in-theory (e/d () (fast-alist-fork)))))
-
    (defthm svl-aliasdb-alist-p-of-FAST-ALIST-fork
      (implies (and (svl-aliasdb-alist-p f)
                    (svl-aliasdb-alist-p e))
               (svl-aliasdb-alist-p (fast-alist-fork f e)))
      :hints (("Goal"
-              :in-theory (e/d (alias-alist-p) ()))))
-
-   (defthm svl-aliasdb-alist-p-of-FAST-ALIST-clean
-     (implies (and (svl-aliasdb-alist-p f))
-              (svl-aliasdb-alist-p (fast-alist-clean f)))
-     :hints (("Goal"
-              :in-theory (e/d () (fast-alist-fork)))))))
+              :in-theory (e/d (alias-alist-p) ()))))))
 
 (define merge-this-insts-svl-aliasdb ((sub-svl-aliasdb svl-aliasdb-alist-p)
                                       (insts-svl-aliasdb-alist svl-aliasdb-alist-p))
@@ -744,27 +732,27 @@
                                     (cdr insts-svl-aliasdb-alist)))))
 
 (acl2::defines
- add-delay-to-vars-in-svex
- :prepwork ((local
-             (in-theory (e/d (sv::svex-kind
-                              sv::svex-p
-                              sv::svar-p)))))
- (define add-delay-to-vars-in-svex ((svex sv::svex-p))
-   :returns (res sv::svex-p :hyp (sv::svex-p svex))
-   (cond ((equal (sv::svex-kind svex) ':quote)
-          svex)
-         ((equal (sv::svex-kind svex) ':var)
-          (sv::change-svar svex :delay 1))
-         (t
-          (cons (car svex)
-                (add-delay-to-vars-in-svex-lst (cdr svex))))))
+  add-delay-to-vars-in-svex
+  :prepwork ((local
+              (in-theory (e/d (sv::svex-kind
+                               sv::svex-p
+                               sv::svar-p)))))
+  (define add-delay-to-vars-in-svex ((svex sv::svex-p))
+    :returns (res sv::svex-p :hyp (sv::svex-p svex))
+    (cond ((equal (sv::svex-kind svex) ':quote)
+           svex)
+          ((equal (sv::svex-kind svex) ':var)
+           (sv::change-svar svex :delay 1))
+          (t
+           (cons (car svex)
+                 (add-delay-to-vars-in-svex-lst (cdr svex))))))
 
- (define add-delay-to-vars-in-svex-lst ((lst sv::svexlist-p))
-   :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
-   (if (atom lst)
-       nil
-     (cons (add-delay-to-vars-in-svex (car lst))
-           (add-delay-to-vars-in-svex-lst (cdr lst))))))
+  (define add-delay-to-vars-in-svex-lst ((lst sv::svexlist-p))
+    :returns (res-lst sv::svexlist-p :hyp (sv::svexlist-p lst))
+    (if (atom lst)
+        nil
+      (cons (add-delay-to-vars-in-svex (car lst))
+            (add-delay-to-vars-in-svex-lst (cdr lst))))))
 
 (define get-svex-from-svl-aliasdb ((name)
                                    (trace-name)
@@ -823,58 +811,58 @@
       (nthcdr2 (+ acl2::n -1) (cdr acl2::l)))))
 
 (acl2::defines
- update-svex-with-svl-aliasdb
- :prepwork ((local
-             (in-theory (e/d (svex-kind
-                              sv::svar-p
-                              svex-p) ()))))
+  update-svex-with-svl-aliasdb
+  :prepwork ((local
+              (in-theory (e/d (svex-kind
+                               sv::svar-p
+                               svex-p) ()))))
 
- (define update-svex-with-svl-aliasdb ((svex sv::svex-p)
-                                       (svl-aliasdb svl-aliasdb-p)
-                                       (skip-var-name)
-                                       (trace-size natp))
-   :returns (res sv::svex-p
-                 :hyp (and (sv::svex-p svex)
-                           (svl-aliasdb-p svl-aliasdb)
-                           (natp trace-size)))
-   (let ((kind (sv::svex-kind svex)))
-     (cond ((eq kind ':quote)
-            svex)
-           ((eq kind ':var)
-            (b* ((var-name (sv::svar->name svex))
-                 (var-delay (sv::svar->delay svex))
-                 (place (if (consp var-name) (car var-name) nil))
-                 (name (if (consp var-name) (cdr var-name) var-name))
-                 (place (nthcdr2 trace-size place))
-                 ((when (equal var-name skip-var-name)) svex)
-                 (res (get-svex-from-svl-aliasdb name place var-delay svl-aliasdb)))
-              (if res
-                  res
-                svex)))
-           (t
-            (cons-with-hint (car svex)
-                            (update-svex-with-svl-aliasdb-lst (cdr svex)
-                                                              svl-aliasdb
-                                                              skip-var-name
-                                                              trace-size)
-                            svex)))))
+  (define update-svex-with-svl-aliasdb ((svex sv::svex-p)
+                                        (svl-aliasdb svl-aliasdb-p)
+                                        (skip-var-name)
+                                        (trace-size natp))
+    :returns (res sv::svex-p
+                  :hyp (and (sv::svex-p svex)
+                            (svl-aliasdb-p svl-aliasdb)
+                            (natp trace-size)))
+    (let ((kind (sv::svex-kind svex)))
+      (cond ((eq kind ':quote)
+             svex)
+            ((eq kind ':var)
+             (b* ((var-name (sv::svar->name svex))
+                  (var-delay (sv::svar->delay svex))
+                  (place (if (consp var-name) (car var-name) nil))
+                  (name (if (consp var-name) (cdr var-name) var-name))
+                  (place (nthcdr2 trace-size place))
+                  ((when (equal var-name skip-var-name)) svex)
+                  (res (get-svex-from-svl-aliasdb name place var-delay svl-aliasdb)))
+               (if res
+                   res
+                 svex)))
+            (t
+             (cons-with-hint (car svex)
+                             (update-svex-with-svl-aliasdb-lst (cdr svex)
+                                                               svl-aliasdb
+                                                               skip-var-name
+                                                               trace-size)
+                             svex)))))
 
- (define update-svex-with-svl-aliasdb-lst ((lst sv::svexlist-p)
-                                           (svl-aliasdb svl-aliasdb-p)
-                                           (skip-var-name)
-                                           (trace-size natp))
-   :returns (res-lst sv::svexlist-p
-                     :hyp (and (sv::svexlist-p lst)
-                               (svl-aliasdb-p svl-aliasdb)
-                               (natp trace-size)))
-   (if (atom lst)
-       nil
-     (cons-with-hint
-      (update-svex-with-svl-aliasdb (car lst)
-                                    svl-aliasdb skip-var-name trace-size)
-      (update-svex-with-svl-aliasdb-lst (cdr lst)
-                                        svl-aliasdb skip-var-name trace-size)
-      lst))))
+  (define update-svex-with-svl-aliasdb-lst ((lst sv::svexlist-p)
+                                            (svl-aliasdb svl-aliasdb-p)
+                                            (skip-var-name)
+                                            (trace-size natp))
+    :returns (res-lst sv::svexlist-p
+                      :hyp (and (sv::svexlist-p lst)
+                                (svl-aliasdb-p svl-aliasdb)
+                                (natp trace-size)))
+    (if (atom lst)
+        nil
+      (cons-with-hint
+       (update-svex-with-svl-aliasdb (car lst)
+                                     svl-aliasdb skip-var-name trace-size)
+       (update-svex-with-svl-aliasdb-lst (cdr lst)
+                                         svl-aliasdb skip-var-name trace-size)
+       lst))))
 
 (define fix-this-aliases ((this-aliases alias-alist-p)
                           (trace-size natp)
@@ -899,145 +887,145 @@
                                     svl-aliasdb)))))
 
 (acl2::defines
- mod-aliaspairs->svl-aliasdb-pt1
- (define mod-aliaspairs->svl-aliasdb-pt1 ((modname sv::modname-p)
-                                          (modalist sv::modalist-p)
-                                          ;;  (proc-history )
-                                          (trace trace-p)
-                                          (mods-to-skip sv::modnamelist-p)
-                                          (limit natp "To prove termination"))
-   :returns (res svl-aliasdb-p)
-   :verify-guards nil
-   :measure (nfix limit)
-   (cond ((zp limit)
-          (progn$ (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
-                              "Limit Reached! ~%"
-                              nil)
+  mod-aliaspairs->svl-aliasdb-pt1
+  (define mod-aliaspairs->svl-aliasdb-pt1 ((modname sv::modname-p)
+                                           (modalist sv::modalist-p)
+                                           ;;  (proc-history )
+                                           (trace trace-p)
+                                           (mods-to-skip sv::modnamelist-p)
+                                           (limit natp "To prove termination"))
+    :returns (res svl-aliasdb-p)
+    :verify-guards nil
+    :measure (nfix limit)
+    (cond ((zp limit)
+           (progn$ (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
+                               "Limit Reached! ~%"
+                               nil)
+                   (make-svl-aliasdb)))
+          ;; ((hons-get modname proc-history)
+          ;;  (cdr (hons-get modname proc-history)))
+          (t
+           (b* ((module (hons-get modname modalist))
+                ((unless module)
+                 (progn$
+                  (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
+                              "Module not found in modalist ~p0 ~%"
+                              (list (cons #\0 modname)))
                   (make-svl-aliasdb)))
-         ;; ((hons-get modname proc-history)
-         ;;  (cdr (hons-get modname proc-history)))
-         (t
-          (b* ((module (hons-get modname modalist))
-               ((unless module)
-                (progn$
-                 (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
-                             "Module not found in modalist ~p0 ~%"
-                             (list (cons #\0 modname)))
-                 (make-svl-aliasdb)))
-               (module (cdr module))
-               ((sv::module module) module)
-               (svl-aliasdb (aliaspair-lst->svl-aliasdb module.aliaspairs trace))
-               (insts-svl-aliasdb-alist
-                (mod-aliaspairs->svl-aliasdb-pt1-lst module.insts
-                                                     modalist
-                                                     ;;proc-history
-                                                     trace
-                                                     mods-to-skip
-                                                     (1- limit)))
-               (merged-sub (merge-this-insts-svl-aliasdb (svl-aliasdb->sub svl-aliasdb)
-                                                         insts-svl-aliasdb-alist))
-               (svl-aliasdb (change-svl-aliasdb svl-aliasdb :sub merged-sub))
-               (this-aliases (svl-aliasdb->this svl-aliasdb))
-               (this-aliases (fix-this-aliases this-aliases
-                                               (len (car trace))
-                                               svl-aliasdb))
-               (- (fast-alist-free (svl-aliasdb->this svl-aliasdb))))
-            (change-svl-aliasdb svl-aliasdb :this this-aliases)))))
-
- (define mod-aliaspairs->svl-aliasdb-pt1-lst ((insts sv::modinstlist-p)
-                                              (modalist sv::modalist-p)
-                                              (trace trace-p)
-                                              (mods-to-skip sv::modnamelist-p)
-                                              (limit natp "To prove
-                                              termination"))
-   :returns (res-alist svl-aliasdb-alist-p)
-   :measure (nfix limit)
-   (cond ((zp limit)
-          (progn$ (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
-                              "Limit Reached! ~%"
-                              nil)
-                  nil))
-         ((atom insts)
-          nil)
-         (t (b* (((sv::modinst inst) (car insts))
-                 (rest (mod-aliaspairs->svl-aliasdb-pt1-lst (cdr insts)
-                                                            modalist
-                                                            trace
-                                                            mods-to-skip
-                                                            (1- limit)))
-                 ((when (member-equal inst.modname mods-to-skip))
-                  rest)
-                 (trace- (cons (if trace
-                                   (cons-to-end (car trace) inst.instname)
-                                 inst.instname)
-                               trace)))
-              (acons inst.instname
-                     (mod-aliaspairs->svl-aliasdb-pt1 inst.modname
+                (module (cdr module))
+                ((sv::module module) module)
+                (svl-aliasdb (aliaspair-lst->svl-aliasdb module.aliaspairs trace))
+                (insts-svl-aliasdb-alist
+                 (mod-aliaspairs->svl-aliasdb-pt1-lst module.insts
                                                       modalist
-                                                      trace-
+                                                      ;;proc-history
+                                                      trace
                                                       mods-to-skip
-                                                      (1- limit))
-                     rest)))))
- ///
- (verify-guards mod-aliaspairs->svl-aliasdb-pt1
-   :hints (("Goal"
-            :in-theory (e/d (trace-p) ())))))
+                                                      (1- limit)))
+                (merged-sub (merge-this-insts-svl-aliasdb (svl-aliasdb->sub svl-aliasdb)
+                                                          insts-svl-aliasdb-alist))
+                (svl-aliasdb (change-svl-aliasdb svl-aliasdb :sub merged-sub))
+                (this-aliases (svl-aliasdb->this svl-aliasdb))
+                (this-aliases (fix-this-aliases this-aliases
+                                                (len (car trace))
+                                                svl-aliasdb))
+                (- (fast-alist-free (svl-aliasdb->this svl-aliasdb))))
+             (change-svl-aliasdb svl-aliasdb :this this-aliases)))))
+
+  (define mod-aliaspairs->svl-aliasdb-pt1-lst ((insts sv::modinstlist-p)
+                                               (modalist sv::modalist-p)
+                                               (trace trace-p)
+                                               (mods-to-skip sv::modnamelist-p)
+                                               (limit natp "To prove
+                                              termination"))
+    :returns (res-alist svl-aliasdb-alist-p)
+    :measure (nfix limit)
+    (cond ((zp limit)
+           (progn$ (hard-error 'mod-aliaspairs->svl-aliasdb-pt1
+                               "Limit Reached! ~%"
+                               nil)
+                   nil))
+          ((atom insts)
+           nil)
+          (t (b* (((sv::modinst inst) (car insts))
+                  (rest (mod-aliaspairs->svl-aliasdb-pt1-lst (cdr insts)
+                                                             modalist
+                                                             trace
+                                                             mods-to-skip
+                                                             (1- limit)))
+                  ((when (member-equal inst.modname mods-to-skip))
+                   rest)
+                  (trace- (cons (if trace
+                                    (cons-to-end (car trace) inst.instname)
+                                  inst.instname)
+                                trace)))
+               (acons inst.instname
+                      (mod-aliaspairs->svl-aliasdb-pt1 inst.modname
+                                                       modalist
+                                                       trace-
+                                                       mods-to-skip
+                                                       (1- limit))
+                      rest)))))
+  ///
+  (verify-guards mod-aliaspairs->svl-aliasdb-pt1
+    :hints (("Goal"
+             :in-theory (e/d (trace-p) ())))))
 
 #|
 
 (mod-aliaspairs->svl-aliasdb-pt1 "mul_test1"
-                             (make-fast-alist (sv::design->modalist *booth-sv-design*))
-                             nil
-                             (expt 2 30))
+(make-fast-alist (sv::design->modalist *booth-sv-design*))
+nil
+(expt 2 30))
 
 (mod-aliaspairs->svl-aliasdb-pt1 "booth2_multiplier_signed_64x32_97"
-                             (make-fast-alist (sv::design->modalist *big-sv-design*))
-                             nil
-                             '("booth2_reduction_dadda_17x65_97")
-                             (expt 2 30))
+(make-fast-alist (sv::design->modalist *big-sv-design*))
+nil
+'("booth2_reduction_dadda_17x65_97")
+(expt 2 30))
 ||#
 
 (acl2::defines
- update-svex-with-aliases-alist
- :guard-hints (("Goal"
-                :in-theory (e/d (svex-kind
-                                 sv::svar-p
-                                 svex-p) ())))
- :hints (("Goal"
-          :in-theory (e/d (svex-kind) ())))
- :prepwork ((local
-             (in-theory (enable svex-p
-                                svex-kind
-                                sv::svexlist-p
-                                SV::SVAR-P))))
+  update-svex-with-aliases-alist
+  :guard-hints (("Goal"
+                 :in-theory (e/d (svex-kind
+                                  sv::svar-p
+                                  svex-p) ())))
+  :hints (("Goal"
+           :in-theory (e/d (svex-kind) ())))
+  :prepwork ((local
+              (in-theory (enable svex-p
+                                 svex-kind
+                                 sv::svexlist-p
+                                 SV::SVAR-P))))
 
- (define update-svex-with-aliases-alist ((svex sv::svex-p)
-                                         (aliases-alist alias-alist-p))
-   :returns (res svex-p :hyp (and (sv::svex-p svex)
-                                  (alias-alist-p aliases-alist)))
-   (let ((kind (sv::svex-kind svex)))
-     (cond ((eq kind ':quote)
-            svex)
-           ((eq kind ':var)
-            (b* ((res (hons-get svex aliases-alist)))
-              (if res (cdr res) svex)))
-           (t
-            (cons-with-hint (car svex)
-                            (update-svex-with-aliases-alist-lst (cdr svex)
-                                                                aliases-alist)
-                            svex)))))
+  (define update-svex-with-aliases-alist ((svex sv::svex-p)
+                                          (aliases-alist alias-alist-p))
+    :returns (res svex-p :hyp (and (sv::svex-p svex)
+                                   (alias-alist-p aliases-alist)))
+    (let ((kind (sv::svex-kind svex)))
+      (cond ((eq kind ':quote)
+             svex)
+            ((eq kind ':var)
+             (b* ((res (hons-get svex aliases-alist)))
+               (if res (cdr res) svex)))
+            (t
+             (cons-with-hint (car svex)
+                             (update-svex-with-aliases-alist-lst (cdr svex)
+                                                                 aliases-alist)
+                             svex)))))
 
- (define update-svex-with-aliases-alist-lst ((lst sv::svexlist-p)
-                                             (aliases-alist alias-alist-p))
-   :returns (res-lst sv::svexlist-p
-                     :hyp (and (sv::svexlist-p lst)
-                               (alias-alist-p aliases-alist)) )
-   (if (atom lst)
-       nil
-     (cons-with-hint
-      (update-svex-with-aliases-alist (car lst) aliases-alist)
-      (update-svex-with-aliases-alist-lst (cdr lst) aliases-alist)
-      lst))))
+  (define update-svex-with-aliases-alist-lst ((lst sv::svexlist-p)
+                                              (aliases-alist alias-alist-p))
+    :returns (res-lst sv::svexlist-p
+                      :hyp (and (sv::svexlist-p lst)
+                                (alias-alist-p aliases-alist)) )
+    (if (atom lst)
+        nil
+      (cons-with-hint
+       (update-svex-with-aliases-alist (car lst) aliases-alist)
+       (update-svex-with-aliases-alist-lst (cdr lst) aliases-alist)
+       lst))))
 
 (define add-to-aliases-alist ((this-alias-alist alias-alist-p)
                               (aliases-alist alias-alist-p)
@@ -1075,89 +1063,89 @@
                       rest)))))
 
 (acl2::defines
- mod-aliaspairs->svl-aliasdb-pt2
- :prepwork
- ((local
-   (defthm lemma1
-     (O< (CONS-COUNT (SVL-ALIASDB-ALIST-FIX (CADR SVL-ALIASDB)))
-         (CONS-COUNT (SVL-ALIASDB-FIX SVL-ALIASDB)))
-     :hints (("Goal"
-              :in-theory (e/d (cons-count
-                               SVL-ALIASDB-FIX
-                               SVL-ALIASDB-ALIST-FIX) ())))))
-  (local
-   (defthm lemma2
-     (implies (consp x)
-              (o< (cons-count (cdr (car x)))
-                  (cons-count x)))
-     :hints (("Goal"
-              :in-theory (e/d (cons-count) ())))))
+  mod-aliaspairs->svl-aliasdb-pt2
+  :prepwork
+  ((local
+    (defthm lemma1
+      (O< (CONS-COUNT (SVL-ALIASDB-ALIST-FIX (CADR SVL-ALIASDB)))
+          (CONS-COUNT (SVL-ALIASDB-FIX SVL-ALIASDB)))
+      :hints (("Goal"
+               :in-theory (e/d (cons-count
+                                SVL-ALIASDB-FIX
+                                SVL-ALIASDB-ALIST-FIX) ())))))
+   (local
+    (defthm lemma2
+      (implies (consp x)
+               (o< (cons-count (cdr (car x)))
+                   (cons-count x)))
+      :hints (("Goal"
+               :in-theory (e/d (cons-count) ())))))
 
-  (local
-   (in-theory (e/d (trace-p)
-                   ()))))
+   (local
+    (in-theory (e/d (trace-p)
+                    ()))))
 
- (define mod-aliaspairs->svl-aliasdb-pt2 ((svl-aliasdb svl-aliasdb-p)
-                                          (aliases-alist alias-alist-p)
-                                          (trace trace-p))
-   :hints (("Goal"
-            :in-theory (e/d (SVL-ALIASDB->SUB
-                             SVL-ALIASDB-ALIST-FIX
-                             rp::measure-lemmas) ())))
-   :measure (cons-count (svl-aliasdb-fix svl-aliasdb))
-   :verify-guards nil
-   :returns (mv (res-alist-db svl-aliasdb-p)
-                (res-alias-alist alias-alist-p
-                                 :hyp (and (alias-alist-p aliases-alist)
-                                           (svl-aliasdb-p svl-aliasdb)
-                                           (trace-p trace))))
+  (define mod-aliaspairs->svl-aliasdb-pt2 ((svl-aliasdb svl-aliasdb-p)
+                                           (aliases-alist alias-alist-p)
+                                           (trace trace-p))
+    :hints (("Goal"
+             :in-theory (e/d (SVL-ALIASDB->SUB
+                              SVL-ALIASDB-ALIST-FIX
+                              rp::measure-lemmas) ())))
+    :measure (cons-count (svl-aliasdb-fix svl-aliasdb))
+    :verify-guards nil
+    :returns (mv (res-alist-db svl-aliasdb-p)
+                 (res-alias-alist alias-alist-p
+                                  :hyp (and (alias-alist-p aliases-alist)
+                                            (svl-aliasdb-p svl-aliasdb)
+                                            (trace-p trace))))
 
-   (b* (((svl-aliasdb svl-aliasdb) svl-aliasdb)
-        ((mv aliases-alist new-this)
-         (add-to-aliases-alist svl-aliasdb.this aliases-alist trace))
-        (- (fast-alist-free svl-aliasdb.this))
-        (- (fast-alist-free svl-aliasdb.sub))
-        ((mv new-sub aliases-alist)
-         (mod-aliaspairs->svl-aliasdb-pt2-lst svl-aliasdb.sub aliases-alist trace)))
-     (mv (change-svl-aliasdb svl-aliasdb
-                             :this new-this
-                             :sub new-sub)
-         aliases-alist)))
+    (b* (((svl-aliasdb svl-aliasdb) svl-aliasdb)
+         ((mv aliases-alist new-this)
+          (add-to-aliases-alist svl-aliasdb.this aliases-alist trace))
+         (- (fast-alist-free svl-aliasdb.this))
+         (- (fast-alist-free svl-aliasdb.sub))
+         ((mv new-sub aliases-alist)
+          (mod-aliaspairs->svl-aliasdb-pt2-lst svl-aliasdb.sub aliases-alist trace)))
+      (mv (change-svl-aliasdb svl-aliasdb
+                              :this new-this
+                              :sub new-sub)
+          aliases-alist)))
 
- (define mod-aliaspairs->svl-aliasdb-pt2-lst ((svl-aliasdb.sub svl-aliasdb-alist-p)
-                                              (aliases-alist alias-alist-p)
-                                              (trace trace-p))
-   :measure (cons-count (svl-aliasdb-alist-fix svl-aliasdb.sub))
+  (define mod-aliaspairs->svl-aliasdb-pt2-lst ((svl-aliasdb.sub svl-aliasdb-alist-p)
+                                               (aliases-alist alias-alist-p)
+                                               (trace trace-p))
+    :measure (cons-count (svl-aliasdb-alist-fix svl-aliasdb.sub))
 
-   :returns (mv (res-alist-db-alist svl-aliasdb-alist-p)
-                (res-alias-alist alias-alist-p
-                                 :hyp (and (alias-alist-p aliases-alist)
-                                           (svl-aliasdb-alist-p
-                                            svl-aliasdb.sub)
-                                           (trace-p trace))))
+    :returns (mv (res-alist-db-alist svl-aliasdb-alist-p)
+                 (res-alias-alist alias-alist-p
+                                  :hyp (and (alias-alist-p aliases-alist)
+                                            (svl-aliasdb-alist-p
+                                             svl-aliasdb.sub)
+                                            (trace-p trace))))
 
-   (b* ((svl-aliasdb.sub (mbe :logic (svl-aliasdb-alist-fix svl-aliasdb.sub)
-                              :exec svl-aliasdb.sub)))
-     (if (atom svl-aliasdb.sub)
-         (mv nil aliases-alist)
-       (b* ((trace-tmp (cons (if (consp trace)
-                                 (cons-to-end (car trace) (caar svl-aliasdb.sub))
-                               (caar svl-aliasdb.sub))
-                             trace))
-            ((mv new-sub-entry aliases-alist)
-             (mod-aliaspairs->svl-aliasdb-pt2 (cdar svl-aliasdb.sub)
-                                              aliases-alist
-                                              trace-tmp))
-            ((mv rest-subs aliases-alist)
-             (mod-aliaspairs->svl-aliasdb-pt2-lst (cdr svl-aliasdb.sub)
-                                                  aliases-alist
-                                                  trace)))
-         (mv (hons-acons (caar svl-aliasdb.sub) new-sub-entry rest-subs)
-             aliases-alist)))))
+    (b* ((svl-aliasdb.sub (mbe :logic (svl-aliasdb-alist-fix svl-aliasdb.sub)
+                               :exec svl-aliasdb.sub)))
+      (if (atom svl-aliasdb.sub)
+          (mv nil aliases-alist)
+        (b* ((trace-tmp (cons (if (consp trace)
+                                  (cons-to-end (car trace) (caar svl-aliasdb.sub))
+                                (caar svl-aliasdb.sub))
+                              trace))
+             ((mv new-sub-entry aliases-alist)
+              (mod-aliaspairs->svl-aliasdb-pt2 (cdar svl-aliasdb.sub)
+                                               aliases-alist
+                                               trace-tmp))
+             ((mv rest-subs aliases-alist)
+              (mod-aliaspairs->svl-aliasdb-pt2-lst (cdr svl-aliasdb.sub)
+                                                   aliases-alist
+                                                   trace)))
+          (mv (hons-acons (caar svl-aliasdb.sub) new-sub-entry rest-subs)
+              aliases-alist)))))
 
- ///
+  ///
 
- (verify-guards mod-aliaspairs->svl-aliasdb-pt2))
+  (verify-guards mod-aliaspairs->svl-aliasdb-pt2))
 
 (define mod-aliaspairs->svl-aliasdb ((modname sv::modname-p)
                                      (modalist sv::modalist-p)
@@ -1177,101 +1165,101 @@
 #|
 
 (mod-aliaspairs->svl-aliasdb "mul_test1"
-                         (make-fast-alist (sv::design->modalist *booth-sv-design*))
-                         nil)
+(make-fast-alist (sv::design->modalist *booth-sv-design*))
+nil)
 
 ;; not unfree fast-alist
 (b* ((modalist (make-fast-alist (sv::design->modalist *signed64-sv-design*))))
-  (progn$ (free-svl-aliasdb (mod-aliaspairs->svl-aliasdb "S_SP_64_64"
-                                                modalist
-                                                nil))
-         (fast-alist-free modalist)
-          nil))
+(progn$ (free-svl-aliasdb (mod-aliaspairs->svl-aliasdb "S_SP_64_64"
+modalist
+nil))
+(fast-alist-free modalist)
+nil))
 
 (mod-aliaspairs->svl-aliasdb "booth2_multiplier_signed_64x32_97"
-                         (make-fast-alist (sv::design->modalist *big-sv-design*))
-                         '("booth2_reduction_dadda_17x65_97"))
+(make-fast-alist (sv::design->modalist *big-sv-design*))
+'("booth2_reduction_dadda_17x65_97"))
 ||#
 
 ;; (vl-design-to-insouts *big-vl-design2* *big-sv-design*)
 
 (acl2::defines
- update-svex-with-svl-aliasdb-and-trace
- :guard-hints (("Goal"
-                :in-theory (e/d (svex-kind
-                                 sv::svar-p
-                                 trace-p
-                                 svex-p) ())))
- :hints (("Goal"
-          :in-theory (e/d (svex-kind) ())))
- :prepwork
- ((local
-   (in-theory (e/d (svex-p
-                    svex-kind)
-                   ()))))
+  update-svex-with-svl-aliasdb-and-trace
+  :guard-hints (("Goal"
+                 :in-theory (e/d (svex-kind
+                                  sv::svar-p
+                                  trace-p
+                                  svex-p) ())))
+  :hints (("Goal"
+           :in-theory (e/d (svex-kind) ())))
+  :prepwork
+  ((local
+    (in-theory (e/d (svex-p
+                     svex-kind)
+                    ()))))
 
- (define update-svex-with-svl-aliasdb-and-trace ((svex sv::svex-p)
-                                                 (svl-aliasdb svl-aliasdb-p)
-                                                 (trace trace-p))
-   :verify-guards nil
-   :returns (res sv::svex-p
-                 :hyp (and (sv::svex-p svex)
-                           (svl-aliasdb-p svl-aliasdb)
-                           (trace-p trace)))
-   (let ((kind (sv::svex-kind svex)))
-     (cond ((equal svl-aliasdb `(,(make-svl-aliasdb)))
-            svex)
-           ((eq kind ':quote)
-            svex)
-           ((eq kind ':var)
-            (b* ((var-name (sv::svar->name svex))
-                 (var-delay (sv::svar->delay svex))
-                 ((mv var-name address)
-                  (case-match var-name
-                    ((':address n & depth) (mv n depth))
-                    (& (mv var-name 0))))
+  (define update-svex-with-svl-aliasdb-and-trace ((svex sv::svex-p)
+                                                  (svl-aliasdb svl-aliasdb-p)
+                                                  (trace trace-p))
+    :verify-guards nil
+    :returns (res sv::svex-p
+                  :hyp (and (sv::svex-p svex)
+                            (svl-aliasdb-p svl-aliasdb)
+                            (trace-p trace)))
+    (let ((kind (sv::svex-kind svex)))
+      (cond ((equal svl-aliasdb `(,(make-svl-aliasdb)))
+             svex)
+            ((eq kind ':quote)
+             svex)
+            ((eq kind ':var)
+             (b* ((var-name (sv::svar->name svex))
+                  (var-delay (sv::svar->delay svex))
+                  ((mv var-name address)
+                   (case-match var-name
+                     ((':address n & depth) (mv n depth))
+                     (& (mv var-name 0))))
 
-                 (cur-trace (nth (nfix address) trace))
+                  (cur-trace (nth (nfix address) trace))
 
-                 (place (if (consp var-name) (car var-name) nil))
-                 (place (if place
-                            (if cur-trace
-                                (cons-to-end cur-trace place)
-                              place)
-                          cur-trace))
+                  (place (if (consp var-name) (car var-name) nil))
+                  (place (if place
+                             (if cur-trace
+                                 (cons-to-end cur-trace place)
+                               place)
+                           cur-trace))
 
-                 (name (if (consp var-name) (cdr var-name) var-name))
-                 (res (get-svex-from-svl-aliasdb name place var-delay svl-aliasdb))
-                 ((when res) res)
+                  (name (if (consp var-name) (cdr var-name) var-name))
+                  (res (get-svex-from-svl-aliasdb name place var-delay svl-aliasdb))
+                  ((when res) res)
 
-                 (svar (sv::change-svar svex :name (if place (cons place name) name))))
-              svar))
-           (t
-            (cons-with-hint (car svex)
-                            (update-svex-with-svl-aliasdb-and-trace-lst (cdr svex)
-                                                                        svl-aliasdb
-                                                                        trace)
-                            svex)))))
+                  (svar (sv::change-svar svex :name (if place (cons place name) name))))
+               svar))
+            (t
+             (cons-with-hint (car svex)
+                             (update-svex-with-svl-aliasdb-and-trace-lst (cdr svex)
+                                                                         svl-aliasdb
+                                                                         trace)
+                             svex)))))
 
- (define update-svex-with-svl-aliasdb-and-trace-lst ((lst sv::svexlist-p)
-                                                     (svl-aliasdb svl-aliasdb-p)
-                                                     (trace trace-p))
-   :returns (res-lst sv::svexlist-p
-                     :hyp (and (sv::svexlist-p lst)
-                               (svl-aliasdb-p svl-aliasdb)
-                               (trace-p trace)))
-   (if (atom lst)
-       nil
-     (cons-with-hint
-      (update-svex-with-svl-aliasdb-and-trace (car lst)
-                                              svl-aliasdb trace)
-      (update-svex-with-svl-aliasdb-and-trace-lst (cdr lst)
-                                                  svl-aliasdb trace)
-      lst)))
- ///
- (verify-guards update-svex-with-svl-aliasdb-and-trace
-   :hints (("Goal"
-            :in-theory (e/d (trace-p) ())))))
+  (define update-svex-with-svl-aliasdb-and-trace-lst ((lst sv::svexlist-p)
+                                                      (svl-aliasdb svl-aliasdb-p)
+                                                      (trace trace-p))
+    :returns (res-lst sv::svexlist-p
+                      :hyp (and (sv::svexlist-p lst)
+                                (svl-aliasdb-p svl-aliasdb)
+                                (trace-p trace)))
+    (if (atom lst)
+        nil
+      (cons-with-hint
+       (update-svex-with-svl-aliasdb-and-trace (car lst)
+                                               svl-aliasdb trace)
+       (update-svex-with-svl-aliasdb-and-trace-lst (cdr lst)
+                                                   svl-aliasdb trace)
+       lst)))
+  ///
+  (verify-guards update-svex-with-svl-aliasdb-and-trace
+    :hints (("Goal"
+             :in-theory (e/d (trace-p) ())))))
 
 (define get-lhs-w ((lhs sv::lhs-p))
   :returns (res natp)
@@ -1295,6 +1283,8 @@
                                sv::svex-p)
                               ()))))
   :returns (res sv::lhs-p :hyp (sv::svex-p svex))
+
+  :guard-debug t
 
   (case-match svex
     (('sv::partsel start size var)
@@ -1325,19 +1315,30 @@
                                                 :atom (sv::make-lhatom-z)))
                         (svex->lhs term2))))))
     (&
-     (hard-error 'svex->lhs
-                 "Unexpected Expression~ ~p0 ~%"
-                 (list (cons #\0 svex))))))
+     (b* (((when (equal svex 0))
+           nil)
+          ((unless (and (sv::4vec-p svex)
+                        (natp (sv::4vec->upper svex))
+                        (natp (sv::4vec->lower svex))))
+           (hard-error 'svex->lhs
+                       "Unexpected Expression~ ~p0 ~%"
+                       (list (cons #\0 svex)))))
+       (list (sv::make-lhrange :w (acl2::pos-fix ;; needed for guard. should never happen.
+                                   (max (nfix (integer-length (sv::4vec->upper svex)))
+                                       (nfix (integer-length (sv::4vec->lower svex)))))
+                               :atom (sv::make-lhatom-z)))))))
+
+
 
 #|
 (svex->lhs
- '(CONCAT
-   68
-   (PARTSEL 0 65 (:VAR ("partial_products" . 2) . 0))
-   (CONCAT
-    61
-    (PARTSEL 4 61 (:VAR ("partial_products" . 2) . 0))
-    (PARTSEL 65 5 (:VAR ("x" . "out") . 0)))))
+'(CONCAT
+68
+(PARTSEL 0 65 (:VAR ("partial_products" . 2) . 0))
+(CONCAT
+61
+(PARTSEL 4 61 (:VAR ("partial_products" . 2) . 0))
+(PARTSEL 65 5 (:VAR ("x" . "out") . 0)))))
 ||#
 
 (define lhs-to-svl-wirelist ((lhs sv::lhs-p))
@@ -1359,86 +1360,98 @@
 #|
 
 (lhs-to-svl-wirelist '((65 :VAR ("partial_products" . 2) . 0)
-                       (3 . :Z)
-                       (61 (:VAR ("partial_products" . 2) . 0)
-                           . 4)
-                       (5 (:VAR ("x" . "out") . 0) . 65)))
+(3 . :Z)
+(61 (:VAR ("partial_products" . 2) . 0)
+. 4)
+(5 (:VAR ("x" . "out") . 0) . 65)))
 ||#
 
 (acl2::defines
- get-inputs-for-svex
- :prepwork
- ((local
-   (in-theory (enable SV::SVARLIST-P
-                      SVEX-P
+  get-inputs-for-svex
+  :prepwork
+  ((local
+    (in-theory (enable SV::SVARLIST-P
+                       SVEX-P
 
-                      svex-kind)))
-  (local
-   (defthm wire-list-p-implies-true-listp
-     (implies (wire-list-p wires)
-              (true-listp wires))))
-  (local
-   (defthm SVarLIST-P-implies-true-listp
-     (implies (sv::SVarLIST-P wires)
-              (true-listp wires)))))
+                       svex-kind)))
+   (local
+    (defthm wire-list-p-implies-true-listp
+      (implies (wire-list-p wires)
+               (true-listp wires))))
+   (local
+    (defthm SVarLIST-P-implies-true-listp
+      (implies (sv::SVarLIST-P wires)
+               (true-listp wires)))))
 
- (define get-inputs-for-svex ((svex sv::svex-p)
-                              (modname sv::modname-p)
-                              (modalist sv::modalist-p))
-   :verify-guards nil
-   :returns (mv (wires wire-list-p
-                       :hyp (sv::svex-p svex))
-                (delayed sv::svarlist-p
-                         :hyp (sv::svex-p svex))
-                (success booleanp))
-   (declare (ignorable modname modalist)) ;; will use these when var is not in
-   ;; partsel. If so, will see if the wire is of size 1. Then it's all good..
-   (b* ((kind (sv::svex-kind svex)))
-     (cond ((eq kind ':quote)
-            (mv nil nil t))
-           ((eq kind ':var)
-            (b* ((delayed (eql (sv::svar->delay svex) 1)))
-              (mv (if delayed nil (list `(,svex)))
-                  (if delayed (list svex) nil)
-                  (if delayed t
-                    (cw "~% Reached a var that was not in a partsel ~p0 ~%" svex)))))
-           ((case-match svex (('sv::partsel start size sub-svex)
-                              (and (sv::svar-p sub-svex)
-                                   (natp start)
-                                   (natp size)))
-              (& nil))
-            (b* ((start (cadr svex))
-                 (size (caddr svex))
-                 (svar (cadddr svex))
-                 (delayed (eql (sv::svar->delay svar) 1)))
-              (mv (if delayed nil (list `(,svar ,size . ,start)))
-                  (if delayed (list svar) nil)
-                  t)))
-           (t
-            (get-inputs-for-svex-lst (cdr svex) modname modalist)))))
+  (define get-inputs-for-svex ((svex sv::svex-p)
+                               (modname sv::modname-p)
+                               (modalist sv::modalist-p))
+    :verify-guards nil
+    :returns (mv (wires wire-list-p
+                        :hyp (sv::svex-p svex))
+                 (delayed sv::svarlist-p
+                          :hyp (sv::svex-p svex))
+                 (success booleanp))
+    (declare (ignorable modname modalist)) ;; will use these when var is not in
+    ;; partsel. If so, will see if the wire is of size 1. Then it's all good..
+    (b* ((kind (sv::svex-kind svex)))
+      (cond ((eq kind ':quote)
+             (mv nil nil t))
+            ((eq kind ':var)
+             (b* ((delayed (eql (sv::svar->delay svex) 1)))
+               (mv (if delayed nil (list `(,svex)))
+                   (if delayed (list svex) nil)
+                   (if delayed t
+                     (cw "~% Reached a var that was not in a partsel ~p0 ~%" svex)))))
+            ((case-match svex
+               (('sv::partsel start size sub-svex)
+                (and (sv::svar-p sub-svex)
+                     (natp start)
+                     (natp size)))
+               (& nil))
+             (b* ((start (cadr svex))
+                  (size (caddr svex))
+                  (svar (cadddr svex))
+                  (delayed (eql (sv::svar->delay svar) 1)))
+               (mv (if delayed nil (list `(,svar ,size . ,start)))
+                   (if delayed (list svar) nil)
+                   t)))
+            ((case-match svex
+               (('sv::zerox size sub-svex)
+                (and (sv::svar-p sub-svex)
+                     (natp size)))
+               (& nil))
+             (b* ((size (cadr svex))
+                  (svar (caddr svex))
+                  (delayed (eql (sv::svar->delay svar) 1)))
+               (mv (if delayed nil (list `(,svar ,size . 0)))
+                   (if delayed (list svar) nil)
+                   t)))
+            (t
+             (get-inputs-for-svex-lst (cdr svex) modname modalist)))))
 
- (define get-inputs-for-svex-lst ((lst sv::svexlist-p)
-                                  (modname sv::modname-p)
-                                  (modalist sv::modalist-p))
-   :returns (mv (wires wire-list-p
-                       :hyp (sv::svexlist-p lst))
-                (delayed sv::svarlist-p
-                         :hyp (sv::svexlist-p lst))
-                (success booleanp))
-   (if (atom lst)
-       (mv nil nil t)
-     (b* (((mv rest rest-delayed success1)
-           (get-inputs-for-svex (car lst) modname modalist))
-          ((mv rest2 rest-delayed2 success2)
-           (get-inputs-for-svex-lst (cdr lst) modname modalist)))
-       (mv (append rest rest2)
-           (append rest-delayed
-                   rest-delayed2)
-           (and success1 success2)))))
+  (define get-inputs-for-svex-lst ((lst sv::svexlist-p)
+                                   (modname sv::modname-p)
+                                   (modalist sv::modalist-p))
+    :returns (mv (wires wire-list-p
+                        :hyp (sv::svexlist-p lst))
+                 (delayed sv::svarlist-p
+                          :hyp (sv::svexlist-p lst))
+                 (success booleanp))
+    (if (atom lst)
+        (mv nil nil t)
+      (b* (((mv rest rest-delayed success1)
+            (get-inputs-for-svex (car lst) modname modalist))
+           ((mv rest2 rest-delayed2 success2)
+            (get-inputs-for-svex-lst (cdr lst) modname modalist)))
+        (mv (append rest rest2)
+            (append rest-delayed
+                    rest-delayed2)
+            (and success1 success2)))))
 
- ///
+  ///
 
- (verify-guards get-inputs-for-svex))
+  (verify-guards get-inputs-for-svex))
 
 (define assign-occ-merge-ins ((ins wire-list-p))
   :verify-guards nil
@@ -1637,9 +1650,15 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
          ;;(- (cw "Calling svex-simplify ~%"))
          (lhs-svex `(sv::partsel 0 ,lhs-w ,lhs-svex))
-         ((mv lhs-svex rp::rp-state) (svex-simplify lhs-svex
-                                                    :reload-rules nil
-                                                    :runes nil))
+         (lhs-svex (svex-reduce-w/-env lhs-svex
+                                       :env nil
+                                       :context nil
+                                       :config (make-svex-reduce-config
+                                                :keep-missing-env-vars t
+                                                :skip-bitor/and/xor-repeated t)))
+         #|((mv lhs-svex rp::rp-state) (svex-simplify lhs-svex
+         :reload-rules nil
+         :runes nil))|#
 
          ;; lhs svex to lhs
          (lhs (svex->lhs lhs-svex))
@@ -1659,10 +1678,17 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
          ;;(- (cw "Calling svex-simplify ~%"))
          (rhs-svex `(sv::partsel 0 ,lhs-w ,rhs-svex))
-         ((mv rhs-svex rp::rp-state) (svex-simplify rhs-svex
-                                                    :reload-rules nil
-                                                    :runes nil
-                                                    :linearize :auto))
+         (rhs-svex (svex-reduce-w/-env rhs-svex
+                                       :env nil
+                                       :context nil
+                                       :config (make-svex-reduce-config
+                                                :keep-missing-env-vars t
+                                                :skip-bitor/and/xor-repeated t)))
+         #|((mv rhs-svex rp::rp-state) (svex-simplify rhs-svex
+         :reload-rules nil
+         :runes nil
+         :linearize :auto
+         :svex-env-is-var t))|#
 
          ;;(- (cw "Calling svex->lhs ~%"))
 
@@ -1739,10 +1765,17 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
                      rest)
               rp::rp-state))
          (alias-svex `(sv::partsel 0 ,cur-w ,alias-svex))
-         ((mv alias-svex rp::rp-state)
-          (svex-simplify alias-svex
-                         :reload-rules nil
-                         :runes nil))
+         (alias-svex (svex-reduce-w/-env alias-svex
+                                         :env nil
+                                         :context nil
+                                         :config (make-svex-reduce-config
+                                                  :keep-missing-env-vars t
+                                                  :skip-bitor/and/xor-repeated t)))
+         #|((mv alias-svex rp::rp-state)
+         (svex-simplify alias-svex
+         :reload-rules nil
+         :runes nil
+         :svex-env-is-var t))|#
          (alias-lhs (svex->lhs alias-svex)))
       (mv (acons cur-name alias-lhs rest)
           rp::rp-state)))
@@ -1801,166 +1834,166 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 (set-state-ok t)
 ;; :i-am-here
 (acl2::defines
- sv-mod->svl-occs
+  sv-mod->svl-occs
 
- :prepwork
- ((local
-   (in-theory (e/d (trace-p)
-                   (rp::rp-statep
-                    (:DEFINITION ALWAYS$)
-                    (:DEFINITION MEMBER-EQUAL)
-;;                    (:REWRITE ACL2::PLAIN-UQI-INTEGER-LISTP)
-                    (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
-                    (:REWRITE ACL2::APPLY$-PRIMITIVE)
-                    (:META ACL2::APPLY$-PRIM-META-FN-CORRECT)
-                    (:DEFINITION INTEGER-LISTP)
-;;                    (:REWRITE ACL2::PLAIN-UQI-ACL2-NUMBER-LISTP)
-                    (:DEFINITION ACL2::APPLY$-BADGEP)
-;;                    (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
-                    (:REWRITE ACL2::NATP-OF-CAR-WHEN-NAT-LISTP)
-                    (:DEFINITION RATIONAL-LISTP)
-                    (:DEFINITION ACL2-NUMBER-LISTP)
-                    (:REWRITE ACL2::RATIONALP-OF-CAR-WHEN-RATIONAL-LISTP))))))
+  :prepwork
+  ((local
+    (in-theory (e/d (trace-p)
+                    (rp::rp-statep
+                     (:DEFINITION ALWAYS$)
+                     (:DEFINITION MEMBER-EQUAL)
+                     ;;                    (:REWRITE ACL2::PLAIN-UQI-INTEGER-LISTP)
+                     (:REWRITE ACL2::APPLY$-SYMBOL-ARITY-1)
+                     (:REWRITE ACL2::APPLY$-PRIMITIVE)
+                     (:META ACL2::APPLY$-PRIM-META-FN-CORRECT)
+                     (:DEFINITION INTEGER-LISTP)
+                     ;;                    (:REWRITE ACL2::PLAIN-UQI-ACL2-NUMBER-LISTP)
+                     (:DEFINITION ACL2::APPLY$-BADGEP)
+                     ;;                    (:REWRITE ACL2::PLAIN-UQI-TRUE-LIST-LISTP)
+                     (:REWRITE ACL2::NATP-OF-CAR-WHEN-NAT-LISTP)
+                     (:DEFINITION RATIONAL-LISTP)
+                     (:DEFINITION ACL2-NUMBER-LISTP)
+                     (:REWRITE ACL2::RATIONALP-OF-CAR-WHEN-RATIONAL-LISTP))))))
 
- (define sv-mod->svl-occs ((modname sv::modname-p)
-                           (modalist sv::modalist-p)
-                           (svl-aliasdb svl-aliasdb-p)
-                           (trace trace-p)
-                           (mods-to-skip sv::modnamelist-p)
-                           (vl-insouts vl-insouts-sized-p)
+  (define sv-mod->svl-occs ((modname sv::modname-p)
+                            (modalist sv::modalist-p)
+                            (svl-aliasdb svl-aliasdb-p)
+                            (trace trace-p)
+                            (mods-to-skip sv::modnamelist-p)
+                            (vl-insouts vl-insouts-sized-p)
 
-                           (limit natp "To prove termination")
-                           &key
-                           (rp::rp-state 'rp::rp-state)
-                           (state 'state))
-   :stobjs (state rp::rp-state)
+                            (limit natp "To prove termination")
+                            &key
+                            (rp::rp-state 'rp::rp-state)
+                            (state 'state))
+    :stobjs (state rp::rp-state)
 
-   :verify-guards nil
-   :measure (nfix limit)
-   :guard (valid-rp-state-syntaxp rp-state)
+    :verify-guards nil
+    :measure (nfix limit)
+    :guard (valid-rp-state-syntaxp rp-state)
 
-   :returns (mv (tmp-occs tmp-occ-alist-p
-                          :hyp (and (sv::modname-p modname)
-                                    (sv::modalist-p modalist)
-                                    (svl-aliasdb-p svl-aliasdb)
-                                    (trace-p trace)
-                                    (sv::modnamelist-p mods-to-skip)
-                                    (vl-insouts-sized-p vl-insouts)))
-                (rp::rp-state-res valid-rp-state-syntaxp :hyp (valid-rp-state-syntaxp rp::rp-state)))
+    :returns (mv (tmp-occs tmp-occ-alist-p
+                           :hyp (and (sv::modname-p modname)
+                                     (sv::modalist-p modalist)
+                                     (svl-aliasdb-p svl-aliasdb)
+                                     (trace-p trace)
+                                     (sv::modnamelist-p mods-to-skip)
+                                     (vl-insouts-sized-p vl-insouts)))
+                 (rp::rp-state-res valid-rp-state-syntaxp :hyp (valid-rp-state-syntaxp rp::rp-state)))
 
-   ;; Goal: by flattening, create all the occs including assigns and modules.
-   (cond ((zp limit)
-          (progn$ (hard-error 'mod-assigns->occs
-                              "Limit Reached! ~%"
-                              nil)
+    ;; Goal: by flattening, create all the occs including assigns and modules.
+    (cond ((zp limit)
+           (progn$ (hard-error 'mod-assigns->occs
+                               "Limit Reached! ~%"
+                               nil)
+                   (mv nil rp::rp-state)))
+          (t
+           (b* ((module (hons-get modname modalist))
+                ((unless module)
+                 (progn$
+                  (hard-error 'mod-aliaspairlis$->svl-aliasdb-pt1
+                              "Module not found in modalist ~p0 ~%"
+                              (list (cons #\0 modname)))
                   (mv nil rp::rp-state)))
-         (t
-          (b* ((module (hons-get modname modalist))
-               ((unless module)
-                (progn$
-                 (hard-error 'mod-aliaspairlis$->svl-aliasdb-pt1
-                             "Module not found in modalist ~p0 ~%"
-                             (list (cons #\0 modname)))
-                 (mv nil rp::rp-state)))
-               (module (cdr module))
-               ((sv::module module) module)
-               ((mv assign-occs ?cnt rp::rp-state)
-                (sv-mod->svl-occs-assigns module.assigns trace svl-aliasdb
-                                          0
-                                          modname modalist))
-               ((mv insts-occs  rp::rp-state)
-                (sv-mod->svl-occs-insts module.insts
-                                        modalist
-                                        svl-aliasdb
-                                        trace
-                                        mods-to-skip
-                                        vl-insouts
-                                        (1- limit))))
-            (mv (append assign-occs insts-occs)  rp::rp-state)))))
+                (module (cdr module))
+                ((sv::module module) module)
+                ((mv assign-occs ?cnt rp::rp-state)
+                 (sv-mod->svl-occs-assigns module.assigns trace svl-aliasdb
+                                           0
+                                           modname modalist))
+                ((mv insts-occs  rp::rp-state)
+                 (sv-mod->svl-occs-insts module.insts
+                                         modalist
+                                         svl-aliasdb
+                                         trace
+                                         mods-to-skip
+                                         vl-insouts
+                                         (1- limit))))
+             (mv (append assign-occs insts-occs)  rp::rp-state)))))
 
- (define sv-mod->svl-occs-insts ((insts sv::modinstlist-p)
-                                 (modalist sv::modalist-p)
-                                 (svl-aliasdb svl-aliasdb-p)
-                                 (trace trace-p)
-                                 (mods-to-skip sv::modnamelist-p)
-                                 (vl-insouts vl-insouts-sized-p)
+  (define sv-mod->svl-occs-insts ((insts sv::modinstlist-p)
+                                  (modalist sv::modalist-p)
+                                  (svl-aliasdb svl-aliasdb-p)
+                                  (trace trace-p)
+                                  (mods-to-skip sv::modnamelist-p)
+                                  (vl-insouts vl-insouts-sized-p)
 
-                                 (limit natp "To prove termination")
-                                 &key
-                                 (rp::rp-state 'rp::rp-state)
-                                 (state 'state))
-   :stobjs (state rp::rp-state)
-   :returns (mv
-             (tmp-occs tmp-occ-alist-p
-                       :hyp (and (sv::modinstlist-p insts)
-                                 (sv::modalist-p modalist)
-                                 (svl-aliasdb-p svl-aliasdb)
-                                 (trace-p trace)
-                                 (sv::modnamelist-p mods-to-skip)
-                                 (vl-insouts-sized-p vl-insouts)))
-             (rp::rp-state-res valid-rp-state-syntaxp :hyp (valid-rp-state-syntaxp rp::rp-state)))
-   :guard (valid-rp-state-syntaxp rp-state)
-   :measure (nfix limit)
+                                  (limit natp "To prove termination")
+                                  &key
+                                  (rp::rp-state 'rp::rp-state)
+                                  (state 'state))
+    :stobjs (state rp::rp-state)
+    :returns (mv
+              (tmp-occs tmp-occ-alist-p
+                        :hyp (and (sv::modinstlist-p insts)
+                                  (sv::modalist-p modalist)
+                                  (svl-aliasdb-p svl-aliasdb)
+                                  (trace-p trace)
+                                  (sv::modnamelist-p mods-to-skip)
+                                  (vl-insouts-sized-p vl-insouts)))
+              (rp::rp-state-res valid-rp-state-syntaxp :hyp (valid-rp-state-syntaxp rp::rp-state)))
+    :guard (valid-rp-state-syntaxp rp-state)
+    :measure (nfix limit)
 
-   (cond ((zp limit)
-          (progn$ (hard-error 'mod-assigns->occs
-                              "Limit Reached! ~%"
-                              nil)
-                  (mv nil  rp::rp-state)))
-         ((atom insts)
-          (mv nil  rp::rp-state))
-         (t
-          (b* (((sv::modinst inst) (car insts))
-               ((mv rest  rp::rp-state)
-                (sv-mod->svl-occs-insts (cdr insts)
-                                        modalist
-                                        svl-aliasdb
-                                        trace
-                                        mods-to-skip
-                                        vl-insouts
+    (cond ((zp limit)
+           (progn$ (hard-error 'mod-assigns->occs
+                               "Limit Reached! ~%"
+                               nil)
+                   (mv nil  rp::rp-state)))
+          ((atom insts)
+           (mv nil  rp::rp-state))
+          (t
+           (b* (((sv::modinst inst) (car insts))
+                ((mv rest  rp::rp-state)
+                 (sv-mod->svl-occs-insts (cdr insts)
+                                         modalist
+                                         svl-aliasdb
+                                         trace
+                                         mods-to-skip
+                                         vl-insouts
 
-                                        (1- limit)))
-               (trace-tmp (cons (if (consp trace)
-                                    (cons-to-end (car trace) inst.instname)
-                                  inst.instname)
-                                trace))
-               ((when (member-equal inst.modname mods-to-skip))
-                (b* (((mv this-occ rp::rp-state)
-                      (sv-mod->svl-occs-module inst.modname svl-aliasdb trace-tmp
-                                               vl-insouts )))
-                  (mv (acons (car trace-tmp)
-                             this-occ
-                             rest)
-                      rp::rp-state)))
-               ((svl-aliasdb svl-aliasdb) svl-aliasdb)
-               #|(svl-aliasdb-tmp (hons-get inst.instname svl-aliasdb.sub))
-               (svl-aliasdb-tmp (if svl-aliasdb (cdr svl-aliasdb) (make-svl-aliasdb)))||#
+                                         (1- limit)))
+                (trace-tmp (cons (if (consp trace)
+                                     (cons-to-end (car trace) inst.instname)
+                                   inst.instname)
+                                 trace))
+                ((when (member-equal inst.modname mods-to-skip))
+                 (b* (((mv this-occ rp::rp-state)
+                       (sv-mod->svl-occs-module inst.modname svl-aliasdb trace-tmp
+                                                vl-insouts )))
+                   (mv (acons (car trace-tmp)
+                              this-occ
+                              rest)
+                       rp::rp-state)))
+                ((svl-aliasdb svl-aliasdb) svl-aliasdb)
+                #|(svl-aliasdb-tmp (hons-get inst.instname svl-aliasdb.sub))
+                (svl-aliasdb-tmp (if svl-aliasdb (cdr svl-aliasdb) (make-svl-aliasdb)))||#
 
-               ((mv cur-inst-occs  rp::rp-state)
-                (sv-mod->svl-occs inst.modname
-                                  modalist
-                                  svl-aliasdb
-                                  trace-tmp
-                                  mods-to-skip
-                                  vl-insouts
+                ((mv cur-inst-occs  rp::rp-state)
+                 (sv-mod->svl-occs inst.modname
+                                   modalist
+                                   svl-aliasdb
+                                   trace-tmp
+                                   mods-to-skip
+                                   vl-insouts
 
-                                  (1- limit))))
-            (mv (append cur-inst-occs rest)
-                rp::rp-state)))))
+                                   (1- limit))))
+             (mv (append cur-inst-occs rest)
+                 rp::rp-state)))))
 
- ///
+  ///
 
- (local
-  (defthm tmp-occ-alist-p-implies-true-listp
-    (implies (tmp-occ-alist-p alist)
-             (true-listp alist))))
+  (local
+   (defthm tmp-occ-alist-p-implies-true-listp
+     (implies (tmp-occ-alist-p alist)
+              (true-listp alist))))
 
- (local
-  (defthm tmp-occ-alist-p-implies-alistp
-    (implies (tmp-occ-alist-p alist)
-             (alistp alist))))
+  (local
+   (defthm tmp-occ-alist-p-implies-alistp
+     (implies (tmp-occ-alist-p alist)
+              (alistp alist))))
 
- (verify-guards sv-mod->svl-occs-fn))
+  (verify-guards sv-mod->svl-occs-fn))
 
 ;;;;;; verify-guards checkpoint
 
@@ -2047,10 +2080,17 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
            (alias-svex (cdr alias))
            (alias-svex `(sv::partsel 0 ,(acl2::pos-fix (wire-size cur)) ,alias-svex))
-           ((mv alias-svex rp::rp-state)
+           (alias-svex (svex-reduce-w/-env alias-svex
+                                           :env nil
+                                           :context nil
+                                           :config (make-svex-reduce-config
+                                                    :keep-missing-env-vars t
+                                                    :skip-bitor/and/xor-repeated t)))
+           #|((mv alias-svex rp::rp-state)
             (svex-simplify alias-svex
                            :Reload-rules nil
-                           :runes nil))
+                           :runes nil
+                           :svex-env-is-var t))|#
            (alias-lhs (svex->lhs alias-svex))
            ((mv assigns cnt)
             (svl-flatten-mod-insert-assigns-for-inputs-aux cur
@@ -2098,10 +2138,17 @@ it may help to add a rewrite rule for this. ~%" rhs-svex)))
 
            (alias-svex (cdr alias))
            (alias-svex `(sv::partsel 0 ,(acl2::pos-fix (wire-size cur)) ,alias-svex))
-           ((mv alias-svex rp::rp-state)
+           (alias-svex (svex-reduce-w/-env alias-svex
+                                       :env nil
+                                       :context nil
+                                       :config (make-svex-reduce-config
+                                                :keep-missing-env-vars t
+                                                :skip-bitor/and/xor-repeated t)))
+           #|((mv alias-svex rp::rp-state)
             (svex-simplify alias-svex
-                           :Reload-rules nil
-                           :runes nil))
+                           :reload-rules nil
+                           :runes nil
+                           :svex-env-is-var t))|#
            ((mv ins prev-ins success)
             (get-inputs-for-svex alias-svex modname modalist))
            (- (or success
@@ -2369,7 +2416,7 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
   occ)) ; ;
   (does-wires-intesect-with-occ (cdr wires) ; ;
   occ)))) ; ;
-; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
   (define does-lhs-intersect-with-occ ((lhs sv::lhs-p) ; ;
   (occ occ-p)) ; ;
   (if (atom lhs) ; ;
@@ -2563,33 +2610,33 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
             (cut-list-until e (cdr lst))))))
 
 (acl2::defines
- find-loop
- (define find-loop (occ-name occ-to-occ-listeners
-                             (trace true-listp)
-                             &optional
-                             (limit '(expt 2 30)))
-   :guard (natp limit)
-   :measure (nfix limit)
-   (b* ((member (member-equal occ-name trace))
-        ((when (or member
-                   (zp limit)))
-         (b* ((trace-cut (cut-list-until occ-name trace)))
-           (progn$ (cw "Loop found for ~p0 in this trace: ~p1 ~%" occ-name
-                       trace-cut)
-                   trace-cut)))
-        (lst (cdr (hons-get occ-name occ-to-occ-listeners))))
-     (find-loop-lst lst occ-to-occ-listeners (cons occ-name trace) (1- limit))))
- (define find-loop-lst (lst
-                        occ-to-occ-listeners
-                        (trace true-listp) &optional
-                        (limit '(expt 2 30)))
-   :guard (natp limit)
-   :measure (nfix limit)
-   (if (or (atom lst)
-           (zp limit))
-       nil
-     (or (find-loop (car lst) occ-to-occ-listeners trace (1- limit))
-         (find-loop-lst (cdr lst) occ-to-occ-listeners trace (1- limit))))))
+  find-loop
+  (define find-loop (occ-name occ-to-occ-listeners
+                              (trace true-listp)
+                              &optional
+                              (limit '(expt 2 30)))
+    :guard (natp limit)
+    :measure (nfix limit)
+    (b* ((member (member-equal occ-name trace))
+         ((when (or member
+                    (zp limit)))
+          (b* ((trace-cut (cut-list-until occ-name trace)))
+            (progn$ (cw "Loop found for ~p0 in this trace: ~p1 ~%" occ-name
+                        trace-cut)
+                    trace-cut)))
+         (lst (cdr (hons-get occ-name occ-to-occ-listeners))))
+      (find-loop-lst lst occ-to-occ-listeners (cons occ-name trace) (1- limit))))
+  (define find-loop-lst (lst
+                         occ-to-occ-listeners
+                         (trace true-listp) &optional
+                         (limit '(expt 2 30)))
+    :guard (natp limit)
+    :measure (nfix limit)
+    (if (or (atom lst)
+            (zp limit))
+        nil
+      (or (find-loop (car lst) occ-to-occ-listeners trace (1- limit))
+          (find-loop-lst (cdr lst) occ-to-occ-listeners trace (1- limit))))))
 
 (define in-node-count-accp (acc)
   :enabled t
@@ -2653,68 +2700,68 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
                                                                 acc))))
 
   (acl2::defines
-   svl-sort-occs
-   (define svl-sort-occs ((occ-name occ-name-p)
-                          (all-tmp-occs tmp-occ-alist-p)
-                          (occ-to-occ-listeners)
-                          (occ-in-nodes-count in-node-count-accp)
-                          &optional
-                          (limit '(expt 2 30)))
-     :guard (natp limit)
-     :measure (nfix limit)
-     :verify-guards :after-returns
-     :returns (mv (res-occs tmp-occ-alist-p :hyp (tmp-occ-alist-p all-tmp-occs))
-                  (res-occ-in-nodes-count in-node-count-accp
-                                          :hyp (in-node-count-accp occ-in-nodes-count)))
-     (b* (((when (zp limit))
-           (mv nil nil))
-          (tmp-occ (hons-get occ-name all-tmp-occs))
-          (candidates (cdr (hons-get occ-name occ-to-occ-listeners)))
-          ((mv rest occ-in-nodes-count)
-           (svl-sort-occs-lst candidates all-tmp-occs occ-to-occ-listeners
-                              occ-in-nodes-count
-                              (1- limit))))
-       (mv (if tmp-occ
-               (cons tmp-occ rest)
-             rest)
-           occ-in-nodes-count)))
+    svl-sort-occs
+    (define svl-sort-occs ((occ-name occ-name-p)
+                           (all-tmp-occs tmp-occ-alist-p)
+                           (occ-to-occ-listeners)
+                           (occ-in-nodes-count in-node-count-accp)
+                           &optional
+                           (limit '(expt 2 30)))
+      :guard (natp limit)
+      :measure (nfix limit)
+      :verify-guards :after-returns
+      :returns (mv (res-occs tmp-occ-alist-p :hyp (tmp-occ-alist-p all-tmp-occs))
+                   (res-occ-in-nodes-count in-node-count-accp
+                                           :hyp (in-node-count-accp occ-in-nodes-count)))
+      (b* (((when (zp limit))
+            (mv nil nil))
+           (tmp-occ (hons-get occ-name all-tmp-occs))
+           (candidates (cdr (hons-get occ-name occ-to-occ-listeners)))
+           ((mv rest occ-in-nodes-count)
+            (svl-sort-occs-lst candidates all-tmp-occs occ-to-occ-listeners
+                               occ-in-nodes-count
+                               (1- limit))))
+        (mv (if tmp-occ
+                (cons tmp-occ rest)
+              rest)
+            occ-in-nodes-count)))
 
-   (define svl-sort-occs-lst ((candidates occ-name-list-p
-                                          "Occs that might be ready to add")
-                              (all-tmp-occs tmp-occ-alist-p)
-                              (occ-to-occ-listeners)
-                              (occ-in-nodes-count in-node-count-accp)
-                              &optional
-                              (limit '(expt 2 30)))
-     :guard (natp limit)
-     :measure (nfix limit)
-     :returns (mv (res-occs tmp-occ-alist-p :hyp (tmp-occ-alist-p all-tmp-occs))
-                  (res-occ-in-nodes-count in-node-count-accp
-                                          :hyp (in-node-count-accp occ-in-nodes-count)))
-     (cond
-      ((or (atom candidates)
-           (zp limit))
-       (mv nil occ-in-nodes-count))
-      (t
-       (b* ((cur (car candidates))
-            (in-node-cnt (nfix (1- (nfix (cdr (hons-get cur occ-in-nodes-count))))))
-            (occ-in-nodes-count (hons-acons cur in-node-cnt occ-in-nodes-count))
-            ((mv added-occs occ-in-nodes-count)
-             (if (equal in-node-cnt 0)
-                 (svl-sort-occs cur all-tmp-occs occ-to-occ-listeners
-                                occ-in-nodes-count
-                                (1- limit))
-               (mv nil occ-in-nodes-count)))
-            ((mv rest occ-in-nodes-count)
-             (svl-sort-occs-lst (cdr candidates)
-                                all-tmp-occs
-                                occ-to-occ-listeners
-                                occ-in-nodes-count
-                                (1- limit))))
-         (mv (append added-occs rest)
-             occ-in-nodes-count)))))
-   ///
-   (verify-guards svl-sort-occs-fn))
+    (define svl-sort-occs-lst ((candidates occ-name-list-p
+                                           "Occs that might be ready to add")
+                               (all-tmp-occs tmp-occ-alist-p)
+                               (occ-to-occ-listeners)
+                               (occ-in-nodes-count in-node-count-accp)
+                               &optional
+                               (limit '(expt 2 30)))
+      :guard (natp limit)
+      :measure (nfix limit)
+      :returns (mv (res-occs tmp-occ-alist-p :hyp (tmp-occ-alist-p all-tmp-occs))
+                   (res-occ-in-nodes-count in-node-count-accp
+                                           :hyp (in-node-count-accp occ-in-nodes-count)))
+      (cond
+       ((or (atom candidates)
+            (zp limit))
+        (mv nil occ-in-nodes-count))
+       (t
+        (b* ((cur (car candidates))
+             (in-node-cnt (nfix (1- (nfix (cdr (hons-get cur occ-in-nodes-count))))))
+             (occ-in-nodes-count (hons-acons cur in-node-cnt occ-in-nodes-count))
+             ((mv added-occs occ-in-nodes-count)
+              (if (equal in-node-cnt 0)
+                  (svl-sort-occs cur all-tmp-occs occ-to-occ-listeners
+                                 occ-in-nodes-count
+                                 (1- limit))
+                (mv nil occ-in-nodes-count)))
+             ((mv rest occ-in-nodes-count)
+              (svl-sort-occs-lst (cdr candidates)
+                                 all-tmp-occs
+                                 occ-to-occ-listeners
+                                 occ-in-nodes-count
+                                 (1- limit))))
+          (mv (append added-occs rest)
+              occ-in-nodes-count)))))
+    ///
+    (verify-guards svl-sort-occs-fn))
 
   ;; to check and make sure that all the occ are added.
   (define count-not-added-occs ((occ-in-nodes-count in-node-count-accp))
@@ -2946,7 +2993,6 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
       (cons (lhs->wire-list (car lhslist))
             (lhslist->wire-list (cdr lhslist))))))
 
-
 (define sv-wires-to-sv-wire-alist ((wires sv::wirelist-p))
   :returns (res sv-wire-alist-p
                 :hyp (sv::wirelist-p wires)
@@ -3160,17 +3206,17 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
              :in-theory (e/d () ())))))
 
 #|(b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))
-     (vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
-                                                '("full_adder_1$WIDTH=1"
-                                                  "full_adder$WIDTH=1"
-                                                  "booth2_reduction_dadda_17x65_97")
-                                                ))
-     (svex-simplify-preloaded (svex-simplify-preload)))
-  (svl-flatten-mod "booth2_reduction_dadda_17x65_97"
-                    (make-fast-alist (sv::design->modalist *big-sv-design*))
-                    '("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
-                    vl-insouts2
-                    svex-simplify-preloaded))||#
+(vl-insouts2 (vl-insouts-insert-wire-sizes vl-insouts *big-sv-design*
+'("full_adder_1$WIDTH=1"
+"full_adder$WIDTH=1"
+"booth2_reduction_dadda_17x65_97")
+))
+(svex-simplify-preloaded (svex-simplify-preload)))
+(svl-flatten-mod "booth2_reduction_dadda_17x65_97"
+(make-fast-alist (sv::design->modalist *big-sv-design*))
+'("full_adder_1$WIDTH=1" "full_adder$WIDTH=1")
+vl-insouts2
+svex-simplify-preloaded))||#
 
 (define svl-flatten-mods ((modnames sv::modnamelist-p)
                           (modalist sv::modalist-p)
@@ -3225,116 +3271,116 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
          (ranks-alistp (cdr alist)))))
 
 (acl2::defines
- svl-mod-calculate-ranks
- :prepwork
- ((Local
-   (in-theory (disable natp max)))
+  svl-mod-calculate-ranks
+  :prepwork
+  ((Local
+    (in-theory (disable natp max)))
 
-  (local
-   (defthm lemma1
-     (implies
-      (and (assoc-equal key alist)
-           (ranks-alistp alist))
-      (and (integerp (cdr (assoc-equal key alist)))
-           (RATIONALP (cdr (assoc-equal key alist)))
-           (natp (cdr (assoc-equal key alist)))))))
+   (local
+    (defthm lemma1
+      (implies
+       (and (assoc-equal key alist)
+            (ranks-alistp alist))
+       (and (integerp (cdr (assoc-equal key alist)))
+            (RATIONALP (cdr (assoc-equal key alist)))
+            (natp (cdr (assoc-equal key alist)))))))
 
-  (local
-   (defthm lemma2
-     (implies (and (natp x1)
-                   (natp x2))
-              (natp (max x1 x2)))
-     :hints (("Goal"
-              :in-theory (e/d (max) ())))))
+   (local
+    (defthm lemma2
+      (implies (and (natp x1)
+                    (natp x2))
+               (natp (max x1 x2)))
+      :hints (("Goal"
+               :in-theory (e/d (max) ())))))
 
-  )
- (define svl-mod-calculate-ranks ((modname sv::modname-p)
-                                  (modules svl-module-alist-p)
-                                  (ranks ranks-alistp)
-                                  (trace true-listp) ;; to check for module instantiation loops
-                                  (limit natp) ;; to easily prove termination
-                                  )
-   :verify-guards nil
-   ;; to profile...
-   :measure (nfix limit)
-   :returns (ranks-res ranks-alistp :hyp (and (ranks-alistp ranks)
-                                              (sv::modname-p modname)))
-   (cond
-    ((zp limit)
-     ranks)
-    ((member-equal modname trace)
-     (hard-error 'svl-mod-calculate-ranks
-                 "It seems there's a loop in module instances. Trace = ~p0,
+   )
+  (define svl-mod-calculate-ranks ((modname sv::modname-p)
+                                   (modules svl-module-alist-p)
+                                   (ranks ranks-alistp)
+                                   (trace true-listp) ;; to check for module instantiation loops
+                                   (limit natp) ;; to easily prove termination
+                                   )
+    :verify-guards nil
+    ;; to profile...
+    :measure (nfix limit)
+    :returns (ranks-res ranks-alistp :hyp (and (ranks-alistp ranks)
+                                               (sv::modname-p modname)))
+    (cond
+     ((zp limit)
+      ranks)
+     ((member-equal modname trace)
+      (hard-error 'svl-mod-calculate-ranks
+                  "It seems there's a loop in module instances. Trace = ~p0,
                                   module = ~p1 ~%"
-                 (list (cons #\0 trace)
-                       (cons #\1 modname))))
-    (t  (b* ((module (assoc-equal modname modules))
-             ((unless module) ranks)
-             (module (cdr module))
-             (occs (svl-module->occs module))
-             ((mv max-occ-rank ranks)
-              (svl-mod-calculate-ranks-occs occs
-                                            modules
-                                            ranks
-                                            (cons modname trace)
-                                            (1- limit))))
-          (acons modname (1+ max-occ-rank) ranks)))))
+                  (list (cons #\0 trace)
+                        (cons #\1 modname))))
+     (t  (b* ((module (assoc-equal modname modules))
+              ((unless module) ranks)
+              (module (cdr module))
+              (occs (svl-module->occs module))
+              ((mv max-occ-rank ranks)
+               (svl-mod-calculate-ranks-occs occs
+                                             modules
+                                             ranks
+                                             (cons modname trace)
+                                             (1- limit))))
+           (acons modname (1+ max-occ-rank) ranks)))))
 
- (define svl-mod-calculate-ranks-occs ((occs svl-occ-alist-p)
-                                       (modules svl-module-alist-p)
-                                       (ranks ranks-alistp)
-                                       (trace true-listp)
-                                       (limit natp))
-   :measure (nfix limit)
-   :returns (mv (max natp :hyp (ranks-alistp ranks))
-                (ranks-res ranks-alistp :hyp (ranks-alistp ranks)))
-   (cond
-    ((zp limit)
-     (mv 0 ranks))
-    ((atom occs)
-     (mv 0 ranks))
-    (t
-     (b* (((mv rest-max ranks)
-           (svl-mod-calculate-ranks-occs (cdr occs) modules ranks trace (1- limit)))
-          ((when (equal (svl-occ-kind (cdar occs)) :assign))
-           (mv rest-max ranks))
-          (modname (svl-occ-module->name (cdar occs)))
-          (module-rank (assoc-equal modname ranks))
-          ((when module-rank)
-           (mv (max (cdr module-rank) rest-max) ranks))
-          (ranks (svl-mod-calculate-ranks modname modules ranks trace (1- limit)))
-          (module-rank (assoc-equal modname ranks))
-          ((when module-rank)
-           (mv (max (cdr module-rank) rest-max) ranks)))
-       (mv 0
-           (hard-error 'svl-mod-calculate-ranks
-                       "Something is wrong. Cannot calculate rank for module ~p0~%"
-                       (list (cons #\0 modname))))))))
- ///
+  (define svl-mod-calculate-ranks-occs ((occs svl-occ-alist-p)
+                                        (modules svl-module-alist-p)
+                                        (ranks ranks-alistp)
+                                        (trace true-listp)
+                                        (limit natp))
+    :measure (nfix limit)
+    :returns (mv (max natp :hyp (ranks-alistp ranks))
+                 (ranks-res ranks-alistp :hyp (ranks-alistp ranks)))
+    (cond
+     ((zp limit)
+      (mv 0 ranks))
+     ((atom occs)
+      (mv 0 ranks))
+     (t
+      (b* (((mv rest-max ranks)
+            (svl-mod-calculate-ranks-occs (cdr occs) modules ranks trace (1- limit)))
+           ((when (equal (svl-occ-kind (cdar occs)) :assign))
+            (mv rest-max ranks))
+           (modname (svl-occ-module->name (cdar occs)))
+           (module-rank (assoc-equal modname ranks))
+           ((when module-rank)
+            (mv (max (cdr module-rank) rest-max) ranks))
+           (ranks (svl-mod-calculate-ranks modname modules ranks trace (1- limit)))
+           (module-rank (assoc-equal modname ranks))
+           ((when module-rank)
+            (mv (max (cdr module-rank) rest-max) ranks)))
+        (mv 0
+            (hard-error 'svl-mod-calculate-ranks
+                        "Something is wrong. Cannot calculate rank for module ~p0~%"
+                        (list (cons #\0 modname))))))))
+  ///
 
- (local
-  (defthm lemma3
-    (implies (ranks-alistp alist)
-             (alistp alist))))
+  (local
+   (defthm lemma3
+     (implies (ranks-alistp alist)
+              (alistp alist))))
 
- (local
-  (defthm lemma4
-    (implies (and (ASSOC-EQUAL MODNAME MODULES)
-                  (SVL-MODULE-ALIST-P MODULES))
-             (and (SVL-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES)))
-                  (CONSP (ASSOC-EQUAL MODNAME MODULES))))))
+  (local
+   (defthm lemma4
+     (implies (and (ASSOC-EQUAL MODNAME MODULES)
+                   (SVL-MODULE-ALIST-P MODULES))
+              (and (SVL-MODULE-P (CDR (ASSOC-EQUAL MODNAME MODULES)))
+                   (CONSP (ASSOC-EQUAL MODNAME MODULES))))))
 
- (local
-  (defthm lemma5
-    (implies (and
-              (alistp y)
-              (assoc-equal x y))
-             (consp (assoc-equal x y)))))
+  (local
+   (defthm lemma5
+     (implies (and
+               (alistp y)
+               (assoc-equal x y))
+              (consp (assoc-equal x y)))))
 
- (verify-guards svl-mod-calculate-ranks
-   :hints (("Goal"
-            :do-not-induct t
-            :in-theory (e/d () ())))))
+  (verify-guards svl-mod-calculate-ranks
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d () ())))))
 
 (define update-modules-with-ranks ((ranks alistp)
                                    (modules svl-module-alist-p))
@@ -3413,66 +3459,65 @@ it may help to add a rewrite rule for this. ~%" alias-svex)))
             (get-mod-names-from-insts (cdr lst)))))
 
 (acl2::defines
- get-sv-submodules
+  get-sv-submodules
 
- (define get-sv-submodules ((modname sv::modname-p)
-                            (modalist sv::modalist-p)
-                            (acc sv::modnamelist-p)
-                            &optional
-                            (limit '(expt 2 40)))
-   :measure (nfix limit)
-   :guard (natp limit)
-   :verify-guards nil
-   :returns (mod-names SV::MODNAMELIST-P
-                       :hyp (and (sv::modname-p modname)
-                                 (sv::modalist-p modalist)
-                                 (sv::modnamelist-p acc)))
+  (define get-sv-submodules ((modname sv::modname-p)
+                             (modalist sv::modalist-p)
+                             (acc sv::modnamelist-p)
+                             &optional
+                             (limit '(expt 2 40)))
+    :measure (nfix limit)
+    :guard (natp limit)
+    :verify-guards nil
+    :returns (mod-names SV::MODNAMELIST-P
+                        :hyp (and (sv::modname-p modname)
+                                  (sv::modalist-p modalist)
+                                  (sv::modnamelist-p acc)))
 
-   (b* (((when (or (zp limit)
-                   (not (stringp modname))
-                   (member-equal modname acc)))
-         acc)
-        (mod (hons-assoc-equal modname modalist))
-        ((unless mod)
-         acc)
-        (mod (cdr mod))
-        (acc (cons modname acc))
-        (modname-lst (get-mod-names-from-insts (sv::module->insts mod))))
-     (get-sv-submodules-lst modname-lst modalist acc (1- limit))))
+    (b* (((when (or (zp limit)
+                    (not (stringp modname))
+                    (member-equal modname acc)))
+          acc)
+         (mod (hons-assoc-equal modname modalist))
+         ((unless mod)
+          acc)
+         (mod (cdr mod))
+         (acc (cons modname acc))
+         (modname-lst (get-mod-names-from-insts (sv::module->insts mod))))
+      (get-sv-submodules-lst modname-lst modalist acc (1- limit))))
 
- (define get-sv-submodules-lst ((modname-lst sv::modnamelist-p)
-                                (modalist sv::modalist-p)
-                                (acc sv::modnamelist-p)
-                                &optional
-                                (limit '(expt 2 40)))
-   :measure (nfix limit)
-   :guard (natp limit)
-   :returns (mod-names SV::MODNAMELIST-P
-                       :hyp (and (sv::modnamelist-p modname-lst)
-                                 (sv::modalist-p modalist)
-                                 (sv::modnamelist-p acc)))
-   (if (or (atom modname-lst)
-           (zp limit))
-       acc
-     (get-sv-submodules-lst (cdr modname-lst)
-                            modalist
-                            (get-sv-submodules (car modname-lst)
-                                               modalist
-                                               acc
-                                               (1- limit))
-                            (1- limit))))
- ///
- (local
-  (defthm lemma2
-    (implies (and  (hons-assoc-equal MODNAME MODALIST)
-                   (SV::MODALIST-P MODALIST))
-             (and (SV::MODULE-P (CDR (hons-assoc-equal MODNAME MODALIST)))
-                  (consp (hons-assoc-equal MODNAME MODALIST))))
-    :hints (("Goal"
-             :in-theory (e/d (SV::MODALIST-P) ())))))
+  (define get-sv-submodules-lst ((modname-lst sv::modnamelist-p)
+                                 (modalist sv::modalist-p)
+                                 (acc sv::modnamelist-p)
+                                 &optional
+                                 (limit '(expt 2 40)))
+    :measure (nfix limit)
+    :guard (natp limit)
+    :returns (mod-names SV::MODNAMELIST-P
+                        :hyp (and (sv::modnamelist-p modname-lst)
+                                  (sv::modalist-p modalist)
+                                  (sv::modnamelist-p acc)))
+    (if (or (atom modname-lst)
+            (zp limit))
+        acc
+      (get-sv-submodules-lst (cdr modname-lst)
+                             modalist
+                             (get-sv-submodules (car modname-lst)
+                                                modalist
+                                                acc
+                                                (1- limit))
+                             (1- limit))))
+  ///
+  (local
+   (defthm lemma2
+     (implies (and  (hons-assoc-equal MODNAME MODALIST)
+                    (SV::MODALIST-P MODALIST))
+              (and (SV::MODULE-P (CDR (hons-assoc-equal MODNAME MODALIST)))
+                   (consp (hons-assoc-equal MODNAME MODALIST))))
+     :hints (("Goal"
+              :in-theory (e/d (SV::MODALIST-P) ())))))
 
- (verify-guards get-sv-submodules-fn))
-
+  (verify-guards get-sv-submodules-fn))
 
 (define svex-simplify-rules-fn ()
   (acl2::append-without-guard
@@ -3640,7 +3685,6 @@ them.
              :do-not-induct t
              :in-theory (e/d () ()))))
 
-
   )
 
 (define svl-modules-port-info ((modules svl-module-alist-p))
@@ -3661,20 +3705,20 @@ them.
 :i-am-here
 
 (b* ((modnames '("fa" "mul_test1" "partial")))
-  (svl-flatten-design modnames
-                       *booth-sv-design*
-                       *booth-vl-design2*))
+(svl-flatten-design modnames
+*booth-sv-design*
+*booth-vl-design2*))
 
 (b* ((modnames '("full_adder_1$WIDTH=1"
-                 "full_adder$WIDTH=1"
-                 "booth2_reduction_dadda_17x65_97"
-                 "booth2_multiplier_signed_64x32_97")))
-  (svl-flatten-design modnames
-                       *big-sv-design*
-                       *big-vl-design2*))
+"full_adder$WIDTH=1"
+"booth2_reduction_dadda_17x65_97"
+"booth2_multiplier_signed_64x32_97")))
+(svl-flatten-design modnames
+*big-sv-design*
+*big-vl-design2*))
 
 #|(svl-flatten-mod "booth_encoder"
-                 (make-fast-alist (sv::design->modalist *booth-sv-design*))
+(make-fast-alist (sv::design->modalist *booth-sv-design*))
 nil)||#
 
 (b* ((vl-insouts (vl-design-to-insouts *big-vl-design2* *big-sv-design*))

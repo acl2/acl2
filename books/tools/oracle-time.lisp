@@ -76,7 +76,7 @@ limitation is that it does need access to the state.</p>
         state)                        ; Updated state
 })
 
-<p>See also the file @('[books]/tools/oracle-time-tests.lisp') for some
+<p>See also the community book @('tools/oracle-time-tests.lisp') for some
 additional tests and working examples.</p>
 
 <h5>General Form</h5>

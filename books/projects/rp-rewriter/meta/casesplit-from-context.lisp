@@ -86,7 +86,7 @@
                 (cc-st-listp (third x)))
                ((equal (car x) ':or-list)
                 (cc-st-list-listp (third x))))))
-  
+
   (define cc-st-listp (lst)
     :enabled t
     (if (atom lst)
@@ -129,7 +129,7 @@
                                     (implies (equal type ':or-list)
                                              (cc-st-list-listp e))))
     (list type sign e))
-  
+
   (define cc-st->type ((st cc-st-p))
     :returns type
     (car st)
@@ -169,7 +169,7 @@
       (implies (and (cc-st-p st)
                     (equal (cc-st->type st) ':term))
                (rp-termp e)))
-    
+
     (defret CC-ST-LIST-LISTP-of-<fn>
       (implies (and (cc-st-p st)
                     (equal (cc-st->type st) :or-list))
@@ -186,7 +186,6 @@
       :hints (("Goal"
                :in-theory (e/d (CC-ST-MAKE) ()))))
     )
-
 
   (define cc-st->sign ((st cc-st-p))
     :returns (res booleanp :hyp (cc-st-p st)
@@ -227,8 +226,6 @@
                 (if a (CC-ST-LISTP b) t)))
     :hints (("Goal"
              :in-theory (e/d (or* and*) ())))))
-           
-
 
 (define cc-st-tree-p (entry)
   :enabled t
@@ -252,8 +249,7 @@
                 (or (not neg-branch)
                     (cc-st-tree-p neg-branch)))
     (list* term pos-branch neg-branch)))
-  
-  
+
 (acl2::defines cc-st-equal
   :flag-local nil
 
@@ -312,13 +308,13 @@
                                    (cdr lst2))))
            (mv (1+ rest)
                rest-evals-to-nil)))
-        ((and (equal (cc-st->type (car lst1)) ':term) 
+        ((and (equal (cc-st->type (car lst1)) ':term)
               (equal (cc-st->e (car lst1)) ''nil))
          (if (cc-st->sign (car lst1))
              (count-common-cases (cdr lst1)
                                  lst2)
            (mv 0 t)))
-        ((and (equal (cc-st->type (car lst2)) ':term) 
+        ((and (equal (cc-st->type (car lst2)) ':term)
               (equal (cc-st->e (car lst2)) ''nil))
          (if (cc-st->sign (car lst2))
              (count-common-cases lst1
@@ -357,13 +353,13 @@
                                         (cdr lst2))))
            (mv (cons (car lst1) rest)
                rest-evals-to-nil)))
-        ((and (equal (cc-st->type (car lst1)) ':term) 
+        ((and (equal (cc-st->type (car lst1)) ':term)
               (equal (cc-st->e (car lst1)) ''nil))
          (if (cc-st->sign (car lst1))
              (collect-cases-merge-lst (cdr lst1)
                                       lst2)
            (mv nil t)))
-        ((and (equal (cc-st->type (car lst2)) ':term) 
+        ((and (equal (cc-st->type (car lst2)) ':term)
               (equal (cc-st->e (car lst2)) ''nil))
          (if (cc-st->sign (car lst2))
              (collect-cases-merge-lst lst1
@@ -373,7 +369,7 @@
          (b* (((when (and (not (equal (cc-st->sign (car lst1))
                                       (cc-st->sign (car lst2))))
                           (equal (cc-st-remove-sign (car lst1))
-                                       (cc-st-remove-sign (car lst2)))))
+                                 (cc-st-remove-sign (car lst2)))))
                (mv nil t))
               (e1 (cc-st->e (car lst1)))
               (e2 (cc-st->e (car lst2)))
@@ -501,7 +497,7 @@
               (cur2 (car lst2))
               (order (if (> (Len cur2) (Len cur1)) ;;(cons-count-compare cur2 (cons-count cur1))
                          t
-                         (not (lexorder cur2 cur1))))
+                       (not (lexorder cur2 cur1))))
               (rest
                (collect-cases-merge-lst-lst (if order (cdr lst1) lst1)
                                             (if order lst2 (cdr lst2)))))
@@ -513,7 +509,6 @@
                   (cc-st-list-listp lst2)
                   (or lst1 lst2))
              res)))
-
 
 (define collect-cases-sort-lst-lst ((lst1 cc-st-list-listp))
   :verify-guards :after-returns
@@ -544,8 +539,6 @@
     (collect-cases-merge-lst-lst
      (collect-cases-sort-lst-lst (odds lst1))
      (collect-cases-sort-lst-lst (evens lst1)))))
-                                    
-
 
 (define cc-st-to-term-dont-rw-aux (term)
   :guard-hints (("Goal"
@@ -555,7 +548,7 @@
          nil)
         ((is-rp-loose term)
          `(nil t ,(cc-st-to-term-dont-rw-aux (caddr term))))
-        (t `(nil ,(repeat (len (cdr term)) t))))) 
+        (t `(nil ,(repeat (len (cdr term)) t)))))
 
 (acl2::defines cc-st-to-term
   :flag-local nil
@@ -609,7 +602,7 @@
                                 ((iff-flg booleanp) 't))
   :returns (mv res evals-to-nil)
   :verify-guards nil
-  
+
   (cond
    ((equal term ''nil)
     (mv `((,(cc-st-make :E ''nil)))
@@ -654,14 +647,11 @@
        (mv (cons (cc-st-make :e e1) rest) rest-valid)))
     (('if & & &)
      (mv nil nil))
-    
+
     (&
      (b* (((unless (< cnt 0)) (mv nil nil))
           ((when iff-flg) (mv (list (cc-st-make :e term)) t)))
        (mv nil (equal term ''t))))))
-              
-
-
 
 ;; (define merge-buried-cases-aux1 ((cur cc-st-listp)
 ;;                                 (lst2 cc-st-list-listp)
@@ -749,7 +739,6 @@
 ;;        (lst (collect-cases-sort-lst-lst unsorted-lst)))
 ;;     lst))
 
-
 (acl2::defines collect-buried-cases
   :flag-local nil
   (define collect-buried-cases ((term rp-termp)
@@ -757,10 +746,10 @@
                                 ((iff-flg booleanp) 't))
     :returns (mv res subcases evals-to-nil)
     :verify-guards nil
-  
+
     (cond
      ((equal term ''nil)
-      (mv (if iff-flg `((,(cc-st-make :e ''nil))) `(()))  
+      (mv (if iff-flg `((,(cc-st-make :e ''nil))) `(()))
           '(())
           iff-flg))
      ((or (atom term)
@@ -797,10 +786,10 @@
                                   (collect-cases-crossx
                                    (or* (and* (not b-eval-to-nil)
                                               subcases-b)
-                                       '(()))
+                                        '(()))
                                    (or* (and* (not c-eval-to-nil)
                                               subcases-c)
-                                       '(()))))               
+                                        '(()))))
             (and b-eval-to-nil c-eval-to-nil))))
      (t
       (b* ((subcases (collect-buried-cases-lst (cdr term))))
@@ -818,7 +807,7 @@
                                     '(()))
                                (or* subcases2
                                     '(())))))))
-                                     
+
   ///
   (defret-mutual cc-st-list-listp-of-collect-buried-cases
     (defret cc-st-list-listp-of<fn>
@@ -832,7 +821,6 @@
       :fn collect-buried-cases-lst))
 
   (verify-guards collect-buried-cases-lst))
-
 
 (acl2::Defines dont-rw-for-context-term
   (define dont-rw-for-context-term ((context-term rp-termp))
@@ -852,10 +840,8 @@
       (cons (dont-rw-for-context-term (car lst))
             (dont-rw-for-context-term-lst (cdr lst))))))
 
-
 ;; (define buried-cases-to-tree ((buried-cases cc-st-list-listp))
 ;;   (if (atom buried-cases)
-      
 
 (define casesplit-from-context-attach-buried ((term rp-termp)
                                               (term-dont-rw)
@@ -872,35 +858,35 @@
   (if (atom buried-cases)
       (mv term t)
     (b* (#|((when (not (car buried-cases)))
-          (casesplit-from-context-attach-buried term term-dont-rw
-                                                context-term
-                                                context-term-dont-rw
-                                                (cdr buried-cases)
-                                                subgoal-prefix (1- cnt)))|#
+         (casesplit-from-context-attach-buried term term-dont-rw
+         context-term
+         context-term-dont-rw
+         (cdr buried-cases)
+         subgoal-prefix (1- cnt)))|#
          ((mv cur-cond-term ?cur-cond-dont-rw) (cc-st-lst-to-term (car
-                                                                  buried-cases)))
+                                                                   buried-cases)))
 
          (subgoal-message-1 `(fmt-to-comment-window
                               ',(concatenate 'string
                                              subgoal-prefix "."
                                              (str::int-to-dec-string cnt)
                                              "~%")
-                              'nil                  
+                              'nil
                               '0 'nil 'NIL))
          #|(subgoal-message-2 `(fmt-to-comment-window
-                              ',(concatenate 'string
-                                             subgoal-prefix "."
-                                             (str::int-to-dec-string (1- cnt))
-                                             "~%")
-                              'nil                  
-                              '0 'NIL 'NIL))|#
+         ',(concatenate 'string
+         subgoal-prefix "."
+         (str::int-to-dec-string (1- cnt))
+         "~%")
+         'nil
+         '0 'NIL 'NIL))|#
 
          #|(rewriting-cond-message `(fmt-to-comment-window
-                                   '"Rewriting final cond ~p0 ~%"
-                                   (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5)
-                                             (CONS ,context-term 'NIL))               
-                                   '0 '(nil 5 6 nil) 'NIL))|#
-         
+         '"Rewriting final cond ~p0 ~%"
+         (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5)
+         (CONS ,context-term 'NIL))
+         '0 '(nil 5 6 nil) 'NIL))|#
+
          ((when (atom (cdr buried-cases)))
           (mv `(if (dont-rw-context ,cur-cond-term)
                    (if (dont-rw-context ,context-term)
@@ -908,15 +894,15 @@
                      't)
                  't
                  #|(if (dont-rw-context ,context-term)
-                     (return-last 'progn ,subgoal-message-2 ,term) 't)|#)
+                 (return-last 'progn ,subgoal-message-2 ,term) 't)|#)
               `(if (nil ,cur-cond-dont-rw)
                    (if (nil ,context-term-dont-rw)
                        (nil nil nil ,term-dont-rw)
                      t)
                  t
                  #|(if (nil ,context-term-dont-rw)
-                     (nil nil nil t)
-                   t)|#)))
+                 (nil nil nil t)
+                 t)|#)))
          ((mv rest rest-dont-rw)
           (casesplit-from-context-attach-buried term term-dont-rw
                                                 context-term
@@ -926,26 +912,24 @@
       (mv `(if (dont-rw-context ,cur-cond-term)
                (if (dont-rw-context ,context-term)
                    (return-last 'progn ,subgoal-message-1 ,term)
-                   't)
+                 't)
              ,rest)
           `(nil (dont-rw-context ,cur-cond-dont-rw)
                 (if (nil ,context-term-dont-rw)
                     (nil nil nil ,term-dont-rw)
                   t)
                 ,rest-dont-rw)))))
-         
 
 #|(define remove-nils-from-cc-st-list-list ((lst cc-st-list-listp))
-  :Returns (res-lst cc-st-list-listp
-                    :hyp (cc-st-list-listp lst))
-  (If (atom lst)
-      nil
-      (if (car lst)
-          (cons-with-hint (car lst)
-                          (remove-nils-from-cc-st-list-list (cdr lst))
-                          lst)
-        (remove-nils-from-cc-st-list-list (cdr lst)))))|#
-  
+:Returns (res-lst cc-st-list-listp
+:hyp (cc-st-list-listp lst))
+(If (atom lst)
+nil
+(if (car lst)
+(cons-with-hint (car lst)
+(remove-nils-from-cc-st-list-list (cdr lst))
+lst)
+(remove-nils-from-cc-st-list-list (cdr lst)))))|#
 
 (define casesplit-from-context-attach ((term rp-termp)
                                        (term-dont-rw)
@@ -968,7 +952,7 @@
          #|(buried-cases (remove-nils-from-cc-st-list-list buried-cases))|#
          (- (cw "There are ~p0 buried cases.~%" (len buried-cases)))
          (subgoal-prefix (string-append "Subgoal "
-                                         (str::int-to-dec-string cnt)))
+                                        (str::int-to-dec-string cnt)))
          ((mv term-with-buried term-with-buried-dont-rw)
           (casesplit-from-context-attach-buried term term-dont-rw
                                                 cond-term cond-term-dont-rw
@@ -979,7 +963,7 @@
          (subgoal-message (string-append subgoal-prefix "~%")))
       (mv `(if (dont-rw-context ,cond-term)
                (return-last 'progn (fmt-to-comment-window ',SUBGOAL-MESSAGE
-                                                          'nil                  
+                                                          'nil
                                                           '0 'NIL 'NIL)
                             ,term-with-buried)
              ,rest)
@@ -1022,7 +1006,6 @@
                                      context))
     (& (mv term dont-rw))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Proofs
@@ -1033,84 +1016,84 @@
 
 (local
  (acl2::defines eval-of-cc-st
-  (define eval-of-cc-st ((st cc-st-p)
-                         (a))
-    :returns eval-res
-    (b* (((unless (mbt (cc-st-p st)))  ;; for measure
-          nil)
-         (eval
-          (cond ((equal (cc-st->type st) :term)
-                 (rp-evlt (cc-st->e st) a))
-                ((equal (cc-st->type st) :and-list)
-                 (eval-of-cc-st-lst (cc-st->e st) a))
-                ((equal (cc-st->type st) :or-list)
-                 (eval-of-cc-st-lst-lst (cc-st->e st) a)))))
-      (if (cc-st->sign st)
-          (not eval)
-        (if eval t nil))))
+   (define eval-of-cc-st ((st cc-st-p)
+                          (a))
+     :returns eval-res
+     (b* (((unless (mbt (cc-st-p st)))  ;; for measure
+           nil)
+          (eval
+           (cond ((equal (cc-st->type st) :term)
+                  (rp-evlt (cc-st->e st) a))
+                 ((equal (cc-st->type st) :and-list)
+                  (eval-of-cc-st-lst (cc-st->e st) a))
+                 ((equal (cc-st->type st) :or-list)
+                  (eval-of-cc-st-lst-lst (cc-st->e st) a)))))
+       (if (cc-st->sign st)
+           (not eval)
+         (if eval t nil))))
 
-  (define eval-of-cc-st-lst  ((lst cc-st-listp)
-                              (a))
-    :returns eval-res
-    (if (atom lst)
-        t
-      (b* ((cur (car lst))
-           (cur-eval (eval-of-cc-st cur a))
-           (rest-eval (eval-of-cc-st-lst (cdr lst) a)))
-        (and cur-eval rest-eval))))
+   (define eval-of-cc-st-lst  ((lst cc-st-listp)
+                               (a))
+     :returns eval-res
+     (if (atom lst)
+         t
+       (b* ((cur (car lst))
+            (cur-eval (eval-of-cc-st cur a))
+            (rest-eval (eval-of-cc-st-lst (cdr lst) a)))
+         (and cur-eval rest-eval))))
 
-  (define eval-of-cc-st-lst-lst ((lst-lst cc-st-list-listp)
-                                 (a))
-    (if (atom lst-lst)
-        nil
-      (b* ((cur (car lst-lst))
-           (cur-eval
-            (eval-of-cc-st-lst cur a))
-           (rest-eval
-            (eval-of-cc-st-lst-lst (cdr lst-lst) a)))
-        (or cur-eval rest-eval))))))
+   (define eval-of-cc-st-lst-lst ((lst-lst cc-st-list-listp)
+                                  (a))
+     (if (atom lst-lst)
+         nil
+       (b* ((cur (car lst-lst))
+            (cur-eval
+             (eval-of-cc-st-lst cur a))
+            (rest-eval
+             (eval-of-cc-st-lst-lst (cdr lst-lst) a)))
+         (or cur-eval rest-eval))))))
 
 (local
- (acl2::defines cc-st-valid-p 
-  (define cc-st-valid-p ((st cc-st-p)
-                         (a))
-    (declare (ignorable a))
-    :verify-guards nil
-    :returns correct-p
-    :measure (acl2-count st)
-    (cond ((not (mbt (cc-st-p st))) nil) ;; for measure
-          ((equal (cc-st->type st) :term)
-           (b* ((term (cc-st->e st)))
-             (not (include-fnc term 'rp));;(valid-sc term a)
-             ))
-          ((equal (cc-st->type st) :and-list)
-           (cc-st-lst-valid-p (cc-st->e st) a))
-          ((equal (cc-st->type st) :or-list)
-           (cc-st-lst-lst-valid-p (cc-st->e st) a))))
+ (acl2::defines cc-st-valid-p
+   (define cc-st-valid-p ((st cc-st-p)
+                          (a))
+     (declare (ignorable a))
+     :verify-guards nil
+     :returns correct-p
+     :measure (acl2-count st)
+     (cond ((not (mbt (cc-st-p st))) nil) ;; for measure
+           ((equal (cc-st->type st) :term)
+            (b* ((term (cc-st->e st)))
+              (and (not (include-fnc term 'rp))
+                   (not (include-fnc term 'equals 2)));;(valid-sc term a)
+              ))
+           ((equal (cc-st->type st) :and-list)
+            (cc-st-lst-valid-p (cc-st->e st) a))
+           ((equal (cc-st->type st) :or-list)
+            (cc-st-lst-lst-valid-p (cc-st->e st) a))))
 
-  (define cc-st-lst-valid-p  ((lst cc-st-listp)
-                              (a))
-    :returns correct-p
-    :measure (acl2-count lst)
-    (if (atom lst)
-        (equal lst nil)
-      (b* ((cur-valid-p
-            (cc-st-valid-p (car lst) a))
-           (rest-valid-p
-            (cc-st-lst-valid-p (cdr lst) a)))
-        (and cur-valid-p rest-valid-p))))
-  (define cc-st-lst-lst-valid-p ((lst-lst cc-st-list-listp)
-                                 (a))
-    :returns correct-p
-    :measure (acl2-count lst-lst)
-    (if (atom lst-lst)
-        (equal lst-lst nil)
-      (b* ((cur-valid-p
-            (cc-st-lst-valid-p (car lst-lst) a))
-           (rest-valid-p
-            (cc-st-lst-lst-valid-p (cdr lst-lst) a)))
-        (and cur-valid-p rest-valid-p))))))
-
+   (define cc-st-lst-valid-p  ((lst cc-st-listp)
+                               (a))
+     :returns correct-p
+     :measure (acl2-count lst)
+     (if (atom lst)
+         (equal lst nil)
+       (b* ((cur-valid-p
+             (cc-st-valid-p (car lst) a))
+            (rest-valid-p
+             (cc-st-lst-valid-p (cdr lst) a)))
+         (and cur-valid-p rest-valid-p))))
+   (define cc-st-lst-lst-valid-p ((lst-lst cc-st-list-listp)
+                                  (a))
+     :returns correct-p
+     :measure (acl2-count lst-lst)
+     (if (atom lst-lst)
+         (equal lst-lst nil)
+       (b* ((cur-valid-p
+             (cc-st-lst-valid-p (car lst-lst) a))
+            (rest-valid-p
+             (cc-st-lst-lst-valid-p (cdr lst-lst) a)))
+         (and cur-valid-p rest-valid-p))))))
 
 (local
  (defthm EVAL-OF-CC-ST-LST-LST-of-or*/and*
@@ -1133,75 +1116,74 @@
                (if x
                    (CC-ST-LST-LST-VALID-P y a)
                  (CC-ST-LST-LST-VALID-P nil a))))))
- 
 
 #|(acl2::defines cc-st-valid-p2
 
-  :hints (("Goal"
-           :in-theory (e/d (CC-ST->SUBCASES) ())))
-  (define cc-st-valid-p2 ((st cc-st-p)
-                          (a))
-    :verify-guards nil
-    :returns correct-p
-    :measure (acl2-count st)
-    (cond ((not (mbt (cc-st-p st))) nil) ;; for measure
-          ((equal (cc-st->type st) :term)
-           (b* ((term (cc-st->term st))
-                (subcases (cc-st->subcases st))
-                (subcases-valid-p (cc-st-lst-lst-valid-p2 subcases a)))
-             (and subcases-valid-p
-                  (valid-sc term a))))
-          ((equal (cc-st->type st) :and-list)
-           (cc-st-lst-valid-p2 (cc-st->and-list st) a))
-          ((equal (cc-st->type st) :or-list)
-           (cc-st-lst-valid-p2 (cc-st->or-list st) a))))
+:hints (("Goal"
+:in-theory (e/d (CC-ST->SUBCASES) ())))
+(define cc-st-valid-p2 ((st cc-st-p)
+(a))
+:verify-guards nil
+:returns correct-p
+:measure (acl2-count st)
+(cond ((not (mbt (cc-st-p st))) nil) ;; for measure
+((equal (cc-st->type st) :term)
+(b* ((term (cc-st->term st))
+(subcases (cc-st->subcases st))
+(subcases-valid-p (cc-st-lst-lst-valid-p2 subcases a)))
+(and subcases-valid-p
+(valid-sc term a))))
+((equal (cc-st->type st) :and-list)
+(cc-st-lst-valid-p2 (cc-st->and-list st) a))
+((equal (cc-st->type st) :or-list)
+(cc-st-lst-valid-p2 (cc-st->or-list st) a))))
 
-  (define cc-st-lst-valid-p2  ((lst cc-st-listp)
-                               (a))
-    :returns correct-p
-    :measure (acl2-count lst)
-    (if (atom lst)
-        (equal lst nil)
-      (b* ((cur-valid-p
-            (cc-st-valid-p2 (car lst) a))
-           (cur-eval
-            (eval-of-cc-st (car lst) a))
-           (rest-valid-p
-            (cc-st-lst-valid-p2 (cdr lst) a)))
-        (and cur-valid-p (implies cur-eval rest-valid-p)))))
-  (define cc-st-lst-lst-valid-p2 ((lst-lst cc-st-list-listp)
-                                  (a))
-    :returns correct-p
-    :measure (acl2-count lst-lst)
-    (if (atom lst-lst)
-        (equal lst-lst nil)
-      (b* ((cur-valid-p
-            (cc-st-lst-valid-p2 (car lst-lst) a))
-           (cur-eval
-            (eval-of-cc-st-lst (car lst-lst) a))
-           (rest-valid-p
-            (cc-st-lst-lst-valid-p2 (cdr lst-lst) a)))
-        (and cur-valid-p (implies (not cur-eval) rest-valid-p)))))
+(define cc-st-lst-valid-p2  ((lst cc-st-listp)
+(a))
+:returns correct-p
+:measure (acl2-count lst)
+(if (atom lst)
+(equal lst nil)
+(b* ((cur-valid-p
+(cc-st-valid-p2 (car lst) a))
+(cur-eval
+(eval-of-cc-st (car lst) a))
+(rest-valid-p
+(cc-st-lst-valid-p2 (cdr lst) a)))
+(and cur-valid-p (implies cur-eval rest-valid-p)))))
+(define cc-st-lst-lst-valid-p2 ((lst-lst cc-st-list-listp)
+(a))
+:returns correct-p
+:measure (acl2-count lst-lst)
+(if (atom lst-lst)
+(equal lst-lst nil)
+(b* ((cur-valid-p
+(cc-st-lst-valid-p2 (car lst-lst) a))
+(cur-eval
+(eval-of-cc-st-lst (car lst-lst) a))
+(rest-valid-p
+(cc-st-lst-lst-valid-p2 (cdr lst-lst) a)))
+(and cur-valid-p (implies (not cur-eval) rest-valid-p)))))
 
-  ///
-  (defret-mutual cc-st-valid-p-implies-cc-st-valid-p2
-    (defret  cc-st-valid-p-implies-cc-st-valid-p2
-      (implies (cc-st-valid-p st a)
-               correct-p)
-      :fn cc-st-valid-p2)
-    (defret  cc-st-lst-valid-p-implies-cc-st-lst-valid-p2
-      (implies (cc-st-lst-valid-p lst a)
-               correct-p)
-      :fn cc-st-lst-valid-p2)
-    (defret cc-st-lst-lst-valid-p-implies-cc-st-lst-lst-valid-p2
-      (implies (cc-st-lst-lst-valid-p lst-lst a)
-               correct-p)
-      :fn cc-st-lst-lst-valid-p2)
-    :hints (("Goal"
-             :in-theory (e/d (cc-st-lst-lst-valid-p
-                              cc-st-valid-p
-                              cc-st-lst-valid-p
-                              ) ())))))|#
+///
+(defret-mutual cc-st-valid-p-implies-cc-st-valid-p2
+(defret  cc-st-valid-p-implies-cc-st-valid-p2
+(implies (cc-st-valid-p st a)
+correct-p)
+:fn cc-st-valid-p2)
+(defret  cc-st-lst-valid-p-implies-cc-st-lst-valid-p2
+(implies (cc-st-lst-valid-p lst a)
+correct-p)
+:fn cc-st-lst-valid-p2)
+(defret cc-st-lst-lst-valid-p-implies-cc-st-lst-lst-valid-p2
+(implies (cc-st-lst-lst-valid-p lst-lst a)
+correct-p)
+:fn cc-st-lst-lst-valid-p2)
+:hints (("Goal"
+:in-theory (e/d (cc-st-lst-lst-valid-p
+cc-st-valid-p
+cc-st-lst-valid-p
+) ())))))|#
 
 (local
  (defthm rp-evlt-of-not
@@ -1270,7 +1252,7 @@
 (local
  (defthm collect-cases-merge-lst-eval-correct-lemma
    (implies (and
-             
+
              (cc-st-p x)
              (cc-st-p y)
              (equal (cc-st-remove-sign x)
@@ -1287,8 +1269,8 @@
                   (:instance eval-of-cc-st-of-CC-ST-REMOVE-SIGN
                              (x y))
                   #|(:instance cc-st-equal-and-eval-equiv
-                             (x (CC-ST-REMOVE-SIGN X))
-                             (y (CC-ST-REMOVE-SIGN Y)))|#)
+                  (x (CC-ST-REMOVE-SIGN X))
+                  (y (CC-ST-REMOVE-SIGN Y)))|#)
             :in-theory (e/d ()
                             (cc-st-equal-and-eval-equiv
                              eval-of-cc-st-of-CC-ST-REMOVE-SIGN))))))
@@ -1305,31 +1287,31 @@
 
 (local
  (defret count-common-cases-evals-to-nil-eval-correct
-  (implies (and (cc-st-listp lst1)
-                (cc-st-listp lst2))
-           (implies evals-to-nil
-                    (not (and (eval-of-cc-st-lst lst1 a)
-                              (eval-of-cc-st-lst lst2 a)))))
-  :fn count-common-cases
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST LST1 A)
-                    ;;(eval-of-cc-st (CAR LST1) A)
-                    ;;(eval-of-cc-st (CAR LST2) A)
-                    (eval-of-cc-st-LST LST2 A))
-           :induct (count-common-cases lst1 lst2)
-           :in-theory (e/d (eval-of-cc-st-lst
-                            collect-cases-merge-lst-eval-correct-lemma-2
-                            count-common-cases
-                            eval-of-cc-st-lst
-                            )
-                           (rp-trans
-                            
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-listp lst1)
+                 (cc-st-listp lst2))
+            (implies evals-to-nil
+                     (not (and (eval-of-cc-st-lst lst1 a)
+                               (eval-of-cc-st-lst lst2 a)))))
+   :fn count-common-cases
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST LST1 A)
+                     ;;(eval-of-cc-st (CAR LST1) A)
+                     ;;(eval-of-cc-st (CAR LST2) A)
+                     (eval-of-cc-st-LST LST2 A))
+            :induct (count-common-cases lst1 lst2)
+            :in-theory (e/d (eval-of-cc-st-lst
+                             collect-cases-merge-lst-eval-correct-lemma-2
+                             count-common-cases
+                             eval-of-cc-st-lst
+                             )
+                            (rp-trans
+
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret count-common-cases-evals-to-nil-eval-correct-nil-1
@@ -1359,551 +1341,546 @@
 
 (local
  (defret collect-cases-merge-lst-eval-correct
-  (implies (and (cc-st-listp lst1)
-                (cc-st-listp lst2))
-           (and (cc-st-listp res)
-                (implies evals-to-nil
-                         (not (and (eval-of-cc-st-lst lst1 a)
-                                   (eval-of-cc-st-lst lst2 a))))
-                (implies (not evals-to-nil)
-                         (equal (eval-of-cc-st-lst res a)
-                                (and (eval-of-cc-st-lst lst1 a)
-                                     (eval-of-cc-st-lst lst2 a))))))
-  :fn collect-cases-merge-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST LST1 A)
-                    ;;(eval-of-cc-st (CAR LST1) A)
-                    ;;(eval-of-cc-st (CAR LST2) A)
-                    (eval-of-cc-st-LST LST2 A))
-           :induct (collect-cases-merge-lst lst1 lst2)
-           :in-theory (e/d (eval-of-cc-st-lst
-                            collect-cases-merge-lst-eval-correct-lemma-2
-                            collect-cases-merge-lst
-                            eval-of-cc-st-lst
-                            )
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-listp lst1)
+                 (cc-st-listp lst2))
+            (and (cc-st-listp res)
+                 (implies evals-to-nil
+                          (not (and (eval-of-cc-st-lst lst1 a)
+                                    (eval-of-cc-st-lst lst2 a))))
+                 (implies (not evals-to-nil)
+                          (equal (eval-of-cc-st-lst res a)
+                                 (and (eval-of-cc-st-lst lst1 a)
+                                      (eval-of-cc-st-lst lst2 a))))))
+   :fn collect-cases-merge-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST LST1 A)
+                     ;;(eval-of-cc-st (CAR LST1) A)
+                     ;;(eval-of-cc-st (CAR LST2) A)
+                     (eval-of-cc-st-LST LST2 A))
+            :induct (collect-cases-merge-lst lst1 lst2)
+            :in-theory (e/d (eval-of-cc-st-lst
+                             collect-cases-merge-lst-eval-correct-lemma-2
+                             collect-cases-merge-lst
+                             eval-of-cc-st-lst
+                             )
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-merge-lst-eval-correct-derivative-for-evals-to-nil
-  (implies (and (eval-of-cc-st-lst lst1 a)
-                evals-to-nil
-                (cc-st-listp lst1)
-                (cc-st-listp lst2))
-           (not (eval-of-cc-st-lst lst2 a)))
-  :rule-classes :forward-chaining
-  :fn collect-cases-merge-lst
-  :hints (("Goal"
-           :use ((:instance collect-cases-merge-lst-eval-correct))
-           :do-not-induct t
-           :in-theory (e/d ()
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (eval-of-cc-st-lst lst1 a)
+                 evals-to-nil
+                 (cc-st-listp lst1)
+                 (cc-st-listp lst2))
+            (not (eval-of-cc-st-lst lst2 a)))
+   :rule-classes :forward-chaining
+   :fn collect-cases-merge-lst
+   :hints (("Goal"
+            :use ((:instance collect-cases-merge-lst-eval-correct))
+            :do-not-induct t
+            :in-theory (e/d ()
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-merge-lst-eval-correct-derivative-for-evals-to-nil-2
-  (implies (and (eval-of-cc-st-lst lst2 a)
-                evals-to-nil
-                (cc-st-listp lst1)
-                (cc-st-listp lst2))
-           (not (eval-of-cc-st-lst lst1 a)))
-  :rule-classes :forward-chaining
-  :fn collect-cases-merge-lst
-  :hints (("Goal"
-           :use ((:instance collect-cases-merge-lst-eval-correct))
-           :do-not-induct t
-           :in-theory (e/d ()
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (eval-of-cc-st-lst lst2 a)
+                 evals-to-nil
+                 (cc-st-listp lst1)
+                 (cc-st-listp lst2))
+            (not (eval-of-cc-st-lst lst1 a)))
+   :rule-classes :forward-chaining
+   :fn collect-cases-merge-lst
+   :hints (("Goal"
+            :use ((:instance collect-cases-merge-lst-eval-correct))
+            :do-not-induct t
+            :in-theory (e/d ()
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-merge-lst-eval-valid
-  (implies (and (cc-st-listp lst1)
-                (cc-st-listp lst2)
-                (cc-st-lst-valid-p lst1 a)
-                (cc-st-lst-valid-p lst2 a))
-           (cc-st-lst-valid-p res a))
-  :fn collect-cases-merge-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
-           :induct (collect-cases-merge-lst lst1 lst2)
-           :in-theory (e/d (cc-st-lst-valid-p
-                            eval-of-cc-st-lst
-                            collect-cases-merge-lst
-                            eval-of-cc-st-lst
-                            )
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-listp lst1)
+                 (cc-st-listp lst2)
+                 (cc-st-lst-valid-p lst1 a)
+                 (cc-st-lst-valid-p lst2 a))
+            (cc-st-lst-valid-p res a))
+   :fn collect-cases-merge-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
+            :induct (collect-cases-merge-lst lst1 lst2)
+            :in-theory (e/d (cc-st-lst-valid-p
+                             eval-of-cc-st-lst
+                             collect-cases-merge-lst
+                             eval-of-cc-st-lst
+                             )
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 #|(defret collect-cases-merge-lst-eval-valid2
-  (implies (and (cc-st-listp lst1)
-                (cc-st-listp lst2)
-                (cc-st-lst-valid-p2 lst1 a)
-                (cc-st-lst-valid-p2 lst2 a))
-           (cc-st-lst-valid-p2 res a))
-  :fn collect-cases-merge-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
-           :induct (collect-cases-merge-lst lst1 lst2)
-           :in-theory (e/d (cc-st-lst-valid-p2
-                            eval-of-cc-st-lst
-                            collect-cases-merge-lst
-                            eval-of-cc-st-lst
-                            )
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal)))))|#
+(implies (and (cc-st-listp lst1)
+(cc-st-listp lst2)
+(cc-st-lst-valid-p2 lst1 a)
+(cc-st-lst-valid-p2 lst2 a))
+(cc-st-lst-valid-p2 res a))
+:fn collect-cases-merge-lst
+:hints (("Goal"
+:do-not-induct t
+:expand ()
+:induct (collect-cases-merge-lst lst1 lst2)
+:in-theory (e/d (cc-st-lst-valid-p2
+eval-of-cc-st-lst
+collect-cases-merge-lst
+eval-of-cc-st-lst
+)
+(rp-trans
+not-include-rp
+rp-termp
+ex-from-rp
+include-fnc
+rp-equal)))))|#
 
 (local
  (defret collect-cases-crossx-aux-correct
-  (implies (and (cc-st-listp e1)
-                (cc-st-list-listp lst2))
-           (equal (eval-of-cc-st-lst-lst res a)
-                  (and (eval-of-cc-st-lst e1 a)
-                       (eval-of-cc-st-lst-lst lst2 a))))
-  :fn collect-cases-crossx-aux
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST-LST LST2 A))
-           :induct (COLLECT-CASES-CROSSX-AUX E1 LST2)
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            collect-cases-crossx-aux
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-listp e1)
+                 (cc-st-list-listp lst2))
+            (equal (eval-of-cc-st-lst-lst res a)
+                   (and (eval-of-cc-st-lst e1 a)
+                        (eval-of-cc-st-lst-lst lst2 a))))
+   :fn collect-cases-crossx-aux
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST-LST LST2 A))
+            :induct (COLLECT-CASES-CROSSX-AUX E1 LST2)
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             collect-cases-crossx-aux
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-crossx-aux-valid
-  (implies (and (cc-st-listp e1)
-                (cc-st-list-listp lst2)
-                (cc-st-lst-valid-p e1 a)
-                (cc-st-lst-lst-valid-p lst2 a))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-cases-crossx-aux
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST-LST LST2 A))
-           :induct (COLLECT-CASES-CROSSX-AUX E1 LST2)
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P
-                            collect-cases-crossx-aux
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-listp e1)
+                 (cc-st-list-listp lst2)
+                 (cc-st-lst-valid-p e1 a)
+                 (cc-st-lst-lst-valid-p lst2 a))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-cases-crossx-aux
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST-LST LST2 A))
+            :induct (COLLECT-CASES-CROSSX-AUX E1 LST2)
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P
+                             collect-cases-crossx-aux
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defthm eval-of-cc-st-LST-LST-of-append
-  (equal (eval-of-cc-st-LST-LST (append x y) a)
-         (or (eval-of-cc-st-LST-LST x a)
-             (eval-of-cc-st-LST-LST y a)))
-  :hints (("Goal"
-           :in-theory (e/d (eval-of-cc-st-LST-LST) ())))))
+   (equal (eval-of-cc-st-LST-LST (append x y) a)
+          (or (eval-of-cc-st-LST-LST x a)
+              (eval-of-cc-st-LST-LST y a)))
+   :hints (("Goal"
+            :in-theory (e/d (eval-of-cc-st-LST-LST) ())))))
 
 (local
  (defret collect-cases-crossx-correct
-  (implies (and (cc-st-list-listp lst1)
-                (cc-st-list-listp lst2))
-           (equal (eval-of-cc-st-lst-lst res a)
-                  (and (eval-of-cc-st-lst-lst lst1 a)
-                       (eval-of-cc-st-lst-lst lst2 a))))
-  :fn collect-cases-crossx
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST-LST LST2 A))
-           :induct (COLLECT-CASES-CROSSX lst1 LST2)
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            collect-cases-crossx
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-list-listp lst1)
+                 (cc-st-list-listp lst2))
+            (equal (eval-of-cc-st-lst-lst res a)
+                   (and (eval-of-cc-st-lst-lst lst1 a)
+                        (eval-of-cc-st-lst-lst lst2 a))))
+   :fn collect-cases-crossx
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST-LST LST2 A))
+            :induct (COLLECT-CASES-CROSSX lst1 LST2)
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             collect-cases-crossx
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defthm CC-ST-LST-LST-VALID-P-of-append
-  (implies (true-listp x)
-           (equal (CC-ST-LST-LST-VALID-P (append x y) a)
-                  (and (CC-ST-LST-LST-VALID-P x a)
-                       (CC-ST-LST-LST-VALID-P y a))))
-  :hints (("Goal"
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P) ())))))
+   (implies (true-listp x)
+            (equal (CC-ST-LST-LST-VALID-P (append x y) a)
+                   (and (CC-ST-LST-LST-VALID-P x a)
+                        (CC-ST-LST-LST-VALID-P y a))))
+   :hints (("Goal"
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P) ())))))
 
 (local
  (defret collect-cases-crossx-valid
-  (implies (and (cc-st-list-listp lst1)
-                (cc-st-list-listp lst2)
-                (cc-st-lst-lst-valid-p lst1 a)
-                (cc-st-lst-lst-valid-p lst2 a))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-cases-crossx
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST-LST LST2 A))
-           :induct (COLLECT-CASES-CROSSX lst1 LST2)
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P
-                            collect-cases-crossx
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
-
-
+   (implies (and (cc-st-list-listp lst1)
+                 (cc-st-list-listp lst2)
+                 (cc-st-lst-lst-valid-p lst1 a)
+                 (cc-st-lst-lst-valid-p lst2 a))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-cases-crossx
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST-LST LST2 A))
+            :induct (COLLECT-CASES-CROSSX lst1 LST2)
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P
+                             collect-cases-crossx
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-lst-correct
-  (implies (cc-st-listp e)
-           (equal (eval-of-cc-st-lst-lst res a)
-                  (not (eval-of-cc-st-lst e  a))))
-  :fn collect-cases-negate-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((eval-of-cc-st-LST-LST LST2 A)
-                    (:free (x y)
-                           (CC-ST->TYPE (cons x y)))
-                    (:free (x y)
-                           (cc-st->sign (cons x y)))
-                    
-                    (:free (x y)
-                           (cc-st->e (cons x y)))
-                    (:free (x y)
-                           (eval-of-cc-st-lst (cons x y)
-                                              A))
-                    (:free (x y)
-                           (eval-of-cc-st-lst-lst (cons x y)
-                                                  A))
-                    (:free (x y)
-                           (eval-of-cc-st (cons x y)
-                                          A)))
-           :induct (collect-cases-negate-lst e)
-           :in-theory (e/d (CC-ST-MAKE
-                            eval-of-cc-st-lst-lst
-                            collect-cases-negate-lst
-                            eval-of-cc-st
-                            CC-ST-MAKE
-                            
-                            eval-of-cc-st-lst)
-                           (rp-trans
+   (implies (cc-st-listp e)
+            (equal (eval-of-cc-st-lst-lst res a)
+                   (not (eval-of-cc-st-lst e  a))))
+   :fn collect-cases-negate-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((eval-of-cc-st-LST-LST LST2 A)
+                     (:free (x y)
+                            (CC-ST->TYPE (cons x y)))
+                     (:free (x y)
+                            (cc-st->sign (cons x y)))
 
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+                     (:free (x y)
+                            (cc-st->e (cons x y)))
+                     (:free (x y)
+                            (eval-of-cc-st-lst (cons x y)
+                                               A))
+                     (:free (x y)
+                            (eval-of-cc-st-lst-lst (cons x y)
+                                                   A))
+                     (:free (x y)
+                            (eval-of-cc-st (cons x y)
+                                           A)))
+            :induct (collect-cases-negate-lst e)
+            :in-theory (e/d (CC-ST-MAKE
+                             eval-of-cc-st-lst-lst
+                             collect-cases-negate-lst
+                             eval-of-cc-st
+                             CC-ST-MAKE
+
+                             eval-of-cc-st-lst)
+                            (rp-trans
+
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 #|(defthm cc-st-valid-p-of-cc-st-make
-  (implies (and (rp-termp term)
-                (cc-st-list-listp subcases))
-           (equal (cc-st-valid-p (cc-st-make term subcases) a)
-                  (b* ((subcases-eval-res
-                        (eval-of-cc-st-lst-lst subcases a))
-                       (subcases-valid-p
-                        (cc-st-lst-lst-valid-p subcases a)))
-                    (and subcases-valid-p
-                         (valid-sc term a)
-                         subcases-eval-res))))
-  :hints (("goal"
-           :expand (cc-st-valid-p (cons term subcases)
-                                  a)
-           :in-theory (e/d (cc-st-make
-                            cc-st->subcases
-                            cc-st->term
-                            cc-st-valid-p)
-                           ()))))|#
+(implies (and (rp-termp term)
+(cc-st-list-listp subcases))
+(equal (cc-st-valid-p (cc-st-make term subcases) a)
+(b* ((subcases-eval-res
+(eval-of-cc-st-lst-lst subcases a))
+(subcases-valid-p
+(cc-st-lst-lst-valid-p subcases a)))
+(and subcases-valid-p
+(valid-sc term a)
+subcases-eval-res))))
+:hints (("goal"
+:expand (cc-st-valid-p (cons term subcases)
+a)
+:in-theory (e/d (cc-st-make
+cc-st->subcases
+cc-st->term
+cc-st-valid-p)
+()))))|#
 
 (local
  (defret collect-cases-negate-lst-valid
-  (implies (and (cc-st-listp e)
-                (cc-st-lst-valid-p e a))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-cases-negate-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand (
-                    (:free (x y)
-                           (CC-ST->TYPE (cons x y)))
-                    (:free (x y)
-                           (cc-st->e (cons x y)))
-                   
-                    (:free (x y)
-                           (CC-ST-VALID-P (cons x y) a))
-                    (:free (x y)
-                           (CC-ST-LST-VALID-P (cons x y) a)))
-           :induct (collect-cases-negate-lst e)
+   (implies (and (cc-st-listp e)
+                 (cc-st-lst-valid-p e a))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-cases-negate-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand (
+                     (:free (x y)
+                            (CC-ST->TYPE (cons x y)))
+                     (:free (x y)
+                            (cc-st->e (cons x y)))
 
-           :in-theory (e/d (CC-ST-MAKE
-                            CC-ST-LST-LST-VALID-P
-                            collect-cases-negate-lst
-                            ;;CC-ST-MAKE
-                            CC-ST-VALID-P
-                            ;;CC-ST->TERM
-                            CC-ST-LST-VALID-P
-                            is-rp is-if
-                            ;;CC-ST->SUBCASES
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            valid-sc
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+                     (:free (x y)
+                            (CC-ST-VALID-P (cons x y) a))
+                     (:free (x y)
+                            (CC-ST-LST-VALID-P (cons x y) a)))
+            :induct (collect-cases-negate-lst e)
+
+            :in-theory (e/d (CC-ST-MAKE
+                             CC-ST-LST-LST-VALID-P
+                             collect-cases-negate-lst
+                             ;;CC-ST-MAKE
+                             CC-ST-VALID-P
+                             ;;CC-ST->TERM
+                             CC-ST-LST-VALID-P
+                             is-rp is-if
+                             ;;CC-ST->SUBCASES
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             valid-sc
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-lst-lst-correct
-  (implies (cc-st-list-listp lst)
-           (equal (eval-of-cc-st-lst-lst res a)
-                  (not (eval-of-cc-st-lst-lst lst  a))))
-  :fn collect-cases-negate-lst-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
-           :induct (collect-cases-negate-lst-lst lst)
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            collect-cases-negate-lst-lst
-                            eval-of-cc-st
-                            CC-ST-MAKE
-                            CC-ST->e
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (cc-st-list-listp lst)
+            (equal (eval-of-cc-st-lst-lst res a)
+                   (not (eval-of-cc-st-lst-lst lst  a))))
+   :fn collect-cases-negate-lst-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
+            :induct (collect-cases-negate-lst-lst lst)
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             collect-cases-negate-lst-lst
+                             eval-of-cc-st
+                             CC-ST-MAKE
+                             CC-ST->e
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-lst-lst-valid
-  (implies (and (cc-st-list-listp lst)
-                (cc-st-lst-lst-valid-p lst a))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-cases-negate-lst-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
-           :induct (collect-cases-negate-lst-lst lst)
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P
-                            collect-cases-negate-lst-lst
-                            ;;CC-ST-MAKE
-                            CC-ST-VALID-P
-                            ;;CC-ST->e
-                            CC-ST-LST-VALID-P
-                            is-rp is-if
-                            ;;CC-ST->SUBCASES
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            valid-sc
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
-
+   (implies (and (cc-st-list-listp lst)
+                 (cc-st-lst-lst-valid-p lst a))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-cases-negate-lst-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
+            :induct (collect-cases-negate-lst-lst lst)
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P
+                             collect-cases-negate-lst-lst
+                             ;;CC-ST-MAKE
+                             CC-ST-VALID-P
+                             ;;CC-ST->e
+                             CC-ST-LST-VALID-P
+                             is-rp is-if
+                             ;;CC-ST->SUBCASES
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             valid-sc
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-lst-lst-lw-correct
-  (implies (cc-st-list-listp lst)
-           (equal (eval-of-cc-st-lst res a)
-                  (not (eval-of-cc-st-lst-lst lst  a))))
-  :fn collect-cases-negate-lst-lst-lw
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((:free (x y)
-                           (eval-of-cc-st (cons x y) a))
-                    (:free (x y)
-                           (CC-ST->TYPE (cons x y)))
-                    (:free (x y)
-                           (cc-st->e (cons x y)))
-                    
-                    
-                    (:free (x y)
-                           (CC-ST->SIGN (cons x y))))
-           :induct (collect-cases-negate-lst-lst-lw lst)
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            collect-cases-negate-lst-lst-lw
-                            eval-of-cc-st
-                            CC-ST-MAKE
-                            CC-ST->e
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (cc-st-list-listp lst)
+            (equal (eval-of-cc-st-lst res a)
+                   (not (eval-of-cc-st-lst-lst lst  a))))
+   :fn collect-cases-negate-lst-lst-lw
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((:free (x y)
+                            (eval-of-cc-st (cons x y) a))
+                     (:free (x y)
+                            (CC-ST->TYPE (cons x y)))
+                     (:free (x y)
+                            (cc-st->e (cons x y)))
+
+                     (:free (x y)
+                            (CC-ST->SIGN (cons x y))))
+            :induct (collect-cases-negate-lst-lst-lw lst)
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             collect-cases-negate-lst-lst-lw
+                             eval-of-cc-st
+                             CC-ST-MAKE
+                             CC-ST->e
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-lst-lst-lw-valid
-  (implies (and (cc-st-list-listp lst)
-                (cc-st-lst-lst-valid-p lst a))
-           (cc-st-lst-valid-p res a))
-  :fn collect-cases-negate-lst-lst-lw
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((:free (x y)
-                           (CC-ST->TYPE (cons x y)))
-                    (:free (x y)
-                           (cc-st->e (cons x y)))
-                    (:free (x y)
-                           (CC-ST->SIGN (cons x y)))
-                    (:free (x y)
-                           (CC-ST-VALID-P (cons x y) A)))
-           :induct (collect-cases-negate-lst-lst-lw lst)
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P
-                            CC-ST-MAKE
-                            collect-cases-negate-lst-lst-lw
-                            ;;CC-ST-MAKE
-                            CC-ST-VALID-P
-                            ;;CC-ST->e
-                            CC-ST-LST-VALID-P
-                            is-rp is-if
-                            ;;CC-ST->SUBCASES
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            valid-sc
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-list-listp lst)
+                 (cc-st-lst-lst-valid-p lst a))
+            (cc-st-lst-valid-p res a))
+   :fn collect-cases-negate-lst-lst-lw
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((:free (x y)
+                            (CC-ST->TYPE (cons x y)))
+                     (:free (x y)
+                            (cc-st->e (cons x y)))
+                     (:free (x y)
+                            (CC-ST->SIGN (cons x y)))
+                     (:free (x y)
+                            (CC-ST-VALID-P (cons x y) A)))
+            :induct (collect-cases-negate-lst-lst-lw lst)
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P
+                             CC-ST-MAKE
+                             collect-cases-negate-lst-lst-lw
+                             ;;CC-ST-MAKE
+                             CC-ST-VALID-P
+                             ;;CC-ST->e
+                             CC-ST-LST-VALID-P
+                             is-rp is-if
+                             ;;CC-ST->SUBCASES
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             valid-sc
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-main-correct
-  (implies (cc-st-list-listp lst)
-           (equal (eval-of-cc-st-lst-lst res a)
-                  (not (eval-of-cc-st-lst-lst lst  a))))
-  :fn collect-cases-negate-main
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
+   (implies (cc-st-list-listp lst)
+            (equal (eval-of-cc-st-lst-lst res a)
+                   (not (eval-of-cc-st-lst-lst lst  a))))
+   :fn collect-cases-negate-main
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
 
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            collect-cases-negate-main
-                            eval-of-cc-st
-                            CC-ST-MAKE
-                            CC-ST->e
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             collect-cases-negate-main
+                             eval-of-cc-st
+                             CC-ST-MAKE
+                             CC-ST->e
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-negate-main-valid
-  (implies (and (cc-st-list-listp lst)
-                (cc-st-lst-lst-valid-p lst a))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-cases-negate-main
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
+   (implies (and (cc-st-list-listp lst)
+                 (cc-st-lst-lst-valid-p lst a))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-cases-negate-main
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
 
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P
-                            collect-cases-negate-main
-                            ;;CC-ST-MAKE
-                            CC-ST-VALID-P
-                            ;;CC-ST->e
-                            CC-ST-LST-VALID-P
-                            is-rp is-if
-                            ;;CC-ST->SUBCASES
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            valid-sc
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P
+                             collect-cases-negate-main
+                             ;;CC-ST-MAKE
+                             CC-ST-VALID-P
+                             ;;CC-ST->e
+                             CC-ST-LST-VALID-P
+                             is-rp is-if
+                             ;;CC-ST->SUBCASES
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             valid-sc
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-merge-lst-lst-correct
-  (implies (and (cc-st-list-listp lst1)
-                (cc-st-list-listp lst2))
-           (equal (eval-of-cc-st-lst-lst res a)
-                  (or (eval-of-cc-st-lst-lst lst1 a)
-                      (eval-of-cc-st-lst-lst lst2 a))))
-  :fn collect-cases-merge-lst-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
-           :induct (collect-cases-merge-lst-lst lst1 lst2)
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            collect-cases-merge-lst-lst
-                            eval-of-cc-st
-                            CC-ST-MAKE
-                            CC-ST->e
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
+   (implies (and (cc-st-list-listp lst1)
+                 (cc-st-list-listp lst2))
+            (equal (eval-of-cc-st-lst-lst res a)
+                   (or (eval-of-cc-st-lst-lst lst1 a)
+                       (eval-of-cc-st-lst-lst lst2 a))))
+   :fn collect-cases-merge-lst-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
+            :induct (collect-cases-merge-lst-lst lst1 lst2)
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             collect-cases-merge-lst-lst
+                             eval-of-cc-st
+                             CC-ST-MAKE
+                             CC-ST->e
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (defret collect-cases-merge-lst-lst-valid
-  (implies (and (cc-st-list-listp lst1)
-                (cc-st-list-listp lst2)
-                (cc-st-lst-lst-valid-p lst1 a)
-                (cc-st-lst-lst-valid-p lst2 a))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-cases-merge-lst-lst
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ()
-           :induct (collect-cases-merge-lst-lst lst1 lst2)
-           :in-theory (e/d (CC-ST-LST-LST-VALID-P
-                            collect-cases-merge-lst-lst
-                            ;;CC-ST-MAKE
-                            CC-ST-VALID-P
-                            ;;CC-ST->e
-                            CC-ST-LST-VALID-P
-                            is-rp is-if
-                            ;;CC-ST->SUBCASES
-                            eval-of-cc-st-lst)
-                           (rp-trans
-                            valid-sc
-                            not-include-rp
-                            rp-termp
-                            ex-from-rp
-                            include-fnc
-                            rp-equal))))))
-
+   (implies (and (cc-st-list-listp lst1)
+                 (cc-st-list-listp lst2)
+                 (cc-st-lst-lst-valid-p lst1 a)
+                 (cc-st-lst-lst-valid-p lst2 a))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-cases-merge-lst-lst
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ()
+            :induct (collect-cases-merge-lst-lst lst1 lst2)
+            :in-theory (e/d (CC-ST-LST-LST-VALID-P
+                             collect-cases-merge-lst-lst
+                             ;;CC-ST-MAKE
+                             CC-ST-VALID-P
+                             ;;CC-ST->e
+                             CC-ST-LST-VALID-P
+                             is-rp is-if
+                             ;;CC-ST->SUBCASES
+                             eval-of-cc-st-lst)
+                            (rp-trans
+                             valid-sc
+                             not-include-rp
+                             rp-termp
+                             ex-from-rp
+                             include-fnc
+                             rp-equal))))))
 
 (local
  (define collect-cases-induct (term iff-flg)
@@ -1941,157 +1918,158 @@
 
 (local
  (defret collect-unburied-cases-is-correct
-  (implies (rp-termp term)
-           (and (iff (eval-of-cc-st-lst-lst res a)
-                     (rp-evlt term a))
-                (implies evals-to-nil
-                         (iff (rp-evlt term a) nil))))
-  :fn collect-unburied-cases
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((COLLECT-unburied-CASES TERM :iff-flg IFF-FLG)
-                    (eval-of-cc-st-LST NIL A)
-                    (eval-of-cc-st-LST-LST NIL A)
-                    (:free (x y)
-                           (CC-ST->SIGN (cons x y)))
-                    (:free (x y)
-                           (CC-ST->TYPE (cons x y)))
-                    (:free (x y)
-                           (CC-ST->e (cons x y)))
-                    (:free (x y)
-                           (eval-of-cc-st-LST-LST (cons x y) a))
-                    (:free (x y)
-                           (eval-of-cc-st-LST (cons x y) a))
-                    (:free (x y)
-                           (eval-of-cc-st (cons x y) a)))
-           :induct (collect-cases-induct TERM  IFF-FLG)
-           :in-theory (e/d (COLLECT-unburied-CASES
-                            CC-ST-MAKE
-                            ;;is-if
-                            eval-of-cc-st)
-                           (rp-termp
-                            if*
-                            INCLUDE-FNC
-                            rp-trans))))))
+   (implies (rp-termp term)
+            (and (iff (eval-of-cc-st-lst-lst res a)
+                      (rp-evlt term a))
+                 (implies evals-to-nil
+                          (iff (rp-evlt term a) nil))))
+   :fn collect-unburied-cases
+   :hints (("Goal"
+            :do-not-induct t
+            :expand ((COLLECT-unburied-CASES TERM :iff-flg IFF-FLG)
+                     (eval-of-cc-st-LST NIL A)
+                     (eval-of-cc-st-LST-LST NIL A)
+                     (:free (x y)
+                            (CC-ST->SIGN (cons x y)))
+                     (:free (x y)
+                            (CC-ST->TYPE (cons x y)))
+                     (:free (x y)
+                            (CC-ST->e (cons x y)))
+                     (:free (x y)
+                            (eval-of-cc-st-LST-LST (cons x y) a))
+                     (:free (x y)
+                            (eval-of-cc-st-LST (cons x y) a))
+                     (:free (x y)
+                            (eval-of-cc-st (cons x y) a)))
+            :induct (collect-cases-induct TERM  IFF-FLG)
+            :in-theory (e/d (COLLECT-unburied-CASES
+                             CC-ST-MAKE
+                             ;;is-if
+                             eval-of-cc-st)
+                            (rp-termp
+                             if*
+                             INCLUDE-FNC
+                             rp-trans))))))
 
 #|(local
- (defthm valid-sc-subterms-cdr-lemma
-   (implies (and (valid-sc term a)
-                 (or (not (equal (car term) 'if))
-                     (not (is-if term)))
-                 (not (equal (car term) 'quote)))
-            (valid-sc-subterms (cdr term) a))
-   :hints (("Goal"
-            :cases ((is-rp term))
-            :use ((:instance valid-sc-single-step))
-            :in-theory (e/d (is-rp
-                             is-if)
-                            (valid-sc-single-step))))))|#
-
+(defthm valid-sc-subterms-cdr-lemma
+(implies (and (valid-sc term a)
+(or (not (equal (car term) 'if))
+(not (is-if term)))
+(not (equal (car term) 'quote)))
+(valid-sc-subterms (cdr term) a))
+:hints (("Goal"
+:cases ((is-rp term))
+:use ((:instance valid-sc-single-step))
+:in-theory (e/d (is-rp
+is-if)
+(valid-sc-single-step))))))|#
 
 (local
  (defret collect-cases-is-valid
-  (implies (and (rp-termp term)
-                (not (include-fnc term 'rp)))
-           (cc-st-lst-lst-valid-p res a))
-  :fn collect-unburied-cases
-  :hints (("Goal"
-           :do-not-induct t
-           :induct (collect-unburied-cases-fn term iff-flg)
-           :expand (
-                    (CC-ST-LST-VALID-P NIL A)
-                    (CC-ST-LST-LST-VALID-P NIL A)
-                    (collect-unburied-cases TERM :iff-flg IFF-FLG)
-                    (CC-ST-LST-VALID-P NIL A)
-                    (CC-ST-LST-LST-VALID-P NIL A)
-                    (eval-of-cc-st-LST NIL A)
-                    (eval-of-cc-st-LST-LST NIL A)
-                    (:free (x)
-                           (COLLECT-CASES-MERGE-LST-LST nil x))
-                    (:free (x y)
-                           (CC-ST->SIGN (cons x y)))
-                    
-                    (:free (x y)
-                           (CC-ST->TYPE (cons x y)))
-                    (:free (x y)
-                           (CC-ST->e (cons x y)))
-                    (:free (x y)
-                           (cc-st-lst-lst-valid-p (cons x y) a))
-                    (:free (x y)
-                           (cc-st-lst-valid-p (cons x y) a))
-                    (:free (x y)
-                           (cc-st-valid-p (cons x y) a))
-                    (:free (x y)
-                           (cc-st-lst-lst-valid-p (cons x y) a))
-                    (:free (x y)
-                           (cc-st-lst-valid-p (cons x y) a))
-                    (:free (x y)
-                           (cc-st-valid-p (cons x y) a))
-                    (:free (x y)
-                           (eval-of-cc-st (cons x y) a)))
+   (implies (and (rp-termp term)
+                 (not (include-fnc term 'rp))
+                 (not (include-fnc term 'equals 2)))
+            (cc-st-lst-lst-valid-p res a))
+   :fn collect-unburied-cases
+   :hints (("Goal"
+            :do-not-induct t
+            :induct (collect-unburied-cases-fn term iff-flg)
+            :expand (
+                     (CC-ST-LST-VALID-P NIL A)
+                     (CC-ST-LST-LST-VALID-P NIL A)
+                     (collect-unburied-cases TERM :iff-flg IFF-FLG)
+                     (CC-ST-LST-VALID-P NIL A)
+                     (CC-ST-LST-LST-VALID-P NIL A)
+                     (eval-of-cc-st-LST NIL A)
+                     (eval-of-cc-st-LST-LST NIL A)
+                     (:free (x)
+                            (COLLECT-CASES-MERGE-LST-LST nil x))
+                     (:free (x y)
+                            (CC-ST->SIGN (cons x y)))
 
-           :in-theory (e/d (include-fnc
-                            collect-unburied-cases
-                            valid-sc
-                            CC-ST-MAKE
-                            not-include-rp-means-valid-sc
-                            eval-of-cc-st)
-                           (rp-termp
-                            if*
-                            rp-trans))))))
+                     (:free (x y)
+                            (CC-ST->TYPE (cons x y)))
+                     (:free (x y)
+                            (CC-ST->e (cons x y)))
+                     (:free (x y)
+                            (cc-st-lst-lst-valid-p (cons x y) a))
+                     (:free (x y)
+                            (cc-st-lst-valid-p (cons x y) a))
+                     (:free (x y)
+                            (cc-st-valid-p (cons x y) a))
+                     (:free (x y)
+                            (cc-st-lst-lst-valid-p (cons x y) a))
+                     (:free (x y)
+                            (cc-st-lst-valid-p (cons x y) a))
+                     (:free (x y)
+                            (cc-st-valid-p (cons x y) a))
+                     (:free (x y)
+                            (eval-of-cc-st (cons x y) a)))
 
+            :in-theory (e/d (include-fnc
+                             collect-unburied-cases
+                             valid-sc
+                             CC-ST-MAKE
+                             not-include-rp-means-valid-sc
+                             eval-of-cc-st)
+                            (rp-termp
+                             if*
+                             rp-trans))))))
 
 (local
  (defret-mutual cc-st-to-term-correct
-  (defret cc-st-to-term-correct
-    (equal (rp-evlt res a)
-           (eval-of-cc-st st a)
-           )
-    :fn cc-st-to-term)
-  (defret cc-st-lst-to-term-correct
-    (equal (rp-evlt res a)
-           (eval-of-cc-st-lst st-lst a)
-           )
-    :fn cc-st-lst-to-term)
-  (defret cc-st-lst-lst-to-term-correct
-    (equal (rp-evlt res a)
-           (eval-of-cc-st-lst-lst st-lst-lst a)
-           )
-    :fn cc-st-lst-lst-to-term)
-  :mutual-recursion cc-st-to-term
-  :hints (("Goal"
-           :in-theory (e/d (cc-st-to-term
-                            EVAL-OF-CC-ST-LST-LST
-                            EVAL-OF-CC-ST-LST
-                            EVAL-OF-CC-ST
-                            cc-st-lst-to-term
-                            cc-st-lst-lst-to-term
-                            ) ())))))
+   (defret cc-st-to-term-correct
+     (equal (rp-evlt res a)
+            (eval-of-cc-st st a)
+            )
+     :fn cc-st-to-term)
+   (defret cc-st-lst-to-term-correct
+     (equal (rp-evlt res a)
+            (eval-of-cc-st-lst st-lst a)
+            )
+     :fn cc-st-lst-to-term)
+   (defret cc-st-lst-lst-to-term-correct
+     (equal (rp-evlt res a)
+            (eval-of-cc-st-lst-lst st-lst-lst a)
+            )
+     :fn cc-st-lst-lst-to-term)
+   :mutual-recursion cc-st-to-term
+   :hints (("Goal"
+            :in-theory (e/d (cc-st-to-term
+                             EVAL-OF-CC-ST-LST-LST
+                             EVAL-OF-CC-ST-LST
+                             EVAL-OF-CC-ST
+                             cc-st-lst-to-term
+                             cc-st-lst-lst-to-term
+                             ) ())))))
 
 (local
  (defret-mutual cc-st-to-term-valid-sc
-  (defret cc-st-to-term-valid-sc
-    (implies (cc-st-valid-p st a)
-             (not (include-fnc res 'rp)))
-    :fn cc-st-to-term)
-  (defret cc-st-lst-to-term-valid-sc
-    (implies (cc-st-lst-valid-p st-lst a)
-             (not (include-fnc res 'rp)))
-    :fn cc-st-lst-to-term)
-  (defret cc-st-lst-lst-to-term-valid-sc
-    (implies (cc-st-lst-lst-valid-p st-lst-lst a)
-             (not (include-fnc res 'rp)))
-    :fn cc-st-lst-lst-to-term)
-  :mutual-recursion cc-st-to-term
-  :hints (("Goal"
-           :in-theory (e/d (cc-st-to-term
-                            cc-st-lst-to-term
-                            cc-st-lst-lst-to-term
-                            CC-ST-LST-LST-VALID-P
-                            CC-ST-LST-VALID-P
-                            CC-ST-VALID-P
-                            ) ())))))
-
+   (defret cc-st-to-term-valid-sc
+     (implies (cc-st-valid-p st a)
+              (and (not (include-fnc res 'rp))
+                   (not (include-fnc res 'equals 2))))
+     :fn cc-st-to-term)
+   (defret cc-st-lst-to-term-valid-sc
+     (implies (cc-st-lst-valid-p st-lst a)
+              (and (not (include-fnc res 'rp))
+                   (not (include-fnc res 'equals 2))))
+     :fn cc-st-lst-to-term)
+   (defret cc-st-lst-lst-to-term-valid-sc
+     (implies (cc-st-lst-lst-valid-p st-lst-lst a)
+              (and (not (include-fnc res 'rp))
+                   (not (include-fnc res 'equals 2))))
+     :fn cc-st-lst-lst-to-term)
+   :mutual-recursion cc-st-to-term
+   :hints (("Goal"
+            :in-theory (e/d (cc-st-to-term
+                             cc-st-lst-to-term
+                             cc-st-lst-lst-to-term
+                             CC-ST-LST-LST-VALID-P
+                             CC-ST-LST-VALID-P
+                             CC-ST-VALID-P
+                             ) ())))))
 
 (local
  (defret casesplit-from-context-attach-buried-correct
@@ -2116,21 +2094,21 @@
 
 (local
  (defret casesplit-from-context-attach-buried-valid-sc
-  (implies (and (valid-sc term a)
-                (valid-sc context-term a)
-                (cc-st-lst-lst-valid-p buried-cases a))
-           (valid-sc res a))
-  :fn casesplit-from-context-attach-buried
-  :hints (("Goal"
-           :in-theory (e/d (casesplit-from-context-attach-buried
-                            valid-sc
-                            not-include-rp-means-valid-sc
-                            is-rp
-                            is-if
-                            CC-ST-LST-LST-VALID-P
-                            CC-ST-LST-VALID-P
-                            CC-ST-VALID-P)
-                           (eval-and-all))))))
+   (implies (and (valid-sc term a)
+                 (valid-sc context-term a)
+                 (cc-st-lst-lst-valid-p buried-cases a))
+            (valid-sc res a))
+   :fn casesplit-from-context-attach-buried
+   :hints (("Goal"
+            :in-theory (e/d (casesplit-from-context-attach-buried
+                             valid-sc
+                             not-include-rp-means-valid-sc
+                             is-rp is-equals
+                             is-if
+                             CC-ST-LST-LST-VALID-P
+                             CC-ST-LST-VALID-P
+                             CC-ST-VALID-P)
+                            (eval-and-all))))))
 
 (local
  (defret eval-of-GROUP-LONG-AND-CHAIN
@@ -2149,8 +2127,7 @@
                              EVAL-OF-CC-ST-LST)
                             ())))))
 
-
-(define collect-buried-cases-induct (term iff-flg) 
+(define collect-buried-cases-induct (term iff-flg)
   :verify-guards nil
   :enabled t
   (cond
@@ -2172,8 +2149,8 @@
       (list (collect-buried-cases-induct a iff-flg)
             (collect-buried-cases-induct b iff-flg)
             (collect-buried-cases-induct c iff-flg))))
-    (t
-     t)))
+   (t
+    t)))
 
 (local
  (defret COLLECT-BURIED-CASES-valid-subcases-lemma
@@ -2200,150 +2177,153 @@
                              collect-buried-cases)
                             ())))))
 
-
-
 (local
  (defret-mutual COLLECT-BURIED-CASES-valid-subcases
-  (defret COLLECT-BURIED-CASES-valid-subcases
-    (implies (rp-termp term)
-             (and (eval-of-cc-st-lst-lst subcases a)
-                  ))
-    :fn collect-buried-cases)
-  (defret COLLECT-BURIED-CASES-lst-valid-subcases
-    (implies (rp-term-listp lst)
-             (eval-of-cc-st-lst-lst subcases a))
-    :fn collect-buried-cases-lst)
-  :mutual-recursion collect-buried-cases
-  :hints (("Goal"
-           :do-not-induct t
-           :in-theory (e/d (eval-of-cc-st-lst-lst
-                            eval-of-cc-st-lst
-                            eval-of-cc-st
-                            collect-buried-cases-lst
-                            collect-buried-cases)
-                           (rp-termp
-                            ))))))
-
+   (defret COLLECT-BURIED-CASES-valid-subcases
+     (implies (rp-termp term)
+              (and (eval-of-cc-st-lst-lst subcases a)
+                   ))
+     :fn collect-buried-cases)
+   (defret COLLECT-BURIED-CASES-lst-valid-subcases
+     (implies (rp-term-listp lst)
+              (eval-of-cc-st-lst-lst subcases a))
+     :fn collect-buried-cases-lst)
+   :mutual-recursion collect-buried-cases
+   :hints (("Goal"
+            :do-not-induct t
+            :in-theory (e/d (eval-of-cc-st-lst-lst
+                             eval-of-cc-st-lst
+                             eval-of-cc-st
+                             collect-buried-cases-lst
+                             collect-buried-cases)
+                            (rp-termp
+                             ))))))
 
 (local
  (defret casesplit-from-context-attach-correct
-  (implies (and (cc-st-list-listp unburied-cases)
-                (eval-of-cc-st-lst-lst unburied-cases a))
-           (equal (rp-evlt res a)
-                  (rp-evlt term a)))
-  :fn casesplit-from-context-attach
-  :hints (("Goal"
-           :in-theory (e/d (casesplit-from-context-attach
-                            EVAL-OF-CC-ST-LST-LST
-                            EVAL-OF-CC-ST-LST
-                            EVAL-OF-CC-ST)
-                           ())))))
+   (implies (and (cc-st-list-listp unburied-cases)
+                 (eval-of-cc-st-lst-lst unburied-cases a))
+            (equal (rp-evlt res a)
+                   (rp-evlt term a)))
+   :fn casesplit-from-context-attach
+   :hints (("Goal"
+            :in-theory (e/d (casesplit-from-context-attach
+                             EVAL-OF-CC-ST-LST-LST
+                             EVAL-OF-CC-ST-LST
+                             EVAL-OF-CC-ST)
+                            ())))))
 
 (local
  (defthm CC-ST-VALID-P-of-CC-ST-MAKE-term
-  (implies (and (not (include-fnc term 'rp))
-                (rp-termp term)
-                (booleanp sign))
-           (CC-ST-VALID-P (CC-ST-MAKE :TYPE :TERM
-                                      :SIGN sign
-                                      :E TERM)
-                          A))
-  :hints (("Goal"
-           :in-theory (e/d (CC-ST-MAKE
-                            cc-st->type
-                            CC-ST->E
-                            CC-ST-VALID-P)
-                           ())))))
+   (implies (and (not (include-fnc term 'rp))
+                 (not (include-fnc term 'equals 2))
+                 (rp-termp term)
+                 (booleanp sign))
+            (CC-ST-VALID-P (CC-ST-MAKE :TYPE :TERM
+                                       :SIGN sign
+                                       :E TERM)
+                           A))
+   :hints (("Goal"
+            :in-theory (e/d (CC-ST-MAKE
+                             cc-st->type
+                             CC-ST->E
+                             CC-ST-VALID-P)
+                            ())))))
 
 (local
  (defthm CC-ST-VALID-P-of-CC-ST-MAKE-and-list
-  (implies (and (cc-st-lst-valid-p and-list a)
-                (CC-ST-LISTP AND-LIST)
-                (booleanp sign))
-           (CC-ST-VALID-P (CC-ST-MAKE :TYPE :and-list
-                                      :SIGN sign
-                                      :E and-list)
-                          A))
-  :hints (("Goal"
-           :in-theory (e/d (CC-ST-MAKE
-                            cc-st-lst-valid-p
-                            cc-st->type
-                            CC-ST->E
-                            CC-ST-VALID-P)
-                           ())))))
+   (implies (and (cc-st-lst-valid-p and-list a)
+                 (CC-ST-LISTP AND-LIST)
+                 (booleanp sign))
+            (CC-ST-VALID-P (CC-ST-MAKE :TYPE :and-list
+                                       :SIGN sign
+                                       :E and-list)
+                           A))
+   :hints (("Goal"
+            :in-theory (e/d (CC-ST-MAKE
+                             cc-st-lst-valid-p
+                             cc-st->type
+                             CC-ST->E
+                             CC-ST-VALID-P)
+                            ())))))
 
 (local
  (defthm CC-ST-VALID-P-of-CC-ST-MAKE-or-list
-  (implies (and (cc-st-lst-lst-valid-p or-list a)
-                (CC-ST-list-LISTP or-LIST)
-                (booleanp sign))
-           (CC-ST-VALID-P (CC-ST-MAKE :TYPE :or-list
-                                      :SIGN sign
-                                      :E or-list)
-                          A))
-  :hints (("Goal"
-           :in-theory (e/d (CC-ST-MAKE
-                            cc-st-lst-valid-p
-                            cc-st->type
-                            CC-ST->E
-                            CC-ST-VALID-P)
-                           ())))))
+   (implies (and (cc-st-lst-lst-valid-p or-list a)
+                 (CC-ST-list-LISTP or-LIST)
+                 (booleanp sign))
+            (CC-ST-VALID-P (CC-ST-MAKE :TYPE :or-list
+                                       :SIGN sign
+                                       :E or-list)
+                           A))
+   :hints (("Goal"
+            :in-theory (e/d (CC-ST-MAKE
+                             cc-st-lst-valid-p
+                             cc-st->type
+                             CC-ST->E
+                             CC-ST-VALID-P)
+                            ())))))
 
 (local
- (defret GROUP-LONG-AND-CHAIN-valid-sc
-  (implies (and (not (include-fnc term 'rp))
-                (rp-termp term))
-           (CC-ST-LST-VALID-P res a))
-  :fn group-long-and-chain
-  :hints (("Goal"
-           :in-theory (e/d (CC-ST-LST-VALID-P
-                            CC-ST-VALID-P
-                            GROUP-LONG-AND-CHAIN)
-                           ())))))
+ (defret group-long-and-chain-valid-sc
+   (implies (and (not (include-fnc term 'rp))
+                 (not (include-fnc term 'equals 2))
+                 (rp-termp term))
+            (cc-st-lst-valid-p res a))
+   :fn group-long-and-chain
+   :hints (("goal"
+            :in-theory (e/d (cc-st-lst-valid-p
+                             cc-st-valid-p
+                             group-long-and-chain)
+                            ())))))
 
 (local
- (defret-mutual COLLECT-BURIED-CASES-valid-sc
-  (defret COLLECT-BURIED-CASES-valid-sc
-    (implies (and (not (include-fnc term 'rp))
-                  (rp-termp term))
-             (and (cc-st-lst-lst-valid-p res a)
-                  (cc-st-lst-lst-valid-p subcases a)))
-    :fn collect-buried-cases)
-  (defret COLLECT-BURIED-CASES-lst-valid-sc
-    (implies (and (not (include-fnc-subterms lst 'rp))
-                  (rp-term-listp lst))
-             (cc-st-lst-lst-valid-p subcases a))
-    :fn collect-buried-cases-lst)
-  :mutual-recursion collect-buried-cases
-  :hints (("Goal"
-           :in-theory (e/d (cc-st-lst-lst-valid-p
-                            cc-st-lst-valid-p
-                            cc-st-valid-p
-                            collect-buried-cases-lst
-                            collect-buried-cases)
-                           (rp-termp
-                            ))))))
-
-
-  
+ (defret-mutual collect-buried-cases-valid-sc
+   (defret collect-buried-cases-valid-sc
+     (implies (and (not (include-fnc term 'rp))
+                   (not (include-fnc term 'equals 2))
+                   (rp-termp term))
+              (and (cc-st-lst-lst-valid-p res a)
+                   (cc-st-lst-lst-valid-p subcases a)))
+     :fn collect-buried-cases)
+   (defret collect-buried-cases-lst-valid-sc
+     (implies (and (not (include-fnc-subterms lst 'rp))
+                   (not (include-fnc-subterms lst 'equals 2))
+                   (rp-term-listp lst))
+              (cc-st-lst-lst-valid-p subcases a))
+     :fn collect-buried-cases-lst)
+   :mutual-recursion collect-buried-cases
+   :hints (("Goal"
+            ;;:do-not-induct t
+            :in-theory (e/d (cc-st-lst-lst-valid-p
+                             cc-st-lst-valid-p
+                             cc-st-valid-p
+                             collect-buried-cases-lst
+                             collect-buried-cases)
+                            (rp-termp
+                             (:REWRITE DEFAULT-CDR)
+                             (:REWRITE
+                              INCLUDE-FNC-WITHOUT-SIZE-IMPLIES-WITH-SIZE)
+                             (:REWRITE
+                                INCLUDE-FNC-SUBTERMS-WITHOUT-SIZE-IMPLIES-WITH-SIZE)
+                             ))))))
 
 (local
  (defret casesplit-from-context-attach-valid-sc
-  (implies (and (cc-st-list-listp unburied-cases)
-                (valid-sc term a)
-                (cc-st-lst-lst-valid-p unburied-cases a))
-           (valid-sc res a))
-  :fn casesplit-from-context-attach
-  :hints (("Goal"
-           :in-theory (e/d (casesplit-from-context-attach
-                            cc-st-lst-lst-valid-p
-                            cc-st-lst-valid-p
-                            cc-st-valid-p
-                            is-rp
-                            is-if
-                            not-include-rp-means-valid-sc)
-                           (eval-and-all))))))
-
+   (implies (and (cc-st-list-listp unburied-cases)
+                 (valid-sc term a)
+                 (cc-st-lst-lst-valid-p unburied-cases a))
+            (valid-sc res a))
+   :fn casesplit-from-context-attach
+   :hints (("Goal"
+            :in-theory (e/d (casesplit-from-context-attach
+                             cc-st-lst-lst-valid-p
+                             cc-st-lst-valid-p
+                             cc-st-valid-p
+                             is-rp is-equals
+                             is-if
+                             not-include-rp-means-valid-sc)
+                            (eval-and-all))))))
 
 (local
  (defret collect-cases-gather-context-term-correct
@@ -2356,28 +2336,27 @@
 
 (local
  (defret collect-cases-from-context-aux-correct
-  (implies (and (rp-termp term)
-                (rp-term-listp context)
-                (eval-and-all context a))
-           (equal (rp-evlt res-term a)
-                  (rp-evlt term a)))
-  :fn collect-cases-from-context-aux
-  :hints (("Goal"
-           :in-theory (e/d (collect-cases-from-context-aux)
-                           ())))))
+   (implies (and (rp-termp term)
+                 (rp-term-listp context)
+                 (eval-and-all context a))
+            (equal (rp-evlt res-term a)
+                   (rp-evlt term a)))
+   :fn collect-cases-from-context-aux
+   :hints (("Goal"
+            :in-theory (e/d (collect-cases-from-context-aux)
+                            ())))))
 
 (local
  (defret collect-cases-from-context-aux-valid-sc
-  (implies (and (rp-termp term)
-                (rp-term-listp context)
-                (valid-sc term a))
-           (valid-sc res-term a))
-  :fn collect-cases-from-context-aux
-  :hints (("Goal"
-           :in-theory (e/d (collect-cases-from-context-aux)
-                           ())))))
-
-
+   (implies (and (rp-termp term)
+                 (rp-term-listp context)
+                 (valid-sc term a))
+            (valid-sc res-term a))
+   :fn collect-cases-from-context-aux
+   :hints (("Goal"
+            :in-theory (e/d (equal-of-len-with-constant
+                             collect-cases-from-context-aux)
+                            ())))))
 
 (defthmd implies-redef-with-casesplit-from-context-trig
   (equal (implies p q)
@@ -2390,17 +2369,14 @@
 (add-rp-rule implies-redef-with-casesplit-from-context-trig
              :rw-direction :outside-in)
 
-
 (rp::add-meta-rule
  :meta-fnc casesplit-from-context
  :trig-fnc casesplit-from-context-trig
  :valid-syntaxp t
  :rw-direction :outside-in
- :disabledp t
+ :disabled t
  :returns (mv term dont-rw)
  :hints (("Goal"
           :in-theory (e/d (casesplit-from-context
                            casesplit-from-context-trig)
                           ()))))
-
-

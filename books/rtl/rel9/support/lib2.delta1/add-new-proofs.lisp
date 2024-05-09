@@ -3,8 +3,7 @@
 ;
 ; Contact:
 ;   David Russinoff
-;   1106 W 9th St., Austin, TX 78703
-;   http://www.russsinoff.com/
+;   http://www.russinoff.com/
 ;
 ; See license file books/rtl/rel9/license.txt.
 ;
@@ -1281,6 +1280,14 @@
   (logand (bits_alt (lamt_alt a b e) e 2)
 	  (logand (bits_alt (lamg_alt a b e) (1- e) 1)
 		  (bits_alt (lognot (lamz_alt a b e)) (- e 2) 0))))
+
+; Matt K. addition: The following lemma, natp-lamz, is not normally necessary.
+; But with fast-cert mode active, we need it for the proof of lam1_alt-is-lam1.
+; See :DOC fast-cert-anomalies if you want an explanation.
+(local
+ (defthm natp-lamz
+   (natp (lamz a b e))
+   :rule-classes :type-prescription))
 
 (local
  (defthm lam1_alt-is-lam1

@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "dags")
+(include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 ;todo: reduce?:
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -341,9 +342,9 @@
 ;;     (implies (weak-dagp-aux dag)
 ;;              (dargp (mv-nth 0 (compose-term-and-dag-aux term var-replacement-alist dag))))
 ;;     :flag compose-term-and-dag-aux)
-;;   (defthm all-dargp-of-mv-nth-0-of-compose-term-and-dag-aux-lst
+;;   (defthm darg-listp-of-mv-nth-0-of-compose-term-and-dag-aux-lst
 ;;     (implies (weak-dagp-aux dag)
-;;              (all-dargp (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))))
+;;              (darg-listp (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))))
 ;;     :flag compose-term-and-dag-aux-lst))
 
 ;rename
@@ -366,7 +367,7 @@
                   (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))
                   )
              (and (pseudo-dagp (mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))
-                  ;;(all-dargp (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))
+                  ;;(darg-listp (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))
                   (BOUNDED-DARG-LISTP (mv-nth 0 (compose-term-and-dag-aux-lst terms var-replacement-alist dag))
                                                   (BINARY-+ '1 (TOP-NODENUM (mv-nth 1 (compose-term-and-dag-aux-lst terms var-replacement-alist dag)))))
                   (<= (top-nodenum dag)

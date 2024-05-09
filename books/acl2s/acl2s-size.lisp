@@ -32,7 +32,7 @@ Added these rules as built-in clauses
  Causes rewrite loops. Seems like an ACL2 bug, or at least there is a
  potential for improvement since we should catch such rewrite
  loops. Investigate at some point. (remove similar built-in clauses to
- reproduce) 
+ reproduce)
 
 (defthm acl2s-size-cons
   (implies (consp (double-rewrite x))
@@ -124,19 +124,19 @@ Added these rules as built-in clauses
   :rule-classes :linear)
 
 (defthm tail-acl2s-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (acl2s-size (set::tail x))
               (acl2s-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::tail)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0) 
+  :hints (("Goal" :in-theory (enable set::emptyp set::tail)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
                  (:linear :backchain-limit-lst 0)))
 
 (defthm head-acl2s-size
-  (implies (not (set::empty x))
+  (implies (not (set::emptyp x))
            (< (acl2s-size (set::head x))
               (acl2s-size x)))
-  :hints (("Goal" :in-theory (enable set::empty set::head)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0) 
+  :hints (("Goal" :in-theory (enable set::emptyp set::head)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
                  (:linear :backchain-limit-lst 0)))
 
 (defthm split-list-1-acl2s-size
@@ -144,38 +144,30 @@ Added these rules as built-in clauses
            (< (acl2s-size (mv-nth 1 (str::split-list-1 x str::del)))
               (acl2s-size x)))
   :hints (("Goal" :in-theory (enable str::split-list-1)))
-  :rule-classes ((:rewrite :backchain-limit-lst 0) 
+  :rule-classes ((:rewrite :backchain-limit-lst 0)
                  (:linear :backchain-limit-lst 0)))
 
-(defthm records-lemma-acl2s-size
-  (implies (and (acl2::ifmp v)
-                (acl2::well-formed-map v))
-           (< (acl2s-size (acl2::mget-wf x v))
-              (acl2s-size v)))
-  :hints (("goal" :in-theory (enable acl2::mget-wf)))
-  :rule-classes ((:linear :backchain-limit-lst 1)))
- 
 (defthm records-acl2s-size-linear-arith-<=
-  (<= (acl2s-size (mget k v))
-      (acl2s-size v))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  (<= (acl2s-size (mget k r))
+      (acl2s-size r))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes :linear)
 
 (defthm records-acl2s-size-linear-arith-<2
-  (implies (and (not (equal k (acl2::ill-formed-key)))
-                (mget k v))
-           (< (acl2s-size (mget k v))
-              (acl2s-size v)))
-  :hints (("goal" :in-theory (enable mget acl2::acl2->map)))
+  (implies (mget k r)
+           (< (acl2s-size (mget k r))
+              (acl2s-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
 
 (defthm records-acl2s-size
-  (implies (and (consp v)
-                (not (equal x (acl2::ill-formed-key))))
-           (< (acl2s-size (mget x v))
-              (acl2s-size v)))
-  :hints (("goal" :induct (acl2::mget-wf x v)
-           :in-theory (enable mget acl2::acl2->map)))
+  (implies (consp r)
+           (< (acl2s-size (mget k r))
+              (acl2s-size r)))
+  :hints (("goal" :in-theory
+           (enable mget recordp no-nil-val-alistp ordered-unique-key-alistp)))
   :rule-classes ((:linear :backchain-limit-lst 1)))
 
 (defthm acl2s-size-evens-weak
@@ -252,6 +244,19 @@ Added these rules as built-in clauses
   (<= (len x) (acl2s-size x))
   :rule-classes :linear)
 
+; This came up when I asked openai to write and verify a sorting
+; function in ACL2. It used remove and we don't have a theorem like
+; this, so here goes.
+
+(defthm acl2-count-remove
+  (<= (acl2-count (remove a x))
+      (acl2-count x))
+  :rule-classes :linear)
+
+(defthm acl2-count-remove2
+  (<= (acl2-count (remove-equal a x))
+      (acl2-count x))
+  :rule-classes :linear)
 
 #|
 
@@ -523,9 +528,9 @@ Maybe be useful for replacing acl2-count with acl2s-size.
 
 (defthm acl2s-size-built-in-5
   (implies (not (atom x))
-           (and (< (acl2s-size (cdr x)) 
+           (and (< (acl2s-size (cdr x))
                    (acl2s-size x))
-                (o< (acl2s-size (cdr x)) 
+                (o< (acl2s-size (cdr x))
                     (acl2s-size x))))
   :rule-classes :built-in-clause)
 
@@ -693,6 +698,13 @@ Maybe be useful for replacing acl2-count with acl2s-size.
    :rule-classes :built-in-clause)
  )
 
+(defthm acl2s-size-car-cdr-linear
+  (implies (consp x)
+           (equal (acl2s-size x)
+                  (+ 1 (acl2s-size (car x))
+                     (acl2s-size (cdr x)))))
+  :rule-classes :linear)
+
 #|
 (defthm acl2s-size-string
   (implies (stringp x)
@@ -704,7 +716,7 @@ Maybe be useful for replacing acl2-count with acl2s-size.
            (equal (acl2s-size x)
                   (integer-abs (numerator x))))
   :rule-classes ((:rewrite :backchain-limit-lst 0)))
-   
+
 (defthm acl2s-size-cons
   (implies (consp x)
            (equal (acl2s-size x)

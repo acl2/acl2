@@ -1891,10 +1891,10 @@
   :hints
   (("goal"
     :do-not-induct t
-    :in-theory (disable true-listp-when-m1-file-alist-p)
+    :in-theory (disable true-listp-when-m1-file-alist-p-compound-recognizer)
     :use
     (:instance
-     true-listp-when-m1-file-alist-p
+     true-listp-when-m1-file-alist-p-compound-recognizer
      (x (m1-file->contents$inline
          file))))))
 

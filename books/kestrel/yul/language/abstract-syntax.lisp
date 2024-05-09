@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,13 +69,6 @@
   :ok identifier
   :pred identifier-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-identifierp
-  (implies (identifierp x)
-           (not (resulterrp x)))
-  :enable (identifierp resulterrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption identifier-option
@@ -98,13 +91,6 @@
   :short "Fixtype of errors and lists of identifiers."
   :ok identifier-list
   :pred identifier-list-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-identifier-listp
-  (implies (identifier-listp x)
-           (not (resulterrp x)))
-  :enable resulterrp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,13 +122,6 @@
   :short "Fixtype of errors and osets of identifiers."
   :ok identifier-set
   :pred identifier-set-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-identifier-setp
-  (implies (identifier-setp x)
-           (not (resulterrp x)))
-  :enable (resulterrp identifier-setp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -227,14 +206,6 @@
   :ok path
   :pred path-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-pathp
-  (implies (pathp x)
-           (not (resulterrp x)))
-  :enable (pathp resulterrp))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist path-list
@@ -271,7 +242,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection hex-digit-list->chars ((x hex-digit-listp))
-  :returns (chars str::hex-digit-char-listp)
+  :returns (chars str::hex-digit-char-list*p)
   :short "Extract the characters from a list of hex digits."
   (hex-digit->get x)
   ///
@@ -343,7 +314,7 @@
   (:u ((get hex-quad)))
   :pred escapep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult escape-result
   :short "Fixtype of errors and escapes."
@@ -520,13 +491,6 @@
   :ok expression
   :pred expression-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-expressionp
-  (implies (expressionp x)
-           (not (resulterrp x)))
-  :enable (expressionp resulterrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption funcall-option
@@ -540,13 +504,6 @@
   :short "Fixtype of errors and function calls."
   :ok funcall
   :pred funcall-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-funcallp
-  (implies (funcallp x)
-           (not (resulterrp x)))
-  :enable (funcallp resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,26 +623,12 @@
   :ok block
   :pred block-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-blockp
-  (implies (blockp x)
-           (not (resulterrp x)))
-  :enable (blockp resulterrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult statement-result
   :short "Fixtype of errors and statements."
   :ok statement
   :pred statement-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-statementp
-  (implies (statementp x)
-           (not (resulterrp x)))
-  :enable (statementp resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -694,26 +637,12 @@
   :ok fundef
   :pred fundef-resultp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-fundefp
-  (implies (fundefp x)
-           (not (resulterrp x)))
-  :enable (fundefp resulterrp))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult swcase-result
   :short "Fixtype of errors and swcase clauses (for switch statements)."
   :ok swcase
   :pred swcase-resultp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled not-resulterrp-when-swcasep
-  (implies (swcasep x)
-           (not (resulterrp x)))
-  :enable (swcasep resulterrp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,7 +726,7 @@
    (xdoc::p
     "The concrete syntax of Yul objects is described in
      [Yul: Specification of Yul Object].
-     That description refers to the old grammar (see (@see concrete-syntax));
+     That description refers to the old grammar (see @(see concrete-syntax));
      the new grammar does not include Yul objects.")
    (xdoc::p
     "Here we formalize an abstract syntax version of Yul objects.

@@ -47,8 +47,8 @@
               ;;fact was strengthened:
               (mv (erp-nil) fact result state result-array-stobj))))))))
 
-;fixme compare to improve-invars
-;fixme handle boolands?
+;TODO: compare to improve-invars and simplify-terms-using-each-other-fn
+;TODO: handle boolands?
 ;returns (mv erp new-facts state result-array-stobj) where new-facts is a set of facts whose conjunction is equal to the conjunction of facts
 ;fixme handle contradictions (manifested as a single fact that rewrites to nil)?
 (defun strengthen-facts (facts print rules state result-array-stobj)

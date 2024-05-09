@@ -1,7 +1,7 @@
 ; JVM-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,6 +28,8 @@
 (in-theory (disable member-equal-becomes-memberp)) ;causes problems
 
 (local (in-theory (disable myquotep natp-of-nth-from-all-natp))) ; for speed
+
+(local (in-theory (enable rationalp-when-natp)))
 
 ;call-stack is now either a nodenum or a quotep
 ;now pops count as -1 (because terms are often represented as a push of a new frame onto a pop of the old stack)
@@ -324,7 +326,7 @@
                          (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                 (not (consp (strip-steps nest dag-array))))
            (<= 0 (strip-steps nest dag-array)))
-  :hints (("Goal" :in-theory (enable <=-of-0-when-0-natp))))
+  :hints (("Goal" :in-theory (enable <=-of-0-when-natp))))
 
 (local
  (defthm not-consp-when-not-consp-of-strip-steps
@@ -399,7 +401,11 @@
                            ((when (eq :error left-status)) (mv :error nil nil))
                            ((mv right-status right-sh right-pc)
                             (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack dag-array))
-                           ((when (eq :error right-status)) (mv :error nil nil)))
+                           ((when (eq :error right-status)) (mv :error nil nil))
+                           ;; There is a :step-present, so there is an unsimplified step around a make-state!
+                           ;; Maybe we hit a step limit.
+                           ((when (or (eq :step-present left-status) (eq :step-present right-status)))
+                            (mv :step-present nil nil)))
                         (if (eq :ready left-status)
                             (if (eq :ready right-status)
                                 ;; First compare the stack heights (preferring to
@@ -419,10 +425,8 @@
                           (if (eq :ready right-status)
                               ;; Only right is ready:
                               (mv :ready right-sh right-pc)
-                            ;; Neither is ready:
-                            (if (or (eq :step-present left-status) (eq :step-present right-status))
-                                (mv :step-present nil nil)
-                              (mv :finished nil nil)))))))
+                            ;; Neither is ready: ;; todo: this is now already checked above
+                            (mv :finished nil nil))))))
                 (if (eq 'jvm::obtain-and-throw-exception fn)
                     (progn$ (cw "(Exception branch detected (will try to prune it later).)~%")
                             (mv :finished nil nil))
@@ -454,18 +458,15 @@
                                   (if (eq 'jvm::make-state stripped-expr-fn)
                                       (mv :step-present nil nil)
                                     ;; Avoid printing anything here, because steps can stack up around a call to jvm::obtain-and-throw-exception.
-                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new))
+                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new)) ; todo: what about jvm::error-state?
                                         (mv :finished nil nil)
                                       (prog2$ (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls.~%" stripped-expr)
                                               (mv :error nil nil)))))))))
                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
-                              (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
+                              ;;(er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
+                              ;; When this was an error, symbolic execution failures were harder to debug.
+                              (cw "WARNING: Unexpected state term: ~X01.~%" expr nil)
                               (mv :error nil nil))))))))))))))
-
-(local
- (defthm rationalp-when-natp
-   (implies (natp x)
-            (rationalp x))))
 
 (defthm rationalp-of-mv-nth-1-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
   (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))

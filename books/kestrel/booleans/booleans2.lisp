@@ -11,14 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "booleans") ;reduce?
+;(include-book "booleans") ;reduce?
 
 (defthm xor-associative
-  (implies (and (booleanp a)
-                (booleanp b)
-                (booleanp c))
-           (equal (xor (xor a b) c)
-                  (xor a (xor b c))))
+  (equal (xor (xor a b) c)
+         (xor a (xor b c)))
   :hints (("Goal" :in-theory (enable xor))))
 
 (defthm xor-nil

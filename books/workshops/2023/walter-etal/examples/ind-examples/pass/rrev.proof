@@ -1,0 +1,154 @@
+
+(definec aapp (a :tl b :tl) :tl
+  (if (endp a)
+      b
+    (cons (first a) (aapp (rest a) b))))
+
+(definec rrev (x :tl) :tl
+  (if (endp x)
+      nil
+    (aapp (rrev (rest x)) (list (first x)))))
+
+
+(definec revt (x :tl acc :tl) :tl
+  (if (endp x)
+      acc
+    (revt (rest x) (cons (first x) acc))))
+
+;; Non-recursive version of rev that uses rev-tl
+(definec revst (x :tl) :tl
+  (revt x nil))
+
+;; TODO : should add ability to write defthms
+(defthm assoc-append
+(implies (and (tlp x) (tlp y) (tlp z))
+         (equal (aapp x (aapp y z)) (aapp (aapp x y) z))))
+
+
+Lemma revt-rrev-help:
+(implies (and (tlp x)
+              (tlp acc))
+         (equal (revt x acc)
+                (aapp (rrev x) acc)))
+
+Proof by: Induction on (revt x acc)
+
+Induction Case 0:
+(implies (not (and (tlp x)
+		   (tlp acc)))
+	 (implies (and (tlp x)
+		       (tlp acc))
+                  (equal (revt x acc)
+                         (aapp (rrev x) acc))))
+
+Exportation:
+(implies (and (tlp x)
+              (tlp acc)
+              (not (and (tlp x)
+                        (tlp acc))))
+         (equal (revt x acc)
+                (aapp (rrev x) acc)))
+
+Context:
+C1. (tlp x)
+C2. (tlp acc)
+C3. (not (and (tlp x) (tlp acc)))
+
+Derived Context:
+D1. nil { C1, C2, C3, PL }
+
+QED
+
+
+Induction Case 1:
+(implies (endp x)
+	 (implies (and (tlp x)
+		       (tlp acc))	  
+                  (equal (revt x acc)
+                         (aapp (rrev x) acc))))
+
+Exportation:
+(implies (and (tlp x)
+              (tlp acc)
+              (endp x))
+         (equal (revt x acc)
+                (aapp (rrev x) acc)))
+
+Context:
+C1. (tlp x)
+C2. (tlp acc)
+C3. (endp x)
+
+Derived Context:
+D1. (equal x nil) { C1, C3 }
+
+Goal: (equal (revt x acc) (aapp (rrev x) acc))
+
+Proof:
+(revt x acc)
+== { D1, Def revt }
+acc
+== { Def aapp }
+(aapp nil acc)
+== { Def rrev, D1 }
+(aapp (rrev x) acc)
+
+QED
+
+
+Induction Case 2:
+(implies (and (not (endp x))
+	      (implies (and (tlp (cdr x))
+			    (tlp (cons (car x) acc)))
+		       (equal (revt (cdr x) (cons (car x) acc))
+			      (aapp (rrev (cdr x)) (cons (car x) acc)))))
+	 (implies (and (tlp x)
+		       (tlp acc))
+                  (equal (revt x acc)
+                         (aapp (rrev x) acc))))
+
+Exportation:
+(implies (and (tlp x)
+              (tlp acc)
+              (not (endp x))
+              (implies (and (tlp (cdr x))
+                            (tlp (cons (car x) acc)))
+                       (equal (revt (cdr x) (cons (car x) acc))
+                              (aapp (rrev (cdr x)) (cons (car x) acc)))))
+         (equal (revt x acc)
+                (aapp (rrev x) acc)))
+
+Context:
+C1. (tlp x)
+C2. (tlp acc)
+C3. (not (endp x))
+C4. (implies (and (tlp (cdr x))
+                  (tlp (cons (car x) acc)))
+             (equal (revt (cdr x) (cons (car x) acc))
+                    (aapp (rrev (cdr x)) (cons (car x) acc))))
+
+Derived Context:
+D1. (tlp (cdr x)) { C1, C3, Def tlp }
+D2. (tlp (cons (car x) acc)) { C2, C3, Def tlp }
+D3. (equal (revt (cdr x) (cons (car x) acc))
+           (aapp (rrev (cdr x)) (cons (car x) acc))) { D1, D2, C4, MP }
+
+Goal: (equal (revt x acc) (aapp (rrev x) acc))
+
+Proof:
+(revt x acc)
+== { Def revt, C3 }
+(revt (cdr x) (cons (car x) acc))
+== { D3 }
+(aapp (rrev (cdr x)) (cons (car x) acc))
+== { Def aapp, car-cdr axioms }
+(aapp (rrev (cdr x)) (aapp (list (car x)) acc))
+== { Lemma assoc-append ((x (rrev (cdr x))) (y (list (car x))) (z acc)) }
+(aapp (aapp (rrev (cdr x)) (list (car x))) acc)
+== { C3, Def rrev, car-cdr axioms }
+(aapp (rrev x) acc)
+
+QED
+
+
+QED

@@ -12,5 +12,6 @@
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 ;(include-book "../primes/portcullis")
 (include-book "portcullis")
+(include-book "projects/numbers/portcullis" :dir :system)
 (reset-prehistory)
 (in-package "PRIMES")

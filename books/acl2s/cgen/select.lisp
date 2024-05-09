@@ -12,6 +12,10 @@
 (include-book "cgen-state")
 (include-book "type")
 
+(defttag t)
+(acl2::set-register-invariant-risk nil)
+(defttag nil)
+
 (def separate-const/simple-hyps. (ts wrld Hc. Hs. Ho.)
   (decl :sig ((pseudo-term-list plist-world 
                pseudo-term-list pseudo-term-list pseudo-term-list) 
@@ -46,24 +50,16 @@
       (&          (add-others-and-recurse...)))))))
 
 
-
-
-;identify (equal x y)
-(defun equiv-hyp? (hyp)
-  (and (= 3 (len hyp))
-       (member-eq (car hyp) '(equal = eq eql));TODO
-       (proper-symbolp (second hyp))
-       (proper-symbolp (third hyp))))
-
-
 (mutual-recursion
 (defun possible-constant-value-expressionp-lst (expr-lst)
+  (declare (xargs :guard t))
   (if (atom expr-lst)
     t
     (and (possible-constant-value-expressionp (car expr-lst))
          (possible-constant-value-expressionp-lst (cdr expr-lst)))))
 
 (defun possible-constant-value-expressionp (expr)
+  (declare (xargs :guard t))
    (cond ((null expr) t);if nil
          ((defdata::possible-constant-value-p expr) t); if a constant
          ((atom expr) (defdata::possible-constant-value-p expr));if an atom, it has to go through this
@@ -74,8 +70,8 @@
 
 ;identify (equal 3 x) or (equal x 42)
 (defun constant-hyp? (hyp)
-  (and (= 3 (len hyp))
-       (member-eq (car hyp) '(equal = eq eql))
+  (declare (xargs :guard t))
+  (and (equiv-term? hyp)
        (or (and (proper-symbolp (second hyp))
                 (possible-constant-value-expressionp (third hyp)))
            (and (proper-symbolp (third hyp))
@@ -83,24 +79,27 @@
 
 ;identify (mget keyword x) and return x
 (defun mget-term-var (term recordp)
-  (and (= (len term) 3)
-       (member-eq (car term) '(acl2::mget acl2::g g))
+  (declare (xargs :guard t))
+  (and (true-listp term)
+       (= (len term) 3)
+       (member-equal (car term) '(acl2::mget acl2::g g))
        (quotep (cadr term))
+       (true-listp (cadr term))
        (implies recordp (keywordp (acl2::unquote (cadr term))))
        (proper-symbolp (third term))
        (third term)))
 
-
 (defun mget-hyp-var (hyp recordp)
+  (declare (xargs :guard t))
   (or (mget-term-var hyp recordp)
-      (and (= 3 (len hyp))
-           (member-eq (car hyp) '(equal = eq eql))
+      (and (equiv-term? hyp)
            (or (mget-term-var (second hyp) recordp)
                (mget-term-var (third hyp) recordp)))))
            
 ;chyp=(equal x <const>) or (equal <const> x)
 ;gives (mv x <const>)
 (defun destruct-simple-hyp (chyp)
+  (declare (xargs :guard (>= (len chyp) 3)))
   (if (proper-symbolp (second chyp))
       (mv (second chyp) (third chyp))
     (mv (third chyp) (second chyp))))

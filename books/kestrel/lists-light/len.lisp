@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function len.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -75,9 +75,17 @@
 
 (theory-invariant (incompatible (:rewrite len-of-cdr) (:definition len)))
 
+;rename
 (defthmd consp-of-cdr
   (equal (consp (cdr x))
          (< 1 (len x)))
+  :hints (("Goal" :in-theory (e/d (len) (len-of-cdr)))))
+
+;loops with cdr-iff
+(defthmd <-of-1-and-len-when-true-listp
+  (implies (true-listp x)
+           (iff (< 1 (len x))
+                (cdr x)))
   :hints (("Goal" :in-theory (e/d (len) (len-of-cdr)))))
 
 ;pretty aggressive

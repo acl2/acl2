@@ -226,6 +226,20 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     (implies (not (member v (sv::svex-vars x)))
              (not (member v (sv::svex-vars (svex-extend type width x)))))))
 
+(define 4vec-extend ((type vl-exprsign-p)
+                     (width natp)
+                     (x sv::4vec-p))
+  :short "Returns an 4vec representing the sign- or zero-extension of x at the given width."
+
+  :long "<p>We don't have to extend/truncate operands when translating VL
+expressions like @('a & b'), but we do need to do it to the inputs of
+expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
+
+  :returns (sv sv::4vec-p)
+  (if (vl-exprsign-equiv type :vl-signed)
+      (sv::4vec-sign-ext (sv::2vec (lnfix width)) x)
+    (sv::4vec-zero-ext (sv::2vec (lnfix width)) x)))
+
 
 
 #!sv
@@ -303,6 +317,75 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
 
   (memoize 'svex-reduce-consts :condition '(svex-case x :call)))
 
+#!sv
+(define svexlist-args-extract-constants ((x svexlist-p))
+  :returns (vals maybe-4veclist-p)
+  (if (Atom x)
+      nil
+    (cons (b* ((new (svex-reduce-consts (car x))))
+            (svex-case new
+              :quote new.val
+              :otherwise nil))
+          (svexlist-args-extract-constants (cdr x)))))
+
+(define vl-function-map-check-matching ((specialization sv::maybe-4veclist-p)
+                                        (actuals sv::maybe-4veclist-p))
+  :returns (match maybe-natp :rule-classes :type-prescription)
+  (b* (((when (atom specialization))
+        (and (atom actuals) 0))
+       ((unless (consp actuals)) nil)
+       (spec1 (car specialization))
+       (act1 (car actuals))
+       ((when (not spec1))
+        (vl-function-map-check-matching (cdr specialization) (cdr actuals)))
+       ((unless (and act1 (sv::4vec-equiv spec1 act1)))
+        nil)
+       (rest (vl-function-map-check-matching (cdr specialization) (cdr actuals))))
+    (and rest (+ 1 rest)))
+  ///
+  (local (defthm car-of-maybe-4veclist-fix
+           (equal (car (sv::maybe-4veclist-fix x))
+                  (sv::maybe-4vec-fix (car x)))
+           :hints(("Goal" :in-theory (enable sv::maybe-4veclist-fix
+                                             sv::maybe-4vec-fix)))))
+
+  (local (defthm maybe-4vec-fix-when-exists
+           (implies x
+                    (equal (sv::maybe-4vec-fix x)
+                           (sv::4vec-fix x)))
+           :hints(("Goal" :in-theory (enable sv::maybe-4vec-fix))))))
+        
+    
+
+(define vl-function-map-find-matching-aux ((x vl-function-specialization-map-p)
+                                           (args sv::maybe-4veclist-p))
+  :returns (mv (score maybe-natp :rule-classes :type-prescription)
+               (match (implies score (vl-function-specialization-p match))))
+  (b* (((when (atom x)) (mv nil nil))
+       ((unless (mbt (consp (car x))))
+        (vl-function-map-find-matching-aux (cdr x) args))
+       ((cons specxn (vl-function-specialization match)) (car x))
+       ((unless match.successp)
+        (vl-function-map-find-matching-aux (cdr x) args))
+       (score (vl-function-map-check-matching specxn args))
+       ((unless score)
+        (vl-function-map-find-matching-aux (cdr x) args))
+       ((mv rest-score rest-match) (vl-function-map-find-matching-aux (cdr x) args))
+       ((unless (and rest-score (> rest-score score)))
+        (mv score (vl-function-specialization-fix match))))
+    (mv rest-score rest-match))
+  ///
+  (local (in-theory (enable vl-function-specialization-map-fix)))
+  (local #!fty (set-deffixequiv-default-hints
+                ((deffixequiv-expand-hint fnname)))))
+
+
+(define vl-function-map-find-matching ((x vl-function-specialization-map-p)
+                                       (args sv::maybe-4veclist-p))
+  :returns (match (implies match (vl-function-specialization-p match)))
+  (b* (((mv score match) (vl-function-map-find-matching-aux x args)))
+    (and score match)))
+
 ;; #!sv
 ;; (define svex-maybe-reduce-to-const ((x svex-p))
 ;;   :returns (x1 svex-p)
@@ -346,27 +429,36 @@ expressions like @('a < b'), to chop off any garbage in the upper bits.</p>"
     (logior (ash rest 8) charval)))
 
 
+(define vl-value-to-4vec ((x vl-value-p))
+  :prepwork ((local (defthm vl-bit-p-of-vl-extint->value-forward
+                      (vl-bit-p (vl-extint->value x))
+                      :rule-classes ((:forward-chaining :trigger-terms ((vl-extint->value x)))))))
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (val sv::4vec-p))
+  (vl-value-case x
+    :vl-constint (mv nil (4vec-extend x.origsign x.origwidth (sv::2vec x.value)))
+    :vl-weirdint (mv nil (4vec-extend x.origsign (len x.bits)
+                                      (vl-bitlist->4vec (vl-weirdint->bits x))))
+    :vl-extint   (mv nil (case x.value
+                           (:vl-1val (sv::2vec -1))
+                           (:vl-0val (sv::2vec 0))
+                           (:vl-xval (sv::4vec-x))
+                           (:vl-zval (sv::4vec-z))))
+    :vl-string   (mv nil (sv::2vec (vl-string->bits x.value (length x.value))))
+    :otherwise   (mv (vmsg "Unsupported value type: ~a0" (make-vl-literal :val x))
+                     (sv::4vec-x))))
+
 (define vl-value-to-svex ((x vl-value-p))
   :prepwork ((local (defthm vl-bit-p-of-vl-extint->value-forward
                       (vl-bit-p (vl-extint->value x))
                       :rule-classes ((:forward-chaining :trigger-terms ((vl-extint->value x)))))))
   :returns (mv (err (iff (vl-msg-p err) err))
                (svex sv::svex-p))
-  (vl-value-case x
-    :vl-constint (mv nil (svex-extend x.origsign x.origwidth (svex-int x.value)))
-    :vl-weirdint (mv nil (svex-extend x.origsign (len x.bits)
-                                      (sv::svex-quote (vl-bitlist->4vec (vl-weirdint->bits x)))))
-    :vl-extint   (mv nil (case x.value
-                           (:vl-1val (svex-int -1))
-                           (:vl-0val (svex-int 0))
-                           (:vl-xval (svex-x))
-                           (:vl-zval (sv::svex-quote (sv::4vec-z)))))
-    :vl-string   (mv nil (svex-int (vl-string->bits x.value (length x.value))))
-    :otherwise   (mv (vmsg "Unsupported value type: ~a0" (make-vl-literal :val x))
-                     (svex-x)))
+  (b* (((mv err 4vec) (vl-value-to-4vec x)))
+    (mv err (sv::svex-quote 4vec)))
   ///
-  (defret vars-of-vl-value-to-svex
-    (not (member v (sv::svex-vars svex)))))
+  (defret vars-of-<fn>
+    (Equal (sv::svex-vars svex) nil)))
 
 (define vl-select-resolved-p ((x vl-select-p))
   (vl-select-case x
@@ -3320,6 +3412,14 @@ a cons of two vttrees.</p>"
              ;;          :rule-classes :forward-chaining))
              ;; (local (defcong iff iff (and* x y) 1 :hints(("Goal" :in-theory (enable and*)))))
              ;; (local (defcong iff iff (and* x y) 2 :hints(("Goal" :in-theory (enable and*)))))
+
+             (local (defthm assignpat-count-from-concat-parts
+                      (implies (vl-expr-case x :vl-concat)
+                               (< (vl-assignpat-count (vl-assignpat-positional (vl-concat->parts x)))
+                                  (vl-expr-count x)))
+                      :hints (("goal" :expand ((vl-expr-count x)
+                                               (vl-assignpat-count (vl-assignpat-positional (vl-concat->parts x))))))))
+
              )
 
   #||
@@ -3973,12 +4073,13 @@ functions can assume all bits of it are good.</p>"
                           :msg "Unresolved reps in multiple concatenation ~a0"
                           :args (list x))
                   (svex-x)))
-             (reps (vl-resolved->val x.reps))
-             ((unless (<= 0 reps))
-              (mv (vfatal :type :vl-expr-to-svex-fail
-                          :msg "Negative value for reps in multiple concatenation ~a0"
-                          :args (list x))
-                  (svex-x)))
+             (reps (nfix (vl-resolved->val x.reps)))
+             ;; Already warned about this in sizing
+             ;; ((unless (<= 0 reps))
+             ;;  (mv (vfatal :type :vl-expr-to-svex-fail
+             ;;              :msg "Negative value for reps in multiple concatenation ~a0"
+             ;;              :args (list x))
+             ;;      (svex-x)))
              ((when (member nil sizes))
               (mv vttree (svex-x)))
              (svex
@@ -4297,22 +4398,24 @@ functions can assume all bits of it are good.</p>"
                       :msg "Bad arguments in function call ~a0: ~@1"
                       :args (list x err))
               (svex-x) nil))
-         ((unless item.function)
-          (mv (vfatal :type :vl-expr-to-svex-fail
-                      :msg "Function hasn't been preprocessed (unresolved ~
-                           body function): ~a0"
-                      :args (list x))
-              (svex-x) nil))
          ((vmv vttree type-errs args-svex)
           (vl-exprlist-to-svex-datatyped
            x.args
            port-types
            ss scopes :compattype :assign))
          ((wvmv vttree) (vl-subexpr-type-error-list-warn x type-errs ss))
+         (const-args (sv::svexlist-args-extract-constants args-svex))
+         (function (vl-function-map-find-matching item.function-map const-args))
+         ((unless function)
+          (mv (vfatal :type :vl-expr-to-svex-fail
+                      :msg "Function ~a0 had no compilation for arguments with the following constants: ~a1"
+                      :args (list x.name const-args))
+              (svex-x) nil))
+         ((vl-function-specialization function))
          (comp-alist (vl-function-pair-inputs-with-actuals item.portdecls args-svex))
          ((with-fast comp-alist))
-         (ans (sv::svex-subst-memo item.function comp-alist))
-         (constraints (sv::constraintlist-subst-memo item.constraints comp-alist))
+         (ans (sv::svex-subst-memo function.function comp-alist))
+         (constraints (sv::constraintlist-subst-memo function.constraints comp-alist))
          (vttree (vttree-add-constraints constraints vttree)))
       (clear-memoize-table 'sv::svex-subst-memo)
       (mv (vttree-fix vttree) ans item.rettype)))
@@ -4536,6 +4639,17 @@ functions can assume all bits of it are good.</p>"
              (type-err (vl-datatype-compatibility-type-error type pattype compattype)))
           (mv vttree type-err svex))
 
+        :vl-concat
+        ;; Special case: pretend it's a positional assign pattern rather than a concat :(
+        (b* ((pattern (make-vl-assignpat-positional :vals x.parts))
+             ((vmv vttree type-err svex)
+              (vl-assignpat-to-svex pattern type ss scopes x)))
+          (mv (vwarn :type :vl-concat-treated-as-assignpat
+                     :msg "Treated concatenation ~a0 as positional assignment pattern ~a1 in non-packed type context ~a2"
+                     :args (list x (make-vl-pattern :pat pattern) type))
+              type-err svex))
+             
+        
         :vl-special
         (mv (vfatal :type :vl-expr-to-svex-fail
                     :msg "Don't yet support ~a0."
@@ -4742,7 +4856,7 @@ functions can assume all bits of it are good.</p>"
                           :args (list orig-x))
                   nil
                   (svex-x)))
-             (reps (vl-resolved->val x.reps))
+             (reps (nfix (vl-resolved->val x.reps)))
              ((unless (eql (* reps (len subexprs)) arrsize))
               (mv (vfatal :type :vl-expr-to-svex-fail
                           :msg "Wrong number of elements in positional assignment ~

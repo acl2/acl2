@@ -1,7 +1,7 @@
-; The Axe equivalence checker
+; Test cases for the Axe Equivalence Checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,36 +12,94 @@
 
 (in-package "ACL2")
 
-(include-book "axe-types")
-;(include-book "evaluator") ; todo
-(include-book "evaluator-basic")
+(include-book "axe-types") ; for stuff like bv-type-width
+(include-book "evaluator-basic") ; for the :eval type
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+;(local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
 (local (in-theory (disable randp symbol-alistp)))
 
+(in-theory (disable mv-nth))
+
 ;move
-(defthm integerp-of-mv-nth-0-of-genrandom
-  (implies (integerp max) ; gen?
-           (integerp (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
+(local
+ (defthm integerp-of-mv-nth-0-of-genrandom
+   (implies (integerp max) ; gen?
+            (integerp (mv-nth 0 (genrandom max rand))))
+   :hints (("Goal" :in-theory (enable genrandom)))))
 
-(defthm <=-of-0-and-mv-nth-0-of-genrandom
-  (implies (natp max) ; gen?
-           (<= 0 (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
+(local
+ (defthm <=-of-0-and-mv-nth-0-of-genrandom
+   (implies (natp max) ; gen?
+            (<= 0 (mv-nth 0 (genrandom max rand))))
+   :hints (("Goal" :in-theory (enable genrandom)))))
 
-(defthm natp-of-mv-nth-0-of-genrandom
-  (implies (natp max) ; gen?
-           (natp (mv-nth 0 (genrandom max rand))))
-  :hints (("Goal" :in-theory (enable genrandom))))
+(local
+ (defthm natp-of-mv-nth-0-of-genrandom
+   (implies (natp max) ; gen?
+            (natp (mv-nth 0 (genrandom max rand))))
+   :hints (("Goal" :in-theory (enable genrandom)))))
+
+(local
+ (defthm integerp-of-mv-nth-0-of-genrandom-of-expt2
+   (integerp (mv-nth 0 (genrandom (expt 2 size) rand)))
+   :hints (("Goal" :in-theory (enable genrandom)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; The :list type:  (:list element-type len-type)
+;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
+;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
+;; TODO: Redo the bv-array type and move this elsewhere.
+(defund list-typep (type)
+  (declare (xargs :guard t))
+  (and (true-listp type)
+       (eq :list (first type))
+       (eql 3 (len type)) ;this might be overkill to check in some cases?
+       ))
+
+(defund make-list-type (element-type len-type)
+  (declare (xargs :guard t))
+  `(:list ,element-type ,len-type))
+
+(defthm list-typep-of-make-list-type
+  (list-typep (make-list-type element-type len-type))
+  :hints (("Goal" :in-theory (enable list-typep make-list-type))))
+
+(defund list-type-element-type (type)
+  (declare (xargs :guard (list-typep type)
+                  :guard-hints (("Goal" :in-theory (enable list-typep)))))
+  (second type))
+
+(defund list-type-len-type (type)
+  (declare (xargs :guard (list-typep type)
+                  :guard-hints (("Goal" :in-theory (enable list-typep)))))
+  (third type))
+
+(defthm list-type-len-type-of-make-list-type
+  (equal (list-type-len-type (make-list-type element-type len-type))
+         len-type)
+  :hints (("Goal" :in-theory (enable list-type-len-type make-list-type))))
+
+(defthm list-type-element-type-of-make-list-type
+  (equal (list-type-element-type (make-list-type element-type len-type))
+         element-type)
+  :hints (("Goal" :in-theory (enable list-type-element-type make-list-type))))
+
+;todo, but it can also be a quoted constant
+;; (thm
+;;  (implies (list-typep type)
+;;           (axe-typep (list-type-len-type type)))
+;;  :hints (("Goal" :in-theory (enable list-type-len-type list-typep))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,9 +126,7 @@
 
 (defthm integerp-of-mv-nth-0-of-gen-random-bv
   (integerp (mv-nth 0 (gen-random-bv size rand)))
-  :hints (("Goal" :in-theory (enable gen-random-bv
-                                     genrandom ;todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable gen-random-bv))))
 
 (verify-guards gen-random-bv)
 
@@ -111,14 +167,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Represents the type of a value for testing purposes (see also axe-typep).
 (defund test-case-typep (type)
   (declare (xargs :guard t
                   :hints (("Goal" :in-theory (enable list-type-len-type
                                                      list-type-element-type
                                                      list-typep)))))
-  (or (myquotep type)
-      (symbolp type) ; look up a previous val
+  (or (myquotep type) ; a quoted constant (type is a singleton set containing that value)
+      (symbolp type) ; look up a previous val -- todo: tag this?
+      ;; todo: (boolean-typep type)
       (bv-typep type)
+      (bv-array-typep type)
       (and (list-typep type)
            (test-case-typep (list-type-element-type type))
            ;; todo: must be a scalar type:
@@ -141,6 +200,18 @@
            (consp (cdr type)) ; must be at least one element
            )))
 
+(defthm test-case-typep-of-make-bv-type
+  (implies (natp width)
+           (test-case-typep (make-bv-type width)))
+  :hints (("Goal" :in-theory (enable test-case-typep make-bv-type))))
+
+(defthm test-case-typep-of-make-bv-array-type
+  (implies (and (posp element-width)
+                (integerp len)
+                (<= 2 len))
+           (test-case-typep (make-bv-array-type element-width len)))
+  :hints (("Goal" :in-theory (enable test-case-typep))))
+
 ;; Recognize an alist from vars to their "test types"
 (defund test-case-type-alistp (alist)
   (declare (xargs :guard t))
@@ -153,6 +224,13 @@
              (and (symbolp var)
                   (test-case-typep type)
                   (test-case-type-alistp (rest alist))))))))
+
+(defthm test-case-type-alistp-of-cons-of-cons
+  (equal (test-case-type-alistp (cons (cons var type) alist))
+         (and (symbolp var)
+              (test-case-typep type)
+              (test-case-type-alistp alist)))
+  :hints (("Goal" :in-theory (enable test-case-type-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,10 +247,13 @@
                                              list-type-len-type
                                              bv-typep
                                              list-typep
-                                             axe-typep)
+                                             axe-typep
+                                             make-bv-type
+                                             bv-array-typep
+                                             bv-array-type-element-width)
                                             (natp))))
                    :guard-hints (("Goal"
-                                  :in-theory (e/d (list-typep BV-TYPEP test-case-typep)
+                                  :in-theory (e/d (list-typep BV-TYPEP bv-array-typep test-case-typep bv-array-type-element-width)
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (erp-nil) (unquote type) rand))
@@ -235,8 +316,13 @@
                         (mv (erp-t) nil rand))
               (prog2$ (cw "List length: ~x0.~%" len)
                       (gen-random-values len element-type rand var-value-alist)))))
+         ((bv-array-typep type)
+          (b* ((element-width (bv-array-type-element-width type))
+               (len (bv-array-type-len type)))
+            (prog2$ (cw "Bv-array length: ~x0.~%" len)
+                    (gen-random-values len (make-bv-type element-width) rand var-value-alist))))
          (t (mv (erp-t)
-                (er hard? 'gen-random-value "Unknown type: ~x0" type)
+                (er hard 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
  ;;returns (mv erp values rand)
@@ -267,9 +353,15 @@
               (test-casep test-case)))
   :hints (("Goal" :in-theory (enable test-casep))))
 
+(defthm test-casesp-forward-to-symbol-alistp
+  (implies (test-casep case)
+           (symbol-alistp case))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable test-casep))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a true list of test cases.
+;; Recognize a true-list of test cases.
 (defund test-casesp (test-cases)
   (declare (xargs :guard t))
   (if (atom test-cases)
@@ -302,6 +394,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp test-case rand).
+;; Pairs each variable with a random value, according to test-case-type-alist.
 (defund make-test-case (test-case-type-alist acc rand)
   (declare (xargs :guard (and (test-case-type-alistp test-case-type-alist)
                               (test-casep acc))
@@ -342,8 +435,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv erp test-cases rand), where each test case is an alist from vars to values
-;should we give them numbers?
+;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
 (defund make-test-cases-aux (test-cases-left test-case-number test-case-type-alist assumptions print acc rand)
   (declare (xargs :guard (and (natp test-cases-left)
                               (natp test-case-number)
@@ -388,7 +480,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
+;; We drop any test cases that fail to satisfy the assumptions.
 ;; TODO: Consider passing in interpreted-functions?
+;; TODO: Add print arg and pass to make-test-cases-aux.
 (defund make-test-cases (test-case-count test-case-type-alist assumptions rand)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
@@ -401,7 +495,6 @@
                           (mv erp test-cases rand)))))
 
 (defthm test-casesp-of-mv-nth-1-of-make-test-cases
-  (implies (and (test-case-type-alistp test-case-type-alist)
-                (test-casesp acc))
+  (implies (test-case-type-alistp test-case-type-alist)
            (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
   :hints (("Goal" :in-theory (enable make-test-cases))))

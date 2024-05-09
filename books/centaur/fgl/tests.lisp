@@ -61,17 +61,25 @@
       (fgl-thm ,form)
       :with-output-off nil)
      (make-event
-      (b* (((mv err (cons ?stobjs-out values) state)
+      (b* ((debug-info (interp-st->debug-info interp-st))
+           (form ',form)
+           ((unless (and (consp debug-info)
+                         (equal (car debug-info) "Counterexample.")
+                         (symbol-alistp (cdr debug-info))))
+            (er hard? 'check-counterexample
+                "No counterexample stored in debug-info for ~x0~%" form)
+            (mv t nil state))
+           ((mv err (cons ?stobjs-out values) state)
             (with-guard-checking-error-triple nil
               (trans-eval `(let ,(alist-to-let-bindings (interp-st->debug-info interp-st))
                              ,',form)
                           '(check-counterexample ,form)
                           state t)))
            ((when err)
-            (er hard? 'check-counterexample "Failed to evaluate the counterexample for ~x0~%" ',form)
+            (er hard? 'check-counterexample "Failed to evaluate the counterexample for ~x0~%" form)
             (mv t nil state))
            ((when values)
-            (er hard? 'check-counterexample "False counterexample for ~x0~%" ',form)
+            (er hard? 'check-counterexample "False counterexample for ~x0~%" form)
             (mv t nil state)))
         (value '(value-triple :ok))))))
 
@@ -736,8 +744,6 @@
          (src2-lane (if maskbit (bitops::nth-slice32 lane src2) 0)))
     (if maskbit (* src1-lane src2-lane) 0)))
 
-(include-book "std/testing/eval" :dir :system)
-
 
 (local
  (progn
@@ -804,3 +810,46 @@
 (check-counterexample
  (not (equal (+ (loghead 3 x) (loghead 4 y)) 9)))
  
+
+
+(acl2::must-fail
+ (fgl-thm
+  (implies (and (unsigned-byte-p 4 x)
+                (> x 20)) ;; vacuity check should catch this
+           (equal x x))))
+
+(fgl-thm
+ (implies (and (unsigned-byte-p 4 x)
+               (> x 20)) ;; vacuity check should catch this but we're turning it off
+          (equal x x))
+ :skip-vacuity-check t)
+
+
+(include-book "centaur/bitops/int-sqrt" :dir :system)
+
+
+(encapsulate nil
+  (local (defun default-exhaustive-test-config ()
+           (declare (xargs :guard t))
+           (make-fgl-exhaustive-test-config)))
+  (local (defattach fgl-toplevel-sat-check-config default-exhaustive-test-config))
+  
+  (def-fgl-thm int-sqrt-correct
+    (implies (unsigned-byte-p 16 x)
+             (b* ((sqrt (bitops::int-sqrt x))
+                  (sqrt+1 (+ 1 sqrt))
+                  (lower-bound (* sqrt sqrt))
+                  (upper-bound (* sqrt+1 sqrt+1)))
+               (and (<= lower-bound x)
+                    (< x upper-bound)))))
+
+  (check-counterexample
+    (implies (and (unsigned-byte-p 16 x)
+                  (equal (integer-length x) 16))
+             (b* ((sqrt (bitops::int-sqrt x))
+                  (sqrt+1 (+ 1 sqrt))
+                  (lower-bound (* sqrt sqrt))
+                  (upper-bound (* sqrt+1 sqrt+1)))
+               (and (< lower-bound x)
+                    (< x upper-bound))))))
+                

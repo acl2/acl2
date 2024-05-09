@@ -1,0 +1,2 @@
+; Avoid randomness (see ../permute-randomly.lisp):
+(f-put-global 'acl2data-testing t state)

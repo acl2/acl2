@@ -57,7 +57,7 @@
 (local
  (defthm x86-div-guard-proof-helper-1
    (implies (n16p rr16-a)
-	    (equal (logand 18446462598732906495 rr16-a)
+	    (equal (logand 18446744069414649855 rr16-a)
 		   rr16-a))
    :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))))
 
@@ -145,7 +145,7 @@
 		     rAX
 		   (mbe :logic (part-install rDX rAX
 					     :low   (ash reg/mem-size 3)
-					     :width (ash reg/mem-size 4))
+					     :width (ash reg/mem-size 3))
 			:exec (logior (ash rDX (ash reg/mem-size 3)) rAX))))
        ((mv overflow? quotient remainder)
 	(div-spec reg/mem-size dividend reg/mem))
@@ -266,7 +266,7 @@
 		     rAX
 		   (mbe :logic (part-install rDX rAX
 					     :low   (ash reg/mem-size 3)
-					     :width (ash reg/mem-size 4))
+					     :width (ash reg/mem-size 3))
 			:exec (logior (ash rDX (ash reg/mem-size 3)) rAX))))
 
        ;; Compute the result

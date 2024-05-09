@@ -125,6 +125,18 @@ CacheConstMethodsShallowGuardedTests.java
 CacheConstMethodsNoAIJTypes.java
 CacheConstMethodsNoAIJTypesTests.java
 
+HardErrorDeepUnguarded.java
+HardErrorDeepUnguardedEnvironment.java
+
+HardErrorDeepGuarded.java
+HardErrorDeepGuardedEnvironment.java
+
+HardErrorShallowUnguarded.java
+HardErrorShallowUnguardedEnvironment.java
+
+HardErrorShallowGuarded.java
+HardErrorShallowGuardedEnvironment.java
+
 packages1
 packages2
 packages3

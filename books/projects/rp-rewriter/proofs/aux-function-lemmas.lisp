@@ -41,11 +41,12 @@
 
 (include-book "../aux-functions")
 
-(make-flag include-fnc :defthm-macro-name defthm-include-fnc)
+(make-flag include-fnc-fn :defthm-macro-name defthm-include-fnc)
+
 (make-flag rp-termp :defthm-macro-name defthm-rp-termp)
 (make-flag beta-search-reduce :defthm-macro-name defthm-beta-search-reduce)
 #|(make-flag all-falist-consistent :defthm-macro-name
-           defthm-all-falist-consistent)||#
+defthm-all-falist-consistent)||#
 #|(make-flag rp-syntaxp :defthm-macro-name defthm-rp-syntaxp)||#
 (make-flag lambda-exp-free-p :defthm-macro-name defthm-lambda-exp-free-p)
 
@@ -59,7 +60,6 @@
 
 (local
  (in-theory (enable falist-consistent)))
- 
 
 (make-event
  `(defthm is-lambda-implies
@@ -135,16 +135,16 @@
                                      dumb-negate-lit2))))
 
 #|(defthm-remove-return-last
-  (defthm rp-termp-remove-return-last
-    (implies (rp-termp term)
-             (rp-termp (remove-return-last term)))
-    :flag remove-return-last)
-  (defthm rp-term-listp-remove-return-last-subterms
-    (implies (rp-term-listp subterms)
-             (rp-term-listp (remove-return-last-subterms subterms)))
-    :flag remove-return-last-subterms)
-  :hints (("Goal" :in-theory (enable rp-term-listp
-                                     rp-termp))))||#
+(defthm rp-termp-remove-return-last
+(implies (rp-termp term)
+(rp-termp (remove-return-last term)))
+:flag remove-return-last)
+(defthm rp-term-listp-remove-return-last-subterms
+(implies (rp-term-listp subterms)
+(rp-term-listp (remove-return-last-subterms subterms)))
+:flag remove-return-last-subterms)
+:hints (("Goal" :in-theory (enable rp-term-listp
+rp-termp))))||#
 
 (defthm-rp-termp
   (defthm rp-termp-implies-pseudo-termp
@@ -182,16 +182,16 @@
   (local
    (in-theory (enable is-rp)))
 
-;; Removed in July 2021 by Matt Kaufmann since the right-hand sides of the
-;; generated rules are now all constants, due to enhancements to
-;; remove-guard-holders.
-#||
+  ;; Removed in July 2021 by Matt Kaufmann since the right-hand sides of the
+  ;; generated rules are now all constants, due to enhancements to
+  ;; remove-guard-holders.
+  #||
   (defthm is-synp-implies
-    (implies (is-synp term)
-             (CASE-MATCH TERM (('SYNP & & &) T)
-               (& NIL)))
-    :hints (("Goal" :in-theory (enable is-synp))))
-||#
+  (implies (is-synp term)
+  (CASE-MATCH TERM (('SYNP & & &) T)
+  (& NIL)))
+  :hints (("Goal" :in-theory (enable is-synp))))
+  ||#
 
   (defthm pseudo-termlistp-extract-from-rp
     (implies (and (rp-termp term)
@@ -278,7 +278,7 @@
   :hints (("Goal" :in-theory (enable rp-term-listp
                                      context-syntaxp))))
 
-  ;; acl2::beta-eval-to-beta-reduce-lambda-expr
+;; acl2::beta-eval-to-beta-reduce-lambda-expr
 
 (defthm-beta-search-reduce
   (defthm eval-of-beta-search-reduce
@@ -326,86 +326,86 @@
 ;;                                      rp-stat-add-to-rules-used-ex-cnt))))
 
 #|(defthm all-falist-consistent-bindings-lemma1
-  (implies (all-falist-consistent-bindings bindings)
-           (all-falist-consistent (cdr (assoc-equal term bindings)))))||#
+(implies (all-falist-consistent-bindings bindings)
+(all-falist-consistent (cdr (assoc-equal term bindings)))))||#
 
 #|(encapsulate
-  nil
+nil
 
-  (local
-   (defthm is-rpl-is-not-is-falist
-     (implies (is-rp term)
-              (not (is-falist term)))
-     :hints (("Goal" :in-theory (enable is-rp is-falist)))))
+(local
+(defthm is-rpl-is-not-is-falist
+(implies (is-rp term)
+(not (is-falist term)))
+:hints (("Goal" :in-theory (enable is-rp is-falist)))))
 
-  (local
-   (defthm lemma2
-     (implies (is-rp term)
-              (and (not (EQUAL (CAR TERM) 'QUOTE))
-                   (CONSP TERM)))
-     :hints (("Goal" :in-theory (enable is-rp is-falist)))))
+(local
+(defthm lemma2
+(implies (is-rp term)
+(and (not (EQUAL (CAR TERM) 'QUOTE))
+(CONSP TERM)))
+:hints (("Goal" :in-theory (enable is-rp is-falist)))))
 
-  (defthm all-falist-consistent-ex-from-rp
-    (implies (all-falist-consistent term)
-             (all-falist-consistent (ex-from-rp term)))
-    :hints (("Goal"
-             :induct (ex-from-rp term)
-             :expand ((all-falist-consistent term))
-             :in-theory (e/d (ex-from-rp)
-                             (IS-FALIST all-falist-consistent)))))
+(defthm all-falist-consistent-ex-from-rp
+(implies (all-falist-consistent term)
+(all-falist-consistent (ex-from-rp term)))
+:hints (("Goal"
+:induct (ex-from-rp term)
+:expand ((all-falist-consistent term))
+:in-theory (e/d (ex-from-rp)
+(IS-FALIST all-falist-consistent)))))
 
-  (defthm all-falist-consistent-put-term-in-cons
-    (implies (all-falist-consistent term)
-             (all-falist-consistent (put-term-in-cons term)))
-    :hints (("Goal" :in-theory (enable put-term-in-cons))))
+(defthm all-falist-consistent-put-term-in-cons
+(implies (all-falist-consistent term)
+(all-falist-consistent (put-term-in-cons term)))
+:hints (("Goal" :in-theory (enable put-term-in-cons))))
 
-  (defthm all-falist-consistent-lst-context-from-rp
-    (implies (and (all-falist-consistent-lst context)
-                  (all-falist-consistent term))
-             (all-falist-consistent-lst (context-from-rp term context)))
-    :hints (("Goal"
-             :induct (context-from-rp term context)
-             :expand ((ALL-FALIST-CONSISTENT-LST (CDDR TERM))
-                      (ALL-FALIST-CONSISTENT-LST (CDR TERM)))
-             :in-theory (e/d (context-from-rp is-rp)))))
+(defthm all-falist-consistent-lst-context-from-rp
+(implies (and (all-falist-consistent-lst context)
+(all-falist-consistent term))
+(all-falist-consistent-lst (context-from-rp term context)))
+:hints (("Goal"
+:induct (context-from-rp term context)
+:expand ((ALL-FALIST-CONSISTENT-LST (CDDR TERM))
+(ALL-FALIST-CONSISTENT-LST (CDR TERM)))
+:in-theory (e/d (context-from-rp is-rp)))))
 
-  (defthm cdr-term-is-all-falist-consistent-lst
-    (implies (and (not (quotep term))
-                  (all-falist-consistent term))
-             (all-falist-consistent-lst (cdr term)))
-    :hints (("Goal"
-             :expand ((ALL-FALIST-CONSISTENT TERM)
-                      (ALL-FALIST-CONSISTENT-LST (CDR TERM)))
-             :in-theory (enable all-falist-consistent
-                                all-falist-consistent-lst
-                                is-falist)))))||#
+(defthm cdr-term-is-all-falist-consistent-lst
+(implies (and (not (quotep term))
+(all-falist-consistent term))
+(all-falist-consistent-lst (cdr term)))
+:hints (("Goal"
+:expand ((ALL-FALIST-CONSISTENT TERM)
+(ALL-FALIST-CONSISTENT-LST (CDR TERM)))
+:in-theory (enable all-falist-consistent
+all-falist-consistent-lst
+is-falist)))))||#
 
 #|(defthm all-falist-consistent-lst-cdr-term-lemma
-  (implies (and (all-falist-consistent term)
-                (not (equal (car term) 'quote)))
-           (all-falist-consistent-lst (cdr term)))
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((all-falist-consistent term)
-                    (FALIST-CONSISTENT TERM)
-                    (ALL-FALIST-CONSISTENT (CADR TERM))
-                    (ALL-FALIST-CONSISTENT-LST (CDR TERM)))
-           :in-theory (enable is-falist all-falist-consistent-lst))))||#
+(implies (and (all-falist-consistent term)
+(not (equal (car term) 'quote)))
+(all-falist-consistent-lst (cdr term)))
+:hints (("Goal"
+:do-not-induct t
+:expand ((all-falist-consistent term)
+(FALIST-CONSISTENT TERM)
+(ALL-FALIST-CONSISTENT (CADR TERM))
+(ALL-FALIST-CONSISTENT-LST (CDR TERM)))
+:in-theory (enable is-falist all-falist-consistent-lst))))||#
 
 #|(defthm-all-falist-consistent
-  (defthm not-include-falist-all-falist-consistent
-    (implies (not (include-fnc term 'falist))
-             (all-falist-consistent term))
-    :flag all-falist-consistent)
-  (defthm not-include-falist-all-falist-consistent-lst
-    (implies (not (include-fnc-subterms lst 'falist))
-             (all-falist-consistent-lst lst))
-    :flag all-falist-consistent-lst)
-  :hints (("Goal"
-           :in-theory (e/d (is-falist
-                            all-falist-consistent-lst
-                            all-falist-consistent)
-                           (falist-consistent)))))||#
+(defthm not-include-falist-all-falist-consistent
+(implies (not (include-fnc term 'falist))
+(all-falist-consistent term))
+:flag all-falist-consistent)
+(defthm not-include-falist-all-falist-consistent-lst
+(implies (not (include-fnc-subterms lst 'falist))
+(all-falist-consistent-lst lst))
+:flag all-falist-consistent-lst)
+:hints (("Goal"
+:in-theory (e/d (is-falist
+all-falist-consistent-lst
+all-falist-consistent)
+(falist-consistent)))))||#
 
 (encapsulate
   nil
@@ -507,7 +507,7 @@
   (consp (car term))
   (equal (len subterms)
   (len (cdr term)))
-;(mv-nth 0 (get-lambda-free-vars-lst subterms)) ;
+;(mv-nth 0 (get-lambda-free-vars-lst subterms)) ; ;
   #|(lambda-exp-free-listp subterms)||#
   (rp-term-listp subterms))
   (rp-termp (cons (car term) subterms)))
@@ -519,7 +519,6 @@
   (is-lambda-strict (cons (car term) subterms))
   (IS-LAMBDA (CONS (CAR TERM) SUBTERMS)))
   :in-theory (e/d () (get-lambda-free-vars))))))||#
-
 
   (defthm rp-termp-cons-car-term-subterms
     (implies (and (rp-termp term)
@@ -547,10 +546,10 @@
   :hints (("Goal" :in-theory (enable append rp-term-listp))))
 
 #|(defthm ALL-FALIST-CONSISTENT-LST-append
-  (implies (and (ALL-FALIST-CONSISTENT-LST lst1)
-                (ALL-FALIST-CONSISTENT-LST lst2))
-           (ALL-FALIST-CONSISTENT-LST (append lst1 lst2)))
-  :hints (("Goal" :in-theory (enable append ALL-FALIST-CONSISTENT-LST))))||#
+(implies (and (ALL-FALIST-CONSISTENT-LST lst1)
+(ALL-FALIST-CONSISTENT-LST lst2))
+(ALL-FALIST-CONSISTENT-LST (append lst1 lst2)))
+:hints (("Goal" :in-theory (enable append ALL-FALIST-CONSISTENT-LST))))||#
 
 (encapsulate
   nil
@@ -607,25 +606,25 @@
                            ()))))
 
 #|(encapsulate
-  nil
-  (local
-   (defthm lemma1
-     (implies (is-rp term)
-              (equal (REMOVE-RETURN-LAST (CADR TERM))
-                     (cadr term)))
-     :hints (("Goal"
-              :in-theory (e/d (is-rp) ())))))
-  (local
-   (DEFTHM IS-RP-IMPLIES-lemma
-                       (IMPLIES (IS-RP TERM)
-                                (CASE-MATCH TERM
-                                            (('RP ('QUOTE TYPE) &)
-                                             (AND (SYMBOLP TYPE)
-                                                  (NOT (EQUAL TYPE 'QUOTE))))
-                                            (& NIL)))
-                       :hints (("Goal"
-                                :in-theory (e/d (is-rp) ())))
-                       :rule-classes :forward-chaining))
+nil
+(local
+(defthm lemma1
+(implies (is-rp term)
+(equal (REMOVE-RETURN-LAST (CADR TERM))
+(cadr term)))
+:hints (("Goal"
+:in-theory (e/d (is-rp) ())))))
+(local
+(DEFTHM IS-RP-IMPLIES-lemma
+(IMPLIES (IS-RP TERM)
+(CASE-MATCH TERM
+(('RP ('QUOTE TYPE) &)
+(AND (SYMBOLP TYPE)
+(NOT (EQUAL TYPE 'QUOTE))))
+(& NIL)))
+:hints (("Goal"
+:in-theory (e/d (is-rp) ())))
+:rule-classes :forward-chaining))
 
 ||#
 
@@ -648,103 +647,103 @@
 ;;     :flag rp-syntaxp-lst))
 
 #|(defthm-remove-return-last
-  (defthm not-include-rp-of-remove-return-last
-    (implies (not (include-fnc term 'rp))
-             (not (include-fnc (remove-return-last term) 'rp)))
-    :flag remove-return-last)
-  (defthm not-include-rp-of-remove-return-last-subterms
-    (implies (not (include-fnc-subterms subterms 'rp))
-             (Not (include-fnc-subterms (remove-return-last-subterms subterms) 'rp)))
-    :flag remove-return-last-subterms))||#
+(defthm not-include-rp-of-remove-return-last
+(implies (not (include-fnc term 'rp))
+(not (include-fnc (remove-return-last term) 'rp)))
+:flag remove-return-last)
+(defthm not-include-rp-of-remove-return-last-subterms
+(implies (not (include-fnc-subterms subterms 'rp))
+(Not (include-fnc-subterms (remove-return-last-subterms subterms) 'rp)))
+:flag remove-return-last-subterms))||#
 
 #|(defthm rp-syntaxp-ex-from-rp
-  (implies (rp-syntaxp term)
-           (rp-syntaxp (ex-from-rp term)))
-  :hints (("Goal"
-           :in-theory (e/d (ex-from-rp
-                            is-rp) ()))))||#
+(implies (rp-syntaxp term)
+(rp-syntaxp (ex-from-rp term)))
+:hints (("Goal"
+:in-theory (e/d (ex-from-rp
+is-rp) ()))))||#
 #|
 (defthm rp-syntaxp-ex-from-rp-lemma
-  (implies (and (rp-syntaxp term)
-                (not (equal (car (ex-from-rp term))
-                            'quote)))
-           (rp-syntaxp-lst (cdr (ex-from-rp term))))
-  :hints (("Goal"
-           :in-theory (e/d (ex-from-rp
-                            is-rp) ()))))
+(implies (and (rp-syntaxp term)
+(not (equal (car (ex-from-rp term))
+'quote)))
+(rp-syntaxp-lst (cdr (ex-from-rp term))))
+:hints (("Goal"
+:in-theory (e/d (ex-from-rp
+is-rp) ()))))
 
 (defthm rp-syntaxp-lst-context-from-rp
-  (implies (and (rp-syntaxp term)
-                (rp-syntaxp-lst context))
-           (rp-syntaxp-lst (context-from-rp term context)))
-  :hints (("Goal"
-           :in-theory (e/d (context-from-rp
-                            is-rp) ()))))
+(implies (and (rp-syntaxp term)
+(rp-syntaxp-lst context))
+(rp-syntaxp-lst (context-from-rp term context)))
+:hints (("Goal"
+:in-theory (e/d (context-from-rp
+is-rp) ()))))
 
 (defthm rp-syntaxp-put-term-in-cons
-  (implies
-   (should-term-be-in-cons rule-lhs term)
-   (and (rp-syntaxp (put-term-in-cons term))
-        (RP-SYNTAXP-LST (CDR (PUT-TERM-IN-CONS term)))))
-  :hints (("Goal"
-           :in-theory (e/d (put-term-in-cons
-                            should-term-be-in-cons) ()))))
+(implies
+(should-term-be-in-cons rule-lhs term)
+(and (rp-syntaxp (put-term-in-cons term))
+(RP-SYNTAXP-LST (CDR (PUT-TERM-IN-CONS term)))))
+:hints (("Goal"
+:in-theory (e/d (put-term-in-cons
+should-term-be-in-cons) ()))))
 
 (encapsulate
-  nil
-  (local
-   (defthm lemma1
-     (IMPLIES
-      (AND
-       (CONSP TERM)
-       (NOT (EQUAL (CAR TERM) 'QUOTE))
-       (NOT (EQUAL (CAR TERM) 'RP))
-       (RP-SYNTAXP-LST
-        (REMOVE-RETURN-LAST-SUBTERMS (CDR TERM)))
-       (RP-SYNTAXP-LST (CDR TERM)))
-      (RP-SYNTAXP (REMOVE-RETURN-LAST TERM)))
-     :hints (("Goal"
-              :cases ((is-return-last term))
-              :in-theory (e/d () ())))))
+nil
+(local
+(defthm lemma1
+(IMPLIES
+(AND
+(CONSP TERM)
+(NOT (EQUAL (CAR TERM) 'QUOTE))
+(NOT (EQUAL (CAR TERM) 'RP))
+(RP-SYNTAXP-LST
+(REMOVE-RETURN-LAST-SUBTERMS (CDR TERM)))
+(RP-SYNTAXP-LST (CDR TERM)))
+(RP-SYNTAXP (REMOVE-RETURN-LAST TERM)))
+:hints (("Goal"
+:cases ((is-return-last term))
+:in-theory (e/d () ())))))
 
-  #|(defthm-rp-syntaxp
-  (defthm rp-syntaxp-remove-return-last
-  (implies (rp-syntaxp term)
-  (rp-syntaxp (remove-return-last term)))
-  :flag rp-syntaxp)
-  (defthm rp-syntaxp-remove-return-last-subterms
-  (implies
-  (rp-syntaxp-lst lst)
-  (rp-syntaxp-lst (remove-return-last-subterms lst)))
-  :flag rp-syntaxp-lst)
-  :hints (("Goal"
-  :in-theory (e/d (is-rp) ()))))||#)
+#|(defthm-rp-syntaxp
+(defthm rp-syntaxp-remove-return-last
+(implies (rp-syntaxp term)
+(rp-syntaxp (remove-return-last term)))
+:flag rp-syntaxp)
+(defthm rp-syntaxp-remove-return-last-subterms
+(implies
+(rp-syntaxp-lst lst)
+(rp-syntaxp-lst (remove-return-last-subterms lst)))
+:flag rp-syntaxp-lst)
+:hints (("Goal"
+:in-theory (e/d (is-rp) ()))))||#)
 
 (defthmd context-syntaxp-implies
-  (implies (context-syntaxp context)
-           (AND (RP-TERM-LISTP CONTEXT)
-                (RP-SYNTAXP-LST CONTEXT)
-                (ALL-FALIST-CONSISTENT-LST CONTEXT)))
-  :hints (("Goal"
-           :in-theory (e/d (context-syntaxp) ()))))
+(implies (context-syntaxp context)
+(AND (RP-TERM-LISTP CONTEXT)
+(RP-SYNTAXP-LST CONTEXT)
+(ALL-FALIST-CONSISTENT-LST CONTEXT)))
+:hints (("Goal"
+:in-theory (e/d (context-syntaxp) ()))))
 
 (defthm rp-syntaxp-assoc-equal
-  (IMPLIES
-   (AND
-    (RP-SYNTAXP-LST (STRIP-CDRS BINDINGS))
-    (CONSP (ASSOC-EQUAL TERM BINDINGS)))
-   (and
-    (RP-SYNTAXP (CDR (ASSOC-EQUAL TERM BINDINGS)))
-    (RP-SYNTAXP (CDR (hons-ASSOC-EQUAL TERM BINDINGS))))))
+(IMPLIES
+(AND
+(RP-SYNTAXP-LST (STRIP-CDRS BINDINGS))
+(CONSP (ASSOC-EQUAL TERM BINDINGS)))
+(and
+(RP-SYNTAXP (CDR (ASSOC-EQUAL TERM BINDINGS)))
+(RP-SYNTAXP (CDR (hons-ASSOC-EQUAL TERM BINDINGS))))))
 
 (defthm rp-syntaxp-lst-append
-  (equal (rp-syntaxp-lst (append x y))
-         (and (rp-syntaxp-lst x)
-              (rp-syntaxp-lst y)))
-  :hints (("Goal"
-           :in-theory (e/d (rp-syntaxp-lst
-                            append)
-                           (rp-syntaxp)))))||#
+(equal (rp-syntaxp-lst (append x y))
+(and (rp-syntaxp-lst x)
+(rp-syntaxp-lst y)))
+:hints (("Goal"
+:in-theory (e/d (rp-syntaxp-lst
+append)
+(rp-syntaxp)))))||#
 
 (defthm is-if-implies
   (implies (is-if term)
@@ -769,6 +768,17 @@
   :hints (("Goal"
            :in-theory (e/d (is-rp) ()))))
 
+(defthm is-rp-of-rp
+  (implies (AND (SYMBOLP TYPE)
+                (NOT (BOOLEANP TYPE))
+                (NOT (EQUAL TYPE 'QUOTE))
+                (NOT (EQUAL TYPE 'RP))
+                (NOT (EQUAL TYPE 'LIST))
+                (NOT (EQUAL TYPE 'FALIST)))
+           (is-rp `(rp ',type ,x)))
+  :hints (("Goal"
+           :in-theory (e/d (is-rp) ()))))
+
 (defthmd rule-syntaxp-implies
   (implies (and (rule-syntaxp rule :warning warning)
                 (not (rp-rule-metap rule)))
@@ -788,7 +798,11 @@
             #|(no-free-variablep rule)|#
             (not (include-fnc (rp-lhs rule) 'list))
             (not (include-fnc-subterms (rp-hyp rule) 'list))
-            (not (include-fnc (rp-rhs rule) 'list))))
+            (not (include-fnc (rp-rhs rule) 'list))
+
+            (not (include-fnc (rp-lhs rule) 'equals))
+            (not (include-fnc-subterms (rp-hyp rule) 'equals))
+            (not (include-fnc (rp-rhs rule) 'equals))))
   :rule-classes (:rewrite :forward-chaining)
   :hints (("Goal" :in-theory (enable rule-syntaxp))))
 
@@ -871,52 +885,52 @@
                             is-rp-loose) ()))))
 
 #|(defthm rp-syntaxp-cadr
-  (implies (and (rp-syntaxp term)
-                (consp term)
-                (not (quotep term))
-                (not (equal (car term) 'rp))
-                (consp (cdr term)))
-           (rp-syntaxp (cadr term)))
-  :hints (("Goal"
-           :in-theory (e/d (rp-termp
-                            ex-from-rp-loose
-                            is-rp-loose) ()))))||#
+(implies (and (rp-syntaxp term)
+(consp term)
+(not (quotep term))
+(not (equal (car term) 'rp))
+(consp (cdr term)))
+(rp-syntaxp (cadr term)))
+:hints (("Goal"
+:in-theory (e/d (rp-termp
+ex-from-rp-loose
+is-rp-loose) ()))))||#
 
 #|(defthm all-falist-consistent-cadr
-  (implies (and (all-falist-consistent term)
-                (consp term)
-                (not (quotep term))
-                (consp (cdr term)))
-           (all-falist-consistent (cadr term)))
-  :hints (("Goal"
-           :in-theory (e/d (all-falist-consistent
-                            ex-from-rp-loose
-                            is-rp-loose) ()))))||#
+(implies (and (all-falist-consistent term)
+(consp term)
+(not (quotep term))
+(consp (cdr term)))
+(all-falist-consistent (cadr term)))
+:hints (("Goal"
+:in-theory (e/d (all-falist-consistent
+ex-from-rp-loose
+is-rp-loose) ()))))||#
 
 #|(defthm all-falist-consistent-caddr
-  (implies (and (all-falist-consistent term)
-                (consp term)
-                (not (quotep term))
-                (consp (cdr term))
-                (consp (cddr term)))
-           (all-falist-consistent (caddr term)))
-  :hints (("Goal"
-           :in-theory (e/d (all-falist-consistent
-                            ex-from-rp-loose
-                            is-rp-loose) ()))))||#
+(implies (and (all-falist-consistent term)
+(consp term)
+(not (quotep term))
+(consp (cdr term))
+(consp (cddr term)))
+(all-falist-consistent (caddr term)))
+:hints (("Goal"
+:in-theory (e/d (all-falist-consistent
+ex-from-rp-loose
+is-rp-loose) ()))))||#
 
 #|(defthm all-falist-consistent-cadddr
-  (implies (and (all-falist-consistent term)
-                (consp term)
-                (not (quotep term))
-                (consp (cdr term))
-                (consp (cddr term))
-                (consp (cdddr term)))
-           (all-falist-consistent (cadddr term)))
-  :hints (("Goal"
-           :in-theory (e/d (all-falist-consistent
-                            ex-from-rp-loose
-                            is-rp-loose) ()))))||#
+(implies (and (all-falist-consistent term)
+(consp term)
+(not (quotep term))
+(consp (cdr term))
+(consp (cddr term))
+(consp (cdddr term)))
+(all-falist-consistent (cadddr term)))
+:hints (("Goal"
+:in-theory (e/d (all-falist-consistent
+ex-from-rp-loose
+is-rp-loose) ()))))||#
 
 (defthm rp-termp-caddr
   (implies (and (rp-termp term)
@@ -961,33 +975,33 @@
                             is-rp-loose) ()))))
 
 #|(defthm rp-syntaxp-caddr
-  (implies (and (rp-syntaxp term)
-                (consp term)
-                (not (quotep term))
-                ;(not (equal (car term) 'rp))
-                (consp (cdr term))
-                (consp (cddr term)))
-           (rp-syntaxp (caddr term)))
-  :hints (("Goal"
-           :in-theory (e/d (rp-termp
-                            ex-from-rp-loose
-                            is-rp-loose) ()))))||#
+(implies (and (rp-syntaxp term)
+(consp term)
+(not (quotep term))
+                ;(not (equal (car term) 'rp)) ;
+(consp (cdr term))
+(consp (cddr term)))
+(rp-syntaxp (caddr term)))
+:hints (("Goal"
+:in-theory (e/d (rp-termp
+ex-from-rp-loose
+is-rp-loose) ()))))||#
 
 #|(defthm rp-syntaxp-cadddr
-  (implies (and (rp-syntaxp term)
-                (consp term)
-                (not (quotep term))
-                (consp (cdr term))
-                (consp (cddr term))
-                (consp (cdddr term)))
-           (rp-syntaxp (cadddr term)))
-  :hints (("Goal"
-           :expand ((rp-syntaxp term))
-           :in-theory (e/d (rp-termp
-                            ex-from-rp-loose
-                            rp-syntaxp
-                            is-rp
-                            is-rp-loose) ()))))||#
+(implies (and (rp-syntaxp term)
+(consp term)
+(not (quotep term))
+(consp (cdr term))
+(consp (cddr term))
+(consp (cdddr term)))
+(rp-syntaxp (cadddr term)))
+:hints (("Goal"
+:expand ((rp-syntaxp term))
+:in-theory (e/d (rp-termp
+ex-from-rp-loose
+rp-syntaxp
+is-rp
+is-rp-loose) ()))))||#
 
 (defthmd ex-from-rp-loose-is-ex-from-rp
   (implies (rp-termp term)
@@ -1015,7 +1029,7 @@
 
 (defthm rp-termp-implies-dont-rw-syntaxp
   (implies (rp-termp term)
-	   (dont-rw-syntaxp term)))
+           (dont-rw-syntaxp term)))
 
 (defthm rp-termp-ex-from-falist
   (implies (rp-termp x)
@@ -1060,6 +1074,46 @@
     :flag rp-trans-lst)
   :otf-flg t
   :hints (("Goal"
+           :expand ((:free (x y)
+                           (rp-termp (cons x y)))
+                    (RP-TERMP TERM))
+           :in-theory (e/d ()
+                           (FALIST-CONSISTENT
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS)))))
+
+(defthm-rp-trans
+  (defthm rp-trans-not-include-fnc-list
+    (not (include-fnc (rp-trans term) 'list))
+    :flag rp-trans)
+  (defthm rp-trans-lst-not-include-fnc-subterms-list
+    (not (include-fnc-subterms (rp-trans-lst lst) 'list))
+    :flag rp-trans-lst)
+  :otf-flg t
+  :hints (("Goal"
+           :in-theory (e/d ()
+                           ()))))
+
+(defthm rp-trans-of-trans-list
+  (equal (rp-trans (trans-list lst))
+         (trans-list (rp-trans-lst lst))))
+
+(defthm-rp-trans
+  (defthm rp-trans-of-rp-trans
+    (equal (rp-trans (rp-trans term))
+           (rp-trans term))
+    :flag rp-trans)
+  (defthm rp-trans-lst-of-rp-trans-lst
+    (equal (rp-trans-lst (rp-trans-lst lst))
+           (rp-trans-lst lst))
+    :flag rp-trans-lst)
+  :otf-flg t
+  :hints (("goal"
+           :expand ((is-falist (list (car term)))
+                    (rp-trans-lst (cdr term))
+                    (rp-trans-lst (cddr term))
+                    (rp-trans-lst (cdddr term))
+                    (rp-trans (cons (car term)
+                                    (rp-trans-lst (cdr term)))))
            :in-theory (e/d ()
                            ()))))
 
@@ -1081,12 +1135,10 @@
                             rp-statep)
                            ()))))
 
-
 (defthm RP-TERM-LISTP-of-append
   (implies (and (rp-term-listp lst1)
                 (rp-term-listp lst2))
            (rp-term-listp (append lst1 lst2))))
-
 
 (defthm rp-state-preservedp-of-the-same
   (implies (rp-statep rp-state)
@@ -1121,30 +1173,28 @@
                             RP-STATEP)))))
 
 
-
 #|(local
- (defthmd rp-termp-ex-from-rp-all2-lemma
-     (implies (syntaxp (not (include-fnc term 'ex-from-rp)))
-              (equal (rp-termp term)
-                     (and (hide (rp-termp term))
-                          (rp-termp (ex-from-rp term))))) 
-  :hints
-  (("goal"
-    :expand (hide (rp-termp term))
-    :in-theory
-    (e/d (ex-from-rp-loose ex-from-rp is-rp-loose is-rp)
-         nil)))))|#
- 
+(defthmd rp-termp-ex-from-rp-all2-lemma
+(implies (syntaxp (not (include-fnc term 'ex-from-rp)))
+(equal (rp-termp term)
+(and (hide (rp-termp term))
+(rp-termp (ex-from-rp term)))))
+:hints
+(("goal"
+:expand (hide (rp-termp term))
+:in-theory
+(e/d (ex-from-rp-loose ex-from-rp is-rp-loose is-rp)
+nil)))))|#
 
 (defthm-ex-from-rp-all2
-    (defthm rp-termp-ex-from-rp-all2
-        (implies (rp-termp term)
-                 (rp-termp (ex-from-rp-all2 term)))
-      :flag ex-from-rp-all2)
-    (defthm rp-term-listp-ex-from-rp-all2-lst
-        (implies (rp-term-listp lst)
-                 (rp-term-listp (ex-from-rp-all2-lst lst)))
-      :flag ex-from-rp-all2-lst)
+  (defthm rp-termp-ex-from-rp-all2
+    (implies (rp-termp term)
+             (rp-termp (ex-from-rp-all2 term)))
+    :flag ex-from-rp-all2)
+  (defthm rp-term-listp-ex-from-rp-all2-lst
+    (implies (rp-term-listp lst)
+             (rp-term-listp (ex-from-rp-all2-lst lst)))
+    :flag ex-from-rp-all2-lst)
   :hints (("Goal"
            :do-not-induct t
            :expand (RP-TERMP (EX-FROM-RP TERM))
@@ -1162,14 +1212,14 @@
                             )))))
 
 (defthm-ex-from-rp-all2
-    (defthm ex-from-rp-all2-not-include-rp
-        (implies (rp-termp term)
-                 (not (include-fnc (ex-from-rp-all2 term) 'rp)))
-      :flag ex-from-rp-all2)
-    (defthm ex-from-rp-all2-lst-not-include-rp
-        (implies (rp-term-listp lst)
-                 (not (include-fnc-subterms (ex-from-rp-all2-lst lst) 'rp)))
-      :flag ex-from-rp-all2-lst)
+  (defthm ex-from-rp-all2-not-include-rp
+    (implies (rp-termp term)
+             (not (include-fnc (ex-from-rp-all2 term) 'rp)))
+    :flag ex-from-rp-all2)
+  (defthm ex-from-rp-all2-lst-not-include-rp
+    (implies (rp-term-listp lst)
+             (not (include-fnc-subterms (ex-from-rp-all2-lst lst) 'rp)))
+    :flag ex-from-rp-all2-lst)
   :hints (("Goal"
            :do-not-induct t
            :expand (RP-TERMP (EX-FROM-RP TERM))
@@ -1186,6 +1236,53 @@
                             RP-TERMP-CONS-CAR-TERM-SUBTERMS
                             )))))
 
+(defthmd equal-of-len-with-constant
+  (implies (and (syntaxp (quotep x))
+                (posp x))
+           (equal (equal (len lst) x)
+                  (and (consp lst)
+                       (equal (len (cdr lst)) (1- x)))))
+  :hints (("Goal"
+           :in-theory (e/d (len) ()))))
+
+(defthm equal-of-len-with-0
+  (equal (equal (len lst) 0)
+         (atom lst))
+  :hints (("Goal"
+           :in-theory (e/d (len) ()))))
+
+(defthm len-of-ex-from-rp-all2-lst
+  (equal (len (ex-from-rp-all2-lst lst))
+         (len lst))
+  :hints (("Goal"
+           :induct (len lst)
+           :in-theory (e/d (ex-from-rp-all2-lst len) ()))))
+
+(defthm-ex-from-rp-all2
+  (defthm ex-from-rp-all2-not-include-equals
+    (implies (rp-termp term)
+             (not (include-fnc (ex-from-rp-all2 term) 'equals 2)))
+    :flag ex-from-rp-all2)
+  (defthm ex-from-rp-all2-lst-not-include-equals
+    (implies (rp-term-listp lst)
+             (not (include-fnc-subterms (ex-from-rp-all2-lst lst) 'equals 2)))
+    :flag ex-from-rp-all2-lst)
+  :hints (("Goal"
+           :do-not-induct t
+           :expand (RP-TERMP (EX-FROM-RP TERM))
+           :in-theory (e/d (equal-of-len-with-constant
+                            is-equals
+                            EX-FROM-RP-ALL2
+                            IS-RP-LOOSE
+                            is-rp
+                            ;;rp-termp-ex-from-rp-all2-lemma
+                            ex-from-rp-all2-lst
+                            )
+                           (ex-from-rp
+                            ;;FALIST-CONSISTENT
+                            RP-TERMP-EX-FROM-RP
+                            RP-TERMP-CONS-CAR-TERM-SUBTERMS
+                            )))))
 
 (defthmd rp-termp-single-step
   (implies (is-rp term)
@@ -1220,7 +1317,6 @@
            (rp-term-listp (rev x)))
   :hints (("Goal"
            :in-theory (e/d (rev) ()))))
-
 
 (progn
   (define binary-or**/and**-guard-meta-aux (term)
@@ -1259,7 +1355,7 @@
       (case-match term
         (('RETURN-LAST & & x)
          (binary-or**/and**-guard-meta-aux x))
-      
+
         (('if x x y)
          `(binary-or** ,(binary-or**/and**-guard-meta-aux x)
                        ,(binary-or**/and**-guard-meta-aux y)))
@@ -1268,7 +1364,6 @@
                         ,(binary-or**/and**-guard-meta-aux y)))
         (& term)))
      (t term)))
-                   
 
   (define binary-or**/and**-guard-meta (term)
     (case-match term
@@ -1327,16 +1422,26 @@
                     (binary-or**/and**-guard-meta-eval
                      (binary-or**/and**-guard-meta term) a)))
     :rule-classes ((:meta :trigger-fns (equal)))
-    :hints (("Goal"                 
+    :hints (("Goal"
              :do-not-induct t
              :in-theory (e/d (binary-or**/and**-guard-meta)
                              ())))))
 
-  
 #|(defthm binary-and**-of-nil/t
-  (and (equal (binary-and** nil a)
-              nil)
-       (equal (binary-and** t a)
-              a))
-  :hints (("Goal"
-           :in-theory (e/d (binary-and**) ()))))|#
+(and (equal (binary-and** nil a)
+nil)
+(equal (binary-and** t a)
+a))
+:hints (("Goal"
+:in-theory (e/d (binary-and**) ()))))|#
+
+
+(defthm-include-fnc
+  (defthmd include-fnc-without-size-implies-with-size
+    (implies (not (include-fnc term fnc nil))
+             (not (include-fnc term fnc arg-size)))
+    :flag include-fnc-fn)
+  (defthmd include-fnc-subterms-without-size-implies-with-size
+    (implies (not (include-fnc-subterms subterms fnc nil))
+             (not (include-fnc-subterms subterms fnc arg-size)))
+    :flag include-fnc-subterms-fn))

@@ -46,8 +46,8 @@ ACL2 !>>(TOP-LEVEL (WITH-GLOBAL-STOBJ ST (ST)
 ACL2 !>>(TOP-LEVEL (WITH-GLOBAL-STOBJ ST (FLD ST)))
 1
 ACL2 !>>(DEFUN RD0 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ ST (FLD ST)))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ ST (FLD ST)))
 
 Since RD0 is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of RD0.
@@ -66,9 +66,9 @@ Rules: NIL
 ACL2 !>>(ASSERT-EVENT (EQUAL (RD0 STATE) 1))
  :PASSED
 ACL2 !>>(DEFUN WR0 (X STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ ST (ST)
-                                  (UPDATE-FLD X ST)))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ ST (ST)
+                             (UPDATE-FLD X ST)))
 
 Since WR0 is non-recursive, its admission is trivial.  We observe that
 the type of WR0 is described by the theorem (CONSP (WR0 X STATE)).
@@ -90,8 +90,8 @@ ACL2 !>>(WR0 2 STATE)
 ACL2 !>>(ASSERT-EVENT (EQUAL (RD0 STATE) 2))
  :PASSED
 ACL2 !>>(DEFUN BAD (X STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ ST (UPDATE-FLD X ST)))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ ST (UPDATE-FLD X ST)))
 
 
 ACL2 Error [Translate] in ( DEFUN BAD ...):  The read-only WITH-GLOBAL-
@@ -107,10 +107,10 @@ ACL2 Error [Failure] in ( DEFUN BAD ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN FOO (VAL ST STATE)
-               (DECLARE (XARGS :STOBJS (ST STATE)))
-               (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)
-                                               (UPDATE-FLD VAL ST))))
-                    (MV (FLD ST) STATE)))
+          (DECLARE (XARGS :STOBJS (ST STATE)))
+          (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)
+                                          (UPDATE-FLD VAL ST))))
+            (MV (FLD ST) STATE)))
 
 Since FOO is non-recursive, its admission is trivial.  We observe that
 the type of FOO is described by the theorem 
@@ -141,9 +141,9 @@ ACL2 !>>(FOO 3 ST2 STATE)
 ACL2 !>>(FLD ST)
 3
 ACL2 !>>(DEFUN FOO2-SUB (VAL STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ ST (ST)
-                                  (UPDATE-FLD VAL ST)))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ ST (ST)
+                             (UPDATE-FLD VAL ST)))
 
 Since FOO2-SUB is non-recursive, its admission is trivial.  We observe
 that the type of FOO2-SUB is described by the theorem 
@@ -162,9 +162,9 @@ Form:  ( DEFUN FOO2-SUB ...)
 Rules: ((:TYPE-PRESCRIPTION WRITE-USER-STOBJ-ALIST))
  FOO2-SUB
 ACL2 !>>(DEFUN FOO2 (VAL ST STATE)
-               (DECLARE (XARGS :STOBJS (ST STATE)))
-               (LET ((STATE (FOO2-SUB VAL STATE)))
-                    (MV (FLD ST) STATE VAL)))
+          (DECLARE (XARGS :STOBJS (ST STATE)))
+          (LET ((STATE (FOO2-SUB VAL STATE)))
+            (MV (FLD ST) STATE VAL)))
 
 Since FOO2 is non-recursive, its admission is trivial.  We observe
 that the type of FOO2 is described by the theorem 
@@ -199,8 +199,8 @@ which makes an updating WITH-GLOBAL-STOBJ call that binds ST.  See
 :DOC with-global-stobj.
 
 ACL2 !>>(DEFUN FOO2-CALLER (VAL ST STATE)
-               (DECLARE (XARGS :STOBJS (ST STATE)))
-               (FOO2 VAL ST STATE))
+          (DECLARE (XARGS :STOBJS (ST STATE)))
+          (FOO2 VAL ST STATE))
 
 Since FOO2-CALLER is non-recursive, its admission is trivial.  We observe
 that the type of FOO2-CALLER is described by the theorem 
@@ -234,9 +234,9 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 4)
                            (EQUAL (FLD ST2) NIL)))
  :PASSED
 ACL2 !>>(DEFUN G1 (ST STATE)
-               (DECLARE (XARGS :STOBJS (ST STATE)))
-               (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
-                    (MV F STATE (FLD ST))))
+          (DECLARE (XARGS :STOBJS (ST STATE)))
+          (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
+            (MV F STATE (FLD ST))))
 
 Since G1 is non-recursive, its admission is trivial.  We observe that
 the type of G1 is described by the theorem 
@@ -257,10 +257,10 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(G1 ST STATE)
 (4 <state> 4)
 ACL2 !>>(DEFUN G2 (VAL ST STATE)
-               (DECLARE (XARGS :STOBJS (ST STATE)))
-               (LET ((ST (UPDATE-FLD VAL ST)))
-                    (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
-                         (MV F (FLD ST) ST STATE))))
+          (DECLARE (XARGS :STOBJS (ST STATE)))
+          (LET ((ST (UPDATE-FLD VAL ST)))
+            (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
+              (MV F (FLD ST) ST STATE))))
 
 Since G2 is non-recursive, its admission is trivial.  We observe that
 the type of G2 is described by the theorem 
@@ -289,8 +289,8 @@ a WITH-GLOBAL-STOBJ call that binds ST.  See :DOC with-global-stobj.
 ACL2 !>>(G2 5 ST2 STATE)
 (4 5 <st2> <state>)
 ACL2 !>>(DEFUN G3-SUB (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ ST (FLD ST)))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ ST (FLD ST)))
 
 Since G3-SUB is non-recursive, its admission is trivial.  We could
 deduce no constraints on the type of G3-SUB.
@@ -307,9 +307,9 @@ Form:  ( DEFUN G3-SUB ...)
 Rules: NIL
  G3-SUB
 ACL2 !>>(DEFUN G3 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
-                    (MV F STATE (G3-SUB STATE))))
+          (DECLARE (XARGS :STOBJS STATE))
+          (LET ((F (WITH-GLOBAL-STOBJ ST (FLD ST))))
+            (MV F STATE (G3-SUB STATE))))
 
 Since G3 is non-recursive, its admission is trivial.  We observe that
 the type of G3 is described by the theorem 
@@ -330,12 +330,12 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(G3 STATE)
 (4 <state> 4)
 ACL2 !>>(DEFUN FOO3 (STATE)
-               (DECLARE (XARGS :STOBJS (STATE)))
-               (WITH-GLOBAL-STOBJ
-                    ST
-                    (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)
-                                                    (UPDATE-FLD 3 ST))))
-                         (MV (FLD ST) STATE))))
+          (DECLARE (XARGS :STOBJS (STATE)))
+          (WITH-GLOBAL-STOBJ
+               ST
+               (LET ((STATE (WITH-GLOBAL-STOBJ ST (ST)
+                                               (UPDATE-FLD 3 ST))))
+                 (MV (FLD ST) STATE))))
 
 
 ACL2 Error [Translate] in ( DEFUN FOO3 ...):  The form binding stobj
@@ -343,7 +343,7 @@ ST,
 
 (WITH-GLOBAL-STOBJ ST
                    (LET ((STATE (WITH-GLOBAL-STOBJ ST # #)))
-                        (MV (FLD ST) STATE))),
+                     (MV (FLD ST) STATE))),
 
 is illegal because its body makes an updating WITH-GLOBAL-STOBJ call
 that binds ST.
@@ -358,10 +358,10 @@ ACL2 Error [Failure] in ( DEFUN FOO3 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN FOO3 (STATE)
-               (DECLARE (XARGS :STOBJS (STATE)))
-               (WITH-GLOBAL-STOBJ ST
-                                  (LET ((STATE (FOO2-SUB VAL STATE)))
-                                       (MV (FLD ST) STATE))))
+          (DECLARE (XARGS :STOBJS (STATE)))
+          (WITH-GLOBAL-STOBJ ST
+                             (LET ((STATE (FOO2-SUB VAL STATE)))
+                               (MV (FLD ST) STATE))))
 
 
 ACL2 Error [Translate] in ( DEFUN FOO3 ...):  The form binding stobj
@@ -369,7 +369,7 @@ ST,
 
 (WITH-GLOBAL-STOBJ ST
                    (LET ((STATE (FOO2-SUB VAL STATE)))
-                        (MV (FLD ST) STATE))),
+                     (MV (FLD ST) STATE))),
 
 is illegal because its body calls FOO2-SUB, which makes an updating
 WITH-GLOBAL-STOBJ call that binds ST.
@@ -383,10 +383,10 @@ ACL2 Error [Failure] in ( DEFUN FOO3 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN FOO4 (STATE)
-               (DECLARE (XARGS :STOBJS (STATE)))
-               (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
-                                  (LET ((X (WITH-GLOBAL-STOBJ ST (FLD ST))))
-                                       (MV (FLD ST) X ST))))
+          (DECLARE (XARGS :STOBJS (STATE)))
+          (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
+                             (LET ((X (WITH-GLOBAL-STOBJ ST (FLD ST))))
+                               (MV (FLD ST) X ST))))
 
 
 ACL2 Error [Translate] in ( DEFUN FOO4 ...):  The form binding stobj
@@ -394,7 +394,7 @@ ST,
 
 (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
                    (LET ((X (WITH-GLOBAL-STOBJ ST #)))
-                        (MV (FLD ST) X ST))),
+                     (MV (FLD ST) X ST))),
 
 is illegal because its body makes a WITH-GLOBAL-STOBJ call that binds
 ST.
@@ -409,10 +409,10 @@ ACL2 Error [Failure] in ( DEFUN FOO4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN FOO4 (STATE)
-               (DECLARE (XARGS :STOBJS (STATE)))
-               (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
-                                  (LET ((X (RD0 STATE)))
-                                       (MV (FLD ST) X ST))))
+          (DECLARE (XARGS :STOBJS (STATE)))
+          (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
+                             (LET ((X (RD0 STATE)))
+                               (MV (FLD ST) X ST))))
 
 
 ACL2 Error [Translate] in ( DEFUN FOO4 ...):  The form binding stobj
@@ -420,7 +420,7 @@ ST,
 
 (WITH-GLOBAL-STOBJ ST (NIL NIL ST)
                    (LET ((X (RD0 STATE)))
-                        (MV (FLD ST) X ST))),
+                     (MV (FLD ST) X ST))),
 
 is illegal because its body calls RD0, which makes a WITH-GLOBAL-STOBJ
 call that binds ST.
@@ -434,7 +434,7 @@ ACL2 Error [Failure] in ( DEFUN FOO4 ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(LET ((STATE (WR0 2 STATE)))
-             (MV ST STATE))
+          (MV ST STATE))
 
 
 ACL2 Error in TOP-LEVEL:  Illegal top-level form, 
@@ -444,8 +444,8 @@ STOBJ form, as the top-level form calls WR0, which makes an updating
 WITH-GLOBAL-STOBJ call that binds ST.  See :DOC with-global-stobj.
 
 ACL2 !>>(DEFUN WR1 (X STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WR0 X STATE))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WR0 X STATE))
 
 Since WR1 is non-recursive, its admission is trivial.  We observe that
 the type of WR1 is described by the theorem (CONSP (WR1 X STATE)).
@@ -463,8 +463,8 @@ Form:  ( DEFUN WR1 ...)
 Rules: ((:TYPE-PRESCRIPTION WR0))
  WR1
 ACL2 !>>(DEFUN WR2 (X STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WR1 X STATE))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WR1 X STATE))
 
 Since WR2 is non-recursive, its admission is trivial.  We observe that
 the type of WR2 is described by the theorem (CONSP (WR2 X STATE)).
@@ -482,7 +482,7 @@ Form:  ( DEFUN WR2 ...)
 Rules: ((:TYPE-PRESCRIPTION WR1))
  WR2
 ACL2 !>>(LET ((STATE (WR2 2 STATE)))
-             (MV ST STATE))
+          (MV ST STATE))
 
 
 ACL2 Error in TOP-LEVEL:  Illegal top-level form, 
@@ -493,9 +493,9 @@ calls WR0, which makes an updating WITH-GLOBAL-STOBJ call that binds
 ST.  See :DOC with-global-stobj.
 
 ACL2 !>>(DEFUN F0 (ST2 STATE)
-               (DECLARE (XARGS :STOBJS (ST2 STATE)))
-               (WITH-GLOBAL-STOBJ ST (ST ST2 NIL STATE)
-                                  (MV ST ST2 NIL STATE)))
+          (DECLARE (XARGS :STOBJS (ST2 STATE)))
+          (WITH-GLOBAL-STOBJ ST (ST ST2 NIL STATE)
+                             (MV ST ST2 NIL STATE)))
 
 Since F0 is non-recursive, its admission is trivial.  We observe that
 the type of F0 is described by the theorem 
@@ -519,9 +519,9 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F0 (W STATE))
                                   '(ST2 NIL STATE))))
  :PASSED
 ACL2 !>>(DEFUN F1-BAD (ST2 STATE)
-               (DECLARE (XARGS :STOBJS (ST2 STATE)))
-               (WITH-GLOBAL-STOBJ ST (ST2 NIL STATE)
-                                  (MV ST2 NIL STATE)))
+          (DECLARE (XARGS :STOBJS (ST2 STATE)))
+          (WITH-GLOBAL-STOBJ ST (ST2 NIL STATE)
+                             (MV ST2 NIL STATE)))
 
 
 ACL2 Error [Translate] in ( DEFUN F1-BAD ...):  Illegal call of WITH-
@@ -538,9 +538,9 @@ ACL2 Error [Failure] in ( DEFUN F1-BAD ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN F1 (ST2 STATE)
-               (DECLARE (XARGS :STOBJS (ST2 STATE)))
-               (WITH-GLOBAL-STOBJ ST (ST2 ST STATE NIL)
-                                  (MV ST2 ST STATE 17)))
+          (DECLARE (XARGS :STOBJS (ST2 STATE)))
+          (WITH-GLOBAL-STOBJ ST (ST2 ST STATE NIL)
+                             (MV ST2 ST STATE 17)))
 
 Since F1 is non-recursive, its admission is trivial.  We observe that
 the type of F1 is described by the theorem 
@@ -564,9 +564,9 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F1 (W STATE))
                                   '(ST2 STATE NIL))))
  :PASSED
 ACL2 !>>(DEFUN F2 (ST2 STATE)
-               (DECLARE (XARGS :STOBJS (ST2 STATE)))
-               (WITH-GLOBAL-STOBJ ST (ST2 ST NIL)
-                                  (MV ST2 ST 17)))
+          (DECLARE (XARGS :STOBJS (ST2 STATE)))
+          (WITH-GLOBAL-STOBJ ST (ST2 ST NIL)
+                             (MV ST2 ST 17)))
 
 Since F2 is non-recursive, its admission is trivial.  We observe that
 the type of F2 is described by the theorem 
@@ -590,9 +590,9 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (STOBJS-IN 'F2 (W STATE))
                                   '(ST2 NIL STATE))))
  :PASSED
 ACL2 !>>(DEFUN F3 (ST2 STATE)
-               (DECLARE (XARGS :STOBJS (ST2 STATE)))
-               (WITH-GLOBAL-STOBJ ST (ST2 ST)
-                                  (SWAP-STOBJS ST2 ST)))
+          (DECLARE (XARGS :STOBJS (ST2 STATE)))
+          (WITH-GLOBAL-STOBJ ST (ST2 ST)
+                             (SWAP-STOBJS ST2 ST)))
 
 Since F3 is non-recursive, its admission is trivial.  We observe that
 the type of F3 is described by the theorem 
@@ -626,14 +626,14 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 2)
                            (EQUAL (RD0 STATE) 2)))
  :PASSED
 ACL2 !>>(DEFUN F4 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ
-                    ST (ST)
-                    (WITH-LOCAL-STOBJ ST2
-                                      (MV-LET (ST ST2)
-                                              (LET ((ST2 (UPDATE-FLD 3 ST2)))
-                                                   (SWAP-STOBJS ST ST2))
-                                              ST))))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ
+               ST (ST)
+               (WITH-LOCAL-STOBJ ST2
+                                 (MV-LET (ST ST2)
+                                         (LET ((ST2 (UPDATE-FLD 3 ST2)))
+                                           (SWAP-STOBJS ST ST2))
+                                   ST))))
 
 Since F4 is non-recursive, its admission is trivial.  We observe that
 the type of F4 is described by the theorem (CONSP (F4 STATE)).  We
@@ -660,10 +660,10 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 3)
                            (EQUAL (FLD ST2) 2)))
  :PASSED
 ACL2 !>>(DEFUN F5 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ ST
-                                  (LIST (FLD ST)
-                                        (WITH-GLOBAL-STOBJ ST (FLD ST)))))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ ST
+                             (LIST (FLD ST)
+                                   (WITH-GLOBAL-STOBJ ST (FLD ST)))))
 
 Since F5 is non-recursive, its admission is trivial.  We observe that
 the type of F5 is described by the theorem 
@@ -687,21 +687,20 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (F5 STATE) '(F5 F5)))
  :PASSED
 ACL2 !>>(LIST (FLD ST) (F5 STATE))
 (F5 (F5 F5))
-ACL2 !>>(DEFUN
-             WRITE-GLOBAL-ST-ST2 (FLD FLD2 STATE)
-             (DECLARE (XARGS :STOBJS STATE))
-             (WITH-GLOBAL-STOBJ
-                  ST (ST)
-                  (LET ((ST (UPDATE-FLD FLD ST)))
-                       (WITH-GLOBAL-STOBJ ST2 (ST ST2)
-                                          (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
-                                               (MV ST ST2))))))
+ACL2 !>>(DEFUN WRITE-GLOBAL-ST-ST2 (FLD FLD2 STATE)
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ
+               ST (ST)
+               (LET ((ST (UPDATE-FLD FLD ST)))
+                 (WITH-GLOBAL-STOBJ ST2 (ST ST2)
+                                    (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
+                                      (MV ST ST2))))))
 
 
 ACL2 Error [Translate] in ( DEFUN WRITE-GLOBAL-ST-ST2 ...):  The form
 (WITH-GLOBAL-STOBJ ST2 (ST ST2)
                    (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
-                        (MV ST ST2)))
+                     (MV ST ST2)))
 is illegal here because of a signature mismatch.  Its signature argument
 is (ST ST2), which indicates that it will return a result of shape
 (ST STATE).  However, a result of shape (ST) is required.  See :DOC
@@ -716,15 +715,14 @@ ACL2 Error [Failure] in ( DEFUN WRITE-GLOBAL-ST-ST2 ...):  See :DOC
 failure.
 
 ******** FAILED ********
-ACL2 !>>(DEFUN
-             WRITE-GLOBAL-ST-ST2 (FLD FLD2 STATE)
-             (DECLARE (XARGS :STOBJS STATE))
-             (WITH-GLOBAL-STOBJ
-                  ST (ST STATE)
-                  (LET ((ST (UPDATE-FLD FLD ST)))
-                       (WITH-GLOBAL-STOBJ ST2 (ST ST2)
-                                          (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
-                                               (MV ST ST2))))))
+ACL2 !>>(DEFUN WRITE-GLOBAL-ST-ST2 (FLD FLD2 STATE)
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ
+               ST (ST STATE)
+               (LET ((ST (UPDATE-FLD FLD ST)))
+                 (WITH-GLOBAL-STOBJ ST2 (ST ST2)
+                                    (LET ((ST2 (UPDATE-FLD FLD2 ST2)))
+                                      (MV ST ST2))))))
 
 Since WRITE-GLOBAL-ST-ST2 is non-recursive, its admission is trivial.
 We observe that the type of WRITE-GLOBAL-ST-ST2 is described by the
@@ -753,10 +751,10 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) 'C)
                            (EQUAL (FLD ST2) 'D)))
  :PASSED
 ACL2 !>>(DEFUN READ-GLOBAL-ST-ST2 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WITH-GLOBAL-STOBJ
-                    ST
-                    (WITH-GLOBAL-STOBJ ST2 (LIST (FLD ST) (FLD ST2)))))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ
+               ST
+               (WITH-GLOBAL-STOBJ ST2 (LIST (FLD ST) (FLD ST2)))))
 
 Since READ-GLOBAL-ST-ST2 is non-recursive, its admission is trivial.
 We observe that the type of READ-GLOBAL-ST-ST2 is described by the
@@ -780,10 +778,10 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (READ-GLOBAL-ST-ST2 STATE)
                              '(C D)))
  :PASSED
 ACL2 !>>(DEFUN F3-ALT (ST2 STATE)
-               (DECLARE (XARGS :STOBJS (ST2 STATE)
-                               :MODE :PROGRAM))
-               (WITH-GLOBAL-STOBJ ST (ST2 ST)
-                                  (SWAP-STOBJS ST2 ST)))
+          (DECLARE (XARGS :STOBJS (ST2 STATE)
+                          :MODE :PROGRAM))
+          (WITH-GLOBAL-STOBJ ST (ST2 ST)
+                             (SWAP-STOBJS ST2 ST)))
 
 Summary
 Form:  ( DEFUN F3-ALT ...)
@@ -859,8 +857,8 @@ ACL2 !>>(ASSERT-EVENT (AND (EQUAL (FLD ST) -2)
                            (EQUAL (RD0 STATE) -2)))
  :PASSED
 ACL2 !>>(DEFTHM ASSOC-EQUAL-PUT-ASSOC-EQUAL
-                (EQUAL (ASSOC-EQUAL KEY (PUT-ASSOC-EQUAL KEY VAL ALIST))
-                       (CONS KEY VAL)))
+          (EQUAL (ASSOC-EQUAL KEY (PUT-ASSOC-EQUAL KEY VAL ALIST))
+                 (CONS KEY VAL)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -868,9 +866,11 @@ Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
 We will induct according to a scheme suggested by 
-(PUT-ASSOC-EQUAL KEY VAL ALIST).  This suggestion was produced using
-the :induction rule PUT-ASSOC-EQUAL.  If we let (:P ALIST KEY VAL)
-denote *1 above then the induction scheme we'll use is
+(PUT-ASSOC-EQUAL KEY VAL ALIST).
+
+This suggestion was produced using the :induction rule PUT-ASSOC-EQUAL.
+If we let (:P ALIST KEY VAL) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ENDP ALIST))
                    (NOT (EQUAL KEY (CAR (CAR ALIST))))
                    (:P (CDR ALIST) KEY VAL))
@@ -907,7 +907,7 @@ Rules: ((:DEFINITION ASSOC-EQUAL)
         (:REWRITE CDR-CONS))
  ASSOC-EQUAL-PUT-ASSOC-EQUAL
 ACL2 !>>(DEFTHM RD0-OF-WR0
-                (EQUAL (RD0 (WR0 VAL STATE)) VAL))
+          (EQUAL (RD0 (WR0 VAL STATE)) VAL))
 
 ACL2 Warning [Non-rec] in ( DEFTHM RD0-OF-WR0 ...):  A :REWRITE rule
 generated from RD0-OF-WR0 will be triggered only by terms containing
@@ -948,22 +948,21 @@ Rules: ((:DEFINITION FLD)
 Warnings:  Subsume and Non-rec
  RD0-OF-WR0
 ACL2 !>>(DEFSTOBJ GLOBAL-STOBJ-TABLE
-                  (GTBL :TYPE (STOBJ-TABLE)))
+          (GTBL :TYPE (STOBJ-TABLE)))
 
 Summary
 Form:  ( DEFSTOBJ GLOBAL-STOBJ-TABLE ...)
 Rules: NIL
  GLOBAL-STOBJ-TABLE
-ACL2 !>>(DEFUN
-             READ-GTBL-ST (STATE)
-             (DECLARE (XARGS :STOBJS STATE))
-             (WITH-GLOBAL-STOBJ
-                  GLOBAL-STOBJ-TABLE
-                  (STOBJ-LET ((ST (GTBL-GET 'ST
-                                            GLOBAL-STOBJ-TABLE (CREATE-ST))))
-                             (VAL)
-                             (FLD ST)
-                             VAL)))
+ACL2 !>>(DEFUN READ-GTBL-ST (STATE)
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ
+               GLOBAL-STOBJ-TABLE
+               (STOBJ-LET ((ST (GTBL-GET 'ST
+                                         GLOBAL-STOBJ-TABLE (CREATE-ST))))
+                          (VAL)
+                          (FLD ST)
+                          VAL)))
 
 Since READ-GTBL-ST is non-recursive, its admission is trivial.  We
 could deduce no constraints on the type of READ-GTBL-ST.
@@ -979,16 +978,15 @@ Summary
 Form:  ( DEFUN READ-GTBL-ST ...)
 Rules: NIL
  READ-GTBL-ST
-ACL2 !>>(DEFUN
-             WRITE-GTBL-ST (VAL STATE)
-             (DECLARE (XARGS :STOBJS STATE))
-             (WITH-GLOBAL-STOBJ
-                  GLOBAL-STOBJ-TABLE (GLOBAL-STOBJ-TABLE)
-                  (STOBJ-LET ((ST (GTBL-GET 'ST
-                                            GLOBAL-STOBJ-TABLE (CREATE-ST))))
-                             (ST)
-                             (UPDATE-FLD VAL ST)
-                             GLOBAL-STOBJ-TABLE)))
+ACL2 !>>(DEFUN WRITE-GTBL-ST (VAL STATE)
+          (DECLARE (XARGS :STOBJS STATE))
+          (WITH-GLOBAL-STOBJ
+               GLOBAL-STOBJ-TABLE (GLOBAL-STOBJ-TABLE)
+               (STOBJ-LET ((ST (GTBL-GET 'ST
+                                         GLOBAL-STOBJ-TABLE (CREATE-ST))))
+                          (ST)
+                          (UPDATE-FLD VAL ST)
+                          GLOBAL-STOBJ-TABLE)))
 
 Since WRITE-GTBL-ST is non-recursive, its admission is trivial.  We
 observe that the type of WRITE-GTBL-ST is described by the theorem
@@ -1010,8 +1008,7 @@ ACL2 !>>(WRITE-GTBL-ST 10 STATE)
 <state>
 ACL2 !>>(ASSERT-EVENT (EQUAL (READ-GTBL-ST STATE) 10))
  :PASSED
-ACL2 !>>(DEFMACRO
-         READ-GTBL (NAME FIELD &OPTIONAL CREATOR)
+ACL2 !>>(DEFMACRO READ-GTBL (NAME FIELD &OPTIONAL CREATOR)
          (CONS
           'WITH-GLOBAL-STOBJ
           (CONS
@@ -1044,9 +1041,7 @@ Summary
 Form:  ( DEFMACRO READ-GTBL ...)
 Rules: NIL
  READ-GTBL
-ACL2 !>>(DEFMACRO
-         WRITE-GTBL
-         (VAL NAME UPDATER &OPTIONAL CREATOR)
+ACL2 !>>(DEFMACRO WRITE-GTBL (VAL NAME UPDATER &OPTIONAL CREATOR)
          (CONS
           'WITH-GLOBAL-STOBJ
           (CONS
@@ -1082,8 +1077,8 @@ Form:  ( DEFMACRO WRITE-GTBL ...)
 Rules: NIL
  WRITE-GTBL
 ACL2 !>>(DEFUN READ-GTBL-ST2 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (READ-GTBL ST FLD))
+          (DECLARE (XARGS :STOBJS STATE))
+          (READ-GTBL ST FLD))
 
 Since READ-GTBL-ST2 is non-recursive, its admission is trivial.  We
 could deduce no constraints on the type of READ-GTBL-ST2.
@@ -1100,8 +1095,8 @@ Form:  ( DEFUN READ-GTBL-ST2 ...)
 Rules: NIL
  READ-GTBL-ST2
 ACL2 !>>(DEFUN WRITE-GTBL-ST2 (VAL STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (WRITE-GTBL VAL ST UPDATE-FLD))
+          (DECLARE (XARGS :STOBJS STATE))
+          (WRITE-GTBL VAL ST UPDATE-FLD))
 
 Since WRITE-GTBL-ST2 is non-recursive, its admission is trivial.  We
 observe that the type of WRITE-GTBL-ST2 is described by the theorem
@@ -1124,9 +1119,9 @@ ACL2 !>>(WRITE-GTBL-ST 20 STATE)
 ACL2 !>>(ASSERT-EVENT (EQUAL (READ-GTBL-ST STATE) 20))
  :PASSED
 ACL2 !>>(ENCAPSULATE (((CRN0 STATE) => *))
-                     (LOCAL (DEFUN CRN0 (STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (STATE-P STATE))))
+          (LOCAL (DEFUN CRN0 (STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (STATE-P STATE))))
 
 To verify that the encapsulated event correctly extends the current
 theory we will evaluate it.  The theory thus constructed is only ephemeral.
@@ -1135,8 +1130,8 @@ Encapsulated Event:
 
 
 ACL2 !>>>(LOCAL (DEFUN CRN0 (STATE)
-                       (DECLARE (XARGS :STOBJS STATE))
-                       (STATE-P STATE)))
+                  (DECLARE (XARGS :STOBJS STATE))
+                  (STATE-P STATE)))
 
 Since CRN0 is non-recursive, its admission is trivial.  We observe
 that the type of CRN0 is described by the theorem 
@@ -1189,9 +1184,9 @@ ACL2 Error [Failure] in ( DEFATTACH CRN0 RD0):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RD0-IN-GUARD (STATE)
-               (DECLARE (XARGS :STOBJS STATE :GUARD (RD0 STATE))
-                        (IGNORE STATE))
-               17)
+          (DECLARE (XARGS :STOBJS STATE :GUARD (RD0 STATE))
+                   (IGNORE STATE))
+          17)
 
 Since RD0-IN-GUARD is non-recursive, its admission is trivial.  We
 observe that the type of RD0-IN-GUARD is described by the theorem 
@@ -1229,7 +1224,7 @@ ACL2 Error [Failure] in ( DEFATTACH CRN0 RD0-IN-GUARD):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(ENCAPSULATE (((CRN1 *) => * :GLOBAL-STOBJS ((ST))))
-                     (LOCAL (DEFUN CRN1 (X) X)))
+          (LOCAL (DEFUN CRN1 (X) X)))
 
 
 ACL2 Error in ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...):  In the
@@ -1251,7 +1246,7 @@ ACL2 !>>(ENCAPSULATE (((CRN1 *)
                        :FORMALS (X)
                        :GUARD (CONSP X)
                        :GLOBAL-STOBJS ((ST))))
-                     (LOCAL (DEFUN CRN1 (X) X)))
+          (LOCAL (DEFUN CRN1 (X) X)))
 
 
 ACL2 Error in ( ENCAPSULATE (((CRN1 * ...) ...) ...) ...):  In the
@@ -1271,9 +1266,9 @@ See :DOC failure.
 ACL2 !>>(ENCAPSULATE (((CRN1 STATE)
                        => *
                        :GLOBAL-STOBJS ((ST))))
-                     (LOCAL (DEFUN CRN1 (STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (STATE-P STATE))))
+          (LOCAL (DEFUN CRN1 (STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (STATE-P STATE))))
 
 To verify that the encapsulated event correctly extends the current
 theory we will evaluate it.  The theory thus constructed is only ephemeral.
@@ -1282,8 +1277,8 @@ Encapsulated Event:
 
 
 ACL2 !>>>(LOCAL (DEFUN CRN1 (STATE)
-                       (DECLARE (XARGS :STOBJS STATE))
-                       (STATE-P STATE)))
+                  (DECLARE (XARGS :STOBJS STATE))
+                  (STATE-P STATE)))
 
 Since CRN1 is non-recursive, its admission is trivial.  We observe
 that the type of CRN1 is described by the theorem 
@@ -1319,9 +1314,9 @@ Rules: NIL
 ACL2 !>>(ENCAPSULATE (((CRN2 * STATE)
                        => *
                        :GLOBAL-STOBJS (NIL ST)))
-                     (LOCAL (DEFUN CRN2 (X STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (CONS X (STATE-P STATE)))))
+          (LOCAL (DEFUN CRN2 (X STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (CONS X (STATE-P STATE)))))
 
 
 ACL2 Error in ( ENCAPSULATE (((CRN2 * ...) ...) ...) ...):  In the
@@ -1342,9 +1337,9 @@ See :DOC failure.
 ACL2 !>>(ENCAPSULATE (((CRN2 * STATE)
                        => STATE
                        :GLOBAL-STOBJS (NIL ST)))
-                     (LOCAL (DEFUN CRN2 (X STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (F-PUT-GLOBAL 'ABC X STATE))))
+          (LOCAL (DEFUN CRN2 (X STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (F-PUT-GLOBAL 'ABC X STATE))))
 
 To verify that the encapsulated event correctly extends the current
 theory we will evaluate it.  The theory thus constructed is only ephemeral.
@@ -1353,8 +1348,8 @@ Encapsulated Event:
 
 
 ACL2 !>>>(LOCAL (DEFUN CRN2 (X STATE)
-                       (DECLARE (XARGS :STOBJS STATE))
-                       (F-PUT-GLOBAL 'ABC X STATE)))
+                  (DECLARE (XARGS :STOBJS STATE))
+                  (F-PUT-GLOBAL 'ABC X STATE)))
 
 Since CRN2 is non-recursive, its admission is trivial.  We observe
 that the type of CRN2 is described by the theorem (CONSP (CRN2 X STATE)).
@@ -1462,9 +1457,9 @@ Rules: ((:TYPE-PRESCRIPTION STATE-P))
 ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
                        => STATE
                        :GLOBAL-STOBJS ((ST ST ST2 ST2))))
-                     (LOCAL (DEFUN CRN3 (X STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (F-PUT-GLOBAL 'ABC X STATE))))
+          (LOCAL (DEFUN CRN3 (X STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (F-PUT-GLOBAL 'ABC X STATE))))
 
 
 ACL2 Error in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):  Illegal
@@ -1484,9 +1479,9 @@ See :DOC failure.
 ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
                        => STATE
                        :GLOBAL-STOBJS ((ST) ST)))
-                     (LOCAL (DEFUN CRN3 (X STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (F-PUT-GLOBAL 'ABC X STATE))))
+          (LOCAL (DEFUN CRN3 (X STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (F-PUT-GLOBAL 'ABC X STATE))))
 
 
 ACL2 Error in ( ENCAPSULATE (((CRN3 * ...) ...) ...) ...):  Illegal
@@ -1506,9 +1501,9 @@ See :DOC failure.
 ACL2 !>>(ENCAPSULATE (((CRN3 * STATE)
                        => STATE
                        :GLOBAL-STOBJS ((ST))))
-                     (LOCAL (DEFUN CRN3 (X STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (F-PUT-GLOBAL 'ABC X STATE))))
+          (LOCAL (DEFUN CRN3 (X STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (F-PUT-GLOBAL 'ABC X STATE))))
 
 To verify that the encapsulated event correctly extends the current
 theory we will evaluate it.  The theory thus constructed is only ephemeral.
@@ -1517,8 +1512,8 @@ Encapsulated Event:
 
 
 ACL2 !>>>(LOCAL (DEFUN CRN3 (X STATE)
-                       (DECLARE (XARGS :STOBJS STATE))
-                       (F-PUT-GLOBAL 'ABC X STATE)))
+                  (DECLARE (XARGS :STOBJS STATE))
+                  (F-PUT-GLOBAL 'ABC X STATE)))
 
 Since CRN3 is non-recursive, its admission is trivial.  We observe
 that the type of CRN3 is described by the theorem (CONSP (CRN3 X STATE)).
@@ -1593,9 +1588,9 @@ ACL2 Error [Failure] in ( DEFATTACH CRN3 WR2):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFUN RD0+ (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (MV (WITH-GLOBAL-STOBJ ST (FLD ST))
-                   STATE))
+          (DECLARE (XARGS :STOBJS STATE))
+          (MV (WITH-GLOBAL-STOBJ ST (FLD ST))
+              STATE))
 
 Since RD0+ is non-recursive, its admission is trivial.  We observe
 that the type of RD0+ is described by the theorem 
@@ -1616,9 +1611,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(ENCAPSULATE (((CRN4 STATE)
                        => (MV * STATE)
                        :GLOBAL-STOBJS (NIL ST)))
-                     (LOCAL (DEFUN CRN4 (STATE)
-                                   (DECLARE (XARGS :STOBJS STATE))
-                                   (MV 3 STATE))))
+          (LOCAL (DEFUN CRN4 (STATE)
+                   (DECLARE (XARGS :STOBJS STATE))
+                   (MV 3 STATE))))
 
 To verify that the encapsulated event correctly extends the current
 theory we will evaluate it.  The theory thus constructed is only ephemeral.
@@ -1627,8 +1622,8 @@ Encapsulated Event:
 
 
 ACL2 !>>>(LOCAL (DEFUN CRN4 (STATE)
-                       (DECLARE (XARGS :STOBJS STATE))
-                       (MV 3 STATE)))
+                  (DECLARE (XARGS :STOBJS STATE))
+                  (MV 3 STATE)))
 
 Since CRN4 is non-recursive, its admission is trivial.  We observe
 that the type of CRN4 is described by the theorem 
@@ -1681,8 +1676,8 @@ Form:  ( DEFATTACH CRN4 RD0+)
 Rules: ((:TYPE-PRESCRIPTION STATE-P))
  :ATTACHMENTS-RECORDED
 ACL2 !>>(DEFUN H1 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (CRN1 STATE))
+          (DECLARE (XARGS :STOBJS STATE))
+          (CRN1 STATE))
 
 Since H1 is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of H1.
@@ -1699,8 +1694,8 @@ Form:  ( DEFUN H1 ...)
 Rules: NIL
  H1
 ACL2 !>>(DEFUN H2 (STATE)
-               (DECLARE (XARGS :STOBJS STATE))
-               (H1 STATE))
+          (DECLARE (XARGS :STOBJS STATE))
+          (H1 STATE))
 
 Since H2 is non-recursive, its admission is trivial.  We could deduce
 no constraints on the type of H2.

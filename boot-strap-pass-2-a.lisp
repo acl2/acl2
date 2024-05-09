@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -56,6 +56,10 @@
 (verify-termination-boot-strap cons-term) ; and guards
 (verify-termination-boot-strap symbol-class) ; and guards
 
+; wormhole coherence functions
+(verify-termination-boot-strap sync-ephemeral-whs-with-persistent-whs)
+(verify-termination-boot-strap set-persistent-whs-and-ephemeral-whs)
+
 ; packn1, packn, and pack-to-string
 
 (verify-termination-boot-strap packn1) ; and guards
@@ -101,14 +105,20 @@
 (verify-termination-boot-strap flatten-ands-in-lit) ; and guards
 (verify-termination-boot-strap union-equal-to-end) ; and guards
 (verify-termination-boot-strap flatten-ands-in-lit!) ; and guards
+(verify-termination-boot-strap remove-lisp-suffix) ; and guards
 
 (verify-guards warranted-fns-of-world)
+
+(verify-termination-boot-strap string-prefixp-1) ; and guards
+(verify-termination-boot-strap string-prefixp) ; and guards
 
 ; Convert defproxy events to :logic mode.
 (defstub initialize-event-user (* * state) => state)
 (defstub finalize-event-user (* * state) => state)
 (defstub acl2x-expansion-alist (* state) => *)
 (defstub set-ld-history-entry-user-data (* * * state) => *)
+(defstub brkpt1-brr-data-entry (* * * state) => *)
+(defstub brkpt2-brr-data-entry (* * * state) => *)
 
 #+acl2-loop-only
 (partial-encapsulate
@@ -187,6 +197,44 @@
 (verify-termination-boot-strap print-object$-fn) ; and guards
 (verify-termination-boot-strap print-object$) ; and guards
 (verify-termination-boot-strap print-object$-preserving-case) ; and guards
+
+(verify-termination-boot-strap set-fmt-hard-right-margin) ; and guards
+(verify-termination-boot-strap set-fmt-soft-right-margin) ; and guards
+
+(verify-termination-boot-strap bounded-integer-listp) ; and guards
+
+(verify-termination-boot-strap project-dir-alist) ; and guards
+(verify-termination-boot-strap project-dir-lookup) ; and guards
+(verify-termination-boot-strap project-dir) ; and guards
+(verify-termination-boot-strap system-books-dir) ; and guards
+
+(verify-termination-boot-strap sysfile-p) ; and guards
+(verify-termination-boot-strap sysfile-key) ; and guards
+(verify-termination-boot-strap sysfile-filename) ; and guards
+(verify-termination-boot-strap book-name-p) ; and guards
+(verify-termination-boot-strap book-name-listp) ; and guards
+(verify-termination-boot-strap book-name-to-filename-1) ; and guards
+(verify-termination-boot-strap book-name-to-filename) ; and guards
+(verify-termination-boot-strap book-name-lst-to-filename-lst) ; and guards
+(verify-termination-boot-strap warnings-as-errors-val-guard) ; and guards
+(verify-termination-boot-strap warnings-as-errors-val) ; and guards
+
+(verify-termination-boot-strap brr-data-p) ; and guards
+(verify-termination-boot-strap brr-data-mirror) ; and guards
+(verify-termination-boot-strap brkpt1-brr-data-entry-builtin) ; and guards
+(verify-termination-boot-strap brkpt2-brr-data-entry-builtin) ; and guards
+(verify-termination-boot-strap update-brr-data-1-builtin) ; and guards
+(verify-termination-boot-strap update-brr-data-2-builtin) ; and guards
+(verify-termination-boot-strap set-wormhole-data-fast) ; and guards
+(set-brr-data-attachments)
+(verify-termination-boot-strap brr-data-lst) ; and guards
+
+; The following has caused the following error with "make proofs".
+; > Error: HARD ACL2 ERROR in EXECUTABLE-BADGE:  It is illegal to call this function
+; >        during boot strapping because primitives have not yet been identified
+; >        and badges not yet computed!
+; So clear-brr-data-lst has been put into *system-verify-guards-alist*.
+; (verify-termination-boot-strap clear-brr-data-lst) ; and guards
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -493,9 +541,9 @@
 
 ;;; (defthm-occur-cnt-bounded signed-byte-p-30-occur-cnt-bounded-flg
 ;;;   (term
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
+;;;    (implies (and (force (signed-byte-p *fixnum-bits* a))
+;;;                  (signed-byte-p *fixnum-bits* m)
+;;;                  (signed-byte-p *fixnum-bits* (+ bound-m m))
 ;;;                  (force (<= 0 a))
 ;;;                  (<= 0 m)
 ;;;                  (<= 0 bound-m)
@@ -504,9 +552,9 @@
 ;;;                  (<= (occur-cnt-bounded term1 term2 a m bound-m) (+ bound-m m))))
 ;;;    :rule-classes :linear)
 ;;;   (list
-;;;    (implies (and (force (signed-byte-p 30 a))
-;;;                  (signed-byte-p 30 m)
-;;;                  (signed-byte-p 30 (+ bound-m m))
+;;;    (implies (and (force (signed-byte-p *fixnum-bits* a))
+;;;                  (signed-byte-p *fixnum-bits* m)
+;;;                  (signed-byte-p *fixnum-bits* (+ bound-m m))
 ;;;                  (force (<= 0 a))
 ;;;                  (<= 0 m)
 ;;;                  (<= 0 bound-m)
@@ -518,11 +566,11 @@
 ;;;                                                  bound-m))))
 
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
     (case flg
-      (term (implies (and (force (signed-byte-p 30 a))
-                          (signed-byte-p 30 m)
-                          (signed-byte-p 30 (+ bound-m m))
+      (term (implies (and (force (signed-byte-p *fixnum-bits* a))
+                          (signed-byte-p *fixnum-bits* m)
+                          (signed-byte-p *fixnum-bits* (+ bound-m m))
                           (force (<= 0 a))
                           (<= 0 m)
                           (<= 0 bound-m)
@@ -532,9 +580,9 @@
                           (<= (occur-cnt-bounded term1 term2 a m bound-m)
                               (+ bound-m m)))))
       (otherwise
-       (implies (and (force (signed-byte-p 30 a))
-                     (signed-byte-p 30 m)
-                     (signed-byte-p 30 (+ bound-m m))
+       (implies (and (force (signed-byte-p *fixnum-bits* a))
+                     (signed-byte-p *fixnum-bits* m)
+                     (signed-byte-p *fixnum-bits* (+ bound-m m))
                      (force (<= 0 a))
                      (<= 0 m)
                      (<= 0 bound-m)
@@ -547,10 +595,10 @@
     :hints
     (("Goal" :induct (occur-cnt-bounded-flg flg term2 term1 lst a m bound-m)))))
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg-term
-    (implies (and (force (signed-byte-p 30 a))
-                  (signed-byte-p 30 m)
-                  (signed-byte-p 30 (+ bound-m m))
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg-term
+    (implies (and (force (signed-byte-p *fixnum-bits* a))
+                  (signed-byte-p *fixnum-bits* m)
+                  (signed-byte-p *fixnum-bits* (+ bound-m m))
                   (force (<= 0 a))
                   (<= 0 m)
                   (<= 0 bound-m)
@@ -561,13 +609,13 @@
                       (+ bound-m m))))
     :rule-classes :linear
     :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-             :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
+             :use ((:instance signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
                               (flg 'term)))))))
  (local
-  (defthm signed-byte-p-30-occur-cnt-bounded-flg-list
-    (implies (and (force (signed-byte-p 30 a))
-                  (signed-byte-p 30 m)
-                  (signed-byte-p 30 (+ bound-m m))
+  (defthm signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg-list
+    (implies (and (force (signed-byte-p *fixnum-bits* a))
+                  (signed-byte-p *fixnum-bits* m)
+                  (signed-byte-p *fixnum-bits* (+ bound-m m))
                   (force (<= 0 a))
                   (<= 0 m)
                   (<= 0 bound-m)
@@ -578,7 +626,7 @@
                       (+ bound-m m))))
     :rule-classes :linear
     :hints (("Goal" ; :in-theory (theory 'minimal-theory)
-             :use ((:instance signed-byte-p-30-occur-cnt-bounded-flg
+             :use ((:instance signed-byte-p-*fixnum-bits*-occur-cnt-bounded-flg
                               (flg 'list)))))))
 
  (verify-guards occur-cnt-bounded)
@@ -621,7 +669,7 @@
 
 (verify-termination-boot-strap evg-occur)
 
-(verify-termination-boot-strap min-fixnum)
+(verify-termination-boot-strap min-fixnat$inline)
 
 (verify-termination-boot-strap fn-count-evg-rec ; but not guards
                                (declare (xargs :verify-guards nil)))

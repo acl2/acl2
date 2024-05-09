@@ -214,8 +214,10 @@
 
 ; The following is proved in axioms under the name
 ; symbol-listp-forward-to-true-listp but stored only as a :forward-chaining
-; lemma.  We need it as a :rewrite rule so we prove it again, locally.  It
-; is an inefficient :rewrite rule.
+; lemma.  [Matt K. mod, 7/15/2022; that rule is being removed, but its effect
+; follows from three other forward-chaining rules; see ACL2 source file
+; axioms.lisp.]  We need it as a :rewrite rule so we prove it again, locally.
+; It is an inefficient :rewrite rule.
 
 (local
  (defthm symbol-listp-implies-true-listp

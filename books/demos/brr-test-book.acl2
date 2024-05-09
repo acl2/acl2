@@ -1,0 +1,10 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "brr-test")
+
+; Help dependency scanner.
+#||
+(depends-on "brr-test-input.lsp")
+(depends-on "brr-test-log.txt")
+||#
+
+; cert-flags: ? t :ttags :all

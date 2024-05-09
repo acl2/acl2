@@ -1,7 +1,7 @@
 ; BV-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,13 +25,13 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (enable car-becomes-nth-of-0
-                          integerp-of-nth-when-all-dargp
-                          not-cddr-of-nth-when-all-dargp
-                          consp-of-cdr-of-nth-when-all-dargp
-                          equal-of-quote-and-nth-0-of-nth-when-all-dargp
-                          symbolp-of-nth-0-when-dag-exprp)))
+                          integerp-of-nth-when-darg-listp
+                          not-cddr-of-nth-when-darg-listp
+                          consp-of-cdr-of-nth-when-darg-listp
+                          equal-of-quote-and-nth-0-of-nth-when-darg-listp
+                          symbolp-of-nth-0-when-dag-exprp
+                          dargp-of-nth-when-darg-listp)))
 
-;dup
 (defund unquote-if-possible (x)
   (declare (xargs :guard t))
   (if (and (quotep x)
@@ -43,9 +43,9 @@
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
-(defund get-type-of-bv-expr-axe (fn dargs)
-  (declare (xargs :guard (and (true-listp dargs)
-                              (all-dargp dargs))))
+(defund maybe-get-type-of-bv-function-call (fn dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  ;; todo: use case here:
   (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
    ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))
     (make-bv-type 1))
@@ -60,16 +60,17 @@
                     sbvdiv sbvrem
                     leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
                     bvif
-                    bvnth ;drop?
-                    ))
+                    bvshl
+                    bvshr))
     (and (consp dargs)
          (let ((width (first dargs)))
-           (and (quoted-natp width)
+           (and (darg-quoted-natp width)
                 (make-bv-type (unquote width))))))
    ;; 32-bit operations:
    ;;see unsigned-byte-p-32-of-leftrotate32 and unsigned-byte-p-32-of-rightrotate32:
    ((member-eq fn '(leftrotate32 rightrotate32)) ;eventually drop?
     (make-bv-type 32))
+   ;; Slice:
    ((eq fn 'slice)
     (let ((high (unquote-if-possible (first dargs)))
           (low (unquote-if-possible (second dargs))))
@@ -77,6 +78,7 @@
            (natp low)
            (<= low high)
            (make-bv-type (+ 1 high (- low))))))
+   ;; Bvcat:
    ((eq fn 'bvcat)
     (let ((high-size (unquote-if-possible (first dargs)))
           (low-size (unquote-if-possible (third dargs))))
@@ -86,21 +88,24 @@
    ;; Unknown function, can't find a BV size:
    (t nil)))
 
-(defthm get-type-of-bv-expr-axe-type
-  (or (null (get-type-of-bv-expr-axe fn dargs))
-      (integerp (get-type-of-bv-expr-axe fn dargs))) ;strengthen to natp?
+(defthm maybe-get-type-of-bv-function-call-type
+  (or (null (maybe-get-type-of-bv-function-call fn dargs))
+      (natp (maybe-get-type-of-bv-function-call fn dargs)))
   :rule-classes (:type-prescription)
-  :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call
+                                     <-of-0-and-make-bv-type))))
 
-(defthm bv-typep-of-get-type-of-bv-expr-axe
-  (implies (get-type-of-bv-expr-axe fn dargs)
-           (bv-typep (get-type-of-bv-expr-axe fn dargs)))
-  :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
+;; If it's not nil, it's a bv-type.
+(defthm bv-typep-of-maybe-get-type-of-bv-function-call
+  (implies (maybe-get-type-of-bv-function-call fn dargs)
+           (bv-typep (maybe-get-type-of-bv-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call))))
 
-(defthm axe-typep-of-get-type-of-bv-expr-axe
-  (implies (get-type-of-bv-expr-axe fn dargs)
-           (axe-typep (get-type-of-bv-expr-axe fn dargs)))
-  :hints (("Goal" :in-theory (enable get-type-of-bv-expr-axe))))
+;; If it's not nil, it's an axe-type.
+(defthm axe-typep-of-maybe-get-type-of-bv-function-call
+  (implies (maybe-get-type-of-bv-function-call fn dargs)
+           (axe-typep (maybe-get-type-of-bv-function-call fn dargs)))
+  :hints (("Goal" :in-theory (enable maybe-get-type-of-bv-function-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,7 +136,7 @@
                       (acons (unquote quoted-varname) (list 'quote (integer-length val)) nil)
                     ;; failure (may be a constant array or a negative or something else):
                     nil))
-              (let ((type (get-type-of-bv-expr-axe fn (dargs expr))))
+              (let ((type (maybe-get-type-of-bv-function-call fn (dargs expr))))
                 (if type
                     (acons (unquote quoted-varname) (list 'quote (bv-type-width type)) nil) ;could often save this quote since in many operators the size is already quoted
                   ;;failure:
@@ -164,7 +169,7 @@
                ;;                    (and (eq 'bv-array-read (ffn-symb expr))
                ;;                         (quotep (darg4 expr)))
                )
-           (let ((type (get-type-of-bv-expr-axe (ffn-symb expr) (dargs expr))))
+           (let ((type (maybe-get-type-of-bv-function-call (ffn-symb expr) (dargs expr))))
              (and type
                   (< width (bv-type-width type))))))))
 
@@ -179,24 +184,29 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (if (not (and (consp quoted-width)          ; test for quotep
+  (and (if (or (equal operators ''all) ;; todo: can we avoid this?  use one as the default?
+               (equal operators ''non-arithmetic))
+           t
+         (progn$
+          ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected operators: ~x0.)~%" operators)
+          nil))
+       (if (and (consp quoted-width)          ; test for quotep
                 (natp (unquote quoted-width)) ;check natp or posp?
-                ;; todo: can we avoid this?  use one as the default?
-                (or (equal operators ''all)
-                    (equal operators ''non-arithmetic))))
-      (prog2$ (cw "Warning: In term-should-be-trimmed-axe: Unexpected arguments (width: ~x0, operators ~x1).~%"
-                  (if (consp quoted-width) ; check for quotep
-                      quoted-width
-                    ;; simplify this?:
-                    (if (and (not (myquotep term))
-                             (natp quoted-width)
-                             (< quoted-width (alen1 'dag-array dag-array)))
-                        (aref1 'dag-array dag-array quoted-width)
-                      :unknown))
-                  operators)
-              nil)
-    (let ((width (unquote quoted-width)))
-      (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+                )
+           t
+         (progn$ ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
+          ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected width: ~x0.)~%"
+          ;;     (if (consp quoted-width) ; check for quotep
+          ;;         quoted-width
+          ;;       ;; simplify this?:
+          ;;       (if (and (not (myquotep term))
+          ;;                (natp quoted-width)
+          ;;                (< quoted-width (alen1 'dag-array dag-array)))
+          ;;           (aref1 'dag-array dag-array quoted-width)
+          ;;         :unknown)))
+          nil))
+       (let ((width (unquote quoted-width)))
+         (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
 
 ;adds 1 to QUOTED-WIDTH;
 ;for (slice 7 0 x) the relevant width to consider is 8, not 7.  likewise for (getbit 7 x).
@@ -206,27 +216,33 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (if (not (and (myquotep quoted-width)
-                (natp (unquote quoted-width))
-                (or (equal operators ''all)
-                    (equal operators ''non-arithmetic))))
-      (prog2$ (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected arguments (width: ~x0).~%"
-                  (if (quotep quoted-width)
-                      quoted-width
-                    ;; simplify this?:
-                    (if (and (not (myquotep term))
-                             (natp quoted-width)
-                             (< quoted-width (alen1 'dag-array dag-array)))
-                        (aref1 'dag-array dag-array quoted-width)
-                      :unknown)))
-              nil)
-    (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
-      (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+  (and (if (or (equal operators ''all) ;; todo: can we avoid this?  use one as the default?
+               (equal operators ''non-arithmetic))
+           t
+         (progn$
+          ;; (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected operators: ~x0.)~%" operators)
+          nil))
+       (if (and (myquotep quoted-width)
+                (natp (unquote quoted-width)))
+           t
+         (progn$ ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
+          ;; (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected width: ~x0.)~%"
+          ;;     (if (quotep quoted-width)
+          ;;         quoted-width
+          ;;       ;; simplify this?:
+          ;;       (if (and (not (myquotep term))
+          ;;                (natp quoted-width)
+          ;;                (< quoted-width (alen1 'dag-array dag-array)))
+          ;;           (aref1 'dag-array dag-array quoted-width)
+          ;;         :unknown)))
+          nil))
+       (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
+         (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;term and nest are nodenums or quoteps?
-(defund bv-array-write-nest-ending-inp (term nest dag-array)
+(defund bv-array-write-nest-ending-inp-axe (term nest dag-array)
   (declare (xargs :guard (or (myquotep nest)
                              (and (natp nest)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
@@ -239,12 +255,12 @@
            (= 5 (len (dargs expr)))
            (if (quotep (darg5 expr))
                (equal term (darg5 expr))
-             (and (natp (darg5 expr))           ;drop somehow?
-                  (mbt (natp nest))               ;for termination
-                  (mbt (< (darg5 expr) nest))   ;for termination
-                  (bv-array-write-nest-ending-inp term
-                                                  (darg5 expr)
-                                                  dag-array)))))))
+             (and (natp (darg5 expr))         ;drop somehow?
+                  (mbt (natp nest))           ;for termination
+                  (mbt (< (darg5 expr) nest)) ;for termination
+                  (bv-array-write-nest-ending-inp-axe term
+                                                      (darg5 expr)
+                                                      dag-array)))))))
 
 ;; ;; scheme for getting rid of logext-lists in myif nests
 
@@ -345,7 +361,7 @@
 
 ;BOZO for what other terms is it syntactically evident that they have low zeros?
 ;termination depends on dag property?
-(defund bvcat-nest-with-low-zeros-aux (term zero-count-needed dag-array)
+(defund bvcat-nest-with-low-zerosp-axe-aux (term zero-count-needed dag-array)
   (declare (xargs :measure (if (quotep term)
                                0
                              (+ 1 (nfix term)))
@@ -379,18 +395,18 @@
                              (mbt (or (quotep (darg4 expr)) ;for termination
                                       (and (< (darg4 expr) term)
                                            (natp (darg4 expr)))))
-                             (bvcat-nest-with-low-zeros-aux (darg4 expr) zero-count-needed dag-array)))))))))))
+                             (bvcat-nest-with-low-zerosp-axe-aux (darg4 expr) zero-count-needed dag-array)))))))))))
 
 ;zero-count-needed is quoted
-(defund bvcat-nest-with-low-zeros (term zero-count-needed dag-array)
+(defund bvcat-nest-with-low-zerosp-axe (term zero-count-needed dag-array)
   (declare (xargs :guard (or (myquotep term)
                              (and (natp term)
                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
   (and (myquotep zero-count-needed)
        (natp (unquote zero-count-needed))
-       (bvcat-nest-with-low-zeros-aux term (unquote zero-count-needed) dag-array)))
+       (bvcat-nest-with-low-zerosp-axe-aux term (unquote zero-count-needed) dag-array)))
 
-(defund bv-array-write-nest-with-val-at-index-aux (term val index dag-array
+(defund bv-array-write-nest-with-val-at-indexp-axe-aux (term val index dag-array
                                                         calls-remaining ;ensures termination (todo: drop and use mbt instead)
                                                         )
   (declare (xargs :measure (nfix (+ 1 calls-remaining))
@@ -424,10 +440,10 @@
                      (let ((index2 (darg3 expr)))
                        (if (and (quotep index2)
                                 (not (equal (unquote index2) index)))
-                           (bv-array-write-nest-with-val-at-index-aux (darg5 expr) val index dag-array (+ -1 calls-remaining))
+                           (bv-array-write-nest-with-val-at-indexp-axe-aux (darg5 expr) val index dag-array (+ -1 calls-remaining))
                          nil)))))))))))
 
-(defund bv-array-write-nest-with-val-at-index (term val index dag-array)
+(defund bv-array-write-nest-with-val-at-indexp-axe (term val index dag-array)
   (declare (xargs :guard (and (or (natp index)
                                   (myquotep index))
                               (or (natp val)
@@ -438,26 +454,20 @@
   (and (quotep val)
        (quotep index)
        (natp (unquote index)) ;new, can prevent loops?
-       (bv-array-write-nest-with-val-at-index-aux term (unquote val) (unquote index) dag-array
-                                                  1000000 ;is term a nodenum?  can we use it here?
-                                                  )))
+       (bv-array-write-nest-with-val-at-indexp-axe-aux term (unquote val) (unquote index) dag-array
+                                                       1000000 ;is term a nodenum?  can we use it here?
+                                                       )))
 
-(defund bv-term-syntaxp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (if (consp nodenum-or-quotep)
-      (natp (unquote nodenum-or-quotep))
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (and (consp expr)
-           (member-eq (ffn-symb expr)
-                      *operators-whose-size-we-know*)))))
-
-(defund not-bv-term-syntaxp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (not (bv-term-syntaxp nodenum-or-quotep dag-array)))
+;; (defund bv-term-syntaxp (nodenum-or-quotep dag-array)
+;;   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
+;;                              (and (natp nodenum-or-quotep)
+;;                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
+;;   (if (consp nodenum-or-quotep)
+;;       (natp (unquote nodenum-or-quotep))
+;;     (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+;;       (and (consp expr)
+;;            (member-eq (ffn-symb expr)
+;;                       *operators-whose-size-we-know*)))))
 
 ;; ;bbbozo use this all over the place
 ;; ;term should be a nodenum or quoted constant (is this always the case for the da-syntaxp fns?)
@@ -471,7 +481,7 @@
 ;;       (let ((expr (aref1 'dag-array dag-array term)))
 ;;         (and (consp expr)
 ;;              (member-eq (car expr) *operators-whose-size-we-know*)
-;;              (< (unquote width) (get-type-of-expr expr)))))))
+;;              (< (unquote width) (get-type-of-function-call expr)))))))
 
 ;; (skip -proofs (verify-guards term-is-wider-than))
 
@@ -560,3 +570,52 @@
                          (natp (unquote (first (dargs expr))))
                          (acons (unquote quoted-varname) (first (dargs expr)) nil))
                   nil)))))))))
+
+;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
+;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
+;; cannot easily establish it.
+(defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
+  (declare (xargs :guard (and (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (and (not (consp darg)) ; test for nodenum
+       (let ((expr (aref1 'dag-array dag-array darg)))
+         (and (consp expr)
+              (let ((fn (ffn-symb expr)))
+                (and (member-eq fn *functions-convertible-to-bv*)
+                     (let ((exclude-fns (unquote-if-possible exclude-fns)))
+                       (if exclude-fns
+                           (and (true-listp exclude-fns) ; for guards
+                                (not (member-eq fn exclude-fns)))
+                         t))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This can be used to decide which functions to open.
+;; But to decide whether we can translate an expression, more checking is needed.
+;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
+;instead of using this, check the args, etc.?
+;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
+;; todo: add bve and sbvle?
+(defconst *bv-and-array-fns-we-can-translate*
+  '(not
+    booland boolor ;boolxor
+    boolif
+    bitnot
+    bitand bitor bitxor
+    bvchop bvnot bvuminus
+    getbit
+    slice
+    bvand bvor bvxor
+    bvplus bvminus bvmult
+    bvdiv bvmod
+    sbvdiv sbvrem
+    bvlt bvle
+    sbvlt sbvle
+    bvcat
+    bvsx
+    bvif
+    leftrotate32
+    bv-array-read
+    bv-array-write
+    equal))

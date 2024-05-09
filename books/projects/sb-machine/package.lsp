@@ -3,11 +3,12 @@
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
 (include-book "std/portcullis" :dir :system)
-(include-book "std/util/define" :dir :system)
-(include-book "std/util/defrule" :dir :system)
+;; (include-book "std/util/define" :dir :system)
+;; (include-book "std/util/defrule" :dir :system)
 
-(include-book "centaur/fty/deftypes" :dir :system)
-(include-book "centaur/fty/basetypes" :dir :system)
+(include-book "centaur/fty/portcullis" :dir :system)
+;; (include-book "centaur/fty/deftypes" :dir :system)
+;; (include-book "centaur/fty/basetypes" :dir :system)
 
 (defconst *fty-imports*
   '(fty::deflist

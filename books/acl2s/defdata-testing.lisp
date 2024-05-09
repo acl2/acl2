@@ -188,6 +188,19 @@ Skipping for now.
 (defdata loi (listof int))
 (defdata r1 (record (a . loi)))
 
+(defdata data (listof nat))
+(defdata receiver-state (record (received . data)))
+
+(definec bax (rs :data) :receiver-state
+  (receiver-state rs))
+
+(property (rs :data)
+  (receiver-statep (receiver-state rs)))
+
+(property (rs :receiver-state a b c :all)
+  (equal (mget :received (msets rs :received a :received b :received c))
+         c))
+         
 (must-fail
  (defdata-alias r2 r1))
 
@@ -213,6 +226,90 @@ Skipping for now.
               (^ (<= lo mid1)
                  (>= hi mid2))))))
 
-;(in-package "DEFDATA")
-;:redef!
-;(in-package "ACL2S")
+(defdata receiver-state (record (received . data)))
+
+(defdata value-type int)
+
+(defdata read-request   (list 'READ-REQUEST))
+(defdata read-response  (list 'READ-RESPONSE value-type))
+(defdata write-request  (list 'WRITE-REQUEST value-type))
+(defdata write-response (list 'WRITE-RESPONSE))
+(defdata repl-request   (list 'REPL-REQUEST nat value-type))
+(defdata repl-response  (list 'REPL-RESPONSE))
+
+(defdata operation (oneof read-request read-response
+                    write-request write-response
+                    repl-request repl-response))
+
+(check (operationp (list 'READ-REQUEST)))
+(check (operationp (list 'READ-RESPONSE 1)))
+(check (operationp (list 'WRITE-REQUEST 1)))
+(check (operationp (list 'WRITE-RESPONSE)))
+(check (operationp (list 'REPL-REQUEST 1 2)))
+(check (operationp (list 'REPL-RESPONSE)))
+(check (write-requestp '(write-request 3)))
+
+(defdata name (map nat nat))
+
+(defdata d2 (map loi loi))
+(defdata lloi (listof loi))
+(defdata d3 (map lloi lloi))
+(defdata d4 (map loi lloi))
+(defdata d5 (map lloi loi))
+
+(defdata d6
+  (record (a . loi)
+          (b . int)
+          (c . non-neg-rational)))
+
+(defdata d7 (map d6 d6))
+
+; If a recognizer is already defined, but the guard is not t, then
+; throw an error.
+(must-fail
+  (defdata zero 0))
+
+; An example where the recognizer is already defined.
+(defun zeerop (x)
+  (declare (xargs :guard t))
+  (equal x 0))
+
+(defdata zeero 0)
+
+; If we then try to define zerop using the alias route, still fail,
+; but due to constraining a symbol in the main Lisp package.
+(must-fail
+  (defdata zero 0))
+
+(defun zeeerop (x)
+  (declare (xargs :guard (acl2-numberp x)))
+  (equal x 0))
+
+; If we then try to define zeerop using the alias route, still fail
+; because we try to define zeeerop as a macro 
+(must-fail
+  (defdata zeeero 0))
+
+(defdata ds1 (enum '(1 2 3 1 2 3)))
+(defdata ds2 (or 1 2 3 1 2 3))
+(defdata ds3 (or 1 2 3 1 2 3 int))
+(defdata ds4 1)
+(defdata ds5 'x)
+(defdata ds6 int)
+(defdata ds7 (or 1 nil))
+
+(check= (defdata-domain-size ds1) 3)
+(check= (defdata-domain-size ds2) 3)
+(check= (defdata-domain-size ds3) 'infinite)
+(check= (defdata-domain-size ds4) 1)
+(check= (defdata-domain-size ds5) 1)
+(check= (defdata-domain-size ds6) 1)
+(check= (defdata-domain-size ds7) 2)
+
+(defdata ds8 (record (a . int) (b . tl)))
+
+; Can prove equivalence of records
+(property (x y :ds8)
+  :h (^ (== (ds8-a x) (ds8-a y))
+	(== (ds8-b x) (ds8-b y)))
+  (== x y))

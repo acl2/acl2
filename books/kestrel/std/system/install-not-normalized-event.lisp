@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ; Copyright (C) 2018, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
@@ -14,6 +14,7 @@
 
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
 (include-book "misc/install-not-normalized" :dir :system)
+(include-book "system/pseudo-event-form-listp" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,13 +23,13 @@
    (local booleanp "Make the event form local or not.")
    (names-to-avoid symbol-listp "Avoid these as theorem name.")
    (wrld plist-worldp))
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (name "A @(tsee symbolp): the name of the theorem.")
-               (updated-names-to-avoid "A @(tsee symbol-listp):
-                                        the input list @('names-to-avoid')
+  :returns (mv (event pseudo-event-formp)
+               (name symbolp "The name of the theorem.")
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)
+                                       "The input list @('names-to-avoid')
                                         augmented with @('name')."))
 
-  :mode :program
   :parents (std/system install-not-normalized)
   :short "Create an event form to
           <see topic='@(url install-not-normalized)'>install
@@ -60,12 +61,12 @@
    (local booleanp "Make the event forms local or not.")
    (names-to-avoid symbol-listp "Avoid these as theorem names.")
    (wrld plist-worldp))
-  :returns (mv (events "A list of @(tsee pseudo-event-formp) values.")
-               (names "A @(tsee symbol-listp): the names of the theorems.")
-               (updated-names-to-avoid "A @(tsee symbol-listp):
-                                        the input list @('names-to-avoid')
+  :returns (mv (events pseudo-event-form-listp)
+               (names symbol-listp "The names of the theorems.")
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)
+                                       "The input list @('names-to-avoid')
                                         augmented with @('names')."))
-  :mode :program
   :parents (std/system install-not-normalized)
   :short "Create a list of event forms to
           <see topic='@(url install-not-normalized)'>install

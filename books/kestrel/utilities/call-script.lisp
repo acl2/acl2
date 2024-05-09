@@ -1,7 +1,7 @@
 ; A utility to call shell scripts
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,24 +12,24 @@
 (in-package "ACL2")
 
 (local (include-book "state"))
+(local (include-book "read-acl2-oracle"))
+(local (include-book "w"))
+(local (include-book "getenv-dollar"))
 
 (defttag call-script)
 
-;move
-(in-theory (disable getenv$))
-
 (in-theory (disable mv-nth))
 
-(defthm state-p1-of-mv-nth-2-of-read-acl2-oracle
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 2 (read-acl2-oracle state))))
-  :hints (("Goal" :in-theory (enable read-acl2-oracle state-p1 open-output-channels))))
+(local
+ (defthm true-listp-of-acl2-oracle
+   (implies (state-p state)
+            (true-listp (acl2-oracle state)))
+   :hints (("Goal" :in-theory (enable state-p1 state-p)))))
 
-;move
-(defthm state-p1-of-mv-nth-2-of-getenv$
-  (implies (state-p1 state)
-           (state-p1 (mv-nth 2 (getenv$ str state))))
-  :hints (("Goal" :in-theory (enable getenv$))))
+(local
+ (defthm true-listp-of-cdr
+   (implies (true-listp x)
+            (true-listp (cdr x)))))
 
 ;; Call helper script named SCRIPT-NAME (which must be in
 ;; ${ACL2_ROOT}/books/kestrel/utilities/), passing it arguments SCRIPT-ARGS.
@@ -40,7 +40,7 @@
   (declare (xargs :stobjs state
                   :guard (and (stringp script-name)
                               (string-listp script-args))))
-  (let ((system-books-dir (f-get-global 'system-books-dir state))) ; should end with /
+  (let ((system-books-dir (system-books-dir state))) ; should end with /
     (if (not (stringp system-books-dir))
         (prog2$
          (er hard? 'call-script "Could not get system-books-dir when calling ~s0." script-name)
@@ -58,4 +58,9 @@
 
 (defthm stringp-of-mv-nth-1-of-call-script
   (stringp (mv-nth 1 (call-script script-name script-args state)))
+  :hints (("Goal" :in-theory (enable call-script))))
+
+(defthm w-of-mv-nth-2-of-call-script
+  (equal (w (mv-nth 2 (call-script script-name script-args state)))
+         (w state))
   :hints (("Goal" :in-theory (enable call-script))))

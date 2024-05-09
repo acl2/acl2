@@ -186,7 +186,7 @@
               ,(restore-mv-lets-in-term (lambda-body fn) wrld))
          ;; `((lambda ,(lambda-formals fn) ,(restore-mv-lets-in-term (lambda-body fn) wrld))
          ;;   ,@new-args)
-         (if (mv-nth-of-mv-list-termp term)
+         (if (mv-nth-of-mv-list-termp term) ; TODO: Support the case where the mv-list call is let-bound and mv-nth is called on it in the body
              (apply-mv-let-to-term (farg2 (farg2 term))
                                    (unquote (farg1 term))
                                    (unquote (farg1 (farg2 term)))

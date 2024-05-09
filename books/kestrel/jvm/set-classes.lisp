@@ -1,7 +1,7 @@
 ; A tool to set many classes in a class-table
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,6 +45,8 @@
            (bound-in-class-tablep class-name1 class-table)))
   :hints (("Goal" :in-theory (enable bound-in-class-tablep set-class-info))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; ALIST pairs class-names with class-infos.  It may often be a constant.
 (defund set-classes (alist class-table)
   (declare (xargs :guard (alistp alist)))
@@ -55,14 +57,22 @@
                       (cdr entry) ;; the class-info
                       (set-classes (rest alist) class-table)))))
 
-;rename
 (defthm get-class-info-of-set-classes
-  (implies (alistp alist)
+  (implies class-name
            (equal (get-class-info class-name (set-classes alist class-table))
-                  (let ((res (assoc-eq class-name alist)))
+                  (let ((res (assoc-eq class-name alist))) ; often this gets resolved
                     (if res
                         (cdr res)
                       (get-class-info class-name class-table)))))
+  :hints (("Goal" :in-theory (enable set-classes))))
+
+(defthm bound-in-class-tablep-of-set-classes
+  (implies class-name
+           (equal (bound-in-class-tablep class-name (set-classes alist class-table))
+                  (let ((res (assoc-equal class-name alist)))
+                    (if res
+                        (if (cdr res) t nil)
+                      (bound-in-class-tablep class-name class-table)))))
   :hints (("Goal" :in-theory (enable set-classes))))
 
 ;; ;dup in axe
@@ -99,7 +109,7 @@
 ;;    (equal (strip-cdrs (cdr alist))
 ;;           (cdr (strip-cdrs alist)))))
 
-(local (in-theory (disable strip-cars strip-cdrs)))
+;; (local (in-theory (disable strip-cars strip-cdrs)))
 
 ;; (local
 ;;  (defthm memberp-of-strip-cars-iff
@@ -107,12 +117,3 @@
 ;;             (iff (memberp key (strip-cars alist))
 ;;                  (assoc-equal key alist)))
 ;;    :hints (("Goal" :in-theory (enable memberp assoc-equal strip-cars)))))
-
-(defthm bound-in-class-tablep-of-set-classes
-  (implies class-name
-           (equal (bound-in-class-tablep class-name (set-classes alist class-table))
-                  (let ((res (assoc-equal class-name alist)))
-                    (if res
-                        (if (cdr res) t nil)
-                      (bound-in-class-tablep class-name class-table)))))
-  :hints (("Goal" :in-theory (enable set-classes))))

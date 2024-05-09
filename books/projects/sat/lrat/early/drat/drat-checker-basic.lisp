@@ -675,7 +675,7 @@
                             (assignment (exists-solution-witness formula))
                             (formula (cons clause formula)))))))
 
-; redudant even with name-from-paper
+; redundant even with name-from-paper
 (defthm ATp-lemma
   (implies (and (ATp formula clause)
                 (exists-solution formula)

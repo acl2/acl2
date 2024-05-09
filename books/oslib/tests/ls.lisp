@@ -56,12 +56,12 @@
   (oslib::ls! "../"))
 
 (defconsts (*files3* state)
-  (b* ((acl2-src-dir (f-get-global 'acl2::system-books-dir state))
+  (b* ((acl2-src-dir (acl2::system-books-dir state))
        (oslib-dir    (oslib::catpath acl2-src-dir "oslib")))
     (oslib::ls! oslib-dir)))
 
 (defconsts (*files4* state)
-  (b* ((acl2-src-dir (f-get-global 'acl2::system-books-dir state))
+  (b* ((acl2-src-dir (acl2::system-books-dir state))
        (oslib-dir    (oslib::catpath acl2-src-dir "oslib/../oslib")))
     (oslib::ls! oslib-dir)))
 

@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -282,6 +282,10 @@
 (defun eval-ground-subexpressions1 (term ens wrld safe-mode gc-off ttree
                                          hands-off-fns memo)
 
+; We return (flg term' ttree' memo'), where: term is provably equal to term' as
+; justified by ttree' extending ttree; if flg is nil then term' = term and
+; ttree' = ttree; and memo' extends memo as described below.
+
 ; We do not evaluate ground calls of the function symbols listed in
 ; hands-off-fns.
 
@@ -302,23 +306,28 @@
         (eq (ffn-symb term) 'hide))
     (mv nil term ttree memo))
    ((flambda-applicationp term)
-    (mv-let
-      (flg args ttree memo)
-      (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
-                                       ttree
-                                       hands-off-fns
-                                       memo)
-      (cond
-       ((all-quoteps args)
-        (mv-let
-          (flg val ttree memo)
-          (eval-ground-subexpressions1
-           (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
-                       (lambda-body (ffn-symb term)))
-           ens wrld safe-mode gc-off ttree hands-off-fns memo)
-          (declare (ignore flg))
-          (mv t val ttree memo)))
-       (flg
+    (let ((lam (ffn-symb term)))
+      (mv-let (flg args ttree memo)
+        (eval-ground-subexpressions1-lst (fargs term) ens wrld safe-mode gc-off
+                                         ttree hands-off-fns memo)
+        (cond
+         ((all-quoteps args)
+          (mv-let
+            (flg val ttree memo)
+            (eval-ground-subexpressions1
+             (sublis-var (pairlis$ (lambda-formals (ffn-symb term)) args)
+                         (lambda-body lam))
+             ens wrld safe-mode gc-off ttree hands-off-fns memo)
+            (declare (ignore flg))
+            (mv t val ttree memo)))
+         (t
+          (mv-let (flg-body body ttree memo)
+            (eval-ground-subexpressions1 (lambda-body lam)
+                                         ens wrld safe-mode gc-off ttree
+                                         hands-off-fns memo)
+        
+            (cond
+             ((or flg flg-body)
 
 ; We could look for just those args that are quoteps, and substitute those,
 ; presumably then calling make-lambda-application to create a lambda out of the
@@ -326,8 +335,13 @@
 ; noting that through Version_2.9.4 we did not evaluate any ground lambda
 ; applications.
 
-        (mv t (cons-term (ffn-symb term) args) ttree memo))
-       (t (mv nil term ttree memo)))))
+              (mv t
+                  (fcons-term (if flg-body
+                                  (make-lambda (lambda-formals lam) body)
+                                lam)
+                              args)
+                  ttree memo))
+             (t (mv nil term ttree memo)))))))))
    ((eq (ffn-symb term) 'if)
     (mv-let
       (flg1 arg1 ttree memo)
@@ -659,44 +673,48 @@
 ; from a negated equality.  Note that the final argument to base-poly
 ; is 'T.
 
-                (if positivep
+                (cond
+                 ((and (ts-disjointp ts-lhs *ts-acl2-number*)
+                       (ts-disjointp ts-rhs *ts-acl2-number*))
+                  nil)
+                 (positivep
 
 ; (implies (equal lhs rhs)
 ;          (and (<= lhs rhs) (<= rhs lhs)))
 
-                    (let ((rationalp-flg (and (ts-real/rationalp ts-lhs)
-                                              (ts-real/rationalp ts-rhs))))
-                      (poly-set 'and
-                                (add-linear-terms
-                                 :lhs lhs
-                                 :rhs rhs
-                                 (base-poly0 (if rationalp-flg ts-ttree ttree)
+                  (let ((rationalp-flg (and (ts-real/rationalp ts-lhs)
+                                            (ts-real/rationalp ts-rhs))))
+                    (poly-set 'and
+                              (add-linear-terms
+                               :lhs lhs
+                               :rhs rhs
+                               (base-poly0 (if rationalp-flg ts-ttree ttree)
 
 ; See the "break from tradition" comment above for a discussion of the
 ; parents.
 
-                                             (collect-parents ttree)
-                                             '<=
-                                             rationalp-flg
-                                             t))
-                                (add-linear-terms
-                                 :lhs rhs
-                                 :rhs lhs
-                                 (base-poly0 (if rationalp-flg ts-ttree ttree)
+                                           (collect-parents ttree)
+                                           '<=
+                                           rationalp-flg
+                                           t))
+                              (add-linear-terms
+                               :lhs rhs
+                               :rhs lhs
+                               (base-poly0 (if rationalp-flg ts-ttree ttree)
 
 ; See the "break from tradition" comment above for a discussion of the
 ; parents.
 
-                                             (collect-parents ttree)
-                                             '<=
-                                             rationalp-flg
-                                             t))))
+                                           (collect-parents ttree)
+                                           '<=
+                                           rationalp-flg
+                                           t)))))
 
 ; Other case: (not (equal lhs rhs)).  But we need additional (type) information
 ; in order to derive inequalities.
 
-                  (cond ((and (ts-subsetp ts-lhs *ts-integer*)
-                              (ts-subsetp ts-rhs *ts-integer*))
+                 ((and (ts-subsetp ts-lhs *ts-integer*)
+                       (ts-subsetp ts-rhs *ts-integer*))
 
 ; (implies (and (not (equal lhs rhs))
 ;               (integerp lhs)
@@ -704,28 +722,28 @@
 ;          (or (<= (1+ lhs) rhs)
 ;              (<= (1+ rhs) lhs)))
 
-                         (poly-set 'or
-                                   (add-linear-terms
-                                    :lhs lhs
-                                    :lhs *1*
-                                    :rhs rhs
-                                    (base-poly ts-ttree
-                                               '<=
-                                               t
-                                               nil))
-                                   (add-linear-terms
-                                    :lhs rhs
-                                    :lhs *1*
-                                    :rhs lhs
-                                    (base-poly ts-ttree
-                                               '<=
-                                               t
-                                               nil))))
-                        ((if (ts-subsetp ts-lhs *ts-acl2-number*)
-                             (or (ts-subsetp ts-rhs *ts-acl2-number*)
-                                 (ts-disjointp ts-lhs *ts-zero*))
-                           (and (ts-subsetp ts-rhs *ts-acl2-number*)
-                                (ts-disjointp ts-rhs *ts-zero*)))
+                  (poly-set 'or
+                            (add-linear-terms
+                             :lhs lhs
+                             :lhs *1*
+                             :rhs rhs
+                             (base-poly ts-ttree
+                                        '<=
+                                        t
+                                        nil))
+                            (add-linear-terms
+                             :lhs rhs
+                             :lhs *1*
+                             :rhs lhs
+                             (base-poly ts-ttree
+                                        '<=
+                                        t
+                                        nil))))
+                 ((if (ts-subsetp ts-lhs *ts-acl2-number*)
+                      (or (ts-subsetp ts-rhs *ts-acl2-number*)
+                          (ts-disjointp ts-lhs *ts-zero*))
+                    (and (ts-subsetp ts-rhs *ts-acl2-number*)
+                         (ts-disjointp ts-rhs *ts-zero*)))
 
 ; (implies (and (not (equal lhs rhs))
 ;               (or (and (acl2-numberp lhs)
@@ -737,27 +755,27 @@
 ;          (or (< lhs rhs)
 ;              (< rhs lhs)))
 
-                         (let ((rationalp-flg
-                                (and (ts-real/rationalp ts-lhs)
-                                     (ts-real/rationalp ts-rhs))))
-                           (poly-set 'or
-                                     (add-linear-terms
-                                      :lhs lhs
-                                      :rhs rhs
-                                      (base-poly ts-ttree
-                                                 '<
-                                                 rationalp-flg
-                                                 nil))
-                                     (add-linear-terms
-                                      :lhs rhs
-                                      :rhs lhs
-                                      (base-poly ts-ttree
-                                                 '<
-                                                 rationalp-flg
-                                                 nil)))))
-                        ((and (ts-acl2-numberp ts-lhs)
-                              force-flg
-                              (ts-intersectp ts-rhs *ts-acl2-number*))
+                  (let ((rationalp-flg
+                         (and (ts-real/rationalp ts-lhs)
+                              (ts-real/rationalp ts-rhs))))
+                    (poly-set 'or
+                              (add-linear-terms
+                               :lhs lhs
+                               :rhs rhs
+                               (base-poly ts-ttree
+                                          '<
+                                          rationalp-flg
+                                          nil))
+                              (add-linear-terms
+                               :lhs rhs
+                               :rhs lhs
+                               (base-poly ts-ttree
+                                          '<
+                                          rationalp-flg
+                                          nil)))))
+                 ((and (ts-acl2-numberp ts-lhs)
+                       force-flg
+                       (ts-intersectp ts-rhs *ts-acl2-number*))
 
 ; (implies (and (not (equal lhs rhs))
 ;               (acl2-numberp lhs)
@@ -765,13 +783,13 @@
 ;          (or (< lhs rhs)
 ;              (< rhs lhs)))
 
-                         (mv-let (flg new-ttree)
-                                 (add-linear-assumption
-                                  term
-                                  `(acl2-numberp ,rhs)
-                                  type-alist ens
-                                  (immediate-forcep nil ens)
-                                  force-flg wrld ts-ttree)
+                  (mv-let (flg new-ttree)
+                    (add-linear-assumption
+                     term
+                     `(acl2-numberp ,rhs)
+                     type-alist ens
+                     (immediate-forcep nil ens)
+                     force-flg wrld ts-ttree)
 
 ; We strongly suspect that add-linear-assumption will succeed with flg =
 ; :added, since (ts-intersectp ts-rhs *ts-acl2-number*).  But we do not depend
@@ -790,28 +808,28 @@
 ;
 ;   (thm (implies (not (rationalp (foo x))) (equal 0 (foo x))))
 
-                                 (cond
-                                  ((and (not (eq flg :failed))
-                                        (not (eq flg :known-false)))
-                                   (poly-set 'or
-                                             (add-linear-terms
-                                              :lhs lhs
-                                              :rhs rhs
-                                              (base-poly new-ttree
-                                                         '<
-                                                         nil
-                                                         nil))
-                                             (add-linear-terms
-                                              :lhs rhs
-                                              :rhs lhs
-                                              (base-poly new-ttree
-                                                         '<
-                                                         nil
-                                                         nil))))
-                                  (t nil))))
-                        ((and (ts-acl2-numberp ts-rhs)
-                              force-flg
-                              (ts-intersectp ts-lhs *ts-acl2-number*))
+                    (cond
+                     ((and (not (eq flg :failed))
+                           (not (eq flg :known-false)))
+                      (poly-set 'or
+                                (add-linear-terms
+                                 :lhs lhs
+                                 :rhs rhs
+                                 (base-poly new-ttree
+                                            '<
+                                            nil
+                                            nil))
+                                (add-linear-terms
+                                 :lhs rhs
+                                 :rhs lhs
+                                 (base-poly new-ttree
+                                            '<
+                                            nil
+                                            nil))))
+                     (t nil))))
+                 ((and (ts-acl2-numberp ts-rhs)
+                       force-flg
+                       (ts-intersectp ts-lhs *ts-acl2-number*))
 
 ; (implies (and (not (equal lhs rhs))
 ;               (acl2-numberp rhs)
@@ -819,34 +837,34 @@
 ;          (or (< lhs rhs)
 ;              (< rhs lhs)))
 
-                         (mv-let (flg new-ttree)
-                                 (add-linear-assumption
-                                  term
-                                  `(acl2-numberp ,lhs)
-                                  type-alist ens
-                                  (immediate-forcep nil ens)
-                                  force-flg wrld ts-ttree)
-                                 (cond
-                                  ((and (not (eq flg :failed))
-                                        (not (eq flg :known-false)))
-                                   (poly-set 'or
-                                             (add-linear-terms
-                                              :lhs lhs
-                                              :rhs rhs
-                                              (base-poly new-ttree
-                                                         '<
-                                                         nil
-                                                         nil))
-                                             (add-linear-terms
-                                              :lhs rhs
-                                              :rhs lhs
-                                              (base-poly new-ttree
-                                                         '<
-                                                         nil
-                                                         nil))))
-                                  (t nil))))
-                        (t
-                         nil)))))))
+                  (mv-let (flg new-ttree)
+                    (add-linear-assumption
+                     term
+                     `(acl2-numberp ,lhs)
+                     type-alist ens
+                     (immediate-forcep nil ens)
+                     force-flg wrld ts-ttree)
+                    (cond
+                     ((and (not (eq flg :failed))
+                           (not (eq flg :known-false)))
+                      (poly-set 'or
+                                (add-linear-terms
+                                 :lhs lhs
+                                 :rhs rhs
+                                 (base-poly new-ttree
+                                            '<
+                                            nil
+                                            nil))
+                                (add-linear-terms
+                                 :lhs rhs
+                                 :rhs lhs
+                                 (base-poly new-ttree
+                                            '<
+                                            nil
+                                            nil))))
+                     (t nil))))
+                 (t
+                  nil))))))
        ((quotep atm)
 
 ; This is a strange one.  It can happen that the

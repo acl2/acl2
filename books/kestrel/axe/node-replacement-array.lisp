@@ -1,7 +1,7 @@
 ; An array to track replacements of nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,6 +22,9 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/min" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 ;; We can build the node-replacement-array by calling make-into-array on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
@@ -32,15 +35,17 @@
 ;; to later unassume the replacement of B, unless we've already unassumed the
 ;; replacement of A...  We could instead address this by a repeated lookup.
 
-;; See also node-replacement-array2.lisp.
+;; See also node-replacement-array3.lisp.
 
-(local (in-theory (disable ;symbolp-of-car-of-car-when-symbol-term-alistp
-                   assoc-equal
-                   ;default-car
-                   ;;default-cdr
-                   myquotep
-                   natp
-                   )))
+(local (in-theory (e/d (consp-of-cdr-when-dargp
+                        not-cddr-when-dargp)
+                       ( ;symbolp-of-car-of-car-when-symbol-term-alistp
+                        assoc-equal
+                        ;;default-car
+                        ;;default-cdr
+                        myquotep
+                        natp
+                        ))))
 
 ;dup
 (defthmd bounded-natp-alistp-redef
@@ -153,19 +158,20 @@
 
 (defthm <-of-max-key-bound
   (implies (and
-            (< (max-key alist val2) 2147483646)
-            (< val 2147483646)
-            (< val2 2147483646)
+            (< (max-key alist val2) max-so-far)
+            (< val max-so-far)
+            (< val2 max-so-far)
             )
            (< (max-key alist val)
-              2147483646))
+              max-so-far))
   :hints (("Goal" :in-theory (enable max-key))))
 
 (defthm <-of-max-key-when-all-<-of-STRIP-CARS
-  (implies (and (ALL-< (STRIP-CARS alist) '2147483646)
+  (implies (and (ALL-< (STRIP-CARS alist) bound)
                 (all-natp (STRIP-CARS alist)) ;drop?
+                (posp bound)
                 )
-           (< (MAX-KEY alist '0) '2147483646))
+           (< (MAX-KEY alist '0) bound))
   :hints (("Goal" :in-theory (e/d (MAX-KEY max-when-<=-1) (max)))))
 
 ;;;
@@ -266,22 +272,25 @@
 (defthm bounded-node-replacement-arrayp-aux-of-make-into-array
   (implies (and (node-replacement-alistp alist bound)
                 (natp index)
-                (< (max-key alist 0) 2147483646) ;or say bounded-natp-alistp
+                (< (max-key alist 0) *max-1d-array-length*) ;or say bounded-natp-alistp
                 (<= index (max-key alist 0))
                 (symbolp array-name))
            (bounded-node-replacement-arrayp-aux array-name (make-into-array array-name alist) index bound))
-  :hints (("Goal" :in-theory (enable bounded-node-replacement-arrayp-aux
+  :hints (("Goal" :in-theory (e/d (bounded-node-replacement-arrayp-aux
                                      bounded-natp-alistp-when-node-replacement-alistp
                                      make-into-array ;todo
                                      aref1 ;todo
                                      make-into-array-with-len ;todo
-                                     DARGP-LESS-THAN-OF-CDR-OF-ASSOC-EQUAL-WHEN-NODE-REPLACEMENT-ALISTP
-                                     ))))
+                                     dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
+                                     acons
+                                     )
+                                  ;; for speed:
+                                  (bounded-node-replacement-arrayp-aux-beyond-length)))))
 
 (defthm bounded-node-replacement-arrayp-of-make-into-array
   (implies (and (node-replacement-alistp node-replacement-alist bound)
                 (natp bound)
-                (<= bound 2147483646)
+                (<= bound *max-1d-array-length*)
                 ;(equal (alen1 ..) (+ 1 (max-key node-replacement-alist 0)))
                 )
            (bounded-node-replacement-arrayp 'node-replacement-array
@@ -422,7 +431,7 @@
                   *nil*
                 *t* ; any non-nil constant is equivalent to t
                 )
-            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replament-array, and are now replacing again)
+            res ; a replacement nodenum (this should be rare, but perhaps we just simplified something and replaced it with nodenum using the node-replacement-array, and are now replacing again)
             ))))))
 
 (defthm dargp-of-apply-node-replacement-array-bool
@@ -485,6 +494,58 @@
            :in-theory (e/d (apply-node-replacement-array-bool)
                            (type-of-aref1-when-bounded-node-replacement-arrayp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns DARG (indicating no replacement) or a new darg with to replace DARG.
+;; The result is equivalent to DARG under iff (but not necessarily equal), given the information in the node-replacement-array.
+;; This is just a wrapper that handles the quotep case.
+(defund apply-node-replacement-array-bool-to-darg (darg node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (dargp darg)
+                              (natp node-replacement-count)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (consp darg) ;; checks for quotep
+      darg ;; already a constant, so do not replace
+    (apply-node-replacement-array-bool darg node-replacement-array node-replacement-count)))
+
+(defthm dargp-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (dargp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+;; Use consp as the normal form
+(defthm natp-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array))
+           (equal (natp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count))
+                  (not (consp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count))))))
+
+(defthm dargp-less-than-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (dargp-less-than darg bound) ; in case no replacement happens
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (dargp-less-than (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
+                            bound))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+(defthm <-of-apply-node-replacement-array-bool-to-darg
+  (implies (and (not (consp (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)))
+                (dargp-less-than darg bound) ; in case no replacement happens
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                (natp bound)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))
+           (< (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
+              bound))
+  :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand
 ;;;
@@ -493,7 +554,7 @@
 ;; Returns (mv node-replacement-array node-replacement-count).
 (defund add-node-replacement-entry-and-maybe-expand (nodenum replacement node-replacement-array node-replacement-count)
   (declare (xargs :guard (and (natp nodenum)
-                              (< nodenum 2147483646)
+                              (< nodenum *max-1d-array-length*)
                               (node-replacement-valp replacement)
                               (node-replacement-arrayp 'node-replacement-array node-replacement-array)
                               (natp node-replacement-count)
@@ -509,7 +570,7 @@
 (defthm node-replacement-arrayp-aux-when-node-replacement-arrayp-aux-of-len-minus-1
   (implies (and (array1p name array)
                 (node-replacement-arrayp-aux name array (+ -1 (alen1 name array)))
-                ;; (<= index 2147483645)
+                ;; (<= index *max-1d-array-index*)
                 (natp index)
                 (equal nil (default name array)))
            (node-replacement-arrayp-aux name array index))
@@ -518,7 +579,7 @@
 ;todo: have the tool generate a theorem about maybe-exapand-array and don't enable that here
 (defthm node-replacement-arrayp-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 (node-replacement-valp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -533,7 +594,7 @@
 
 (defthm bounded-node-replacement-arrayp-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 (bounded-node-replacement-valp replacement bound)
                 (bounded-node-replacement-arrayp 'node-replacement-array array bound)
                 ;;(natp node-replacement-count)
@@ -558,7 +619,7 @@
 ;; The array doesn't get shorter.
 (defthm bound-on-alen1-of-mv-nth-0-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -576,7 +637,7 @@
   (implies (and (<= x (alen1 'node-replacement-array array))
                 (integerp x)
                 (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -588,7 +649,7 @@
 
 (defthm bound-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 (natp node-replacement-count)
@@ -606,7 +667,7 @@
 (defthm bound-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
   (implies (and (<= x (mv-nth 1 (add-node-replacement-entry-and-maybe-expand nodenum replacement array node-replacement-count)))
                 (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 (natp node-replacement-count)
@@ -622,7 +683,7 @@
 ;; The node-replacement-count does not decrease
 (defthm bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand
   (implies (and (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -638,7 +699,7 @@
 (defthm bound2-on-mv-nth-1-of-add-node-replacement-entry-and-maybe-expand-gen
   (implies (and (<= x node-replacement-count)
                 (natp nodenum)
-                (< nodenum 2147483646)
+                (< nodenum *max-1d-array-length*)
                 ;; (dargp replacement)
                 (node-replacement-arrayp 'node-replacement-array array)
                 ;;(natp node-replacement-count)
@@ -679,6 +740,7 @@
 ;; Turns ASSUMPTION into an alist mapping terms to replacement terms or *non-nil*.
 ;; Extends ACC.
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
+;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
 (defun term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
@@ -694,24 +756,29 @@
         (quote ;can this happen?
          (prog2$ (cw "NOTE: term-replacement-alist-for-assumption is skipping constant assumption ~x0.~%" assumption)
                  acc))
-        (equal ;fixme consider more sophisticated tests to decide whether to turn around the assumption?
+        (equal ; todo: consider more sophisticated tests to decide whether to turn around the assumption?
          (let ((x (farg1 assumption))
                (y (farg2 assumption)))
            (if (and (quotep x) (quotep y))
-               (prog2$ (cw "NOTE: term-replacement-alist-for-assumption is skipping unusual assumption ~x0.~%" assumption)
+               (prog2$ (if (equal (unquote x) (unquote y))
+                           (cw "NOTE: Skipping vacuous assumption ~x0.~%" assumption)
+                         (cw "WARNING: Skipping contradictory assumption ~x0.~%" assumption))
                        acc)
              (if (quotep x)
-                 (acons y x acc) ; replace y with x since x is a constant
+                 (acons y x acc) ; replace y with x since x is a constant and y is not
                (if (quotep y)
-                   (acons x y acc) ; replace x with y since y is a constant
-                 ;; We're being conservative here and not replacing either term with the other in general (TODO: consider when one is a subterm of the other)
-                 ;; We'll add the fact that the equality oriented either way it true
-                 ;; TODO: Consider not being conservative, since these are assumptions from the user, which can be taken to be directed equalities
-                 (acons assumption *t*
-                        (acons `(equal ,y ,x) *t*
-                               acc)))))))
+                   (acons x y acc) ; replace x with y since y is a constant and x is not
+                 ;; Neither is a constant, so replace x with y (we interpret the assumption as a directed equality):
+                 (acons x y acc)
+                 ;; Old behavior (todo: add an option to put this back, if the assumptions might have unexoected forms):
+                 ;; ;; We're being conservative here and not replacing either term with the other in general (TODO: consider when one is a subterm of the other)
+                 ;; ;; We add the fact that the equality oriented either way is true.
+                 ;; ;; TODO: Consider not being conservative, since these are assumptions from the user, which can be taken to be directed equalities
+                 ;; (acons assumption *t*
+                 ;;        (acons `(equal ,y ,x) *t*
+                 ;;               acc))
+                 )))))
         (not ;; (not x) becomes the pair (x . 'nil) ;; the case above for 'equal above handles the (equal x nil) phrasing for nots.
-         ;; TODO: If x is a call of EQUAL, add pairs for both orientations?  or handle that later?
          (acons (farg1 assumption) *nil* acc))
         (booland ;; TODO: Other ways of stripping conjuncts!
          (and (consp (cdr (fargs assumption))) ;for termination
@@ -755,8 +822,8 @@
                 (symbol-listp known-booleans)
                 (term-replacement-alistp acc))
            (term-replacement-alistp (term-replacement-alist-for-assumptions assumptions known-booleans acc)))
-  :hints (("Goal" :in-theory (enable term-replacement-alist-for-assumptions
-                                     term-replacement-alistp))))
+  :hints (("Goal" :induct t
+           :in-theory (enable term-replacement-alist-for-assumptions))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -785,8 +852,8 @@
                                            nil ;interpreted-function-alist
                                            ))
          ((when erp) (mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-         ((when (consp term-nodenum-or-quotep)) ; check for quotep -- todo: prove this can't happen
-          (er hard? 'update-node-replacement-array-and-extend-dag-for-alist "Assumption with a quotep LHS: ~x0." `(equal ,term ,replacement))
+         ((when (consp term-nodenum-or-quotep)) ; check for quotep -- todo: what if the LHS is an evaluatable ground term?
+          (er hard? 'update-node-replacement-array-and-extend-dag-for-alist "Assumption term, ~x0, became a quotep, ~x1." term term-nodenum-or-quotep)
           (mv :unexpected-quote node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          ;; Add the replacement if it is not *non-nil*:
          ((mv erp replacement-item dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

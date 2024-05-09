@@ -256,7 +256,7 @@
 ;;      (EQLABLEP (FOO X))
 ;;      (NATP (FOO X))
 ;;      (O-FINP (FOO X))
-;;      (32-BIT-INTEGERP (FOO X))
+;;      (32-BIT-INTEGERP (FOO X)) ; probably not computed after 3/29/2023
 ;;      (FILE-CLOCK-P (FOO X))
 ;;      (<= 0 (FOO X))
 ;;      (<= (FOO X) 3)

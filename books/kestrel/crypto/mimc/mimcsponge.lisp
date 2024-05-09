@@ -29,10 +29,10 @@
 ;;       Minimal Multiplicative Complexity
 ;; Martin Albrecht et al.
 ;; Published in:
-;;   Advances in Cryptology – ASIACRYPT 2016: 22nd International
+;;   Advances in Cryptology - ASIACRYPT 2016: 22nd International
 ;;   Conference on the Theory and Application of Cryptology and
 ;;   Information Security, Hanoi, Vietnam, December 4-8, 2016,
-;;   Proceedings, Part 1, Springer LNCS 10031, pp. 191–219.
+;;   Proceedings, Part 1, Springer LNCS 10031, pp. 191-219.
 ;; Also available at:
 ;;   https://eprint.iacr.org/2016/492
 ;; Usually referred to as "MiMC spec" or [Alb+16].
@@ -53,7 +53,7 @@
 ;;     In [Alb+16], section 5.3 states:
 ;;         it needs to be assured that the cubing in the round function
 ;;         creates a permutation. For this, it is sufficient to require
-;;         gcd(3, p − 1) = 1.
+;;         gcd(3, p - 1) = 1.
 ;;     It so happens that 3 divides (p - 1), when p is the BN-254 curve order,
 ;;     so gcd(3, p - 1) = 3.
 ;;     However, we are using an exponent of 5 (see below).
@@ -96,7 +96,7 @@
 ;;     In [Alb+16] section 5.3 p.18, for the MiMC-2n/n case,
 ;;     they write:
 ;;         Remember that for MiMC-n/n, d has to satisfy the condition
-;;         gcd(d, 2n − 1) = 1 in order to be a permutation, while in
+;;         gcd(d, 2n - 1) = 1 in order to be a permutation, while in
 ;;         the case of MiMC-2n/n (that is, for Feistel Networks) this
 ;;         condition is not necessary.
 ;;     The MiMC spec is not explicit whether the relaxation for Feistel
@@ -151,7 +151,7 @@
 ;; Utility to describe return type.
 
 (defun fe-pairp (elems prime)
-  (declare (xargs :guard (rtl::primep prime)))
+  (declare (xargs :guard (dm::primep prime)))
   (and (= (len elems) 2)
        (pfield::fe-listp elems prime)))
 
@@ -210,7 +210,7 @@
 (defun mimc-p/p-block-cipher
   (x key field-order exponent nrounds round-constants)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep x field-order)
                               (pfield::fep key field-order)
                               (natp exponent) (< 2 exponent)
@@ -284,7 +284,7 @@
 (defun mimc-2p/p-block-cipher-body
     (xL xR k field-order exponent nrounds round-constants)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep xL field-order)
                               (pfield::fep xR field-order)
                               (pfield::fep k field-order)
@@ -307,7 +307,7 @@
 (defthm return-type-of--mimc-2p/p-block-cipher-body
   (implies (and ;; same as guard of mimc-p/p-block-cipher
                 (posp field-order) (< 2 field-order)
-                (rtl::primep field-order)
+                (dm::primep field-order)
                 (pfield::fep xL field-order)
                 (pfield::fep xR field-order)
                 (pfield::fep k field-order)
@@ -323,7 +323,7 @@
 (defun mimc-2p/p-block-cipher
     (xL xR k field-order exponent nrounds round-constants)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep xL field-order)
                               (pfield::fep xR field-order)
                               (pfield::fep k field-order)
@@ -339,7 +339,7 @@
 (defthm return-type-of--mimc-2p/p-block-cipher
   (implies (and ;; same as guard of mimc-p/p-block-cipher
             (posp field-order) (< 2 field-order)
-            (rtl::primep field-order)
+            (dm::primep field-order)
             (pfield::fep xL field-order)
             (pfield::fep xR field-order)
             (pfield::fep k field-order)
@@ -359,7 +359,7 @@
 
 (defun mimc-p/p-permutation (x field-order exponent nrounds round-constants)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep x field-order)
                               (natp exponent) (< 2 exponent)
                               (natp nrounds)
@@ -370,7 +370,7 @@
 
 (defthm return-type-of--mimc-p/p-permutation
   (implies (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep x field-order)
                               (natp exponent) (< 2 exponent)
                               (natp nrounds)
@@ -382,7 +382,7 @@
 
 (defun mimc-2p/p-permutation (xL xR field-order exponent nrounds round-constants)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep xL field-order)
                               (pfield::fep xR field-order)
                               (natp exponent) (< 2 exponent)
@@ -394,7 +394,7 @@
 
 (defthm return-type-of--mimc-2p/p-permutation
   (implies (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep xL field-order)
                               (pfield::fep xR field-order)
                               (natp exponent) (< 2 exponent)
@@ -459,7 +459,7 @@
   ;; we would like to verify guards but we first need to prove the return type
   ;; of mimc-2p/p-permutation
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep r field-order)
                               (pfield::fep c field-order)
                               (pfield::fe-listp inputs field-order)
@@ -481,7 +481,7 @@
 
 (defthm return-type-of--mimcsponge-absorb
   (implies (and (posp field-order) (< 2 field-order)
-                (rtl::primep field-order)
+                (dm::primep field-order)
                 (pfield::fep r field-order)
                 (pfield::fep c field-order)
                 (pfield::fe-listp inputs field-order)
@@ -496,7 +496,7 @@
 
 (defun MiMCsponge-squeeze (r c n field-order constants exponent nrounds)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (pfield::fep r field-order)
                               (pfield::fep c field-order)
                               (posp n)
@@ -521,7 +521,7 @@
 
 (defthm return-type-of--mimcsponge-squeeze
   (implies (and (posp field-order) (< 2 field-order)
-                (rtl::primep field-order)
+                (dm::primep field-order)
                 (pfield::fep r field-order)
                 (pfield::fep c field-order)
                 (posp n)
@@ -534,7 +534,7 @@
 
 (defthm number-of-outputs-of--mimcsponge-squeeze
   (implies (and (posp field-order) (< 2 field-order)
-                (rtl::primep field-order)
+                (dm::primep field-order)
                 (pfield::fep r field-order)
                 (pfield::fep c field-order)
                 (posp n)
@@ -550,7 +550,7 @@
 
 (defun MiMCsponge (m n inputs field-order constants exponent nrounds)
   (declare (xargs :guard (and (posp field-order) (< 2 field-order)
-                              (rtl::primep field-order)
+                              (dm::primep field-order)
                               (natp m)
                               (posp n)
                               (pfield::fe-listp inputs field-order)
@@ -566,7 +566,7 @@
 
 (defthm return-type-of--mimcsponge
   (implies (and (posp field-order) (< 2 field-order)
-                (rtl::primep field-order)
+                (dm::primep field-order)
                 (natp m)
                 (posp n)
                 (pfield::fe-listp inputs field-order)
@@ -580,7 +580,7 @@
 
 (defthm number-of-outputs-of--mimcsponge
   (implies (and (posp field-order) (< 2 field-order)
-                (rtl::primep field-order)
+                (dm::primep field-order)
                 (natp m)
                 (posp n)
                 (pfield::fe-listp inputs field-order)

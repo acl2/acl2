@@ -304,7 +304,9 @@
                                                (DECLARE (IGNORABLE I))
                                                (SQUARE I)))
                                    ((LAMBDA (I) (SQUARE I)) LOOP$-IVAR)))
-             (FROM-TO-BY LOWER UPPER '1))))
+             ((LAMBDA (LOOP$-LO LOOP$-HI LOOP$-BY)
+                      (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY))
+              LOWER UPPER '1))))
 
 (assert! ; may be able to use assert-event after a bug fix is in place
  (equal
@@ -312,11 +314,25 @@
    (cadr (cadr (mv-list 2 (guard-obligation 'f2 nil nil t 'top-level state))))
    nil
    (w state))
-  '((IMPLIES (AND (APPLY$-WARRANT-SQUARE)
-                  (INTEGERP LOWER)
-                  (INTEGERP UPPER)
-                  (MEMBER-EQUAL NEWV (FROM-TO-BY LOWER UPPER 1)))
-             (INTEGERP NEWV)))))
+  '((IMPLIES
+     (AND
+      (APPLY$-WARRANT-SQUARE)
+      (INTEGERP LOWER)
+      (INTEGERP UPPER)
+      (MEMBER-EQUAL
+       NEWV
+       (LET ((LOOP$-LO LOWER)
+             (LOOP$-HI UPPER)
+             (LOOP$-BY 1))
+            (DECLARE (TYPE INTEGER LOOP$-LO LOOP$-HI LOOP$-BY))
+            (PROG2$ (LET ((LOOP$-FINAL (+ LOOP$-LO LOOP$-BY
+                                          (* LOOP$-BY
+                                             (FLOOR (+ LOOP$-HI (- LOOP$-LO))
+                                                    LOOP$-BY)))))
+                         (DECLARE (TYPE INTEGER LOOP$-FINAL))
+                         LOOP$-FINAL)
+                    (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY)))))
+     (INTEGERP NEWV)))))
 
 (must-fail
  (defun f2-alt (lower upper)
@@ -876,7 +892,7 @@
 ; only used in an irrelevant arg of return-last.
 
 (must-fail
- (defthm my-natp-test0 
+ (defthm my-natp-test0
   (implies (and (natp y)
                 (natp z))
            (equal (ev$ '(return-last 'progn
@@ -1558,7 +1574,7 @@
 ; Repeating an experiment shown above, but on a different laptop:
 #|
 ACL2 !>(time$ (do-loop-counting-up 1 1000000))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 57.72 seconds realtime, 57.71 seconds runtime
 ; (4,080,550,752 bytes allocated).
 (FROM 1 TO 1000000 IS 999999 STEPS)
@@ -1567,7 +1583,7 @@ ACL2 !>(verify-guards do-loop-counting-up)
 Prover steps counted:  400639
  DO-LOOP-COUNTING-UP
 ACL2 !>(time$ (do-loop-counting-up 1 1000000))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.00 seconds realtime, 0.00 seconds runtime
 ; (144 bytes allocated).
 (FROM 1 TO 1000000 IS 999999 STEPS)
@@ -1576,7 +1592,7 @@ ACL2 !>
 ; And now repeating that experiment for the new version.
 #|
 ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 67.41 seconds realtime, 67.39 seconds runtime
 ; (4,688,677,328 bytes allocated).
 ((FROM 1 TO 1000000
@@ -1587,7 +1603,7 @@ ACL2 !>(verify-guards do-loop-counting-up-mv)
 Prover steps counted:  634086
  DO-LOOP-COUNTING-UP-MV
 ACL2 !>(time$ (do-loop-counting-up-mv 1 1000000 st))
-; (EV-REC *RETURN-LAST-ARG3* ...) took 
+; (EV-REC *RETURN-LAST-ARG3* ...) took
 ; 0.01 seconds realtime, 0.01 seconds runtime
 ; (256 bytes allocated).
 ((FROM 1 TO 1000000
@@ -1605,11 +1621,12 @@ ACL2 !>
     '(LAMBDA
       (ALIST)
       (DECLARE
-       (XARGS :GUARD (IF (ALISTP ALIST)
-                         (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                             'NIL)
-                         'NIL)
+       (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                      (IF (ALISTP ALIST)
+                          (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                              'NIL)
+                          'NIL))
               :SPLIT-TYPES T)
        (IGNORABLE ALIST))
       (RETURN-LAST
@@ -1617,9 +1634,10 @@ ACL2 !>
        '(LAMBDA$
          (ALIST)
          (DECLARE
-          (XARGS :GUARD (AND (ALISTP ALIST)
-                             (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+          (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -1636,11 +1654,12 @@ ACL2 !>
     '(LAMBDA
       (ALIST)
       (DECLARE
-       (XARGS :GUARD (IF (ALISTP ALIST)
-                         (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                             'NIL)
-                         'NIL)
+       (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                      (IF (ALISTP ALIST)
+                          (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                              'NIL)
+                          'NIL))
               :SPLIT-TYPES T)
        (IGNORABLE ALIST))
       (RETURN-LAST
@@ -1648,9 +1667,10 @@ ACL2 !>
        '(LAMBDA$
          (ALIST)
          (DECLARE
-          (XARGS :GUARD (AND (ALISTP ALIST)
-                             (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                             (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+          (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                         (AND (ALISTP ALIST)
+                              (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                              (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
          (LET
           ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
            (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
@@ -1711,14 +1731,14 @@ ACL2 !>
         (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
     '(LAMBDA
       (ALIST)
-      (DECLARE (XARGS :GUARD (ALISTP ALIST)
+      (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))
                       :SPLIT-TYPES T)
                (IGNORABLE ALIST))
       (RETURN-LAST
        'PROGN
        '(LAMBDA$
          (ALIST)
-         (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+         (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
          (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -1762,11 +1782,12 @@ ACL2 !>
       '(LAMBDA
         (ALIST)
         (DECLARE
-         (XARGS :GUARD (IF (ALISTP ALIST)
-                           (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                               'NIL)
-                           'NIL)
+         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                        (IF (ALISTP ALIST)
+                            (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                'NIL)
+                            'NIL))
                 :SPLIT-TYPES T)
          (IGNORABLE ALIST))
         (RETURN-LAST
@@ -1774,9 +1795,10 @@ ACL2 !>
          '(LAMBDA$
            (ALIST)
            (DECLARE
-            (XARGS :GUARD (AND (ALISTP ALIST)
-                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+            (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                           (AND (ALISTP ALIST)
+                                (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                  (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -1793,11 +1815,12 @@ ACL2 !>
       '(LAMBDA
         (ALIST)
         (DECLARE
-         (XARGS :GUARD (IF (ALISTP ALIST)
-                           (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
-                               'NIL)
-                           'NIL)
+         (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                        (IF (ALISTP ALIST)
+                            (IF (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))
+                                'NIL)
+                            'NIL))
                 :SPLIT-TYPES T)
          (IGNORABLE ALIST))
         (RETURN-LAST
@@ -1805,9 +1828,10 @@ ACL2 !>
          '(LAMBDA$
            (ALIST)
            (DECLARE
-            (XARGS :GUARD (AND (ALISTP ALIST)
-                               (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
-                               (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))))
+            (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                           (AND (ALISTP ALIST)
+                                (TRUE-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                                (NATP (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))))
            (LET
             ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
              (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
@@ -1868,14 +1892,14 @@ ACL2 !>
           (CDR (ASSOC-EQ-SAFE 'LEN ALIST)))))
       '(LAMBDA
         (ALIST)
-        (DECLARE (XARGS :GUARD (ALISTP ALIST)
+        (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))
                         :SPLIT-TYPES T)
                  (IGNORABLE ALIST))
         (RETURN-LAST
          'PROGN
          '(LAMBDA$
            (ALIST)
-           (DECLARE (XARGS :GUARD (ALISTP ALIST)))
+           (DECLARE (XARGS :GUARD (DO-BODY-GUARD-WRAPPER (ALISTP ALIST))))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (RESULT (CDR (ASSOC-EQ-SAFE 'RESULT ALIST)))
                  (LEN (CDR (ASSOC-EQ-SAFE 'LEN ALIST))))
@@ -2687,3 +2711,26 @@ scope containing (SETQ ANS ANS2).
          finally
          (return lst))
   '(1 A C)))
+
+; See the comment below about a failure based on the following defun.
+(defun v8-5-problem-loop (lst)
+  (declare (xargs :guard t))
+  (loop$ with temp = lst
+         with  ans of-type rational = 0
+         do
+         :values (nil nil)
+         (cond ((atom temp) (return (mv ans temp)))
+               (t (progn (setq ans (+  (rfix (car temp)) ans))
+                         (setq temp (cdr temp)))))))
+
+(assert-event (mv-let (x y)
+                  (v8-5-problem-loop '(3 1/2 4 . a))
+                (and (= x 15/2)
+                     (eq y 'a))))
+
+; The following failed in ACL2 8.5.
+(thm (mv-let (x y)
+         (v8-5-problem-loop '(3 1/2 4 . a))
+       (and (= x 15/2)
+            (eq y 'a)))
+     :hints (("Goal" :do-not '(preprocess))))

@@ -546,7 +546,7 @@
                                (equal (:? lhs)
                                       (:? rhs))))
         (er hard? 'add-replace-equalities-rule
-            "Theorem ~x0 not of the right form") thmname))
+            "Theorem ~x0 not of the right form" thmname)))
     hyp-sym))
 
 (defmacro add-replace-equalities-rule (thmname)

@@ -41,7 +41,7 @@ use Cwd 'abs_path';
 use Certinfo;
 use Depdb;
 use Bookscan;
-
+use Cygwin_paths;
 
 use base 'Exporter';
 
@@ -55,6 +55,7 @@ store_cache
 certlib_add_dir
 process_labels_and_targets
 add_deps
+add_image_deps
 propagate_reqparam
 to_cert_name
 cert_to_acl2x
@@ -72,6 +73,8 @@ find_deps
 write_timestamps
 read_timestamps
 cert_target_deps
+determine_acl2_exec
+determine_acl2_dirs
 );
 
 
@@ -85,8 +88,8 @@ cert_target_deps
 # 				include_dirs => '%',    # add-include-book-dir(!) forms
 # 				rec_visited => '%' ];   # already seen files for depends_rec
 
-# database:
-my $cache_version_code = 8;
+# database -- increment this when changing the format of events produced by Bookscan.pm
+my $cache_version_code = 9;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -103,6 +106,7 @@ my $include_excludes = 0;
 my $debug_up_to_date = 0;
 my $force_up_to_date;
 my $force_out_of_date;
+my $imagefile_src_dir = 0;
 # sub cert_bookdeps {
 #     my ($cert, $depdb) = @_;
 #     my $certinfo = $depdb->certdeps->{$cert};
@@ -130,6 +134,35 @@ sub certlib_add_dir {
     $dirs{$name} = $dir;
 }
 
+sub read_projects_dirs {
+    my ($acl2_projects) = @_;
+    # acl2_projects should already be absolute, canonical path
+    if (open (my $projects, "<", $acl2_projects)) {
+	while (my $pline = <$projects>) {
+	    my @parts = $pline =~ m/^\s*:(\S*)\s+"([^"]*)"/;
+	    if (@parts) {
+		my ($key, $dir) = @parts;
+		my $dirfull;
+		if (File::Spec->file_name_is_absolute($dir)) {
+		    $dirfull = $dir;
+		} else {
+		    $dirfull = File::Spec->catfile(dirname($acl2_projects), $dir);
+		}
+		certlib_add_dir(uc($key), abs_canonical_path($dirfull));
+	    } else {
+		print(STDERR
+		      "Couldn't parse ACL2_PROJECTS file line $pline\n");
+	    }
+	}
+	close($projects);
+    } else {
+	print(STDERR
+	      "Couldn't read ACL2_PROJECTS file $acl2_projects\n");
+    }
+}
+
+
+
 sub certlib_set_opts {
     my $opts = shift;
     $debugging = $opts->{"debugging"};
@@ -141,6 +174,136 @@ sub certlib_set_opts {
     $debug_up_to_date = $opts->{"debug_up_to_date"};
     $force_up_to_date = $opts->{"force_up_to_date"};
     $force_out_of_date = $opts->{"force_out_of_date"};
+    $imagefile_src_dir = $opts->{"imagefile_src_dir"};
+}
+
+
+sub determine_acl2_exec {
+    my ($acl2) = @_;
+    # If it is already set here, it has been set by command line and we won't override it.
+    
+    unless($acl2) {
+	$acl2 = $ENV{"ACL2"};
+    }
+    
+    unless ($acl2) {
+	$acl2 = "acl2";
+    }
+
+    # convert user-provided ACL2 to cygwin path, under cygwin
+    $acl2 = path_import($acl2);
+    # this is probably always /dev/null but who knows under windows
+    my $devnull = File::Spec->devnull;
+    # get the absolute path
+    $acl2 = `which $acl2 2>$devnull`;
+    chomp($acl2);		# remove trailing newline
+
+    if ($acl2) {
+	# canonicalize the path
+	$acl2 = abs_canonical_path($acl2);
+	$ENV{"ACL2"} = $acl2;
+    }
+    return $acl2;
+}
+
+sub determine_acl2_dirs {
+    my ($acl2_books, $acl2_projects, $acl2, $startjob, $scriptdir) = @_;
+    # Determines the system books dir and imports project dirs as
+    # global include-book-dirs.  If acl2_books or acl2_projects is
+    # defined, then these were set by command line args and won't be
+    # overridden.  Acl2 is the acl2 executable, which is run in order
+    # to determine the system books as a fallback. Scriptdir is the
+    # RealBin of the script itself, presumably in books/build, which
+    # we use to determine the system books as another fallback.
+
+    # Returns the final system books dir.
+
+    # First way of setting acl2_books: command line (passed in as arg here)
+    # Second way: environment var
+    unless ($acl2_books) {
+	$acl2_books = $ENV{"ACL2_SYSTEM_BOOKS"};
+    }
+
+    unless ($acl2_projects) {
+	$acl2_projects = $ENV{"ACL2_PROJECTS"};
+    }
+
+    if ($acl2_projects) {
+	$acl2_projects = abs_canonical_path($acl2_projects);
+	read_projects_dirs($acl2_projects);
+	# In case we're going to run Make, set the ACL2_PROJECTS
+	# environment var to match our assumption.
+	my $acl2_projects_env = path_export($acl2_projects);
+	$ENV{"ACL2_PROJECTS"} = $acl2_projects_env;
+    }
+
+    # Third way of setting acl2_books: projects entry
+    unless ($acl2_books ) {
+	# Check whether the SYSTEM dir was set when reading the acl2_projects file and set it if so.
+	$acl2_books = lookup_colon_dir("SYSTEM", {});
+
+        if ($acl2_books) {
+            # In this case we skip the rest because the path should be
+            # canonicalized already and is already added to the $dirs.
+            my $acl2_books_env = path_export($acl2_books);
+            $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
+            return $acl2_books;
+        }
+    }
+    
+    # Fourth way: directory named books under the directory containing acl2
+    if (! $acl2_books && $acl2 ) {
+	# was:
+	# my $tmp_acl2_books = rel_path(dirname($acl2), "books");
+	my $tmp_acl2_books = File::Spec->catfile(dirname($acl2), "books");
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	}
+    }
+    
+    my $devnull = File::Spec->devnull;
+    $startjob = $startjob || "bash";
+    # Fifth way: run ACL2 and have it print the system-books-dir
+    if (! $acl2_books && $acl2 ) {
+	my $dumper1 =		# command to send to ACL2
+	    '(cw \"~%CERT_PL_VAL:~S0~%\" (acl2::system-books-dir acl2::state))';
+	my $dumper2 =		# command to send to STARTJOB
+	    'echo "' . $dumper1 . '" | ' .
+	    "$acl2 2>$devnull | " .
+	    'awk -F: "/CERT_PL_VAL/ { print \$2 }"';
+	my $dumper3 =		# command to send to the shell
+	    "$startjob -c '$dumper2'";
+	my $tmp_acl2_books = `$dumper3`;
+	chomp($tmp_acl2_books);
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	}
+    }
+    
+    # Sixth: directory underneath the script directory (which we assume to be books/build)
+    if (! $acl2_books ) {
+	my $tmp_acl2_books = "$scriptdir/..";
+	if (-d $tmp_acl2_books) {
+	    $acl2_books = $tmp_acl2_books;
+	}
+    }
+
+    unless ($acl2_books) {
+	return undef;
+    }
+    
+    $acl2_books = abs_canonical_path($acl2_books);
+    
+    # In case we're going to run Make, set the ACL2_SYSTEM_BOOKS
+    # environment variable to match our assumption.
+    # In cygwin, ACL2 reads paths like c:/foo/bar whereas we're dealing in
+    # paths like /cygdrive/c/foo/bar, so "export" it
+    certlib_add_dir("SYSTEM", $acl2_books);
+    my $acl2_books_env = path_export($acl2_books);
+    $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books_env;
+
+    return $acl2_books;
+
 }
 
 
@@ -205,7 +368,7 @@ my %canonical_path_memo = ();
 
 sub canonical_path_aux {
     my $fname = shift;
-    
+
     my $abs_path = abs_canonical_path($fname);
     if ($BASE_PATH && $abs_path) {
 	my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
@@ -287,10 +450,6 @@ sub lookup_colon_dir {
     }
     return $dirpath;
 }
-
-
-# (check-hons-enabled (:book
-# cert_param (hons-only)
 
 
 
@@ -437,7 +596,7 @@ sub expand_dirname_cmd {
     } else {
 	my $dir = dirname($basename);
 	my $fullpath = File::Spec->file_name_is_absolute($relname) ?
-	    $relname . $ext : 
+	    $relname . $ext :
 	    File::Spec->catfile($dir, $relname . $ext);
 	# was:
 	# $fullname = canonical_path(rel_path($dir, $relname . $ext));
@@ -466,7 +625,7 @@ sub print_events {
     }
     print "\n";
 }
-    
+
 my %times_seen = ();
 
 sub print_times_seen {
@@ -494,7 +653,7 @@ sub src_deps {
 	print STDERR "Circular dependency found in src_deps of $fname\n";
 	return 0;
     }
-    
+
     $seen->{$fname} = 1;
 
     $times_seen{$fname} = ($times_seen{$fname} || 0) + 1;
@@ -552,9 +711,15 @@ sub src_deps {
 	} elsif ($ifdef_skipping_level == 0) {
 	    # Only pay attention to other events if we're not skipping due to ifdefs.
 	    if ($type eq add_dir_event) {
-		my (undef, $name, $dir, $localp) = @$event;
+		my (undef, $name, $key, $dir, $localp) = @$event;
 
-		print "add_dir_event: name=$name, dir=$dir, localp=$localp\n" if $debugging;
+		print "add_dir_event: name=$name, key=$key, dir=$dir, localp=$localp\n" if $debugging;
+
+		if ($key) {
+		    my $keydir = lookup_colon_dir($key, $incdirs);
+		    $dir = File::Spec->catfile($keydir, $dir);
+		}
+
 		my $newdir;
 		if (File::Spec->file_name_is_absolute($dir)) {
 		    $newdir = canonical_path($dir);
@@ -686,7 +851,7 @@ sub src_deps {
 		if ($portp || ! $localp) {
 		    $certinfo->defines->{$var} = $val;
 		}
-	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event)) {
+	    } elsif (! ($type eq set_max_mem_event || $type eq set_max_time_event || $type eq pbs_event || $type eq cert_env_event)) {
 		print STDERR "unknown event type: $type\n";
 	    }
 	}
@@ -766,21 +931,29 @@ sub find_deps {
 	print "others:\n";
 	print_lst($certinfo->otherdeps);
     }
-    
-    my $image;
 
     if ($certifiable) {
+	# Look for something indicating what saved image to use for building this file.
+	# First look for an acl2-image certparam.
+	my $paramimage = $certinfo->params->{"acl2-image"};
+
+	my $imagefileimage;
 	# If there is an .image file corresponding to this file or a
 	# cert.image in this file's directory, add a dependency on the
 	# ACL2 image specified in that file and the .image file itself.
 	my $imagefile = $base . ".image";
+	my $directory_imagefile;
 	if (! -e $imagefile) {
 	    # was:
 	    # $imagefile = rel_path(dirname($base), "cert.image");
 	    $imagefile = File::Spec->catfile(dirname($base), "cert.image");
 	    if (! -e $imagefile) {
 		$imagefile = 0;
+	    } else {
+		$directory_imagefile = 1;
 	    }
+	} else {
+	    $directory_imagefile = 0;
 	}
 
 	if ($imagefile) {
@@ -797,8 +970,19 @@ sub find_deps {
 	    } else {
 		print STDERR "Warning: find_deps: Could not open image file $imagefile: $!\n";
 	    }
-	    $certinfo->image($line);
+	    $imagefileimage = $line;
 	}
+	if ($paramimage || $imagefileimage) {
+	    if ($paramimage && $imagefileimage && ! ($paramimage eq $imagefileimage) && !$directory_imagefile) {
+		print STDERR "Warning: find_deps: different acl2 images for $lispfile given by acl2-image cert-param and .image file.\n";
+		print STDERR " Using image given by cert-param:     $paramimage\n";
+		print STDERR " Ignoring image from .image file:     $imagefileimage\n";
+	    }
+	    $certinfo->image($paramimage || $imagefileimage);
+	}
+    }
+    if ($certinfo->image && $imagefile_src_dir) {
+	add_image_deps($certinfo->image, $depdb, $lispfile);
     }
 
     return $certinfo;
@@ -844,7 +1028,7 @@ sub deps_dfs {
 
 }
 
-# Depth-first search through the dependency map in order to propagate requirements (e.g. hons-only)
+# Depth-first search through the dependency map in order to propagate requirements (e.g. ccl-only)
 # from books with that cert_param to books that include them.
 sub propagate_reqparam {
     my ($target, $paramname, $visited, $depdb) = @_;
@@ -862,7 +1046,7 @@ sub propagate_reqparam {
 	}
 	return;
     }
-    
+
     my $certdeps = $depdb->cert_deps($target);
     my $set_param = 0;
     foreach my $dep (@$certdeps) {
@@ -912,7 +1096,7 @@ sub check_up_to_date {
 	    $up_to_date{$target} = 0;
 	    return;
 	}
-	
+
 	my $certdeps = $depdb->cert_deps($target);
 	foreach my $cert (@$certdeps) {
 	    $dfs->($cert);
@@ -932,9 +1116,9 @@ sub check_up_to_date {
 	}
 	my $srcdeps = $depdb->cert_srcdeps($target);
 	my $otherdeps = $depdb->cert_otherdeps($target);
-	
+
 	foreach my $dep (@$srcdeps, @$otherdeps) {
-	    if ( (! $force_up_to_date->{$dep}) && 
+	    if ( (! $force_up_to_date->{$dep}) &&
 		 ($force_out_of_date->{$dep} || ! (-e $dep) || ! newer_than_or_equal($target, $dep))) {
 		$up_to_date{$target} = 0;
 		return;
@@ -1294,8 +1478,132 @@ sub add_deps {
 
     # 	push(@{$depdb->{$target}->[2]}, @$recsrcs);
     # }
-	
+
 }
+
+
+
+sub add_image_deps {
+    my ($target, $depdb, $parent) = @_;
+    if ($target eq "acl2") {
+	return;
+    }
+
+    print "add_image_deps (check) $target\n" if $debugging;
+    my $targetimage = ${target} . ".image";
+
+    if (exists $depdb->certdeps->{$targetimage}) {
+	# We've already calculated this file's dependencies, or we're in a self-loop.
+	if ($depdb->certdeps->{$targetimage} == 0) {
+	    print STDERR "Dependency loop on $target!\n";
+	    print STDERR "Current stack:\n";
+	    foreach my $book (@{$depdb->stack}) {
+		print STDERR "   $book\n";
+	    }
+	}
+	print "depdb entry exists\n" if $debugging;
+	return;
+    }
+
+    if (excludep($target)) {
+	print "excludep\n" if $debugging;
+    	return;
+    }
+
+    if (! $imagefile_src_dir) {
+	print STDERR "Can't get dependencies of saved image $target because --image-sources/ACL2_IMAGE_SRC_DIR isn't set.\n";
+	$depdb->certdeps->{$targetimage} = new Certinfo;
+	return;
+	
+    }
+    # We need to somehow map from the image name to the location of
+    # the source file. For now, we're just going to use a configured
+    # path for all images; will need to revisit this later.
+    my $lspfile = canonical_path(File::Spec->catfile($imagefile_src_dir, $target . ".lsp"));
+
+    if (! -e $lspfile) {
+	# The file doesn't exist in the expected place.
+	print STDERR "Skipping dependencies of saved image $target -- build file not found in image source dir\n";
+	$depdb->certdeps->{$targetimage} = new Certinfo;
+	return;
+    }
+    
+    $depdb->certdeps->{$targetimage} = 0;
+
+    print "add_image_deps $target\n" if $debugging;
+
+    # What should we do when cleaning?  Delete images?  Leave it for now
+    # clean_generated_files($base) if ($clean_certs);
+
+
+    push (@{$depdb->stack}, $targetimage);
+
+    my $certinfo = find_deps($lspfile, $depdb, $parent);
+
+    my $topstack = pop(@{$depdb->stack});
+    if (! ($topstack eq $targetimage) ) {
+	print STDERR "Stack discipline failed on $targetimage! was $topstack\n";
+    }
+
+    $depdb->certdeps->{$targetimage} = $certinfo ;
+
+    if ($print_deps) {
+        print "Dependencies for $target:\n";
+        print "book:\n";
+        foreach my $dep (@{$certinfo->bookdeps}) {
+            print "$dep\n";
+        }
+        print "src:\n";
+        foreach my $dep (@{$certinfo->srcdeps}) {
+            print "$dep\n";
+        }
+        print "other:\n";
+        foreach my $dep (@{$certinfo->otherdeps}) {
+            print "$dep\n";
+        }
+        print "image: " . $certinfo->image . "\n" if $certinfo->image;
+        if ($certinfo->params) {
+            print "params:\n";
+            while (my ($key, $value) = each %{$certinfo->params}) {
+                print "$key = $value\n";
+            }
+            print "\n";
+        }
+        print "\n";
+    }
+
+    # # Accumulate the set of sources.  We haven't checked yet if they exist.
+    # foreach my $dep (@$srcdeps) {
+    # 	$sources->{$dep} = 1;
+    # }
+
+    # # Accumulate the set of non-source/cert deps..
+    # foreach my $dep (@$otherdeps) {
+    # 	$others->{$dep} = 1;
+    # }
+
+
+    # # Run the recursive add_deps on each dependency.
+    # foreach my $dep  (@$bookdeps, @$portdeps, @$recdeps) {
+    # 	add_deps($dep, $cache, $depdb, $sources, $others, $tscache, $target);
+    # }
+
+    # # Collect the recursive dependencies of @$recdeps and add them to srcdeps.
+    # if (@$recdeps) {
+    # 	my $recsrcs = [];
+    # 	my $reccerts = [];
+    # 	my $recothers = [];
+    # 	my $visited = {};
+    # 	foreach my $dep (@$recdeps) {
+    # 	    deps_dfs($dep, $depdb, $visited, $recsrcs, $reccerts, $recothers);
+    # 	}
+
+    # 	push(@{$depdb->{$target}->[2]}, @$recsrcs);
+    # }
+
+}
+
+
 
 sub read_targets {
     my ($fname,$targets) = @_;
@@ -1370,7 +1678,7 @@ sub process_labels_and_targets {
     my ($input, $depdb, $target_ext) = @_;
     my %labels = ();
     my @targets = ();
-    my @maketargets = ();
+    my @images = ();
     my $label_started = 0;
     my $label_targets;
     foreach my $str (@$input) {
@@ -1382,6 +1690,7 @@ sub process_labels_and_targets {
 		push (@targets, @{$certinfo->bookdeps});
 		push (@targets, @{$certinfo->portdeps});
 		push (@$label_targets, @{$certinfo->bookdeps}) if $label_started;
+		push (@images, $certinfo->image) if $certinfo->image;
 	    } else {
 		print STDERR "Bad path for target: $str\n";
 	    }
@@ -1422,7 +1731,7 @@ sub process_labels_and_targets {
     # 	}
     # }
 
-    return (\@targets, \%labels);
+    return (\@targets, \@images, \%labels);
 }
 
 

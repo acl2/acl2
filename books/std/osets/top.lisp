@@ -144,37 +144,37 @@ from the accompanying talk.</p>")
       (equal (setp X) nil))
   :rule-classes :type-prescription)
 
-(defund empty (X)
+(defund emptyp (X)
   (declare (xargs :guard (setp X)))
   (mbe :logic (or (null X)
                   (not (setp X)))
        :exec  (null X)))
 
-(defthm empty-type
-  (or (equal (empty X) t)
-      (equal (empty X) nil))
+(defthm emptyp-type
+  (or (equal (emptyp X) t)
+      (equal (emptyp X) nil))
   :rule-classes :type-prescription)
 
 (defund sfix (X)
   (declare (xargs :guard (setp X)))
-  (mbe :logic (if (empty X) nil X)
+  (mbe :logic (if (emptyp X) nil X)
        :exec  X))
 
 (defund head (X)
   (declare (xargs :guard (and (setp X)
-                              (not (empty X)))))
+                              (not (emptyp X)))))
   (mbe :logic (car (sfix X))
        :exec  (car X)))
 
 (defund tail (X)
   (declare (xargs :guard (and (setp X)
-                              (not (empty X)))))
+                              (not (emptyp X)))))
   (mbe :logic (cdr (sfix X))
        :exec  (cdr X)))
 
 (defund insert (a X)
   (declare (xargs :guard (setp X)))
-  (mbe :logic (cond ((empty X) (list a))
+  (mbe :logic (cond ((emptyp X) (list a))
                     ((equal (head X) a) X)
                     ((<< a (head X)) (cons a X))
                     (t (cons (head X) (insert a (tail X)))))
@@ -190,7 +190,7 @@ from the accompanying talk.</p>")
 (defun in (a X)
   (declare (xargs :guard (setp X)))
   (mbe :logic
-       (and (not (empty X))
+       (and (not (emptyp X))
             (or (equal a (head X))
                 (in a (tail X))))
        :exec
@@ -208,8 +208,8 @@ from the accompanying talk.</p>")
 (defund fast-subset (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic
-       (cond ((empty X) t)
-             ((empty Y) nil)
+       (cond ((emptyp X) t)
+             ((emptyp Y) nil)
              ((<< (head X) (head Y)) nil)
              ((equal (head X) (head Y)) (fast-subset (tail X) (tail Y)))
              (t (fast-subset X (tail Y))))
@@ -224,7 +224,7 @@ from the accompanying talk.</p>")
 
 (defun subset (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (mbe :logic (if (empty X)
+  (mbe :logic (if (emptyp X)
 		  t
 		(and (in (head X) Y)
 		     (subset (tail X) Y)))
@@ -300,7 +300,7 @@ from the accompanying talk.</p>")
 (defun delete (a X)
   (declare (xargs :guard (setp X)))
   (mbe :logic
-       (cond ((empty X) nil)
+       (cond ((emptyp X) nil)
              ((equal a (head X)) (tail X))
              (t (insert (head X) (delete a (tail X)))))
        :exec
@@ -310,14 +310,14 @@ from the accompanying talk.</p>")
 
 (defun union (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (mbe :logic (if (empty X)
+  (mbe :logic (if (emptyp X)
                   (sfix Y)
                 (insert (head X) (union (tail X) Y)))
        :exec  (fast-union X Y nil)))
 
 (defun intersect (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (mbe :logic (cond ((empty X) (sfix X))
+  (mbe :logic (cond ((emptyp X) (sfix X))
                     ((in (head X) Y)
                      (insert (head X) (intersect (tail X) Y)))
                     (t (intersect (tail X) Y)))
@@ -325,19 +325,19 @@ from the accompanying talk.</p>")
 
 (defun intersectp (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (mbe :logic (not (empty (intersect X Y)))
+  (mbe :logic (not (emptyp (intersect X Y)))
        :exec (fast-intersectp X Y)))
 
 (defun difference (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
-  (mbe :logic (cond ((empty X) (sfix X))
+  (mbe :logic (cond ((emptyp X) (sfix X))
                     ((in (head X) Y) (difference (tail X) Y))
                     (t (insert (head X) (difference (tail X) Y))))
        :exec (fast-difference X Y nil)))
 
 (defun cardinality (X)
   (declare (xargs :guard (setp X)))
-  (mbe :logic (if (empty X)
+  (mbe :logic (if (emptyp X)
                   0
                 (1+ (cardinality (tail X))))
        :exec  (length (the list X))))
@@ -389,7 +389,7 @@ from the accompanying talk.</p>")
 
 (defun all (set-for-all-reduction)
   (declare (xargs :guard (setp set-for-all-reduction)))
-  (if (empty set-for-all-reduction)
+  (if (emptyp set-for-all-reduction)
       t
     (and (predicate (head set-for-all-reduction))
 	 (all (tail set-for-all-reduction)))))
@@ -441,7 +441,7 @@ from the accompanying talk.</p>")
   ;; only this very special case to solve such goals.
   (implies (syntaxp (equal set-for-all-reduction 'set-for-all-reduction))
            (equal (subset set-for-all-reduction rhs)
-                  (cond ((empty set-for-all-reduction) t)
+                  (cond ((emptyp set-for-all-reduction) t)
                         ((in (head set-for-all-reduction) rhs)
                          (subset (tail set-for-all-reduction) rhs))
                         (t nil)))))
@@ -482,22 +482,22 @@ from the accompanying talk.</p>")
   :rule-classes ((:rewrite :backchain-limit-lst (1))))
 
 (defthm tail-count
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (< (acl2-count (tail X)) (acl2-count X)))
   :rule-classes ((:rewrite) (:linear)))
 
 (defthm head-count
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (< (acl2-count (head X)) (acl2-count X)))
   :rule-classes ((:rewrite) (:linear)))
 
 (defthm tail-count-built-in
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (o< (acl2-count (tail X)) (acl2-count X)))
   :rule-classes :built-in-clause)
 
 (defthm head-count-built-in
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (o< (acl2-count (head X)) (acl2-count X)))
   :rule-classes :built-in-clause)
 
@@ -516,10 +516,10 @@ from the accompanying talk.</p>")
   (setp (insert a X)))
 
 (defthm insert-never-empty
-  (not (empty (insert a X))))
+  (not (emptyp (insert a X))))
 
 (defthm nonempty-means-set
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (setp X)))
 
 (defthm sfix-set-identity
@@ -527,9 +527,9 @@ from the accompanying talk.</p>")
            (equal (sfix X)
                   X)))
 
-(defthm empty-sfix-cancel
-  (equal (empty (sfix X))
-         (empty X)))
+(defthm emptyp-sfix-cancel
+  (equal (emptyp (sfix X))
+         (emptyp X)))
 
 (defthm head-sfix-cancel
   (equal (head (sfix X))
@@ -540,12 +540,12 @@ from the accompanying talk.</p>")
          (tail X)))
 
 (defthm insert-head
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (equal (insert (head X) X)
                   X)))
 
 (defthm insert-head-tail
-  (implies (not (empty X))
+  (implies (not (emptyp X))
            (equal (insert (head X) (tail X))
                   X)))
 
@@ -557,19 +557,19 @@ from the accompanying talk.</p>")
   (equal (insert a (sfix X))
          (insert a X)))
 
-(defthm head-when-empty
-  (implies (empty X)
+(defthm head-when-emptyp
+  (implies (emptyp X)
            (equal (head X)
                   nil)))
 
-(defthm tail-when-empty
-  (implies (empty X)
+(defthm tail-when-emptyp
+  (implies (emptyp X)
            (equal (tail X)
                   nil)))
 
-(defthm insert-when-empty
+(defthm insert-when-emptyp
   (implies (and (syntaxp (not (equal X ''nil)))
-                (empty X))
+                (emptyp X))
            (equal (insert a X)
                   (insert a nil))))
 
@@ -581,8 +581,8 @@ from the accompanying talk.</p>")
   (equal (tail (insert a nil))
          nil))
 
-(defthm sfix-when-empty
-  (implies (empty X)
+(defthm sfix-when-emptyp
+  (implies (emptyp X)
            (equal (sfix X)
                   nil)))
 
@@ -608,7 +608,7 @@ from the accompanying talk.</p>")
          (in a X)))
 
 (defthm never-in-empty
-  (implies (empty X)
+  (implies (emptyp X)
            (not (in a X))))
 
 (defthm in-set
@@ -627,7 +627,7 @@ from the accompanying talk.</p>")
 
 (defthm in-head
   (equal (in (head X) X)
-         (not (empty X))))
+         (not (emptyp X))))
 
 (defthm head-unique
   (not (in (head X) (tail X))))
@@ -679,14 +679,14 @@ from the accompanying talk.</p>")
                      (subset X Y))
                 (not (in a X)))))
 
-(defthm empty-subset
-  (implies (empty X)
+(defthm emptyp-subset
+  (implies (emptyp X)
            (subset X Y)))
 
-(defthm empty-subset-2
-  (implies (empty Y)
+(defthm emptyp-subset-2
+  (implies (emptyp Y)
 	   (equal (subset X Y)
-                  (empty X))))
+                  (emptyp X))))
 
 (defthm subset-reflexive
   (subset X X))
@@ -721,7 +721,7 @@ from the accompanying talk.</p>")
 
 (defun weak-insert-induction (a X)
   (declare (xargs :guard (setp X)))
-  (cond ((empty X) nil)
+  (cond ((emptyp X) nil)
         ((in a X) nil)
         ((equal (head (insert a X)) a) nil)
         (t (list (weak-insert-induction a (tail X))))))
@@ -745,9 +745,9 @@ from the accompanying talk.</p>")
 (defthm delete-set
   (setp (delete a X)))
 
-(defthm delete-preserves-empty
-  (implies (empty X)
-           (empty (delete a X))))
+(defthm delete-preserves-emptyp
+  (implies (emptyp X)
+           (emptyp (delete a X))))
 
 (defthm delete-in
   (equal (in a (delete b X))
@@ -817,17 +817,17 @@ from the accompanying talk.</p>")
 (defthm union-sfix-cancel-Y
   (equal (union X (sfix Y)) (union X Y)))
 
-(defthm union-empty-X
-  (implies (empty X)
+(defthm union-emptyp-X
+  (implies (emptyp X)
            (equal (union X Y) (sfix Y))))
 
-(defthm union-empty-Y
-  (implies (empty Y)
+(defthm union-emptyp-Y
+  (implies (emptyp Y)
            (equal (union X Y) (sfix X))))
 
-(defthm union-empty
-  (equal (empty (union X Y))
-         (and (empty X) (empty Y))))
+(defthm union-emptyp
+  (equal (emptyp (union X Y))
+         (and (emptyp X) (emptyp Y))))
 
 (defthm union-in
   (equal (in a (union X Y))
@@ -895,11 +895,11 @@ from the accompanying talk.</p>")
 (defthm intersect-sfix-cancel-Y
   (equal (intersect X (sfix Y)) (intersect X Y)))
 
-(defthm intersect-empty-X
-  (implies (empty X) (empty (intersect X Y))))
+(defthm intersect-emptyp-X
+  (implies (emptyp X) (emptyp (intersect X Y))))
 
-(defthm intersect-empty-Y
-  (implies (empty Y) (empty (intersect X Y))))
+(defthm intersect-emptyp-Y
+  (implies (emptyp Y) (emptyp (intersect X Y))))
 
 (defthm intersect-in
   (equal (in a (intersect X Y))
@@ -958,12 +958,12 @@ from the accompanying talk.</p>")
 (defthm difference-sfix-Y
   (equal (difference X (sfix Y)) (difference X Y)))
 
-(defthm difference-empty-X
-  (implies (empty X)
+(defthm difference-emptyp-X
+  (implies (emptyp X)
            (equal (difference X Y) (sfix X))))
 
-(defthm difference-empty-Y
-  (implies (empty Y)
+(defthm difference-emptyp-Y
+  (implies (emptyp Y)
            (equal (difference X Y) (sfix X))))
 
 (defthm difference-in
@@ -975,7 +975,7 @@ from the accompanying talk.</p>")
   (subset (difference X Y) X))
 
 (defthm subset-difference
-  (equal (empty (difference X Y))
+  (equal (emptyp (difference X Y))
          (subset X Y)))
 
 (defthm difference-over-union
@@ -1017,9 +1017,9 @@ from the accompanying talk.</p>")
        (<= 0 (cardinality X)))
   :rule-classes :type-prescription)
 
-(defthm cardinality-zero-empty
+(defthm cardinality-zero-emptyp
   (equal (equal (cardinality x) 0)
-	 (empty x)))
+	 (emptyp x)))
 
 (defthm cardinality-sfix-cancel
   (equal (cardinality (sfix X))
@@ -1119,30 +1119,30 @@ from the accompanying talk.</p>")
 (defthmd insert-induction-case
   (implies (and (not (<< a (head X)))
                 (not (equal a (head X)))
-                (not (empty X)))
+                (not (emptyp X)))
            (equal (insert (head X) (insert a (tail X)))
                   (insert a X))))
 
 (defthmd head-insert
   (equal (head (insert a X))
-	 (cond ((empty X) a)
+	 (cond ((emptyp X) a)
 	       ((<< a (head X)) a)
 	       (t (head X)))))
 
 (defthmd tail-insert
   (equal (tail (insert a X))
-	 (cond ((empty X) (sfix X))
-	       ((<< a (head X)) (sfix X))
+	 (cond ((emptyp X) nil)
+	       ((<< a (head X)) X)
                ((equal a (head X)) (tail X))
                (t (insert a (tail X))))))
 
 (defthmd head-tail-order
-  (implies (not (empty (tail X)))
+  (implies (not (emptyp (tail X)))
            (<< (head X) (head (tail X)))))
 
 (defthmd head-tail-order-contrapositive
   (implies (not (<< (head X) (head (tail X))))
-           (empty (tail X))))
+           (emptyp (tail X))))
 
 (defthmd head-minimal
   (implies (<< a (head X))
@@ -1156,7 +1156,7 @@ from the accompanying talk.</p>")
   (equal (setp (cons a X))
          (and (setp X)
               (or (<< a (head X))
-                  (empty X)))))
+                  (emptyp X)))))
 
 (defthmd in-to-member
   (implies (setp X)

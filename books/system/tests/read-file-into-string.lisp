@@ -19,9 +19,15 @@
 definition of *test-file-contents* in file read-file-into-string.lisp.
 ")
 
+(defmacro increment-file-clock-event ()
+  '(make-event (pprogn (increment-file-clock state)
+                       (value '(value-triple nil)))))
+
 (assert!
  (equal (read-file-into-string "read-file-into-string-test.txt")
         *test-file-contents*))
+
+(increment-file-clock-event)
 
 (assert!
  (equal (read-file-into-string "read-file-into-string-test.txt"
@@ -50,12 +56,16 @@ definition of *test-file-contents* in file read-file-into-string"))
 ; Read-file-into-string for entire file agrees with its logical definition:
 
 (must-eval-to-t
- (let ((str2 (read-file-into-string "read-file-into-string-test.txt")))
-   (mv-let (chan state)
-     (open-input-channel "read-file-into-string-test.txt" :character state)
-     (mv-let (str1 state)
-       (read-file-into-string1 chan state nil *read-file-into-string-bound*)
-       (value (equal str1 str2))))))
+ (pprogn
+  (increment-file-clock state)
+  (let ((str2 (read-file-into-string "read-file-into-string-test.txt")))
+    (pprogn
+     (increment-file-clock state)
+     (mv-let (chan state)
+       (open-input-channel "read-file-into-string-test.txt" :character state)
+       (mv-let (str1 state)
+         (read-file-into-string1 chan state nil *read-file-into-string-bound*)
+         (value (equal str1 str2))))))))
 
 (defun read-file-into-string-in-chunks-rec (bound filename chunk-size start
                                                   state acc)
@@ -97,6 +107,8 @@ definition of *test-file-contents* in file read-file-into-string"))
                          30 ; which does not divide 140
                          state))
         *test-file-contents*))
+
+(increment-file-clock-event)
 
 (assert!
  (equal (string-append* (read-file-into-string-in-chunks

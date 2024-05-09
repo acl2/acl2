@@ -1,6 +1,6 @@
 ; Standard Basic Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,9 +32,7 @@
    (xdoc::p
     "These good values are the only ones that can be constructed in execution.
      However, in the ACL2 logic, there may be bad atoms,
-     or @(tsee cons) pairs that contain, directly or indirectly, bad atoms.")
-   (xdoc::p
-    "Also see @(tsee good-atom-listp)."))
+     or @(tsee cons) pairs that contain, directly or indirectly, bad atoms."))
   (or (acl2-numberp x)
       (characterp x)
       (stringp x)

@@ -32,8 +32,8 @@ Form:  (DEFSTUB P2 ...)
 Rules: NIL
  P2
 ACL2 !>>(DEFAXIOM P2-TRANS
-                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
-                           (P2 X Z)))
+          (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                   (P2 X Z)))
 
 ACL2 Warning [Free] in ( DEFAXIOM P2-TRANS ...):  A :REWRITE rule generated
 from P2-TRANS contains the free variable Y.  This variable will be
@@ -130,8 +130,8 @@ ACL2 !>>(UBT! 'P2-TRANS)
 ACL2 !>>(SET-MATCH-FREE-ERROR T)
 <state>
 ACL2 !>>(DEFAXIOM P2-TRANS
-                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
-                           (P2 X Z)))
+          (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                   (P2 X Z)))
 
 ACL2 Warning [Free] in ( DEFAXIOM P2-TRANS ...):  A :REWRITE rule generated
 from P2-TRANS contains the free variable Y.  This variable will be
@@ -165,9 +165,9 @@ ACL2 Error [Failure] in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFAXIOM P2-TRANS
-                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
-                           (P2 X Z))
-                  :RULE-CLASSES ((:REWRITE :MATCH-FREE NIL)))
+          (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                   (P2 X Z))
+          :RULE-CLASSES ((:REWRITE :MATCH-FREE NIL)))
 
 
 ACL2 Error in ( DEFAXIOM P2-TRANS ...):  The legal values of :MATCH-
@@ -183,9 +183,9 @@ ACL2 Error [Failure] in ( DEFAXIOM P2-TRANS ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFAXIOM P2-TRANS
-                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
-                           (P2 X Z))
-                  :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
+          (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                   (P2 X Z))
+          :RULE-CLASSES ((:REWRITE :MATCH-FREE :ONCE)))
 
 Summary
 Form:  ( DEFAXIOM P2-TRANS ...)
@@ -236,8 +236,8 @@ ACL2 !>>(U)
 ACL2 !>>(SET-MATCH-FREE-DEFAULT :ONCE)
  :ONCE
 ACL2 !>>(DEFAXIOM P2-TRANS
-                  (IMPLIES (AND (P2 X Y) (P2 Y Z))
-                           (P2 X Z)))
+          (IMPLIES (AND (P2 X Y) (P2 Y Z))
+                   (P2 X Z)))
 
 ACL2 Warning [Free] in ( DEFAXIOM P2-TRANS ...):  A :REWRITE rule generated
 from P2-TRANS contains the free variable Y.  This variable will be
@@ -296,11 +296,11 @@ ACL2 !>>(ENCAPSULATE (((P1 *) => *)
                       ((P3 *) => *)
                       ((A) => *)
                       ((B) => *))
-                     (LOCAL (DEFUN P1 (X) X))
-                     (LOCAL (DEFUN P2 (X Y) (LIST X Y)))
-                     (LOCAL (DEFUN P3 (X) X))
-                     (LOCAL (DEFUN A NIL 0))
-                     (LOCAL (DEFUN B NIL 0)))
+          (LOCAL (DEFUN P1 (X) X))
+          (LOCAL (DEFUN P2 (X Y) (LIST X Y)))
+          (LOCAL (DEFUN P3 (X) X))
+          (LOCAL (DEFUN A NIL 0))
+          (LOCAL (DEFUN B NIL 0)))
 
 To verify that the five encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -380,7 +380,7 @@ Rules: NIL
 ACL2 !>>(SET-MATCH-FREE-ERROR NIL)
 <state>
 ACL2 !>>(DEFAXIOM AX1
-                  (IMPLIES (AND (P2 X Y) (P1 Y)) (P3 X)))
+          (IMPLIES (AND (P2 X Y) (P1 Y)) (P3 X)))
 
 ACL2 Warning [Free] in ( DEFAXIOM AX1 ...):  A :REWRITE rule generated
 from AX1 contains the free variable Y.  This variable will be chosen
@@ -426,6 +426,10 @@ Proof succeeded.
 ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE T)
  ((:REWRITE AX1)
   (:REWRITE APPLY$-WARRANT-DO$-NECC)
+  (:REWRITE APPLY$-WARRANT-LOOP$-DEFAULT-VALUES-NECC)
+  (:REWRITE APPLY$-WARRANT-LOOP$-DEFAULT-VALUES1-NECC)
+  (:REWRITE APPLY$-WARRANT-EVISCERATE-DO$-ALIST-NECC)
+  (:REWRITE APPLY$-WARRANT-STOBJ-PRINT-NAME-NECC)
   (:REWRITE APPLY$-WARRANT-LEXP-NECC)
   (:REWRITE APPLY$-WARRANT-LEX-FIX-NECC)
   (:REWRITE APPLY$-WARRANT-NFIX-LIST-NECC)
@@ -461,6 +465,7 @@ ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE T)
   (:REWRITE ARITIES-OKP-IMPLIES-ARITY)
   (:REWRITE TERM-LISTP-IMPLIES-PSEUDO-TERM-LISTP)
   (:REWRITE TERMP-IMPLIES-PSEUDO-TERMP)
+  (:LINEAR TO-DF-MONOTONICITY)
   (:REWRITE ANCESTORS-CHECK-CONSTRAINT)
   (:REWRITE ANCESTORS-CHECK-BUILTIN-PROPERTY)
   (:REWRITE LEXORDER-TRANSITIVE)
@@ -475,6 +480,8 @@ ACL2 !>>(ADD-MATCH-FREE-OVERRIDE :ONCE T)
   (:LINEAR ARRAY1P-LINEAR)
   (:LINEAR ARRAY1P-LINEAR)
   (:LINEAR ARRAY1P-LINEAR)
+  (:LINEAR DF-ROUND-MONOTONICITY)
+  (:LINEAR CONSTRAINED-TO-DF-MONOTONICITY)
   (:REWRITE BAD-ATOM<=-TRANSITIVE))
 ACL2 !>>(THM (IMPLIES (P2 (A) Y) (P3 (A))))
 
@@ -535,37 +542,37 @@ ACL2 !>>(ENCAPSULATE ((P1 (U X) T)
                       (FOO (X Y) T)
                       (POO (X Y) T)
                       (PROP (U) T))
-                     (LOCAL (DEFUN P1 (U X)
-                                   (DECLARE (IGNORE U X))
-                                   NIL))
-                     (LOCAL (DEFUN BAD (X)
-                                   (DECLARE (IGNORE X))
-                                   NIL))
-                     (LOCAL (DEFUN P2 (X Y Z)
-                                   (DECLARE (IGNORE X Y Z))
-                                   NIL))
-                     (LOCAL (DEFUN BAR (X Y)
-                                   (DECLARE (IGNORE X Y))
-                                   NIL))
-                     (LOCAL (DEFUN FOO (X Y)
-                                   (DECLARE (IGNORE X Y))
-                                   NIL))
-                     (LOCAL (DEFUN POO (X Y)
-                                   (DECLARE (IGNORE X Y))
-                                   NIL))
-                     (LOCAL (DEFUN PROP (U) (DECLARE (IGNORE U)) T))
-                     (DEFTHM FOO-POO
-                             (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
-                                      (EQUAL (FOO X Y) (POO X Y))))
-                     (DEFTHM LEMMA-1
-                             (IMPLIES (AND (P1 U X)
-                                           (BAD X)
-                                           (P2 X Y Z)
-                                           (BAR X Y)
-                                           (EQUAL X X)
-                                           (FOO X Y))
-                                      (PROP U))
-                             :RULE-CLASSES ((:REWRITE :MATCH-FREE :ALL))))
+          (LOCAL (DEFUN P1 (U X)
+                   (DECLARE (IGNORE U X))
+                   NIL))
+          (LOCAL (DEFUN BAD (X)
+                   (DECLARE (IGNORE X))
+                   NIL))
+          (LOCAL (DEFUN P2 (X Y Z)
+                   (DECLARE (IGNORE X Y Z))
+                   NIL))
+          (LOCAL (DEFUN BAR (X Y)
+                   (DECLARE (IGNORE X Y))
+                   NIL))
+          (LOCAL (DEFUN FOO (X Y)
+                   (DECLARE (IGNORE X Y))
+                   NIL))
+          (LOCAL (DEFUN POO (X Y)
+                   (DECLARE (IGNORE X Y))
+                   NIL))
+          (LOCAL (DEFUN PROP (U) (DECLARE (IGNORE U)) T))
+          (DEFTHM FOO-POO
+            (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
+                     (EQUAL (FOO X Y) (POO X Y))))
+          (DEFTHM LEMMA-1
+            (IMPLIES (AND (P1 U X)
+                          (BAD X)
+                          (P2 X Y Z)
+                          (BAR X Y)
+                          (EQUAL X X)
+                          (FOO X Y))
+                     (PROP U))
+            :RULE-CLASSES ((:REWRITE :MATCH-FREE :ALL))))
 
 To verify that the nine encapsulated events correctly extend the current
 theory we will evaluate them.  The theory thus constructed is only
@@ -575,8 +582,8 @@ Encapsulated Events:
 
 
 ACL2 !>>>(LOCAL (DEFUN P1 (U X)
-                       (DECLARE (IGNORE U X))
-                       NIL))
+                  (DECLARE (IGNORE U X))
+                  NIL))
 
 Since P1 is non-recursive, its admission is trivial.  We observe that
 the type of P1 is described by the theorem (EQUAL (P1 U X) NIL).  
@@ -588,8 +595,8 @@ P1
 
 
 ACL2 !>>>(LOCAL (DEFUN BAD (X)
-                       (DECLARE (IGNORE X))
-                       NIL))
+                  (DECLARE (IGNORE X))
+                  NIL))
 
 Since BAD is non-recursive, its admission is trivial.  We observe that
 the type of BAD is described by the theorem (EQUAL (BAD X) NIL).  
@@ -601,8 +608,8 @@ BAD
 
 
 ACL2 !>>>(LOCAL (DEFUN P2 (X Y Z)
-                       (DECLARE (IGNORE X Y Z))
-                       NIL))
+                  (DECLARE (IGNORE X Y Z))
+                  NIL))
 
 Since P2 is non-recursive, its admission is trivial.  We observe that
 the type of P2 is described by the theorem (EQUAL (P2 X Y Z) NIL).
@@ -614,8 +621,8 @@ P2
 
 
 ACL2 !>>>(LOCAL (DEFUN BAR (X Y)
-                       (DECLARE (IGNORE X Y))
-                       NIL))
+                  (DECLARE (IGNORE X Y))
+                  NIL))
 
 Since BAR is non-recursive, its admission is trivial.  We observe that
 the type of BAR is described by the theorem (EQUAL (BAR X Y) NIL).
@@ -627,8 +634,8 @@ BAR
 
 
 ACL2 !>>>(LOCAL (DEFUN FOO (X Y)
-                       (DECLARE (IGNORE X Y))
-                       NIL))
+                  (DECLARE (IGNORE X Y))
+                  NIL))
 
 Since FOO is non-recursive, its admission is trivial.  We observe that
 the type of FOO is described by the theorem (EQUAL (FOO X Y) NIL).
@@ -640,8 +647,8 @@ FOO
 
 
 ACL2 !>>>(LOCAL (DEFUN POO (X Y)
-                       (DECLARE (IGNORE X Y))
-                       NIL))
+                  (DECLARE (IGNORE X Y))
+                  NIL))
 
 Since POO is non-recursive, its admission is trivial.  We observe that
 the type of POO is described by the theorem (EQUAL (POO X Y) NIL).
@@ -664,8 +671,8 @@ PROP
 
 
 ACL2 !>>>(DEFTHM FOO-POO
-                 (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
-                          (EQUAL (FOO X Y) (POO X Y))))
+           (IMPLIES (SYNTAXP (EQUAL Y 'Y3))
+                    (EQUAL (FOO X Y) (POO X Y))))
 
 ACL2 Warning [Non-rec] in ( DEFTHM FOO-POO ...):  A :REWRITE rule generated
 from FOO-POO will be triggered only by terms containing the function
@@ -691,14 +698,14 @@ FOO-POO
 
 
 ACL2 !>>>(DEFTHM LEMMA-1
-                 (IMPLIES (AND (P1 U X)
-                               (BAD X)
-                               (P2 X Y Z)
-                               (BAR X Y)
-                               (EQUAL X X)
-                               (FOO X Y))
-                          (PROP U))
-                 :RULE-CLASSES ((:REWRITE :MATCH-FREE :ALL)))
+           (IMPLIES (AND (P1 U X)
+                         (BAD X)
+                         (P2 X Y Z)
+                         (BAR X Y)
+                         (EQUAL X X)
+                         (FOO X Y))
+                    (PROP U))
+           :RULE-CLASSES ((:REWRITE :MATCH-FREE :ALL)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-1 ...):  A :REWRITE rule generated
 from LEMMA-1 will be triggered only by terms containing the function
@@ -768,7 +775,7 @@ NIL
  T
 ACL2 !>>:MONITOR (:REWRITE LEMMA-1) '(:TARGET :UNIFY-SUBST :GO)
 (((:REWRITE LEMMA-1)
-  '(:TARGET :UNIFY-SUBST :GO)))
+  (:CONDITION QUOTE (:TARGET :UNIFY-SUBST :GO))))
 ACL2 !>>(THM (IMPLIES (AND (P1 U0 X1)
                            (BAD X1)
                            (BAD X3)
@@ -923,8 +930,8 @@ Rules: ((:TYPE-PRESCRIPTION F))
 Warnings:  Subsume and Non-rec
  F-K-H
 ACL2 !>>(DEFTHM G-REWRITE
-                (IMPLIES (AND (EQUAL Y (K X)) (F Y))
-                         (EQUAL (G X) Y)))
+          (IMPLIES (AND (EQUAL Y (K X)) (F Y))
+                   (EQUAL (G X) Y)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM G-REWRITE ...):  A :REWRITE rule
 generated from G-REWRITE will be triggered only by terms containing
@@ -1027,7 +1034,8 @@ Summary
 Form:  ( DEFUN H2 ...)
 Rules: NIL
  H2
-ACL2 !>>(DEFTHM LEMMA-1 (MY-EQUIV (H1 X) (H2 X)))
+ACL2 !>>(DEFTHM LEMMA-1
+          (MY-EQUIV (H1 X) (H2 X)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-1 ...):  A :REWRITE rule generated
 from LEMMA-1 will be triggered only by terms containing the function
@@ -1074,9 +1082,9 @@ Rules: ((:TYPE-PRESCRIPTION F))
 Warnings:  Subsume and Non-rec
  LEMMA-2
 ACL2 !>>(DEFTHM LEMMA-3
-                (IMPLIES (AND (MY-EQUIV Y (DOUBLE-REWRITE X))
-                              (F Y))
-                         (EQUAL (G X) Y)))
+          (IMPLIES (AND (MY-EQUIV Y (DOUBLE-REWRITE X))
+                        (F Y))
+                   (EQUAL (G X) Y)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM LEMMA-3 ...):  A :REWRITE rule generated
 from LEMMA-3 will be triggered only by terms containing the function
@@ -1179,10 +1187,10 @@ Form:  (DEFSTUB G ...)
 Rules: NIL
  G
 ACL2 !>>(DEFAXIOM G-REWRITE
-                  (IMPLIES (AND (F Y)
-                                (SYNTAXP (NOT (CW "rewrite trying ~x0~%" Y)))
-                                (EQUAL X Y))
-                           (EQUAL (G X) Y)))
+          (IMPLIES (AND (F Y)
+                        (SYNTAXP (NOT (CW "rewrite trying ~x0~%" Y)))
+                        (EQUAL X Y))
+                   (EQUAL (G X) Y)))
 
 ACL2 Warning [Free] in ( DEFAXIOM G-REWRITE ...):  A :REWRITE rule
 generated from G-REWRITE contains the free variable Y.  This variable
@@ -1197,35 +1205,40 @@ Rules: NIL
 Warnings:  Free
  G-REWRITE
 ACL2 !>>(DEFAXIOM G-BIND-FREE
-                  (IMPLIES (AND (BIND-FREE '(((Y . A)) ((Y . B))) (Y))
-                                (SYNTAXP (NOT (CW "bind trying ~x0~%" Y)))
-                                (F Y)
-                                (EQUAL X Y))
-                           (EQUAL (G X) Y)))
+          (IMPLIES (AND (BIND-FREE '(((Y . A)) ((Y . B))) (Y))
+                        (SYNTAXP (NOT (CW "bind trying ~x0~%" Y)))
+                        (F Y)
+                        (EQUAL X Y))
+                   (EQUAL (G X) Y)))
 
 Summary
 Form:  ( DEFAXIOM G-BIND-FREE ...)
 Rules: NIL
  G-BIND-FREE
 ACL2 !>>:MONITOR (:REWRITE G-BIND-FREE) '(:TARGET :GO)
-(((:REWRITE G-BIND-FREE) '(:TARGET :GO))
+(((:REWRITE G-BIND-FREE)
+  (:CONDITION QUOTE (:TARGET :GO)))
  ((:REWRITE LEMMA-1)
-  '(:TARGET :UNIFY-SUBST :GO)))
+  (:CONDITION QUOTE (:TARGET :UNIFY-SUBST :GO))))
 ACL2 !>>:MONITOR (:REWRITE G-REWRITE) '(:TARGET :GO)
-(((:REWRITE G-REWRITE) '(:TARGET :GO))
- ((:REWRITE G-BIND-FREE) '(:TARGET :GO))
+(((:REWRITE G-REWRITE)
+  (:CONDITION QUOTE (:TARGET :GO)))
+ ((:REWRITE G-BIND-FREE)
+  (:CONDITION QUOTE (:TARGET :GO)))
  ((:REWRITE LEMMA-1)
-  '(:TARGET :UNIFY-SUBST :GO)))
+  (:CONDITION QUOTE (:TARGET :UNIFY-SUBST :GO))))
 ACL2 !>>:BRR T
 Use :a! to exit break-rewrite.
 See :DOC set-brr-evisc-tuple and :DOC iprint to control suppression
 of details when printing.
 
 The monitored runes are:
-(((:REWRITE G-REWRITE) '(:TARGET :GO))
- ((:REWRITE G-BIND-FREE) '(:TARGET :GO))
+(((:REWRITE G-REWRITE)
+  (:CONDITION QUOTE (:TARGET :GO)))
+ ((:REWRITE G-BIND-FREE)
+  (:CONDITION QUOTE (:TARGET :GO)))
  ((:REWRITE LEMMA-1)
-  '(:TARGET :UNIFY-SUBST :GO)))
+  (:CONDITION QUOTE (:TARGET :UNIFY-SUBST :GO))))
  T
 ACL2 !>>(THM (IMPLIES (AND (F A) (F B))
                       (EQUAL (G X) X)))

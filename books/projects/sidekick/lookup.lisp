@@ -58,7 +58,7 @@
 
 (define sk-get-props ((name stringp) state)
   :returns (mv json-props state)
-  (b* (((mv errmsg objs state) (acl2::read-string name))
+  (b* (((mv errmsg objs state) (acl2::read-string name nil))
        ((when errmsg)
         (mv (sk-json-error "Error in props: parsing failed: ~a: ~a" name errmsg)
             state))
@@ -74,7 +74,7 @@
 
 (define sk-get-origin ((name stringp) state)
   :returns (mv json-props state)
-  (b* (((mv errmsg objs state) (acl2::read-string name))
+  (b* (((mv errmsg objs state) (acl2::read-string name nil))
        ((when errmsg)
         (mv (sk-json-error "Error in origin: parsing failed: ~a: ~a~%" name errmsg)
             state))
@@ -105,7 +105,7 @@
 
 (define sk-get-xdoc ((name stringp) state)
   :returns (mv json-props state)
-  (b* (((mv errmsg objs state) (acl2::read-string name))
+  (b* (((mv errmsg objs state) (acl2::read-string name nil))
        ((when errmsg)
         (mv (sk-json-error "Error in origin: parsing failed: ~a: ~a~%" name errmsg)
             state))

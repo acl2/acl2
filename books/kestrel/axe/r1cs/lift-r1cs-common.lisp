@@ -16,6 +16,9 @@
 (local (include-book "kestrel/typed-lists-light/symbol-listp2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+
+(in-theory (disable mv-nth)) ; so the rules fire
 
 (defund acl2::symbol<-of-cars (x y)
   (declare (xargs :guard (and (consp x)
@@ -29,8 +32,8 @@
   (and (consp x)
        (symbolp (car x))))
 
-(acl2::defmergesort acl2::merge-symbol<-of-cars
-                    acl2::merge-sort-symbol<-of-cars
+(acl2::defmergesort acl2::merge-sort-symbol<-of-cars
+                    acl2::merge-symbol<-of-cars
                     acl2::symbol<-of-cars
                     acl2::consp-and-symbolp-car)
 

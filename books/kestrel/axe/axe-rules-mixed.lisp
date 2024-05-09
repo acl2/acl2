@@ -1,7 +1,7 @@
 ; Mixed Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,13 +21,14 @@
 (include-book "rules3") ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
+(include-book "kestrel/lists-light/all-same" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
 
 (defthmd bvplus-commutative-2-sizes-differ2-axe
-  (implies (and (axe-syntaxp (should-commute-args-dag 'bvplus x y dag-array)) ;gen?
+  (implies (and (axe-syntaxp (should-commute-axe-argsp 'bvplus x y dag-array)) ;gen?
                 (equal (+ 1 smallsize) bigsize) ;relax somehow?
                 (natp smallsize)
                 (unsigned-byte-p smallsize y) ;move to conc? by adding bvchops - or maybe adding bvchop would cause loops?
@@ -48,28 +49,19 @@
                             bvchop-when-top-bit-1)
                            (getbit-of-plus
 ;                            <-of-bvchop-arg1
-                            <-becomes-bvlt-free
-                            <-becomes-bvlt-free-alt
                             ;<-when-unsigned-byte-p
                             ;<-when-unsigned-byte-p-alt
-                            <-becomes-bvlt
                             ;minus-becomes-bv
                             ;plus-becomes-bvplus-arg1-free
                             ;bvuminus-of-+
-                            bvplus-of-plus-arg3
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
-                            <-becomes-bvlt
-                            <-becomes-bvlt-alt
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
                             ;anti-bvplus
-                            ;getbit-of-+
                             ;plus-becomes-bvplus
-                            bvlt-of-plus-arg1
-                            bvlt-of-plus-arg2
-                            ;slice-of-+
-                            ;getbit-of-+ ;looped
+
+
                             )))))
 
 ;shouldn't this just go to bvuminus?
@@ -128,22 +120,19 @@
            :use (:instance <-becomes-bvlt))))
 
 
-;gen the 1
-(defthmd +-becomes-bvplus-when-bv-dag
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p-forced xsize x)
-                (natp xsize))
-           (equal (+ 1 x)
-                  (bvplus (+ 1 xsize) 1 x)))
-  :hints (("Goal" :in-theory (e/d (bvplus
-                                   UNSIGNED-BYTE-P-FORCED)
-                                  (anti-bvplus
-                                   ;GETBIT-OF-+
-                                   BVLT-OF-PLUS-ARG1
-                                   BVLT-OF-PLUS-ARG2
-                                   PLUS-BECOMES-BVPLUS
-                                   <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
-                                   )))))
+;; ;gen the 1
+;; (defthmd +-becomes-bvplus-when-bv-dag
+;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+;;                 (unsigned-byte-p-forced xsize x)
+;;                 (natp xsize))
+;;            (equal (+ 1 x)
+;;                   (bvplus (+ 1 xsize) 1 x)))
+;;   :hints (("Goal" :in-theory (e/d (bvplus
+;;                                    UNSIGNED-BYTE-P-FORCED)
+;;                                   (anti-bvplus
+;;                                    PLUS-BECOMES-BVPLUS
+;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
+;;                                    )))))
 
 (DEFTHMd BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-NO-SPLIT-dag
   (IMPLIES (AND (syntaxp (QUOTEP SIZE))
@@ -173,8 +162,8 @@
                 (posp xsize))
            (equal (bvlt size x y)
                   (bvlt (max xsize ysize) x y)))
-  :hints (("Goal" :use (:instance bvlt-tighten-non-dag)
-           :in-theory (disable bvlt-tighten-non-dag))))
+  :hints (("Goal" :use (:instance bvlt-tighten)
+           :in-theory (disable bvlt-tighten))))
 
 (defthmd <-becomes-bvlt-dag-gen
   (implies (and (axe-bind-free (bind-bv-size-axe x 'free dag-array) '(free))
@@ -221,8 +210,8 @@
                   t))
   :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P-FORCED))))
 
-
-(defthmd plus-becomes-bvplus-dag
+;; Pretty aggressive
+(defthmd +-becomes-bvplus-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p-forced xsize x)
@@ -233,6 +222,17 @@
   :hints (("Goal" :use (:instance plus-becomes-bvplus)
            :in-theory (disable plus-becomes-bvplus))))
 
+;; Special case for when the + is inside an unsigned-byte-p.
+(defthmd unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (unsigned-byte-p-forced xsize x)
+                (unsigned-byte-p-forced ysize y)
+                (posp xsize))
+           (equal (unsigned-byte-p size (+ x y))
+                  (unsigned-byte-p size (bvplus (+ 1 (max xsize ysize)) x y))))
+  :hints (("Goal" :use (:instance +-becomes-bvplus-axe)
+           :in-theory (disable +-becomes-bvplus-axe equal-of-+-and-bv))))
 
 (defthmd equal-when-bv-sizes-differ-1-dag
   (implies (and (unsigned-byte-p free x)
@@ -343,7 +343,7 @@
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bvlt
                                                           ;unsigned-byte-p
                                                           )
-                                  (bvlt-tighten-non-dag
+                                  (bvlt-tighten
                                    UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 
@@ -368,7 +368,7 @@
                                                    )
                            (<-of-bvchop-and-bvchop-same
                             BVCHOP-WHEN-<-TIGHTEN
-                            bvlt-tighten-non-dag
+                            bvlt-tighten
                             UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 (defthmd bvmult-tighten-dag-power-of-2
@@ -684,7 +684,7 @@
                   (equal 0 (slice (+ -1 xsize) size x))))
   :hints (("Goal"
            :cases (equal size xsize)
-           :use (:instance split-bv (y x) (n xsize) (m size))
+           :use (:instance split-bv (x x) (n xsize) (m size))
            :in-theory (e/d (unsigned-byte-p-forced) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE bvcat-of-bvchop-low)))))
 
 
@@ -705,25 +705,6 @@
 ; :hints (("Goal" :in-theory (enable bvlt bvplus bvchop-of-sum-cases UNSIGNED-BYTE-P-FORCED)))
   )
 
-(defthmd *-becomes-bvmult-2
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p ysize y)
-                (unsigned-byte-p-forced xsize x)
-                )
-           (equal (* x y) (bvmult (+ ysize xsize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance *-becomes-bvmult-non-dag (n xsize) (m ysize)))))
-
-(defthmd *-becomes-bvmult-3
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (unsigned-byte-p ysize y)
-                (unsigned-byte-p-forced xsize x)
-                )
-           (equal (* y x) (bvmult (+ ysize xsize) x y)))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
-           :use (:instance *-becomes-bvmult-non-dag (n xsize) (m ysize)))))
-
-
 ;fixme use signed comparisons more when values can go negative?!
 (defthmd unsigned-byte-p-of-+-of-minus2
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -738,7 +719,7 @@
                        (sbvlt (+ 1 (max xsize ysize)) (+ (- x) y) (expt 2 n)))))
   :hints (("Goal"
 ;           :cases ((equal 1 (GETBIT 29 X)))
-           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus))))
+           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus sbvlt-rewrite))))
 
 ;move
 (defthm <-of-if-arg1-safe
@@ -799,6 +780,7 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-+-of-minus-better-helper (size (max xsize ysize)))
            :in-theory (enable unsigned-byte-p-forced))))
 
+;move
 (defthmd nth-of-bv-when-all-same
   (implies (and (syntaxp (quotep lst))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -823,7 +805,7 @@
            (equal (equal k (bvchop 6 x))
                   (equal k (bvchop 5 x))))
   :hints (("Goal"
-           :use (:instance split-bv (y (bvchop 6 x)) (n 6) (m 5))
+           :use (:instance split-bv (x (bvchop 6 x)) (n 6) (m 5))
            :in-theory (e/d (bvlt ;UNSIGNED-BYTE-P
                             )
                            (bvcat-of-bvchop-low bvcat-of-getbit-and-x-adjacent

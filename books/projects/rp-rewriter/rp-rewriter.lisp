@@ -45,12 +45,9 @@
 
 (include-book "macros")
 (include-book "aux-functions")
-
 (include-book "rp-state-functions")
-
-
-
 (include-book "eval-functions")
+(include-book "std/strings/strsubst" :dir :system)
 
 (local
  (include-book "proofs/local-lemmas"))
@@ -315,6 +312,7 @@
   (if (atom context)
       (mv term dont-rw)
     (let* ((c (car context))
+           (c (if (is-hide c) (cadr c) c))
            ;;(rw-context-flg nil)
            )
       (cond ((and attach-sc
@@ -483,6 +481,12 @@
         (('if & ''nil ''t) nil)
         (& (and nil (cw "WARNING! (if a b c) unsupported case-split may be required. ~%"))))
       (cons term nil)))
+    (('equal ''t x)
+     (cons `(equal ,x 't)
+           (rp-extract-context x)))
+    (('equal x ''t)
+     (cons term
+           (rp-extract-context x)))
     (''t
      nil)
     (&
@@ -514,10 +518,11 @@
 
   (mutual-recursion
 
-   (defun rp-exc-all (term var-bindings rp-state state)
+   (defun rp-exc-all (term var-bindings backchain-limit rp-state state)
      (declare (xargs  :stobjs (state rp-state)
                       :guard (and
                               (alistp var-bindings)
+                              (integerp backchain-limit)
                               #|(rp-termp term)||#
                               )
                       :verify-guards nil
@@ -530,34 +535,34 @@
        term)
       ((acl2::fquotep term)
        (cond ((equal term '':rewriting-main-term)
-              (list 'quote (backchaining-just-started rp-state)))
+              (list 'quote (equal (1+ backchain-limit) (rw-backchain-limit rp-state))))
              ((equal term '':rewriting-hyp)
               (list 'quote
-                    (and (not (backchaining-just-started rp-state))
-                         (backchaining-rule rp-state)
-                         )))
+                    (not (equal (1+ backchain-limit) (rw-backchain-limit rp-state)))
+                    ))
              (t term)))
       ((case-match term (('if & & &) t) (& nil))
        ;; if we don't ckeck the if statement and run everything:
        ;; 1. the performance could be bad.
        ;; 2. guards may fail for one of the branches
-       (b* ((cond-rw (rp-exc-all (cadr term) var-bindings rp-state state))
+       (b* ((cond-rw (rp-exc-all (cadr term) var-bindings backchain-limit rp-state state))
             ((when (equal cond-rw ''nil))
-             (rp-exc-all (cadddr term) var-bindings rp-state  state))
+             (rp-exc-all (cadddr term) var-bindings backchain-limit rp-state  state))
             ((when (nonnil-p cond-rw))
-             (rp-exc-all (caddr term) var-bindings rp-state state)))
+             (rp-exc-all (caddr term) var-bindings backchain-limit rp-state state)))
          (progn$ (cw "Error in executing an if statement: ~%~p0~%" term)
                  term)))
       (t
        (rp-ev-fncall (car term)
-                     (rp-exc-all-subterms (cdr term) var-bindings rp-state state)
+                     (rp-exc-all-subterms (cdr term) var-bindings backchain-limit rp-state state)
                      var-bindings
                      state))))
 
-   (defun rp-exc-all-subterms (subterms var-bindings rp-state  state)
+   (defun rp-exc-all-subterms (subterms var-bindings backchain-limit rp-state  state)
      (declare (xargs  :stobjs (state rp-state)
                       :guard (and
                               (alistp var-bindings)
+                              (integerp backchain-limit)
                               #|(rp-term-listp subterms)||#
                               )
                       :verify-guards nil
@@ -566,25 +571,25 @@
       ((atom subterms)
        subterms)
       (t
-       (cons-with-hint (rp-exc-all (car subterms) var-bindings rp-state state)
-                       (rp-exc-all-subterms (cdr subterms) var-bindings rp-state state)
+       (cons-with-hint (rp-exc-all (car subterms) var-bindings backchain-limit rp-state state)
+                       (rp-exc-all-subterms (cdr subterms) var-bindings backchain-limit rp-state state)
                        subterms)))))
   #|(local
-   (encapsulate
-     nil
+  (encapsulate
+  nil
 
-     (set-state-ok t)
-     (make-flag rp-exc-all :defthm-macro-name defthm-rp-exc-all)
+  (set-state-ok t)
+  (make-flag rp-exc-all :defthm-macro-name defthm-rp-exc-all)
 
-     (defthm-rp-exc-all
-       (defthm pseudo-termp-rp-exc-all
-         (implies (rp-termp term)
-                  (rp-termp (rp-exc-all term var-bindings rp-state state)))
-         :flag rp-exc-all)
-       (defthm pseudo-termp-rp-exc-all-subterms
-         (implies (rp-term-listp subterms)
-                  (rp-term-listp (rp-exc-all-subterms subterms var-bindings rp-state state)))
-         :flag rp-exc-all-subterms))))|#
+  (defthm-rp-exc-all
+  (defthm pseudo-termp-rp-exc-all
+  (implies (rp-termp term)
+  (rp-termp (rp-exc-all term var-bindings rp-state state)))
+  :flag rp-exc-all)
+  (defthm pseudo-termp-rp-exc-all-subterms
+  (implies (rp-term-listp subterms)
+  (rp-term-listp (rp-exc-all-subterms subterms var-bindings rp-state state)))
+  :flag rp-exc-all-subterms))))|#
 
   (verify-guards rp-exc-all)
 
@@ -603,10 +608,11 @@
 
   (mutual-recursion
 
-   (defun rp-rw-relieve-synp (term bindings rp-state  state)
+   (defun rp-rw-relieve-synp (term bindings backchain-limit rp-state  state)
      (declare (xargs  :stobjs (state rp-state)
                       :guard (and #|(rp-termp term)||#
                               (alistp bindings)
+                              (integerp backchain-limit)
                               )
                       :mode :logic))
      "Relieve syntaxp by binding the variables and executing all the function
@@ -617,33 +623,35 @@
       ((and (case-match term (('synp & & ('quote &)) t) (& nil))
             #|(check-synp-syntax-aux term)||#)
        (b* ((hyp (unquote (cadddr term)))
-            (exc (rp-exc-all hyp bindings rp-state state))
+            (exc (rp-exc-all hyp bindings backchain-limit rp-state state))
             (res (nonnil-p exc)))
          res))
-      (t (rp-rw-relieve-synp-subterms (cdr term) bindings rp-state  state))))
+      (t (rp-rw-relieve-synp-subterms (cdr term) bindings backchain-limit rp-state  state))))
 
-   (defun rp-rw-relieve-synp-subterms (subterms bindings rp-state state)
+   (defun rp-rw-relieve-synp-subterms (subterms bindings backchain-limit rp-state state)
      (declare (xargs  :stobjs (state rp-state)
                       :guard (and #|(rp-term-listp subterms)||#
                               (alistp bindings)
+                              (integerp backchain-limit)
                               )
                       :mode :logic))
      (if (atom subterms)
          t
-       (and (rp-rw-relieve-synp (car subterms) bindings rp-state  state)
-            (rp-rw-relieve-synp-subterms (cdr subterms) bindings rp-state
+       (and (rp-rw-relieve-synp (car subterms) bindings backchain-limit rp-state  state)
+            (rp-rw-relieve-synp-subterms (cdr subterms) bindings backchain-limit rp-state
                                          state)))))
 
-  (defund rp-rw-relieve-synp-wrap (term  bindings rp-state state)
+  (defund rp-rw-relieve-synp-wrap (term  bindings backchain-limit rp-state state)
     (declare (xargs  :stobjs (state rp-state)
                      :guard (and #|(rp-termp term)||#
                              (alistp bindings)
+                             (integerp backchain-limit)
                              )
                      :verify-guards nil))
     (or
      (not (include-fnc term 'synp))
      (rp-rw-relieve-synp term
-                         bindings rp-state
+                         bindings backchain-limit rp-state
                          state)))
 
   (defund remove-rp-from-bindings-for-synp (rule var-bindings)
@@ -665,18 +673,10 @@
                                   (natp limit)
                                   (rp-term-listp context)
                                   (valid-rp-state-syntaxp rp-state))
-                      :stobjs (state rp-state))
-     (rp-rw-preprocessor (term context rp-state state)
-                         t
-                         :guard (and (rp-termp term)
-                                     (valid-rp-state-syntaxp rp-state))
-                         :stobjs (state rp-state))
-     (rp-rw-postprocessor (term context rp-state state)
-                          t
-                          :guard (and (rp-termp term)
-                                      (valid-rp-state-syntaxp rp-state))
-                          :stobjs (state rp-state))
-     (rp-formula-checks (state) t :stobjs (state)))
+                      :stobjs (state rp-state)
+                      :transparent t)
+     (rp-meta-fnc-formula-checks (state) t :stobjs (state)
+                                 :transparent t))
     (local
      (defun rp-rw-meta-rule (term meta-fnc-name dont-rw context limit rp-state state)
        (declare (ignorable term meta-fnc-name dont-rw context limit rp-state state)
@@ -688,22 +688,9 @@
                 (xargs :stobjs (state rp-state)))
        (mv term nil rp-state)))
 
-    (local
-     (defun rp-rw-preprocessor (term  context rp-state state)
-       (declare (ignorable term  context rp-state state)
-                (xargs :guard (rp-termp term))
-                (xargs :stobjs (state rp-state)))
-       term))
 
     (local
-     (defun rp-rw-postprocessor (term  context rp-state state)
-       (declare (ignorable term  context rp-state state)
-                (xargs :guard (rp-termp term))
-                (xargs :stobjs (state rp-state)))
-       term))
-
-    (local
-     (defun rp-formula-checks (state)
+     (defun rp-meta-fnc-formula-checks (state)
        (declare (xargs :stobjs (state))
                 (ignorable state))
        t))
@@ -715,7 +702,7 @@
                     (valid-sc-subterms context a)
                     (eval-and-all context a)
                     (rp-evl-meta-extract-global-facts)
-                    (rp-formula-checks state)
+                    (rp-meta-fnc-formula-checks state)
                     (rp-statep rp-state))
                (b* (((mv res-term ?dont-rw ?res-rp-state)
                      (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state state)))
@@ -723,19 +710,68 @@
                       (equal (rp-evlt res-term a)
                              (rp-evlt term a))))))
 
-    (defthm rp-rw-meta-rule-rp-state-preservedp
-      (implies (rp-statep rp-state)
-               (b* (((mv ?res-term ?dont-rw res-rp-state)
-                     (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state state)))
-                 (rp-state-preservedp rp-state res-rp-state))))
+    #|(defthm rp-rw-meta-rule-rp-state-preservedp
+    (implies (and (rp-state-preservedp rp-state rp-state-other));;(rp-statep rp-state) ; ; ;
+    (b* (((mv ?res-term ?dont-rw res-rp-state) ; ; ;
+    (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state-other state))) ; ; ;
+    (rp-state-preservedp rp-state res-rp-state))))|#
+
+    (defthm rp-rw-meta-rule-valid-rp-statep
+      (b* (((mv ?res-term ?dont-rw res-rp-state)
+            (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state state)))
+        (and (implies (and (rp-statep rp-state)
+                           (valid-rp-statep rp-state))
+                      (valid-rp-statep  res-rp-state))
+             (implies (rp-statep rp-state)
+                      (rp-statep  res-rp-state))
+             (implies (VALID-RP-STATE-SYNTAXP rp-state)
+                      (VALID-RP-STATE-SYNTAXP  res-rp-state)))))
 
     (defthm rp-rw-meta-rule-valid-rp-termp
       (implies (and (rp-termp term)
                     (rp-term-listp context)
-                    (rp-statep rp-state))
+                    (valid-rp-state-syntaxp rp-state))
                (b* (((mv res-term ?dont-rw ?rp-state)
                      (rp-rw-meta-rule term meta-fnc-name dont-rw context limit rp-state state)))
-                 (rp-termp res-term))))
+                 (rp-termp res-term)))))
+
+  (encapsulate
+    ((rp-rw-preprocessor (term context rp-state state)
+                         (mv t rp-state)
+                         :guard (and (rp-termp term)
+                                     (valid-rp-state-syntaxp rp-state))
+                         :stobjs (state rp-state)
+                         :transparent t)
+     (rp-rw-postprocessor (term context rp-state state)
+                          (mv t rp-state)
+                          :guard (and (rp-termp term)
+                                      (valid-rp-state-syntaxp rp-state))
+                          :stobjs (state rp-state)
+                          :transparent t)
+     (rp-proc-formula-checks (state) t :stobjs (state)
+                             :transparent t))
+
+    (local
+     (defun rp-rw-preprocessor (term  context rp-state state)
+       (declare (ignorable term  context rp-state state)
+                (xargs :guard (and (rp-termp term)
+                                   (valid-rp-state-syntaxp rp-state)))
+                (xargs :stobjs (state rp-state)))
+       (mv term rp-state)))
+
+    (local
+     (defun rp-rw-postprocessor (term  context rp-state state)
+       (declare (ignorable term  context rp-state state)
+                (xargs :guard (and (rp-termp term)
+                                   (valid-rp-state-syntaxp rp-state)))
+                (xargs :stobjs (state rp-state)))
+       (mv term rp-state)))
+
+    (local
+     (defun rp-proc-formula-checks (state)
+       (declare (xargs :stobjs (state))
+                (ignorable state))
+       t))
 
     (defthm rp-rw-preprocessor-valid-eval
       (implies (and (rp-termp term)
@@ -743,10 +779,12 @@
                     (valid-sc term a)
                     (valid-sc-subterms context a)
                     (rp-evl-meta-extract-global-facts)
-                    (rp-formula-checks state)
+                    (rp-proc-formula-checks state)
                     (eval-and-all context a)
-                    (rp-statep rp-state))
-               (b* ((res-term (rp-rw-preprocessor term context rp-state state)))
+                    (rp-statep rp-state)
+                    (alistp a)
+                    (valid-rp-statep rp-state))
+               (b* (((mv res-term &) (rp-rw-preprocessor term context rp-state state)))
                  (and (valid-sc res-term a)
                       (iff (rp-evlt res-term a)
                            (rp-evlt term a))))))
@@ -754,9 +792,19 @@
     (defthm rp-rw-preprocessor-valid-rp-termp
       (implies (and (rp-termp term)
                     (rp-term-listp context)
-                    (rp-statep rp-state))
-               (b* ((res-term (rp-rw-preprocessor term context rp-state state)))
+                    (valid-rp-state-syntaxp rp-state))
+               (b* (((mv res-term &) (rp-rw-preprocessor term context rp-state state)))
                  (rp-termp res-term))))
+
+    (defthm rp-rw-preprocessor-returns-valid-rp-statep
+      (b* (((mv & res-rp-state) (rp-rw-preprocessor term context rp-state state)))
+        (and (implies (and (rp-statep rp-state)
+                           (valid-rp-statep rp-state))
+                      (valid-rp-statep  res-rp-state))
+             (implies (rp-statep rp-state)
+                      (rp-statep  res-rp-state))
+             (implies (valid-rp-state-syntaxp rp-state)
+                      (valid-rp-state-syntaxp  res-rp-state)))))
 
     (defthm rp-rw-postprocessor-valid-eval
       (implies (and (rp-termp term)
@@ -765,9 +813,11 @@
                     (valid-sc-subterms context a)
                     (eval-and-all context a)
                     (rp-evl-meta-extract-global-facts)
-                    (rp-formula-checks state)
-                    (rp-statep rp-state))
-               (b* ((res-term
+                    (rp-proc-formula-checks state)
+                    (rp-statep rp-state)
+                    (alistp a)
+                    (valid-rp-statep rp-state))
+               (b* (((mv res-term &)
                      (rp-rw-postprocessor term context rp-state state)))
                  (and (valid-sc res-term a)
                       (iff (rp-evlt res-term a)
@@ -776,10 +826,20 @@
     (defthm rp-rw-postprocessor-valid-rp-termp
       (implies (and (rp-termp term)
                     (rp-term-listp context)
-                    (rp-statep rp-state))
-               (b* ((res-term
+                    (valid-rp-state-syntaxp rp-state))
+               (b* (((mv res-term &)
                      (rp-rw-postprocessor term context rp-state state)))
-                 (rp-termp res-term)))))
+                 (rp-termp res-term))))
+
+    (defthm rp-rw-postprocessor-returns-valid-rp-statep
+      (b* (((mv & res-rp-state) (rp-rw-postprocessor term context rp-state state)))
+        (and (implies (and (rp-statep rp-state)
+                           (valid-rp-statep rp-state))
+                      (valid-rp-statep  res-rp-state))
+             (implies (rp-statep rp-state)
+                      (rp-statep  res-rp-state))
+             (implies (VALID-RP-STATE-SYNTAXP rp-state)
+                      (VALID-RP-STATE-SYNTAXP  res-rp-state))))))
 
   (defund rp-rw-meta-rule-main (term rule dont-rw context limit rp-state state)
     (declare (xargs  :stobjs (rp-state state)
@@ -802,6 +862,55 @@
                                                        rp-state)          ;
                      rp-state)))
       (mv term-changed res-term dont-rw rp-state))))
+
+; Start initial attachments for transparent functions, for clause-processor
+; rule support.
+
+(defun rp-rw-meta-rule-init (term meta-fnc-name dont-rw context limit rp-state
+                                  state)
+  (declare (ignorable term meta-fnc-name dont-rw context limit rp-state state)
+           (xargs :guard (and (rp-termp term)
+                              (rp-term-listp context)
+                              (valid-rp-state-syntaxp rp-state)
+                              (symbolp meta-fnc-name)
+                              (natp limit)))
+           (xargs :stobjs (state rp-state)))
+  (mv term nil rp-state))
+
+(defun rp-meta-fnc-formula-checks-init (state)
+  (declare (xargs :stobjs (state))
+           (ignorable state))
+  t)
+
+(defattach
+  (rp-rw-meta-rule rp-rw-meta-rule-init)
+  (rp-meta-fnc-formula-checks rp-meta-fnc-formula-checks-init))
+
+(defun rp-rw-preprocessor-init (term  context rp-state state)
+  (declare (ignorable term  context rp-state state)
+           (xargs :guard (and (rp-termp term)
+                              (valid-rp-state-syntaxp rp-state)))
+           (xargs :stobjs (state rp-state)))
+  (mv term rp-state))
+
+(defun rp-rw-postprocessor-init (term  context rp-state state)
+  (declare (ignorable term  context rp-state state)
+           (xargs :guard (and (rp-termp term)
+                              (valid-rp-state-syntaxp rp-state)))
+           (xargs :stobjs (state rp-state)))
+  (mv term rp-state))
+
+(defun rp-proc-formula-checks-init (state)
+  (declare (xargs :stobjs (state))
+           (ignorable state))
+  t)
+
+(defattach
+  (rp-rw-preprocessor rp-rw-preprocessor-init)
+  (rp-rw-postprocessor rp-rw-postprocessor-init)
+  (rp-proc-formula-checks rp-proc-formula-checks-init))
+
+; End initial attachments for transparent functions.
 
 (defun rp-rw-rule-aux (term rules-for-term context iff-flg state)
   (declare (xargs :mode :logic
@@ -891,6 +1000,10 @@ returns (mv rule rules-rest bindings rp-context)"
       (('cons a rest)
        (cons (if (and (symbolp a) (equal (symbol-name a) "@CONTEXT")) context a)
              (rp-rw-fix-cw-list rest context)))
+      (('quote x)
+       (let* ((x (true-list-fix x)))
+         (loop$ for e in x collect
+                `',e)))
       (''nil
        nil)
       (& nil)))
@@ -905,21 +1018,23 @@ returns (mv rule rules-rest bindings rp-context)"
       (('hard-error ('quote ctx) ('quote str) alist)
        (progn$
         (rp-state-print-rules-used rp-state)
-        (hard-error ctx str (rp-rw-fix-hard-error-alist alist))))
+        (hard-error ctx
+                    (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
+                    (rp-rw-fix-hard-error-alist alist))))
       (('fmt-to-comment-window ('quote &) ('quote &)
                                ('quote &) ('quote &) ('quote &))
        ;; if all arguments are quoted, then executable counterpart will be
        ;; triggered anyways, so dont do anything.
        nil)
-      (('fmt-to-comment-window ('quote str) ('acl2::pairlis2 &
-                                                             list)
+      (('fmt-to-comment-window ('quote str)
+                               ('acl2::pairlis2 & list)
                                ('quote col)
                                ('quote evisc)
                                ('quote print-base))
        (progn$
         ;;(cw "here1 ~p0 ~%" term)
         (fmt-to-comment-window
-         str
+         (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
          (acl2::pairlis2 acl2::*base-10-chars* (rp-rw-fix-cw-list list context))
          col evisc print-base)))
       (('fmt-to-comment-window ('quote str) alist
@@ -927,7 +1042,8 @@ returns (mv rule rules-rest bindings rp-context)"
        (progn$
         ;;(cw "here2 ~p0 ~%" term)
         (fmt-to-comment-window
-         str (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
+         (if (stringp str) (str::strsubst "~s" "~x" (str::strsubst "~d" "~x" str)) str)
+         (rp-rw-fix-hard-error-alist alist) col evisc print-base)))
       (& nil))))
 
 (local
@@ -1027,7 +1143,7 @@ returns (mv rule rules-rest bindings rp-context)"
              new-dont-rw))
           (t rhs/hyp-lst))))
 
-(define limit-reached-action (rp-state)
+(define limit-reached-action (cause rp-state)
   :stobjs (rp-state)
   :Returns (res-rp-state)
   (b* ((backchaining-rule (backchaining-rule rp-state))
@@ -1041,8 +1157,9 @@ returns (mv rule rules-rest bindings rp-context)"
        ((unless rw-limit-throws-error) rp-state)
        (- (rp-state-print-rules-used rp-state))
        (-
-        (if backchaining-rule
-            (hard-error 'rp-rewriter "Backchain limit of ~x0 exhausted when ~
+        (if (equal cause :backchain-limit-reached)
+            (and (rw-backchain-limit-throws-error rp-state)
+                 (hard-error 'rp-rewriter "Backchain limit of ~x0 exhausted when ~
 relieving the hypothesis for ~x1! You can disable this error by running:
 (rp::set-rp-backchain-limit-throws-error nil). You can change the backchain-limit:
 (rp::set-rp-backchain-limit new-limit). Or you can run:
@@ -1050,11 +1167,11 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 (rp::pp-rw-stack :omit '()
                  :evisc-tuple (evisc-tuple 10 10 nil nil)
                  :frames 100). ~%"
-                        (list (cons #\0 (rw-backchain-limit rp-state))
-                              (cons #\1
-                                    (if (weak-custom-rewrite-rule-P backchaining-rule)
-                                        (rp-rune backchaining-rule)
-                                      backchaining-rule))))
+                             (list (cons #\0 (rw-backchain-limit rp-state))
+                                   (cons #\1
+                                         (if (weak-custom-rewrite-rule-P backchaining-rule)
+                                             (rp-rune backchaining-rule)
+                                           backchaining-rule)))))
           (hard-error 'rp-rewriter "Step limit of ~x0 exhausted! Either run
 (rp::set-rw-step-limit new-limit) or
 (rp::update-rp-brr t rp::rp-state) to save the rewrite stack and see it with
@@ -1064,7 +1181,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                       (list (cons #\0 (rw-step-limit rp-state)))))))
     rp-state))
 
-(define get-limit-for-hyp-rw ((limit natp)
+#|(define get-limit-for-hyp-rw ((limit natp)
                               rule
                               rp-state)
   :stobjs (rp-state)
@@ -1074,15 +1191,11 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                (res-rp-state rp-statep :hyp (rp-statep rp-state)))
   :prepwork ((local
               (in-theory (e/d (rp-statep) ()))))
-  (b* ((backchain-limit (rw-backchain-limit rp-state))
-       (backchain-limit (mbe :exec backchain-limit :logic (nfix backchain-limit)))
-       (existing-backchaining-rule (backchaining-rule rp-state))
-       (rp-state (update-backchaining-just-started nil rp-state))
-       (limit (1- limit))
+  (b* ((existing-backchaining-rule (backchaining-rule rp-state))
        ((when (or (> backchain-limit limit)
                   existing-backchaining-rule))
         (progn$
-         (mv limit nil nil rp-state)))
+         (mv nil nil rp-state)))
        (old-limit-error-setting (rw-limit-throws-error rp-state))
        (rp-state (update-rw-limit-throws-error (rw-backchain-limit-throws-error rp-state) rp-state))
        (rp-state (update-backchaining-rule rule rp-state))
@@ -1093,18 +1206,22 @@ relieving the hypothesis for ~x1! You can disable this error by running:
   (defret smaller-limit-of-<fn>
     (implies (not (zp limit))
              (and (natp res-limit)
-                  (< res-limit limit)))))
+                  (< res-limit limit)))))|#
+
+(define try-to-update-backchaining-rule (rule rp-state)
+  :returns (mv backchain-starts res-rp-state)
+  (b* ((existing-backchaining-rule (backchaining-rule rp-state))
+       ((when existing-backchaining-rule)
+        (mv nil rp-state))
+       (rp-state (update-backchaining-rule rule rp-state)))
+    (mv t rp-state)))
 
 (define post-backchain-ops (backchain-ends
-                            (old-limit-error-setting booleanp)
                             rp-state)
   :stobjs (rp-state)
   :returns (res-rp-state)
-  (b* ((rp-state (update-backchaining-just-started nil rp-state))
-       ((unless backchain-ends) rp-state)
-       (rp-state (update-backchaining-rule nil rp-state))
-       (rp-state (update-rw-limit-throws-error old-limit-error-setting
-                                               rp-state)))
+  (b* (((unless backchain-ends) rp-state)
+       (rp-state (update-backchaining-rule nil rp-state)))
     rp-state))
 
 (define create-if-instance (test r1 r2 &key negated-test)
@@ -1194,8 +1311,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                      rp-state state)))
            (mv (cons-with-hint (car term)
                                (cons-with-hint (cadr term)
-                                               (cons-with-hint subterm nil (cddr
-                                                                            term))
+                                               (cons-with-hint subterm nil (cddr term))
                                                (cdr term))
                                term)
                rp-state)))
@@ -1209,6 +1325,10 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                         context
                                         (1- limit)
                                         rp-state state))
+        ((when (is-equals term))
+         (mv (cons-with-hint 'equals subterms term)
+             rp-state))
+                             
         (term (cons-with-hint (car term) subterms term))
         ((mv term &)
          (rp-check-context term t context :rw-context-flg nil))
@@ -1273,7 +1393,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                    :verify-guards nil
                    :mode :logic))
    (if (atom lst)
-       (mv lst rp-state)
+       (mv nil rp-state)
      (b* (((mv cur rp-state)
            (rw-only-with-context (car lst) (dont-rw-car dont-rw) context
                                  nil limit rp-state state))
@@ -1338,7 +1458,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 (progn
   (define calc-dw-negated-cond-rw (cond-rw-is-a-constant then else
                                                          negated-cond-rw-dont-rw)
-    
+
     :inline t
     (rp-rw-dont-rw-or
      (or** cond-rw-is-a-constant
@@ -1352,10 +1472,9 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                                      (negated-cond-rw-is-a-constant
                                       'negated-cond-rw-is-a-constant)
                                      (cond-rw-is-a-constant 'cond-rw-is-a-constant)
-                                     
+
                                      (rp-state 'rp-state)
-                                     
-                                     
+
                                      (then 'then)
                                      (dont-rw 'dont-rw)
                                      (else 'else))
@@ -1363,11 +1482,11 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                 (consp (cdr dont-rw))
                 (consp (cddr dont-rw))
                 (consp (cdddr dont-rw)))
-    
+
     :inline t
     (mv (if** (or** negated-cond-rw-is-a-constant
                     cond-rw-is-a-constant
-                    
+
                     (backchaining-rule rp-state)
                     (rw-context-disabled rp-state)
                     (cons-count-compare then 2000))
@@ -1375,7 +1494,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
               nil)
         (if** (or** negated-cond-rw-is-a-constant
                     cond-rw-is-a-constant
-                    
+
                     (backchaining-rule rp-state)
                     (rw-context-disabled rp-state)
                     (cons-count-compare else 2000))
@@ -1387,7 +1506,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
  ;; The main mutually recursive functions
  ;; to perform rewriting.
 
- (defun rp-rw-rule (term dont-rw rules-for-term context iff-flg outside-in-flg  limit rp-state state)
+ (defun rp-rw-rule (term dont-rw rules-for-term context iff-flg outside-in-flg backchain-limit limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (ignorable dont-rw))
    (declare (xargs :measure (acl2::nat-list-measure (list limit 0))
@@ -1396,6 +1515,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            (rp-term-listp context)
                            (booleanp iff-flg)
                            (natp limit)
+                           (integerp backchain-limit)
                            (VALID-RP-STATE-SYNTAXP RP-STATE)
                            (rule-list-syntaxp rules-for-term))
                    :stobjs (state
@@ -1414,7 +1534,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           )
        (mv nil new-term dont-rw rp-state))) ;))
     ((zp limit)
-     (b* ((rp-state (limit-reached-action rp-state)))
+     (b* ((rp-state (limit-reached-action nil rp-state)))
        (mv nil term dont-rw rp-state)))
     (t
      (b* (((mv rule rules-for-term-rest var-bindings rp-context)
@@ -1432,7 +1552,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
              (if term-changed
                  (mv term-changed term dont-rw rp-state)
                (rp-rw-rule term dont-rw rules-for-term-rest context iff-flg outside-in-flg
-                           (1- limit) rp-state state))))
+                           backchain-limit (1- limit) rp-state state))))
 
           ((mv stack-index rp-state)
            (rp-state-push-to-try-to-rw-stack rule var-bindings
@@ -1440,21 +1560,21 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 
           (hyp (rp-apply-bindings-subterms (rp-hyp rule) var-bindings))
 
-          ((mv hyp-limit backchain-starts old-limit-error-setting rp-state)
-           (get-limit-for-hyp-rw limit rule rp-state))
+          ((mv backchain-starts rp-state)
+           (try-to-update-backchaining-rule rule rp-state))
 
           ((mv hyp-relieved rp-state)
            (rp-rw-relieve-hyp hyp
                               (calculate-dont-rw-lst rule (rp-hyp rule) dont-rw outside-in-flg)
-                              rp-context rule stack-index var-bindings hyp-limit
+                              rp-context rule stack-index var-bindings (1- backchain-limit) (1- limit)
                               rp-state state))
 
-          (rp-state (post-backchain-ops backchain-starts old-limit-error-setting rp-state))
+          (rp-state (post-backchain-ops backchain-starts rp-state))
 
           ((when (not hyp-relieved))
            (rp-rw-rule
             term dont-rw rules-for-term-rest context iff-flg outside-in-flg
-            (1- limit) rp-state state))
+            backchain-limit (1- limit) rp-state state))
           (term-res (rp-apply-bindings (rp-rhs rule) var-bindings))
           (rp-state (rp-stat-add-to-rules-used rule nil nil rp-state))
           (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
@@ -1463,7 +1583,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           (dont-rw (calculate-dont-rw rule (rp-rhs rule) dont-rw outside-in-flg)))
        (mv t term-res dont-rw rp-state)))))
 
- (defun rp-rw-relieve-hyp (term-lst dont-rw context rule stack-index var-bindings limit rp-state state)
+ (defun rp-rw-relieve-hyp (term-lst dont-rw context rule stack-index var-bindings backchain-limit limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs
              :measure (acl2::nat-list-measure (list limit (acl2-count term-lst)))
@@ -1471,6 +1591,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
              :guard (and
                      (rp-term-listp term-lst)
                      (natp limit)
+                     (integerp backchain-limit)
                      (valid-rp-state-syntaxp rp-state)
                      (rp-term-listp context)
                      (integerp stack-index)
@@ -1482,27 +1603,31 @@ relieving the hypothesis for ~x1! You can disable this error by running:
          (mv nil rp-state))
         ((when (atom term-lst))
          (mv t rp-state))
+        ((when (< backchain-limit 0))
+         (b* ((rp-state (limit-reached-action :backchain-limit-reached rp-state)))
+           (mv nil rp-state)))
         (term (car term-lst))
         (synp-relieved (or (not (and (consp term) (equal (car term) 'synp)))
-                           (rp-rw-relieve-synp-wrap term var-bindings rp-state state)))
+                           (rp-rw-relieve-synp-wrap term var-bindings backchain-limit rp-state state)))
         ((unless synp-relieved)
          (b* ((rp-state (rp-stat-add-to-rules-used rule :failed-synp nil rp-state))
               (rp-state (rp-state-push-to-result-to-rw-stack rule stack-index
-                                                             :failed-synp nil nil rp-state)))
+                                                             :failed-synp
+                                                             (nth 2 term) nil rp-state)))
            (mv nil rp-state)))
         ((mv eval1 rp-state)
-         (rp-rw term (dont-rw-car dont-rw) context t (1- limit) rp-state
+         (rp-rw term (dont-rw-car dont-rw) context t backchain-limit (1- limit) rp-state
                 state))
         ((unless (nonnil-p eval1))
          (b* ((rp-state (rp-stat-add-to-rules-used rule :failed  nil rp-state))
               (rp-state (rp-state-push-to-result-to-rw-stack rule
-                                                             stack-index :failed nil nil
+                                                             stack-index :failed term eval1
                                                              rp-state)))
            (mv nil rp-state))))
      (rp-rw-relieve-hyp (cdr term-lst) (dont-rw-cdr dont-rw)
-                        context rule stack-index var-bindings limit rp-state state)))
+                        context rule stack-index var-bindings backchain-limit limit rp-state state)))
 
- (defun rp-rw-if (term dont-rw context iff-flg limit rp-state state)
+ (defun rp-rw-if (term dont-rw context iff-flg backchain-limit limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs
              :measure (acl2::nat-list-measure (list limit 1))
@@ -1514,6 +1639,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                      (valid-rp-state-syntaxp rp-state)
                      (rp-term-listp context)
                      (booleanp iff-flg)
+                     (integerp backchain-limit)
                      )
              :verify-guards nil
              :mode :logic))
@@ -1536,25 +1662,25 @@ relieving the hypothesis for ~x1! You can disable this error by running:
 
           ;; simplify it for "or" pattern.
           ;;(then (if (and iff-flg (rp-equal-cnt then cond 2)) ''t then))
-          
+
           ((mv cond-rw rp-state)
            (rp-rw cond cond-dont-rw
-                  context t 
+                  context t
+                  backchain-limit
                   (1- limit)
                   rp-state state))
-          
 
           #|((when (and* (is-if cond-rw)
-                      (equal (third (cdr cond-rw)) ''nil)
-                      (equal else ''nil)
-                      #|(not (cw "and of and pattern: triggered by: ~p0 ~%"
-                               term))|#
-                      #|(not (cw "result ~p0 ~%" `(if ,(cadr cond-rw) (if ,(caddr cond-rw) ,then 'nil) 'nil)))|#))
-           (rp-rw `(if ,(cadr cond-rw) (if ,(caddr cond-rw) ,then 'nil) 'nil)
-                  `(nil t (nil t ,(second (cdr dont-rw)) t) t)
-                  context iff-flg hyp-flg
-                  (1- limit) rp-state state))|#
-          
+          (equal (third (cdr cond-rw)) ''nil)
+          (equal else ''nil)
+          #|(not (cw "and of and pattern: triggered by: ~p0 ~%"
+          term))|#
+          #|(not (cw "result ~p0 ~%" `(if ,(cadr cond-rw) (if ,(caddr cond-rw) ,then 'nil) 'nil)))|#))
+          (rp-rw `(if ,(cadr cond-rw) (if ,(caddr cond-rw) ,then 'nil) 'nil)
+          `(nil t (nil t ,(second (cdr dont-rw)) t) t)
+          context iff-flg hyp-flg
+          (1- limit) rp-state state))|#
+
           ;; if the cond is ''nil, then the 3rd subterm
 
           ;; ((when (equal cond-rw ''nil))
@@ -1577,14 +1703,14 @@ relieving the hypothesis for ~x1! You can disable this error by running:
            (rp-rw negated-cond-rw
                   (calc-dw-negated-cond-rw cond-rw-is-a-constant
                                            then else negated-cond-rw-dont-rw)
-                  #|(rp-rw-dont-rw-or 
-                                    (or** cond-rw-is-a-constant
-                                          (and** (or** (equal then ''nil)
-                                                       (nonnil-p then))
-                                                 (or** (equal else ''nil)
-                                                       (nonnil-p else))))
-                                    negated-cond-rw-dont-rw)|#
-                  context t  (1- limit)
+                  #|(rp-rw-dont-rw-or
+                  (or** cond-rw-is-a-constant
+                  (and** (or** (equal then ''nil)
+                  (nonnil-p then))
+                  (or** (equal else ''nil)
+                  (nonnil-p else))))
+                  negated-cond-rw-dont-rw)|#
+                  context t backchain-limit (1- limit)
                   rp-state state))
 
           (negated-cond-rw-is-a-constant (or** (nonnil-p negated-cond-rw)
@@ -1596,117 +1722,114 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                (dumb-negate-lit2 negated-cond-rw)
              (mv cond-rw nil)))
 
-
           ((mv then-dont-rw else-dont-rw)
            (calc-conds-for-rp-rw-if-1)
            #|(mv (if** (or** negated-cond-rw-is-a-constant
-                           cond-rw-is-a-constant
-                           hyp-flg
-                           (backchaining-rule rp-state)
-                           (rw-context-disabled rp-state)
-                           (cons-count-compare then 2000))
-                     (second (cdr dont-rw))
-                     nil)
-               (if** (or** negated-cond-rw-is-a-constant
-                           cond-rw-is-a-constant
-                           hyp-flg
-                           (backchaining-rule rp-state)
-                           (rw-context-disabled rp-state)
-                           (cons-count-compare else 2000))
-                     (third (cdr dont-rw))
-                     nil))|#)
+           cond-rw-is-a-constant
+           hyp-flg
+           (backchaining-rule rp-state)
+           (rw-context-disabled rp-state)
+           (cons-count-compare then 2000))
+           (second (cdr dont-rw))
+           nil)
+           (if** (or** negated-cond-rw-is-a-constant
+           cond-rw-is-a-constant
+           hyp-flg
+           (backchaining-rule rp-state)
+           (rw-context-disabled rp-state)
+           (cons-count-compare else 2000))
+           (third (cdr dont-rw))
+           nil))|#)
 
           #|((when (and** hyp-flg
-                        (not** cond-rw-is-a-constant)
-                        (not** negated-cond-rw-is-a-constant)
-                        (or** (equal then ''nil)
-                              (equal else ''nil))))
-           ;; hyp-flg means stop rewriting if you are sure that the term won't
-           ;; become ''t.
-           ;; When  simplifying   a  hypothesis,  cond  did   not  simplify  to
-           ;; nil/nonnil. Same for negated-cond. We now  rely on r1 and r2 both
-           ;; being  rewritten to  a nonnil.  If r2  is already  nil, or  if r1
-           ;; doesn't simplify  to a nonnil or  simplifies to a nil,  then just
-           ;; return the term
-           (mv term rp-state))|#
+          (not** cond-rw-is-a-constant)
+          (not** negated-cond-rw-is-a-constant)
+          (or** (equal then ''nil)
+          (equal else ''nil))))
+          ;; hyp-flg means stop rewriting if you are sure that the term won't
+          ;; become ''t.
+          ;; When  simplifying   a  hypothesis,  cond  did   not  simplify  to
+          ;; nil/nonnil. Same for negated-cond. We now  rely on r1 and r2 both
+          ;; being  rewritten to  a nonnil.  If r2  is already  nil, or  if r1
+          ;; doesn't simplify  to a nonnil or  simplifies to a nil,  then just
+          ;; return the term
+          (mv term rp-state))|#
 
-          
-          
           ((mv r1 r1-context-has-nil rp-state)
            (rp-rw-if-branch cond-rw then then-dont-rw context
-                            iff-flg  limit rp-state state)
+                            iff-flg backchain-limit limit rp-state state)
            #|(b* (((mv r1-context rp-state)
-                 (rp-rw-context-main cond-rw context
-                                     ;;r1-rp-rw-context-main-enabled
-                                     (and** (not* (equal cond-rw ''nil))
-                                            ;;(not* (is-dont-rw-context cond))
-                                            (end-of-if-p then)
-                                            (not* (nonnil-p then))
-                                            ;;(not* (equal else ''nil)) ;; if
-                                            ;; rewriting an 'and' pattern, then
-                                            ;; don't try to rewrite the context
-                                            (not* (equal then ''nil))
+           (rp-rw-context-main cond-rw context
+           ;;r1-rp-rw-context-main-enabled
+           (and** (not* (equal cond-rw ''nil))
+           ;;(not* (is-dont-rw-context cond))
+           (end-of-if-p then)
+           (not* (nonnil-p then))
+           ;;(not* (equal else ''nil)) ;; if
+           ;; rewriting an 'and' pattern, then
+           ;; don't try to rewrite the context
+           (not* (equal then ''nil))
 
-                                            ;;(not* (rw-context-disabled rp-state))
-                                            ;;(not* (backchaining-rule rp-state))
-                                            )
-                                     ;;r1-rp-rw-context-main-quick-enabled
-                                     (and** (not* (equal cond-rw ''nil))
-                                            ;;(not* (is-dont-rw-context cond))
-                                            (not* (nonnil-p then))
-                                            ;;(not* (equal else ''nil)) ;; if
-                                            ;; rewriting an 'and' pattern, then
-                                            ;; don't try to rewrite the context
-                                            (not* (equal then ''nil)))
-                                     (1- limit) rp-state state))
-                (r1-context-has-nil (member-equal ''nil r1-context))
-                
-                ((mv r1 rp-state)
-                 (rp-rw then
-                        (rp-rw-dont-rw-or (or** (equal cond-rw ''nil)
-                                                r1-context-has-nil)
-                                          then-dont-rw)
-                        r1-context iff-flg hyp-flg
-                        (1- limit) rp-state state)))
-             (mv r1 r1-context-has-nil rp-state))|#)
+           ;;(not* (rw-context-disabled rp-state))
+           ;;(not* (backchaining-rule rp-state))
+           )
+           ;;r1-rp-rw-context-main-quick-enabled
+           (and** (not* (equal cond-rw ''nil))
+           ;;(not* (is-dont-rw-context cond))
+           (not* (nonnil-p then))
+           ;;(not* (equal else ''nil)) ;; if
+           ;; rewriting an 'and' pattern, then
+           ;; don't try to rewrite the context
+           (not* (equal then ''nil)))
+           (1- limit) rp-state state))
+           (r1-context-has-nil (member-equal ''nil r1-context))
+
+           ((mv r1 rp-state)
+           (rp-rw then
+           (rp-rw-dont-rw-or (or** (equal cond-rw ''nil)
+           r1-context-has-nil)
+           then-dont-rw)
+           r1-context iff-flg hyp-flg
+           (1- limit) rp-state state)))
+           (mv r1 r1-context-has-nil rp-state))|#)
 
           #|((when (and** hyp-flg
-                        (not** negated-cond-rw-is-a-constant)
-                        (not** cond-rw-is-a-constant)
-                        (or** (equal r1 ''nil)
-                              (equal else ''nil)
-                              (not* (nonnil-p r1)))))
-           ;; When  simplifying   a  hypothesis,  cond  did   not  simplify  to
-           ;; nil/nonnil. We  now rely on r1  and r2 both being  rewritten to a
-           ;; nonnil. If  r2 is  already nil,  or if r1  doesn't simplify  to a
-           ;; nonnil or simplifies to a nil, then just return the term
-           (mv term rp-state))|#
+          (not** negated-cond-rw-is-a-constant)
+          (not** cond-rw-is-a-constant)
+          (or** (equal r1 ''nil)
+          (equal else ''nil)
+          (not* (nonnil-p r1)))))
+          ;; When  simplifying   a  hypothesis,  cond  did   not  simplify  to
+          ;; nil/nonnil. We  now rely on r1  and r2 both being  rewritten to a
+          ;; nonnil. If  r2 is  already nil,  or if r1  doesn't simplify  to a
+          ;; nonnil or simplifies to a nil, then just return the term
+          (mv term rp-state))|#
 
           ((mv r2 r2-context-has-nil rp-state)
            (rp-rw-if-branch negated-cond-rw else else-dont-rw context
-                            iff-flg  limit rp-state state)
+                            iff-flg  backchain-limit limit rp-state state)
            #|(b* (((mv r2-context rp-state)
-                 (rp-rw-context-main negated-cond-rw context
-                                     (and** (not* (nonnil-p cond-rw))
-                                            ;;(not* (is-dont-rw-context cond))
-                                            (end-of-if-p else)
-                                            (not* (nonnil-p else))
-                                            (not* (equal else ''nil)))
-                                     (and** (not* (nonnil-p cond-rw))
-                                            ;;(not* (is-dont-rw-context cond))
-                                            (not* (nonnil-p else))
-                                            (not* (equal else ''nil)))
-                                     (1- limit) rp-state state))
-                (r2-context-has-nil (member-equal ''nil r2-context))
-                ((mv r2 rp-state)
-                 (rp-rw else
-                        ;; to minimize casesplit, use a dont-rw trick:
-                        (rp-rw-dont-rw-or (or** (nonnil-p cond-rw)
-                                                r2-context-has-nil)
-                                          else-dont-rw)
-                        r2-context iff-flg hyp-flg
-                        (1- limit) rp-state state)))
-             (mv r2 r2-context-has-nil rp-state))|#)
+           (rp-rw-context-main negated-cond-rw context
+           (and** (not* (nonnil-p cond-rw))
+           ;;(not* (is-dont-rw-context cond))
+           (end-of-if-p else)
+           (not* (nonnil-p else))
+           (not* (equal else ''nil)))
+           (and** (not* (nonnil-p cond-rw))
+           ;;(not* (is-dont-rw-context cond))
+           (not* (nonnil-p else))
+           (not* (equal else ''nil)))
+           (1- limit) rp-state state))
+           (r2-context-has-nil (member-equal ''nil r2-context))
+           ((mv r2 rp-state)
+           (rp-rw else
+           ;; to minimize casesplit, use a dont-rw trick:
+           (rp-rw-dont-rw-or (or** (nonnil-p cond-rw)
+           r2-context-has-nil)
+           else-dont-rw)
+           r2-context iff-flg hyp-flg
+           (1- limit) rp-state state)))
+           (mv r2 r2-context-has-nil rp-state))|#)
 
           ;; if the  two subterms  are equal, return  them cannot  use rp-equal
           ;; because  they may  have  different side-conditions,  which is  not
@@ -1714,7 +1837,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           ;; removing all side-conditions
           ((when (equal r1 r2))
            (mv r1 rp-state))
-          
+
           ((when r1-context-has-nil)
            (mv r2 rp-state))
           ((when r2-context-has-nil)
@@ -1736,25 +1859,24 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                   (and** (not** cond-rw-is-a-constant)
                          (not** (cons-count-compare cond-rw (* 3 *and-pattern-flip-cons-count-limit*)))
                          (not** (cons-count-compare r1 (* 3 *and-pattern-flip-cons-count-limit*))))))
-           (rp-rw-and cond-rw r1 context  (1- limit) rp-state state))
+           (rp-rw-and cond-rw r1 context backchain-limit (1- limit) rp-state state))
 
           ((when (and*e ;;iff-flg
                   (equal r1 ''nil)
                   (and** (not** negated-cond-rw-is-a-constant)
                          (not** (cons-count-compare cond-rw (* 3 *and-pattern-flip-cons-count-limit*)))
                          (not** (cons-count-compare r2 (* 3 *and-pattern-flip-cons-count-limit*)))))) ; ;
-           (rp-rw-and negated-cond-rw r2 context  (1- limit) rp-state state)))
+           (rp-rw-and negated-cond-rw r2 context backchain-limit (1- limit) rp-state state)))
 
        ;; could not simplify, return the rewritten term.
        (mv (create-if-instance cond-rw r1 r2 :negated-test negated-cond-rw) rp-state)))
     (t (mv term rp-state))))
 
-
  (defun rp-rw-if-branch (cond-rw then then-dont-rw
                                  context
-                                 iff-flg  limit rp-state state)
+                                 iff-flg backchain-limit limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
-   
+
    (declare (xargs :measure (acl2::nat-list-measure (list limit
                                                           0))
                    :stobjs (state rp-state)
@@ -1765,6 +1887,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            (booleanp iff-flg)
                            (rp-term-listp context)
                            (natp limit)
+                           (integerp backchain-limit)
                            (valid-rp-state-syntaxp rp-state))
                    :mode :logic))
    (b* (((when (zp limit))
@@ -1798,22 +1921,22 @@ relieving the hypothesis for ~x1! You can disable this error by running:
               ((when (or r1-context-has-nil
                          (equal cond-rw ''nil)))
                (mv ''t t rp-state))
-                
+
               ((mv r1 rp-state)
                (rp-rw then then-dont-rw
                       #|(rp-rw-dont-rw-or (or** (equal cond-rw ''nil)
-                                              r1-context-has-nil)
-                                        then-dont-rw)|#
-                      r1-context iff-flg 
+                      r1-context-has-nil)
+                      then-dont-rw)|#
+                      r1-context iff-flg backchain-limit
                       (1- limit) rp-state state)))
            (mv r1 r1-context-has-nil rp-state))))
      (mv r1 r1-context-has-nil rp-state)))
 
- (defun rp-rw-and (term1 term2 context  limit rp-state state)
+ (defun rp-rw-and (term1 term2 context backchain-limit limit rp-state state)
    ;; Rewrite again the (if term1 term2 'nil) pattern by swapping term1 and
    ;; term2. To be called only under iff flag.
    (declare (type (unsigned-byte 58) limit))
-   
+
    (declare (xargs :measure (acl2::nat-list-measure (list limit
                                                           0))
                    :stobjs (state rp-state)
@@ -1823,6 +1946,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            (rp-termp term2)
                            (rp-term-listp context)
                            (natp limit)
+                           (integerp backchain-limit)
                            (valid-rp-state-syntaxp rp-state))
                    :mode :logic))
    ;; if we have an "and" pattern: (if cond r1 nil)
@@ -1859,7 +1983,8 @@ relieving the hypothesis for ~x1! You can disable this error by running:
         (term1-orig term1)
         ((mv term1 rp-state)
          (rp-rw term1 term1 ;; pass this as dont-rw to not rw the atoms
-                term1-context t 
+                term1-context t
+                backchain-limit
                 (min (1- limit) if-rw-limit)
                 rp-state state))
         (rp-state (update-rw-context-disabled nil rp-state))
@@ -1882,6 +2007,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            (rp-term-listp context)
                            (natp limit)
                            (rp-termp term)
+                           
                            (valid-rp-state-syntaxp rp-state))
                    :mode :logic))
    (b* (((when (zp limit)) (mv context rp-state))
@@ -1927,12 +2053,12 @@ relieving the hypothesis for ~x1! You can disable this error by running:
         (limit (min (1- limit) *and-pattern-flip-cons-count-limit*))
         (new-context (append context-from-term context))
         #|((mv context-rw ?changed rp-state)
-         (rp-rw-context context new-context limit rp-state state))
+        (rp-rw-context context new-context limit rp-state state))
         (new-context (append context-from-term context-rw))|#
 
         ((mv new-context rp-state)
          (rp-rw-context-loop new-context limit 8 rp-state state))
-        
+
         (rp-state (update-rw-limit-throws-error current-rw-limit-throws-error rp-state))
         (rp-state (update-rw-context-disabled nil rp-state)))
      (mv new-context rp-state)))
@@ -1946,7 +2072,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                    :verify-guards nil
                    :guard (and
                            (natp limit)
-                           (natp loop-limit) 
+                           (natp loop-limit)
                            (rp-term-listp context)
                            (valid-rp-state-syntaxp rp-state))
                    :mode :logic))
@@ -1959,9 +2085,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
        (if changed
            (rp-rw-context-loop context limit (1- loop-limit) rp-state state)
          (mv context rp-state)))))
-          
-   
- 
+
  (defun rp-rw-context (old-context new-context limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
    (declare (xargs :measure (acl2::nat-list-measure (list limit
@@ -1984,7 +2108,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                (mv (car old-context) rp-state)
              (rp-rw (car old-context) nil
                     (rp-remove-equal (car old-context) new-context)
-                    t  (1- limit) rp-state state)))
+                    t (rw-backchain-limit rp-state) (1- limit) rp-state state)))
           ((mv rest rest-changed rp-state)
            (rp-rw-context (cdr old-context) new-context limit rp-state
                           state))
@@ -1997,15 +2121,16 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                  (not** (rp-equal-cnt cur (car old-context) 1)))
            rp-state))))
 
- (defun rp-rw (term dont-rw context iff-flg  limit rp-state state)
+ (defun rp-rw (term dont-rw context iff-flg backchain-limit limit rp-state state)
    (declare (type (unsigned-byte 58) limit))
-   
+
    (declare (xargs :measure (acl2::nat-list-measure (list limit 0))
                    :stobjs (state rp-state)
                    :verify-guards nil
                    :guard (and
                            (rp-termp term)
                            (natp limit)
+                           (integerp backchain-limit)
                            (rp-term-listp context)
                            (booleanp iff-flg)
                            (valid-rp-state-syntaxp rp-state))
@@ -2036,21 +2161,22 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           term))
       rp-state))
     ((or (eq (car term) 'quote)
-         (eq (car term) 'list)) ;; a list instance is created by a meta rule,
+         #|(eq (car term) 'list)|#) ;; a list instance is created by a meta rule,
      ;; do not try to rewrite it again.
      (mv term rp-state))
     ((should-not-rw dont-rw);; exit right away if said to not rewrite
      (mv term rp-state))
     ((zp limit)
-     (b* ((rp-state (limit-reached-action rp-state)))
+     (b* ((rp-state (limit-reached-action nil rp-state)))
        (mv term rp-state)))
     ((is-rp$ term)
-     (b* ((dont-rw (dont-rw-car
+     (b* ((rp-state (push-to-rw-recent-terms term rp-state))
+          (dont-rw (dont-rw-car
                     (dont-rw-cdr
                      (dont-rw-cdr dont-rw))))
           ((mv new-term rp-state)
            (rp-rw (caddr term)
-                  dont-rw context nil  (1- limit) rp-state state))
+                  dont-rw context nil backchain-limit  (1- limit) rp-state state))
           ((when (quotep new-term))
            (mv new-term rp-state)))
        (mv (cons-with-hint (car term)
@@ -2062,34 +2188,37 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            term)
            rp-state)))
     #|((is-dont-rw-context term)
-     (b* ((dont-rw (dont-rw-car (dont-rw-cdr dont-rw)))
-          (current-rw-context-disabled (rw-context-disabled rp-state))
-          (rp-state (update-rw-context-disabled t rp-state))
-          ((mv term rp-state)
-           (rp-rw (cadr term) dont-rw
-                  context iff-flg hyp-flg (1- limit) rp-state state))
-          (rp-state (update-rw-context-disabled current-rw-context-disabled
-                                                  rp-state)))
-       (mv term rp-state)))|#
+    (b* ((dont-rw (dont-rw-car (dont-rw-cdr dont-rw)))
+    (current-rw-context-disabled (rw-context-disabled rp-state))
+    (rp-state (update-rw-context-disabled t rp-state))
+    ((mv term rp-state)
+    (rp-rw (cadr term) dont-rw
+    context iff-flg hyp-flg (1- limit) rp-state state))
+    (rp-state (update-rw-context-disabled current-rw-context-disabled
+    rp-state)))
+    (mv term rp-state)))|#
     (t
      (b* (
           ;; update the term to see if it simplifies with respect to the
           ;; context
           ((when (and*e iff-flg
-                       (check-if-relieved-with-rp term)))
+                        (check-if-relieved-with-rp term)))
            (mv ''t rp-state))
 
           #|((mv term dont-rw)
           (rp-check-context term dont-rw context iff-flg))|#
 
+          (rp-state (push-to-rw-recent-terms term rp-state)) ;; save what term
+          ;; is being rewritten into a small stack for history tracking when necessary.
+          
           ((mv rule-rewritten-flg term dont-rw rp-state)
            (rp-rw-rule term dont-rw
                        (rules-alist-outside-in-get (car term) rp-state)
                        context iff-flg t
-                       (1- limit) rp-state state))
+                       backchain-limit (1- limit) rp-state state))
 
           ((when rule-rewritten-flg)
-           (rp-rw term dont-rw context iff-flg  (1- limit) rp-state state))
+           (rp-rw term dont-rw context iff-flg backchain-limit (1- limit) rp-state state))
 
           ;; if simplified to a constant, then exit.
           ((when (or (atom term)
@@ -2101,14 +2230,14 @@ relieving the hypothesis for ~x1! You can disable this error by running:
            (cond ((is-if term)
                   ;; if the term is an "if" statement, rewrite branches accordingly.
                   (b* (((mv if-res rp-state)
-                        (rp-rw-if term dont-rw context iff-flg 
-                                  (1-  limit) rp-state state)))
+                        (rp-rw-if term dont-rw context iff-flg
+                                  backchain-limit (1-  limit) rp-state state)))
                     (mv if-res rp-state)))
                  ((is-hide term)
                   (mv term rp-state))
                  (t (b* (((mv subterms rp-state)
                           (rp-rw-subterms (cdr term) (dont-rw-cdr dont-rw)
-                                          context (1- limit) rp-state
+                                          context backchain-limit (1- limit) rp-state
                                           state))
                          (term (cons-with-hint (car term) subterms term))
                          ;; check if it is a cw or hard-error statements.
@@ -2126,18 +2255,18 @@ relieving the hypothesis for ~x1! You can disable this error by running:
            (rp-rw-rule term dont-rw
                        (rules-alist-inside-out-get (car term) rp-state)
                        context iff-flg nil
-                       (1- limit) rp-state state))
+                       backchain-limit (1- limit) rp-state state))
           ((when (and*e iff-flg
-                       (check-if-relieved-with-rp term)))
+                        (check-if-relieved-with-rp term)))
            (mv ''t rp-state))
           ((when (not rule-rewritten-flg))
            (mv term rp-state)))
-       (rp-rw term dont-rw context iff-flg  (1- limit) rp-state state)))))
+       (rp-rw term dont-rw context iff-flg backchain-limit (1- limit) rp-state state)))))
 
- (defun rp-rw-subterms (subterms dont-rw context  limit rp-state state)
+ (defun rp-rw-subterms (subterms dont-rw context backchain-limit limit rp-state state)
    ;; call the rewriter on subterms.
    (declare (type (unsigned-byte 58) limit))
-   
+
    (declare (xargs :measure (acl2::nat-list-measure (List limit
                                                           (acl2-count subterms)))
                    :stobjs (state rp-state)
@@ -2145,6 +2274,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                            (rp-term-listp subterms)
                            (rp-term-listp context)
                            (natp limit)
+                           (integerp backchain-limit)
                            (valid-rp-state-syntaxp rp-state))
                    :verify-guards nil
                    :mode :logic))
@@ -2158,13 +2288,15 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                   (dont-rw-car dont-rw)
                   context
                   nil
-                   (1- limit)
+                  backchain-limit
+                  (1- limit)
                   rp-state
                   state))
           ((mv rest rp-state)
            (rp-rw-subterms (cdr subterms)
                            (dont-rw-cdr dont-rw)
-                           context 
+                           context
+                           backchain-limit
                            limit;;(1- limit)
                            rp-state state)))
        (mv (cons-with-hint car-subterms rest subterms)
@@ -2248,6 +2380,7 @@ relieving the hypothesis for ~x1! You can disable this error by running:
                           (valid-rp-state-syntaxp rp-state))
                   :verify-guards nil))
   (b* ((step-limit (rw-step-limit rp-state))
+       (backchain-limit (rw-backchain-limit rp-state))
        ((when (include-fnc term 'list))
         (progn$ (hard-error 'preprocess-then-rp-rw
                             "unexpected term is given to preprocess-then-rp-rw. The term contains a list instance: ~p0 ~%"
@@ -2260,40 +2393,43 @@ relieving the hypothesis for ~x1! You can disable this error by running:
           (('implies p q)
            (b* (((mv p rp-state)
                  (rp-rw p nil nil
-                        t step-limit rp-state state))
+                        t backchain-limit step-limit rp-state state))
                 (context (rp-extract-context p))
                 ;;(q (attach-sc-from-context context q))
                 ;;(context (attach-sc-from-context-lst context context))
 
-                (q (rp-rw-preprocessor q context rp-state state))
+                ((mv q rp-state) (rp-rw-preprocessor q context rp-state state))
                 (q `(casesplit-from-context-trig ,q))
                 ((mv q rp-state)
-                 (rp-rw q nil context t step-limit rp-state state))
-                (q (rp-rw-postprocessor q context rp-state state)))
+                 (rp-rw q nil context t backchain-limit step-limit rp-state state))
+                ((mv q rp-state) (rp-rw-postprocessor q context rp-state state)))
              (mv (if (nonnil-p q)
                      q
                    `(implies ,p ,q))
                  rp-state)))
           (&
-           (b* ((term (rp-rw-preprocessor term nil rp-state state))
+           (b* (((mv term rp-state) (rp-rw-preprocessor term nil rp-state state))
                 ((mv term rp-state)
-                 (rp-rw term nil nil t step-limit rp-state state))
-                (term
+                 (rp-rw term nil nil t backchain-limit step-limit rp-state state))
+                ((mv term rp-state)
                  (rp-rw-postprocessor term nil rp-state state)))
              (mv term rp-state)))))
 
        (- (rp-state-print-rules-used rp-state))
        (- (if (not (nonnil-p res-))
-              (b* ((action (not-simplified-action rp-state)))
-                (cond ((equal action ':error)
+              (b* ((action (not-simplified-action rp-state))
+                   (suppress-not-simplified-error (suppress-not-simplified-error rp-state))) 
+                (cond ((or suppress-not-simplified-error
+                           (equal action ':none))
+                       nil)
+                      ((equal action ':error)
                        (hard-error
                         'preprocess-then-rp-rw
                         "Error! rp-rewriter did not reduce the term to t! To supress this error run:
 (set-not-simplified-action :warning) or (set-not-simplified-action :none)
 Resulting  term is:~% ~p0 ~%"
                         (list (cons #\0 res-))))
-                      ((equal action ':none)
-                       nil)
+                      
                       (t
                        (cw "--- WARNING! --- Term was not reduced to 't. To throw an error instead, run:
 (set-not-simplified-action :error) ~% ~%" ))))

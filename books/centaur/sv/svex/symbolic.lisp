@@ -392,7 +392,7 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
 (local (defthm 4vec-bit?!-of-3vec-fix
          (equal (4vec-bit?! (3vec-fix test) then else)
                 (4vec-bit?! test then else))
-         :hints(("Goal" :in-theory (enable 4vec-bit?! 3vec-fix)))))
+         :hints(("Goal" :in-theory (enable 4vec-bit?! 4vec-1mask 3vec-fix)))))
 
 
 
@@ -3036,6 +3036,197 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (rev (svarlist-fix vars))))))
 
 
+
+
+(define svex-varmasks/env->aig-env-stats-rec ((vars svarlist-p)
+                                              (masks svex-mask-alist-p)
+                                              (boolmasks svar-boolmasks-p)
+                                              (nextvar natp))
+  :returns (mv err (new-nextvar natp))
+  (b* (((when (atom vars))
+        (mv nil (lnfix nextvar)))
+       (mask (svex-mask-lookup (svex-var (car vars)) masks))
+       ((when (sparseint-< mask 0))
+        (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars))) (lnfix nextvar)))
+       (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
+       (nextvar (+ (lnfix nextvar)
+                   (4vmask-to-a4vec-varcount mask boolmask))))
+    (svex-varmasks/env->aig-env-stats-rec
+     (cdr vars) masks boolmasks nextvar)))
+
+(define svex-varmasks/env->aig-env-stats ((vars svarlist-p)
+                                          (masks svex-mask-alist-p)
+                                          (boolmasks svar-boolmasks-p))
+  (b* ((- (cw "svex-varmasks/env->aig-env-stats:~%")
+          (cw "svex vars: ~x0~%" (len vars)))
+       ((mv err nextvar) (svex-varmasks/env->aig-env-stats-rec
+                          vars masks boolmasks 0))
+       (- (cw "bits to generate: ~x0~%" nextvar)
+          (and err
+               (cw "error: ~@0~%" err))))
+    nil))
+       
+
+
+
+(define svex-varmasks/env->aig-env-rec-log ((count natp)
+                                            (vars svarlist-p)
+                                            (masks svex-mask-alist-p)
+                                            (boolmasks svar-boolmasks-p)
+                                            (env svex-env-p "look up variables in env to get 4vecs to assign -- symbolic")
+                                            (nextvar natp)
+                                            (acc "aig environment accumulator"))
+  :guard (<= count (len vars))
+  :hooks nil
+  :prepwork (;; (local (in-theory (enable svarlist-p svarlist-fix)))
+             (local (include-book "std/lists/nthcdr" :dir :system))
+             (local (in-theory (disable member-svex-mask-alist-keys
+                                        true-list-listp
+                                        acl2::list-fix-when-len-zero
+                                        acl2::take-when-atom
+                                        acl2::take-of-len-free
+                                        acl2::take-of-too-many
+                                        ACL2::CDR-NTHCDR
+                                        acl2::nthcdr-of-cdr
+                                        nthcdr take nth
+                                        svex-mask-alist-p-when-not-consp
+                                        SVEX-VARMASKS/ENV->AIG-ENV-ACCUMULATOR-ELIM)))
+             (local (defthm logcar-plus-logcdr
+                      (implies (natp x)
+                               (<= (+ (logcar x) (logcdr x)) x))
+                      :hints (("goal" :use ((:instance bitops::logcons-destruct))
+                               :in-theory (e/d (logcons)
+                                               (bitops::logcons-destruct
+                                                acl2::logcar-logcdr-elim))))
+                      :rule-classes :linear))
+             (local (defthm logcar-plus-logcdr-gte-1
+                      (implies (posp x)
+                               (<= 1 (+ (logcar x) (logcdr x))))
+                      :hints (("goal" :use ((:instance bitops::logcons-destruct))
+                               :in-theory (e/d (logcons)
+                                               (bitops::logcons-destruct
+                                                acl2::logcar-logcdr-elim))))
+                      :rule-classes :linear))
+             ;; (local (defthm nthcdr-of-svarlist-fix
+             ;;          (equal (nthcdr n (svarlist-fix x))
+             ;;                 (svarlist-fix (nthcdr n x)))
+             ;;          :hints(("Goal" :in-theory (enable nthcdr)
+             ;;                  :induct (nthcdr n x)))))
+             )
+  :verify-guards nil
+  :returns (mv (err)
+               (new-acc) ;; binds AIG vars to Boolean values
+               (new-nextvar)
+               (rem-vars (equal rem-vars (nthcdr count vars))
+                         :hints(("Goal" :in-theory (enable nthcdr)))))
+  
+  :measure (nfix count)
+  ;; :hooks ((:fix :args (vars nextvar)))
+  (b* (((when (zp count))
+        (mv nil acc (lnfix nextvar) vars))
+       (mask (svex-mask-lookup (svex-var (car vars)) masks))
+       ((when (sparseint-< mask 0))
+        (mv (msg "Negative mask: ~x0~%" (svar-fix (car vars)))
+            acc (lnfix nextvar) (nthcdr count vars)))
+       (boolmask (svar-boolmasks-lookup (car vars) boolmasks))
+       (4vec (svex-env-lookup (svar-fix (car vars)) env))
+       (env-part
+        (4vmask-to-a4vec-env mask boolmask 4vec nextvar))
+       (nextvar (+ (lnfix nextvar)
+                   (4vmask-to-a4vec-varcount mask boolmask)))
+       (acc (append env-part acc))
+       (count (1- count))
+       (half-count (logcdr count))
+       ((mv err acc nextvar vars)
+        (svex-varmasks/env->aig-env-rec-log half-count (cdr vars) masks boolmasks env nextvar acc))
+       ((when err) (mv err acc nextvar (nthcdr (- count half-count) vars))))
+    (svex-varmasks/env->aig-env-rec-log
+     (- count half-count) vars masks boolmasks env nextvar acc))
+  ///
+  (local (defthmd svex-varmasks/env->aig-env-rec-compose
+           (b* (((mv err1 acc1 nextvar1)
+                 (svex-varmasks/env->aig-env-rec vars1 masks boolmasks env nextvar acc))
+                ((mv err2 acc2 nextvar2)
+                 (svex-varmasks/env->aig-env-rec vars2 masks boolmasks env nextvar1 acc1))
+                ((mv err acc nextvar)
+                 (svex-varmasks/env->aig-env-rec (append vars1 vars2) masks boolmasks env nextvar acc)))
+             (and (implies (not err1)
+                           (and (equal err2 err)
+                                (equal acc2 acc)
+                                (equal nextvar2 nextvar)))
+                  (implies err1
+                           (and (equal err1 err)
+                                (equal acc1 acc)
+                                (equal nextvar1 nextvar)))))
+           :hints (("goal" :induct (svex-varmasks/env->aig-env-rec vars1 masks boolmasks env nextvar acc)
+                    :in-theory (enable (:i svex-varmasks/env->aig-env-rec))
+                    :expand ((:free (vars1)
+                              (svex-varmasks/env->aig-env-rec vars1 masks boolmasks env nextvar acc)))))))
+
+  (local (defthm len-of-cdr-when-posp
+           (implies (posp (len x))
+                    (equal (len (cdr x))
+                           (+ -1 (len x))))))
+
+  (local (defthm len-nthcdr-when-greater
+           (implies (<= (nfix n) (len x))
+                    (equal (len (nthcdr n x)) (- (len x) (nfix n))))))
+
+  (local (in-theory (disable len)))
+  
+  (local (defthm append-take-nthcdr
+           (equal (append (take n x) (take m (nthcdr n x)))
+                  (take (+ (nfix n) (nfix m)) x))
+           :hints(("Goal" :in-theory (enable take nthcdr)
+                   :induct (take m (nthcdr n x))))))
+  
+  (defret <fn>-in-terms-of-svex-varmasks/env->aig-env-rec
+    (implies (<= (nfix count) (len vars))
+             (b* (((mv spec-err spec-acc spec-nextvar)
+                   (svex-varmasks/env->aig-env-rec (take count vars) masks boolmasks env nextvar acc)))
+               (and (equal err spec-err)
+                    (equal new-acc spec-acc)
+                    (equal new-nextvar spec-nextvar))))
+    :hints(("Goal" :in-theory (disable (:d svex-varmasks/env->aig-env-rec-log))
+            :induct <call>
+            :do-not-induct t
+            :expand (<call>
+                     ;; (len vars)
+                     (:free (vars) (svex-varmasks/env->aig-env-rec vars masks boolmasks env nextvar acc))
+                     (take count vars)))
+           (and stable-under-simplificationp
+                '(:use ((:instance svex-varmasks/env->aig-env-rec-compose
+                         (vars1 (take (logcdr (+ -1 count)) (cdr vars)))
+                         (vars2 (take (+ -1 count (- (logcdr (+ -1 count))))
+                                      (nthcdr (logcdr (+ -1 count)) (cdr vars))))
+                         (nextvar (+ (NFIX NEXTVAR)
+                                     (4VMASK-TO-A4VEC-VARCOUNT (SVEX-MASK-LOOKUP (SVEX-VAR (CAR VARS))
+                                                                                 MASKS)
+                                                               (SVAR-BOOLMASKS-LOOKUP (CAR VARS)
+                                                                                      BOOLMASKS))))
+                         (acc (APPEND (4VMASK-TO-A4VEC-ENV (SVEX-MASK-LOOKUP (SVEX-VAR (CAR VARS))
+                                                                             MASKS)
+                                                           (SVAR-BOOLMASKS-LOOKUP (CAR VARS)
+                                                                                  BOOLMASKS)
+                                                           (SVEX-ENV-LOOKUP (CAR VARS) ENV)
+                                                           NEXTVAR)
+                                      ACC))))))))
+
+  (local (defthm svex-varmasks/env->aig-env-rec-return-values-correct
+           (b* ((ans (svex-varmasks/env->aig-env-rec vars masks boolmasks env nextvar acc))
+                ((mv err acc nextvar) ans))
+             (equal (list err acc nextvar) ans))
+           :hints(("Goal" :in-theory (enable svex-varmasks/env->aig-env-rec)))))
+
+  ;; NOTE: use this for FGL to avoid stack overflows
+  (defthmd svex-varmasks/env->aig-env-rec-in-terms-of-rec-log
+    (equal (svex-varmasks/env->aig-env-rec vars masks boolmasks env nextvar acc)
+           (b* (((mv err acc nextvar ?rest)
+                 (svex-varmasks/env->aig-env-rec-log (len vars) vars masks boolmasks env nextvar acc)))
+             (mv err acc nextvar))))) 
+
+
+
 (define svex-varmasks/env->aig-env ((vars svarlist-p)
                                     (masks svex-mask-alist-p)
                                     (boolmasks svar-boolmasks-p)
@@ -3046,8 +3237,9 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     :hints(("Goal" :in-theory (enable svex-maskbits-ok))))
                (env "binds AIG vars to Boolean values"))
     :hooks ((:fix :args (vars)))
-  (b* (((mv err res &)
-        (svex-varmasks/env->aig-env-rec vars masks boolmasks env 0 nil)))
+    (b* ((?stats (svex-varmasks/env->aig-env-stats vars masks boolmasks))
+         ((mv err res &)
+          (svex-varmasks/env->aig-env-rec vars masks boolmasks env 0 nil)))
     (mv err res))
   ///
   (defthm eval-svex-varmasks->a4env-with-env
@@ -3160,9 +3352,10 @@ into @(see acl2::aig)s, to support symbolic simulation with @(see acl2::gl).")
                     (svex-mask-alist-complete masks)
                     (equal boolmasks (svar-boolmasks-fix boolmasks1))
                     (svex-env-boolmasks-ok goalenv boolmasks)
-                    (subsetp (intersection-equal (svexlist-vars x)
-                                                 (alist-keys (svex-env-fix goalenv)))
-                             (svarlist-fix vars)))
+                    (double-rewrite
+                     (subsetp (intersection-equal (svexlist-vars x)
+                                                  (alist-keys (svex-env-fix goalenv)))
+                              (svarlist-fix vars))))
                (equal (a4veclist-eval a4vecs env)
                       (svexlist-eval x goalenv))))
     :hints (("goal" :use svexlist->a4vec-correct-for-varmasks-aig-env
@@ -3458,9 +3651,10 @@ except that we memoize the results and we use fast alist lookups."
       :flag list))
 
   (defret svex-eval-of-svexlist-x-out-unused-vars
-    (implies (subsetp (intersection-equal (svexlist-vars x)
-                                          (alist-keys (svex-env-fix env)))
-                      (svarlist-fix svars))
+    (implies (double-rewrite
+              (subsetp (intersection-equal (svexlist-vars x)
+                                           (alist-keys (svex-env-fix env)))
+                       (svarlist-fix svars)))
              (equal (svexlist-eval new-x env)
                     (svexlist-eval x env))))
 
@@ -3711,7 +3905,6 @@ obviously 2-vectors.</p>"
         (t (logapp 1 (acl2::bool->bit (car v))
                     (v2i-first-n (1- n) (cdr v))))))
 
-
 (define 4vec-from-bitlist ((upper-len natp) (lower-len natp) (bits true-listp))
   :hooks ((:fix :omit (bits)))
   :returns (mv (vec 4vec-p)
@@ -3733,7 +3926,10 @@ obviously 2-vectors.</p>"
                                 (append (aig-eval-list (a4vec->aiglist x) env)
                                         rest))
              (mv (a4vec-eval x env) rest)))
-    :hints(("Goal" :in-theory (enable a4vec->aiglist)))))
+    :hints(("Goal" :in-theory (enable a4vec->aiglist))))
+
+  (defretd 4vec-from-bitlist-rest-bits
+    (equal rest (nthcdr (+ (nfix upper-len) (nfix lower-len)) bits))))
 
 (define a4veclist->aiglist ((x a4veclist-p))
   :returns (aigs true-listp :rule-classes :type-prescription)
@@ -3741,6 +3937,20 @@ obviously 2-vectors.</p>"
       nil
     (append (a4vec->aiglist (car x))
             (a4veclist->aiglist (cdr x)))))
+
+
+(define a4veclist-length ((x a4veclist-p))
+  :returns (len natp)
+  (if (atom x)
+      0
+    (+ (len (a4vec->upper (car x)))
+       (len (a4vec->lower (car x)))
+       (a4veclist-length (cdr x))))
+  ///
+  (defthm a4veclist-length-of-append
+    (equal (a4veclist-length (append x y))
+           (+ (a4veclist-length x) (a4veclist-length y)))))
+
 
 (define 4veclist-from-bitlist ((origs a4veclist-p) (bits true-listp))
   :returns (4vecs 4veclist-p)
@@ -3756,6 +3966,128 @@ obviously 2-vectors.</p>"
            (a4veclist-eval x env))
     :hints(("Goal" :in-theory (enable a4veclist-eval
                                       a4veclist->aiglist)))))
+
+
+(define 4veclist-from-bitlist-log-rec ((n natp) (origs a4veclist-p) (bits true-listp))
+  ;; computes 4veclist-from-bitlist for the first n elements of origs,
+  ;; returning the remaining origs and bits as well as the 4vecs.
+  :guard (<= (nfix n) (len origs))
+  :hooks nil
+  :returns (mv (4vecs true-listp)
+               (rest-origs (implies (a4veclist-p origs) (a4veclist-p rest-origs)))
+               (rest-bits (implies (true-listp bits) (true-listp rest-bits))))
+  :measure (nfix n)
+  :prepwork ((local (include-book "std/lists/nthcdr" :dir :system))
+             (local (in-theory (disable true-list-listp
+                                        acl2::list-fix-when-len-zero
+                                        acl2::take-when-atom
+                                        acl2::take-of-len-free
+                                        acl2::take-of-too-many
+                                        ACL2::CDR-NTHCDR
+                                        acl2::nthcdr-of-cdr
+                                        nthcdr take nth)))
+             (local (in-theory (enable bitops::logtail**)))
+             (local (defthm logcar-plus-logcdr
+                      (implies (natp x)
+                               (<= (+ (logcar x) (logcdr x)) x))
+                      :hints (("goal" :use ((:instance bitops::logcons-destruct))
+                               :in-theory (e/d (logcons)
+                                               (bitops::logcons-destruct
+                                                acl2::logcar-logcdr-elim))))
+                      :rule-classes :linear))
+             (local (defthm logcar-plus-logcdr-gte-1
+                      (implies (posp x)
+                               (<= 1 (+ (logcar x) (logcdr x))))
+                      :hints (("goal" :use ((:instance bitops::logcons-destruct))
+                               :in-theory (e/d (logcons)
+                                               (bitops::logcons-destruct
+                                                acl2::logcar-logcdr-elim))))
+                      :rule-classes :linear)))
+  ;; :hints (("goal" :expand ((:free (n) (logtail 1 n)))))
+  :verify-guards nil
+  (b* (((when (zp n)) (mv nil origs bits))
+       ((a4vec x) (car origs))
+       (rest-origs (cdr origs))
+       ((mv 4vec1 rest-bits)
+        (4vec-from-bitlist (len x.upper) (len x.lower) bits))
+       (n (1- n))
+       (halfn (ash n -1))
+       (restn (- n halfn))
+       ((mv 4vecs-half1 rest-origs rest-bits)
+        (4veclist-from-bitlist-log-rec halfn rest-origs rest-bits))
+       ((mv 4vecs-half2 rest-origs rest-bits)
+        (4veclist-from-bitlist-log-rec restn rest-origs rest-bits)))
+    (mv (cons 4vec1 (append 4vecs-half1 4vecs-half2)) rest-origs rest-bits))
+  ///
+  (defret <fn>-nthcdrs-origs
+    (equal rest-origs (nthcdr n origs)))
+
+
+  
+  (local (defthm append-take-nthcdr
+           (equal (append (take n x) (take m (nthcdr n x)))
+                  (take (+ (nfix n) (nfix m)) x))
+           :hints(("Goal" :in-theory (enable take nthcdr)
+                   :induct (take m (nthcdr n x))))))
+
+  (local (defthm sum-a4veclist-length-of-take-nthcdr
+           (equal (+ (a4veclist-length (take n x))
+                     (a4veclist-length (take m (nthcdr n x))))
+                  (a4veclist-length (take (+ (nfix n) (nfix m)) x)))
+           :hints (("goal" :use ((:instance a4veclist-length-of-append
+                                  (x (take n x)) (y (take m (nthcdr n x)))))
+                    :in-theory (disable a4veclist-length-of-append)))))
+
+  (local (defthm nthcdr-of-equal-nthcdr
+           (implies (equal y (nthcdr n x))
+                    (equal (nthcdr m y)
+                           (nthcdr (+ (nfix m) (nfix n)) x)))))
+  
+  (defret <fn>-rest-bits
+    (equal rest-bits (nthcdr (a4veclist-length (take n origs)) bits))
+    :hints(("Goal" :in-theory (enable 4vec-from-bitlist-rest-bits
+                                      a4veclist-length take)
+            :induct <call>)))
+
+  
+  (local (defthm 4veclist-from-bitlist-of-append
+           (equal (4veclist-from-bitlist (append x y) bits)
+                  (append (4veclist-from-bitlist x bits)
+                          (4veclist-from-bitlist y (nthcdr (a4veclist-length x) bits))))
+           :hints(("Goal" :in-theory (enable (:i 4veclist-from-bitlist)
+                                             4vec-from-bitlist-rest-bits)
+                   :induct (4veclist-from-bitlist x bits)
+                   :expand ((4veclist-from-bitlist x bits)
+                            (4veclist-from-bitlist nil bits)
+                            (a4veclist-length x)
+                            (:free (a b) (4veclist-from-bitlist (cons a b) bits))
+                            (:free (n) (4veclist-from-bitlist-log-rec n x bits)))))))
+
+  (local (defthm 4veclist-from-bitlist-take-nthcdr
+           (equal (append (4veclist-from-bitlist (take n x) bits)
+                          (4veclist-from-bitlist (take m (nthcdr n x))
+                                                 (nthcdr (a4veclist-length (take n x)) bits)))
+                  (4veclist-from-bitlist (take (+ (nfix m) (nfix n)) x) bits))
+           :hints (("goal" :use ((:instance 4veclist-from-bitlist-of-append
+                                  (x (take n x)) (y (take m (nthcdr n x)))))
+                    :in-theory (disable 4veclist-from-bitlist-of-append)))))
+                  
+  
+  (verify-guards 4veclist-from-bitlist-log-rec
+    ;; :hints (("goal" :expand ((logtail 1 (+ -1 n)))))
+    )
+  
+  (defret <fn>-correct
+    (implies (<= (nfix n) (len origs))
+             (equal 4vecs (4veclist-from-bitlist (take n origs) bits)))
+    :hints (("goal" :induct <call>
+             :expand ((take n origs)
+                      (:free (x) (4veclist-from-bitlist x bits))))))
+
+  (defretd 4veclist-from-bitlist-in-terms-of-<fn>
+    :pre-bind ((n (len origs)))
+    (equal (4veclist-from-bitlist origs bits)
+           4vecs)))
 
 
 (define a4veclist-eval-gl ((x a4veclist-p) (env))

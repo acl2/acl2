@@ -1,7 +1,7 @@
 ; A function to read from an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 ;; Readd the element at position INDEX of the array DATA, which should be a
 ;; bv-array of length LEN and have elements that are bit-vectors of size
@@ -65,7 +66,7 @@
   (implies (equal len (len x))
            (equal (equal (bvchop 8 (car x)) (bv-array-read 8 len 0 x))
                   t))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthm bv-array-read-of-bvchop-helper
   (implies (and (<= m n)
@@ -87,6 +88,13 @@
                                       )
            :use (:instance bv-array-read-of-bvchop-helper (m (+ -1 (integer-length len)))))))
 
+(defthm bv-array-read-of-bvchop-gen
+  (implies (and (<= (ceiling-of-lg len) n)
+                (natp n))
+           (equal (bv-array-read size len (bvchop n index) vals)
+                  (bv-array-read size len index vals)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
 ;or do we want to go to nth?
 (defthm bv-array-read-of-take
   (implies (posp len)
@@ -105,8 +113,7 @@
                   (BV-ARRAY-READ element-size (+ -1 len) (+ -1 index) b)))
   :hints (("Goal"
            :cases ((equal index (+ -1 len)))
-           :in-theory (enable ;LIST::NTH-OF-CONS
-                       bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg))))
+           :in-theory (enable bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg))))
 
 (defthm bv-array-read-of-cons-base
   (implies (and (natp len)
@@ -114,8 +121,7 @@
                 )
            (equal (BV-ARRAY-READ element-size len 0 (cons a b))
                   (bvchop element-size a)))
-  :hints (("Goal" :in-theory (enable ;LIST::NTH-OF-CONS
-                              BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bv-array-read))))
+  :hints (("Goal" :in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER bv-array-read))))
 
 (defthm bv-array-read-of-cons-both
   (implies (and (syntaxp (not (and (quotep a)  ;prevent application to a constant array
@@ -143,14 +149,116 @@
   (implies (< 0 index) ;prevents loops (could also do a syntactic check against '0 but not for axe?)
            (equal (bv-array-read element-size 1 index data)
                   (bv-array-read element-size 1 0 data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthm bv-array-read-of-nil
   (equal (bv-array-read width len index nil)
          0)
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 (defthm bv-array-read-of-0-arg2
   (equal (bv-array-read size 0 index data)
          0)
-  :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthmd bv-array-read-shorten-core
+  (implies (and (unsigned-byte-p isize index)
+                (< (expt 2 isize) len)
+                (equal len (len data)))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (expt 2 isize) index (take (expt 2 isize) data))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm bv-array-read-when-equal-of-take-and-constant
+  (implies (and (equal k (take m x))
+                (syntaxp (and (quotep k)
+                              (not (quotep x))))
+                (< n m)
+                (< n len)
+                (natp len)
+                (natp n)
+                (natp m))
+           (equal (bv-array-read size len n x)
+                  (bv-array-read size len n k)))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
+
+(defthm bv-array-read-of-0-arg1
+  (equal (bv-array-read 0 len index data)
+         0)
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthm BV-ARRAY-READ-when-width-negative
+  (implies (< width 0)
+           (equal (BV-ARRAY-READ width len INDEX data)
+                  0))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-READ))))
+
+;; I'm going to try disabling this, now that we are not trimming array reads...
+;hope the nfixes are okay - could make a function min-nfix..
+(defthmd bvchop-of-bv-array-read
+  (equal (bvchop n (bv-array-read element-size len index data))
+         (bv-array-read (min (nfix n) (ifix element-size)) len index data))
+  :hints (("Goal"
+;           :cases ((natp n))
+           :in-theory (e/d (bv-array-read natp)
+                           ()))))
+
+(defthm bvchop-of-bv-array-read-same
+  (equal (bvchop element-size (bv-array-read element-size len index data))
+         (bv-array-read element-size len index data))
+  :hints (("Goal" :in-theory (enable bv-array-read natp))))
+
+;gross because it mixes theories?
+;fixme could make an append operator with length params for two arrays..
+;does this depend on weird behavior of bv-array-read that may change?
+(defthm bv-array-read-of-append
+  (implies (and; (equal len (+ (len x) (len y))) ;gen?
+                (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-read width len index (binary-append x y))
+                  (if (< index (len x))
+                      (bv-array-read width (len x) index x)
+                    (bv-array-read width
+                                   (- len (len x)) ;(len y)
+                                   (- index (len x)) y))))
+  :hints (("Goal"
+           :cases ((equal 0 (len y)))
+           :in-theory (enable bv-array-read ;-opener
+                              natp))))
+
+;use bv-array-read-of-append?
+(defthm bv-array-read-of-append-of-cons
+  (implies (and (equal (len x) index)
+                (< index len)
+                (natp len))
+           (equal (bv-array-read width len index (binary-append x (cons a b)))
+                  (bvchop width a)))
+  :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
+
+;rename and gen
+(defthm equal-of-bvchop-and-bv-array-read
+  (implies (and (natp n)
+                (< n 16)
+                )
+           (equal (equal (bvchop 8 (nth n data)) (bv-array-read 8 16 n data))
+                  t))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-when-i-is-not-an-integer))))
+
+;rename and gen
+(defthm equal-of-bvchop-and-bv-array-read-gen
+  (implies (and (equal m n)
+                (natp m)
+                (< n 16)
+                )
+           (equal (equal (bvchop 8 (nth n data))
+                         (bv-array-read 8 16 m data))
+                  t))
+  :hints (("Goal" :use (:instance equal-of-bvchop-and-bv-array-read))))
+
+(defthm bv-array-read-of-+-of-expt-of-ceiling-of-lg
+  (implies (and (natp len)
+                (natp index))
+           (equal (bv-array-read element-width len (+ index (expt 2 (ceiling-of-lg len)))data)
+                  (bv-array-read element-width len index data)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))

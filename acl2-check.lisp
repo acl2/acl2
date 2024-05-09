@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -61,67 +61,6 @@ is using two characters to indicate a new line?"))
     (error "We assume that 256 is a fixnum not exceeding char-code-limit, for ~
             purposes of~%character manipulation.  ACL2 will not work in this ~
             Common Lisp."))
-
-; Essay on Fixnum Declarations
-
-; To the best of our knowledge, the values of most-positive-fixnum in various
-; 32-bit lisps are as follows, so we feel safe in using (signed-byte 30) and
-; hence (unsigned-byte 29) to represent fixnums.  At worst, if a lisp is used
-; for which (signed-byte 30) is not a subtype of fixnum, a compiler may simply
-; fail to create efficient code.  Note:
-
-; (the (signed-byte 30) 536870911) ; succeeds
-; (the (signed-byte 30) 536870912) ; fails
-; (the (unsigned-byte 29) 536870911) ; succeeds
-; (the (unsigned-byte 29) 536870912) ; fails
-
-; Values of most-positive-fixnum in 32-bit Lisps:
-; AKCL, GCL: 2147483647
-; Allegro:    536870911
-; Lucid:      536870911
-; CMUCL:      536870911
-; SBCL:       536870911
-; CCL:        536870911
-; MCL:        268435455 ; not supported after ACL2 Version_3.1
-; CLISP:       16777215
-; Lispworks:  536870911 [version 6.0.1; but observed 8388607 in versions 4.2.0
-;                        and 4.4.6]
-
-; We have made many type declarations in the sources of (signed-byte 30).
-; Performance could be seriously degraded if these were not fixnum
-; declarations.  If the following check fails, then we should consider lowering
-; 30.  However, clisp has 24-bit fixnums.  Clisp maintainer Sam Steingold has
-; assured us that "CLISP has a very efficient bignum implementation."  Lispworks
-; Version 4.2.0 on Linux, 32-bit, had most-positive-fixnum = 8388607 and
-; most-negative-fixnum = -8388608; and we have been informed (email 10/22/02)
-; that "this is an architectural limit on this platform and the LispWorks fixnum
-; size cannot be reconfigured."  But Lispworks 6 is back to supporting larger
-; fixnums.
-
-; As of July 2018, 64-bit computers have been available for many years, and it
-; may be appropriate soon to make changes based on that fact since ACL2 is only
-; rarely run on 32-bit Lisps these days.  Below are values of the largest
-; fixnums in 64-bit Lisps.
-
-; Values of most-positive-fixnum in 64-bit Lisps:
-; GCL:       9223372036854775807 ; (1- (expt 2 63))
-; Allegro:   1152921504606846975 ; (1- (expt 2 60))
-; CMUCL:     [apparently available only in 32-bit Lisp]
-; SBCL:      4611686018427387903 ; (1- (expt 2 62))
-; CCL:       1152921504606846975 ; (1- (expt 2 60))
-; Lispworks: 1152921504606846975 ; (1- (expt 2 60))
-
-#-(or clisp (and lispworks (not lispworks-64bit)))
-(or (and (<= (1- (ash 1 29)) most-positive-fixnum)
-         (<= most-negative-fixnum (- (ash 1 29))))
-    (error "We assume for performance reasons that numbers from
-(- (ash 1 29)) to (1- (ash 1 29)) are fixnums in Common Lisp
-implementations.  If you see this error, then please contact the ACL2
-implementors and tell them which Common Lisp implementation you are
-using, and that in that Lisp, most-positive-fixnum = ~s and
-most-negative-fixnum = ~s."
-           most-positive-fixnum
-           most-negative-fixnum))
 
 ; Now we deal with the existence of case-sensitive images in Allegro.
 
@@ -273,12 +212,25 @@ most-negative-fixnum = ~s."
                           (= i 10)
                           (and (>= i 32)
                                (<= i 126))))
-               (error "This Common Lisp is unsuitable for ACL2 because the ~
-                       character~%with char-code ~d ~a standard in this ~
-                       Common Lisp but should~%~abe."
-                      i
-                      (if (standard-char-p ch) "is" "is not")
-                      (if (standard-char-p ch) "not " "")))))
+               #+sbcl
+               (let ((v (lisp-implementation-version)))
+                 (when (and (string<= "2.4.2" v)
+                            (string< v "2.4.2.46"))
+                   (exit-with-build-error
+                    "Please avoid SBCL versions 2.4.2 through ~
+                     2.4.2.45.~%Instead use a later SBCL version --~%2.4.3 or ~
+                     later or, for example, the latest from GitHub --~%or ~
+                     else SBCL version 2.4.1 or earlier.~%(Technical reason: ~
+                     function standard-char-p does not return t on ~
+                     a~%standard character input, but instead returns the ~
+                     input character.)")))
+               (exit-with-build-error
+                "This Common Lisp is unsuitable for ACL2 because the ~
+                 character~%with char-code ~d ~a standard in this Common Lisp ~
+                 but should~%~abe."
+                i
+                (if (standard-char-p ch) "is" "is not")
+                (if (standard-char-p ch) "not " "")))))
 
 ; Check that char-upcase and char-downcase have the same values in all lisps,
 ; and in particular, keep us in the realm of ACL2 characters.  Starting with
@@ -294,14 +246,15 @@ most-negative-fixnum = ~s."
                              (<= i 90))
                         (code-char (+ i 32))
                       ch))
-               (error "This Common Lisp is unsuitable for ACL2 because ~
-                      (char-downcase ~s)~%is ~s but should be ~s."
-                      ch
-                      (char-downcase ch)
-                      (if (and (>= i 65)
-                               (<= i 90))
-                          (code-char (+ i 32))
-                        ch)))))
+               (exit-with-build-error
+                "This Common Lisp is unsuitable for ACL2 because ~
+                 (char-downcase ~s)~%is ~s but should be ~s."
+                ch
+                (char-downcase ch)
+                (if (and (>= i 65)
+                         (<= i 90))
+                    (code-char (+ i 32))
+                  ch)))))
 
 (dotimes (i 256)
          (let ((ch (code-char i)))
@@ -311,14 +264,15 @@ most-negative-fixnum = ~s."
                              (<= i 122))
                         (code-char (- (char-code ch) 32))
                       ch))
-               (error "This Common Lisp is unsuitable for ACL2 because ~
-                      (char-upcase ~s)~%is ~s but should be ~s."
-                      ch
-                      (char-upcase ch)
-                      (if (and (>= i 65)
-                               (<= i 90))
-                          (code-char (- (char-code ch) 32))
-                        ch)))))
+               (exit-with-build-error
+                "This Common Lisp is unsuitable for ACL2 because (char-upcase ~
+                 ~s)~%is ~s but should be ~s."
+                ch
+                (char-upcase ch)
+                (if (and (>= i 65)
+                         (<= i 90))
+                    (code-char (- (char-code ch) 32))
+                  ch)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           FEATURES, MISC.
@@ -329,23 +283,25 @@ most-negative-fixnum = ~s."
 ; is.
 
 #-(or unix mswindows)
-(error "This Common Lisp is unsuitable for ACL2 because~%~
-        neither :UNIX nor :MSWINDOWS is a member of *features*.")
+(exit-with-build-error
+ "This Common Lisp is unsuitable for ACL2 because~%neither :UNIX nor ~
+  :MSWINDOWS is a member of *features*.")
 
 (or (typep array-dimension-limit 'fixnum)
 
 ; We assume this explicitly in the various copy-array functions.
 
-    (error "We assume that ARRAY-DIMENSION-LIMIT is a fixnum.  CLTL2 ~
-            requires this.  ACL2 will not work in this Common Lisp."))
+    (exit-with-build-error
+     "We assume that ARRAY-DIMENSION-LIMIT is a fixnum.  CLTL2 requires ~
+      this.~%ACL2 will not work in this Common Lisp."))
 
 (or (>= multiple-values-limit *number-of-return-values*)
-    (error "We assume that multiple-values-limit is at least ~s, but in this ~
-            Common Lisp its value is ~s.  Please contact the ACL2 implementors ~
-            about lowering the value of ACL2 constant ~
-            *NUMBER-OF-RETURN-VALUES*."
-           multiple-values-limit
-           *number-of-return-values*))
+    (exit-with-build-error
+     "We assume that multiple-values-limit is at least ~s, but in this Common ~
+      Lisp its value is ~s.  Please contact the ACL2 implementors about ~
+      lowering the value of ACL2 constant *NUMBER-OF-RETURN-VALUES*."
+     multiple-values-limit
+     *number-of-return-values*))
 
 ; The following check must be put last in this file, since we don't entirely
 ; trust that it won't corrupt the current image.  We collect all symbols in
@@ -354,12 +310,12 @@ most-negative-fixnum = ~s."
 
 (let ((badvars nil))
   (dolist (var *copy-of-common-lisp-symbols-from-main-lisp-package*)
-          (or (member var *copy-of-common-lisp-specials-and-constants*
-                      :test #'eq)
-              (if (and (let ((s (symbol-name var)))
-                         (or (= (length s) 0)
-                             (not (eql (char s 0) #\&))))
-                       (eval `(let ((,var (gensym)))
+    (or (member var *copy-of-common-lisp-specials-and-constants*
+                :test #'eq)
+        (if (and (let ((s (symbol-name var)))
+                   (or (= (length s) 0)
+                       (not (eql (char s 0) #\&))))
+                 (eval `(let ((,var (gensym)))
 
 ; We are not aware of any predicate, defined in all Common Lisp
 ; implementations, for checking that a variable is special; so we write our own
@@ -369,15 +325,15 @@ most-negative-fixnum = ~s."
 ; which case it remains not boundp, or else its global value is not the above
 ; gensym value.
 
-                                (and (boundp ',var)
-                                     (eq ,var (symbol-value ',var))))))
-                  (setq badvars (cons var badvars)))))
+                          (and (boundp ',var)
+                               (eq ,var (symbol-value ',var))))))
+            (setq badvars (cons var badvars)))))
   (if badvars
-      (error "The following constants or special variables in the main~%~
-              Lisp package needs to be included in the list~%~
-              *common-lisp-specials-and-constants*:~%~
-              ~s."
-             badvars)))
+      (exit-with-build-error
+       "The following constants or special variables in the main~%Lisp ~
+        package needs to be included in the ~
+        list~%*common-lisp-specials-and-constants*:~%~s."
+       badvars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,6 +1,6 @@
 ; A simple clause-processor to push calls of unary functions into IF branches
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,11 +27,14 @@
 
 (local (in-theory (enable symbolp-when-member-equal-and-symbol-listp)))
 
+;move or make local
 (defthm assoc-equal-of-pairlis$-of-repeat
   (implies (member-equal key keys)
            (equal (assoc-equal key (pairlis$ keys (repeat (len keys) val)))
                   (cons key val)))
   :hints (("Goal" :in-theory (enable pairlis$ repeat assoc-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Handle additional calls of UNARY-FN in TERM?
 (defund apply-unary-fn-to-if-branches (unary-fn term)
@@ -44,11 +47,12 @@
          ,(apply-unary-fn-to-if-branches unary-fn (farg3 term)))
     `(,unary-fn ,term)))
 
+;; Supports the :well-formedness-guarantee.
 (defthm logic-termp-of-apply-unary-fn-to-if-branches
   (implies (and (logic-termp term w)
                 (logicp unary-fn w)
                 (symbolp unary-fn)
-                (NOT (EQUAL 'QUOTE UNARY-FN))
+                (not (equal 'quote unary-fn))
                 (arities-okp (acons unary-fn 1
                                     '((if . 3)))
                              w))
@@ -58,11 +62,12 @@
 (defthm pseudo-termp-of-apply-unary-fn-to-if-branches
   (implies (and (pseudo-termp term)
                 (symbolp unary-fn)
-                ;(not (equal 'quote unary-fn))
+                ;; (not (equal 'quote unary-fn))
                 )
            (pseudo-termp (apply-unary-fn-to-if-branches unary-fn term)))
   :hints (("Goal" :in-theory (enable apply-unary-fn-to-if-branches))))
 
+;; Correctness theorem
 (defthm if-eval-of-apply-unary-fn-to-if-branches
   (implies (not (equal 'quote unary-fn))
            (equal (if-eval (apply-unary-fn-to-if-branches unary-fn term) a)
@@ -70,6 +75,8 @@
   :hints (("Goal" :in-theory (e/d (apply-unary-fn-to-if-branches
                                    if-eval-of-fncall-args)
                                   (if-eval-of-fncall-args-back)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Push calls of any of the unary-fns into IF branches
 ;; todo: dive into lambda bodies?
@@ -92,6 +99,7 @@
             ;; todo: do more here?  we currently only handle unary calls in top-level ifs
             term))))))
 
+;; Supports the :well-formedness-guarantee.
 (defthm logic-termp-of-push-unary-functions-in-term
   (implies (and (logic-termp term w)
                 (symbol-listp unary-fns)
@@ -109,15 +117,16 @@
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (enable push-unary-functions-in-term))))
 
-
-
-(defthm push-unary-functions-in-term-correct
+;; Correctness theorem
+(defthm if-eval-of-push-unary-functions-in-term
   (implies (and (alistp a)
                 (pseudo-termp term)
                 (symbol-listp unary-fns))
            (equal (if-eval (push-unary-functions-in-term term unary-fns) a)
                   (if-eval term a)))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund push-unary-functions-in-literals (clause unary-fns)
   (declare (xargs :guard (and (pseudo-term-listp clause)
@@ -127,12 +136,25 @@
     (cons (push-unary-functions-in-term (first clause) unary-fns)
           (push-unary-functions-in-literals (rest clause) unary-fns))))
 
+;; Supports the :well-formedness-guarantee.
+(defthm logic-term-listp-of-push-unary-functions-in-literals
+  (implies (and (symbol-listp unary-fns)
+                (logic-term-listp clause w)
+                (arities-okp
+                 (append (pairlis$ unary-fns (repeat (len unary-fns) 1))
+                         '((if . 3)))
+                 w))
+           (logic-term-listp (push-unary-functions-in-literals clause unary-fns)
+                             w))
+  :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
+
 (defthm pseudo-term-list-listp-of-push-unary-functions-in-literals
   (implies (and (pseudo-term-listp clause)
                 (symbol-listp unary-fns))
            (pseudo-term-listp (push-unary-functions-in-literals clause unary-fns)))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
 
+;; Correctness theorem
 ;strengthen to equal?
 (defthm if-eval-of-disjoin-of-push-unary-functions-in-literals
   (implies (and (symbol-listp unary-fns)
@@ -141,31 +163,25 @@
            (iff (if-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
                 (if-eval (disjoin clause) a)))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-literals
-                                     DISJOIN))))
+                                     disjoin))))
 
-(defthm logic-term-listp-of-push-unary-functions-in-literals
-  (implies (and (symbol-listp unary-fns)
-                (logic-term-listp clause w)
-                (ARITIES-OKP
-                 (APPEND (PAIRLIS$ UNARY-FNS (REPEAT (LEN UNARY-FNS) 1))
-                         '((IF . 3)))
-                 W))
-           (logic-term-listp (push-unary-functions-in-literals clause unary-fns)
-                             w))
-  :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Return a list of one clause (a copy of the one we started with)
+;; Return a list of one clause (like the one we started with but with the unary
+;; function O-P pushed).
+;; TODO: Generalize the use of O-P here.  Or move this stuff to a different book?
 (defund push-o-p-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (progn$ ;(cw "Len of clause is ~x0.~%" (len clause))
           ;(cw "Literals are ~x0.~%" clause)
           (list (push-unary-functions-in-literals clause '(o-p)))))
 
+;; Supports the :well-formedness-guarantee.
 (defthm logic-term-list-listp-of-push-o-p-clause-processor
   (implies (and (logic-term-listp clause w)
-                (ARITIES-OKP '((o-p . 1)
-                               (IF . 3))
-                             W))
+                (arities-okp '((o-p . 1)
+                               (if . 3))
+                             w))
            (logic-term-list-listp (push-o-p-clause-processor clause) w))
   :hints (("Goal" :in-theory (enable push-o-p-clause-processor))))
 
@@ -174,6 +190,7 @@
            (pseudo-term-list-listp (push-o-p-clause-processor clause)))
   :hints (("Goal" :in-theory (enable push-o-p-clause-processor))))
 
+;; Main theorem
 (defthm push-o-p-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)

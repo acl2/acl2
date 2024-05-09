@@ -76,6 +76,14 @@
 (defmacro => (x y)
   `(implies ,x ,y))
 
+; another shorthand for implies
+(defmacro -> (x y)
+  `(implies ,x ,y))
+
+; shorthand for implied
+(defmacro <- (x y)
+  `(implies ,y ,x))
+
 ; shorthand for not
 (defmacro ! (x)
   `(not ,x))

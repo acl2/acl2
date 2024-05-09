@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,8 +26,8 @@
 (defun |read| (|a| |i|)
   (declare (xargs :guard (and (c::uchar-arrayp |a|)
                               (c::sintp |i|)
-                              (c::uchar-array-sint-index-okp |a| |i|))))
-  (c::uchar-array-read-sint |a| |i|))
+                              (c::uchar-array-index-okp |a| |i|))))
+  (c::uchar-array-read |a| |i|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,9 +65,9 @@
    (xargs
     :guard (and (c::uchar-arrayp |a|)
                 (c::sintp |i|)
-                (c::uchar-array-sint-index-okp |a| |i|))))
-  (let ((|a| (c::uchar-array-write-sint |a| |i| (c::uchar-from-sint
-                                                 (c::sint-dec-const 88)))))
+                (c::uchar-array-index-okp |a| |i|))))
+  (let ((|a| (c::uchar-array-write |a| |i| (c::uchar-from-sint
+                                            (c::sint-dec-const 88)))))
     |a|))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,27 +78,27 @@
                               (c::sintp |len|)
                               (c::sintp |i|)
                               (equal (c::uchar-array-length |a|)
-                                     (c::sint->get |len|))
+                                     (c::integer-from-sint |len|))
                               (equal (c::uchar-array-length |b|)
-                                     (c::sint->get |len|))
+                                     (c::integer-from-sint |len|))
                               (<= 0
-                                  (c::sint->get |i|))
-                              (<= (c::sint->get |i|)
-                                  (c::sint->get |len|)))
+                                  (c::integer-from-sint |i|))
+                              (<= (c::integer-from-sint |i|)
+                                  (c::integer-from-sint |len|)))
                   :guard-hints (("Goal"
                                  :do-not-induct t
                                  :in-theory
-                                 (enable c::uchar-array-sint-index-okp
-                                         c::uchar-array-index-okp
+                                 (enable c::uchar-array-index-okp
+                                         c::uchar-array-integer-index-okp
                                          c::boolean-from-sint
                                          c::lt-sint-sint
                                          c::add-sint-sint
                                          c::add-sint-sint-okp
                                          c::sint-integerp-alt-def
-                                         c::sint-integer-value
-                                         c::assign)))
-                  :measure (nfix (- (c::sint->get |len|)
-                                    (c::sint->get |i|)))
+                                         c::assign
+                                         c::integer-from-cinteger-alt-def)))
+                  :measure (nfix (- (c::integer-from-sint |len|)
+                                    (c::integer-from-sint |i|)))
                   :hints (("Goal"
                            :in-theory (enable c::boolean-from-sint
                                               c::lt-sint-sint
@@ -107,11 +107,11 @@
                                               c::assign)))))
   (if (mbt (and (c::sintp |i|)
                 (c::sintp |len|)
-                (>= (c::sint->get |i|) 0)
-                (>= (c::sint->get |len|) 0)))
+                (>= (c::integer-from-sint |i|) 0)
+                (>= (c::integer-from-sint |len|) 0)))
       (if (c::boolean-from-sint (c::lt-sint-sint |i| |len|))
-          (let* ((|b| (c::uchar-array-write-sint
-                       |b| |i| (c::uchar-array-read-sint |a| |i|)))
+          (let* ((|b| (c::uchar-array-write
+                       |b| |i| (c::uchar-array-read |a| |i|)))
                  (|i| (c::assign (c::add-sint-sint |i| (c::sint-dec-const 1)))))
             (|copy$loop| |a| |b| |len| |i|))
         (mv |b| |i|))
@@ -124,9 +124,9 @@
                               (c::uchar-arrayp |b|)
                               (c::sintp |len|)
                               (equal (c::uchar-array-length |a|)
-                                     (c::sint->get |len|))
+                                     (c::integer-from-sint |len|))
                               (equal (c::uchar-array-length |b|)
-                                     (c::sint->get |len|)))))
+                                     (c::integer-from-sint |len|)))))
   (let ((|i| (c::declar (c::sint-dec-const 0))))
     (mv-let (|b| |i|)
       (|copy$loop| |a| |b| |len| |i|)
@@ -142,4 +142,5 @@
         |write|
         |copy$loop|
         |copy|
-        :output-file "arrays.c")
+        :file-name "arrays"
+        :header t)

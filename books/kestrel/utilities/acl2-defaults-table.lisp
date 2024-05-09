@@ -1,4 +1,4 @@
-; Renaming functions in untranslated terms
+; Utilities dealing with the acl2-defaults-table
 ;
 ; Copyright (C) 2021-2022 Kestrel Institute
 ;

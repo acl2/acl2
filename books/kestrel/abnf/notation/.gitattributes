@@ -1,0 +1,2 @@
+core-rules.abnf text eol=crlf
+concrete-syntax-rules.abnf text eol=crlf

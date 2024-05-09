@@ -1,7 +1,7 @@
 ; A variant of update-nth that does some fixing
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -85,14 +85,12 @@
 
 (defthm update-nth2-not-nil1
   (implies (not (zp a))
-           (equal (equal (update-nth2 a b c d) nil)
-                  nil))
+           (not (equal (update-nth2 a b c d) nil)))
   :hints (("Goal" :in-theory (enable update-nth2))))
 
 (defthm update-nth2-not-nil2
   (implies (not (zp a))
-           (equal (equal nil (update-nth2 a b c d))
-                  nil))
+           (not (equal nil (update-nth2 a b c d))))
   :hints (("Goal" :in-theory (enable update-nth2))))
 
 (defthm nth-of-update-nth2-too-high

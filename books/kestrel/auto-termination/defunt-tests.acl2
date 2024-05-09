@@ -1,0 +1,9 @@
+; Matt K. comment, 12/14/2022:
+; An error occurred during an ACL2(p) regression, complaining about the use of
+; override-hints in proving F0-TERMINATION-LEMMA-1-EVENS (apparently generated
+; by the defunt form for f0), which is illegal in ACL2(p) Apparently an
+; included book now generates an override-hint, so we turn off
+; waterfall-parallelism.
+(set-waterfall-parallelism nil)
+
+; cert-flags: ? t :ttags :all

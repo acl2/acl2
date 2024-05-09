@@ -58,10 +58,18 @@ data last modified: [2014-08-06]
        
                        
   `((table user-combinator-table ',name ',kwd-alist)
-    (add-pre-post-hook defdata-defaults-table :pre-pred-hook-fns ',(get1 :pre-pred-hook-fns kwd-alist) )
-    (add-pre-post-hook defdata-defaults-table :in-pred-hook-fns ',(get1 :in-pred-hook-fns kwd-alist))
-    (add-pre-post-hook defdata-defaults-table :post-pred-hook-fns ',(get1 :post-pred-hook-fns kwd-alist))
-    (add-pre-post-hook defdata-defaults-table :post-hook-fns ',(get1 :post-hook-fns kwd-alist))
+    (add-pre-post-hook
+     defdata-defaults-table
+     :pre-pred-hook-fns ',(get1 :pre-pred-hook-fns kwd-alist))
+    (add-pre-post-hook
+     defdata-defaults-table
+     :in-pred-hook-fns ',(get1 :in-pred-hook-fns kwd-alist))
+    (add-pre-post-hook
+     defdata-defaults-table
+     :post-pred-hook-fns ',(get1 :post-pred-hook-fns kwd-alist))
+    (add-pre-post-hook
+     defdata-defaults-table
+     :post-hook-fns ',(get1 :post-hook-fns kwd-alist))
     )))
 
 (logic)
@@ -76,5 +84,3 @@ data last modified: [2014-08-06]
         (cons 'PROGN 
               (register-user-combinator-fn ',name ',keys ',ctx (w state)))))))
 
-
-  

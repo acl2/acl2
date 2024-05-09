@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -191,7 +191,7 @@ Common Lisp.  See source file acl2-init.lisp for this error message,
 which is preceded by information (Lisp features) indicating the legal Lisp
 implementations.")
 
-#+akcl
+#+gcl
 (setq si:*notify-gbc* t)
 
 ; The following has been superseded; see the section on reading characters from
@@ -255,6 +255,55 @@ implementations.")
 ; Create the packages we use.
 
 (load "acl2.lisp")
+
+; Now that acl2-fns.lisp has been loaded (by loading acl2.lisp) so that
+; getenv$-raw has been defined, we can evaluate the code that may set feature
+; :acl2-small-fixnums.
+(let* ((smallp (acl2::getenv$-raw "ACL2_SMALL_FIXNUMS"))
+       (smallp (and smallp
+                    (not (equal smallp "")))))
+  (cond
+   ((and (>= most-positive-fixnum (1- (expt 2 60)))
+         (<= most-negative-fixnum (- (expt 2 60)))
+         (not smallp))
+
+; ACL2 will assume that every fixnum is of type (signed-byte 61),
+; hence also of type (unsigned-byte 60) if it is non-negative.
+
+    nil)
+   ((and (>= most-positive-fixnum (1- (expt 2 29)))
+         (<= most-negative-fixnum (- (expt 2 29))))
+    (cond (smallp
+
+; ACL2 will assume that every fixnum is of type (signed-byte 30),
+; hence also of type (unsigned-byte 29) if it is non-negative.
+
+           (pushnew :acl2-small-fixnums *features*))
+          (t 
+           (error "ACL2 generally assumes that all integers that are
+at least -2^60 but less than 2^60 are Lisp fixnums,
+but that is not the case for this Lisp implementation.
+You can defeat this check by setting environment variable
+ACL2_SMALL_FIXNUMS to a non-empty value when building the
+ACL2 executable.  However, such ACL2 builds are not as
+fully tested as the usual builds and thus may be less
+reliable, and they are not guaranteed to work compatibly
+with ordinary ACL2 builds on the same set of books."))))
+   (t
+
+; The absolute value of most-positive-fixnum or of most-negative-fixnum is too
+; sall for ACL2.
+
+    (error "This Lisp implementation is not a suitable host for ACL2:
+the values of most-negative-fixnum and most-positive-fixnum are
+~s and ~s (respectively),
+but ACL2 assumes that this these have absolute values that are
+respectively at least (1- (expt 2 29)) and (expt 2 29), which are
+~s and ~s, respectively."
+           most-positive-fixnum
+           most-negative-fixnum
+           (1- (expt 2 29))
+           (expt 2 29)))))
 
 (acl2::proclaim-optimize)
 
@@ -349,10 +398,10 @@ implementations.")
 ; SEEMS to be necessary in order to permit the interaction of tracing
 ; with the redefinition of si::break-level.
 
-#+akcl
+#+gcl
 (declaim (special si::arglist))
 
-#+akcl
+#+gcl
 (let ((v (symbol-function 'si::break-level)))
   (setf (symbol-function 'si::break-level)
         (function
@@ -364,8 +413,15 @@ implementations.")
 
 ; Warning: Keep this in sync with system-call+.
 
+; Unlike system-call+, we allow an error to occur.
+
   #+gcl
-  (si::system
+  (when (not (fboundp 'si::system))
+    (exit-with-build-error
+     "SYSTEM-CALL is not defined in this version of GCL."))
+
+  #+gcl
+  (si::system ; if undefined, ignore compiler warning; see check above
    (let ((result string))
      (dolist
       (x arguments)
@@ -384,12 +440,12 @@ implementations.")
       (x arguments)
       (setq result (concatenate 'string result " " x)))
     #-unix
-    (excl::shell result)
+    (excl::run-shell-commad result)
     #+unix
 
-; In Allegro CL in Unix, we can avoid spawning a new shell by calling run-shell-command
-; on a simple vector.  So we parse the resulting string "cmd arg1 ... argk" and
-; run with the simple vector #(cmd cmd arg1 ... argk).
+; In Allegro CL in Unix, we can avoid spawning a new shell by calling
+; run-shell-command on a simple vector.  So we parse the resulting string "cmd
+; arg1 ... argk" and run with the simple vector #(cmd cmd arg1 ... argk).
 
     (excl::run-shell-command
      (let ((lst nil)
@@ -413,11 +469,15 @@ implementations.")
        (setq result (nreverse lst))
        (setq result (coerce (cons (car result) result) 'vector)))))
   #+cmu
-  (ext:process-exit-code
-   (common-lisp-user::run-program string arguments :output t))
+  (let ((ans (ext:process-exit-code
+              (common-lisp-user::run-program string arguments :output t))))
+    (if (integerp ans) ans 1))
   #+sbcl
-  (sb-ext:process-exit-code
-   (sb-ext:run-program string arguments :output t :search t))
+  (let ((ans (sb-ext:process-exit-code
+              (sb-ext:run-program string arguments
+                                  :output t
+                                  :search t))))
+    (if (integerp ans) ans 1))
   #+clisp
   (let ((result (ext:run-program string :arguments arguments)))
     (or result 0))
@@ -484,6 +544,19 @@ implementations.")
 
 ; Warning: Keep this in sync with system-call.
 
+; Unlike system-call, we catch Lisp errors and treat the status as 1 in those
+; cases.
+
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  (declare (ignore string arguments))
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  (error "SYSTEM-CALL is not yet defined in this Lisp.")
+
+  #+gcl
+  (when (not (fboundp 'si::system))
+    (exit-with-build-error
+     "SYSTEM-CALL is not defined in this version of GCL."))
+
   (let* (exit-code ; assigned below
          #+(or gcl clisp)
          (tmp-file (format nil
@@ -492,24 +565,23 @@ implementations.")
                                 (f-get-global 'tmp-dir *the-live-state*))
                                "/tmp")
                            (getpid$)))
-         no-error
          (output-string
           (our-ignore-errors
-           (prog1
-               #+gcl ; does wildcard expansion
-             (progn (setq exit-code
-                          (si::system
-                           (let ((result string))
-                             (dolist
-                               (x arguments)
-                               (setq result (concatenate 'string result " " x)))
-                             (concatenate 'string result " > " tmp-file))))
-                    (read-file-by-lines tmp-file t))
-             #+lispworks ; does wildcard expansion (see comment below)
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (system::call-system-showing-output
+           #+gcl ; does wildcard expansion
+           (progn (setq exit-code
+; If si::system is undefined, ignore compiler warning; see check above.
+                        (si::system
+                         (let ((result string))
+                           (dolist
+                             (x arguments)
+                             (setq result (concatenate 'string result " " x)))
+                           (concatenate 'string result " > " tmp-file))))
+                  (read-file-by-lines tmp-file t))
+           #+lispworks ; does wildcard expansion (see comment below)
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (system::call-system-showing-output
 
 ; It was tempting to use (cons string arguments).  This would cause the given
 ; command, string, to be applied to the given arguments, without involving the
@@ -519,106 +591,91 @@ implementations.")
 ; which will find commands (presumably including built-ins and also using the
 ; user's path).
 
-                      (let ((result string))
-                        (dolist
-                          (x arguments)
-                          (setq result (concatenate 'string result " " x)))
-                        result)
-                      :output-stream s
-                      :prefix ""
-                      :show-cmd nil
-                      :kill-process-on-abort t))
-               #+windows ; process is returned above, not exit code
-               (setq exit-code nil))
-             #+allegro ; does wildcard expansion
-             (multiple-value-bind
-                 (stdout-lines stderr-lines exit-status)
-                 (excl.osi::command-output
-                  (let ((result string))
-                    (dolist
-                      (x arguments)
-                      (setq result (concatenate 'string result " " x)))
-                    result))
-               (declare (ignore stderr-lines))
-               (setq exit-code exit-status)
-               (let ((acc nil))
-                 (loop for line in stdout-lines
-                       do
-                       (setq acc
-                             (if acc
-                                 (concatenate 'string
-                                              acc
-                                              (string #\Newline)
-                                              line)
-                               line)))
-                 acc))
-             #+cmu
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let (temp)
-                       (if (ignore-errors
-                             (progn
-                               (setq temp
-                                     (ext:process-exit-code
-                                      (common-lisp-user::run-program
-                                       string arguments
-                                       :output s)))
-                               1))
-                           temp
-                         1))))
-             #+sbcl
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let (temp)
-                       (if (ignore-errors
-                             (progn
-                               (setq temp
-                                     (sb-ext:process-exit-code
-                                      (sb-ext:run-program string arguments
-                                                          :output s
-                                                          :search t)))
-                               1))
-                           temp
-                         1))))
-             #+clisp
-             (progn (setq exit-code
-                          (or (ext:run-program string
-                                               :arguments arguments
-                                               :output tmp-file)
-                              0))
-                    (read-file-by-lines tmp-file t))
-             #+ccl
-             (with-output-to-string
-               (s)
-               (setq exit-code
-                     (let* ((proc
-                             (ccl::run-program string arguments
-                                               :output s
-                                               :wait t))
-                            (status (multiple-value-list
-                                     (ccl::external-process-status proc))))
-                       (if (not (and (consp status)
-                                     (eq (car status) :EXITED)
-                                     (consp (cdr status))
-                                     (integerp (cadr status))))
-                           1 ; just some non-zero exit code here
-                         (cadr status)))))
-             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
-             (declare (ignore string arguments))
-             #-(or gcl lispworks allegro cmu sbcl clisp ccl)
-             (error "SYSTEM-CALL is not yet defined in this Lisp.")
-             (setq no-error t)))))
-    (values (cond ((integerp exit-code)
-                   exit-code)
-                  ((null exit-code)
-                   (if no-error 0 1))
-                  (t (format t
-                             "WARNING: System-call produced non-integer, ~
-                              non-nil exit code:~%~a~%"
-                             exit-code)
-                     0))
+                    (let ((result string))
+                      (dolist
+                        (x arguments)
+                        (setq result (concatenate 'string result " " x)))
+                      result)
+                    :output-stream s
+                    :prefix ""
+                    :show-cmd nil
+                    :kill-process-on-abort t)))
+           #+allegro ; does wildcard expansion
+           (multiple-value-bind
+            (stdout-lines stderr-lines exit-status)
+            (excl.osi::command-output
+             (let ((result string))
+               (dolist
+                 (x arguments)
+                 (setq result (concatenate 'string result " " x)))
+               result))
+            (declare (ignore stderr-lines))
+            (setq exit-code exit-status)
+            (let ((acc nil))
+              (loop for line in stdout-lines
+                    do
+                    (setq acc
+                          (if acc
+                              (concatenate 'string
+                                           acc
+                                           (string #\Newline)
+                                           line)
+                            line)))
+              acc))
+           #+cmu
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (let (temp)
+                     (if (progn
+                           (setq temp
+                                 (ext:process-exit-code
+                                  (common-lisp-user::run-program
+                                   string arguments
+                                   :output s)))
+                           1)
+                         temp
+                       1))))
+           #+sbcl
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (let (temp)
+                     (if (progn
+                           (setq temp
+                                 (sb-ext:process-exit-code
+                                  (sb-ext:run-program string arguments
+                                                      :output s
+                                                      :search t)))
+                           1)
+                         temp
+                       1))))
+           #+clisp
+           (progn (setq exit-code
+                        (or (ext:run-program string
+                                             :arguments arguments
+                                             :output tmp-file)
+                            0))
+                  (read-file-by-lines tmp-file t))
+           #+ccl
+           (with-output-to-string
+             (s)
+             (setq exit-code
+                   (let* ((proc
+                           (ccl::run-program string arguments
+                                             :output s
+                                             :wait t))
+                          (status (multiple-value-list
+                                   (ccl::external-process-status proc))))
+                     (if (not (and (consp status)
+                                   (eq (car status) :EXITED)
+                                   (consp (cdr status))
+                                   (integerp (cadr status))))
+                         1 ; just some non-zero exit code here
+                       (cadr status))))))))
+    (values (if (integerp exit-code)
+                exit-code
+              1)
             (if (stringp output-string)
                 output-string
               ""))))
@@ -654,6 +711,10 @@ implementations.")
 ; calls this function to return an error status, thus halting the make of which
 ; this operation is a part.  Wart:  Since probe-file does not check names with
 ; wildcards, we skip those.
+
+; This function calls error rathert than exit-with-build-error simply because
+; we don't expect it to be called much by users and if a user does call it,
+; then it might be from within an existing session, not at build time.
 
 ; Note:  This function does not actually do any copying or directory creation;
 ; rather, it creates a file that can be executed.
@@ -841,12 +902,12 @@ implementations.")
                                                (cons (format nil fmt-str x)
                                                      result))))
                                      (reverse result)))))
-                 (append lst (list "hons-raw.lisp"
-                                   "memoize-raw.lisp"
-                                   "multi-threading-raw.lisp"
+                 #+acl2-par
+                 lst
+                 #-acl2-par
+                 (append lst (list "multi-threading-raw.lisp"
                                    "futures-raw.lisp"
-                                   "parallel-raw.lisp"
-                                   "serialize-raw.lisp")))))
+                                   "parallel-raw.lisp")))))
 
 (defvar *saved-build-date-lst* nil)
 
@@ -859,7 +920,7 @@ implementations.")
           (coerce (remove #\Newline (coerce hash 'list))
                   'string))
          (quiet nil)
-         (t (error "Unable to determine git commit hash.")))))
+         (t (exit-with-build-error "Unable to determine git commit hash.")))))
 
 (defvar *acl2-release-p*
 
@@ -895,7 +956,7 @@ implementations.")
                       (format nil
                               "~% +   (Git commit hash: ~a)~72t+"
                               h))
-                     (t (error err-string var))))))))
+                     (t (exit-with-build-error err-string var))))))))
 
 (defvar *saved-string*
   (concatenate
@@ -904,7 +965,7 @@ implementations.")
    "~% + ~a~72t+"
    "~% +   built ~a.~72t+"
    (acl2-snapshot-info)
-   "~% + Copyright (C) 2022, Regents of the University of Texas.~72t+"
+   "~% + Copyright (C) 2024, Regents of the University of Texas.~72t+"
    "~% + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and~72t+"
    "~% + you are welcome to redistribute it under certain conditions.  For~72t+"
    "~% + details, see the LICENSE file distributed with ACL2.~72t+"
@@ -1092,7 +1153,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
   nil)
 
-#+akcl
+#+gcl
 (defvar *gcl-large-maxpages*
 
 ; This variable tells GCL to use Camm Maguire's strategy during development of
@@ -1104,12 +1165,12 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (and (boundp 'si::*code-block-reserve*)
        (fboundp 'si::set-log-maxpage-bound)))
 
-#+akcl
-(defun save-acl2-in-akcl-aux (sysout-name gcl-exec-name
-                                          write-worklispext
-                                          set-optimize-maximum-pages
-                                          host-lisp-args
-                                          inert-args)
+#+gcl
+(defun save-acl2-in-gcl-aux (sysout-name gcl-exec-name
+                                         write-worklispext
+                                         set-optimize-maximum-pages
+                                         host-lisp-args
+                                         inert-args)
   (when *saved-system-banner*
     (when (not (boundp 'si::*system-banner*)) ; true, unless user intervened
       (setq si::*system-banner* *saved-system-banner*))
@@ -1165,9 +1226,9 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
-#+akcl
-(defun save-acl2-in-akcl (sysout-name gcl-exec-name
-                                      &optional mode do-not-save-gcl)
+#+gcl
+(defun save-acl2-in-gcl (sysout-name gcl-exec-name
+                                     &optional mode do-not-save-gcl)
   (declare (ignore mode))
   (setq *acl2-allocation-alist*
 
@@ -1242,8 +1303,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
         nil)
 
-; Now adjust if the page size differs from that for GCL/AKCL running on a
-; Sparc.  See comment above.
+; Now adjust if the page size differs from that for GCL running on a Sparc.
+; See comment above.
 
   (let ((multiplier (/ 4096 si::lisp-pagesize)))
     (cond ((not (= multiplier 1))
@@ -1355,14 +1416,14 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 ;  (print "Save the system") ;debugging
   (when (not do-not-save-gcl)
-    (save-acl2-in-akcl-aux sysout-name gcl-exec-name t t nil nil)))
+    (save-acl2-in-gcl-aux sysout-name gcl-exec-name t t nil nil)))
 
-#+akcl
+#+gcl
 (defun save-exec-raw (sysout-name host-lisp-args inert-args)
   (setq *acl2-allocation-alist* nil) ; Don't meddle with allocations.
   (setq *acl2-default-restart-complete* nil)
-  (save-acl2-in-akcl-aux sysout-name sysout-name nil nil host-lisp-args
-                         inert-args))
+  (save-acl2-in-gcl-aux sysout-name sysout-name nil nil host-lisp-args
+                        inert-args))
 
 (defvar *acl2-default-restart-complete* nil)
 
@@ -1385,8 +1446,15 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   #+(or ccl cmu gcl lispworks)
   (when (pathname-directory *default-pathname-defaults*)
     (let ((p (make-pathname)))
-      (format t "~%Note: Resetting *default-pathname-defaults* to ~s.~%"
-              p)
+
+; Before November 2022 we printed the following message.  But now it seems
+; inappropriate at the user level; in particular, since ACL2 arranges for
+; *default-pathname-defaults* to track the cbd, users shouldn't need to know
+; anything about *default-pathname-defaults*.
+
+;     (format t "~%Note: Resetting *default-pathname-defaults* to ~s.~%"
+;             p)
+
       (setq *default-pathname-defaults* p)))
   nil)
 
@@ -1871,10 +1939,11 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
       (namestring sbcl-home-env))
      (sbcl-home-detected
       (namestring sbcl-home-detected))
-     (t (error "Could not determine a suitable value for the environment ~
-                variable SBCL_HOME.  If it is set, please try unsetting it or ~
-                correcting it.  If it is not set, please try setting it to an ~
-                appropriate value.")))))
+     (t (exit-with-build-error
+         "Could not determine a suitable value for the environment variable ~
+          SBCL_HOME.~%If it is set, please try unsetting it or correcting ~
+          it.~%If it is not set, please try setting it to an appropriate ~
+          value.")))))
 
 #+sbcl
 (defun save-acl2-in-sbcl-aux (sysout-name core-name
@@ -2026,8 +2095,9 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
              (eventual-sysout-dxl
               (if dxl-name
                   (unix-full-pathname dxl-name "dxl")
-                (error "An image file must be specified when building ACL2 in ~
-                        Allegro 5.0 or later.")))
+                (exit-with-build-error
+                 "An image file must be specified when building ACL2 in ~
+                  Allegro 5.0 or later.")))
              (sysout-dxl
               (unix-full-pathname sysout-name "dxl")))
     (if (probe-file eventual-sysout-dxl)
@@ -2183,7 +2253,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                                          inert-args)
   (let* ((ccl-program0
           (or (car ccl::*command-line-argument-list*) ; Gary Byers suggestion
-              (error "Unable to determine CCL program pathname!")))
+              (exit-with-build-error
+               "Unable to determine CCL program pathname!")))
          (os (get-os))
          (ccl-program1 (ignore-errors (our-truename ccl-program0 :safe)))
          (ccl-program (cond
@@ -2195,14 +2266,14 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                        (t
                         (when (probe-file *acl2-status-file*)
                           (delete-file *acl2-status-file*))
-                        (error "Your CCL was apparently invoked as ~s.~%~
-                                In order to save an ACL2 executable, ACL2~%~
-                                must determine the absolute pathname of the~%~
-                                CCL executable.  That determination failed.~%~
-                                Failure can occur if you invoked CCL as a~%~
-                                soft link on your Unix PATH rather than as a~%~
-                                regular file."
-                               ccl-program0))))
+                        (exit-with-build-error
+                         "Your CCL was apparently invoked as ~s.~%In order to ~
+                          save an ACL2 executable, ACL2~%must determine the ~
+                          absolute pathname of the~%CCL executable.  That ~
+                          determination failed.~%Failure can occur if you ~
+                          invoked CCL as a~%soft link on your Unix PATH ~
+                          rather than as a~%regular file."
+                         ccl-program0))))
          (use-thisscriptdir-p (use-thisscriptdir-p sysout-name core-name))
          (core-name-given core-name)
          (core-name (unix-full-pathname core-name
@@ -2325,11 +2396,11 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; case Camm Maguire uses compiler::link.
 
                             do-not-save-gcl)
-  #-akcl (declare (ignore do-not-save-gcl))
-  #-(or akcl allegro cmu sbcl clisp ccl)
+  #-gcl (declare (ignore do-not-save-gcl))
+  #-(or gcl allegro cmu sbcl clisp ccl)
   (declare (ignore other-info))
 
-  #+akcl
+  #+gcl
   (when (boundp 'si::*optimize-maximum-pages*) ; Camm Maguire suggestions
     (setq si::*optimize-maximum-pages* nil)
     (when *gcl-large-maxpages*
@@ -2353,10 +2424,11 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
                              :direction :input)
                         (not (eq (read str nil)
                                  :initialized))))
-    (error "Initialization has failed.  Try INITIALIZE-ACL2 again.")))
+    (exit-with-build-error
+     "Initialization has failed.  Try INITIALIZE-ACL2 again.")))
 
-  #+akcl
-  (save-acl2-in-akcl "nsaved_acl2" other-info mode do-not-save-gcl)
+  #+gcl
+  (save-acl2-in-gcl "nsaved_acl2" other-info mode do-not-save-gcl)
   #+lucid
   (save-acl2-in-lucid "nsaved_acl2" mode)
   #+lispworks
@@ -2371,7 +2443,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (save-acl2-in-clisp "nsaved_acl2" mode other-info)
   #+ccl
   (save-acl2-in-ccl "nsaved_acl2" mode other-info)
-  #-(or akcl lucid lispworks allegro clisp ccl cmu sbcl)
+  #-(or gcl lucid lispworks allegro clisp ccl cmu sbcl)
   (error "We do not know how to save ACL2 in this Common Lisp.")
   (format t "Saving of ACL2 is complete.~%"))
 
@@ -2386,7 +2458,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
      ((eq *do-proclaims* :gcl)
       (cond ((probe-file "sys-proclaim.lisp")
              (rename-file "sys-proclaim.lisp" filename))
-            (t (error "File sys-proclaim.lisp does not exist!"))))
+            (t (exit-with-build-error
+                "File sys-proclaim.lisp does not exist!"))))
      (*do-proclaims*
       (format t "Beginning load-acl2 and initialize-acl2 on behalf of ~
                  generate-acl2-proclaims.~%")
@@ -2407,5 +2480,5 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; The following avoids core being dumped in certain circumstances
 ; resulting from very hard errors.
 
-#+akcl
+#+gcl
 (si::catch-fatal 1)

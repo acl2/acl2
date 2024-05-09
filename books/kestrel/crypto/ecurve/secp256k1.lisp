@@ -39,8 +39,8 @@
 ;; where x and y are integers in the field Z_p (i.e., in [0, p-1]).
 ;; p, the size of the field, is:
 ;;   2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
-;; p is defined in the file
-;; [books]/kestrel/crypto/primes/secp256k1-field-prime.lisp,
+;; p is defined in the community book
+;; kestrel/crypto/primes/secp256k1-field-prime.lisp,
 ;; as the nullary function secp256k1-field-prime.
 ;;
 ;; secp256k1 also defines a group defined on points on the curve
@@ -200,7 +200,7 @@ h = 01
 (encapsulate ()
 
   ;; It's easy to calculate that point-on-weierstrass-elliptic-curve-p holds on
-  ;; the generator, except that the rtl::primep guard of this function takes
+  ;; the generator, except that the dm::primep guard of this function takes
   ;; too long to compute if the definition of secp256k1-field-prime is enabled.  So
   ;; we separate out the calculation of the body of
   ;; point-on-weierstrass-elliptic-curve-p in the lemma below (where we enable
@@ -293,7 +293,7 @@ h = 01
 ;; Euler's Criterion
 ;; lets us know that "a" has a square root mod p if
 ;; a^((p-1)/2) = 1 mod p.
-;; See acl2/books/projects/quadratic-reciprocity/support/euler.lisp
+;; See acl2/books/projects/numbers/support/euler.lisp
 ;; for a proof of Euler's Criterion.
 ;;
 ;; Note, many references define "a is a quadratic residue of p"

@@ -68,11 +68,11 @@ This comment motivates the macro install-not-normalized, defined below.
                               (enabled-structure-p ens)
                               (symbol-listp clique))))
   (let* ((formals (formals name wrld))
-         (name-def (or (get-defun-event name wrld)
-                       (er hard? 'install-not-normalized-fn-1
-                           "There is no defun associated with the name, ~x0."
+         (unnormalized-body
+          (or (getprop name 'unnormalized-body nil 'current-acl2-world wrld)
+              (er hard? 'install-not-normalized-fn-1
+                           "There is no defun body associated with the name, ~x0."
                            name)))
-         (body (car (last name-def)))
          (defthm-name (or defthm-name
                           (install-not-normalized-name name)))
          (controller-alist (let* ((def-bodies
@@ -84,8 +84,6 @@ This comment motivates the macro install-not-normalized, defined below.
                              (and ;; (weak-def-body-p def-body) ; for guard proof
                               (access def-body def-body
                                       :controller-alist))))
-         (unnormalized-body
-          (getprop name 'unnormalized-body nil 'current-acl2-world wrld))
          (cliquep (and clique
                        ;; (pseudo-termp unnormalized-body) ; for guard proof
                        (intersectp-eq clique (all-fnnames unnormalized-body))))
@@ -98,7 +96,7 @@ This comment motivates the macro install-not-normalized, defined below.
                       'defthmd))))
     `((,defthmd? ,defthm-name
         (equal (,name ,@formals)
-               ,body)
+               ,unnormalized-body)
         :hints (("Goal" :by ,name))
         :rule-classes ((:definition :install-body t
                                     ,@(and cliquep

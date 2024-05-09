@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,6 +16,10 @@
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/event-macros/try-event" :dir :system)
 (include-book "kestrel/std/system/fresh-logical-name-with-dollars-suffix" :dir :system)
+(include-book "kestrel/std/system/pseudo-event-form-listp" :dir :system)
+(include-book "kestrel/std/system/untranslate-dollar" :dir :system)
+(include-book "kestrel/std/util/tuple" :dir :system)
+(include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
@@ -144,11 +148,11 @@
                                (print evmac-input-print-p)
                                ctx
                                state)
-  :returns (mv (event "A @(tsee pseudo-event-formp).")
-               (thm-name "A @(tsee symbolp).")
-               (new-hints "An @(tsee evmac-input-hints-p).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (event pseudo-event-formp)
+               (thm-name symbolp)
+               (new-hints evmac-input-hints-p :hyp (evmac-input-hints-p hints))
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Generate a theorem event for an applicability condition."
   :long
   (xdoc::topstring
@@ -257,7 +261,7 @@
                                            nil
                                            names-to-avoid
                                            wrld))
-       (thm-formula (untranslate appcond.formula t wrld))
+       (thm-formula (untranslate$ appcond.formula t state))
        ((mv thm-hints new-hints) (if (keyword-truelist-alistp hints)
                                      (mv (cdr (assoc-eq appcond.name hints))
                                          (remove-assoc-eq appcond.name hints))
@@ -283,7 +287,14 @@
        (event `(local (progn ,@progress-start?
                              ,try?-thm-event
                              ,@progress-end?))))
-    (mv event thm-name new-hints updated-names-to-avoid)))
+    (mv event thm-name new-hints updated-names-to-avoid))
+
+  :prepwork
+  ((local
+    (defthm verify-guards-lemma
+      (implies (keyword-truelist-alistp hints)
+               (iff (consp (assoc-equal name hints))
+                    (assoc-equal name hints)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,11 +304,13 @@
                                     (print evmac-input-print-p)
                                     ctx
                                     state)
-  :returns (mv (events "A @(tsee pseudo-event-form-listp).")
-               (thm-names "A @(tsee keyword-symbol-alistp).")
-               (new-hints "An @(tsee evmac-input-hints-p).")
-               (updated-names-to-avoid "A @(tsee symbol-listp)."))
-  :mode :program
+  :returns (mv (events pseudo-event-form-listp)
+               (thm-names keyword-symbol-alistp
+                          :hyp (evmac-appcond-listp appconds))
+               (new-hints evmac-input-hints-p
+                          :hyp (evmac-input-hints-p hints))
+               (updated-names-to-avoid symbol-listp
+                                       :hyp (symbol-listp names-to-avoid)))
   :short "Lift @(tsee evmac-appcond-theorem)
           to lists of applicability conditions."
   :long
@@ -341,7 +354,12 @@
     (mv (cons event events)
         (acons (evmac-appcond->name appcond) thm-name thm-names)
         hints
-        names-to-avoid)))
+        names-to-avoid))
+  :verify-guards nil
+  ///
+  (verify-guards evmac-appcond-theorem-list
+    :hints
+    (("Goal" :in-theory (enable alistp-when-keyword-symbol-alistp-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -394,15 +412,13 @@
                                                ctx
                                                state)
   :returns (mv erp
-               (result "A tuple
-                        @('(events thm-names new-named-to-avoid)')
-                        satisfying
-                        @('(typed-tupledp pseudo-event-form-listp
-                                          keyword-symbol-alistp
-                                          symbol-listp
-                                          result)').")
+               (val (std::tuple (events pseudo-event-form-listp)
+                                (thm-names keyword-symbol-alistp)
+                                (updated-names-to-avoid symbol-listp)
+                                val)
+                    :hyp (and (evmac-appcond-listp appconds)
+                              (symbol-listp names-to-avoid)))
                state)
-  :mode :program
   :short "Combine @(tsee evmac-appcond-theorem-list)
           and @(tsee evmac-ensure-no-extra-hints)."
   :long
@@ -415,5 +431,6 @@
   (b* (((mv events thm-names remaining-hints updated-names-to-avoid)
         (evmac-appcond-theorem-list
          appconds hints names-to-avoid print ctx state))
-       ((er &) (evmac-ensure-no-extra-hints remaining-hints ctx state)))
+       ((er & :iferr (list nil nil nil))
+        (evmac-ensure-no-extra-hints remaining-hints ctx state)))
     (value (list events thm-names updated-names-to-avoid))))

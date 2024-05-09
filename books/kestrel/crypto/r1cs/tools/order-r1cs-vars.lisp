@@ -1,6 +1,6 @@
 ; A tool to try to order the vars in an R1CS
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "R1CS")
 
-(include-book "../sparse/r1cs")
+(include-book "vars")
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
@@ -22,40 +22,17 @@
 
 (local (in-theory (disable mv-nth)))
 
-(local (in-theory (enable ACL2::SYMBOLP-OF-CAR-WHEN-SYMBOL-LISTP)))
+(local (in-theory (enable acl2::symbolp-of-car-when-symbol-listp)))
 
 ;; A tool to order the variables in an R1CS
 
+;dup
 (local
  (defthm all->=-len-of-2-when-sparse-vectorp
    (implies (sparse-vectorp vec)
             (acl2::all->=-len vec 2))
    :hints (("Goal" :in-theory (enable sparse-vectorp
                                       acl2::all->=-len)))))
-
-(defund r1cs-sparse-vector-vars (vec)
-  (declare (xargs :guard (sparse-vectorp vec)))
-  (remove '1 (acl2::strip-cadrs vec)))
-
-(defthm symbol-listp-of-r1cs-sparse-vector-vars
-  (implies (sparse-vectorp vec)
-           (symbol-listp (r1cs-sparse-vector-vars vec)))
-  :hints (("Goal" :in-theory (enable r1cs-sparse-vector-vars))))
-
-(defund r1cs-constraint-vars (constraint)
-  (declare (xargs :guard (r1cs-constraintp constraint)))
-  (let ((a (r1cs-constraint->a constraint))
-        (b (r1cs-constraint->b constraint))
-        (c (r1cs-constraint->c constraint)))
-    (union-eq (r1cs-sparse-vector-vars a)
-              (r1cs-sparse-vector-vars b)
-              (r1cs-sparse-vector-vars c))))
-
-(defthm symbol-listp-of-r1cs-constraint-vars
-  (implies (r1cs-constraintp constraint)
-           (symbol-listp (r1cs-constraint-vars constraint)))
-  :hints (("Goal" :in-theory (enable r1cs-constraint-vars))))
-
 
 ;; a list whose elements are vars or lists of vars (representing sets of vars constrained together, such as bits of a bvcat)
 (defund done-varsp (done-vars)
@@ -130,7 +107,7 @@
   (declare (xargs :guard (and (symbol-listp vars)
                               (alistp flipped-vec)
                               ;; no, because of the 1: (symbol-alistp flipped-vec)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p)
                               (fep first-coeff p))))
   (if (endp vars)
@@ -148,7 +125,7 @@
 (defund vars-are-concatenated-in-sparse-vectorp (vars vec p)
   (declare (xargs :guard (and (symbol-listp vars)
                               (sparse-vectorp vec)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p))))
   (let* ((coeffs (strip-cars vec))
          (pseudo-vars (acl2::strip-cadrs vec))
@@ -161,7 +138,7 @@
 (defund vars-are-concatenated-in-constraintp (new-vars constraint p)
   (declare (xargs :guard (and (symbol-listp new-vars)
                               (r1cs-constraintp constraint)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p))))
   (let* ((a (r1cs-constraint->a constraint))
          (b (r1cs-constraint->b constraint))
@@ -191,7 +168,7 @@
 (defund order-vars-in-r1cs-constraint (constraint done-vars p)
   (declare (xargs :guard (and (r1cs-constraintp constraint)
                               (done-varsp done-vars)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p))))
   (b* ((vars (r1cs-constraint-vars constraint))
        (num-vars (len vars))
@@ -262,7 +239,7 @@
                               (done-varsp done-vars)
                               (true-listp tagged-constraints-acc)
                               (r1cs-constraint-listp unhandled-constraints-acc)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p))))
   (if (endp constraints)
       (mv tagged-constraints-acc unhandled-constraints-acc done-vars)
@@ -312,7 +289,7 @@
   (declare (xargs :guard (and (r1cs-constraint-listp constraints)
                               (done-varsp done-vars)
                               (true-listp tagged-constraints-acc)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p))
                   :measure (nfix (len constraints))))
   (b* (((mv tagged-constraints-acc unhandled-constraints done-vars)
@@ -335,7 +312,7 @@
 (defund order-r1cs-vars (constraints input-vars p)
   (declare (xargs :guard (and (r1cs-constraint-listp constraints)
                               (symbol-listp input-vars)
-                              (rtl::primep p)
+                              (primep p)
                               (< 2 p))))
   (let ((done-vars (list input-vars))) ; start with inputs as a single element of the done-vars, since there's no ordering between them
     (order-r1cs-vars-aux constraints done-vars nil p)))

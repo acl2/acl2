@@ -1,7 +1,7 @@
 ; Arithmetic negation of a bit-vector
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,8 @@
 
 (include-book "bvplus")
 (include-book "bvchop")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -39,6 +41,12 @@
                 (integerp size1))
            (unsigned-byte-p size1 (bvuminus size i)))
   :hints (("Goal" :in-theory (e/d (bvuminus unsigned-byte-p) (BVCHOP-OF-MINUS)))))
+
+(defthm bvuminus-upper-bound-linear-strong
+  (implies (natp size)
+           (<= (bvuminus size x) (+ -1 (expt 2 size))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvuminus-when-arg-is-not-an-integer
   (implies (not (integerp x))
@@ -109,12 +117,12 @@
                 (integerp size1))
            (equal (bvuminus size (bvchop size1 x))
                   (bvuminus size x)))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvuminus-of-bvchop-arg2-same
   (equal (bvuminus size (bvchop size x))
          (bvuminus size x))
-  :hints (("Goal" :in-theory (e/d (bvuminus) ()))))
+  :hints (("Goal" :in-theory (enable bvuminus))))
 
 (defthm bvplus-of-bvuminus-same
   (equal (bvplus size (bvuminus size x) x)
@@ -124,7 +132,7 @@
 (defthm bvplus-of-bvuminus-same-alt
   (equal (bvplus size x (bvuminus size x))
          0)
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same)
+  :hints (("Goal" :use bvplus-of-bvuminus-same
            :in-theory (disable bvplus-of-bvuminus-same))))
 
 (defthm equal-of-bvuminus-and-bvchop-same
@@ -165,7 +173,7 @@
   (implies (natp size)
            (equal (bvplus size (bvuminus size x) (bvplus size x y))
                   (bvchop size y)))
-  :hints (("Goal" :use (:instance bvplus-of-bvuminus-same-2)
+  :hints (("Goal" :use bvplus-of-bvuminus-same-2
            :in-theory (disable bvplus-of-bvuminus-same-2))))
 
 
@@ -181,5 +189,48 @@
          (getbit 0 x))
   :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
            :in-theory (e/d (bvuminus getbit)
-                           (bvchop-1-becomes-getbit
-                            slice-becomes-getbit)))))
+                           (bvchop-1-becomes-getbit)))))
+
+;can loop
+;restrict to constant width?
+(defthmd bvuminus-of-1-arg2
+  (implies (natp width)
+           (equal (bvuminus width 1)
+                  (- (expt 2 width) 1)))
+  :hints (("Goal" :in-theory (enable bvuminus))))
+
+;subsumes the one for 0
+(defthm equal-of-constant-and-bvuminus
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size))
+           (equal (equal k (bvuminus size x))
+                  (and (unsigned-byte-p size k)
+                       (equal (bvuminus size k) (bvchop size x)))))
+  :hints (("Goal" :in-theory (enable bvuminus bvchop-of-minus))))
+
+;; Only needed by Axe?
+(defthmd equal-of-bvuminus-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size))
+           (equal (equal (bvuminus size x) k)
+                  (and (unsigned-byte-p size k)
+                       (equal (bvuminus size k) (bvchop size x)))))
+  :hints (("Goal" :use equal-of-constant-and-bvuminus
+           :in-theory (disable equal-of-constant-and-bvuminus))))
+
+(defthmd bvuminus-subst-smaller-term
+  (implies (and (equal (bvchop size x)
+                       (bvchop size y))
+                (syntaxp (smaller-termp y x)))
+           (equal (bvuminus size x)
+                  (bvuminus size y)))
+  :hints (("Goal" :in-theory (enable bvuminus))))
+
+(defthmd bvuminus-of-+
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvuminus size (+ x y))
+                  (bvuminus size (bvplus size x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))

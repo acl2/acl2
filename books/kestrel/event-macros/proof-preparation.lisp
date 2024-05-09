@@ -1,6 +1,6 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -71,10 +71,20 @@
      in case @(':induct') hints are not generated.
      It also prevents nested inductions from working,
      which arguably should not be used in generated proofs
-     (or even in manual proofs)."))
+     (or even in manual proofs).")
+   (xdoc::p
+    "We add an implicitly local event to suppress various warnings.
+     This is useful when the generated events are printed in full."))
   '(progn
      (set-default-hints nil)
      (set-override-hints nil)
      (local
       (defattach-system simplifiable-mv-nth-p constant-nil-function-arity-0))
-     (set-induction-depth-limit 1)))
+     (set-induction-depth-limit 1)
+     (set-inhibit-warnings "disable"
+                           "double-rewrite"
+                           "free"
+                           "non-rec"
+                           "subsume"
+                           "theory"
+                           "use")))

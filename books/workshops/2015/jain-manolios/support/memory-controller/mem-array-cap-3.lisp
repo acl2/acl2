@@ -275,11 +275,15 @@ instruction."
 
 (defthm mset-rbuf-nil
   (equal (mset :rbuf
-               nil (mset :mem-reqs (mget :mem-reqs s) nil))
+            nil (mset :mem-reqs (mget :mem-reqs s) nil))
          (mset :mem-reqs (mget :mem-reqs s) nil))
-  :hints (("goal" :use (:instance acl2::mset-diff-mset (b :rbuf) (a :mem-reqs) (x (mget :mem-reqs s)) (y nil)
+  :hints (("goal" :use (:instance acl2::mset-diff-mset1
+                                  (b :rbuf)
+                                  (a :mem-reqs)
+                                  (x (mget :mem-reqs s))
+                                  (y nil)
                                   (r nil))
-           :in-theory (disable acl2::mset-diff-mset))))
+           :in-theory (disable acl2::mset-diff-mset1))))
 
 #|
 ; The following form should work.  However, since it
@@ -297,5 +301,5 @@ instruction."
                                                ; rank decreases
                           (< (rank u) (rank s)))))
            (spec-step-skip-rel w (ref-map u)))
-  :hints (("goal" :in-theory (disable reqp))))
+  :hints (("goal" :in-theory (e/d (istate sstate) (reqp)))))
 |#

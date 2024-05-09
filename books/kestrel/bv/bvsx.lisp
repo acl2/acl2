@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,15 +12,16 @@
 (in-package "ACL2")
 
 (include-book "bvsx-def")
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "logext-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "bvchop"))
 (local (include-book "slice"))
 (local (include-book "repeatbit"))
 (local (include-book "repeatbit2"))
-(local (include-book "unsigned-byte-p"))
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
@@ -31,8 +32,7 @@
   (natp (bvsx a b c))
   :hints (("Goal" :in-theory (enable bvsx))))
 
-;; rename to bvchop-of-bvsx-low
-(defthm bvchop-of-bvsx2
+(defthm bvchop-of-bvsx-low
   (implies (and (<= n old-size)
                 (< 0 old-size)
                 (<= old-size new-size)
@@ -44,7 +44,7 @@
   :hints (("Goal" :in-theory (enable bvsx))))
 
 (defthm bvchop-of-bvsx
-  (implies (and (< old-size n) ; could allow = but we prefer bvchop-of-bvsx2 in that case
+  (implies (and (< old-size n) ; could allow = but we prefer bvchop-of-bvsx-low in that case
                 (<= n new-size)
                 (< 0 old-size)
                 ;; (<= old-size new-size)
@@ -72,8 +72,7 @@
 (defthm bvsx-when-unsigned-byte-p
   (implies (and (unsigned-byte-p (+ -1 old-size) x)
                 (<= old-size new-size)
-                (integerp new-size)
-                (integerp old-size))
+                (integerp new-size))
            (equal (bvsx new-size old-size x)
                   x))
   :hints (("Goal" :in-theory (enable bvsx))))
@@ -93,11 +92,11 @@
                                          getbit
                                          ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                                          )
-                                   ( ;|+-BECOMES-BVPLUS-HACK| BVPLUS-OF-*-ARG2 ;anti-bvplus
+                                   ( ; BVPLUS-OF-*-ARG2 ;anti-bvplus
                                     ;;BVCAT-OF-+-HIGH ;looped
                                     BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                     BVCHOP-1-BECOMES-GETBIT
-                                    SLICE-BECOMES-GETBIT
+
                                     ))
            :cases ((equal (GETBIT (+ -1 n) X) 0) (equal (GETBIT (+ -1 n) X) 1)))))
 
@@ -125,7 +124,7 @@
   :hints (("Goal" :in-theory (e/d (repeatbit getbit slice
                                              expt-diff-collect)
                                   (BVCHOP-CHOP-LEADING-CONSTANT
-                                    BVCHOP-1-BECOMES-GETBIT SLICE-BECOMES-GETBIT BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
+                                    BVCHOP-1-BECOMES-GETBIT  BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
 (defthm getbit-of-bvsx
   (implies (and (<= old-size new-size)
@@ -140,8 +139,14 @@
                       0))))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;rename
 (defthm bvsx-of-0
   (equal (bvsx new-size old-size 0)
+         0)
+  :hints (("Goal" :in-theory (enable bvsx bvcat))))
+
+(defthm bvsx-of-0-arg1
+  (equal (bvsx 0 old-size val)
          0)
   :hints (("Goal" :in-theory (enable bvsx bvcat))))
 
@@ -205,3 +210,66 @@
   (equal (bvsx new-size new-size x)
          (bvchop new-size x))
   :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-too-high
+  (implies (and (unsigned-byte-p (+ -1 old-size) x)
+                (<= old-size new-size))
+           (equal (bvsx new-size old-size x)
+                  x))
+  :hints (("Goal" :in-theory (enable natp bvsx getbit-too-high))))
+
+(defthm bvsx-of-bvsx
+  (implies (and (<= old-size new-size)
+                (<= new-size big-size)
+                (posp old-size) ;must have at least 1 bit to sign-extend..
+                (integerp new-size)
+                (integerp big-size))
+           (equal (bvsx big-size new-size (bvsx new-size old-size x))
+                  (bvsx big-size old-size x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm unsigned-byte-p-of-bvsx-alt
+  (implies (and (< size new-size) ;this case
+                (<= old-size size) ;this case
+                (natp size)
+                (natp new-size)
+                (posp old-size))
+           (equal (unsigned-byte-p size (bvsx new-size old-size x))
+                  (equal 0 (getbit (+ -1 old-size) x))))
+  :hints (("Goal" :in-theory (e/d (bvsx) (REPEATBIT-OF-1-ARG2)))))
+
+(defthm equal-of-0-and-bvsx
+  (implies (and (natp size)
+                (posp old-size)
+                (<= old-size size))
+           (equal (equal 0 (bvsx size old-size x))
+                  (equal 0 (bvchop old-size x))))
+  :hints (("Goal" :in-theory (enable bvsx getbit-when-equal-of-constant-and-bvchop))))
+
+;gen
+(defthm bvcat-of-if-becomes-bvsx-64-64
+  (equal (bvcat 64 (if (equal 1 (getbit 63 x)) 18446744073709551615 0) 64 x)
+         (bvsx 128 64 x))
+  :hints (("Goal" :in-theory (enable
+                              bvsx ;todo
+                              ))))
+
+;rename
+(defthm high-slice-of-logext
+  (implies (and (<= (+ -1 n) low)
+                (posp n)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (logext n x))
+                  (bvsx (+ 1 high (- low))
+                        1
+                        (getbit (+ -1 n) x))))
+  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+
+(defthm bvchop-of-logext-becomes-bvsx
+  (implies (and (< size2 size)
+                (natp size)
+                (posp size2))
+           (equal (bvchop size (logext size2 x))
+                  (bvsx size size2 x)))
+  :hints (("Goal" :in-theory (e/d (bvsx logtail-of-bvchop-becomes-slice) (logext)))))

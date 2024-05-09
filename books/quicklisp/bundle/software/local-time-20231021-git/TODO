@@ -1,0 +1,104 @@
+-*- mode: org; coding: utf-8-unix -*-
+
+* Basic Outline
+** A more human friendly parser
+
+   PARSE-TIMESTRING works fine, but we need a more human-friendly parser that
+   can handle stuff like "08/03/2006 1:54pm CST". or maybe not? see
+   http://chaitanyagupta.com/lisp/chronicity/
+
+** Support for other notational systems than the Gregorian
+
+** Ideally, local-time should have everything that the ruby Date class does
+
+  Also, the time functions in the venerable and honored clsql library.
+  This may be a tall order.
+
+** Integrate local-time with http://common-lisp.net/project/cl-l10n/
+   Also drop time/timezone related functionality from cl-l10n.
+
+** Make local-time work with olson timezone rules
+  http://www.twinsun.com/tz/tz-link.htm
+  Right now, we're using zic compiled files, which have a limited
+  scope.  They may also be larger than the corresponding rule files.
+
+* Attila:
+Many of the operations currently defined on timestamps should not
+really be defined on timestamps at all. i think this is due to some
+heritage from the times when a timestamp value also had a timezone
+value attached to it.
+
+Examples of such bogus operations are timestamp+, timestamp-, all
+adjust-timestamp variants that operate on the components of a date
+value, etc.
+
+* Nomenclature
+** timestamp: a sharp cut on the continuous t axis (as in physics) of time
+   It is mostly unrelated to timezones and different calendar systems
+   (e.g. Julian, Gregorian), which are just ways to denote a timestamp in
+   a way humans can easily deal with.
+
+** interval: a range on the time axis denoted by two timestamps
+
+** date-time: contains the fields defined by the calendar system
+   Some date-time fields may be left undefined.
+
+** calendar: a converter to and from a particular date-time type
+   A method defining how to denote a timestamp using a set of numbers
+   (called year, month, day, etc). there are various such encodings
+   like the Gregorian calendar, or the Julian calendar (which was in
+   effect in Russia until 1922!). wikipedia has loads of info about
+   these.  We'll default to a naive Gregorian calendar
+
+** duration: a value representing a delta between date-times
+
+
+* Timestamp Operations
+** basic arithmetic
+   essentially arithmetic on numbers denoting seconds. operations that
+   would expose the epoch chosen by the implementation are not allowed
+   (e.g. adding two timestamps), but things like adding/subbing
+   literals and substracting two timestamps are valid.
+
+** convert to/from date
+   (only in the mandatory context of a calendar system, which most of
+   the time includes a timezone, too.)
+
+** create an interval given two timestamps
+
+** comparison predicates
+
+* Interval Operations
+  There's a project implementing intervals at:
+  https://github.com/enaeher/local-time-duration
+
+** Arithmetic with timestamps
+** Arithmetic with intervals
+** convert to a duration with a calendar
+** Intersection with a timestamp
+** Overlap with another intervals
+
+* Date-time operations
+** parse from string representation
+   , e.g. an rfc3339 string. note that such a date-time does not
+   necessarily describe a timestamp completely. it only does so when
+   it contains all the components needed by the calendar system to
+   denote a sharp cut on the t axis.
+
+** set/offset any component of it,
+   although what those operations mean potentially depend on the
+   calendar system and its parameters (e.g. the optional timezone
+   value in it). also note that some operations are potentially
+   undefined and signal an error with certain illegal values
+   (e.g. instantiating a date using an illegal or contradictory
+   combination of its parameters; setting a field to an illegal value
+   like february 29 in leap years...)
+
+** convert to/from a timestamp
+   (strictly in the context of a calendar system and a timezone)
+
+** comparison functions
+
+* Duration operations
+** Arithmetic with date-times
+** Arithmetic with durations

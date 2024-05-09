@@ -1,20 +1,25 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C")
 
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/defset" :dir :system)
 
 ; to generate more typed list theorems:
 (local (include-book "std/lists/append" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,10 +44,20 @@
     (xdoc::seetopic "character-sets" "character sets")
     " to lift the ASCII assumption.")
    (xdoc::p
-    "This abstract syntax models C code after preprocessing.
-     As part of a more comprehensive formalization of C,
-     we also plan to formalize abstract syntax before preprocessing,
-     and in fact to formalize the translation phases [C:5.1.1.2] in detail."))
+    "We also plan to differentiate this abstract syntax,
+     used as part of our C langauge formalization,
+     from a different abstract syntax
+     that is tailored to being used in tools such as ATC:
+     see @(see atc-abstract-syntax) for a discussion.
+     Currently this abstract syntax plays that role too,
+     and corresponds to the concrete syntax captured in @('grammar.abnf'):
+     see the discussion there as well.
+     Thus, this abstract syntax is meant to capture syntax
+     that is neither before nor after preprocessing,
+     but rather that may include constructs from
+     both before and after preprocessing.
+     For the language formalization, instead we plan
+     to formalize the translation phases [C:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
 
@@ -78,7 +93,8 @@
   :elt-type ident
   :true-listp t
   :elementp-of-nil nil
-  :pred ident-listp)
+  :pred ident-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,7 +136,8 @@
      it could be argued that one should always use the uppercase variants,
      as recommended in the Java language specification for Java).")
    (xdoc::p
-    "Since the grammar in [C] refers to these as <i>long-suffix</i>,
+    "Since the grammar in [C] refers to these as
+     <i>long-suffix</i> and <i>long-long-suffix</i>,
      it seems appropriate to call these the `length' of an integer constant,
      which justifies the name of this fixtype."))
   (:none ())
@@ -168,7 +185,8 @@
    (unsignedp bool)
    (length iconst-length))
   :tag :iconst
-  :pred iconstp)
+  :pred iconstp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,7 +340,8 @@
   :elt-type tyspecseq
   :true-listp t
   :elementp-of-nil nil
-  :pred tyspecseq-listp)
+  :pred tyspecseq-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,6 +349,21 @@
   tyspecseq
   :short "Fixtype of optional sequences of type specifiers."
   :pred tyspecseq-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum scspecseq
+  :short "Fixtype of sequences of storage class specifuers [C:6.7.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declaration allows a sequence of 0, 1, or 2 storage class specifiers,
+     subject to some constraints.
+     For now we just capture the empty sequence (i.e. no specifiers),
+     and the sequence consisting of the @('extern') specifier."))
+  (:none ())
+  (:extern ())
+  :pred scspecseqp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,7 +456,8 @@
   :elt-type tyname
   :true-listp t
   :elementp-of-nil nil
-  :pred tyname-listp)
+  :pred tyname-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -462,7 +497,8 @@
   :elt-type unop
   :true-listp t
   :elementp-of-nil nil
-  :pred unop-listp)
+  :pred unop-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,7 +566,8 @@
   :elt-type binop
   :true-listp t
   :elementp-of-nil nil
-  :pred binop-listp)
+  :pred binop-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -540,7 +577,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (atc-abstract-syntax expr-fixtypes)
+    :parents (abstract-syntax expr-fixtypes)
     :short "Fixtype of expressions [C:6.5]."
     :long
     (xdoc::topstring
@@ -628,11 +665,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
+    :parents (abstract-syntax expr-fixtypes)
     :short "Fixtype of lists of expressions."
     :elt-type expr
     :true-listp t
     :elementp-of-nil nil
-    :pred expr-listp))
+    :pred expr-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -670,7 +712,8 @@
   :elt-type struct-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred struct-declon-listp)
+  :pred struct-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -728,7 +771,14 @@
   :elt-type param-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred param-declon-listp)
+  :pred param-declon-listp
+  :prepwork ((local (in-theory (enable nfix))))
+  ///
+
+  (defruled cdr-of-param-declon-list-fix
+    (equal (cdr (param-declon-list-fix x))
+           (param-declon-list-fix (cdr x)))
+    :enable param-declon-list-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -784,6 +834,16 @@
   :tag :fun-declon
   :pred fun-declonp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist fun-declon-list
+  :short "Fixtype of lists of function declarations."
+  :elt-type fun-declon
+  :true-listp t
+  :elementp-of-nil nil
+  :pred fun-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum initer
@@ -802,6 +862,13 @@
   (:list ((get expr-list)))
   :pred initerp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption initer-option
+  initer
+  :short "Fixtype of optional initializers."
+  :pred initer-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod obj-declon
@@ -815,25 +882,28 @@
      to differentiate them from other kinds of declarators.")
    (xdoc::p
     "For now we define an object declaration as consisting of
+     a storage class specification sequence,
      a type specification sequence,
      an object declarator,
-     and an initializer.
-     We could easily make the initializer optional for greater generality.")
+     and an optional initializer.")
    (xdoc::p
     "For now we model
-     no storage class specifiers
      no type qualifiers,
      no function specifiers,
-     and no alignment specifiers.")
-   (xdoc::p
-    "An object declaration as defined here is like
-     a parameter declaration (as defined in our abstract syntax)
-     with an initializer."))
-  ((tyspec tyspecseq)
+     and no alignment specifiers."))
+  ((scspec scspecseq)
+   (tyspec tyspecseq)
    (declor obj-declor)
-   (init initerp))
+   (init? initer-optionp))
   :tag :obj-declon
   :pred obj-declonp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption obj-declon-option
+  obj-declon
+  :short "Fixtype of optional object declarations."
+  :pred obj-declon-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -924,7 +994,11 @@
     :elt-type block-item
     :true-listp t
     :elementp-of-nil nil
-    :pred block-item-listp))
+    :pred block-item-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :prepwork ((local (in-theory (enable acl2-count nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -976,7 +1050,8 @@
   :elt-type fundef
   :true-listp t
   :elementp-of-nil nil
-  :pred fundef-listp)
+  :pred fundef-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -985,9 +1060,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support declarations for objects
+    "Besides function definitions,
+     we support declarations of
+     functions,
+     objects,
      and tags (i.e. structure, union, and enumeration types."))
   (:fundef ((get fundef)))
+  (:fun-declon ((get fun-declon)))
   (:obj-declon ((get obj-declon)))
   (:tag-declon ((get tag-declon)))
   :pred ext-declonp)
@@ -999,7 +1078,8 @@
   :elt-type ext-declon
   :true-listp t
   :elementp-of-nil nil
-  :pred ext-declon-listp)
+  :pred ext-declon-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1017,3 +1097,94 @@
   ((declons ext-declon-list))
   :tag :transunit
   :pred transunitp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult transunit-result
+  :short "Fixtype of errors and translation units."
+  :ok transunit
+  :pred transunit-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod file
+  :short "Fixtype of files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar in [C] does not quite define files in the form we want here.
+     The closest things are
+     preprocessing files [C:6.10/1]
+     and translation units [C:6.9/1].
+     However, the grammar rule for preprocessing files
+     describes their content before preprocessing [C:5.1.1.1/1] [C:5.1.1.2/3],
+     and the grammar rule for translation units
+     describes their contents after preprocessing
+     (which may involve copying contents of included files).
+     As discussed in @(see abstract-syntax),
+     the purpose of this abstract syntax is to capture the content of files
+     neither  before nor exactly after preprocessing,
+     but rather that includes construct
+     from both before and after preprocessing.")
+   (xdoc::p
+    "A file consists of a list of external declarations currently.
+     This is actually the same as a translation unit (see @(tsee transunit)),
+     but we plan to extend and change this soon.
+     We put the list into a one-field product fixtype
+     so that in the future it may be easier to extend this fixtype.")
+   (xdoc::p
+    "Note that here by `file' we mean the content of a file,
+     not the file as a full entity of the file system,
+     which also includes a name and possibly other information.
+     We plan to formalize this additional information separately."))
+  ((declons ext-declon-list))
+  :tag :file
+  :pred filep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption file-option
+  file
+  :short "Fixtype of optional files."
+  :pred file-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod fileset
+  :short "Fixtype of file sets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A file set is a collection of related files.
+     This is not an explicit notion in [C],
+     but it is a useful one in a language formalization:
+     a program, or a portion of a program,
+     is contained in a set of related files.
+     This notion is not quite the same as that of C program,
+     which, according to [C], is a complete executable application:
+     a library would not qualify as a program in this sense.")
+   (xdoc::p
+    "For now, a file set consists of one or two files (see @(tsee file)),
+     namely an optional header and a source file,
+     which have the same name except for the extension.
+     (The preceding sentence uses the terminology in [C:5.1.1/1],
+     which appears to call `headers' the @('.h') files
+     and `source files' the @('.c') files.)
+     The idea is that for now we model (portions of) programs
+     that consist of a single source file,
+     optionally with its own header that is @('#include')d in the source file.
+     We do not explicitly model the @('#include') directive: it is implicit.
+     The @('path-wo-ext') component of this fixtype
+     is the common path of both files without the extension.
+     The @('dot-h') and @('dot-c') components of this fixtype
+     are (the contents of) the @('.h') and @('.c') files,
+     where the first one is optional.")
+   (xdoc::p
+    "In the future, we may extend this notion of file ste
+     to be something like
+     a finite map from file system paths to (contents of) files."))
+  ((path-wo-ext string)
+   (dot-h file-option)
+   (dot-c file))
+  :tag :fileset
+  :pred filesetp)

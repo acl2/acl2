@@ -102,8 +102,77 @@
            (true-listp x))
   :rule-classes :compound-recognizer)
 
+(define equal-when-strip-cars ((x alistp) y cars)
+  :measure (len cars)
+  (if (atom cars)
+      (equal y nil)
+    (and (consp y)
+         (consp (car y))
+         (equal (caar y) (car cars))
+         (equal (cdar y) (cdar x))
+         (equal-when-strip-cars (cdr x) (cdr y) (cdr cars))))
+  ///
+  (defthm equal-when-strip-cars-of-nil
+    (equal (equal-when-strip-cars x y nil)
+           (equal y nil)))
+
+  (defthmd equal-when-strip-cars-of-cons
+    (equal (equal-when-strip-cars x (cons (cons key val) rest-y) (cons key rest-cars))
+           (and (equal val (cdar x))
+                (equal-when-strip-cars (cdr x) rest-y rest-cars))))
+
+  ;; (local (defthm equal-of-cons-rw
+  ;;          (equal (equal (cons x y) z)
+  ;;                 (and (consp z)
+  ;;                      (equal x (car z))
+  ;;                      (equal y (cdr z))))))
+
+  (local (in-theory (disable acl2::cons-car-cdr)))
+  
+  (defthmd equal-of-strip-cars-correct
+    (implies (and (alistp x) (equal (strip-cars x) (true-list-fix cars)))
+             (equal (equal-when-strip-cars x y cars)
+                    (equal x y)))
+    :hints(("Goal"
+            :induct (equal-when-strip-cars x y cars)
+            :in-theory (disable (:d equal-when-strip-cars))
+            :expand ((equal-when-strip-cars x y cars)
+                     (equal-when-strip-cars nil nil cars)
+                     (equal-when-strip-cars nil y cars)
+                     (strip-cars x)
+                     (true-list-fix cars)
+                     (alistp x)))))
+
+  (local (defthm true-list-fix-of-strip-cars
+           (equal (true-list-fix (strip-cars x))
+                  (strip-cars x))
+           :hints(("Goal" :in-theory (enable true-list-fix)))))
+  
+  (defthmd equal-of-cons-by-equal-of-strip-cars
+    (implies (and (equal (strip-cars x) cars)
+                  (syntaxp (quotep cars))
+                  (true-listp cars)
+                  (alistp x))
+             (equal (equal (cons (cons key1 val1) rest) x)
+                    (equal-when-strip-cars x (cons (cons key1 val1) rest) cars)))
+    :hints(("Goal" :in-theory (e/d (equal-of-strip-cars-correct
+                                    true-list-fix)
+                                   (equal-when-strip-cars))
+            :do-not-induct t))))
+
+(defthmd prove-equal-of-cons-when-first-quotep
+  (implies (and (syntaxp (quotep car))
+                (consp x)
+                (equal (car x) car)
+                (equal (cdr x) cdr))
+           (equal (equal (cons car cdr) x) t)))
+
 (deftheory deftypes-theory
-  '(equal-of-strip-cars
+  '(;; equal-of-strip-cars
+    prove-equal-of-cons-when-first-quotep
+    equal-when-strip-cars-of-cons
+    equal-when-strip-cars-of-nil
+    equal-of-cons-by-equal-of-strip-cars
     car-cons cdr-cons
     strip-cars
     strip-cars-under-iff
@@ -119,6 +188,8 @@
     hons
     open-member-equal-on-list-of-tags
     alistp-compound-recognizer
+    alistp
+    identity
     ;;  len
     ;; equal-of-plus-one fix
     prod-car
@@ -812,7 +883,7 @@
 
 (defun deftypes-events (x state)
   (b* (((flextypes x) x)
-       (- (flextypelist-check-bad-name x.types)) 
+       (- (flextypelist-check-bad-name x.types))
        (fix/pred-pairs (flextypes-collect-fix/pred-pairs x.types))
        ((mv enable-rules temp-thms) (collect-fix/pred-enable-rules fix/pred-pairs (w state)))
        (verbosep (getarg :verbosep nil x.kwd-alist)))
@@ -1116,4 +1187,3 @@
 (defmacro defomap (&whole form &rest args)
   (declare (ignore args))
   `(make-event (defomap-fn ',form state)))
-

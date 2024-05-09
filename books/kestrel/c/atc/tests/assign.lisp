@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2021 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -37,8 +37,8 @@
   (declare (xargs :guard (and (c::sintp |a|)
                               (c::sintp |b|)
                               ;; 0 <= a <= 100:
-                              (<= 0 (c::sint->get |a|))
-                              (<= (c::sint->get |a|) 100))
+                              (<= 0 (c::integer-from-sint |a|))
+                              (<= (c::integer-from-sint |a|) 100))
                   :guard-hints (("Goal"
                                  :in-theory
                                  (enable c::assign
@@ -113,9 +113,22 @@
           (mv |a| |b|)))
       (c::bitxor-sint-sint |a| |b|))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun |l| (|x|)
+  (declare (xargs :guard (c::uintp |x|)
+                  :guard-hints (("Goal" :in-theory (enable c::assign)))))
+  (let ((|x| (if (c::boolean-from-sint
+                  (c::lt-uint-uint |x| (c::uint-dec-const 100)))
+                 (let ((|x| (c::assign
+                             (c::add-uint-uint |x| (c::uint-dec-const 1)))))
+                   |x|)
+               |x|)))
+    (c::mul-uint-uint (c::uint-dec-const 10) |x|)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c::atc |f| |g| |h| |i| |j| |k| :output-file "assign.c")
+(c::atc |f| |g| |h| |i| |j| |k| |l| :file-name "assign" :header t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,7 +148,7 @@
                 |x|)))
      (c::add-uint-uint |x| |y|)))
  (must-fail
-  (c::atc |foo| :output-file "foo.c" :proofs nil)))
+  (c::atc |foo| :file-name "foo" :proofs nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,7 +165,7 @@
                 |x|)))
      (c::add-uint-uint |x| (c::uint-dec-const 7))))
  (must-fail
-  (c::atc |foo| :output-file "foo.c")))
+  (c::atc |foo| :file-name "foo")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,4 +186,4 @@
                   |x|)))
        (c::bitand-sint-sint |x| |y|))))
  (must-fail
-  (c::atc |foo| :output-file "foo.c" :proofs nil)))
+  (c::atc |foo| :file-name "foo" :proofs nil)))

@@ -804,8 +804,6 @@
 (trace$
  (TRANSLATE-HINTS+1)
  (TRANSLATE-HINTS+1@PAR)
- (TRANSLATE-HINTS2)
- (TRANSLATE-HINTS2@PAR)
  (TRANSLATE-HINTS1)
  (APPLY-OVERRIDE-HINTS@PAR)
  (APPLY-OVERRIDE-HINTS)
@@ -992,7 +990,7 @@ from translate-hint-expression
 
 ; (trace$ (formal-value-triple@par)
 ;         (formal-value-triple)
-;         (thm-fn)n
+;         (thm-fn)
 ;         (translate-hints+)
 ;         (translate-hints)
 ;         (translate-hint-expression)

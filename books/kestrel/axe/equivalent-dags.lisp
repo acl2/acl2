@@ -1,7 +1,7 @@
 ; Recognizing equivalent DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,14 +16,13 @@
 (include-book "dags")
 (include-book "make-equality-dag")
 
-;move?  rename to end in 'p'?
 ;equivalent dags represent the same mathematical function but have their nodes numbered differently
 ;requires that the dags be dag-lsts, not quoteps
-(defund equivalent-dags (dag1 dag2)
+(defund equivalent-dagsp (dag1 dag2)
   (declare (xargs :guard (and (pseudo-dagp dag1)
                               (pseudo-dagp dag2)
                               (<= (+ (len dag1) (len dag2))
-                                  2147483645))
+                                  *max-1d-array-length*))
                   :guard-hints (("Goal" :use (:instance true-listp-of-car-of-mv-nth-1-of-make-equality-dag)
                                  :in-theory (disable true-listp-of-car-of-mv-nth-1-of-make-equality-dag quotep)))))
   (if (equal dag1 dag2) ;slow? how often is this the case?
@@ -52,8 +51,8 @@
                               (or (myquotep dag2)
                                   (pseudo-dagp dag2))
                               (<= (+ (LEN DAG1) (LEN DAG2))
-                                  2147483645))))
+                                  *max-1d-array-length*))))
   (if (or (quotep dag1)
           (quotep dag2))
       (equal dag1 dag2)
-    (equivalent-dags dag1 dag2)))
+    (equivalent-dagsp dag1 dag2)))

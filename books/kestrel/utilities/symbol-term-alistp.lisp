@@ -13,7 +13,7 @@
 
 ;; STATUS: IN-PROGRESS
 
-;; See also symbol-pseudoterm-alistp in [books]/std/typed-alists/symbol-pseudoterm-alistp.lisp.
+;; See also symbol-pseudoterm-alistp in std/typed-alists/symbol-pseudoterm-alistp.lisp.
 
 ;; Recognize an alist from symbols to pseudo-terms
 (defund symbol-term-alistp (x)

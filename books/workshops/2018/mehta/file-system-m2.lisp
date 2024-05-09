@@ -2691,10 +2691,10 @@
       :in-theory
       (e/d (fat-length)
            (fat32-in-memoryp
-            true-listp-when-fat32-masked-entry-list-p))
+            true-listp-when-fat32-masked-entry-list-p-compound-recognizer))
       :use
       (:instance
-       true-listp-when-fat32-masked-entry-list-p
+       true-listp-when-fat32-masked-entry-list-p-compound-recognizer
        (x
         (cdr
          (mv-nth
@@ -2755,10 +2755,10 @@
   :hints
   (("goal"
     :in-theory (e/d (place-contents)
-                    (true-listp-when-fat32-masked-entry-list-p))
+                    (true-listp-when-fat32-masked-entry-list-p-compound-recognizer))
     :use
     (:instance
-     true-listp-when-fat32-masked-entry-list-p
+     true-listp-when-fat32-masked-entry-list-p-compound-recognizer
      (x
       (cdr
        (mv-nth
@@ -2977,10 +2977,10 @@
      ("subgoal 2"
       :in-theory
       (e/d (lower-bounded-integer-listp)
-           (true-listp-when-fat32-masked-entry-list-p))
+           (true-listp-when-fat32-masked-entry-list-p-compound-recognizer))
       :use
       (:instance
-       true-listp-when-fat32-masked-entry-list-p
+       true-listp-when-fat32-masked-entry-list-p-compound-recognizer
        (x
         (cdr
          (mv-nth

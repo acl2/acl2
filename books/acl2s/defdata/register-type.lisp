@@ -15,10 +15,6 @@ data last modified: [2014-08-06]
 
 (include-book "defdata-attach")
 
-
-
-
-
 ;TODO
 ; Q: howto to generate an enumerator or fixer from a predicate def
 ; 11 June 2014 - 2am
@@ -33,7 +29,6 @@ data last modified: [2014-08-06]
 ; a separate F interpretation to directly generate a fixer from the
 ; core defdata expression. Like P, we will store P^-1 in the builtin
 ; combinator table.
-
 
 (def-const *register-type-keywords*
   '(:predicate :enumerator ;mandatory names
@@ -55,6 +50,217 @@ data last modified: [2014-08-06]
 
 ; [2015-07-01 Wed] enumerator and enum/acc are attachable functions
 
+(defun type-of-pred-aux (pred tbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalist1p tbl))))
+  (cond ((endp tbl) nil)
+        ((equal pred (get-alist :predicate (cdar tbl)))
+         (caar tbl))
+        (t (type-of-pred-aux pred (cdr tbl)))))
+
+#|
+(defun type-of-pred (pred tbl)
+  (cond ((equal pred 'intp) 'integer)
+        ((equal pred 'boolp) 'boolean)
+        ((equal pred 'tlp) 'true-list)
+        (t (type-of-pred-aux pred tbl))))
+|#
+
+(defun type-of-pred (pred tbl ptbl)
+  (declare (xargs :guard (and (symbolp pred) (sym-aalist1p tbl) (sym-aalist1p ptbl))))
+  (let ((apred (assoc-equal :type (get-alist pred ptbl))))
+    (if apred
+        (cdr apred)
+    (type-of-pred-aux pred tbl))))
+
+#|
+(type-of-pred 'boolp
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+(type-of-pred 'boolp
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+(type-of-pred 'bool
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+(type-of-pred 'tlp
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+(type-of-pred 'intp
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+(type-of-pred 'integerp
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+(type-of-pred nil
+              (type-metadata-table (w state))
+              (pred-alias-table (w state)))
+|#
+
+(defun enum-of-type (type tbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalist1p tbl))))
+  (get-alist :enumerator (get-alist type tbl)))
+
+; (enum-of-type 'integer (type-metadata-table (w state)))
+
+(defun trans1-cmp (form wrld)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (plist-worldp wrld)))
+  (acl2::translate1-cmp
+   form nil nil nil 'ctx wrld (default-state-vars nil)))
+
+(defun base-val-of-type (type tbl wrld)
+  (declare (xargs :mode :program))
+  (declare (xargs :guard (and (symbolp type) (sym-aalist1p tbl) (plist-worldp wrld))))
+  (b* ((base-val (get-alist :default-base-value (get-alist type tbl)))
+       ((mv - trans-base-val -)
+        (if (and (symbolp base-val)
+                 (acl2::legal-variable-or-constant-namep base-val)
+                 (acl2::legal-constantp1 base-val))
+            (trans1-cmp base-val wrld)
+          (mv nil `',base-val nil))))
+    trans-base-val))
+
+; (defconst *x* 'x)
+; (defdata x *x*)
+; (defdata non-empty-true-list (cons all true-list))
+; (base-val-of-type 'x (type-metadata-table (w state)) (w state)) = 'x
+; (base-val-of-type 'integer (type-metadata-table (w state)) (w state)) = '0
+; (base-val-of-type 'non-empty-true-list (type-metadata-table (w state)) (w state)) = '(nil)
+; (base-val-of-type 'symbol (type-metadata-table (w state)) (w state)) = 'a
+
+
+#|
+
+(defun type-of-type (type tbl atbl ctx)
+  (let ((atype (assoc-equal :type (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist type tbl)))
+        (if res
+            type
+          (er soft ctx
+ "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
+
+(defun pred-of-type (type tbl atbl ctx)
+  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist :predicate (get-alist type tbl))))
+        (or res
+            (er hard ctx
+ "~%**Unknown type **: ~x0 is not a known type name.~%" type ))))))
+
+|#
+
+; Decided to take care of error printing on my own, but kept previous
+; versions above.
+
+(defun type-of-type (type tbl atbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalist1p tbl)
+                              (sym-aalist1p atbl))))
+  (let ((atype (assoc-equal :type (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist type tbl)))
+        (if res
+            type
+          nil)))))
+
+(defun pred-of-type (type tbl atbl)
+  (declare (xargs :guard (and (symbolp type) (sym-aalist1p tbl)
+                              (sym-aalist1p atbl))))
+  (let ((atype (assoc-equal :predicate (get-alist type atbl))))
+    (if atype
+        (cdr atype)
+      (let ((res (get-alist :predicate (get-alist type tbl))))
+        res))))
+
+; A function to determine the domain size of a type.
+; Note that we return 'infinite instead of t if the domain
+; size is determined to be infinite.
+
+#|
+
+Removed error checking which was causing problems for
+mutually recursive definitions.
+
+(defun defdata-domain-size-fn (type wrld)
+  (declare (xargs :guard (and (symbolp type) (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (table-alist 'type-metadata-table wrld))
+       (atbl (table-alist 'type-alias-table wrld))
+       (ttype (type-of-type type tbl atbl))
+       ((unless ttype)
+        (er hard 'domain-size
+            "~%The given type, ~x0, is not a known type or alias type." type))
+       (type-info (assoc ttype tbl))
+       (domain (cdr (assoc :domain-size (cdr type-info)))))
+    (if (natp domain)
+        domain
+      'infinite)))
+|#
+
+; If we have a mutually recursive definition and can't figure out the
+; size, just assume infinite.
+(defun defdata-domain-size-fn (type wrld)
+  (declare (xargs :guard (and (symbolp type) (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (table-alist 'type-metadata-table wrld))
+       (atbl (table-alist 'type-alias-table wrld))
+       (ttype (type-of-type type tbl atbl))
+       (type-info (assoc ttype tbl))
+       (domain (cdr (assoc :domain-size (cdr type-info)))))
+    (if (natp domain)
+        domain
+      'infinite)))
+
+(defmacro defdata-domain-size (type)
+  `(defdata-domain-size-fn ',type (w state)))
+
+(defun defdata-base-val-of-type-fn (type wrld)
+  (declare (xargs :mode :program
+                  :guard (and (symbolp type) (plist-worldp wrld))
+                  :verify-guards nil))
+  (b* ((tbl (type-metadata-table wrld))
+       (atbl (table-alist 'type-alias-table wrld))
+       (ttype (type-of-type type tbl atbl)))
+    (base-val-of-type ttype tbl wrld)))
+
+(defmacro defdata-base-val-of-type (type)
+  `(defdata-base-val-of-type-fn ',type (w state)))
+
+(defun get-or-size-acc (or-def acc wrld)
+  (declare (xargs :mode :program))
+  (if (endp or-def)
+      acc
+    (b* ((type (car or-def))
+         (size-type (if (legal-variablep type) ; otherwise treat as a constant
+                        (defdata-domain-size-fn (car or-def) wrld)
+                      1)))
+      (if (natp size-type)
+          (get-or-size-acc (cdr or-def) (+ size-type acc) wrld)
+        t))))
+
+(defun get-or-size (or-def wrld)
+  (declare (xargs :mode :program))
+  (get-or-size-acc or-def 0 wrld))
+
+#|
+
+ The determination of the size of the domain is incomplete.
+
+ It should be the case that the following returns 3, but it returns
+ infinite, because we don't handle records.
+
+ (defdata foo (enum '(1 2 3)))
+ (defdata r2 (record (f . foo)))
+ (defdata-domain-size r2)
+
+ Also, make sure maps are correctly handled, as well as lists of given
+ lengths, etc.
+
+|#
+
 (defun register-type-fn (name args ctx pkg wrld)
   (declare (xargs :mode :program))
   (b* (((mv kwd-alist rest)
@@ -74,11 +280,22 @@ data last modified: [2014-08-06]
        (enum/acc-formals (or (and enum/acc (acl2::formals enum/acc wrld))
                              '(M SEED)))
        (enum/acc-guard (or (and enum/acc (acl2::guard enum/acc nil wrld))
-                           '(AND (NATP M) (UNSIGNED-BYTE-P 31 SEED))))
+                           '(AND (NATP M) (UNSIGNED-BYTE-P 63 SEED))))
 
        ;; these two names are constant, but attachable names. TODO: Revisit this decision!
        (enum-name (make-enumerator-symbol name pkg))
        (enum/acc-name (make-uniform-enumerator-symbol name pkg))
+       (def (get1 :def kwd-alist))
+       (enum-type? (and (consp def) (equal (car def) 'enum)))
+       (normalized-def (get1 :normalized-def kwd-alist))
+       (or-type? (and (consp def) (equal (car def) 'or)))
+       (or-size (if or-type? (get-or-size (cdr normalized-def) wrld) 0))
+       (domain-size (or (get1 :domain-size kwd-alist)
+                        (and enum-type? (nfix (1- (len normalized-def))))
+                        (and or-type? or-size)
+                        (and (quotep def) 1)
+                        (and (atom def) 1) ; alias caught above
+                        t))
 
        ((when (eq enum enum-name))
         (er hard? ctx "~| Please rename the enumerator ~x0 to be different from ~x1, to which it will be attached.~%" enum enum-name))
@@ -89,9 +306,7 @@ data last modified: [2014-08-06]
        (kwd-alist (put-assoc-eq :enumerator enum-name kwd-alist))
        (kwd-alist (put-assoc-eq :enum/acc enum/acc-name kwd-alist))
 
-       (kwd-alist (put-assoc-eq
-                   :domain-size
-                   (or (get1 :domain-size kwd-alist) 't) kwd-alist))
+       (kwd-alist (put-assoc-eq :domain-size domain-size kwd-alist))
        (kwd-alist (put-assoc-eq
                    :theory-name (or (get1 :theory-name kwd-alist)
                                     (s+ name '-theory :pkg pkg))

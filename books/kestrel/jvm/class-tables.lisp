@@ -1,7 +1,7 @@
 ; The class-table structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -779,7 +779,7 @@
 ;;            (string-listp (get-superclasses class-name class-table))))
 
 ;; (defthm all-keys-bound-to-class-infosp-when-subset-of-dom
-;;   (implies  (and (class-tablep class-table)
+;;   (implies (and (class-tablep class-table)
 ;;                  (all-bound-in-class-tablep names class-table))
 ;;             (all-keys-bound-to-class-infosp names class-table))
 ;;   :hints (("Goal" :in-theory (enable ALL-KEYS-BOUND-TO-CLASS-INFOSP all-bound-in-class-tablep BOUND-IN-CLASS-TABLEP))))
@@ -1013,20 +1013,6 @@
 ;;   (implies (and (not (class-namep class-name))
 ;;                 (class-tablep class-table))
 ;;            (not (bound-in-class-tablep class-name class-table))))
-
-;;;
-;;; The global-class-table
-;;;
-
-;; The global-class-table maps class names to class-infops.  Here "table" means
-;; an ACL2 table and does not refer to a class-table structure, which is a record.
-;; To register a class in the global-class-table, do:
-;; (table global-class-table <class-name> <class-info-constant-name>)
-
-;; Returns the global-class-table as an alist.
-(defund global-class-alist (state)
-  (declare (xargs :stobjs (state)))
-  (table-alist 'acl2::global-class-table (w state)))
 
 (defthm bound-to-a-non-interfacep-of-get-superclass
   (implies (and (not (equal "java.lang.Object" class-name))

@@ -2,6 +2,9 @@
 
 (in-package "ACL2")
 
+; Matt K. mod: Avoid ACL2(p) error from clause-processor that returns state.
+(set-waterfall-parallelism nil)
+
 (include-book "arithmetic-5/top" :dir :system)
 ; (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -14,49 +17,49 @@
 ;;                                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This is an attempt to model simple asymptotic analysis using the 
-;; simple while language as the programming language. 
+;; This is an attempt to model simple asymptotic analysis using the
+;; simple while language as the programming language.
 
 ; (defun apt () (accumulated-persistence t))
 ; (defun apn () (accumulated-persistence nil))
 ; (defun sap () (show-accumulated-persistence))
-; 
+;
 ; (define-pc-macro ls ()
 ;   (mv nil 's-prop state))
-; 
+;
 ; (define-pc-macro sp ()
 ;   (mv nil 's-prop state))
-; 
+;
 ; (define-pc-macro sr1 ()
 ;   (mv nil '(show-rewrites 1) state))
-; 
+;
 ; (define-pc-macro sr2 ()
 ;   (mv nil '(show-rewrites 2) state))
-; 
+;
 ; (define-pc-macro sr3 ()
 ;   (mv nil '(show-rewrites 3) state))
-; 
+;
 ; (define-pc-macro sr4 ()
 ;   (mv nil '(show-rewrites 4) state))
-; 
+;
 ; (define-pc-macro sr5 ()
 ;   (mv nil '(show-rewrites 5) state))
-; 
+;
 ; (define-pc-macro sr6 ()
 ;   (mv nil '(show-rewrites 6) state))
-; 
+;
 ; (define-pc-macro sr7 ()
 ;   (mv nil '(show-rewrites 7) state))
-; 
+;
 ; (define-pc-macro sr8 ()
 ;   (mv nil '(show-rewrites 8) state))
-; 
+;
 ; (define-pc-macro promtoe ()
 ;   (mv nil 'promote state))
-; 
+;
 ; (define-pc-macro push ()
 ;   (mv nil '(= & t t) state))
-; 
+;
 ; (define-pc-macro 1p ()
 ;   (mv nil '(do-all 1 p) state))
 
@@ -323,9 +326,9 @@
 (defmacro param3 (x) `(cadddr ,x))
 
 ;; For this time around, let's assume that the only values in the var-alist
-;; are numbers and symbols, or lists of those. 
+;; are numbers and symbols, or lists of those.
 
-;; >> Note that for a literal int, we need (lit . n) rather than (lit n). 
+;; >> Note that for a literal int, we need (lit . n) rather than (lit n).
 ;;    Otherwise, we probably can't have a list of just n.
 
 (defun literalp (x)
@@ -351,12 +354,12 @@
        (not (equal x 'result))))
 
 (defun varp (x)
-  ;; This defines the syntax of a variable, 
-  ;; but not whether it's defined. 
+  ;; This defines the syntax of a variable,
+  ;; but not whether it's defined.
   (and (lenp x 2)
        (equal (operator x) 'var)
        (var-namep (param1 x))))
-  
+
 ; (defun list-varp (lst vars)
 ;   (let ((lstval (lookup (param1 lst) vars)))
 ;     (and (varp lst)
@@ -367,7 +370,7 @@
   ;; x has form (var v), v is defined in vars,
   ;; and the value is not null.
   (let ((val (lookup (param1 x) vars)))
-    (and (varp x) 
+    (and (varp x)
 	 val)))
 
 ;; VALUE
@@ -384,18 +387,18 @@
 
 (defun var-alist-pairp (x)
   ;; Recognizes a pair of form (var . value).
-  ;; Even though a var has form (var x), we only 
-  ;; include the x as a key. 
+  ;; Even though a var has form (var x), we only
+  ;; include the x as a key.
   (and (consp x)
        (var-namep (car x))
        (valuep (cdr x))
        ))
 
 (defun var-alistp (alist)
-  ;; Recognizes a true-list of pairs where each 
+  ;; Recognizes a true-list of pairs where each
   ;; pair is a cons with a var-namep as key, and
-  ;; each values is either a constant or a list of 
-  ;; constants. 
+  ;; each values is either a constant or a list of
+  ;; constants.
   (if (endp alist)
       (equal alist nil)
     (and (var-alist-pairp (car alist))
@@ -414,11 +417,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; We define a simple expression language that has (at this point)
-;; only integer and Boolean expressions. 
+;; only integer and Boolean expressions.
 
 ;; This recognizer is never used.  I build all of the tests into
 ;; the evaluation function.  If any syntactic check ever fails, then
-;; the evaluation fails and returns an error.  
+;; the evaluation fails and returns an error.
 
 (defund exprp (x vars)
   ;; x is an expression and vars a variable-alist.
@@ -431,8 +434,8 @@
 	  ;; A literal has form (lit . x), where x is
 	  ;; a constant number or symbol, or a list of such.
 	  (lit (valuep (cdr x)))
-	  ;; The following are all expressions involving 
-	  ;; operations. 
+	  ;; The following are all expressions involving
+	  ;; operations.
 	  (== (and (lenp x 3)
 		   (exprp (param1 x) vars)
 		   (exprp (param2 x) vars)))
@@ -635,7 +638,7 @@
   (implies (and (valuep lst)
 		(< 0 (len lst)))
 	   (literal-listp lst)))
-		
+
 (defthm ind-literal-listp-literalp
   (implies (and (natp i)
 		(literal-listp lst)
@@ -716,7 +719,7 @@
 			  (len (exeval-value (exeval lst status vars)))
 			  (1+ (exeval-steps (exeval lst status vars))))
 		    (exeval-error)))))
-			   
+
 (defthm exeval-lit-expander
   (implies (valuep x)
 	   (equal (exeval (cons 'lit x) t vars)
@@ -808,7 +811,7 @@
 
 ;;
 ;; Statements are evaluated within the context of a state that contains
-;; a variable alist and a status (T or nil). 
+;; a variable alist and a status (T or nil).
 
 (defun okp (status)
   (equal status 'ok))
@@ -830,14 +833,14 @@
 (defmacro run-steps (triple)
   `(mv-nth 2 ,triple))
 
-;; >>> If there's an error, we don't really care about steps.  Not sure if this is 
-;;     the right choice. 
+;; >>> If there's an error, we don't really care about steps.  Not sure if this is
+;;     the right choice.
 
 (defun run-error (vars)
   (mv 'error vars 0))
 
-;; Each of the run functions is passed a steps parameter, which is the number of 
-;; steps prior to the execution. 
+;; Each of the run functions is passed a steps parameter, which is the number of
+;; steps prior to the execution.
 
 (defun run-skip (stmt vars steps)
   ;; statement has form (skip)
@@ -846,7 +849,7 @@
 
 ;; Not clear whether steps for an assignment should be (steps lhs) + 1
 ;; or + 2.  Perhaps one for the variable on the lhs and one for the
-;; assignment.  I don't think it really matters much.  I'm going with +1 
+;; assignment.  I don't think it really matters much.  I'm going with +1
 ;; for this first version.
 
 (defun run-assignment (stmt vars steps)
@@ -860,7 +863,7 @@
 	    (run-error vars))))
 
 ;; Return uses variable 'result to store the value.
-;; Probably need to declare this special in some way. 
+;; Probably need to declare this special in some way.
 
 (defun run-return (stmt vars steps)
   ;; statement has form (return val)
@@ -871,8 +874,8 @@
 	    (run-error vars))))
 
 (defun run (stmt status vars steps count)
-  ;; This is the interpreter for our simple language.  It returns a triple 
-  ;; (mv status var-alist steps).  The steps parameter is the cumulative count 
+  ;; This is the interpreter for our simple language.  It returns a triple
+  ;; (mv status var-alist steps).  The steps parameter is the cumulative count
   ;; of steps before this execution.
   (declare (xargs :measure (two-nats-measure count (acl2-count stmt))))
   (if (not (okp status))
@@ -1007,7 +1010,7 @@
 	     (equal (lookup j vars2)
 		    (lookup j vars)))))
 
-;; These functions allow using the syntax: (seqn x y z ...) 
+;; These functions allow using the syntax: (seqn x y z ...)
 ;; instead of a bunch of nested seqs.
 
 (defun seqn-fn (args)

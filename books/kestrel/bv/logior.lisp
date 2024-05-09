@@ -1,7 +1,7 @@
 ; BV Library: logior
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,10 +38,15 @@
          -1)
   :hints (("Goal" :in-theory (enable logior))))
 
-(defthm logior-of-0
+(defthm logior-of-0-arg1
   (equal (logior 0 j)
          (ifix j))
   :hints (("Goal" :in-theory (enable logior))))
+
+;; Disabled since we should commute the 0 forward
+(defthmd logior-of-0-arg2
+  (equal (logior i 0)
+         (ifix i)))
 
 (defthm logior-when-not-integerp-arg1
   (implies (not (integerp i))
@@ -87,6 +92,17 @@
                                (< I 0)))
            :in-theory (enable logior))))
 
+(defthm <-of-0-and-logior
+  (equal (< 0 (logior i j))
+         (and (not (< (ifix i) 0))
+              (not (< (ifix j) 0))
+              (or (< 0 (ifix i))
+                  (< 0 (ifix j)))))
+  :hints (("Goal" :cases ((< J 0)
+                          (and (not (< j 0))
+                               (< I 0)))
+           :in-theory (enable logior))))
+
 (defthm <-of-logior-and-0-type
   (implies (and (or (< i 0)
                     (< j 0))
@@ -107,7 +123,7 @@
 (defthm logior-commutative-2
   (equal (logior j i k)
          (logior i j k))
-  :hints (("Goal" :use ((:instance logior-associative)
+  :hints (("Goal" :use (logior-associative
                         (:instance logior-associative (i j) (j i)))
            :in-theory (disable logior-associative))))
 
@@ -171,10 +187,12 @@
   :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
 
 (defthm logior-bound
-  (implies (and (natp i)
-                (natp j))
+  (implies (and (integerp i); (natp i)
+                (natp j) ; gen?
+                )
            (not (< (logior i j) i)))
   :hints (("Goal"
+           :cases ((< i 0))
            :use (:instance <=-of-logand-same-when-negative (i (+ -1 (- i)))
                            (j (+ -1 (- j))))
            :in-theory (e/d (logior lognot)
@@ -182,7 +200,7 @@
                             <=-of-logand-same-when-negative)))))
 
 (defthm logior-bound-linear
-  (implies (and (natp i)
+  (implies (and (integerp i)
                 (natp j))
            (<= i (logior i j)))
   :rule-classes :linear)
@@ -283,7 +301,7 @@
                 (integerp j))
            (equal (logior i (logand i j) k)
                   (logior i k)))
-  :hints (("Goal" :use (:instance logior-of-logand-same-arg-1)
+  :hints (("Goal" :use logior-of-logand-same-arg-1
            :in-theory (disable logior-of-logand-same-arg-1))))
 
 (defthm logand-of-logior
@@ -298,7 +316,13 @@
                             zip
                             logior-opener-var)
                            (lognot-of-logand
-                            mod-sum-cases)))))
+                            ;; for speed:
+                            floor-when-<
+                            unicity-of-1
+                            my-floor-lower-bound-linear
+                            <=-of-logand-same-arg2
+                            floor-upper-bound-linear
+                            )))))
 
 (defthmd logior-of-logand
   (implies (and (integerp i)
@@ -350,3 +374,29 @@
   :hints (("Goal" :use (:instance <-of-logior-and-expt-of-2
                                   (n (+ -1 (integer-length k))))
            :in-theory (disable <-of-logior-and-expt-of-2))))
+
+(defthm logior-of-all-ones
+  (implies (and (natp n)
+                (unsigned-byte-p n x))
+           (equal (logior (+ -1 (expt 2 n)) x)
+                  (+ -1 (expt 2 n))))
+  :hints (("Goal" :in-theory (e/d (logior) (lognot-of-logand)))))
+
+(defthm logior-of-1-arg1-when-bitp
+  (implies (bitp j)
+           (equal (logior 1 j)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))
+
+;; Disabled since we expect to commute
+(defthmd logior-of-1-arg2-when-bitp
+  (implies (bitp i)
+           (equal (logior i 1)
+                  1))
+  :hints (("Goal" :in-theory (enable bitp))))
+
+(defthm logior-combine-constants
+  (implies (syntaxp (and (quotep i)
+                         (quotep j)))
+           (equal (logior i (logior j k))
+                  (logior (logior i j) k))))

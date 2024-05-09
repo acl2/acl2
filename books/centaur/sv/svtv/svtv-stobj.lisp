@@ -37,6 +37,7 @@
 (include-book "cycle-base")
 ;; (include-book "pipeline")
 (include-book "assign")
+(include-book "expand")
 (include-book "probe")
 (include-book "../svex/alist-equiv")
 (include-book "std/stobjs/nicestobj" :dir :system)
@@ -73,7 +74,8 @@
 (defprod pipeline-setup
   ((probes svtv-probealist)
    (inputs svex-alistlist)
-   (overrides svex-alistlist)
+   (override-vals svex-alistlist)
+   (override-tests svex-alistlist)
    (initst svex-alist)))
 
 (defconst *svtv-data-nonstobj-fields*
@@ -102,13 +104,13 @@
     (phase-fsm-setup :type (satisfies phase-fsm-config-p) :pred phase-fsm-config-p :fix phase-fsm-config-fix
                      :initially ,(make-phase-fsm-config
                                   :override-config (make-svtv-assigns-override-config-omit)))
-    (phase-fsm :type (satisfies base-fsm-p) :pred base-fsm-p :fix base-fsm-fix
-               :initially ,(make-base-fsm))
+    (phase-fsm :type (satisfies fsm-p) :pred fsm-p :fix fsm-fix
+               :initially ,(make-fsm))
     (phase-fsm-validp :type (member t nil) :pred booleanp :fix bool-fix)
 
     (cycle-phases :type (satisfies svtv-cyclephaselist-p) :pred svtv-cyclephaselist-p :fix svtv-cyclephaselist-fix)
-    (cycle-fsm :type (satisfies base-fsm-p) :pred base-fsm-p :fix base-fsm-fix
-               :initially ,(make-base-fsm))
+    (cycle-fsm :type (satisfies fsm-p) :pred fsm-p :fix fsm-fix
+               :initially ,(make-fsm))
     (cycle-fsm-validp :type (member t nil) :pred booleanp :fix bool-fix)
 
     (pipeline-setup :type (satisfies pipeline-setup-p) :pred pipeline-setup-p :fix pipeline-setup-fix
@@ -237,7 +239,9 @@
                    (svtv-normalize-assigns flatten aliases setup)
                    spec))
        ((flatnorm-res flatnorm)))
-    (and (ec-call (svex-alist-eval-equiv flatnorm.assigns spec.assigns))
+    (and (ec-call (svex-alist-eval-equiv! flatnorm.assigns spec.assigns))
+         (subsetp-equal (svex-alist-vars flatnorm.assigns) (svex-alist-vars spec.assigns))
+         ;; (no-duplicatesp-equal (svex-alist-keys flatnorm.assigns))
          (equal flatnorm.delays spec.delays)
          (equal flatnorm.constraints spec.constraints)))
   ///
@@ -264,7 +268,7 @@
 
 
 
-(define svtv-data$c-phase-fsm-okp (svtv-data$c (phase-fsm base-fsm-p))
+(define svtv-data$c-phase-fsm-okp (svtv-data$c (phase-fsm fsm-p))
   ;; :guard (and (modalist-addr-p (design->modalist (svtv-data$c->design svtv-data$c)))
   ;;             ;; (svtv-data$c-flatten-okp svtv-data$c (svtv-data$c->flatten svtv-data$c))
   ;;             )
@@ -279,7 +283,7 @@
        (config (svtv-data$c->phase-fsm-setup svtv-data$c)))
     (ec-call (phase-fsm-composition-p phase-fsm flatnorm config)))
   ///
-  (defcong base-fsm-eval-equiv equal (svtv-data$c-phase-fsm-okp svtv-data$c phase-fsm) 2)
+  (defcong fsm-eval-equiv equal (svtv-data$c-phase-fsm-okp svtv-data$c phase-fsm) 2)
 
   (acl2::def-updater-independence-thm svtv-data$c-phase-fsm-okp-updater-independence
     (let ((new acl2::new) (old acl2::old))
@@ -291,7 +295,7 @@
                       (svtv-data$c-phase-fsm-okp old phase-fsm))))))
 
 
-(define svtv-data$a-phase-fsm-okp (x (phase-fsm base-fsm-p))
+(define svtv-data$a-phase-fsm-okp (x (phase-fsm fsm-p))
   ;; :guard (and (modalist-addr-p (design->modalist (svtv-data$a->design x)))
   ;;             (svtv-data$a-flatten-okp x (svtv-data$a->flatten x)))
   :enabled t
@@ -365,15 +369,15 @@
 
 (defsection svtv-data$c-cycle-fsm-okp
   (defun-sk svtv-data$c-cycle-fsm-okp (svtv-data$c cycle-fsm)
-    (declare (xargs :guard (base-fsm-p cycle-fsm)
+    (declare (xargs :guard (fsm-p cycle-fsm)
                     :stobjs svtv-data$c))
     (forall env
             (non-exec
              (b* ((phase-fsm (svtv-data$c->phase-fsm svtv-data$c))
                   (phases (svtv-data$c->cycle-phases svtv-data$c))
-                  (statevars (svex-alist-keys (base-fsm->nextstate phase-fsm)))
+                  (statevars (svex-alist-keys (fsm->nextstate phase-fsm)))
                   (prev-st (svex-env-extract statevars env))
-                  ((base-fsm cycle-fsm)))
+                  ((fsm cycle-fsm)))
                (and (ec-call
                      (svex-envs-equivalent (svex-alist-eval cycle-fsm.values env)
                                            (svtv-cycle-eval-outs
@@ -381,13 +385,13 @@
                     (ec-call
                      (svex-envs-equivalent (svex-alist-eval cycle-fsm.nextstate env)
                                            (svtv-cycle-eval-nextst
-                                            env prev-st phases phase-fsm)))
+                                            env prev-st phases (fsm->nextstate phase-fsm))))
                     (equal (svex-alist-keys cycle-fsm.nextstate) statevars)))))
     :rewrite :direct)
 
   (in-theory (disable svtv-data$c-cycle-fsm-okp))
 
-  (defcong base-fsm-eval-equiv equal (svtv-data$c-cycle-fsm-okp svtv-data$c cycle-fsm) 2
+  (defcong fsm-eval-equiv equal (svtv-data$c-cycle-fsm-okp svtv-data$c cycle-fsm) 2
     :hints (("goal" :cases ((svtv-data$c-cycle-fsm-okp svtv-data$c cycle-fsm)))
             (b* ((conc (assoc 'svtv-data$c-cycle-fsm-okp clause))
                  (other (if (eq (caddr conc) 'cycle-fsm)
@@ -404,11 +408,11 @@
   (defthm cycle-fsm-okp-when-equivalent-fsm
     (implies (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm1)
              (iff (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
-                  (base-fsm-eval-equiv cycle-fsm1 cycle-fsm)))
+                  (fsm-eval-equiv cycle-fsm1 cycle-fsm)))
     :hints((acl2::use-termhint
             (and (svtv-data$c-cycle-fsm-okp svtv-data cycle-fsm)
-                 (b* (((base-fsm cycle-fsm))
-                      ((base-fsm cycle-fsm1)))
+                 (b* (((fsm cycle-fsm))
+                      ((fsm cycle-fsm1)))
                    (if (svex-alist-eval-equiv cycle-fsm1.values cycle-fsm.values)
                        (b* ((witness (svex-alist-eval-equiv-envs-equivalent-witness cycle-fsm1.nextstate cycle-fsm.nextstate)))
                          `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
@@ -420,7 +424,7 @@
                                   (svtv-data$c svtv-data) (cycle-fsm cycle-fsm)
                                   (env ,(hq witness))))
                            :in-theory (e/d (svex-alist-eval-equiv!-when-svex-alist-eval-equiv
-                                            base-fsm-eval-equiv)
+                                            fsm-eval-equiv)
                                            (svtv-data$c-cycle-fsm-okp-necc))))
                      (b* ((witness (svex-alist-eval-equiv-envs-equivalent-witness cycle-fsm1.values cycle-fsm.values)))
                        `(:use ((:instance svex-envs-equivalent-implies-alist-eval-equiv
@@ -431,12 +435,12 @@
                                (:instance svtv-data$c-cycle-fsm-okp-necc
                                 (svtv-data$c svtv-data) (cycle-fsm cycle-fsm)
                                 (env ,(hq witness))))
-                         :in-theory (e/d (base-fsm-eval-equiv)
+                         :in-theory (e/d (fsm-eval-equiv)
                                          (svtv-data$c-cycle-fsm-okp-necc))))))))))
 
   (acl2::def-updater-independence-thm cycle-fsm-okp-updater-independence
     (let ((new acl2::new) (old acl2::old))
-      (implies (and (base-fsm-eval-equiv (svtv-data$c->phase-fsm new)
+      (implies (and (fsm-eval-equiv (svtv-data$c->phase-fsm new)
                                          (svtv-data$c->phase-fsm old))
                     (equal (svtv-data$c->cycle-phases new)
                            (svtv-data$c->cycle-phases old)))
@@ -456,7 +460,7 @@
                         (env ,(hq witness))))
                  :in-theory (disable svtv-data$c-cycle-fsm-okp-necc)))))))
                   
-(define svtv-data$a-cycle-fsm-okp (x (cycle-fsm base-fsm-p))
+(define svtv-data$a-cycle-fsm-okp (x (cycle-fsm fsm-p))
   :enabled t
   :hooks nil
   (non-exec (svtv-data$c-cycle-fsm-okp x cycle-fsm)))
@@ -468,18 +472,19 @@
     (forall env
             (non-exec
              (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
-                  (rename-fsm (make-svtv-fsm :base-fsm fsm
+                  (rename-fsm (make-svtv-fsm :fsm fsm
                                              ;; :design (svtv-data$c->design svtv-data$c)
                                              ;; :user-names (svtv-data$c->user-names svtv-data$c)
                                              :namemap (svtv-data$c->namemap svtv-data$c)))
                   ((pipeline-setup pipe) (svtv-data$c->pipeline-setup svtv-data$c))
                   (run (svtv-fsm-run
                         (svex-alistlist-eval pipe.inputs env)
-                        (svex-alistlist-eval pipe.overrides env)
                         (svex-alist-eval pipe.initst env)
-                        rename-fsm (svtv-probealist-outvars pipe.probes))))
+                        rename-fsm (svtv-probealist-outvars pipe.probes)
+                        :override-vals (svex-alistlist-eval pipe.override-vals env)
+                        :override-tests (svex-alistlist-eval pipe.override-tests env))))
                (and (equal (svex-alist-keys pipe.initst)
-                           (svex-alist-keys (base-fsm->nextstate fsm)))
+                           (svex-alist-keys (fsm->nextstate fsm)))
                     (ec-call
                      (svex-envs-equivalent
                       (svex-alist-eval results env)
@@ -503,7 +508,7 @@
 
   (acl2::def-updater-independence-thm pipeline-okp-updater-independence
     (let ((new acl2::new) (old acl2::old))
-      (implies (and (base-fsm-eval-equiv (svtv-data$c->cycle-fsm new)
+      (implies (and (fsm-eval-equiv (svtv-data$c->cycle-fsm new)
                                          (svtv-data$c->cycle-fsm old))
                     (equal (svtv-data$c->pipeline-setup new)
                            (svtv-data$c->pipeline-setup old))
@@ -525,23 +530,6 @@
                         (env ,(hq witness))))
                  :in-theory (disable svtv-data$c-pipeline-okp-necc)))))))
   
-
-;; (define svtv-data$c-pipeline-okp (svtv-data$c (results svex-alist-p))
-;;   :enabled t
-;;   (non-exec
-;;    (b* ((fsm (svtv-data$c->cycle-fsm svtv-data$c))
-;;         (probes (svtv-data$c->pipeline-probes svtv-data$c))
-;;         (result
-;;          (svtv-probealist-extract-alist
-;;           probes
-;;           (svtv-fsm-run-compile
-;;            (svtv-data$c->pipeline-inputs svtv-data$c)
-;;            (svtv-data$c->pipeline-overrides svtv-data$c)
-;;            (svtv-data$c->pipeline-initst svtv-data$c)
-;;            fsm
-;;            (svtv-probealist-outvars probes) nil))))
-;;      (ec-call (svex-alist-eval-equiv results result)))))
-
 
 (define svtv-data$a-pipeline-okp (x (results svex-alist-p))
   :enabled t :hooks nil
@@ -610,19 +598,25 @@
                   (svtv-data$c->pipeline-validp x))
              (svtv-data$c-pipeline-okp x (svtv-data$c->pipeline x))))
 
+  (local (defthm svex-alist-keys-when-alist-eval-equiv!-normalize-assigns
+           (implies (svex-alist-eval-equiv! x (flatnorm-res->assigns (svtv-normalize-assigns flatten aliases setup)))
+                    (equal (svex-alist-keys x)
+                           (svex-alist-keys (flatnorm-res->assigns (svtv-normalize-assigns flatten aliases setup)))))))
+  
   (defthm no-duplicatesp-nextstate-keys-of-svtv-data->phase-fsm
     (implies (and (svtv-data$ap x)
                   (svtv-data$a->phase-fsm-validp x)
                   (svtv-data$a->flatnorm-validp x)
                   )
              (no-duplicatesp-equal
-              (svex-alist-keys (base-fsm->nextstate (svtv-data$c->phase-fsm x)))))
+              (svex-alist-keys (fsm->nextstate (svtv-data$c->phase-fsm x)))))
     :hints(("Goal" :in-theory (e/d (svtv-data$ap)
-                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays))
-            :use ((:instance no-duplicate-nextstates-of-svtv-compose-assigns/delays
-                   (flatnorm (svtv-normalize-assigns (svtv-data$c->flatten x)
-                                                     (svtv-data$c->aliases x)
-                                                     (svtv-data$c->flatnorm-setup x))))))))
+                                   (no-duplicate-nextstates-of-svtv-compose-assigns/delays
+                                    phase-fsm-composition-p-implies-no-duplicate-nextstate-keys))
+            :use ((:instance phase-fsm-composition-p-implies-no-duplicate-nextstate-keys
+                   (phase-fsm (svtv-data$c->phase-fsm x))
+                   (flatnorm (svtv-data$c->flatnorm x))
+                   (config (svtv-data$c->phase-fsm-setup x)))))))
 
   (defthm moddb-ok-when-svtv-data$ap
     (implies (and (svtv-data$ap x)
@@ -848,7 +842,7 @@
 (defthm update-phase-fsm-preserves-svtv-data$ap
   (implies (and (svtv-data$ap x)
                 (or (not (svtv-data$a->cycle-fsm-validp x))
-                    (base-fsm-eval-equiv phase-fsm (svtv-data$c->phase-fsm x)))
+                    (fsm-eval-equiv phase-fsm (svtv-data$c->phase-fsm x)))
                 (or (not (svtv-data$c->phase-fsm-validp x))
                     (svtv-data$c-phase-fsm-okp x phase-fsm)))
            (svtv-data$ap (update-svtv-data$c->phase-fsm phase-fsm x)))
@@ -856,9 +850,9 @@
           :use ((:instance svtv-data$ap-implies-phase-fsm-okp))
           :in-theory (disable svtv-data$ap-implies-phase-fsm-okp))))
 
-(define update-svtv-data$a->phase-fsm ((phase-fsm base-fsm-p) (x svtv-data$ap))
+(define update-svtv-data$a->phase-fsm ((phase-fsm fsm-p) (x svtv-data$ap))
   :guard (and (or (not (svtv-data$a->cycle-fsm-validp x))
-                  (base-fsm-eval-equiv phase-fsm (svtv-data$a->phase-fsm x)))
+                  (fsm-eval-equiv phase-fsm (svtv-data$a->phase-fsm x)))
               (or (not (svtv-data$a->phase-fsm-validp x))
                   (ec-call (svtv-data$a-phase-fsm-okp x phase-fsm))))
   ;; :guard-hints ((and stable-under-simplificationp '(:in-theory (enable svtv-data$ap))))  
@@ -953,7 +947,7 @@
                                 (svtv-data$ap-implies-cycle-fsm-okp))
                 :use svtv-data$ap-implies-cycle-fsm-okp))))
 
-(define update-svtv-data$a->cycle-fsm ((cycle-fsm base-fsm-p) (x svtv-data$ap))
+(define update-svtv-data$a->cycle-fsm ((cycle-fsm fsm-p) (x svtv-data$ap))
   :guard (if (svtv-data$a->cycle-fsm-validp x)
              (svtv-data$a-cycle-fsm-okp x cycle-fsm)
            (not (svtv-data$a->pipeline-validp x)))
@@ -1342,6 +1336,8 @@
                 assigns))
    :msg "; Svtv-data flatnorm: ~st seconds, ~sa bytes.~%"))
 
+(local (include-book "std/lists/sets" :dir :system))
+
 (define svtv-data-compute-flatnorm (svtv-data)
   :guard (and (svtv-data->flatten-validp svtv-data)
               (not (svtv-data->phase-fsm-validp svtv-data)))
@@ -1370,6 +1366,18 @@
     (svtv-data$c->flatnorm-validp new-svtv-data)))
 
 
+(define svtv-data-namemap->lhsmap ((user-names svtv-namemap-p)
+                                   (svtv-data))
+  :guard (svtv-data->flatten-validp svtv-data)
+  :returns (mv errs (namemap svtv-name-lhs-map-p))
+  (b* ((design (svtv-data->design svtv-data)))
+    (stobj-let ((moddb (svtv-data->moddb svtv-data))
+                (aliases (svtv-data->aliases svtv-data)))
+               (errs lhsmap)
+               (svtv-namemap->lhsmap user-names
+                                     (moddb-modname-get-index (design->top design) moddb)
+                                     moddb aliases)
+               (mv errs lhsmap))))
 
 (define svtv-data-compute-namemap (svtv-data)
   :returns (mv err new-svtv-data)
@@ -1378,23 +1386,20 @@
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable normalize-stobjs-of-svtv-design-flatten
                                           svtv-data$c-namemap-okp
-                                          svtv-data$c-flatten-okp))))
+                                          svtv-data$c-flatten-okp
+                                          svtv-data-namemap->lhsmap))))
   (time$
    (b* ((user-names (svtv-data->user-names svtv-data))
-        (design (svtv-data->design svtv-data)))
-     (stobj-let ((moddb (svtv-data->moddb svtv-data))
-                 (aliases (svtv-data->aliases svtv-data)))
-                (errs lhsmap)
-                (svtv-namemap->lhsmap user-names
-                                      (moddb-modname-get-index (design->top design) moddb)
-                                      moddb aliases)
-                (b* (((when errs)
-                      (mv (msg-list errs) svtv-data))
-                     (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
-                     (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
-                  (mv nil svtv-data))))
+        ((mv errs lhsmap) (svtv-data-namemap->lhsmap user-names svtv-data))
+        ((when errs)
+         (mv (msg-list errs) svtv-data))
+        (svtv-data (update-svtv-data->namemap lhsmap svtv-data))
+        (svtv-data (update-svtv-data->namemap-validp t svtv-data)))
+     (mv nil svtv-data))
+     
    :msg "; Svtv-data namemap: ~st seconds, ~sa bytes.~%")
   ///
+  (local (in-theory (enable svtv-data-namemap->lhsmap)))
   (defret svtv-data$c-get-of-<fn>
     (implies (and (equal key (svtv-data$c-field-fix k))
                   (not (equal key :namemap))

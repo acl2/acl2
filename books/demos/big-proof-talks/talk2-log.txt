@@ -14,8 +14,9 @@ ACL2 !>>(SET-GUARD-CHECKING :ALL)
 Leaving guard checking on, but changing value to :ALL.
 
 ACL2 !>>(DEFUN AP (X Y)
-               (IF (ENDP X)
-                   Y (CONS (CAR X) (AP (CDR X) Y))))
+          (IF (ENDP X)
+              Y
+            (CONS (CAR X) (AP (CDR X) Y))))
 
 The admission of AP is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -30,7 +31,7 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(AP '(1 2 3) '(4 5 6))
 (1 2 3 4 5 6)
 ACL2 !>>(DEFTHM AP-IS-ASSOCIATIVE
-                (EQUAL (AP (AP A B) C) (AP A (AP B C))))
+          (EQUAL (AP (AP A B) C) (AP A (AP B C))))
 
 Name the formula above *1.
 
@@ -39,9 +40,10 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (AP A B).  This suggestion
-was produced using the :induction rule AP.  If we let (:P A B C) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (AP A B).
+
+This suggestion was produced using the :induction rule AP.  If we let
+(:P A B C) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B C))
               (:P A B C))
      (IMPLIES (ENDP A) (:P A B C))).
@@ -98,10 +100,11 @@ Rules: ((:DEFINITION AP)
         (:REWRITE CDR-CONS))
  AP-IS-ASSOCIATIVE
 ACL2 !>>(DEFUN LTE (X Y)
-               (IF (ENDP X)
-                   T
-                   (IF (ENDP Y)
-                       NIL (LTE (CDR X) (CDR Y)))))
+          (IF (ENDP X)
+              T
+            (IF (ENDP Y)
+                NIL
+              (LTE (CDR X) (CDR Y)))))
 
 The admission of LTE is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -126,9 +129,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (LTE A C), but modified
-to accommodate (LTE B C) and (LTE A B).  These suggestions were produced
-using the :induction rule LTE.  If we let (:P A B C) denote *1 above
-then the induction scheme we'll use is
+to accommodate (LTE B C) and (LTE A B).
+
+These suggestions were produced using the :induction rule LTE.  If
+we let (:P A B C) denote *1 above then the induction scheme we'll use
+is
 (AND (IMPLIES (AND (NOT (ENDP A))
                    (NOT (ENDP C))
                    (:P (CDR A) (CDR B) (CDR C)))
@@ -248,11 +253,11 @@ Rules: ((:DEFINITION ENDP)
 
 Proof succeeded.
 ACL2 !>>(DEFUN INSERT (E X)
-               (IF (ENDP X)
-                   (CONS E X)
-                   (IF (LEXORDER E (CAR X))
-                       (CONS E X)
-                       (CONS (CAR X) (INSERT E (CDR X))))))
+          (IF (ENDP X)
+              (CONS E X)
+            (IF (LEXORDER E (CAR X))
+                (CONS E X)
+              (CONS (CAR X) (INSERT E (CDR X))))))
 
 The admission of INSERT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -266,8 +271,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
 ACL2 !>>(INSERT 'BOB '(ALICE CATHY))
 (ALICE BOB CATHY)
 ACL2 !>>(DEFUN ISORT (X)
-               (IF (ENDP X)
-                   X (INSERT (CAR X) (ISORT (CDR X)))))
+          (IF (ENDP X)
+              X
+            (INSERT (CAR X) (ISORT (CDR X)))))
 
 The admission of ISORT is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -280,10 +286,10 @@ Rules: NIL
 ACL2 !>>(ISORT '(BOB CATHY ALICE))
 (ALICE BOB CATHY)
 ACL2 !>>(DEFUN ORDERED (X)
-               (OR (ENDP X)
-                   (ENDP (CDR X))
-                   (AND (LEXORDER (CAR X) (CAR (CDR X)))
-                        (ORDERED (CDR X)))))
+          (OR (ENDP X)
+              (ENDP (CDR X))
+              (AND (LEXORDER (CAR X) (CAR (CDR X)))
+                   (ORDERED (CDR X)))))
 
 The admission of ORDERED is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -294,16 +300,18 @@ Summary
 Form:  ( DEFUN ORDERED ...)
 Rules: NIL
  ORDERED
-ACL2 !>>(DEFTHM ORDERED-ISORT (ORDERED (ISORT X)))
+ACL2 !>>(DEFTHM ORDERED-ISORT
+          (ORDERED (ISORT X)))
 
 Name the formula above *1.
 
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (ISORT X).  This
-suggestion was produced using the :induction rule ISORT.  If we let
-(:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (ISORT X).
+
+This suggestion was produced using the :induction rule ISORT.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
               (:P X))
      (IMPLIES (ENDP X) (:P X))).
@@ -374,7 +382,8 @@ Perhaps we can prove *1.1 by induction.  Two induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (INSERT X1 IT). 
+We will induct according to a scheme suggested by (INSERT X1 IT).
+
 This suggestion was produced using the :induction rules INSERT and
 ORDERED.  If we let (:P IT X1) denote *1.1 above then the induction
 scheme we'll use is
@@ -572,8 +581,8 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION ORDERED))
  ORDERED-ISORT
 ACL2 !>>(DEFUN REMARKABLY-FAST-SORT (X)
-               (DECLARE (IGNORE X))
-               '(ALICE BOB CATHY))
+          (DECLARE (IGNORE X))
+          '(ALICE BOB CATHY))
 
 Since REMARKABLY-FAST-SORT is non-recursive, its admission is trivial.
 We observe that the type of REMARKABLY-FAST-SORT is described by the
@@ -587,7 +596,7 @@ Rules: NIL
 ACL2 !>>(REMARKABLY-FAST-SORT '(CATHY ALICE BOB))
 (ALICE BOB CATHY)
 ACL2 !>>(DEFTHM ORDERED-REMARKABLY-FAST-SORT
-                (ORDERED (REMARKABLY-FAST-SORT X)))
+          (ORDERED (REMARKABLY-FAST-SORT X)))
 
 ACL2 Warning [Non-rec] in ( DEFTHM ORDERED-REMARKABLY-FAST-SORT ...):
 A :REWRITE rule generated from ORDERED-REMARKABLY-FAST-SORT will be
@@ -619,7 +628,7 @@ ACL2 !>>(INCLUDE-BOOK "sorting/perm"
 Summary
 Form:  ( INCLUDE-BOOK "sorting/perm" ...)
 Rules: NIL
- "[books]/sorting/perm.lisp"
+ (:SYSTEM . "sorting/perm.lisp")
 ACL2 !>>(PERM '(CATHY ALICE BOB)
               '(ALICE BOB CATHY))
 T
@@ -630,14 +639,14 @@ ACL2 !>>(PE 'PERM)
           11:x(INCLUDE-BOOK "sorting/perm" :DIR ...)
               \
               [Included books, outermost to innermost:
-               "[books]/sorting/perm.lisp"
+               (:SYSTEM . "sorting/perm.lisp")
               ]
               \
 >L             (DEFUN PERM (X Y)
-                      (IF (CONSP X)
-                          (AND (MEMB (CAR X) Y)
-                               (PERM (CDR X) (RM (CAR X) Y)))
-                          (NOT (CONSP Y))))
+                 (IF (CONSP X)
+                     (AND (MEMB (CAR X) Y)
+                          (PERM (CDR X) (RM (CAR X) Y)))
+                   (NOT (CONSP Y))))
 ACL2 !>>(DEFTHM PERM-ISORT (PERM (ISORT X) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM PERM-ISORT ...):  In a :REWRITE
@@ -653,9 +662,10 @@ Name the formula above *1.
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (ISORT X).  This
-suggestion was produced using the :induction rule ISORT.  If we let
-(:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (ISORT X).
+
+This suggestion was produced using the :induction rule ISORT.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
               (:P X))
      (IMPLIES (ENDP X) (:P X))).
@@ -730,9 +740,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (INSERT X1 IT), but
-modified to accommodate (PERM IT X2).  These suggestions were produced
-using the :induction rules INSERT and PERM.  If we let (:P IT X1 X2)
-denote *1.1 above then the induction scheme we'll use is
+modified to accommodate (PERM IT X2).
+
+These suggestions were produced using the :induction rules INSERT and
+PERM.  If we let (:P IT X1 X2) denote *1.1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP IT))
                    (NOT (LEXORDER X1 (CAR IT)))
                    (:P (CDR IT) X1 (RM (CAR IT) X2)))
@@ -880,7 +892,7 @@ Splitter rules (see :DOC splitter):
 Warnings:  Double-rewrite
  PERM-ISORT
 ACL2 !>>(DEFTHM PERM-REMARKABLY-FAST-SORT
-                (PERM (REMARKABLY-FAST-SORT X) X))
+          (PERM (REMARKABLY-FAST-SORT X) X))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM PERM-REMARKABLY-FAST-SORT
 ...):  In a :REWRITE rule generated from PERM-REMARKABLY-FAST-SORT,
@@ -963,16 +975,18 @@ ACL2 !>>'(END OF DEMO 1)
 (END OF DEMO 1)
 ACL2 !>>(SET-GAG-MODE :GOALS)
 <state>
-ACL2 !>>(DEFTHM PERM-AP (PERM (AP A B) (AP B A)))
+ACL2 !>>(DEFTHM PERM-AP
+          (PERM (AP A B) (AP B A)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (AP A B).  This suggestion
-was produced using the :induction rule AP.  If we let (:P A B) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (AP A B).
+
+This suggestion was produced using the :induction rule AP.  If we let
+(:P A B) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B))
               (:P A B))
      (IMPLIES (ENDP A) (:P A B))).
@@ -1168,8 +1182,8 @@ ACL2 Error [Failure] in ( DEFTHM PERM-AP ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM MEMB-AP
-                (EQUAL (MEMB E (AP A B))
-                       (OR (MEMB E A) (MEMB E B))))
+          (EQUAL (MEMB E (AP A B))
+                 (OR (MEMB E A) (MEMB E B))))
 Subgoal 2
 Subgoal 2'
 
@@ -1203,9 +1217,11 @@ merge into two derived induction schemes.  However, one of these is
 flawed and so we are left with one viable candidate.  
 
 We will induct according to a scheme suggested by (MEMB E A), but modified
-to accommodate (AP A B).  These suggestions were produced using the
-:induction rules AP and MEMB.  If we let (:P A B E) denote *1 above
-then the induction scheme we'll use is
+to accommodate (AP A B).
+
+These suggestions were produced using the :induction rules AP and MEMB.
+If we let (:P A B E) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B E))
      (IMPLIES (AND (CONSP A)
                    (NOT (EQUAL E (CAR A)))
@@ -1237,16 +1253,18 @@ Rules: ((:DEFINITION AP)
         (:REWRITE CDR-CONS)
         (:TYPE-PRESCRIPTION MEMB))
  MEMB-AP
-ACL2 !>>(DEFTHM PERM-AP (PERM (AP A B) (AP B A)))
+ACL2 !>>(DEFTHM PERM-AP
+          (PERM (AP A B) (AP B A)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  We will choose arbitrarily among these.  
 
-We will induct according to a scheme suggested by (AP A B).  This suggestion
-was produced using the :induction rule AP.  If we let (:P A B) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (AP A B).
+
+This suggestion was produced using the :induction rule AP.  If we let
+(:P A B) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP A)) (:P (CDR A) B))
               (:P A B))
      (IMPLIES (ENDP A) (:P A B))).
@@ -1366,16 +1384,17 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION PERM) (:DEFINITION RM))
  PERM-AP
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
-                (EQUAL (ISORT (ISORT X)) (ISORT X)))
+          (EQUAL (ISORT (ISORT X)) (ISORT X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (ISORT X).  This
-suggestion was produced using the :induction rule ISORT.  If we let
-(:P X) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (ISORT X).
+
+This suggestion was produced using the :induction rule ISORT.  If we
+let (:P X) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X)) (:P (CDR X)))
               (:P X))
      (IMPLIES (ENDP X) (:P X))).
@@ -1802,16 +1821,17 @@ ACL2 Error [Failure] in ( DEFTHM ISORT-IDEMPOTENT ...):  See :DOC failure.
 
 ******** FAILED ********
 ACL2 !>>(DEFTHM ISORT-IDENTITY
-                (IMPLIES (ORDERED X)
-                         (EQUAL (ISORT X) X)))
+          (IMPLIES (ORDERED X)
+                   (EQUAL (ISORT X) X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  Subsumption reduces that number to one.  
 
-We will induct according to a scheme suggested by (ORDERED X).  This
-suggestion was produced using the :induction rules ISORT and ORDERED.
+We will induct according to a scheme suggested by (ORDERED X).
+
+This suggestion was produced using the :induction rules ISORT and ORDERED.
 If we let (:P X) denote *1 above then the induction scheme we'll use
 is
 (AND (IMPLIES (AND (NOT (ENDP X))
@@ -1862,7 +1882,7 @@ Rules: ((:DEFINITION ENDP)
         (:TYPE-PRESCRIPTION LEXORDER))
  ISORT-IDENTITY
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
-                (EQUAL (ISORT (ISORT X)) (ISORT X)))
+          (EQUAL (ISORT (ISORT X)) (ISORT X)))
 
 Q.E.D.
 
@@ -1873,9 +1893,9 @@ Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE ORDERED-ISORT))
  ISORT-IDEMPOTENT
 ACL2 !>>(DEFTHM MEMB-CONGRUENCE
-                (IMPLIES (PERM A B)
-                         (EQUAL (MEMB E A) (MEMB E B)))
-                :RULE-CLASSES :CONGRUENCE)
+          (IMPLIES (PERM A B)
+                   (EQUAL (MEMB E A) (MEMB E B)))
+          :RULE-CLASSES :CONGRUENCE)
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -1885,9 +1905,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (MEMB E A), but modified
-to accommodate (PERM A B).  These suggestions were produced using the
-:induction rules MEMB and PERM.  If we let (:P A B E) denote *1 above
-then the induction scheme we'll use is
+to accommodate (PERM A B).
+
+These suggestions were produced using the :induction rules MEMB and
+PERM.  If we let (:P A B E) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A B E))
      (IMPLIES (AND (CONSP A)
                    (NOT (EQUAL E (CAR A)))
@@ -1957,7 +1979,7 @@ Rules: ((:DEFINITION MEMB)
 ACL2 !>>(PE 'PERM-ISORT)
           12  (DEFTHM PERM-ISORT (PERM (ISORT X) X))
 ACL2 !>>(DEFTHM THIS-IS-NOT-A-THEOREM
-                (MEMB E (ISORT A)))
+          (MEMB E (ISORT A)))
 Goal'
 
 ([ A key checkpoint:
@@ -1972,9 +1994,10 @@ Goal'
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (MEMB E A).  This
-suggestion was produced using the :induction rule MEMB.  If we let
-(:P A E) denote *1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (MEMB E A).
+
+This suggestion was produced using the :induction rule MEMB.  If we
+let (:P A E) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (NOT (CONSP A)) (:P A E))
      (IMPLIES (AND (CONSP A)
                    (NOT (EQUAL E (CAR A)))
@@ -2029,12 +2052,13 @@ failure.
 ACL2 !>>'(END OF DEMO 2)
 (END OF DEMO 2)
 ACL2 !>>(DEFUN FIB1 (N)
-               (DECLARE (XARGS :GUARD (NATP N)
-                               :VERIFY-GUARDS NIL))
-               (IF (ZP N)
-                   0
-                   (IF (EQUAL N 1)
-                       1 (+ (FIB1 (- N 1)) (FIB1 (- N 2))))))
+          (DECLARE (XARGS :GUARD (NATP N)
+                          :VERIFY-GUARDS NIL))
+          (IF (ZP N)
+              0
+            (IF (EQUAL N 1)
+                1
+              (+ (FIB1 (- N 1)) (FIB1 (- N 2))))))
 
 For the admission of FIB1 we will use the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2131,11 +2155,12 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(TIME$ (FIB1 40))
 102334155
 ACL2 !>>(DEFUN FIB2 (N J K)
-               (DECLARE (XARGS :GUARD (AND (NATP N) (NATP J) (NATP K))))
-               (IF (ZP N)
-                   J
-                   (IF (EQUAL N 1)
-                       K (FIB2 (- N 1) K (+ J K)))))
+          (DECLARE (XARGS :GUARD (AND (NATP N) (NATP J) (NATP K))))
+          (IF (ZP N)
+              J
+            (IF (EQUAL N 1)
+                K
+              (FIB2 (- N 1) K (+ J K)))))
 
 The admission of FIB2 is trivial, using the relation O< (which is known
 to be well-founded on the domain recognized by O-P) and the measure
@@ -2161,13 +2186,13 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
 ACL2 !>>(TIME$ (FIB2 40 0 1))
 102334155
 ACL2 !>>(DEFTHM FIB2-V-FIB1
-                (IMPLIES (AND (NATP I)
-                              (NATP J)
-                              (NATP K)
-                              (<= 1 I))
-                         (EQUAL (FIB2 I J K)
-                                (+ (* (FIB1 (- I 1)) J)
-                                   (* (FIB1 I) K)))))
+          (IMPLIES (AND (NATP I)
+                        (NATP J)
+                        (NATP K)
+                        (<= 1 I))
+                   (EQUAL (FIB2 I J K)
+                          (+ (* (FIB1 (- I 1)) J)
+                             (* (FIB1 I) K)))))
 Goal'
 Goal''
 
@@ -2193,9 +2218,11 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (FIB1 I), but modified
-to accommodate (FIB2 I J K).  These suggestions were produced using
-the :induction rules FIB1 and FIB2.  If we let (:P I J K) denote *1
-above then the induction scheme we'll use is
+to accommodate (FIB2 I J K).
+
+These suggestions were produced using the :induction rules FIB1 and
+FIB2.  If we let (:P I J K) denote *1 above then the induction scheme
+we'll use is
 (AND (IMPLIES (AND (NOT (ZP I))
                    (NOT (EQUAL I 1))
                    (:P (+ -1 I) K (+ J K))
@@ -2271,9 +2298,9 @@ Rules: ((:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
         (:REWRITE UNICITY-OF-1))
  FIB2-V-FIB1
 ACL2 !>>(DEFUN FIB (N)
-               (DECLARE (XARGS :GUARD (NATP N)))
-               (MBE :LOGIC (FIB1 N)
-                    :EXEC (FIB2 N 0 1)))
+          (DECLARE (XARGS :GUARD (NATP N)))
+          (MBE :LOGIC (FIB1 N)
+               :EXEC (FIB2 N 0 1)))
 
 Since FIB is non-recursive, its admission is trivial.  We observe that
 the type of FIB is described by the theorem 
@@ -2351,9 +2378,10 @@ Goal'
 Perhaps we can prove *1 by induction.  One induction scheme is suggested
 by this conjecture.  
 
-We will induct according to a scheme suggested by (FIB1 N).  This suggestion
-was produced using the :induction rule FIB1.  If we let (:P N) denote
-*1 above then the induction scheme we'll use is
+We will induct according to a scheme suggested by (FIB1 N).
+
+This suggestion was produced using the :induction rule FIB1.  If we
+let (:P N) denote *1 above then the induction scheme we'll use is
 (AND (IMPLIES (AND (NOT (ZP N))
                    (NOT (EQUAL N 1))
                    (:P (+ -1 N))
@@ -2411,37 +2439,6 @@ Proof succeeded.
 ACL2 !>>(TIME$ (FIB1 40))
 102334155
 ACL2 !>>(MEMOIZE 'FIB1)
-
-
-ACL2 !>>>(TABLE
-              MEMOIZE-TABLE
-              (DEREF-MACRO-NAME 'FIB1
-                                (MACRO-ALIASES WORLD))
-              (LIST* (CONS :CONDITION-FN T)
-                     (CONS :INLINE T)
-                     (CONS :COMMUTATIVE NIL)
-                     (CONS :FORGET NIL)
-                     (CONS :MEMO-TABLE-INIT-SIZE (OR NIL *MHT-DEFAULT-SIZE*))
-                     (CONS :AOKP 'NIL)
-                     (CONS :STATS :DEFAULT)
-                     (CONS :TOTAL NIL)
-                     (CONS :INVOKE NIL)
-                     (AND (NOT (EQ ':DEFAULT :DEFAULT))
-                          (LIST (CONS :IDEAL-OKP ':DEFAULT)))))
-
-Summary
-Form:  ( TABLE MEMOIZE-TABLE ...)
-Rules: NIL
-MEMOIZE-TABLE
-
-
-ACL2 !>>>(VALUE-TRIPLE (DEREF-MACRO-NAME 'FIB1
-                                         (MACRO-ALIASES (W STATE))))
-FIB1
-
-Summary
-Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
-Rules: NIL
  FIB1
 ACL2 !>>(TIME$ (FIB1 5000))
 3878968454388325633701916308325905312082127714646245106160597214895550139044037097010822916462210669479293452858882973813483102008954982940361430156911478938364216563944106910214505634133706558656238254656700712525929903854933813928836378347518908762970712033337052923107693008518093849801803847813996748881765554653788291644268912980384613778969021502293082475666346224923071883324803280375039130352903304505842701147635242270210934637699104006714174883298422891491273104054328753298044273676822977244987749874555691907703880637046832794811358973739993110106219308149018570815397854379195305617510761053075688783766033667355445258844886241619210553457493675897849027988234351023599844663934853256411952221859563060475364645470760330902420806382584929156452876291575759142343809142302917491088984155209854432486594079793571316841692868039545309545388698114665082066862897420639323438488465240988742395873801976993820317174208932265468879364002630797780058759129671389634214252579116872755600360311370547754724604639987588046985178408674382863125
@@ -2453,9 +2450,9 @@ ACL2 !>>(INCLUDE-BOOK "centaur/gl/gl"
 Summary
 Form:  ( INCLUDE-BOOK "centaur/gl/gl" ...)
 Rules: NIL
- "[books]/centaur/gl/gl.lisp"
+ (:SYSTEM . "centaur/gl/gl.lisp")
 ACL2 !>>(DEFUN 32* (X Y)
-               (LOGAND (* X Y) (- (EXPT 2 32) 1)))
+          (LOGAND (* X Y) (- (EXPT 2 32) 1)))
 
 Since 32* is non-recursive, its admission is trivial.  We observe that
 the type of 32* is described by the theorem (INTEGERP (32* X Y)). 
@@ -2466,12 +2463,12 @@ Form:  ( DEFUN 32* ...)
 Rules: ((:TYPE-PRESCRIPTION BINARY-LOGAND))
  32*
 ACL2 !>>(DEFUN FAST-LOGCOUNT-32 (V)
-               (LET* ((V (- V (LOGAND (ASH V -1) 1431655765)))
-                      (V (+ (LOGAND V 858993459)
-                            (LOGAND (ASH V -2) 858993459))))
-                     (ASH (32* (LOGAND (+ V (ASH V -4)) 252645135)
-                               16843009)
-                          -24)))
+          (LET* ((V (- V (LOGAND (ASH V -1) 1431655765)))
+                 (V (+ (LOGAND V 858993459)
+                       (LOGAND (ASH V -2) 858993459))))
+            (ASH (32* (LOGAND (+ V (ASH V -4)) 252645135)
+                      16843009)
+                 -24)))
 
 Since FAST-LOGCOUNT-32 is non-recursive, its admission is trivial.
 We observe that the type of FAST-LOGCOUNT-32 is described by the theorem
@@ -2531,9 +2528,9 @@ produced the non-nil result
 Regarding this value
 (See :DOC set-iprint to be able to see elided values in this message.):
 The :DEFINITION rules for the built-in functions DOUBLE-REWRITE, THE-CHECK,
-CONS-WITH-HINT, IFF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP, ZEROP,
-LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP, ATOM,
-NOT, IMPLIES and EQ are disabled by the theory expression 
+CONS-WITH-HINT, IFF, FROM-DF, WORMHOLE-EVAL, MV-LIST, MINUSP, PLUSP,
+ZEROP, LISTP, SYNP, CASE-SPLIT, FORCE, /=, =, RETURN-LAST, NULL, ENDP,
+ATOM, NOT, IMPLIES and EQ are disabled by the theory expression 
 (UNION-THEORIES NIL
                 (E/D** ((:RULESET GL::SHAPE-SPEC-OBJ-IN-RANGE-BACKCHAIN)))),
 but some expansions of their calls may still occur.  See :DOC theories-
@@ -2602,10 +2599,10 @@ ACL2 !>>'(END OF DEMO 4)
 ACL2 !>>(UBT! 'ISORT-IDENTITY)
           14:x(DEFTHM PERM-AP ...)
 ACL2 !>>(DEFUN LEQUAL (X Y)
-               (COND ((ATOM X) (ATOM Y))
-                     ((ATOM Y) NIL)
-                     (T (AND (EQUAL (CAR X) (CAR Y))
-                             (LEQUAL (CDR X) (CDR Y))))))
+          (COND ((ATOM X) (ATOM Y))
+                ((ATOM Y) NIL)
+                (T (AND (EQUAL (CAR X) (CAR Y))
+                        (LEQUAL (CDR X) (CDR Y))))))
 
 The admission of LEQUAL is trivial, using the relation O< (which is
 known to be well-founded on the domain recognized by O-P) and the measure
@@ -2647,9 +2644,11 @@ suggested by this conjecture.  Subsumption reduces that number to five.
 These merge into one derived induction scheme.  
 
 We will induct according to a scheme suggested by (LEQUAL X Z), but
-modified to accommodate (LEQUAL Y Z) and (LEQUAL Y X).  These suggestions
-were produced using the :induction rule LEQUAL.  If we let (:P X Y Z)
-denote *1 above then the induction scheme we'll use is
+modified to accommodate (LEQUAL Y Z) and (LEQUAL Y X).
+
+These suggestions were produced using the :induction rule LEQUAL. 
+If we let (:P X Y Z) denote *1 above then the induction scheme we'll
+use is
 (AND (IMPLIES (AND (NOT (ATOM X))
                    (NOT (ATOM Z))
                    (NOT (EQUAL (CAR X) (CAR Z))))
@@ -2837,10 +2836,11 @@ suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
 We will induct according to a scheme suggested by (INSERT E X-EQUIV),
-but modified to accommodate (INSERT E X) and (LEQUAL X X-EQUIV).  These
-suggestions were produced using the :induction rules INSERT and LEQUAL.
-If we let (:P E X X-EQUIV) denote *1 above then the induction scheme
-we'll use is
+but modified to accommodate (INSERT E X) and (LEQUAL X X-EQUIV).
+
+These suggestions were produced using the :induction rules INSERT and
+LEQUAL.  If we let (:P E X X-EQUIV) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X-EQUIV))
                    (NOT (LEXORDER E (CAR X-EQUIV)))
                    (:P E (CDR X) (CDR X-EQUIV)))
@@ -2908,9 +2908,11 @@ schemes.  However, one of these is flawed and so we are left with one
 viable candidate.  
 
 We will induct according to a scheme suggested by (ISORT X), but modified
-to accommodate (PERM X X-EQUIV).  These suggestions were produced using
-the :induction rules ISORT and PERM.  If we let (:P X X-EQUIV) denote
-*1 above then the induction scheme we'll use is
+to accommodate (PERM X X-EQUIV).
+
+These suggestions were produced using the :induction rules ISORT and
+PERM.  If we let (:P X X-EQUIV) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (AND (NOT (ENDP X))
                    (:P (CDR X) (RM (CAR X) X-EQUIV)))
               (:P X X-EQUIV))
@@ -3082,7 +3084,7 @@ Form:  ( MAKE-EVENT (DEFCONG-FORM ...))
 Rules: NIL
  PERM-IMPLIES-LEQUAL-ISORT-1
 ACL2 !>>(DEFTHM ISORT-IDEMPOTENT-LEQUAL
-                (LEQUAL (ISORT (ISORT X)) (ISORT X)))
+          (LEQUAL (ISORT (ISORT X)) (ISORT X)))
 
 ACL2 Warning [Double-rewrite] in ( DEFTHM ISORT-IDEMPOTENT-LEQUAL ...):
 In a :REWRITE rule generated from ISORT-IDEMPOTENT-LEQUAL, equivalence
@@ -3103,8 +3105,8 @@ Rules: ((:CONGRUENCE PERM-IMPLIES-LEQUAL-ISORT-1)
 Warnings:  Double-rewrite
  ISORT-IDEMPOTENT-LEQUAL
 ACL2 !>>(DEFUN TERMINAL-MARKER (X)
-               (COND ((ATOM X) X)
-                     (T (TERMINAL-MARKER (CDR X)))))
+          (COND ((ATOM X) X)
+                (T (TERMINAL-MARKER (CDR X)))))
 
 The admission of TERMINAL-MARKER is trivial, using the relation O<
 (which is known to be well-founded on the domain recognized by O-P)
@@ -3116,8 +3118,8 @@ Form:  ( DEFUN TERMINAL-MARKER ...)
 Rules: NIL
  TERMINAL-MARKER
 ACL2 !>>(DEFTHM TERMINAL-MARKER-ISORT
-                (EQUAL (TERMINAL-MARKER (ISORT X))
-                       (TERMINAL-MARKER X)))
+          (EQUAL (TERMINAL-MARKER (ISORT X))
+                 (TERMINAL-MARKER X)))
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
@@ -3125,6 +3127,7 @@ Perhaps we can prove *1 by induction.  Two induction schemes are suggested
 by this conjecture.  These merge into one derived induction scheme.
 
 We will induct according to a scheme suggested by (TERMINAL-MARKER X).
+
 This suggestion was produced using the :induction rules ISORT and 
 TERMINAL-MARKER.  If we let (:P X) denote *1 above then the induction
 scheme we'll use is
@@ -3194,21 +3197,22 @@ Splitter rules (see :DOC splitter):
   if-intro: ((:DEFINITION INSERT))
  TERMINAL-MARKER-ISORT
 ACL2 !>>(DEFTHM LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
-                (IMPLIES (AND (EQUAL (TERMINAL-MARKER A)
-                                     (TERMINAL-MARKER B))
-                              (LEQUAL A B))
-                         (EQUAL A B))
-                :RULE-CLASSES NIL)
+          (IMPLIES (AND (EQUAL (TERMINAL-MARKER A)
+                               (TERMINAL-MARKER B))
+                        (LEQUAL A B))
+                   (EQUAL A B))
+          :RULE-CLASSES NIL)
 
 *1 (the initial Goal, a key checkpoint) is pushed for proof by induction.
 
 Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to one.
 
-We will induct according to a scheme suggested by (LEQUAL A B).  This
-suggestion was produced using the :induction rules LEQUAL and TERMINAL-MARKER.
-If we let (:P A B) denote *1 above then the induction scheme we'll
-use is
+We will induct according to a scheme suggested by (LEQUAL A B).
+
+This suggestion was produced using the :induction rules LEQUAL and
+TERMINAL-MARKER.  If we let (:P A B) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (AND (NOT (ATOM A))
                    (NOT (ATOM B))
                    (NOT (EQUAL (CAR A) (CAR B))))
@@ -3253,8 +3257,7 @@ Rules: ((:DEFINITION ATOM)
         (:INDUCTION LEQUAL)
         (:INDUCTION TERMINAL-MARKER))
  LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL
-ACL2 !>>(DEFTHM
-         ISORT-IDEMPOTENT
+ACL2 !>>(DEFTHM ISORT-IDEMPOTENT
          (EQUAL (ISORT (ISORT X)) (ISORT X))
          :HINTS
          (("Goal" :USE (:INSTANCE LEQUAL-WITH-SAME-TERMINAL-MARKERS-ARE-EQUAL

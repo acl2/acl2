@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function last.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -56,8 +56,7 @@
 
 (defthm last-iff
   (iff (last l)
-       l)
-  :hints (("Goal" :in-theory (enable last))))
+       l))
 
 (defthm len-of-last
   (equal (len (last l))
@@ -66,24 +65,19 @@
            0))
   :hints (("Goal" :in-theory (enable last))))
 
-(defthm acl2-count-of-last-linear
+(defthm <=-of-acl2-count-of-last-linear
   (<= (acl2-count (last x))
       (acl2-count x))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable last))))
+  :rule-classes :linear)
 
-;; Avoid name clash with std
-(defthm last-of-append-2
-  (equal (last (append x y))
-         (if (consp y)
-             (last y)
-           (if (consp x)
-               (cons (car (last x)) y)
-             y))))
+(defthm <-of-acl2-count-of-last-linear
+  (implies (< 1 (len x))
+           (< (acl2-count (last x))
+              (acl2-count x)))
+  :rule-classes :linear)
 
 (defthm last-when-not-cdr-cheap
   (implies (not (cdr x))
            (equal (last x)
                   x))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable last))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))

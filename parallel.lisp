@@ -1,5 +1,5 @@
-; ACL2 Version 8.4 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2022, Regents of the University of Texas
+; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -414,16 +414,9 @@
 (defmacro set-waterfall-printing (val)
   `(set-waterfall-printing-fn ,val 'set-waterfall-printing state))
 
-(defun set-waterfall-parallelism-hacks-enabled-guard (wrld)
-  (or (ttag wrld)
-      (er hard nil
-          "Using waterfall parallelism hacks requires an active trust-tag. ~
-           Consider using (set-waterfall-parallelism-hacks-enabled! t).  See ~
-           :DOC set-waterfall-parallelism-hacks-enabled for~ more~ ~
-           information.")))
-
-(table waterfall-parallelism-table
-       nil nil :guard (set-waterfall-parallelism-hacks-enabled-guard world))
+(set-table-guard waterfall-parallelism-table
+                 (ttag world)
+                 :topic set-waterfall-parallelism-hacks-enabled)
 
 (defmacro set-waterfall-parallelism-hacks-enabled (val)
 
@@ -733,8 +726,8 @@
 ; ; Unlike rewrite-args, we return (cons rewritten-args ttree) instead of
 ; ; (mv rewritten-args ttree).
 ;
-;   (declare (type (unsigned-byte 29) rdepth))
-;   (cond ((f-big-clock-negative-p state)
+;   (declare (type #.*fixnat-type* rdepth))
+;   (cond ((f-big-clock-negative-p state) ; (obsolete: no big-clock after 4/2023)
 ;          (cons (sublis-var-lst alist args)
 ;                ttree))
 ;         ((null args)
@@ -779,27 +772,27 @@
 ; ; Note: In this function, the extra formal geneqv is actually a list of geneqvs
 ; ; or nil denoting a list of nil geneqvs.
 ;
-;   (declare (type (unsigned-byte 29) rdepth)
-;            (type (signed-byte 30) step-limit))
+;   (declare (type #.*fixnat-type* rdepth)
+;            (type #.*fixnum-type* step-limit))
 ;   (the-mv
 ;    3
-;    (signed-byte 30)
+;    #.*fixnum-type*
 ;    (cond ((null args)
 ;           (mv step-limit nil ttree))
 ;          (t (spec-mv-let
 ;              (step-limit1 rewritten-arg ttree1)
-; ;            (declare (type (signed-byte 30) step-limit1))
+; ;            (declare (type #.*fixnum-type* step-limit1))
 ;              (rewrite-entry (rewrite (car args) alist bkptr)
 ;                             :geneqv (car geneqv))
 ;              (mv-let
 ;                (step-limit2 rewritten-args ttree2)
 ;                (rewrite-entry (rewrite-args (cdr args) alist (1+ bkptr))
 ;                               :geneqv (cdr geneqv))
-; ;              (declare (type (signed-byte 30) step-limit2))
+; ;              (declare (type #.*fixnum-type* step-limit2))
 ;                (if t
 ;                    (mv (let* ((steps1 (- step-limit step-limit1))
 ;                               (step-limit (- step-limit2 steps1)))
-;                          (declare (type (signed-byte 30) steps1 step-limit))
+;                          (declare (type #.*fixnum-type* steps1 step-limit))
 ;                          (cond ((>= step-limit 0)
 ;                                 step-limit)
 ;                                ((step-limit-strictp state)

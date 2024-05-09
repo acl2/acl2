@@ -1,6 +1,6 @@
 ; Tests of the wrap-output transformation
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2023 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,30 @@
 
 (include-book "wrap-output")
 (include-book "kestrel/utilities/deftest" :dir :system)
+
+;; Simple Test of wrapping a non-recursive function:
+(deftest
+  (defun double (x) (* 2 x))
+  (defun triple (x)
+    (if (zp x)
+        0
+      (* 3 x)))
+
+  (wrap-output triple double)
+
+  ;; Expected results:
+  (must-be-redundant
+   ;; Note that the wrapper got pushed into each branch:
+   (DEFUN TRIPLE$1 (X)
+     (DECLARE (XARGS :VERIFY-GUARDS NIL))
+     (IF (ZP X)
+         (DOUBLE 0)
+         (DOUBLE (* 3 X))))
+
+   (DEFTHM TRIPLE-TRIPLE$1-CONNECTION
+     (EQUAL (DOUBLE (TRIPLE X))
+            (TRIPLE$1 X))
+     :HINTS (("Goal" :IN-THEORY '(TRIPLE TRIPLE$1))))))
 
 (deftest
   (defun bool-to-bit (x) (if x 1 0))
@@ -118,27 +142,6 @@
      :HINTS (("Goal" :INDUCT T
               :IN-THEORY '(COPY BAR))))))
 
-;; Test of wrapping a non-recursive function:
-(deftest
-  (defun double (x) (* 2 x))
-  (defun triple (x)
-    (if (zp x)
-        0
-      (* 3 x)))
-
-  (wrap-output triple double)
-
-  (must-be-redundant
-   (DEFUN TRIPLE$1 (X)
-     (DECLARE (XARGS :VERIFY-GUARDS NIL))
-     (IF (ZP X)
-         (DOUBLE 0)
-         (DOUBLE (* 3 X))))
-
-   (DEFTHM TRIPLE-TRIPLE$1-CONNECTION
-     (EQUAL (DOUBLE (TRIPLE X))
-            (TRIPLE$1 X))
-     :HINTS (("Goal" :IN-THEORY '(TRIPLE TRIPLE$1))))))
 
 
 ;; An example where the wrapper has an extra param
@@ -216,45 +219,35 @@
    (DEFTHM FOO-FOO$1-CONNECTION
      (EQUAL (IDENTITY (FOO X N)) (FOO$1 X N)))))
 
-;; Test nary and:
-(deftest
-  (defun foo (x y z w)
-    (and x y z w))
-  (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)))
-  (must-be-redundant
-   (DEFUN FOO$1 (X Y Z W)
-     (DECLARE (XARGS :VERIFY-GUARDS NIL))
-     (IF (AND X Y Z) (F W) (F NIL)))
-   (DEFTHM FOO-FOO$1-CONNECTION
-     (EQUAL (F (FOO X Y Z W)) (FOO$1 X Y Z W))))
-  )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Test 0-ary and:
+;; Test 0-ary AND:
 (deftest
   (defun foo ()
     (and))
   (defstub f (x) t)
   (wrap-output foo (lambda (x) (f x)))
   (must-be-redundant
-   (DEFUN FOO$1 NIL (DECLARE (XARGS :VERIFY-GUARDS NIL)) (F T))
+   (DEFUN FOO$1 NIL (DECLARE (XARGS :VERIFY-GUARDS NIL))
+     ;; we just wrap T, since the AND of nothing is T:
+     (F T))
    (DEFTHM FOO-FOO$1-CONNECTION
-     (EQUAL (F (FOO)) (FOO$1))))
-  )
+     (EQUAL (F (FOO)) (FOO$1)))))
 
-;; Test unary and:
+;; Test unary AND:
 (deftest
   (defun foo (x)
     (and x))
   (defstub f (x) t)
   (wrap-output foo (lambda (x) (f x)))
   (must-be-redundant
-   (DEFUN FOO$1 (X) (DECLARE (XARGS :VERIFY-GUARDS NIL)) (F X))
+   (DEFUN FOO$1 (X) (DECLARE (XARGS :VERIFY-GUARDS NIL))
+     ;; we just wrap X, since the AND of one thing is that thing:
+     (F X))
    (DEFTHM FOO-FOO$1-CONNECTION
-     (EQUAL (F (FOO X)) (FOO$1 X))))
-  )
+     (EQUAL (F (FOO X)) (FOO$1 X)))))
 
-;; Test binary and:
+;; Test binary AND:
 (deftest
   (defun foo (x y)
     (and x y))
@@ -263,43 +256,76 @@
   (must-be-redundant
    (DEFUN FOO$1 (X Y)
      (DECLARE (XARGS :VERIFY-GUARDS NIL))
+     ;; Not sure we can do better than this, since we have to wrap both Y and
+     ;; the NIL.  See the comment on the test just below.
      (IF X (F Y) (F NIL)))
    (DEFTHM FOO-FOO$1-CONNECTION
-     (EQUAL (F (FOO X Y)) (FOO$1 X Y))))
-  )
+     (EQUAL (F (FOO X Y)) (FOO$1 X Y)))))
 
-
-;; 'or' is not fully implemented, each of these tests fail!
-#|
-;; Test nary or:
+;; Test AND with more than 2 conjuncts:
 (deftest
   (defun foo (x y z w)
-    (or x y z w))
+    (and x y z w))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (DEFUN FOO$1 (X Y Z W)
+     (DECLARE (XARGS :VERIFY-GUARDS NIL))
+     ;; A bit unusual, but we can't just wrap each conjunct, because F may not
+     ;; even return a boolean.  And note that in the translation of the AND,
+     ;; only W and NIL are at the leaves of the IF nest.  And we can't just
+     ;; wrap the last conjunct, because in cases where NIL was returned by FOO,
+     ;; FOO$1 must return (F NIL).
+     (IF (AND X Y Z) (F W) (F NIL)))
+   (DEFTHM FOO-FOO$1-CONNECTION
+     (EQUAL (F (FOO X Y Z W)) (FOO$1 X Y Z W)))))
 
-;; Test 0-ary or:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test 0-ary OR:
 (deftest
   (defun foo ()
     (or))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1
+       nil (declare (xargs :verify-guards nil))
+       (f nil))))
 
-;; Test unary or:
+;; Test unary OR:
 (deftest
   (defun foo (x)
     (or x))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1 (x)
+     (declare (xargs :verify-guards nil))
+     (f x))))
 
-;; Test binary or:
+;; Test binary OR:
 (deftest
   (defun foo (x y)
     (or x y))
   (defstub f (x) t)
-  (wrap-output foo (lambda (x) (f x)) :print :all))
-|#
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1 (x y) (declare (xargs :verify-guards nil))
+          (if x (f x) (f y)))))
 
+;; Test OR with more than 2 disjuncts:
+(deftest
+  (defun foo (x y z w)
+    (or x y z w))
+  (defstub f (x) t)
+  (wrap-output foo (lambda (x) (f x)))
+  (must-be-redundant
+   (defun foo$1 (x y z w)
+     (declare (xargs :verify-guards nil))
+     (if x (f x) (if y (f y) (if z (f z) (f w)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; test let
 (deftest
@@ -469,7 +495,7 @@
   (defun test-lambda (x n)
     (if (zp n) x
       ((lambda (x) (* x (test-lambda x (1- n)))) x)))
-  (wrap-output test-lambda (lambda (x) (* x x)) :print :all)
+  (wrap-output test-lambda (lambda (x) (* x x)))
   (must-be-redundant
    (DEFUN TEST-LAMBDA$1 (X N)
      (IF (ZP N)
@@ -545,7 +571,7 @@
   )
 
 
-;; Test involving normalizaion:  TODO: Get this to work
+;; Test involving normalization:  TODO: Get this to work
 
 ;; (deftest
 ;;   (defstub stub (x) t)

@@ -1,0 +1,59 @@
+
+1 ;failure_count_hints
+1 ;total_count_hints
+0 ;failure_count_hypotheses
+0 ;total_count_hypotheses
+0 ;failure_count_book_runes
+0 ;total_count_book_runes
+0 ;failure_count_single_rune
+0 ;total_count_single_rune
+("/usr/home/kaufmann/projects/PEARLS/acl2/acl2data/tests/test7a.lisp"
+    (APP-ASSOC-REWRITE
+         (:GOAL (EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                       (BINARY-APPEND X (BINARY-APPEND Y Z))))
+         (:HASH 38295251)
+         (:EXPANSION-STACK NIL)
+         (:GOAL-CLAUSES (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                                 (BINARY-APPEND X (BINARY-APPEND Y Z))))))
+         (:EVENT (DEFTHM APP-ASSOC-REWRITE
+                   (EQUAL (APPEND (APPEND X Y) Z)
+                          (APPEND X Y Z))
+                   :HINTS (("Goal" :IN-THEORY (ENABLE CAR-CONS)))))
+         (:RULE-CLASSES (:REWRITE))
+         (:USED-INDUCTION T)
+         (:HINT-SETTING-ALIST
+              (((:ENABLE CAR-CONS)
+                (((EQUAL (BINARY-APPEND (BINARY-APPEND X Y) Z)
+                         (BINARY-APPEND X (BINARY-APPEND Y Z)))))
+                ((EQUAL (APPEND (APPEND X Y) Z)
+                        (APPEND X Y Z)))
+                (((NOT (CONSP X))
+                  (NOT (EQUAL (BINARY-APPEND (BINARY-APPEND (CDR X) Y)
+                                             Z)
+                              (BINARY-APPEND (CDR X)
+                                             (BINARY-APPEND Y Z))))
+                  (EQUAL (CAR (CONS (CAR X)
+                                    (BINARY-APPEND (CDR X) Y)))
+                         (CAR X))))
+                ((IMPLIES (AND (CONSP X)
+                               (EQUAL (APPEND (APPEND (CDR X) Y) Z)
+                                      (APPEND (CDR X) Y Z)))
+                          (EQUAL (CAR (CONS (CAR X) (APPEND (CDR X) Y)))
+                                 (CAR X))))
+                (DEFTHM APP-ASSOC-REWRITE
+                  (EQUAL (APPEND (APPEND X Y) Z)
+                         (APPEND X Y Z)))
+                ((:ADD-ENABLE-HINT CAR-CONS ((CAR-CONS . :BUILT-IN)))
+                 (:ADD-LIBRARY (INCLUDE-BOOK "std/lists/append"
+                                             :DIR :SYSTEM)
+                               NIL)
+                 (:ADD-LIBRARY (INCLUDE-BOOK "kestrel/lists-light/append"
+                                             :DIR :SYSTEM)
+                               NIL)
+                 (:ADD-ENABLE-HINT ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+                                   ((ADE::LEFT-ASSOCIATIVITY-OF-APPEND
+                                         :SYSTEM
+                                         . "projects/async/utils.lisp")))))))
+         (:SYMBOL-TABLE ((EQUAL . :BUILTIN)
+                         (CAR-CONS . :BUILTIN)
+                         (BINARY-APPEND . :BUILTIN)))))

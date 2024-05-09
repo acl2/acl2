@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "bvchop")
 (include-book "getbit")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "unsigned-byte-p"))
 
@@ -38,11 +39,19 @@
            :use ((:instance bvplus-associative)
                  (:instance bvplus-associative (x y) (y x))))))
 
+;; not needed if we are commuting more generally
 (defthmd bvplus-commute-constant
   (implies (syntaxp (and (quotep k)
                          (not (quotep x))))
            (equal (bvplus size x k)
                   (bvplus size k x))))
+
+;; not needed if we are commuting more generally
+(defthmd bvplus-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvplus size x (bvplus size k y))
+                  (bvplus size k (bvplus size x y)))))
 
 ;; The (bvplus size x y) in the conclusion gets computed.
 (defthm bvplus-combine-constants
@@ -165,32 +174,31 @@
 
 ;fixme improve BVCHOP-+-CANCEL-0
 
-;rename?
+;todo: rename
 (defthm bvplus-cancel
   (equal (equal (bvplus size x y) (bvplus size x z))
          (equal (bvchop size y) (bvchop size z)))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvplus))))
 
-(defthm bvplus-cancel-third-third
+;todo: rename vars
+(defthm bvplus-cancel-arg3-arg3
   (equal (equal (bvplus size k1 (bvplus size x a)) (bvplus size k2 (bvplus size y a)))
          (equal (bvplus size k1 x) (bvplus size k2 y)))
   :hints (("Goal" :use (:instance bvplus-cancel (x a)
                                   (y (bvplus size k1 x))
                                   (z (bvplus size k2 y))))))
 
-(defthm bvplus-cancel-cross
-  (equal (equal (bvplus size y x)
-                (bvplus size x z))
+(defthm equal-of-bvplus-and-bvplus-cancel-arg2-arg1
+  (equal (equal (bvplus size y x) (bvplus size x z))
          (equal (bvchop size y)
                 (bvchop size z))))
 
-(defthm bvplus-cancel-cross2
-  (equal (equal (bvplus size x y)
-                (bvplus size z x))
+(defthm equal-of-bvplus-and-bvplus-cancel-arg1-arg2
+  (equal (equal (bvplus size x y) (bvplus size z x))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :use (:instance bvplus-cancel-cross)
-           :in-theory (disable bvplus-cancel-cross))))
+  :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg2-arg1)
+           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg2-arg1))))
 
 (defthm equal-of-bvplus-and-bvplus-cancel-arg2-arg2
   (equal (equal (bvplus size y x) (bvplus size z x))
@@ -326,14 +334,27 @@
 
 ;; Rewrite bvplus to + when possible
 (defthmd bvplus-becomes-+
-  (implies (and (< (+ x y) (expt 2 n))
+  (implies (and (< (+ x y) (expt 2 size))
                 (natp x)
                 (natp y))
-           (equal (bvplus n x y)
+           (equal (bvplus size x y)
                   (+ x y)))
   :hints (("Goal" :in-theory (e/d (expt ;why?
                                    bvchop-identity)
                                   (expt-hack)))))
+
+;; Similar to the above
+;rename
+;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
+(defthmd bvplus-opener
+  (implies (and (unsigned-byte-p size (+ x y))
+                (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvplus size x y)
+                  (+ x y)))
+  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
+                                            )))))
 
 ;; x plus 1 is greater than x unless the addition overflows or x is just wider than size.
 ;todo: gen the 1.
@@ -352,26 +373,6 @@
 (defthm bvplus-not-negative
   (not (< (bvplus size x y) 0)))
 
-(defthmd bvplus-of-plus
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
-           (equal (bvplus 32 x (+ y z))
-                  (bvplus 32 x (bvplus 32 y z))))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-(defthmd bvplus-of-plus2
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
-           (equal (bvplus 32 (+ y z) x)
-                  (bvplus 32 (bvplus 32 y z) x)))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-;fixme kill these?
-(theory-invariant (incompatible (:rewrite bvplus-of-plus) (:definition bvplus)))
-(theory-invariant (incompatible (:rewrite bvplus-of-plus2) (:definition bvplus)))
-
 (defthmd bvplus-of-plus-arg3
   (implies (and (integerp y)
                 (integerp z))
@@ -386,8 +387,8 @@
                   (bvplus size (bvplus size y z) x)))
   :hints (("Goal" :use (:instance bvplus-of-plus-arg3))))
 
-(theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG3) (:definition bvplus)))
-(theory-invariant (incompatible (:rewrite BVPLUS-OF-PLUS-ARG2) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-plus-arg3) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-plus-arg2) (:definition bvplus)))
 
 (defthm bvplus-trim-leading-constant
   (implies (and (syntaxp (and (quotep k)
@@ -400,23 +401,88 @@
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
 
-;rename
-(defthmd bvplus-recollapse
+
+
+
+;todo: instead, introduce bvminus
+;todo: rename
+(defthm bvplus-minus-cancel
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z)
+                (natp size)
+                )
+           (equal (bvplus size y (bvplus size (- y) x))
+                  (bvchop size x)))
+    :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-expt-same-arg2
+  (implies (natp size)
+           (equal (bvplus size x (expt 2 size))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-subst-smaller-term-arg2
+  (implies (and (equal (bvchop n y) (bvchop n free))
+                (syntaxp (smaller-termp free y)))
+           (equal (bvplus n x y)
+                  (bvplus n x free)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-subst-smaller-term-arg1
+  (implies (and (equal (bvchop n x) (bvchop n free))
+                (syntaxp (smaller-termp free x)))
+           (equal (bvplus n x y)
+                  (bvplus n free y)))
+  :hints (("Goal" :use (:instance bvplus-subst-smaller-term-arg2
+                                  (x y)
+                                  (y x))
+           :in-theory (disable bvplus-subst-smaller-term-arg2))))
+
+(defthmd bvchop-of-+-becomes-bvplus
   (implies (and (integerp x) ;these are new, since bvplus ifixes its args
                 (integerp y))
            (equal (bvchop size (+ x y))
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(theory-invariant (incompatible (:definition bvplus) (:rewrite bvplus-recollapse)))
+(theory-invariant (incompatible (:rewrite bvchop-of-+-becomes-bvplus) (:definition bvplus)))
 
-;here we drop the bvchop (and thus avoid conflicts with the anti-bvplus rules)
-(defthmd bvplus-opener
-  (implies (and (unsigned-byte-p size (+ x y))
-                (natp size)
+(defthmd slice-of-+-becomes-slice-of-bvplus
+  (implies (and (natp high)
+                (natp low) ;drop?
                 (integerp x)
                 (integerp y))
-           (equal (bvplus size x y)
-                  (+ x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
-                                            )))))
+           (equal (slice high low (+ x y))
+                  (slice high low (bvplus (+ 1 high) x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:rewrite slice-of-+-becomes-slice-of-bvplus) (:definition bvplus)))
+
+(defthmd getbit-of-+-becomes-getbit-of-bvplus
+  (implies (and (natp n)
+                (integerp x)
+                (integerp y))
+           (equal (getbit n (+ x y))
+                  (getbit n (bvplus (+ 1 n) x y))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(theory-invariant (incompatible (:rewrite getbit-of-+-becomes-getbit-of-bvplus) (:definition bvplus)))
+
+;mixes abstractions
+(defthm bvplus-of-expt-2
+  (equal (bvplus size x (expt 2 size))
+         (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm equal-of-bvchop-and-bvplus-cancel-1
+  (equal (equal (bvchop size x) (bvplus size x y))
+         (equal 0 (bvchop size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))
+
+(defthm equal-of-bvplus-and-bvchop-cancel-1
+  (equal (equal (bvplus size x y) (bvchop size x))
+         (equal 0 (bvchop size y)))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases))))

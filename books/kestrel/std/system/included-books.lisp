@@ -22,4 +22,7 @@
   :parents (std/system)
   :short "List of full pathnames of all books currently included
           (directly or indirectly)."
-  (strip-cars (global-val 'include-book-alist wrld)))
+  (book-name-lst-to-filename-lst
+   (strip-cars (global-val 'include-book-alist wrld))
+   (project-dir-alist wrld)
+   'included-books))

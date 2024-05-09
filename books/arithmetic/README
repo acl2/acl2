@@ -10,9 +10,11 @@ Robert Krug, and repeated in ../arithmetic-5/README):
   sometimes-slower (but more complete) reasoning, use arithmetic-5.
   Robert is not aware of any rewriting loops.
 
-  Don't use arithmetic-3.  It's not as powerful as arithmetic-5
-  (Robert doesn't know if it's faster), and it may have more rewriting
-  loops than arithmetic-5.
+  While arithmetic-3 is generally not as powerful as arithmetic-5,
+  and it may have more rewriting loops than arithmetic-5,
+  cases have been observed in which arithmetic-3 proves something
+  that arithmetic-5 does not prove, as well as cases in which arithmetic-3
+  is faster than arithmetic-5.
 
   Note that arithmetic-2 is totally obsolete.  We may stop
   distributing it.
@@ -30,14 +32,17 @@ Contents of this directory:
 README			This file
 abs.lisp		Theorems about absolute value
 binomial.lisp		A proof of the binomial theorem
-certify.lsp		(ld "certify.lsp") to certify books in this directory
 equalities.lisp		Arithmetic equality rules
 factorial.lisp		Theorems about the factorial function
 idiv.lisp		Theorems about integer division and related functions
 inequalities.lisp	Arithmetic inequality rules
+mod-gcd.lisp            Theorems about mod and gcd
 nat-listp.lisp          Book about lists of natural numbers
+natp-posp.lisp          Theorems about natp and posp
 rational-listp.lisp	Very short book about lists of rationals
-rationals-with-axioms-proved.lisp	Supersedes rationals-with-axioms.lisp
+rationals.lisp          Theorems about numerator and denominator
+real-listp.lisp         Very short book about lists of reals
+realp.lisp              Very short book about realp
 sumlist.lisp		Theorems about sum of a list of numbers
 top.lisp		Putting it all together
 top-with-meta.lisp      Extension of top.lisp by the books in ../meta
@@ -46,6 +51,6 @@ Many people contributed to these books, especially
 
   Bishop Brock
   John Cowles
-  Matt Kaufmann  
+  Matt Kaufmann
   Art Flatau
   Ruben Gamboa

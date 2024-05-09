@@ -38,43 +38,43 @@
 
 (defthm equal-set-field-destruct
   (equal (equal (set-field ref pair value1 heap1)
-		(set-field ref pair value2 heap2))
-	 (and (equal value1 value2)
-	      (equal (clear-field ref pair heap1)
-		     (clear-field ref pair heap2))))
+                (set-field ref pair value2 heap2))
+         (and (equal value1 value2)
+              (equal (clear-field ref pair heap1)
+                     (clear-field ref pair heap2))))
   :hints (("Goal" :in-theory (enable clear-field set-field))))
 
 (defthm clear-field-of-set-field-both
   (equal (clear-field ref1 pair1 (set-field ref2 pair2 value heap))
-	 (if (and (equal ref1 ref2)
+         (if (and (equal ref1 ref2)
                   (equal pair1 pair2))
-	     (clear-field ref1 pair1 heap)
-	   (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
+             (clear-field ref1 pair1 heap)
+           (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
 
 (defthm clear-field-of-set-field-diff
   (implies (not (and (equal ref1 ref2)
-		     (equal pair1 pair2))) ;distribute?
-	   (equal (clear-field ref1 pair1
-				      (set-field ref2 pair2 value heap))
-		  (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
+                     (equal pair1 pair2))) ;distribute?
+           (equal (clear-field ref1 pair1
+                                      (set-field ref2 pair2 value heap))
+                  (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
 
 (defthm clear-field-of-set-field-same
   (equal (clear-field ref pair (set-field ref pair value heap))
-	 (clear-field ref pair heap))
+         (clear-field ref pair heap))
   :hints (("Goal" :in-theory (enable clear-field set-field ))))
 
 (defthm get-class-of-clear-field-irrel-pair
   (implies (not (equal pair (class-pair)))
            (equal (get-class ref (clear-field ref2 pair heap))
                   (get-class ref heap)))
-  :hints (("Goal" :in-theory (e/d (get-class clear-field) ()))))
+  :hints (("Goal" :in-theory (enable get-class clear-field))))
 
 (defthm clear-field-of-s
- (equal (clear-field ad pair (s ad obj heap))
-        (s ad (clr pair obj) heap))
- :hints (("Goal" :in-theory (e/d (clear-field) ()))))
+  (equal (clear-field ad pair (s ad obj heap))
+         (s ad (clr pair obj) heap))
+  :hints (("Goal" :in-theory (enable clear-field))))
 
 ;more theorems needed about clr?
 

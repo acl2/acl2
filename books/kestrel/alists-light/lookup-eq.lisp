@@ -1,7 +1,7 @@
 ; Lookup a key in an alist using EQ
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2022 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,16 +11,11 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
+;; This book contains reasoning support for lookup-eq.  Note that we
+;; immediately rewrite it to lookup-equal and then reason about that instead.
 
-(include-book "lookup-equal") ;; included becase we rewrite lookup-eq to lookup-eqal
-
-;; Look up KEY in ALIST, using eq as the test.
-(defund lookup-eq (key alist)
-  (declare (xargs :guard (if (symbolp key)
-                             (alistp alist)
-                           (symbol-alistp alist))))
-  (cdr (assoc-eq key alist)))
+(include-book "lookup-eq-def")
+(include-book "lookup-equal") ;; included becase we rewrite lookup-eq to lookup-equal
 
 ;; Our strategy will be to rewrite lookup-eq to lookup-equal.
 (defthm lookup-eq-becomes-lookup-equal

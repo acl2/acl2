@@ -191,14 +191,16 @@
 (defun harvest-trigger (clause trigger-fn)
   (if (endp clause)
       nil
-    (if (eq (caar clause) trigger-fn)
+    (if (and (consp (car clause)) ; conjunct added 10/21/2022 by Matt K.
+             (eq (caar clause) trigger-fn))
         (cons (car clause) (harvest-trigger (cdr clause) trigger-fn))
       (harvest-trigger (cdr clause) trigger-fn))))
 
 (defun others-to-negated-list (others)
   (if (endp others)
       nil
-    (if (equal (caar others) 'not)  ; don't create ugly double not's
+    (if (and (consp (car others)) ; conjunct added 10/21/2022 by Matt K.
+             (equal (caar others) 'not))  ; don't create ugly double not's
         (cons (second (car others))
               (others-to-negated-list (cdr others)))
       (cons (list 'not (car others))
