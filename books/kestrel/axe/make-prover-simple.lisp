@@ -974,11 +974,9 @@
 
        (set-inhibit-warnings "double-rewrite") ; todo: think about these
 
-;(in-theory (disable add-to-end))
+       ;;(local (in-theory (disable CADR-BECOMES-NTH-OF-1))) ;need better acl2-count rules about nth (maybe when we know the length...)
 
-;(local (in-theory (disable CADR-BECOMES-NTH-OF-1))) ;need better acl2-count rules about nth (maybe when we know the length...)
-
-;for speed
+       ;;for speed:
        (local (in-theory (disable ;alistp-consp-hack-equal
                           weak-dagp-aux
                           ;;consp-from-len-cheap
@@ -1005,7 +1003,8 @@
                           ;axe-treep
                           axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
                           state-p
-                          alistp)))
+                          alistp
+                          mv-nth)))
 
        (local (in-theory (enable natp-of-+-of-1-alt
                                  natp-of-car-when-bounded-darg-listp-gen
@@ -1015,28 +1014,12 @@
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
 
-       ;; Make versions of instantiate-hyp, etc.
+       ;; Make versions of instantiate-hyp, etc.:
        ;; (make-instantiation-code-simple ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-free-vars ,suffix ,evaluator-base-name)
        (make-instantiation-code-simple-no-free-vars2 ,suffix ,evaluator-base-name)
 
        ;;(in-theory (disable car-becomes-nth-of-0)) ;move to arrays-axe
-
-       ;; (defthm all-myquotep-of-mv-nth-1-of-sublis-var-and-eval-lst
-       ;;   (implies (and (mv-nth 0 (sublis-var-and-eval-lst alist l interpreted-function-alist))
-       ;;                 (pseudo-term-listp l)
-       ;;                 (symbol-alistp alist)
-       ;;                 (pseudo-term-listp (strip-cdrs alist))
-       ;;                 (alistp interpreted-function-alist))
-       ;;            (all-myquotep (mv-nth 1 (sublis-var-and-eval-lst alist l interpreted-function-alist))))
-       ;;   :hints (("subgoal *1/1"
-       ;; ;           :use (:instance pseudo-termp-of-sublis-var-and-eval (form (car l)))
-       ;;            :in-theory (e/d ( ;consp-of-cdr-when-pseudo-termp
-       ;;                             ) (
-       ;;                             ;pseudo-termp-of-sublis-var-and-eval
-       ;;                             )))
-       ;;           ("Goal" :induct (len l) :expand (sublis-var-and-eval-lst alist l interpreted-function-alist)
-       ;;            :in-theory (enable (:i len)))))
 
        ;;
        ;; The main mutual recursion for the Axe Prover:
