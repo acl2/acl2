@@ -25090,53 +25090,6 @@
                              on)))
             (value :invisible))))))
 
-; The following code supports the explain-giant-lambda-object utility that the
-; user might invoke when hons-copy-lambda-object? signals an error because a
-; lambda is too big.  We wait to now to introduce this stuff because it
-; mentions trace-evisceration-alist which was only recently defined above.
-
-(defun fetch-addr1 (n x)
-
-; N is coerced to a nat.  We enumerate the ``pseudo-elements'' of x from 1 and
-; consider the (possibly invisible) dot at the end to be at position (len x)+1
-; and return |.|, and the final cdr (often nil) to be at position (len x)+2.
-; If n exceeds (len x)+2 we return nil.  Thus, if x is (a b . c), then
-; (fetch-addr1 1 x) = a, ; (fetch-addr1 2 x) = b, (fetch-addr1 3 x) = |.|,
-; (fetch-addr1 4 x) = c.
-
-; We adopt this unconventional enumeration so that our addresses match those
-; used by walkabout.
-
-  (cond
-   ((consp x)
-    (cond
-     ((zp n) nil)
-     ((eql n 1) (car x))
-     (t (fetch-addr1 (- n 1) (cdr x)))))
-   ((zp n) nil)
-   ((eql n 1) '|.|)
-   ((eql n 2) x)
-   (t nil)))
-
-(defun fetch-addr (addr x)
-
-; Addr is assumed to be a list of positive nats, each being the 1-based
-; position of a ``pseudo-element'' in the object to which it refers.  We
-; navigate down to the same substructure of x that walkabout would if the user
-; typed that sequence of numbers.
-
-; We adopt this unconventional enumeration so that our addresses match those
-; used by walkabout.
-
-  (cond
-   ((endp addr) x)
-   (t (let ((x1 (fetch-addr1 (car addr) x))
-            (addr1 (cdr addr)))
-        (cond
-         ((and (atom x1) addr1)
-          nil)
-         (t (fetch-addr addr1 x1)))))))
-
 (mutual-recursion
 
 (defun explore-giant-term (term raddr bq-lst i min max)
@@ -25211,6 +25164,11 @@
             (cddr (car bq-lst))
             (evisc-tuple 3 6 nil nil))
        (tilde-*-big-constants-phrase (cdr bq-lst))))))
+
+; The following code supports the explain-giant-lambda-object utility that the
+; user might invoke when hons-copy-lambda-object? signals an error because a
+; lambda is too big.  We wait to now to introduce this stuff because it
+; mentions trace-evisceration-alist which was only recently defined above.
 
 (defun explain-giant-lambda-object-fn (state)
 

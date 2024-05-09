@@ -6623,26 +6623,45 @@
            (cond
             ((eq (ffn-symb pat) 'intern-in-package-of-symbol)
 
-; We are unifying 'pkg::name with (intern-in-package-of-symbol x y).  Suppose
-; that x is unified with "name"; then when is (intern-in-package-of-symbol
-; "name" y) equal to pkg::name?  It would suffice to unify y with any symbol in
-; pkg.  It might be that y is already such a quoted symbol.  Or perhaps we
-; could unify y with pkg::name, which is one symbol we know is in pkg.  But
-; note that it is not necessary that y unify with a symbol in pkg.  It would
-; suffice, for example, if y could be unified with a symbol in some other
-; package, say gkp, with the property that pkg::name was imported into gkp, for
-; then gkp::name would be pkg::name.  Thus, as is to be expected by all failed
-; unifications, failure does not mean there is no instance that is equal to the
-; term.  Suppose that y is not a quoted symbol and is not a variable (which
-; could therefore be unified with pkg::name).  What else might unify with "any
-; symbol in pkg?"  At first sight one might think that if y were
-; (intern-in-package-of-symbol z 'pkg::name2) then the result is a symbol in
-; pkg no matter what z is.  (The idea is that one might think that
-; (intern-in-package-of-symbol z 'pkg::name2) is "the" generic expression of
-; "any symbol in pkg.")  But that is not true because for certain z it is
-; possible that the result isn't in pkg.  Consider, for example, the
-; possibility that gkp::zzz is imported into pkg so that if z is "ZZZ" the
-; result is a symbol in gkp not pkg.
+; Pat is (intern-in-package-of-symbol x y) and term is (quote evg),
+; where evg is a symbol.  We seek a substitution s such that
+; pat/s is provably term.  Observations:
+; (1) x must be the string that is the symbol-name of evg.
+; (2) y can be any symbol whose symbol-package-name is the same as evg's.
+
+; We satisfy (1) merely by trying to unify x with the quoted string.  But
+; how can we satisfy (2)?  There are three obvious ways -- but let's admit
+; from the start that some seem fairly unlikely to apply often.
+
+; (2a) If y is a quoted symbol and its symbol-package-name is the same as
+;      evg's, we don't need to do anything beyond satisfying (1).
+
+; (2b) If y is a quoted non-symbol, intern-in-package-of-symbol returns nil, so
+;      can succeed if evg is nil.  This is sort of unusual because it doesn't
+;      matter what x is!  (intern-in-package-of-symbol x '123) = nil.
+
+; (2c) If y is anything else -- i.e., term other than a quoted constant -- we
+;      could succeed if y is 'evg.  That is because the symbol-package-name of
+;      the symbol evg is the symbol-package-name of the symbol evg (duh).  So
+;      we'll try to satisfy (1) by unifying x with the symbol-name of evg and
+;      (2) by unifying y with 'evg.  This case seems unlikely to arise!
+
+; It would be nice if we could, from within this function, choose a term v such
+; that unifying y with v would produce an s such that y/s is provably a symbol
+; with the same symbol-package-name as evg.  Alternatively, it would be nice if
+; from within this function we could analyze the term y and determine that
+; regardless of s, y/s is such a symbol.  But we can't, or at least, we don't.
+; One complication is the issue of imports to a package.  For example, suppose
+; y/s were (intern-in-package-of-symbol '"ZZZ" 'pkg::FOO) where pkg is the
+; symbol-package-name of evg.  So is the symbol-package-name of that term pkg?
+; Not necessarily!  It could be that ABC::ZZZ was imported into pkg, so that
+; y/s actually has symbol-package-name "ABC".  So beware of ``strengthening''
+; our weak handling of intern-in-package-of-symbol.
+
+; Note that, as always with one-way-unify, our failure to find a substitution
+; does not mean there is not one!  And that is not a soundness issue for us.
+; The key fact we use about one-way-unify is just that when it reports (mv T
+; s), pat/s is provably term.  All bets are off when it reports (mv NIL ...).
 
              (let ((pkg (symbol-package-name evg))
                    (name (symbol-name evg)))
@@ -6653,18 +6672,16 @@
                   ((symbolp (cadr (fargn pat 2)))
                    (if (equal pkg
                               (symbol-package-name (cadr (fargn pat 2))))
-                       (mv (fargn pat 1) (kwote name) nil nil)
+                       (mv (fargn pat 1) (kwote name) nil nil) ; (2a)
                      (mv nil nil nil nil)))
-                  (t
+                  (t (mv (eq evg nil) nil nil nil)))) ; (2b)
+                (t 
 
-; (intern-in-package-of-symbol x y) is NIL if y is not a symbol.  So we win if
-; term is 'nil and lose otherwise.  If we win, note that x is unified
-; (unnecessarily) with "NIL" in alist1 and so we report the win with alist!  If
-; we lose, we have to report alist to be a no change loser.  So it's alist
-; either way.
+; Finally, here we know that y is not a quoted constant.  We will try to unify
+; x with the symbol-name of evg and y with 'evg, which is just term.  Good luck
+; with that!
 
-                   (mv (eq evg nil) nil nil nil))))
-                (t (mv (fargn pat 1) (kwote name) (fargn pat 2) term)))))
+                   (mv (fargn pat 1) (kwote name) (fargn pat 2) term))))) ; (2c)
             (t (mv nil nil nil nil))))
           ((stringp evg)
            (cond ((and (eq (ffn-symb pat) 'coerce)
@@ -6842,6 +6859,236 @@
 ; though '((x . 1)) does the job.
 
   (one-way-unify1 pat term nil))
+
+(defun fetch-addr1 (n x)
+
+; N is coerced to a nat.  We enumerate the ``pseudo-elements'' of x from 1 and
+; consider the (possibly invisible) dot at the end to be at position (len x)+1
+; and return |.|, and the final cdr (often nil) to be at position (len x)+2.
+; If n exceeds (len x)+2 we return nil.  Thus, if x is (a b . c), then
+; (fetch-addr1 1 x) = a, ; (fetch-addr1 2 x) = b, (fetch-addr1 3 x) = |.|,
+; (fetch-addr1 4 x) = c.
+
+; We adopt this unconventional enumeration so that our addresses match those
+; used by walkabout.
+
+  (cond
+   ((consp x)
+    (cond
+     ((zp n) nil)
+     ((eql n 1) (car x))
+     (t (fetch-addr1 (- n 1) (cdr x)))))
+   ((zp n) nil)
+   ((eql n 1) '|.|)
+   ((eql n 2) x)
+   (t nil)))
+
+(defun fetch-addr (addr x)
+
+; Addr is assumed to be a list of positive nats, each being the 1-based
+; position of a ``pseudo-element'' in the object to which it refers.  We
+; navigate down to the same substructure of x that walkabout would if the user
+; typed that sequence of numbers.
+
+; We adopt this unconventional enumeration so that our addresses match those
+; used by walkabout.
+
+  (cond
+   ((endp addr) x)
+   (t (let ((x1 (fetch-addr1 (car addr) x))
+            (addr1 (cdr addr)))
+        (cond
+         ((and (atom x1) addr1)
+          nil)
+         (t (fetch-addr addr1 x1)))))))
+
+(mutual-recursion
+
+(defun one-way-unify1-fr (pat term alist raddr)
+
+; Warning: Keep this clique in sync with that of one-way-unify1.  Note that
+; one-way-unify1-fr has an extra argument, raddr, which is the reverse of the
+; fetch-addr-style address of this occurrence of pat in the original pat upon
+; which it was called.  (By the way, henceforth we'll abuse notation and say
+; that raddr ``points to'' some subterm and really mean the reverse of raddr
+; points, via fetch-addr, to that subterm.)  The one-way-unify1 clique must
+; also be kept in sync with the one-way-unify1-term-alist clique.  That latter
+; clique is used in the management of patterned congruences and equivalences,
+; generally in selecting the equiv relation to be used by rewrite.
+
+; Note: The ``-fr'' suffix stands for ``failure-reason''.  If (one-way-unify1
+; pat term alist) fails, this function will attempt to find the the subterm of
+; pat that failed to unify.  This function is part of a tool the user may
+; invoke to find out why a monitored rule triggered a near-miss break.  Because
+; of the intended usage, this function does not try to explain why
+; one-way-unify1-term-alist failed.  (We'll wait until some user complains that
+; rewrite didn't select an allowable equivalence relation!)  Ideally, all three
+; cliques will be kept in sync.
+
+; One-way-unify1 returns (mv flg alist), where flg = t means pat/alist is
+; provably term.  One-way-unify1-fr returns (mv flg alist fr-raddr fr-alist
+; fr-term), where (fetch-addr (reverse fr-raddr) orig-pat) is the subterm of
+; pat that first failed to unify and fr-alist is the alist that one-way-unify1
+; was trying to extend.  The culprit term that failed to unify with the pattern
+; subterm at the reverse of fr-raddr is fr-term.  When flg is t the unification
+; succeeded.  In that case, the returned fr-raddr is the input raddr (i.e., it
+; points to the input pat), the returned fr-alist is the input alist, and the
+; returned fr-term is the input term.  I.e., this function is a ``No-Change
+; WINNER!''
+
+; One might have hoped that fr-raddr would also identify the culprit subterm of
+; the original term involved in the failure.  But consider unifying (+ 1 X)
+; with (QUOTE 6).  One-way-unify1 will dive into 6 and try to unify X with 5.
+; A successful unification substitution would be {X <-- (QUOTE 5)}.  But
+; perhaps that substitution conflicts with the alist one-way-unify1 is holding
+; when it encountered X.  So fr-raddr will point to X in the original pattern,
+; i.e., fr-addr = '(3), but (fetch-addr '(3) '(QUOTE 6)) = |.|, i.e., (QUOTE 6)
+; is seen by fetch-addr (and walkabout) as (QUOTE 6 . NIL), not as (+ 1 5).
+; Furthermore, fetch-addr couldn't possibly understand 6 that way since
+; one-way-unify1 would unify the pattern (* 2 X) with 6 by seeing 6 as (* 2 3).
+; That is, one-way-unify1 decomposes a constant as a function of the pattern
+; but fetch-addr just walks the structure of the term.
+
+; This function is a "No-Change Loser" meaning that if it fails and returns nil
+; as its first result, it returns the unmodified alist as its second.  It's a
+; No-Change Winner in the sense above.
+
+  (declare (xargs :measure (make-ord 1
+                                     (+ 1 (acl2-count pat))
+                                     2)
+                  :guard (and (pseudo-termp pat)
+                              (pseudo-termp term)
+                              (alistp alist))
+                  :verify-guards nil
+                  ))
+  (cond ((variablep pat)
+         (let ((pair (assoc-eq pat alist)))
+           (cond (pair (cond ((equal (cdr pair) term)
+                              (mv t alist raddr alist term))
+                             (t (mv nil alist raddr alist term))))
+                 (t (mv t (cons (cons pat term) alist) raddr alist term)))))
+        ((fquotep pat)
+         (cond ((equal pat term) (mv t alist raddr alist term))
+               (t (mv nil alist raddr alist term))))
+        ((variablep term) (mv nil alist raddr alist term))
+        ((fquotep term)
+
+; We have historically attempted to unify ``constructor'' terms with explicit
+; values, and we try to simulate that here, treating the primitive arithmetic
+; operators, intern-in-package-of-symbol, coerce (to a very limited extent),
+; and, of course, cons, as constructors.
+
+; The -fr version cannot currently explain failures to unify with constants.
+; Instead, it just reports that the pat and constant didn't unify.  Note that
+; it calls one-way-unify1, not one-way-unify1-fr below!
+
+         (mv-let
+           (pat1 term1 pat2 term2)
+           (one-way-unify1-quotep-subproblems pat term)
+           (cond ((eq pat1 t) (mv t alist raddr alist term))
+                 ((eq pat1 nil) (mv nil alist raddr alist term))
+                 ((eq pat2 nil)
+                  (mv-let (ans alist1)
+                    (one-way-unify1 pat1 term1 alist)
+                    (cond
+                     (ans (mv ans alist1 raddr alist term))
+                     (t (mv nil alist raddr alist term)))))
+                 (t
+
+; We must succeed on both pat1 v term1 and pat2 v term2 to succeed.  We are
+; careful with alist to keep this a no change loser.
+
+                  (mv-let (ans alist1)
+                    (one-way-unify1 pat1 term1 alist)
+                    (cond ((eq ans nil) (mv nil alist raddr alist term))
+                          (t (mv-let
+                               (ans alist2)
+                               (one-way-unify1 pat2 term2 alist1)
+                               (cond (ans (mv ans alist2 raddr alist term))
+                                     (t (mv nil alist raddr alist term)))))))))))
+        ((cond ((flambda-applicationp pat)
+                (equal (ffn-symb pat) (ffn-symb term)))
+               (t
+                (eq (ffn-symb pat) (ffn-symb term))))
+         (cond ((eq (ffn-symb pat) 'equal)
+
+; We need to one-way-unify1 the given equality pattern with term or its
+; commuted version.  We don't want to try to explain the failures of both
+; attempts, preferring instead to just say we couldn't unify pat and term.  So
+; we just call one-way-unify1-equal and then pad the result with the
+; appropriate reasons.
+
+                (mv-let (ans alist1)
+                  (one-way-unify1-equal (fargn pat 1) (fargn pat 2)
+                                        (fargn term 1) (fargn term 2)
+                                        alist)
+                  (cond
+                   (ans (mv ans alist1 raddr alist term))
+                   (t (mv nil alist raddr alist term)))))
+               (t (mv-let (ans alist1 fr-raddr1 fr-alist1 fr-term1)
+                    (one-way-unify1-lst-fr (fargs pat) (fargs term) alist 2 raddr)
+                    (cond (ans (mv ans alist1 raddr alist term))
+                          (t (mv nil alist fr-raddr1 fr-alist1 fr-term1)))))))
+        (t (mv nil alist raddr alist term))))
+
+(defun one-way-unify1-lst-fr (pl tl alist n raddr)
+
+; Warning: Keep this in sync with one-way-unify1-term-alist-lst.
+
+; n is the position of (car pl) and is incremented as we scan across it.  (cons
+; n raddr) is the reversed addr of (car pl) in the original pattern.
+
+; This function is NOT a No Change Loser.  That is, it may return nil
+; as its first result, indicating that no substitution exists, but
+; return as its second result an alist different from its input alist.
+
+  (declare (xargs :measure (make-ord  1
+                                      (+ 1 (acl2-count pl))
+                                      2)
+                  :guard (and (pseudo-term-listp pl)
+                              (pseudo-term-listp tl)
+                              (alistp alist))))
+  (cond ((endp pl) (mv t alist raddr alist tl))
+        (t (mv-let (ans alist fr-raddr1 fr-alist fr-term)
+             (one-way-unify1-fr (car pl) (car tl) alist (cons n raddr))
+             (cond
+              (ans
+               (one-way-unify1-lst-fr (cdr pl) (cdr tl) alist (+ 1 n) raddr))
+              (t (mv nil alist fr-raddr1 fr-alist fr-term)))))))
+
+
+; In the one-way-unify1 clique at this position we see one-way-unify1-equal1
+; and then one-way-unify1-equal.  But we don't actually need their -fr
+; versions, One-way-unify1-equal1-fr's presumed caller, one-way-unify1-equal-fr
+; would ignore its failure reasons, as explained in that function below.  So we
+; can leave one-way-unify1-equal1-fr out of this clique.  But then its caller,
+; one-way-unify1-equal-fr, doesn't call any functions in this clique and so
+; needn't be defined either!
+
+)
+
+(defun one-way-unify-fr (pat term)
+  (declare (xargs :guard (and (pseudo-termp pat)
+                              (pseudo-termp term))))
+
+; This function returns two values.  The first is T or NIL, according to
+; whether unification succeeded.  The second value returned is a symbol alist
+; that when substituted into pat will produce term, when the unification
+; succeeded.
+
+; The use of the phrase ``unify'' here is somewhat opaque but is
+; historically justified by its usage in nqthm.  Really, all we are
+; doing is matching because we do not treat the ``variable symbols''
+; in term as instantiable.
+
+; Note that the fact that this function returns nil should not be
+; taken as a sign that no substitution makes pat equal to term in the
+; current theory.  For example, we fail to unify (+ x x) with '2 even
+; though '((x . 1)) does the job.
+
+  (mv-let (ans alist fr-raddr fr-alist fr-term)
+    (one-way-unify1-fr pat term nil nil)
+    (mv ans alist (revappend fr-raddr nil) fr-alist fr-term)))
 
 (defconst *initial-return-last-table*
   '((time$1-raw . time$1)

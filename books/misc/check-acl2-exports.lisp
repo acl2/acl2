@@ -211,6 +211,8 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    COMPARE-OBJECTS
+
   ))
 
 (defconst *special-ops*
