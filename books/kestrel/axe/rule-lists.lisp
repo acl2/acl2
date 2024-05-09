@@ -1033,7 +1033,7 @@
 
      unsigned-byte-p-when-unsigned-byte-p-smaller
 
-     ;; rules to introduce bvequal:
+     ;; rules to introduce bvequal (these change the flow of proofs like rc4-loop2-auto.lisp):
      ;; equal-becomes-bvequal-axe-1-strong
      ;; equal-becomes-bvequal-axe-2-strong
 
