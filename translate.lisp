@@ -10973,11 +10973,10 @@
                                          (if (consp summary)
                                              (car summary)
                                            summary)))
-                                    (and (stringp summary)
-                                         (standard-string-p summary))))
+                                    (stringp summary)))
                               (alistp alist)
                               (plist-worldp wrld)
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table wrld))
                               (weak-state-vars-p state-vars))))
   (warning1-form t))
@@ -11241,7 +11240,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table
                                             wrld))
                               (weak-state-vars-p state-vars))))
@@ -11322,7 +11321,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table
                                             wrld))
                               (weak-state-vars-p state-vars))))
@@ -11352,7 +11351,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table
                                             wrld))
                               (weak-state-vars-p state-vars))))
@@ -11376,7 +11375,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table
                                             wrld))
                               (weak-state-vars-p state-vars))))
@@ -11431,7 +11430,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table
                                             wrld))
                               (weak-state-vars-p state-vars))))
@@ -11464,7 +11463,7 @@
                               (symbol-alistp
                                (table-alist 'duplicate-keys-action-table
                                             wrld))
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table
                                             wrld))
                               (weak-state-vars-p state-vars))))

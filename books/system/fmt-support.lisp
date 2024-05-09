@@ -218,6 +218,31 @@
                 (open-output-channel-p1 channel :character state))
            (fmt-state-p (princ$ x channel state))))
 
+; (local (in-theory (enable print-base-p)))
+
+(local
+ (defthm state-p1-implies-print-base-p-rewrite
+   (implies (state-p1 state)
+            (and (print-base-p (cdr (assoc-equal 'print-base (nth 2 state))))
+                 (natp (cdr (assoc-equal 'print-base (nth 2 state))))
+                 (<= (cdr (assoc-equal 'print-base (nth 2 state)))
+                     16)))
+   :hints (("Goal" :in-theory '(state-p1 print-base-p natp member-equal
+                                         global-table)))
+   :rule-classes
+   (:rewrite
+    (:type-prescription
+     :corollary
+     (implies (state-p1 state)
+              (integerp (cdr (assoc-equal 'print-base (nth 2 state))))))
+    (:linear
+     :corollary
+     (implies (state-p1 state)
+              (and (<= 0
+                       (cdr (assoc-equal 'print-base (nth 2 state))))
+                   (<= (cdr (assoc-equal 'print-base (nth 2 state)))
+                       16))))))) 
+
 (defthm fmt-state-p-forward
   (implies (fmt-state-p state)
            (and (state-p1 state)
@@ -443,7 +468,8 @@
 (encapsulate
   ()
   (local (include-book "arithmetic-5/top" :dir :system))
-  (local (in-theory (disable functional-commutativity-of-minus-*-left)))
+  (local (in-theory (e/d (print-base-p)
+                         (functional-commutativity-of-minus-*-left))))
   (verify-termination flsz-integer
     (declare (xargs :verify-guards nil))))
 
@@ -765,6 +791,8 @@
   ()
 
   (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local (in-theory (enable print-base-p)))
 
   (verify-termination number-of-digits
     (declare (xargs :verify-guards nil)))
@@ -1832,7 +1860,7 @@
            (unsigned-byte-p 5
                             (cdr (assoc-equal 'print-base
                                               (nth 2 state)))))
-  :hints (("Goal" :in-theory (enable print-base-p fmt-state-p))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (verify-termination ppr
 ; Hints weren't needed here during development of this book, but we
@@ -1853,8 +1881,8 @@
 (in-theory (disable flsz1))
 
 (verify-termination flsz ; and guards
-  (declare (xargs :guard-hints (("Goal" :in-theory (enable fmt-state-p
-                                                           print-base-p))))))
+  (declare (xargs :guard-hints
+                  (("Goal" :in-theory (enable unsigned-byte-p))))))
 
 (in-theory (disable table-alist))
 
@@ -1897,6 +1925,7 @@
                 (state-p1 state2)
                 (symbolp sym)
                 (not (equal sym 'timer-alist))
+                (not (equal sym 'print-base))
                 (not (equal sym 'current-acl2-world)))
            (state-p1 (update-nth 2
                                  (add-pair sym val (nth 2 state2))
@@ -1915,6 +1944,7 @@
                                 all-boundp
                                 plist-worldp
                                 timer-alistp
+                                print-base-p
                                 known-package-alistp
                                 file-clock-p
                                 readable-files-p
@@ -1931,6 +1961,7 @@
   (implies (and (state-p1 (update-nth 2 alist state1))
                 (symbolp sym)
                 (not (equal sym 'timer-alist))
+                (not (equal sym 'print-base))
                 (not (equal sym 'current-acl2-world)))
            (state-p1 (update-nth 2
                                  (add-pair sym val alist)
@@ -1949,6 +1980,7 @@
                                 all-boundp
                                 plist-worldp
                                 timer-alistp
+                                print-base-p
                                 known-package-alistp
                                 file-clock-p
                                 readable-files-p
