@@ -2227,6 +2227,7 @@
 
 (defthmd equal-becomes-bvequal-axe-1-strong
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (< 0 xsize) ; prevent loops (unsigned-byte-p of 0 can go to equal 0, which triggers this rule again)
                 (unsigned-byte-p-forced xsize x))
            (equal (equal x y)
                   (if (unsigned-byte-p xsize y)
@@ -2236,6 +2237,7 @@
 
 (defthmd equal-becomes-bvequal-axe-2-strong
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< 0 ysize) ; prevent loops (unsigned-byte-p of 0 can go to equal 0, which triggers this rule again)
                 (unsigned-byte-p-forced ysize y))
            (equal (equal x y)
                   (if (unsigned-byte-p ysize x)
