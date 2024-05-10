@@ -2244,15 +2244,3 @@
                       (bvequal ysize x y)
                     nil)))
   :hints (("Goal" :in-theory (enable bvequal))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; not really bv rules...
-;; Only needed by Axe
-
-(defthmd integerp-of-logand (integerp (logand x y)))
-(defthmd integerp-of-logior (integerp (logior x y)))
-(defthmd integerp-of-logxor (integerp (logxor x y)))
-
-(def-constant-opener acl2::logmask$inline)
-(def-constant-opener acl2::binary-logand)
