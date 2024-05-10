@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function floor.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1481,3 +1481,60 @@
            (equal (nonnegative-integer-quotient x 2)
                   (floor x 2)))
   :hints (("Goal" :in-theory (enable floor))))
+
+(defthm floor-of-2-arg1
+  (implies (natp j)
+           (equal (floor 2 j)
+                  (if (equal j 0)
+                      0
+                    (if (equal j 1)
+                        2
+                      (if (equal j 2)
+                          1
+                        0)))))
+  :hints (("Goal" :in-theory (disable floor-type-3 ; bad forcing
+                                      ))))
+
+;; (local
+;;  (defthm <-of-floor-same-when-positive
+;;    (implies (and (< 0 i) ; this case
+;;                  (integerp i)
+;;                  (integerp j))
+;;             (not (< i (floor i j))))))
+
+;; Characterizes the conditions under which i < floor(i,j) for negative i
+(local
+ (defthm <-of-floor-same-arg2-when-negative
+   (implies (and (< i 0) ; this case
+                 (integerp i)
+                 (integerp j))
+            (equal (< i (floor i j))
+                   (if (<= j 0)
+                       t
+                     (if (equal 1 j)
+                         nil
+                     ;; j is at least 2:
+                       (if (equal -1 i)
+                           nil ; the floor rounds back down to -1
+                         t)))))
+   :hints (("Goal" :cases ((< j 0)
+                           (equal j 0)
+                         ;(>= (- (/ i j) i) 1)
+                           (and (< 0 j) (<= i -3)))))))
+
+;; Characterizes the conditions under which i < floor(i,j)
+(defthm <-of-floor-same-arg2
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (< i (floor i j))
+                  (if (<= 0 i)
+                      nil
+                    ;; i is negative:
+                    (if (<= j 0)
+                        t
+                      (if (equal 1 j)
+                          nil
+                     ;; j is at least 2:
+                        (if (equal -1 i)
+                            nil ; the floor rounds back down to -1
+                          t)))))))

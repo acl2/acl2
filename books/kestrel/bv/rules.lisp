@@ -611,7 +611,7 @@
 
 (in-theory (enable BVCHOP-OF-LOGTAIL)) ;fixme why?
 
-(defthm bvxor-of-bvchop-hack6
+(defthmd bvxor-of-bvchop-hack6
   (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
@@ -619,7 +619,7 @@
                   (bvxor 5 x (+ y z))))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-(defthm bvxor-of-bvchop-hack6b
+(defthmd bvxor-of-bvchop-hack6b
   (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
@@ -627,7 +627,7 @@
                   (bvxor 5 x (+ y z))))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-(defthm slice-of-bvchop-hack6
+(defthmd slice-of-bvchop-hack6
   (implies (and (integerp y)
                 (integerp z))
            (equal (slice 31 5 (+ (bvchop 32 y) z))
@@ -635,7 +635,7 @@
   :hints (("Goal" :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice
                                            LOGTAIL-EQUAL-0)))))
 
-(defthm slice-of-bvchop-hack6b
+(defthmd slice-of-bvchop-hack6b
   (implies (and (integerp y)
                 (integerp z))
            (equal (slice 31 5 (+ z (bvchop 32 y)))
