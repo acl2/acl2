@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "logand-b") ; todo
+;(include-book "logand-b") ; todo
 (include-book "bvchop")
 (include-book "getbit")
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp

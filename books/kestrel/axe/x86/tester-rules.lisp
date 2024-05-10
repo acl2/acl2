@@ -41,6 +41,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

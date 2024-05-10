@@ -15,6 +15,7 @@
 (include-book "bvashr")
 ;(local (include-book "logior"))
 (local (include-book "logxor"))
+(local (include-book "logand-b"))
 (local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

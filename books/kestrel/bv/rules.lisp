@@ -60,6 +60,7 @@
 (include-book "bitwise")
 (include-book "trim")
 (include-book "unsigned-byte-p-forced-rules") ; since some of the rules in this file introduce unsigned-byte-p-forced
+(local (include-book "logand-b"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
