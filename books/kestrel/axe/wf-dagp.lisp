@@ -75,6 +75,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
+;; drop if we switch to using empty-dag-array or empty-dag-array-with-name instead of make-empty-array.
 (defthm wf-dagp-of-make-empty-array
   (implies (and (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)

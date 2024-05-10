@@ -17,9 +17,9 @@
 
 (include-book "merge-term-into-dag-array-simple")
 
-;;;
-;;; make-term-into-dag-array-simple
-;;;
+(local (in-theory (disable posp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array
 ;; dag-constant-alist dag-variable-alist), where nodenum-or-quotep is
@@ -28,17 +28,18 @@
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp dag-array-name)
                               (symbolp dag-parent-array-name))))
-  (b* (((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-        ;; todo: call empty-dag-array
+  (b* ((slack-amount 1000) ; why 1000?
+       ;; Start with an empty dag:
+       ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+        (empty-dag-array-with-name slack-amount dag-array-name dag-parent-array-name))
+       ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (merge-term-into-dag-array-simple term
                                           nil ;initial var-replacement-alist
-                                          (make-empty-array dag-array-name 1000) ;fixme why 1000?
-                                          0 ;initial dag-len
-                                          (make-empty-array dag-parent-array-name 1000)
-                                          nil ;empty dag-constant-alist
-                                          (empty-dag-variable-alist)
-                                          dag-array-name dag-parent-array-name
-                                          ))
+                                          dag-array
+                                          dag-len
+                                          dag-parent-array
+                                          dag-constant-alist dag-variable-alist
+                                          dag-array-name dag-parent-array-name))
        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
     (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
 
