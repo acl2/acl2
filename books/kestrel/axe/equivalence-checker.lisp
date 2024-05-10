@@ -60,7 +60,7 @@
 (include-book "kestrel/bv/arith" :dir :system)
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
-(include-book "rules2") ;drop?
+;(include-book "rules2") ;drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "lists-axe")
 (include-book "group-axe")
@@ -69,8 +69,7 @@
 (include-book "replace-node")
 (include-book "prover2")
 (include-book "extract-dag-array")
-(include-book "kestrel/lists-light/append" :dir :system)
-(include-book "kestrel/lists-light/nthcdr" :dir :system)
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (include-book "kestrel/lists-light/last-elem" :dir :system)
 ;(include-book "kestrel/lists-light/update-nth" :dir :system) ;brings in consp-of-update-nth
 (include-book "kestrel/lists-light/cons" :dir :system) ;for equal-of-cons
@@ -86,6 +85,7 @@
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -20156,10 +20156,11 @@
                        ,@(clear-key-in-keyword-value-list :test-case-count
                                                           (clear-key-in-keyword-value-list :input-type-alist rest))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
 ;; Returns (mv erp event state rand result-array-stobj).
-;; TODO: Auto-generate the name
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
@@ -20175,6 +20176,7 @@
                              normalize-xors
                              interpreted-function-alist
                              check-vars
+                             prove-theorem
                              local
                              whole-form
                              state rand result-array-stobj)
@@ -20196,6 +20198,7 @@
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
                               (booleanp check-vars)
+                              (booleanp prove-theorem)
                               (booleanp local))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
@@ -20271,7 +20274,7 @@
                           ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
-       ;; Remove the tempp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
+       ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
                            (mv erp nil state rand result-array-stobj)))
@@ -20279,23 +20282,29 @@
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand result-array-stobj)))
        (- (cw "Proof of equivalence succeeded.~%"))
-       ;; make the theorem (TODO: Make this optional):
-       (term1 (dag-or-term-to-term dag-or-term1 state))
-       (term2 (dag-or-term-to-term dag-or-term2 state))
-       (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
-                 (defthmd ,miter-name
-                   (implies (and ,@assumptions)
-                            (equal ,term1
-                                   ,term2)))))
-       ;; The event may include a theorem:
-       (event (if types ;todo: remove this restriction
-                  (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
-                          `(progn))
-                defthm))
-       ;; The event includes a table event for redundancy checking:
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       (prove-theorem (and prove-theorem
+                           (if  types ;todo: remove this restriction
+                                (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
+                                        nil)
+                             t)))
+       ;; Maybe add the theorem to the progn:
+       (event (if prove-theorem
+                  (let* ((term1 (dag-or-term-to-term dag-or-term1 state))
+                         (term2 (dag-or-term-to-term dag-or-term2 state))
+                         (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
+                                    (defthmd ,miter-name
+                                      (implies (and ,@assumptions)
+                                               (equal ,term1
+                                                      ,term2))))))
+                    (extend-progn event defthm))
+                event))
+       ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
        (event (extend-progn event `(value-triple ',miter-name)))
+       ;; Make the whole thing local if instructed:
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand result-array-stobj)))
 
@@ -20306,37 +20315,41 @@
 
 @({
      (prove-equivalence
-        dag1                   ;; The first DAG or term to compare
-        dag2                   ;; The second DAG or term to compare
-        [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
-        [:assumptions]         ;; Assumptions to use when proving equivalence
-        [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
-        [:types]               ;; An alist from variables to their types, used to generate test cases
-        [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
-        [:name]                ;; A name to assign to the equivalence term, if desired
-        [:debug]               ;; Leave temp files around for debugging, Default: nil
-        [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
-        [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
-        [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
-        [:monitor]             ;; Rule names (symbols) to monitor when rewriting
-        [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
-        [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
-        [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
+         dag1                   ;; The first DAG or term to compare
+         dag2                   ;; The second DAG or term to compare
+         [:assumptions]         ;; Assumptions to use when proving equivalence
+         [:types]               ;; An alist from variables to their types, used to generate test cases
+         [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
+         [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
+         [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
+         [:name]                ;; A name to assign to the equivalence term, if desired
+         [:debug]               ;; Leave temp files around for debugging, Default: nil
+         [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
+         [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
+         [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
+         [:monitor]             ;; Rule names (symbols) to monitor when rewriting
+         [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
+         [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
+         [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
+         [:check-vars] ;; whether to check that the two DAGs/terms have exactly the same vars
+         [:prove-theorem] ;; whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)
+         [:local] ;; whether to make the generated events local
         )
 })
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
+;; TODO: Use defmacrodoc to define this (see xdoc above).
 (defmacro prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
                                     &key
-                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
-                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (assumptions 'nil) ;assumed when rewriting the miter
-                                    (print ':brief)
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
+                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
+                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (print ':brief)
                                     (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
@@ -20347,6 +20360,7 @@
                                     (normalize-xors 't)
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
+                                    (prove-theorem 'nil)
                                     (local 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
@@ -20365,6 +20379,7 @@
                                            ',normalize-xors
                                            ,interpreted-function-alist
                                            ,check-vars
+                                           ,prove-theorem
                                            ,local
                                            ',whole-form
                                            state rand result-array-stobj)))
