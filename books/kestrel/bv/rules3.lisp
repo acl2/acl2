@@ -790,10 +790,10 @@
            (slice high2 low val))))
 
 (defthm slice-of-if2
-  (equal (slice low (if test high1 high2) val)
+  (equal (slice high (if test low1 low2) val)
          (if test
-             (slice low high1 val)
-           (slice low high2 val))))
+             (slice high low1 val)
+           (slice high low2 val))))
 
 (defthm myif-of-getbit-becomes-bvif-arg1
   (implies (unsigned-byte-p 1 y)
@@ -1555,7 +1555,7 @@
   (implies (and (signed-byte-p 32 y))
            (equal (< (logext 32 x) y)
                   (sbvlt 32 x y)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
 
 (theory-invariant (incompatible (:definition sbvlt) (:rewrite <-of-logext-when-signed-byte-p)))
 
@@ -1563,7 +1563,7 @@
   (implies (and (signed-byte-p 32 y))
            (equal (< y (logext 32 x))
                   (sbvlt 32 y x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
 
 (theory-invariant (incompatible (:definition sbvlt) (:rewrite <-of-logext-when-signed-byte-p-alt)))
 
@@ -2090,7 +2090,7 @@
   (implies (natp size)
            (equal  (< 0 (logext size x))
                    (sbvlt size 0 x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;rename
 (defthm myif-lemma-arg2
