@@ -301,9 +301,7 @@
                                           bvminus
                                           bvlt
                                           expt-of-+)
-                                  (bvlt-of-plus-arg1
-                                   bvlt-of-plus-arg2
-                                   bvminus-becomes-bvplus-of-bvuminus
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    ;;collect-constants-over-<
                                    )))))
 
