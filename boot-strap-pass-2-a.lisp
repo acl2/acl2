@@ -64,26 +64,23 @@
 
 (verify-termination-boot-strap packn1) ; and guards
 
-(encapsulate ()
-
 (local
- (defthm character-listp-explode-nonnegative-integer
+ (defthm character-listp-explode-atom-lemma
    (implies (character-listp z)
-            (character-listp (explode-nonnegative-integer x y z)))
-   :rule-classes ((:forward-chaining :trigger-terms
-                                     ((explode-nonnegative-integer x y z))))))
+            (characterp (car (explode-nonnegative-integer x y z))))))
 
 (local
  (defthm character-listp-explode-atom
    (character-listp (explode-atom x y))
-   :rule-classes ((:forward-chaining :trigger-terms
+   :hints (("Goal" :in-theory (enable explode-atom)))
+   :rule-classes (:rewrite
+                  (:forward-chaining :trigger-terms
                                      ((explode-atom x y))))))
 
 (verify-termination-boot-strap packn-pos) ; and guards
 (verify-termination-boot-strap find-first-non-cl-symbol) ; and guards
 (verify-termination-boot-strap packn) ; and guards
 (verify-termination-boot-strap pack-to-string) ; and guards
-)
 
 (verify-termination-boot-strap read-file-into-string1) ; and guards
 
@@ -1056,22 +1053,6 @@
 
 (encapsulate
  ()
-
-; The following local events create perfectly good rewrite rules, but we avoid
-; the possibility of namespace clashes for existing books by making them local
-; as we add them after Version_4.3.
-
- (local
-  (defthm character-listp-explode-nonnegative-integer
-    (implies
-     (character-listp ans)
-     (character-listp (explode-nonnegative-integer n print-base ans)))))
-
- (local
-  (defthm character-listp-explode-atom
-    (character-listp (explode-atom n print-base))
-    :hints ; need to disable this local lemma from axioms.lisp
-    (("Goal" :in-theory (disable character-listp-cdr)))))
 
  (local
   (defthm character-listp-chars-for-tilde-@-clause-id-phrase/periods

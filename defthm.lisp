@@ -11505,7 +11505,8 @@
              (monitor ,x ,expr t)))
 
 (defmacro brr@ (sym)
-  (declare (xargs :guard (member-eq sym '(:target
+  (declare (xargs :guard (member-eq sym '(:lhs :rhs :hyps
+                                          :target
                                           :unify-subst
                                           :wonp
                                           :rewritten-rhs
@@ -11519,6 +11520,12 @@
                                           :final-ttree
                                           :gstack))))
   (case sym
+        (:lhs '(get-rule-field (get-brr-local 'lemma state)
+                               :lhs))
+        (:rhs '(get-rule-field (get-brr-local 'lemma state)
+                               :rhs))
+        (:hyps '(get-rule-field (get-brr-local 'lemma state)
+                               :hyps))
         (:target '(get-brr-local 'target state))
         (:unify-subst '(get-brr-local 'unify-subst state))
         (:wonp '(get-brr-local 'wonp state))
