@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; See also simpler functions for making dags, such as make-term-into-dag-simple.
+;; See also simpler functions for making dags, such as
+;; make-term-into-dag-simple and make-term-into-dag-basic.
 
 (include-book "kestrel/alists-light/lookup-eq-lst" :dir :system)
 (include-book "dag-array-builders2")
