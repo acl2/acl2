@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "logand2")
+(include-book "logand-b") ; todo
 (include-book "bvchop")
 (include-book "getbit")
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
@@ -23,7 +23,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "unsigned-byte-p"))
-(local (include-book "logand2"))
+(local (include-book "logand-b"))
 
 (defund bvand (size x y)
   (declare (type integer x y)
