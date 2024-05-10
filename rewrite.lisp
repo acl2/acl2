@@ -9688,6 +9688,20 @@ its attachment is ignored during proofs"))))
       (:eval$
        1 (lambda (runes)
            (proceed-from-brkpt1 'break runes :eval$ state)))
+      (:explain-near-miss
+       0 (lambda nil
+           (explain-near-miss1
+            (get-brr-local 'target state)
+            30 ; an object containing >= 30 conses is ``large''
+            (evisc-tuple 10 20 nil nil)
+            state)))
+      (:explain-near-miss+
+       0 (lambda nil
+           (explain-near-miss1
+            (get-brr-local 'target state)
+            nil ; everything is ``large''
+            nil ; no evisceration
+            state)))
       (:failure-reason
        0 ,(not-yet-evaled-fn))
       (:failure-reason+
@@ -10075,6 +10089,20 @@ its attachment is ignored during proofs"))))
        1 (lambda (runes)
            (prog2$ runes ; avoid issues of ignored variable
                    ,(already-evaled-fn))))
+      (:explain-near-miss
+       0 (lambda nil
+           (explain-near-miss1
+            (get-brr-local 'target state)
+            30 ; an object containint >= 30 conses is ``large''
+            (evisc-tuple 10 20 nil nil)
+            state)))
+      (:explain-near-miss+
+       0 (lambda nil
+           (explain-near-miss1
+            (get-brr-local 'target state)
+            nil ; everything is ``large''
+            nil ; no evisceration
+            state)))
       (:failure-reason
        0 ,(failure-reason-fn nil))
       (:failure-reason+
@@ -10557,6 +10585,729 @@ its attachment is ignored during proofs"))))
                   (t ,form3))))
     `(prog2$ (clear-brr-data-lst)
              ,form4)))
+
+(defun addr^p (addr)
+  (declare (xargs :guard t))
+  (cond ((atom addr) (eq addr nil))
+        ((eq (car addr) '^) nil)
+        ((posp (car addr))
+         (if (and (consp (cdr addr))
+                  (eq (cadr addr) '^))
+             (eq (cddr addr) nil)
+             (addr^p (cdr addr))))
+        (t nil)))
+
+(defun safe-nth (n x)
+; (thm (equal (safe-nth n x) (nth n x)))
+  (declare (xargs :guard t))
+  (if (natp n)
+      (if (consp x)
+          (if (= n 0)
+              (car x)
+              (safe-nth (- n 1) (cdr x)))
+          nil)
+      (if (consp x)
+          (car x)
+          nil)))
+
+(defun safe-nthcdr (n x)
+; (thm (equal (safe-nthcdr n x) (nthcdr n x)))
+  (declare (xargs :guard t))
+  (if (natp n)
+      (if (consp x)
+          (if (= n 0)
+              x
+              (safe-nthcdr (- n 1) (cdr x)))
+          (if (= n 0)
+              x
+              nil))
+      x))
+
+(defun terminal-marker (x)
+  (declare (xargs :guard t))
+  (if (consp x)
+      (terminal-marker (cdr x))
+      x))
+
+; These theorems are not necessary but are informative.  The two ``safe-''
+; functions above are just guard-free versions of more familiar functions.
+
+; (defthm safe-nth-is-nth
+;   (equal (safe-nth n x) (nth n x)))
+
+; (defthm safe-nthcdr-is-nthcdr
+;   (equal (safe-nthcdr n x) (nthcdr n x)))
+
+(defun get-addr^ (addr x)
+  (declare (xargs :guard (addr^p addr)
+                  :measure (acl2-count addr)))
+  (cond
+   ((endp addr) x)
+   (t (let* ((n (- (car addr) 1)) ; 0 based indexing below
+             (k (len x))
+             (up-flg (and (cdr addr) (eq (cadr addr) '^)))
+             (addr1 (if up-flg nil (cdr addr))))
+        (cond
+         ((< n k)
+          (get-addr^ addr1
+                     (if up-flg
+                         (safe-nthcdr n x)
+                         (safe-nth n x))))
+         ((= n k)
+          (get-addr^ addr1
+                     (if up-flg
+                         (list '|.| (terminal-marker x))
+                         '|.|)))
+         ((= n (+ 1 k))
+          (get-addr^ addr1
+                     (if up-flg
+                         (list (terminal-marker x))
+                         (terminal-marker x))))
+         (t nil))))))
+
+(defun update-nthcdr (n val x)
+  (declare (xargs :guard (and (natp n)
+                              (<= n (len x)))))
+  (cond
+   ((zp n) val)
+   (t (cons (car x)
+            (update-nthcdr (- n 1) val (cdr x))))))
+
+(defun put-addr^ (addr val x) ; SPARE COPY.  CHANGE IT AT WILL!
+  (cond
+   ((endp addr) val)
+   ((and (consp (cdr addr))
+         (eq (cadr addr) '^))
+    (cond
+     ((= (car addr) 1) ; ignore this index and the ^, just act like addr = nil!
+      val)
+     (t
+      (let* ((n (- (car addr) 1))
+             (k (len x)))
+        (cond
+         ((< n k)
+          (update-nthcdr n val x))
+         ((or (= n k) (= n (+ 1 k)))
+
+; If the val we're putting is (|.| z) then we just put z, which uses Lisp's
+; cons dot instead of the fake |.|.
+
+          (update-nthcdr k
+                         (if (and (consp val)
+                                  (eq (car val) '|.|)
+                                  (consp (cdr val))
+                                  (null (cddr val)))
+                             (cadr val)
+                             val)
+                         x))
+         (t x))))))
+   (t (let* ((n (- (car addr) 1)) ; 0-based indexing
+             (k (len x)))
+        (cond
+         ((< n k)
+          (update-nth n (put-addr^ (cdr addr) val (nth n x)) x))
+         ((and (or (= n k)
+                   (= n (+ k 1)))
+               (null (cdr addr)))
+
+; If the val we're putting is (|.| z) then we just put z, which uses Lisp's
+; cons dot instead of the fake |.|.
+
+          (update-nthcdr k
+                         (if (and (consp val)
+                                  (eq (car val) '|.|)
+                                  (consp (cdr val))
+                                  (null (cddr val)))
+                             (cadr val)
+                             val)
+                         x))
+         (t x))))))
+
+; Now we work on compare-objects.
+
+(mutual-recursion
+
+(defun compare-objects1 (x y raddr ans)
+  (declare (xargs :mode :program))
+  (cond
+   ((equal x y) ans)
+   ((or (atom x)
+        (atom y))
+    (cons (list (reverse raddr) x y) ans))
+   (t (compare-objects1-lst x y 1 raddr ans))))
+
+(defun compare-objects1-lst (x y n raddr ans)
+  (cond
+   ((equal x y) ans)
+   ((consp x)
+    (cond ((consp y)
+           (let ((ans1 (compare-objects1 (car x) (car y) (cons n raddr) ans)))
+             (compare-objects1-lst (cdr x) (cdr y) (+ 1 n) raddr ans1)))
+          (t (cons (list (reverse (cons '^ (cons n raddr))) x (list '|.| y)) ans))))
+   ((consp y)
+    (cons (list (reverse (cons '^ (cons n raddr))) (list '|.| x) y) ans))
+   (t (cons (list (reverse (cons (+ 1 n) raddr)) x y) ans)))))
+
+(defun make-compare-objects-placeholder (x)
+
+; (make-compare-objects-placeholder 23) ==> :|<s23>|
+; (make-compare-objects-placeholder 'PAT) ==> :|<pat>|
+
+; Compare-objects (and explain-near-miss1) use placeholders to replace certain
+; subterms.  When we prettyprint these placeholders we do so with a
+; evisceration alist that prints :|<s23>| as <s23>.  So we could have used
+; :<S23> as the placeholder because the user will never see the actual object,
+; just what we prettyprint... UNLESS he or she pokes around, e.g., by tracing
+; compare-objects, etc.  Nevertheless, we lowercase our placeholders for two
+; reasons.  First, if the user does see them, they'll be easier to identify as
+; special tokens.  Second, our code for compare-objects and explain-near-miss1
+; could print confusing results if the objects or terms scanned contain these
+; keywords.  We believe that lowercasing them (forcing the use of |...|) makes
+; it ``more unlikely'' that our placeholders will clash with pre-existing
+; keywords in the user's input.  Of course, nothing stops the user from typing
+; or generating a term containing :|<s23>|!
+
+; Note: If you change the appearance of placeholders in prettyprinted output,
+; e.g., by changing the actual placeholder conventions below, be sure to change
+; the fmt string in explain-near-miss1 which textually refers to placeholders
+; by their prettyprinted appearance.
+
+  (declare (xargs :guard (or (integerp x)
+                             (and (symbolp x)
+                                  (standard-char-listp (coerce (symbol-name x) 'list))))))
+
+  (if (integerp x)
+      (packn (list ':|<s| x '>))
+      (intern-in-package-of-symbol
+       (string-append
+        "<"
+        (string-append (string-downcase (symbol-name x))
+                       ">"))
+       :keyword)))
+
+; The original code for compare-objects contained seven loop$s.  But loop$s are
+; not allowed in ACL2 system code.  So below are six functions that compute the
+; same thing as those seven loop$s.  (Compare-objects-loop$5 has a flag that
+; allows it to serve for two slightly different loop$s.)  Each of these helper
+; functions is commented with the original loop.  Note that the comment also
+; shows the initial values of each of the formals, e.g., when called in
+; compare-objects, the call of compare-objects-loop$1 is
+; (compare-objects-loop$1 triplets (length triplets) nil).
+
+(defun compare-objects-loop$1 (lst i ans)
+
+;   (loop$ with lst = triplets
+;          with i = (length triplets)
+;          with ans = nil
+;          do
+;          (cond
+;           ((endp lst) (return ans))
+;           (t (let ((name (make-compare-objects-placeholder i)))
+;                (progn
+;                  (setq ans (cons (cons name (car lst)) ans))
+;                  (setq i (- i 1))
+;                  (setq lst (cdr lst)))))))
+  (declare (xargs :mode :program))
+  (cond
+   ((endp lst) ans)
+   (t (let ((name (make-compare-objects-placeholder i)))
+        (compare-objects-loop$1 (cdr lst)
+                                (- i 1)
+                                (cons (cons name (car lst)) ans))))))
+
+(defun compare-objects-loop$2 (lst obj)
+
+;   (loop$ with lst = named-triplets
+;          with obj = x
+;          do
+;          (cond ((endp lst) (return obj))
+;                (t (let* ((named-triplet (car lst))
+;                          (name (car named-triplet))
+;                          (addr (cadr named-triplet)))
+;                     (progn
+;                       (setq obj (put-addr^ addr name obj))
+;                       (setq lst (cdr lst)))))))
+  (declare (xargs :mode :program))
+  (cond
+   ((endp lst) obj)
+   (t (let* ((named-triplet (car lst))
+             (name (car named-triplet))
+             (addr (cadr named-triplet)))
+        (compare-objects-loop$2 (cdr lst)
+                                (put-addr^ addr name obj))))))
+
+(defun compare-objects-loop$3 (lst)
+
+;   (loop$ for temp in named-triplets
+;          always
+;          (let ((addri (cadr temp))
+;                (xi (caddr temp))
+;                (yi (cadddr temp)))
+;            (and (if (and (consp xi)
+;                          (eq (car xi) '|.|))
+;                     (and (consp (cdr xi))
+;                          (null (cddr xi)))
+;                     t)
+;                 (if (and (consp yi)
+;                          (eq (car yi) '|.|))
+;                     (and (consp (cdr yi))
+;                          (null (cddr yi)))
+;                     t)
+;                 (if (or (and (consp xi)
+;                              (eq (car xi) '|.|))
+;                         (and (consp yi)
+;                              (eq (car yi) '|.|)))
+;                     (and (consp addri)
+;                          (eq (car (last addri)) '^))
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp lst) t)
+   (t (let ((addri (cadr (car lst)))
+            (xi (caddr (car lst)))
+            (yi (cadddr (car lst))))
+        (and (if (and (consp xi)
+                      (eq (car xi) '|.|))
+                 (and (consp (cdr xi))
+                      (null (cddr xi)))
+                 t)
+             (if (and (consp yi)
+                      (eq (car yi) '|.|))
+                 (and (consp (cdr yi))
+                      (null (cddr yi)))
+                 t)
+             (if (or (and (consp xi)
+                          (eq (car xi) '|.|))
+                     (and (consp yi)
+                          (eq (car yi) '|.|)))
+                 (and (consp addri)
+                      (eq (car (last addri)) '^))
+                 t)
+             (compare-objects-loop$3 (cdr lst)))))))
+
+(defun compare-objects-loop$4 (lst)
+
+;   (loop$ for temp in named-triplets
+;          collect
+;          (list (car temp)
+;                (cadr temp)
+;                (if (and (consp (caddr temp))
+;                         (eq (car (caddr temp)) '|.|))
+;                    (cadr (caddr temp))
+;                    (caddr temp))
+;                (if (and (consp (cadddr temp))
+;                         (eq (car (cadddr temp)) '|.|))
+;                    (cadr (cadddr temp))
+;                    (cadddr temp))))
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp lst) nil)
+   (t (cons (list (car (car lst))
+                  (cadr (car lst))
+                  (if (and (consp (caddr (car lst)))
+                           (eq (car (caddr (car lst))) '|.|))
+                      (cadr (caddr (car lst)))
+                      (caddr (car lst)))
+                  (if (and (consp (cadddr (car lst)))
+                           (eq (car (cadddr (car lst))) '|.|))
+                      (cadr (cadddr (car lst)))
+                      (cadddr (car lst))))
+            (compare-objects-loop$4 (cdr lst))))))
+
+(defun compare-objects-loop$5 (flg lst obj)
+
+; By the way, flg t means put the xi, flg nil means put the yi.
+
+;   (loop$ with lst = named-triplets-without-bogus-dots
+;          with obj = common-obj
+;          do
+;          (cond ((endp lst) (return obj))
+;                (t (let* ((named-triplet (car lst))
+;                          (addri (cadr named-triplet))
+;                          (xi (caddr named-triplet)))
+;                     (progn
+;                       (setq obj (put-addr^ addri xi obj))
+;                       (setq lst (cdr lst)))))))
+
+; The binding of xi above was changed to yi in the other version of
+; this loop$ and is subsumed by the flg below.
+
+  (declare (xargs :mode :program))
+  (cond ((endp lst) obj)
+        (t (let* ((named-triplet (car lst))
+                  (addri (cadr named-triplet))
+                  (xi-or-yi (if flg
+                                (caddr named-triplet)
+                                (cadddr named-triplet))))
+             (compare-objects-loop$5 flg
+                                     (cdr lst)
+                                     (put-addr^ addri xi-or-yi obj))))))
+
+
+(defun compare-objects-loop$6 (lst)
+
+;   (loop$ for temp in named-triplets-without-bogus-dots
+;          collect (list (car temp)
+;                        (caddr temp)
+;                        (cadddr temp)))
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp lst) nil)
+   (t (cons (list (car (car lst))
+                  (caddr (car lst))
+                  (cadddr (car lst)))
+            (compare-objects-loop$6 (cdr lst))))))
+
+(defun compare-objects (x y)
+
+  (declare (xargs :mode :program))
+
+; This function returns ((:OBJ obj) (:LEGEND ((name1 x1 y1) ... (namek xk
+; yk)))) such that if each namei is replaced in obj by the xi (or yi) the
+; result is x (or y).  By ``replaced'' we mean put-addr^ is used to do each
+; replacement, where the address used is that of the occurrence of namei in
+; obj.  However, we do not report the addresses.  If this spec is not
+; satisfied, we cause a hard error.
+
+  (let* ((triplets (compare-objects1 x y nil nil))
+         (named-triplets
+          (compare-objects-loop$1 triplets (length triplets) nil))
+         (common-obj
+          (compare-objects-loop$2 named-triplets x)))
+    (cond
+     ((compare-objects-loop$3 named-triplets)
+
+; We expect the above test to always be true!  We believe that each
+; replacement, xi and yi, that begins with a bogus |.| is a doublet of the form
+; (|.| z) and that if either xi or yi begins with a bogus |.| the associated
+; addri ends with ^.  This gives us permission to simplify the replacements by
+; transforming (|.| z) to simply z, thus hiding the bogus |.| from the user.
+; We will cause an error if this test fails!
+
+      (let* ((named-triplets-without-bogus-dots
+              (compare-objects-loop$4 named-triplets))
+             (x-prime
+              (compare-objects-loop$5 t ; collect the xi
+                                      named-triplets-without-bogus-dots
+                                      common-obj))
+             (y-prime
+              (compare-objects-loop$5 nil ; collect the yi
+                                      named-triplets-without-bogus-dots
+                                      common-obj)))
+        (cond ((and (equal x-prime x)
+                    (equal y-prime y))
+
+; Good! Stripping out the bogus dots preserved the intended semantics: x and y
+; can be obtained from the common-obj by hitting each addri with the (stripped)
+; xi and yi, respectively.
+
+               (let ((named-doublets
+                      (compare-objects-loop$6 named-triplets-without-bogus-dots)))
+
+; We strip out the addresses.
+
+                 `((:OBJ ,common-obj)
+                   (:LEGEND ,named-doublets))))
+              (t
+               (er hard 'compare-objects
+                   "Compare-objects does not satisfy its intended spec that ~
+                    the original x and y can be obtained from the common ~
+                    object by hitting, with put-addr^, the addr of each name ~
+                    <si> with the simplified replacements, xi and yi, stripped ~
+                    of any bogus dots.  Please send this error message ~
+                    (complete with the display below) to the ~
+                    implementors.~%~Y01~%Thanks."
+                       (list (list :x x)
+                             (list :y y)
+                             (list :named-triplets named-triplets)
+                             (list :named-triplets-without-bogus-dots
+                                   named-triplets-without-bogus-dots)
+                             (list :x-prime x-prime)
+                             (list :y-prime y-prime))
+                       nil)))))
+     (t (er hard 'compare-objects
+            "We thought compare-objects1 never reported a replacement ~
+             containing a bogus dot unless the replacement was of the form ~
+             (|.| z) and the associated address ended in ^.  Please send this ~
+             error message (complete with the display below) to the ~
+             implementors.~%~Y01~%~Y21.~%Thanks."
+                x nil y)))))
+
+(defun get-actual-brr-evisc-tuple (state)
+
+; The brr-evisc-tuple, which is technically found in the global var
+; brr-evisc-tuple, can actually be the keyword :default, which means it is the
+; same as the term evisc-tuple.  That can be :default too, in which case we use
+; the equivalent of (evisc-tuple 5 7 nil nil).  This function returns either
+; nil, which is a standard-evisc-tuplep, or an actual 4-tuple.
+
+  (let ((tuple (f-get-global 'brr-evisc-tuple state)))
+    (cond
+     ((eq tuple :default)
+
+; If the brr-evisc-tuple is the default, it defaults to the term-evisc-tuple.g
+      (let ((tuple (f-get-global 'term-evisc-tuple state)))
+        (cond
+         ((eq tuple :default)
+          (evisc-tuple 5 7 nil nil))
+         (t tuple))))
+    (t tuple))))
+
+(defun keyword-to-lc-string-alist (keywords)
+
+; We believe that all placeholder keywords listed in the argument provided by
+; explain-near-miss1 (for which this function was invented) are already
+; lowercase, e.g., :|<s23>| not :<S23>, but we downcase anyway just so this
+; function could be used elsewhere.
+
+  (cond
+   ((endp keywords) nil)
+   ((keywordp (car keywords))
+    (cons (cons (car keywords)
+                (string-downcase (symbol-name (car keywords))))
+          (keyword-to-lc-string-alist (cdr keywords))))
+   (t (keyword-to-lc-string-alist (cdr keywords)))))
+
+(defun explain-near-miss2 (pat-cmd pat-term target-term
+                                   large-cons-count evisc-tuple state)
+
+; See explain-near-miss1.
+
+  (declare (xargs :mode :program))
+  (mv-let (ans1 alist1 addr alist subtarget)
+    (one-way-unify-fr pat-term target-term)
+    (cond
+     ((or (null pat-term)
+          (not (or (eq pat-cmd :lhs)
+                   (eq pat-cmd :max-term))))
+      (er soft 'explain-near-miss
+          "Explain-near-miss is meant to be invoked when (brr@ :lemma) is a ~
+           lemma of rule-class :rewrite, :linear, or :rewrite-quoted-constant ~
+           and the current value of (brr@ :lemma) is none of these."))
+     ((not (or (null large-cons-count)
+               (natp large-cons-count)))
+      (er soft 'explain-near-miss
+          "The large-cons-count argument must be nil or a natural, but you ~
+           supplied ~x0."
+          large-cons-count))
+     ((not
+       (or (eq evisc-tuple t)                    ; means :brr evisc-tuple
+           (standard-evisc-tuplep evisc-tuple))) ; nil (means none) or 4-tuple
+      (er soft 'explain-near-miss
+          "The evisc-tuple argument must be nil (meaning no evisceration), ~
+           t (meaning use the brr evisc-tuple), or a standard evisceration ~
+           4-tuple.  You supplied ~x0."
+          evisc-tuple))
+     (t
+      (let ((evisc-tuple
+             (cond
+              ((eq evisc-tuple nil) nil)
+              ((eq evisc-tuple t) (get-actual-brr-evisc-tuple state))
+              (t evisc-tuple))))
+        (cond
+         (ans1
+          (mv-let (ans2 alist2)
+            (one-way-unify pat-term target-term)
+            (cond (ans2
+                   (let ((state
+                          (fmt-abbrev
+                           "Explain-near-miss is meant to be invoked only ~
+                            after the rule's triggering pattern, ~X01, fails ~
+                            to match the target term, ~X21.  But these two ~
+                            terms do match, under the substitution ~X31 (here ~
+                            printed as a list of doublets, (var term), rather ~
+                            than a list of pairs (var . term)).  The ~
+                            triggering-pattern and target term may be ~
+                            obtained from within a near miss break with the ~
+                            commands ~x4 and :TARGET."
+                           `((#\0 . ,pat-term)
+                             (#\1 . ,evisc-tuple)
+                             (#\2 . ,target-term)
+                             (#\3 . ,(pairlis$ (strip-cars alist2)
+                                               (pairlis-x2 (strip-cdrs alist2) nil)))
+                             (#\4 . ,pat-cmd))
+                           0
+                           *standard-co*
+                           state
+                           "~%~%")))
+                     (value :invisible)))
+                  (t (prog2$
+                      (er hard 'explain-near-miss
+                          "There is a bug in ONE-WAY-UNIFY-FR.  It reports ~
+                           that the pattern ~X01 matches the term ~X21 under ~
+                           substitution ~X31, even though ONE-WAY-UNIFY ~
+                           reports that the pattern and term do not match!  ~
+                           Please provide the implementors with this ~
+                           information."
+                          pat-term
+                          nil
+                          target-term
+                          alist1)
+                      (value :invisible))))))
+         (t (let* ((subpat (fetch-addr addr pat-term))
+                   (instantiated-subpat (sublis-var alist subpat))
+                   (marked-pat (put-addr^ addr
+                                          (make-compare-objects-placeholder 'pat)
+                                          pat-term))
+                   (doublet-alist (pairlis$ (strip-cars alist)
+                                            (pairlis-x2 (strip-cdrs alist) nil)))
+                   (two-quotesp (and (quotep instantiated-subpat)
+                                     (quotep subtarget)))
+                   (compare-objectsp
+                    (or two-quotesp
+                        (and (nvariablep instantiated-subpat)
+                             (not (fquotep instantiated-subpat))
+                             (flambdap (ffn-symb instantiated-subpat))
+                             (nvariablep subtarget)
+                             (not (fquotep subtarget))
+                             (flambdap (ffn-symb subtarget))
+                             (not (equal (ffn-symb instantiated-subpat)
+                                         (ffn-symb subtarget))))))
+; Note that if compare-objectsp is known to be true and two-quotesp is nil,
+; then instantiated-subpat and subtarget are applications of unequal lambda expressions.
+; We will compare the evgs/lambda objects, if they are ``large''.  So we let
+; obj1 and obj2 be the objects to compare and decide whether they're large.
+
+                   (obj1 (if compare-objectsp
+                             (if two-quotesp
+                                 instantiated-subpat
+                                 (ffn-symb instantiated-subpat))
+                             nil))
+                   (obj2 (if compare-objectsp
+                             (if two-quotesp
+                                 subtarget
+                                 (ffn-symb subtarget))
+                             nil))
+                   (largep (if compare-objectsp
+                               (or (null large-cons-count)
+                                   (>= (cons-count-bounded-ac obj1 0
+                                                              large-cons-count)
+                                       large-cons-count)
+                                   (>= (cons-count-bounded-ac obj2 0
+                                                              large-cons-count)
+                                       large-cons-count))
+                               nil))
+                   (obj-and-legend (compare-objects obj1 obj2)))
+              (let ((state
+                     (fmt-abbrev
+                      "~%The ACL2 match algorithm attempted to match ~xe with ~
+                       :TARGET by finding a substitution, s, such that ~xe/s ~
+                       = :TARGET.  That attempt failed when trying to match ~
+                       the subterm of ~xe marked <pat> in ~xe' below.~%~%~
+                       ~xe:~_f ~Y01~
+                       ~xe':~_f~Y21~
+                       :TARGET:   ~Y31~%~
+                       Below we show the substitution, s, computed prior to ~
+                       the failure; the subterm of ~xe we're calling <pat>; ~
+                       the instantiated subterm, <pat>/s; and the ~
+                       corresponding subterm, <tar>, of :TARGET.~%~%~
+                       s:       ~Y61~
+                       <pat>:   ~Y51~
+                       <pat>/s: ~Y81~
+                       <tar>:   ~Y71~%~
+                       For the rewriter to get past this failure the match ~
+                       algorithm must be able to extend substitution s to s' ~
+                       so that <pat>/s' is equal to <tar> and our match ~
+                       algorithm could not find such an extension.~%~%In case ~
+                       you want to manually explore <pat> and <tar> they may ~
+                       be obtained by executing the following forms in the ~
+                       break caused by this near miss~%~%<pat>: ~Yc1<tar>: ~
+                       ~Yd1~%(Note: The substitution, s, is displayed above ~
+                       as a list of ``doublets'' rather than pairs.  I.e., ~
+                       ((var1 term1) ...) instead of ((var1 . term1) ...).  ~
+                       If you wish to instantiate <pat> using sublis-var you ~
+                       must convert the doublets to pairs.  Finally, be ~
+                       advised that instantiating a term can produce a quoted ~
+                       object, e.g., (sublis-var '((x . '13)) '(cons x x)) is ~
+                       '(13 . 13), not (cons '13 '13).)~%~
+                       ~#9~[~/~%Since <pat>/s and <tar> are ~#a~[quoted ~
+                       objects, those objects~/applications of lambda ~
+                       expressions, those lambda expressions~] must be ~
+                       identical for the match algorithm to succeed.  ~
+                       Because they are ``large'' it might be difficult to ~
+                       see where they differ.  So we show you below.~%~%Let ~
+                       x be ~#a~[<pat>/s~/the lambda expression being ~
+                       applied in <pat>/s, i.e., (fn-symb <pat/s>)~] and let ~
+                       y be ~#a~[<tar>~/(fn-symb <tar>)~].  Below is the ~
+                       output of (compare-objects x y).  The object labeled ~
+                       :OBJ shows the basic structure of x and y with ~
+                       certain substructures replaced by tokens, <si>, ~
+                       i=1,2,....  These <si> mark where x and y differ. The ~
+                       :LEGEND is a list of elements, each of the form (<si> ~
+                       xi yi) meaning ``at <si>, x contains xi but y ~
+                       contains yi.''~%~%~Yb1~]~%See :DOC ~
+                       explain-near-miss~#9~[~/ and :DOC compare-objects~] ~
+                       for details."
+
+                      `((#\0 . ,pat-term)
+
+; We transfer the user's specified print-level and print-length into the
+; evisc-tuple we'll use. We considered adding the user's specified alist to the
+; end of our alist, and we considered using the user's specified hiding-cars.
+; But we dropped those two ideas because we are nervous about those settings
+; hiding the special tokens we've inserted.
+
+                        (#\1 . ,(evisc-tuple (cadr evisc-tuple)
+                                             (caddr evisc-tuple)
+                                             (keyword-to-lc-string-alist
+                                              (cons ':|<pat>|
+                                                    (strip-cars
+                                                     (cadr
+                                                      (assoc-eq :legend obj-and-legend)))))
+                                             nil))
+                        (#\2 . ,marked-pat)
+                        (#\3 . ,target-term)
+; We don't use #\4 in the fmt string anymore, but we do use addr
+;                       (#\4 . ,addr)
+                        (#\5 . ,subpat)
+                        (#\6 . ,doublet-alist)
+                        (#\7 . ,subtarget)
+                        (#\8 . ,instantiated-subpat)
+
+; If the mismatch occurred on two ``large'' quotes or two ``large'' unequal
+; lambda expressions, we'll print the comparison of the two.
+
+                        (#\9 . ,(if (and compare-objectsp largep) 1 0))
+                        (#\a . ,(if two-quotesp 0 1)) ; only relevant if compare-objectsp
+                        (#\b . ,obj-and-legend)
+                        (#\c . ,`(fetch-addr ',addr (brr@ ,pat-cmd)))
+                        (#\d . ,`(fetch-addr ',addr (brr@ :target)))
+                        (#\e . ,pat-cmd)
+                        (#\f . ,(if (eq pat-cmd :max-term) 0 5)))
+                      0
+                      *standard-co*
+                      state
+                      "~%~%")))
+                (value :invisible))))))))))
+
+(defun explain-near-miss1 (target-term large-cons-count evisc-tuple state)
+
+; We should be in a near miss break.  Brr-cmd-name and pattern should be bound
+; in as brr-locals.  Large-cons-count is the minimum number of conses for a
+; quote term to be considered ``large'' and evisc-tuple should be nil (meaning
+; no evisceration), :default (which means brr evisc-tuple), or an evisc-tuple.
+; The explanation of the near miss is done by explain-near-miss2, but we must
+; first compute for it pattern term of the lemma and the brr command, :lhs or
+; :max-term, which delivers the pattern to the user.
+
+  (declare (xargs :mode :program))
+  (let* ((pat-cmd (get-brr-local 'brr-cmd-name-for-pattern state))
+         (pat-term (get-brr-local 'pattern state)))
+
+; Pat-cmd is the brr command that will return the pattern of the rule.  There
+; are three rule-classes of concern: :rewrite, :linear, and
+; :rewrite-quoted-constant.  When stored, the last is a subclass of the first
+; and, in the case of Form [2] rewrite-quoted-constant rules like (equiv
+; (normalizer x) x) -- which fires only on quoted constants x and runs
+; normalizer on x to get the result -- get-rule-field swaps the meaning of :lhs
+; and :rhs.  So above when we bind pat-cmd we bind it either to :max-term or
+; :lhs.  If it is bound to nil, explain-near-miss2 will signal an error because
+; it means explain-near-miss was invoked when we were not in a near miss break
+
+    (explain-near-miss2 pat-cmd pat-term target-term large-cons-count
+                        evisc-tuple state)))
 
 (defun near-miss-brkpt1 (lemma target type-alist ancestors initial-ttree
                                gstack rcnst simplify-clause-pot-lst state)

@@ -421,9 +421,6 @@ for the (typically harder) mask 1 case.</p>
 (define ipasir-sat-limit100 ()
   (make-fgl-ipasir-config
    :ipasir-callback-limit 100))
-
-(define monolithic-sat-with-transforms ()
-  (make-fgl-satlink-monolithic-sat-config :transform t))
   
 
 (defattach

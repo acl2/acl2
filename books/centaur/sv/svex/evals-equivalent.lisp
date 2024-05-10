@@ -830,7 +830,17 @@ in two symbolic SVEX environments."
                       ans))
       :hints(("Goal" :in-theory (enable svex-mask-env-common-constants))))))
 
-
+(define my-binary-append ((x true-listp) y)
+  :enabled t
+  (mbe :logic (binary-append x y)
+       :exec (if (eq y nil)
+                 x
+               (binary-append x y)))
+  ///
+  (defmacro my-append (&rest rst)
+    (cond ((null rst) nil)
+          ((null (cdr rst)) (car rst))
+          (t (xxxjoin 'my-binary-append rst)))))
 
 (define eval-collection-of-a4vecs-and-aigs
   ((a4vecs1 a4veclist-p)
@@ -846,7 +856,7 @@ in two symbolic SVEX environments."
                (aigs3-eval true-listp))
   (b* ((a4vecs1-aiglist (sv::a4veclist->aiglist a4vecs1))
        (a4vecs2-aiglist (sv::a4veclist->aiglist a4vecs2))
-       (all-aigs (append a4vecs1-aiglist a4vecs2-aiglist aigs1 aigs2 aigs3))
+       (all-aigs (my-append a4vecs1-aiglist a4vecs2-aiglist aigs1 aigs2 aigs3))
        (bitlist (time$ (acl2::aig-eval-list all-aigs env)
                        :msg "; SV bit-blasting: aig-eval-list: ~st sec, ~sa bytes.~%"))
        (a4vecs1-len (length a4vecs1-aiglist))
@@ -1101,6 +1111,104 @@ in two symbolic SVEX environments."
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct)))))
 
+  (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl-less-extreme
+    (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)
+           (b* ((orig-x x)
+
+                (env1 (make-fast-alist (svex-env-fix env1)))
+                (env2 (make-fast-alist (svex-env-fix env2)))
+                ((mv masks ?toposort)
+                 (svexlist-mask-alist/toposort-memo x))
+                (const-env
+                 (time$ (svex-mask-env-common-constants const-env masks env1 env2)))
+                (x (time$
+                         (svexlist-compose-rw x
+                                              (make-svex-substconfig
+                                               :alist (make-fast-alist
+                                                       (svex-env-to-subst const-env))
+                                               :simp 10))))
+                (svars (set::union
+                        (svexlist-vars-for-symbolic-eval x env1 symbolic-params)
+                        (svexlist-vars-for-symbolic-eval x env2 symbolic-params)))
+                (x (svexlist-x-out-unused-vars x svars
+                                               (symbolic-params-x-out-cond symbolic-params)))
+                (x (maybe-svexlist-rewrite-fixpoint x (cdr (assoc :simplify symbolic-params))))
+                (boolmasks (make-fast-alist
+                            (hons-copy
+                             (ec-call
+                              (svar-boolmasks-fix (cdr (assoc :boolmasks symbolic-params)))))))
+         
+                ((unless (and (svex-env-check-boolmasks boolmasks env1)
+                              (svex-env-check-boolmasks boolmasks env2)))
+                 (b* ((?ign (cw "ERROR: some bits assumed to be Boolean were not~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)))))
+
+                ((mv err x-a4vecs subexp-a4vecs)
+                 (time$ (svexlist->a4vecs-for-varlist-with-subexprs x svars boolmasks)
+                        :msg "; svex->aigs: ~st sec, ~sa bytes.~%"))
+                ((when err)
+                 (b* ((?ign (cw "ERROR gathering AIG bits for variables: ~@0~%" err)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)))))
+
+                ((mv ?err aig-env1)
+                 ;; ignore the error; it can't exist if the above doesn't
+                 (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env1)
+                        :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
+                (aig-env1 (make-fast-alist aig-env1))
+                
+                ((mv ?err aig-env2)
+                 ;; ignore the error; it can't exist if the above doesn't
+                 (time$ (svexlist->a4vec-aig-env-for-varlist x svars boolmasks env2)
+                        :msg "; env -> aig env: ~st sec, ~sa bytes.~%"))
+                (aig-env2 (make-fast-alist aig-env2))
+
+                (?ign (fast-alist-free env1))
+                (?ign (fast-alist-free env2))
+                ;; (x-upper-a4vecs (a4veclist->upper-a4vecs x-a4vecs))
+                ((mv x-eval1 sub-eval1 & & &)
+                 (eval-collection-of-a4vecs-and-aigs
+                  x-a4vecs subexp-a4vecs nil nil nil aig-env1))
+                ((mv x-eval2 sub-eval2 & & &)
+                 (eval-collection-of-a4vecs-and-aigs
+                  x-a4vecs subexp-a4vecs nil nil nil aig-env2 ))
+                ;; (x-eval1 (time$ (a4veclist-eval x-a4vecs aig-env1)
+                ;;                 :msg "; a4veclist-eval (x, env1): ~st sec, ~sa bytes.~%"))
+                ;; (hint-eval1 (time$ (a4veclist-eval hint-a4vecs aig-env1)
+                ;;                   :msg "; a4veclist-eval (sub, env1): ~st sec, ~sa bytes.~%"))
+                ;; (x-eval2 (time$ (a4veclist-eval x-a4vecs aig-env2)
+                ;;                 :msg "; a4veclist-eval (x, env2): ~st sec, ~sa bytes.~%"))
+                ;; (hint-eval2 (time$ (a4veclist-eval hint-a4vecs aig-env2)
+                ;;                   :msg "; a4veclist-eval (sub, env2): ~st sec, ~sa bytes.~%"))
+                (evals-equal (equal x-eval1 x-eval2))
+                ;; We are going to allow equivalences between the two
+                ;; evaluations as well as the upper/lowers of the same
+                ;; evaluation.  
+                (sub-eval1 (acl2::list-to-tree sub-eval1))
+                (sub-eval2 (acl2::list-to-tree sub-eval2))
+                ((mv iso-ok hint-iso1 hint-iso2) (time$ (fgl::fgl-make-isomorphic iso-ok sub-eval1 sub-eval2)))
+                ((unless iso-ok)
+                 (b* ((?ign (cw "ERROR: the equivalence hint objects couldn't be made isomorphic!~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)))))
+                (len1 (fgl::syntax-bind len1 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-iso1)))))
+                (len2 (fgl::syntax-bind len2 (fgl::g-concrete (len (fgl::fgl-object-bfrlist hint-iso2)))))
+                ((unless (fgl::syntax-bind lens-equal (equal len1 len2)))
+                 (b* ((?ign (cw "ERROR: the number of BFR objects in the ~
+                                 equivalence hint objects wasn't equal after ~
+                                 they were made isomorphic!~%"))
+                      (?foo (break$)))
+                   (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)))))
+                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                
+             (fgl::fgl-simplify-ordered evals-equal transforms
+                                        :tracked-obj
+                                        (cons hint-iso1 hint-iso2))))
+    :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
+                                    SVEXLIST->A4VECS-FOR-VARLIST
+                                    svexlist->a4vec-aig-env-for-varlist)
+                                   (svexlist->a4vec-correct)))))
+  
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-with-transforms-fgl-extreme
     (equal (svexlist-evals-equal-with-transforms x env1 env2 symbolic-params transforms)

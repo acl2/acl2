@@ -600,6 +600,7 @@
                                 (cdr (assoc 'current-acl2-world
                                             x))))
        (timer-alistp (cdr (assoc 'timer-alist x)))
+       (print-base-p (cdr (assoc 'print-base x)))
        (known-package-alistp
         (getpropc 'known-package-alist
                   'global-value
@@ -704,7 +705,7 @@
 (defthm state-p1-of-put-global
   (implies (and (state-p1 state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))) ; todo
+                (not (member-equal key '(current-acl2-world timer-alist print-base))) ; todo
                 )
            (state-p1 (put-global key value state)))
   :hints (("Goal" :in-theory (enable put-global state-p1 global-table-p))))
@@ -712,7 +713,7 @@
 (defthm state-p-of-put-global
   (implies (and (state-p state)
                 (symbolp key)
-                (not (member-equal key '(current-acl2-world timer-alist))) ; todo
+                (not (member-equal key '(current-acl2-world timer-alist print-base))) ; todo
                 )
            (state-p (put-global key value state)))
   :hints (("Goal" :in-theory (enable state-p))))
@@ -728,6 +729,7 @@
   (implies (and (symbolp sym)
                 (not (eq sym 'current-acl2-world))
                 (not (eq sym 'timer-alist))
+                (not (eq sym 'print-base))
                 (global-table-p x))
            (global-table-p (add-pair sym val x)))
   :hints (("Goal" :in-theory (enable global-table-p add-pair))))

@@ -206,6 +206,24 @@
 
   (defret fgl-object-alist-bfrlist-of-<fn>
     (equal (fgl-object-alist-bfrlist new-x) nil)))
+
+(define fgl-make-fast-alist-concrete-rec-tr (x (acc fgl-object-alist-p))
+  :guard (true-listp acc)
+  :returns (mv ok (new-x fgl-object-alist-p))
+  (if (atom x)
+      (mv t (revappend (fgl-object-alist-fix acc) x))
+    (if (atom (car x))
+        (mv nil nil)
+      (fgl-make-fast-alist-concrete-rec-tr
+       (cdr x) (cons (cons (caar x) (g-concrete (cdar x))) acc))))
+  ///
+  (defret <fn>-normalize-to-fgl-make-fast-alist-concrete-rec
+    (b* (((mv ok-spec new-x-spec) (fgl-make-fast-alist-concrete-rec x)))
+      (and (iff ok ok-spec)
+           (implies ok-spec
+                    (equal new-x
+                           (revappend (fgl-object-alist-fix acc) new-x-spec)))))
+    :hints(("Goal" :in-theory (enable fgl-make-fast-alist-concrete-rec)))))
         
 
 (define fgl-make-fast-alist-rec ((x fgl-object-p))
@@ -236,8 +254,38 @@
     (implies (not (member v (fgl-object-bfrlist x)))
              (not (member v (fgl-object-alist-bfrlist new-x))))))
 
+(define fgl-make-fast-alist-rec-tr ((x fgl-object-p)
+                                    (acc fgl-object-alist-p))
+  :guard (true-listp acc)
+  :returns (mv ok (new-x fgl-object-alist-p))
+  :measure (fgl-object-count x)
+  (fgl-object-case x
+    :g-concrete (fgl-make-fast-alist-concrete-rec-tr x.val acc)
+    :g-map (mv t (revappend (fgl-object-alist-fix acc) x.alist))
+    :g-cons (fgl-object-case x.car
+              :g-concrete
+              (if (consp x.car.val)
+                  (fgl-make-fast-alist-rec-tr x.cdr
+                                              (cons (cons (car x.car.val) (g-concrete (cdr x.car.val))) acc))
+                (mv nil nil))
+              :g-cons
+              (fgl-object-case x.car.car
+                :g-concrete
+                (fgl-make-fast-alist-rec-tr
+                 x.cdr (cons (cons x.car.car.val x.car.cdr) acc))
+                :otherwise (mv nil nil))
+              :otherwise (mv nil nil))
+    :otherwise (mv nil nil))
+  ///
+  (defret <fn>-normalize-to-fgl-make-fast-alist-rec
+    (b* (((mv ok-spec new-x-spec) (fgl-make-fast-alist-rec x)))
+      (and (iff ok ok-spec)
+           (implies ok
+                    (equal new-x (revappend (fgl-object-alist-fix acc) new-x-spec)))))
+    :hints(("Goal" :in-theory (enable fgl-make-fast-alist-rec)))))
+
 (def-fgl-primitive make-fast-alist (x)
-  (b* (((mv ok alist) (fgl-make-fast-alist-rec x))
+  (b* (((mv ok alist) (fgl-make-fast-alist-rec-tr x nil))
        ((when ok) (mv t (g-map '(:g-map) (make-fast-alist alist)) interp-st)))
     (mv nil nil interp-st))
   :formula-check fast-alist-formula-checks)

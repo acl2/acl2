@@ -159,7 +159,7 @@
                                  :hints (("Goal" :in-theory (enable ,updater-fn ,inner-updater-fn)))))))
                     (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming inner-field-num inner-updater-fn))))
          ((eq 'stobj-table type-kind)
-          (progn$ ;(cw "NOTE: Stobj table fields are not yet supported by defstobj+.")
+          (progn$ ;(cw "NOTE: Stobj table fields are not yet supported by defstobj+.~%")
            nil))
          (t ;must be a scalar type (possibly TYPE is t)
           (let* ( ;; (initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
@@ -296,7 +296,7 @@
                         :hints (("Goal" :in-theory '(,count-fn ,inner-resize-fn nth-update-nth (:e nfix))))))
                     (interaction-theorems-for-scalar-field (rest all-field-infos) (+ 1 other-field-num) stobj-name renaming inner-field-num inner-updater-fn))))
          ((eq 'stobj-table type-kind)
-          (progn$ ;(cw "NOTE: Stobj table fields are not yet supported by defstobj+.")
+          (progn$ ;(cw "NOTE: Stobj table fields are not yet supported by defstobj+.~%")
            nil))
          (t ;must be a scalar type (possibly TYPE is t)
           (let* ( ;; (initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
@@ -560,13 +560,13 @@
               (:e ,recognizer))
             )))
      ((eq 'hash-table type-kind)
-      (prog2$ (cw "NOTE: Hash table fields are not yet supported by defstobj+.")
+      (prog2$ (cw "NOTE: Hash table fields are not yet supported by defstobj+.~%")
               (mv nil
-                  nil ;; (list recognizer)
-                  nil
+                  (list recognizer)
+                  `((:e ,recognizer))
                   )))
      ((eq 'stobj-table type-kind)
-      (prog2$ (cw "NOTE: Stobj table fields are not yet supported by defstobj+.")
+      (prog2$ (cw "NOTE: Stobj table fields are not yet supported by defstobj+.~%")
               (mv nil
                   nil ;; (list recognizer)
                   nil
@@ -666,7 +666,7 @@
 
            ,@theorems-for-fields
 
-           ;; Has to come after the theorems-for-fields, since this need rules about MAKE-LIST-AC.
+           ;; Has to come after the theorems-for-fields, since this needs rules about MAKE-LIST-AC.
            ;; The stobj creation function returns a well-formed stobj:
            (defthm ,(pack$ top-recognizer '-of- creator)
              (,top-recognizer (,creator))

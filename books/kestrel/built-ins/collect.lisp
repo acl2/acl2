@@ -547,10 +547,23 @@
     upper-case-p-char-upcase
     lower-case-p-forward-to-alpha-char-p
     upper-case-p-forward-to-alpha-char-p
-    alpha-char-p-forward-to-standard-char-p
+    char-upcase/downcase-non-standard-inverses
+    char-upcase-maps-non-standard-to-non-standard
+    char-downcase-maps-non-standard-to-non-standard
+    characterp-char-downcase-non-standard
+    characterp-char-upcase-non-standard
     standard-char-p-forward-to-characterp
     characterp-char-downcase
     characterp-char-upcase
+    lower/upper-case-p-non-standard-disjointness
+    upper-case-p-non-standard-char-upcase-non-standard
+    lower-case-p-non-standard-char-downcase-non-standard
+    alpha-char-p-non-standard-implies-characterp
+    lower-case-p-non-standard-implies-alpha-char-p-non-standard
+    upper-case-p-non-standard-implies-alpha-char-p-non-standard
+    booleanp-lower-case-p-non-standard
+    booleanp-upper-case-p-non-standard
+    booleanp-alpha-char-p-non-standard
     characterp-nth
     standard-char-listp-append
     character-listp-append
@@ -700,7 +713,7 @@
     character-alistp-forward-to-eqlable-alistp
     nat-alistp-forward-to-eqlable-alistp
     fixnat-alistp-forward-to-nat-alistp
-    standard-string-alistp-forward-to-alistp
+    string-alistp-forward-to-alistp
     consp-assoc-equal
     known-package-alistp-forward-to-true-list-listp-and-alistp
     true-list-listp-forward-to-true-listp-assoc-equal
