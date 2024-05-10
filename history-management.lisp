@@ -1886,7 +1886,6 @@
   (cond
    ((endp alist) nil)
    ((and (stringp (car (car alist)))
-         (standard-string-p (car (car alist)))
          (member-string-equal (car (car alist))
                               *tracked-warning-summaries*))
     (clear-warning-summaries-alist (cdr alist)))

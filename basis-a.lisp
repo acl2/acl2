@@ -26,96 +26,6 @@
 
 (in-package "ACL2")
 
-; Here we lay down the code for partial-encapsulate.  This code could be moved
-; back to just before the first partial-encapsulate in translate.lisp; we moved
-; it to this file to support some experimenation involving fmt-ppr, but we
-; might as well leave it here.
-
-(defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
-  (cond ((endp embedded-event-lst)
-         nil)
-        ((and (eq (caar embedded-event-lst) 'encapsulate)
-              (cadar embedded-event-lst))
-         (cons (car embedded-event-lst)
-               (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
-        (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
-
-(defun all-function-symbolps (fns wrld)
-  (declare (xargs :mode :logic
-                  :guard (plist-worldp wrld)))
-  (cond ((atom fns) (equal fns nil))
-        (t (and (symbolp (car fns))
-                (function-symbolp (car fns) wrld)
-                (all-function-symbolps (cdr fns) wrld)))))
-
-(defconst *unknown-constraints*
-
-; This value must not be a function symbol, because functions may need to
-; distinguish conses whose car is this value from those consisting of function
-; symbols.
-
-  :unknown-constraints)
-
-(defun unknown-constraints-table-guard (key val wrld)
-  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
-                 because ~@0.  See :DOC partial-encapsulate."))
-    (cond
-     ((eq key :supporters)
-      (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                         (global-val 'embedded-event-lst wrld))))
-        (cond
-         ((null ee-entries)
-          (mv nil
-              (msg er-msg
-                   "it is not being made in the scope of a non-trivial ~
-                    encapsulate")))
-         ((cdr ee-entries)
-          (mv nil
-              (msg er-msg
-                   (msg "it is being made in the scope of nested non-trivial ~
-                         encapsulates.  In particular, an enclosing ~
-                         encapsulate introduces function ~x0, while an ~
-                         encapsulate superior to that one introduces function ~
-                         ~x1"
-                        (caar (cadr (car ee-entries)))
-                        (caar (cadr (cadr ee-entries)))))))
-         ((not (all-function-symbolps val wrld))
-          (mv nil
-              (msg er-msg
-                   (msg "the value, ~x0, is not a list of known function ~
-                         symbols"
-                        val))))
-         ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
-                              val))
-          (mv nil
-              (msg er-msg
-                   (msg "the value, ~x0, does not include all of the ~
-                         signature functions of the partial-encapsulate"
-                        val))))
-         (t (mv t nil)))))
-     (t (mv nil nil)))))
-
-(table unknown-constraints-table nil nil
-       :guard
-       (unknown-constraints-table-guard key val world))
-
-(defmacro set-unknown-constraints-supporters (&rest fns)
-  `(table unknown-constraints-table
-          :supporters
-
-; Notice that by including the newly-constrained functions in the supporters,
-; we are guaranteeing that this table event is not redundant.  To see this,
-; first note that we are inside a non-trivial encapsulate (see
-; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
-; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
-; would have rejected a previous attempt to set to these supporters, since they
-; were not function symbols at that time.
-
-          (let ((ee-entries (non-trivial-encapsulate-ee-entries
-                             (global-val 'embedded-event-lst world))))
-            (union-equal (strip-cars (cadr (car ee-entries)))
-                         ',fns))))
-
 ; Start definitions related to defun-inline.
 
 (defun-inline +f!-fn2 (x y)
@@ -2952,7 +2862,6 @@
   (and (state-p state)
        (small-nat-guard (f-get-global 'fmt-hard-right-margin state))
        (small-nat-guard (f-get-global 'fmt-soft-right-margin state))
-       (print-base-p (f-get-global 'print-base state))
        (alistp (table-alist 'evisc-table (w state)))
        (eviscerate-top-state-p state)
 ; Probably unnecessary, but makes some proofs easier since compress1 is the
@@ -6218,10 +6127,9 @@
 ; a given error should be printed.
 
   (declare (xargs :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
+                                  (stringp summary))
                               (plist-worldp wrld)
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-er-table wrld)))))
   (and summary
        (assoc-string-equal
@@ -6231,9 +6139,8 @@
 (defun er-off-p (summary state)
   (declare (xargs :stobjs state
                   :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
-                              (standard-string-alistp
+                                  (stringp summary))
+                              (string-alistp
                                (table-alist 'inhibit-er-table (w state))))))
   (er-off-p1 summary (w state)))
 
@@ -6259,9 +6166,8 @@
                               (standard-evisc-tuplep
                                (abbrev-evisc-tuple state))
                               (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
-                              (standard-string-alistp
+                                  (stringp summary))
+                              (string-alistp
                                (table-alist 'inhibit-er-table (w state))))))
   (cond ((er-off-p summary state)
          state)
@@ -6312,9 +6218,8 @@
                               (standard-evisc-tuplep
                                (abbrev-evisc-tuple state))
                               (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
-                              (standard-string-alistp
+                                  (stringp summary))
+                              (string-alistp
                                (table-alist 'inhibit-er-table (w state)))
                               (symbolp (standard-co state))
                               (open-output-channel-p (standard-co state)
@@ -7280,7 +7185,7 @@
                                         (member-string-equal
                                          summary
                                          *tracked-warning-summaries*)
-                                        (standard-string-alistp
+                                        (string-alistp
                                          (wormhole-data whs)))
                                    (let ((expln (list ctx alist str))
                                          (entry (or (assoc-string-equal
@@ -7366,7 +7271,7 @@
        (let ((e (f-get-global 'abbrev-evisc-tuple state)))
          (or (eq e :default)
              (standard-evisc-tuplep e)))
-       (standard-string-alistp
+       (string-alistp
         (table-alist 'inhibit-er-table (w state)))
        (symbolp (standard-co state))
        (open-output-channel-p (standard-co state) :character state)
@@ -7401,8 +7306,7 @@
            (xargs :guard (and (error1-state-p state)
                               (character-alistp alist)
                               (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary))))))
+                                  (stringp summary)))))
   (pprogn
    (io? error nil state (alist str ctx summary)
         (error-fms nil ctx summary str alist state))
@@ -7472,10 +7376,9 @@
 ; computation on behalf of disabled warnings.
 
   (declare (xargs :guard (and (or (null summary)
-                                  (and (stringp summary)
-                                       (standard-string-p summary)))
+                                  (stringp summary))
                               (plist-worldp wrld)
-                              (standard-string-alistp
+                              (string-alistp
                                (table-alist 'inhibit-warnings-table wrld)))))
   (or (and summary
            (assoc-string-equal
@@ -7749,11 +7652,10 @@
 (defun warnings-as-errors-val-guard (summary warnings-as-errors)
   (declare (xargs :guard t))
   (and (or (null summary)
-           (and (stringp summary)
-                (standard-string-p summary)))
+           (stringp summary))
        (or (null warnings-as-errors)
            (and (weak-warnings-as-errors-p warnings-as-errors)
-                (standard-string-alistp
+                (string-alistp
                  (warnings-as-errors-alist warnings-as-errors))))))
 
 (defun warnings-as-errors-val (summary warnings-as-errors)

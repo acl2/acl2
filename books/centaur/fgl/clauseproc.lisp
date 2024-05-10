@@ -108,6 +108,7 @@
        (interp-st (update-interp-st->reclimit config.reclimit interp-st))
        (interp-st (update-interp-st->config config interp-st))
        (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
+       (interp-st (update-interp-st->user-scratch nil interp-st))
        (constraint-db (table-alist 'fgl::fgl-bool-constraints (w state)))
        (interp-st (if (and (constraint-db-p constraint-db)
                            (not (constraint-db-bfrlist constraint-db)))

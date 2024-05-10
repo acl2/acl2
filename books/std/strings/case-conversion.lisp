@@ -59,13 +59,18 @@
                          (cons (upcase-char (car x)) acc))))
 
 (define upcase-charlist ((x character-listp))
+
+; Matt K. mods, May 2024: Updated for acl2::char-upcase change.
+
   :parents (cases)
   :short "Convert every character in a list to upper case."
 
   :long "<p>ACL2 has a built-in alternative to this function,
-@('string-upcase1'), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, @('upcase-charlist') works on arbitrary
-characters.</p>
+@('string-upcase1'), which however can also convert characters that are not
+standard characters.  (Historical note: Before May 2024, the guard for
+acl2::string-upcase1 required standard characters yet also converted only
+standard characters; this provided motivation for the development of
+this function.)</p>
 
 <p>For sometimes-better performance, we avoid consing and simply return @('x')
 unchanged when it has no characters that need to be converted.  Of course,
@@ -132,8 +137,10 @@ logical definition.</p>"
   (verify-guards upcase-charlist)
 
   (defthm string-upcase1-is-upcase-charlist
-    (equal (acl2::string-upcase1 x)
-           (upcase-charlist (double-rewrite x))))
+    (implies (standard-char-listp x)
+             (equal (acl2::string-upcase1 x)
+                    (upcase-charlist (double-rewrite x))))
+    :hints (("Goal" :in-theory (enable standard-char-listp))))
 
   ;; Mihir M. mod: added a lemma.
   (defthm
@@ -162,13 +169,18 @@ logical definition.</p>"
 
 
 (define downcase-charlist ((x character-listp))
+
+; Matt K. mods, May 2024: Updated for acl2::char-downcase change.
+
   :parents (cases)
   :short "Convert every character in a list to lower case."
 
   :long "<p>ACL2 has a built-in alternative to this function,
-@('string-downcase1'), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, @('downcase-charlist') works on
-arbitrary characters.</p>
+@('string-downcase1'), which however can also convert characters that are not
+standard characters.  (Historical note: Before May 2024, the guard for
+acl2::string-downcase1 required standard characters yet also converted only
+standard characters; this provided motivation for the development of
+this function.)</p>
 
 <p>For sometimes-better performance, we avoid consing and simply return @('x')
 unchanged when it has no characters that need to be converted.  Of course,
@@ -234,8 +246,10 @@ logical definition.</p>"
   (verify-guards downcase-charlist)
 
   (defthm string-downcase1-redef
-    (equal (acl2::string-downcase1 x)
-           (downcase-charlist (double-rewrite x)))))
+    (implies (standard-char-listp x)
+             (equal (acl2::string-downcase1 x)
+                    (downcase-charlist (double-rewrite x))))
+    :hints (("Goal" :in-theory (enable standard-char-listp)))))
 
 
 (define string-has-some-down-alpha-p
@@ -284,6 +298,9 @@ logical definition.</p>"
 
 
 (define upcase-string
+
+; Matt K. mods, May 2024: Updated for acl2::char-upcase change.
+
   :parents (cases acl2::string-upcase)
   :short "Convert a string to upper case."
   ((x :type string))
@@ -349,8 +366,9 @@ least we're better when no work needs to be done:</p>
            (atom (explode x))))
 
   (defthm string-upcase-is-upcase-string
-    (equal (acl2::string-upcase x)
-           (upcase-string (double-rewrite x)))))
+    (implies (acl2::standard-char-listp (explode x))
+             (equal (acl2::string-upcase x)
+                    (upcase-string (double-rewrite x))))))
 
 
 (define string-has-some-up-alpha-p
@@ -395,6 +413,9 @@ least we're better when no work needs to be done:</p>
   (verify-guards downcase-string-aux))
 
 (define downcase-string ((x :type string))
+
+; Matt K. mods, May 2024: Updated for acl2::char-downcase change.
+
   :parents (cases acl2::string-downcase)
   :short "Convert a string to lower case."
   :long "<p>@(call downcase-string) converts a string to lower case,
@@ -438,8 +459,9 @@ make this fast.</p>"
            (atom (explode x))))
 
   (defthm string-downcase-is-downcase-string
-    (equal (acl2::string-downcase x)
-           (downcase-string (double-rewrite x)))))
+    (implies (acl2::standard-char-listp (explode x))
+             (equal (acl2::string-downcase x)
+                    (downcase-string (double-rewrite x))))))
 
 
 (define upcase-string-list-aux ((x string-listp) acc)

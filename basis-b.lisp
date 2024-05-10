@@ -872,10 +872,7 @@
 
 (defun stobj-print-name (name)
   (declare (xargs :guard (symbolp name)))
-  (let* ((s (symbol-name name))
-         (s (if (standard-string-p s)
-                s
-              "some_stobj")))
+  (let* ((s (symbol-name name)))
     (coerce
      (cons #\<
            (append (string-downcase1 (coerce s 'list))

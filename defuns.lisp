@@ -12367,13 +12367,86 @@
                defs
                lst wrld))))))
 
+(defun verify-termination-boot-strap-chk1 (lst n wrld state)
+
+; Lst is a list of cdrs of defun forms; thus, the car of each element of lst is
+; a symbol.  Moreover, each such symbol is a known function symbol of wrld.
+
+  (cond ((endp lst) (value nil))
+        ((<= (getpropc (caar lst) 'absolute-event-number
+                       '(:error "Implementation error: Missing absolute event ~
+                                 number.  Please contact the ACL2 ~
+                                 implementors.")
+                       wrld)
+             n)
+         (verify-termination-boot-strap-chk1 (cdr lst) n wrld state))
+        (t
+
+; To see why we cause the following error, consider the following example from
+; :DOC verify-termination, modified to use verify-termination-boot-strap.
+
+;   (encapsulate
+;    ()
+;    (defun foo (x y)
+;      (declare (xargs :mode :program
+;                      :guard (and (natp x) (natp y))))
+;      (if (or (zp x) (zp y))
+;          (list x y)
+;        (foo (1+ x) (1- y))))
+;    (local (defun foo (x y)
+;             (declare (xargs :measure (acl2-count y)
+;                             :guard (and (natp x) (natp y))))
+;             (if (or (zp x) (zp y))
+;                 (list x y)
+;               (foo (1+ x) (1- y)))))
+;    (verify-termination-boot-strap foo))
+
+; If that were permitted in axioms.lisp, then one could start ACL2 and
+; immediately prove the following.
+
+;   (defthm bad-lemma
+;     (zp x)
+;     :hints (("Goal" :induct (foo x 1)))
+;     :rule-classes nil)
+
+         (er soft 'verify-termination-boot-strap-chk1
+             "Implementation error: Attempted verify-termination-boot-strap ~
+              for function symbol ~x0 in the same encapsulate where ~x0 is ~
+              introduced.  Please contact the ACL2 implementors, who should ~
+              read the comment in the defun of ~
+              verify-termination-boot-strap-chk1."
+             (caar lst)))))
+
+(defun pre-encapsulate-absolute-event-number (wrld)
+  (cond ((endp wrld)
+         (er hard 'pre-encapsulate-absolute-event-number
+             "Implementation error: Empty world.  Please contact the ACL2 ~
+              implementors."))
+         ((and (eq (caar wrld) 'embedded-event-lst)
+               (eq (cadar wrld) 'global-value)
+               (eq (cdr (cddar wrld)) nil))
+          (max-absolute-event-number wrld))
+         (t (pre-encapsulate-absolute-event-number (cdr wrld)))))
+
+(defun verify-termination-boot-strap-chk (lst state)
+  (let ((wrld (w state)))
+    (cond ((in-encapsulatep (global-val 'embedded-event-lst wrld)
+                            nil)
+           (verify-termination-boot-strap-chk1
+            lst
+            (pre-encapsulate-absolute-event-number wrld)
+            wrld
+            state))
+          (t (value nil)))))
+
 (defun verify-termination-boot-strap-fn1 (lst state event-form)
   (let ((event-form (or event-form
                         (cons 'VERIFY-TERMINATION lst))))
     (er-let*
-        ((verify-termination-defs-lst (verify-termination1 lst state)))
+        ((defs-lst (verify-termination1 lst state))
+         (ignore (verify-termination-boot-strap-chk defs-lst state)))
       (defuns-fn
-        verify-termination-defs-lst
+        defs-lst
         state
         event-form
         #+:non-standard-analysis

@@ -94,6 +94,99 @@
 
 
 
+(defsvtv$ counter-comb-run
+  :design *sv-design*
+  :cycle-phases (list (make-svtv-cyclephase :constants '(("clk" . 1)))
+                      (make-svtv-cyclephase :constants '(("clk" . 0))
+                                            :inputs-free t
+                                            :outputs-captured t))
+  :stages ((:inputs (("inc" inc)
+                     ("reset" reset))
+            :overrides (("sum" sum :cond sum-ovr :output sum-prev)
+                        ("sum1" sum1 :cond sum1-ovr))
+            :outputs (("sum_next" sum-next)
+                      ("sum1_next" sum1-next)))))
+
+(encapsulate nil
+  (local (include-book "svtv-generalize"))
+  (local (include-book "svtv-to-fsm"))
+  (local (def-svtv-data-export counter-comb-run-data))
+  
+  (make-event '(def-svtv-refinement counter-comb-run counter-comb-run-data
+                 :svtv-spec counter-comb-spec :inclusive-overridekeys t
+                 :phase-fsm counter-phase-fsm
+                 :fsm counter-fsm :define-fsm t)))
+
+(value-triple (acl2::tshell-ensure))
+
+
+(encapsulate nil
+  (local (include-book "svtv-generalize"))
+
+  (make-event '(def-svtv-generalized-thm counter-comb-svtv-thm
+                 :svtv counter-comb-run
+                 :svtv-spec counter-comb-spec
+                 :input-vars :all
+                 :output-vars (sum-next sum1-next)
+                 :unsigned-byte-hyps t
+                 :override-vars (sum)
+                 :spec-override-vars (sum1)
+                 :hyp (equal reset 0)
+                 :concl (and (implies (< sum1 15)
+                                   (equal sum-next (+ sum1 inc)))
+                             (implies (< sum 10)
+                                      (equal sum1-next (+ sum inc)))))))
+
+
+(encapsulate nil
+  (local (include-book "svtv-to-fsm"))
+  (local (include-book "svtv-generalize"))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm
+                 :svtv-spec-thmname counter-comb-svtv-thm))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm2
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-vars (sum1)))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm3
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-vars :all))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm4
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-signals :all))
+
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm5
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :cycle-num-rewrite-strategy :all-free))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm6
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-vars (sum1)
+                 :cycle-num-rewrite-strategy :all-free))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm7
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-vars :all
+                 :cycle-num-rewrite-strategy :all-free))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm8
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-signals :all
+                 :cycle-num-rewrite-strategy :all-free))
+
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm9
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :cycle-num-rewrite-strategy :single-var))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm10
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-vars (sum1)
+                 :cycle-num-rewrite-strategy :single-var))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm11
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-vars :all
+                 :cycle-num-rewrite-strategy :single-var))
+  (make-event '(def-svtv-to-fsm-thm counter-comb-fsm-thm12
+                 :svtv-spec-thmname counter-comb-svtv-thm
+                 :eliminate-override-signals :all
+                 :cycle-num-rewrite-strategy :single-var)))
+
+
+
 (defconst *counter-invar0-events*
   '(progn
                              
@@ -128,7 +221,7 @@
   (make-event '(def-svtv-refinement counter-invar0-run counter-invar0-run-data
                  :svtv-spec counter-invar0-spec :inclusive-overridekeys t
                  :phase-fsm counter-phase-fsm
-                 :fsm counter-fsm :define-fsm t)))
+                 :fsm counter-fsm)))
 
 (value-triple (acl2::tshell-ensure))
 

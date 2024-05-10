@@ -34,11 +34,17 @@
 (local (in-theory (disable fast-alist-clean)))
 
 
+(define factor-out-trigger (factor a b)
+  :verify-guards nil
+  (declare (ignore factor))
+  (+ a b))
 
 (defevaluator collect-ev collect-ev-lst
   ((binary-+ x y)
    (unary-- x)
-   (binary-* x y))
+   (binary-* x y)
+   (factor-out-trigger factor a b)
+   (fix x))
   :namedp t)
 
 (def-ev-pseudo-term-fty-support collect-ev collect-ev-lst)
@@ -363,6 +369,211 @@
     :rule-classes ((:meta :trigger-fns (binary-+)))))
 
 
-    
 
-   
+(local (include-book "meta/pseudo-termp-lemmas" :dir :system))
+(local (include-book "arithmetic/top" :dir :system))    
+
+(define mk-binary-+-for-factor-out ((x pseudo-termp)
+                                    (y pseudo-termp))
+  :returns (sum pseudo-termp)
+  (cond ((equal x ''0) (pseudo-term-fix y))
+        ((equal y ''0) (pseudo-term-fix x))
+        (t `(binary-+ ,(pseudo-term-fix x)
+                      ,(pseudo-term-fix y))))
+  ///
+  (defret <fn>-correct
+    (number-equiv (collect-ev sum a)
+                  (+ (collect-ev x a)
+                     (collect-ev y a)))))
+
+(define mk-binary-*-for-factor-out ((x pseudo-termp)
+                                    (y pseudo-termp))
+  :returns (prod pseudo-termp)
+  (cond ((equal x ''1) (pseudo-term-fix y))
+        ((equal y ''1) (pseudo-term-fix x))
+        (t `(binary-* ,(pseudo-term-fix x)
+                      ,(pseudo-term-fix y))))
+  ///
+  (defret <fn>-correct
+    (number-equiv (collect-ev prod a)
+                  (* (collect-ev x a)
+                     (collect-ev y a)))))
+
+(define mk-unary-minus-for-factor-out ((x pseudo-termp))
+  :returns (neg pseudo-termp
+                :hints (("Goal" :expand ((:free (val) (pseudo-termp (list 'quote val)))))))
+  (cond ((and (consp x)
+              (eq (car x) 'quote)
+              (acl2-numberp (cadr x)))
+         (kwote (- (cadr x))))
+        (t `(unary-- ,(pseudo-term-fix x))))
+  ///
+  (defret <fn>-correct
+    (number-equiv (collect-ev neg a)
+                  (- (collect-ev x a)))))
+
+
+(define factor-out-from-product ((factor pseudo-termp)
+                                 (prod pseudo-termp))
+  :returns (mv found (new-prod pseudo-termp))
+
+  :prepwork ((local (in-theory (enable match-tree-obj-equals-subst-when-successful
+                                       match-tree-alist-opener-theory))))
+  :verify-guards nil
+  (if (equal (pseudo-term-fix factor)
+             (pseudo-term-fix prod))
+      (mv t ''1)
+    (treematch
+     prod
+     ((binary-* (:? a) (:? b))
+      (b* (((mv found a1) (factor-out-from-product factor a))
+           ((when found)
+            (mv t (mk-binary-*-for-factor-out a1 b)))
+           ((mv found b1) (factor-out-from-product factor b)))
+        (if found
+            (mv t (mk-binary-*-for-factor-out a b1))
+          (mv nil nil))))
+     ((unary-- (:? a))
+      (b* (((mv found a1) (factor-out-from-product factor a)))
+        (if found
+            (mv t (mk-unary-minus-for-factor-out a1))
+          (mv nil nil))))
+     (& (mv nil nil))))
+  ///
+
+  (verify-guards factor-out-from-product)
+  
+  (defret factor-out-from-product-correct
+    (implies found
+             (number-equiv (* (collect-ev factor a)
+                              (collect-ev new-prod a))
+                           (collect-ev prod a)))
+    :hints (("goal" :induct <call>
+             :expand ((:free (factor) <call>)))
+            (and stable-under-simplificationp
+                 '(:IN-THEORY (ENABLE fix))))))
+
+
+(define factor-out-from-sum ((factor pseudo-termp)
+                             (sum pseudo-termp))
+  :returns (mv (factored pseudo-termp)
+               (unfactored pseudo-termp))
+  :verify-guards nil
+  :prepwork ((local (in-theory (enable match-tree-obj-equals-subst-when-successful
+                                       match-tree-alist-opener-theory))))
+  (treematch
+   sum
+   ((binary-+ (:? a) (:? b))
+    (b* (((mv a-fact a-unfact) (factor-out-from-sum factor a))
+         ((mv b-fact b-unfact) (factor-out-from-sum factor b)))
+      (mv (mk-binary-+-for-factor-out a-fact b-fact)
+          (mk-binary-+-for-factor-out a-unfact b-unfact))))
+   (& (b* (((mv found new-term) (factor-out-from-product factor sum)))
+        (if found
+            (mv new-term ''0)
+          (mv ''0 (pseudo-term-fix sum))))))
+  ///
+  (verify-guards factor-out-from-sum)
+  
+  (local
+   (defret <fn>-correct-lemma
+     (number-equiv (+ (collect-ev unfactored a)
+                      (* (collect-ev factor a)
+                         (collect-ev factored a)))
+                   (collect-ev sum a))))
+  (defret <fn>-correct
+    (number-equiv (collect-ev unfactored a)
+                  (- (collect-ev sum a)
+                     (* (collect-ev factor a)
+                        (collect-ev factored a))))
+    :hints (("goal" :use <fn>-correct-lemma
+             :in-theory (e/d (fix)
+                             (<fn>-correct-lemma
+                              <fn>))))))
+
+(define mk-fix-for-factor ((x pseudo-termp))
+  :returns (fix pseudo-termp)
+  :prepwork ((local (in-theory (enable match-tree-obj-equals-subst-when-successful
+                                       match-tree-alist-opener-theory))))
+  (treematch
+   x
+   ((binary-+ (:? a) (:? b)) (pseudo-term-fix x))
+   ((binary-* (:? a) (:? b)) (pseudo-term-fix x))
+   ((unary-- (:? a)) (pseudo-term-fix x))
+   (& `(fix ,(pseudo-term-fix x))))
+  ///
+  (defret <fn>-correct
+    (equal (collect-ev fix a)
+           (fix (collect-ev x a)))))
+             
+
+
+(define factor-out-metafn ((x pseudo-termp))
+  :returns (new-x pseudo-termp)
+  :prepwork ((local (in-theory (enable match-tree-obj-equals-subst-when-successful
+                                       match-tree-alist-opener-theory))))
+  (treematch
+   x
+   ((factor-out-trigger (:? factor) (:? a) (:? b))
+    (b* (((mv a-fact a-unfact) (factor-out-from-sum factor a))
+         ((mv b-fact b-unfact) (factor-out-from-sum factor b)))
+      (mk-fix-for-factor
+       (mk-binary-+-for-factor-out
+        (mk-binary-*-for-factor-out factor (mk-binary-+-for-factor-out a-fact b-fact))
+        (mk-binary-+-for-factor-out a-unfact b-unfact)))))
+   (& (pseudo-term-fix x)))
+  ///
+  (defthm factor-out-meta
+    (equal (collect-ev x a)
+           (collect-ev (factor-out-metafn x) a))
+    :hints (("goal" :in-theory (enable factor-out-trigger)))
+    :rule-classes ((:meta :trigger-fns (factor-out-trigger)))))
+
+
+;; Utility to check whether a factor exists in a sum
+(define factor-present-in-sum ((factor pseudo-termp) (x pseudo-termp))
+  (b* (((mv fact ?unfact) (factor-out-from-sum factor x)))
+    (not (equal fact ''0))))
+
+;;; Example usage of factor-out-metafn -- needs to be triggered by some kind of
+;;; bind-free rule.
+
+(local
+ (defthm factor-out-trigger-when-q-present
+   (implies (bind-free
+             (and (equal a 'a)
+                  (b* (((mv b-fact ?b-unfact) (factor-out-from-sum 'q b)))
+                    (and (not (equal b-fact ''0))
+                         (prog2$ (cw "a: ~x0~%b: ~x1~%" a b)
+                                 '((q . q))))))
+             (q))
+            (equal (+ a b)
+                   (factor-out-trigger q a b)))
+   :hints(("Goal" :in-theory (e/d (factor-out-trigger)
+                                  (factor-out-meta))))))
+
+(local
+ (defthm prove-factor-out-of-q
+   (equal (+ a
+             (* b (- q) c d)
+             (* e f q g)
+             h i
+             (* q k)
+             (* l m q)
+             n o p)
+          (+ (* q (+ (* b -1 c d)
+                     (* e f g)
+                     k
+                     (* l m)))
+             a h i n o p))
+   :hints (("goal" :in-theory '(factor-out-trigger-when-q-present
+                                factor-out-meta)))))
+    
+  
+
+        
+
+
+
+
+  

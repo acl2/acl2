@@ -145,7 +145,9 @@
                  ((mv ok alist) (const-key-svex-env-term-parse env))
                  ((unless ok) (acl2::pseudo-term-fix x))
                  (look (cdr (hons-get (ec-call (svar-fix key)) alist))))
-              (acl2::pseudo-term-fncall '4vec-fix$inline (list look)))
+              (if look
+                  (acl2::pseudo-term-fncall '4vec-fix$inline (list look))
+                (acl2::pseudo-term-quote (4vec-x))))
     :otherwise (acl2::pseudo-term-fix x))
   ///
   (defthmd svex-env-lookup-meta
