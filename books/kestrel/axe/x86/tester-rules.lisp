@@ -129,12 +129,14 @@
   (implies (BVLT '32 x '4)
            (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))
 
-;gen!
+;; could restrict to constants
 (defthm acl2::bvsx-when-bvlt
-  (implies (BVLT '32 x '4)
-           (equal (BVSX '64 '32 x)
-                  (bvchop 32 x)))
- :hints (("Goal" :in-theory (enable BVSX))))
+  (implies (and (bvlt old-size x (expt 2 (+ -1 old-size)))
+                (natp old-size)
+                (<= old-size new-size))
+           (equal (bvsx new-size old-size x)
+                  (bvchop old-size x)))
+ :hints (("Goal" :in-theory (enable bvsx))))
 
 
 ;; (defthmd bvlt-hack-1
