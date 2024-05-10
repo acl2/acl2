@@ -19683,12 +19683,50 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (deflock *output-lock*) ; Keep in sync with :DOC with-output-lock.
 (deflock *local-state-lock*)
 
-(skip-proofs ; as with open-output-channel
+(local
+  (defthm typed-io-listp-of-character
+    (equal (typed-io-listp l ':character)
+           (character-listp l))))
+
+(local
+  (defthm character-listp-of-cdr-when-open-channel1
+    (implies (and (open-channel1 chan)
+                  (equal (cadr (car chan)) ':character))
+             (character-listp (cdr chan)))))
+
+(local
+  (defthm len-of-cdr-of-car-when-open-channel1
+    (implies (open-channel1 chan)
+             (equal (len (cdr (car chan)))
+                    3))))
+
+;; Since we can't use defthmd here
+(local (in-theory (disable len-of-cdr-of-car-when-open-channel1)))
+
+(local
+  (defthm not-equal-string-nth-2-car-when-open-channel1
+    (implies (open-channel1 chan)
+             (not (equal (nth 2 (car chan)) :string)))))
+
+;; Since we can't use defthmd here
+(local (in-theory (disable not-equal-string-nth-2-car-when-open-channel1)))
+
+(local
+  (defthm open-channel1-of-cdr-of-assoc-equal-when-open-channels-p
+    (implies (and (open-channels-p channels)
+                  (assoc-equal channel channels))
+             (open-channel1 (cdr (assoc-equal channel channels))))
+    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+
 (defun get-output-stream-string$-fn (channel state-state)
-  (declare (xargs :guard (and (state-p1 state-state)
-                              (symbolp channel)
-                              (open-output-channel-any-p1 channel
-                                                          state-state))))
+  (declare (xargs
+             :guard (and (state-p1 state-state)
+                         (symbolp channel)
+                         (open-output-channel-any-p1 channel state-state))
+             :guard-hints
+             (("Goal" :in-theory
+               (enable len-of-cdr-of-car-when-open-channel1
+                       not-equal-string-nth-2-car-when-open-channel1)))))
   #-acl2-loop-only
   (when (live-state-p state-state)
     (let ((stream (get-output-stream-from-channel channel)))
@@ -19728,7 +19766,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (open-output-channels state-state))
            state-state)))
      (t (mv t nil state-state)))))
-)
 
 (defmacro get-output-stream-string$ (channel state-state
                                              &optional
