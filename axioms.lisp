@@ -19313,18 +19313,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (all-boundp alist1 alist2)
            (all-boundp alist1 (add-pair sym val alist2))))
 
-(local
-  (defthm state-p1-put-global
-    (implies (and (state-p1 state)
-                  (symbolp key)
-                  (not (equal key 'current-acl2-world))
-                  (not (equal key 'timer-alist))
-                  (not (equal key 'print-base)))
-             (state-p1 (put-global key value state)))
-    :hints (("Goal" :do-not '(generalize eliminate-destructors)
-             :in-theory (e/d (put-global state-p1)
-                             (all-boundp true-listp))))))
-
 ; Here are lemmas for opening up nth on explicitly given conses.
 
 (defthm nth-0-cons
@@ -19343,6 +19331,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (equal (nth (+ 1 n) (cons a l))
                   (nth n l)))
   :hints (("Goal" :expand (nth (+ 1 n) (cons a l)))))
+
+(local
+  (defthm state-p1-put-global
+    (implies (and (state-p1 state)
+                  (symbolp key)
+                  (not (equal key 'current-acl2-world))
+                  (not (equal key 'timer-alist))
+                  (not (equal key 'print-base)))
+             (state-p1 (put-global key value state)))
+    :hints (("Goal" :do-not '(generalize eliminate-destructors)
+             :in-theory (e/d (put-global state-p1)
+                             (all-boundp true-listp))))))
 
 (local
   (defthm open-channel-listp-add-pair
@@ -19689,30 +19689,32 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (character-listp l))))
 
 (local
-  (defthm character-listp-of-cdr-when-open-channel1
+  (defthm character-listp-cdr-when-open-channel1
     (implies (and (open-channel1 chan)
                   (equal (cadr (car chan)) ':character))
              (character-listp (cdr chan)))))
 
 (local
-  (defthm len-of-cdr-of-car-when-open-channel1
+  (defthm len-cdr-of-car-when-open-channel1
     (implies (open-channel1 chan)
              (equal (len (cdr (car chan)))
                     3))))
 
-;; Since we can't use defthmd here
-(local (in-theory (disable len-of-cdr-of-car-when-open-channel1)))
+; We use defthm just above and in-theory just below, since it's too early in
+; the boot-strap to use defthmd.
+(local (in-theory (disable len-cdr-of-car-when-open-channel1)))
 
 (local
   (defthm not-equal-string-nth-2-car-when-open-channel1
     (implies (open-channel1 chan)
              (not (equal (nth 2 (car chan)) :string)))))
 
-;; Since we can't use defthmd here
+; We use defthm just above and in-theory just below, since it's too early in
+; the boot-strap to use defthmd.
 (local (in-theory (disable not-equal-string-nth-2-car-when-open-channel1)))
 
 (local
-  (defthm open-channel1-of-cdr-of-assoc-equal-when-open-channels-p
+  (defthm open-channel1-cdr-of-assoc-equal-when-open-channels-p
     (implies (and (open-channels-p channels)
                   (assoc-equal channel channels))
              (open-channel1 (cdr (assoc-equal channel channels))))
@@ -19725,7 +19727,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (open-output-channel-any-p1 channel state-state))
              :guard-hints
              (("Goal" :in-theory
-               (enable len-of-cdr-of-car-when-open-channel1
+               (enable len-cdr-of-car-when-open-channel1
                        not-equal-string-nth-2-car-when-open-channel1)))))
   #-acl2-loop-only
   (when (live-state-p state-state)
@@ -20094,8 +20096,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defthm pairlis$-true-list-fix
   (equal (pairlis$ x (true-list-fix y))
          (pairlis$ x y)))
-
-
 
 (defthm state-p1-read-acl2-oracle
     (implies (state-p1 state)
@@ -21986,7 +21986,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (set-timer name1
                (cons (+ (car timer1) (car timer2)) (cdr timer1))
                state)))
-
 
 (defthm ordered-symbol-alistp-add-pair-forward
   (implies (and (symbolp key)
