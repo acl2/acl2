@@ -19285,11 +19285,101 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                state-state))))
           (t (mv nil state-state)))))
 
-(skip-proofs
+(encapsulate
+ ()
+
+; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
+; It turns out that an easy way to prove the improved version below,
+; contributed by Jared Davis, is to prove the old version first as a lemma:
+
+ (local
+  (defthm len-update-nth-lemma
+    (implies (< (nfix n) (len x))
+             (equal (len (update-nth n val x))
+                    (len x)))))
+
+ (defthm len-update-nth
+   (equal (len (update-nth n val x))
+          (max (1+ (nfix n))
+               (len x)))))
+
+(defthm assoc-add-pair
+  (equal (assoc sym1 (add-pair sym2 val alist))
+         (if (equal sym1 sym2)
+             (cons sym1 val)
+           (assoc sym1 alist))))
+
+(defthm add-pair-preserves-all-boundp
+  (implies (all-boundp alist1 alist2)
+           (all-boundp alist1 (add-pair sym val alist2))))
+
+; Here are lemmas for opening up nth on explicitly given conses.
+
+(defthm nth-0-cons
+  (equal (nth 0 (cons a l))
+         a)
+  :hints (("Goal" :in-theory (enable nth))))
+
+(local
+ (defthm plus-minus-1-1
+   (implies (acl2-numberp x)
+            (equal (+ -1 1 x) x))))
+
+(defthm nth-add1
+  (implies (and (integerp n)
+                (>= n 0))
+           (equal (nth (+ 1 n) (cons a l))
+                  (nth n l)))
+  :hints (("Goal" :expand (nth (+ 1 n) (cons a l)))))
+
+(local
+  (defthm state-p1-put-global
+    (implies (and (state-p1 state)
+                  (symbolp key)
+                  (not (equal key 'current-acl2-world))
+                  (not (equal key 'timer-alist))
+                  (not (equal key 'print-base)))
+             (state-p1 (put-global key value state)))
+    :hints (("Goal" :do-not '(generalize eliminate-destructors)
+             :in-theory (e/d (put-global state-p1)
+                             (all-boundp true-listp))))))
+
+(local
+  (defthm open-channel-listp-add-pair
+    (implies (and (open-channel1 value)
+                  (open-channel-listp l))
+             (open-channel-listp (add-pair key value l)))
+    :hints (("Goal" :in-theory (e/d (add-pair) (open-channel1))))))
+
+(local
+  (defthm len-cons
+    (equal (len (cons a b))
+           (+ 1 (len b)))))
+
+(local
+  (defthm state-p1-mv-nth-1-open-output-channel
+    (implies (and (stringp file-name) ; could allow :string
+                  (member-eq typ *file-types*)
+                  (state-p1 state-state))
+             (state-p1 (mv-nth 1 (open-output-channel file-name
+                                                      typ
+                                                      state-state))))
+    :hints (("Goal" :in-theory (e/d (state-p1 open-channels-p)
+                                    (all-boundp
+                                     len
+                                     open-channel-listp
+                                     true-listp
+                                     ordered-symbol-alistp))))))
+
 (defun open-output-channel! (file-name typ state)
   (declare (xargs :guard (and (stringp file-name)
                               (member-eq typ *file-types*)
-                              (state-p state))))
+                              (state-p state))
+                  :guard-hints (("Goal" :in-theory (disable
+                                                     open-output-channel
+                                                     state-p
+                                                     put-global
+                                                     get-global)))))
   (cond
    ((eql 0 (f-get-global 'ld-level state))
 
@@ -19304,7 +19394,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (value chan)))
               (declare (ignore erp))
               (mv chan state)))))
-)
 
 (defmacro assert$ (test form)
   `(prog2$ (or ,test
@@ -19594,12 +19683,52 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (deflock *output-lock*) ; Keep in sync with :DOC with-output-lock.
 (deflock *local-state-lock*)
 
-(skip-proofs ; as with open-output-channel
+(local
+  (defthm typed-io-listp-of-character
+    (equal (typed-io-listp l ':character)
+           (character-listp l))))
+
+(local
+  (defthm character-listp-cdr-when-open-channel1
+    (implies (and (open-channel1 chan)
+                  (equal (cadr (car chan)) ':character))
+             (character-listp (cdr chan)))))
+
+(local
+  (defthm len-cdr-car-when-open-channel1
+    (implies (open-channel1 chan)
+             (equal (len (cdr (car chan)))
+                    3))))
+
+; We use defthm just above and in-theory just below, since it's too early in
+; the boot-strap to use defthmd.
+(local (in-theory (disable len-cdr-car-when-open-channel1)))
+
+(local
+  (defthm not-equal-string-nth-2-car-when-open-channel1
+    (implies (open-channel1 chan)
+             (not (equal (nth 2 (car chan)) :string)))))
+
+; We use defthm just above and in-theory just below, since it's too early in
+; the boot-strap to use defthmd.
+(local (in-theory (disable not-equal-string-nth-2-car-when-open-channel1)))
+
+(local
+  (defthm open-channel1-cdr-assoc-equal-when-open-channels-p
+    (implies (and (open-channels-p channels)
+                  (assoc-equal channel channels))
+             (open-channel1 (cdr (assoc-equal channel channels))))
+    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+
 (defun get-output-stream-string$-fn (channel state-state)
-  (declare (xargs :guard (and (state-p1 state-state)
-                              (symbolp channel)
-                              (open-output-channel-any-p1 channel
-                                                          state-state))))
+  (declare (xargs
+             :guard (and (state-p1 state-state)
+                         (symbolp channel)
+                         (open-output-channel-any-p1 channel state-state))
+             :guard-hints
+             (("Goal" :in-theory
+               (enable len-cdr-car-when-open-channel1
+                       not-equal-string-nth-2-car-when-open-channel1)))))
   #-acl2-loop-only
   (when (live-state-p state-state)
     (let ((stream (get-output-stream-from-channel channel)))
@@ -19639,7 +19768,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (open-output-channels state-state))
            state-state)))
      (t (mv t nil state-state)))))
-)
 
 (defmacro get-output-stream-string$ (channel state-state
                                              &optional
@@ -19968,34 +20096,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defthm pairlis$-true-list-fix
   (equal (pairlis$ x (true-list-fix y))
          (pairlis$ x y)))
-
-(encapsulate
- ()
-
-; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
-; It turns out that an easy way to prove the improved version below,
-; contributed by Jared Davis, is to prove the old version first as a lemma:
-
- (local
-  (defthm len-update-nth-lemma
-    (implies (< (nfix n) (len x))
-             (equal (len (update-nth n val x))
-                    (len x)))))
-
- (defthm len-update-nth
-   (equal (len (update-nth n val x))
-          (max (1+ (nfix n))
-               (len x)))))
-
-(defthm assoc-add-pair
-  (equal (assoc sym1 (add-pair sym2 val alist))
-         (if (equal sym1 sym2)
-             (cons sym1 val)
-           (assoc sym1 alist))))
-
-(defthm add-pair-preserves-all-boundp
-  (implies (all-boundp alist1 alist2)
-           (all-boundp alist1 (add-pair sym val alist2))))
 
 (defthm state-p1-read-acl2-oracle
     (implies (state-p1 state)
@@ -21886,25 +21986,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (set-timer name1
                (cons (+ (car timer1) (car timer2)) (cdr timer1))
                state)))
-
-; Here are lemmas for opening up nth on explicitly given conses.
-
-(defthm nth-0-cons
-  (equal (nth 0 (cons a l))
-         a)
-  :hints (("Goal" :in-theory (enable nth))))
-
-(local
- (defthm plus-minus-1-1
-   (implies (acl2-numberp x)
-            (equal (+ -1 1 x) x))))
-
-(defthm nth-add1
-  (implies (and (integerp n)
-                (>= n 0))
-           (equal (nth (+ 1 n) (cons a l))
-                  (nth n l)))
-  :hints (("Goal" :expand (nth (+ 1 n) (cons a l)))))
 
 (defthm ordered-symbol-alistp-add-pair-forward
   (implies (and (symbolp key)
@@ -30280,4 +30361,3 @@ Lisp definition."
   (if (integerp x)
       (<= x 0)
     t))
-
