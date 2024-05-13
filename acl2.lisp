@@ -703,6 +703,48 @@
 #+ccl
 (declaim (notinline memq))
 
+#+cmucl
+(progn
+
+(defvar *old-char-upcase* (symbol-function 'char-upcase))
+
+(defvar *old-string-upcase* (symbol-function 'string-upcase))
+
+(defun char-upcase-cmucl (x)
+
+; CMUCL as of April 2024 (and perhaps all earlier versions) fails the check for
+; x = 181 that when ch = (code-char x) and (lower-case-p ch), then
+; (char-downcase (char-upcase ch)) = ch.  For justification of that property
+; and the axiom stating it (char-upcase/downcase-non-standard-inverses), see
+; comments in the partial encapsulate introducing char-downcase-non-standard
+; and other xxx-non-standard functions on characters.  If that failure goes
+; away in future versions of CMUCL then we should stop redefining code-char in
+; CMUCL to cause an error as below, and instead change the relevant check in
+; acl2-check.lisp (search there for "char-upcase-cmucl" to print a useful error
+; when encountering a violation for code 181 in CMUCL.
+
+  (declare (type character x))
+  (if (eql x #.(code-char 181))
+      (error "(char-upcase (code-char 181)) is not supported in CMUCL.")
+    (funcall *old-char-upcase* x)))
+
+(defun string-upcase-cmucl (x)
+  (declare (type string x))
+  (let ((p (position #.(code-char 181) x)))
+    (if p
+        (error "(string-upcase has been applied to a string that~%~
+                contains the character with code 181 at position ~s.~%~
+                This is not supported in CMUCL."
+               p)
+      (funcall *old-string-upcase* x))))
+
+(ext:without-package-locks
+(defun char-upcase (x)
+  (char-upcase-cmucl x))
+(defun string-upcase (x)
+  (string-upcase-cmucl x)))
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
