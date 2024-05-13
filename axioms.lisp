@@ -15217,19 +15217,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *file-types* '(:character :byte :object))
 
+(defun channel-headerp (header)
+  (declare (xargs :guard t))
+  (and (true-listp header)
+       (equal (length header) 4)
+       (eq (car header) :header)
+       (member-eq (cadr header) *file-types*)
+       (stringp (caddr header))
+       (integerp (cadddr header))))
+
 (defun open-channel1 (l)
   (declare (xargs :guard t))
   (and (true-listp l)
        (consp l)
        (let ((header (car l)))
-         (and
-          (true-listp header)
-          (equal (length header) 4)
-          (eq (car header) :header)
-          (member-eq (cadr header) *file-types*)
-          (stringp (caddr header))
-          (integerp (cadddr header))
-          (typed-io-listp (cdr l) (cadr header))))))
+         (and (channel-headerp header)
+              (typed-io-listp (cdr l) (cadr header))))))
 
 (defthm open-channel1-forward-to-true-listp-and-consp
   (implies (open-channel1 x)
@@ -20559,7 +20562,72 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          t)
         (t (some-slashable (cdr l)))))
 
-(skip-proofs
+(local
+  (defthm state-p1-update-open-output-channels
+    (implies (state-p1 state)
+             (equal (state-p1 (update-open-output-channels x state))
+                    (open-channels-p x)))
+    :hints (("Goal" :in-theory (e/d (state-p1)
+                                    (open-channels-p all-boundp))))))
+
+(local (in-theory (disable channel-headerp)))
+
+(local
+  (defthm open-channel1-of-cons
+    (equal (open-channel1 (cons header vals))
+           (and (channel-headerp header)
+                (typed-io-listp vals (cadr header))))
+    :hints (("Goal" :in-theory (enable channel-headerp)))))
+
+(local
+  (defthm channel-headerp-cadr-assoc-equal-when-open-channels-p
+    (implies (and (open-channels-p channels)
+                  (assoc-equal channel channels))
+             (channel-headerp (cadr (assoc-equal channel channels))))
+    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+
+(local
+  (defthm open-channel-listp-nth-1
+    (implies (state-p1 state)
+             (open-channel-listp (nth 1 state)))
+    :hints (("Goal" :in-theory (enable state-p1)))))
+
+(local
+  (defthm character-listp-expode-atom
+    (character-listp (explode-atom x print-base))))
+
+(local
+  (defthm character-listp-expode-atom+
+    (character-listp (explode-atom+ x print-base print-radix))
+    :hints (("Goal" :in-theory (disable explode-atom)))))
+
+(local
+  (defthm state-p1-princ$
+    (implies (and (atom x)
+                  (state-p1 state-state)
+                  (symbolp channel)
+                  (open-output-channel-p1 channel
+                                          :character state-state))
+             (state-p1 (princ$ x channel state-state)))
+    :hints (("Goal" :in-theory (e/d (open-channels-p open-channel-listp)
+                                    (update-open-output-channels
+                                     string-downcase explode-atom
+                                     open-channel1))))))
+
+(local
+  (defthm open-output-channel-p1-princ$
+    (implies (and (atom x)
+                  (state-p1 state-state)
+                  (symbolp channel)
+                  (open-output-channel-p1 channel :character state-state))
+             (open-output-channel-p1
+               channel
+               :character (princ$ x channel state-state)))
+    :hints (("Goal" :in-theory (e/d (open-channel-listp)
+                                    (string-downcase explode-atom
+                                     open-channel1
+                                     len))))))
+
 (defun prin1-with-slashes1 (l slash-char channel state)
   (declare (xargs :guard
                   (and (character-listp l)
@@ -20568,7 +20636,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (symbolp channel)
                        (open-output-channel-p channel
                                               :character
-                                              state))))
+                                              state))
+                  :guard-hints (("Goal" :in-theory
+                                 (disable princ$ open-output-channel-p1)))))
   (cond ((endp l) state)
         (t (pprogn
             (cond ((or (equal (car l) #\\) (equal (car l) slash-char))
@@ -20576,7 +20646,34 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (t state))
             (princ$ (car l) channel state)
             (prin1-with-slashes1 (cdr l) slash-char channel state)))))
-)
+
+(local
+  (defthm state-p1-prin1-with-slashes1
+    (implies (and (character-listp l)
+                  (characterp slash-char)
+                  (state-p state)
+                  (symbolp channel)
+                  (open-output-channel-p channel :character state))
+             (state-p1 (prin1-with-slashes1 l slash-char channel state)))
+    :hints (("Goal" :in-theory (disable update-open-output-channels
+                                        princ$
+                                        open-output-channel-p1)))))
+
+(local
+  (defthm open-output-channel-p1-prin1-with-slashes1
+    (implies (and (character-listp l)
+                  (characterp slash-char)
+                  (state-p state)
+                  (symbolp channel)
+                  (open-output-channel-p channel :character state))
+             (open-output-channel-p1 channel :character
+                                     (prin1-with-slashes1 l
+                                                          slash-char
+                                                          channel
+                                                          state)))
+    :hints (("Goal" :in-theory (disable update-open-output-channels
+                                        princ$
+                                        open-output-channel-p1)))))
 
 (defun prin1-with-slashes (s slash-char channel state)
   (declare (xargs :guard (and (stringp s)
@@ -22048,12 +22145,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (cdr timer))
                        state))))
 
-(skip-proofs
 (defun print-rational-as-decimal (x channel state)
   (declare (xargs :guard (and (rationalp x)
                               (symbolp channel)
                               (equal (print-base) 10)
-                              (open-output-channel-p channel :character state))))
+                              (open-output-channel-p channel :character state))
+                  :guard-hints
+                  (("Goal" :in-theory (disable princ$
+                                               open-output-channel-p1)))))
   (let ((x00 (round (* 100 (abs x)) 1)))
     (pprogn
      (cond ((< x 0) (princ$ "-" channel state))
@@ -22067,7 +22166,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (pprogn (princ$ "0" channel state)
                       (princ$ r channel state)))
              (t (princ$ r channel state)))))))
-)
 
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
@@ -22153,7 +22251,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (and foundp ; return nil when x is nil but is not in the current package
         (eq sym x))))
 
-(skip-proofs
 (defun prin1$ (x channel state)
 
 ;  prin1$ differs from prin1 in several ways.  The second arg is state, not
@@ -22161,7 +22258,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (atom x)
                               (symbolp channel)
-                              (open-output-channel-p channel :character state))))
+                              (open-output-channel-p channel :character state))
+                  :guard-hints
+                  (("Goal" :in-theory (disable princ$
+                                               open-output-channel-p1
+                                               all-boundp
+                                               needs-slashes)))))
   #-acl2-loop-only
   (cond ((live-state-p state)
          (cond ((and *wormholep*
@@ -22286,7 +22388,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (princ$ #\| channel state)))
                 (t (princ$ x channel state)))))
         (t (princ$ x channel state))))
-)
 
 
 ;                             UNTOUCHABLES

@@ -26583,9 +26583,10 @@
                the body in the DECLARE form or closing the superior form ~
                before typing the body."
               x))
-   (t (let ((syms (macros-and-functions-in-other-packages
-                   (car x)
-                   wrld)))
+   (t (let* ((boot-strap-flg (global-val 'boot-strap-flg wrld))
+             (syms (and (not boot-strap-flg) ; else could hit package-lock
+                        (macros-and-functions-in-other-packages (car x)
+                                                                wrld))))
         (trans-er+ x ctx
                    "The symbol ~x0 (in package ~x1) has neither a function ~
                     nor macro definition in ACL2.  ~#2~[Please define ~
