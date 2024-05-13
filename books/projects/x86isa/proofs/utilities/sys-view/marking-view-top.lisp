@@ -2801,117 +2801,117 @@
 
 ;; Step function opener lemma:
 
-(skip-proofs (defthm x86-fetch-decode-execute-opener-in-marking-view
-         ;; Note that we use get-prefixes-alt here instead of get-prefixes.
-         ;; TODO: Extend to VEX and EVEX prefixes when necessary.
-         (implies
-           (and
-             ;; Start: binding hypotheses.
-             (equal start-rip (rip x86))
-             (not (set-interrupt-flag-next x86))
-             ;; get-prefixes-alt:
-             (equal four-vals-of-get-prefixes (get-prefixes-alt start-rip 0 0 15 x86))
-             (equal flg-get-prefixes (mv-nth 0 four-vals-of-get-prefixes))
-             (equal prefixes (mv-nth 1 four-vals-of-get-prefixes))
-             (equal rex-byte (mv-nth 2 four-vals-of-get-prefixes))
-             (equal x86-1 (mv-nth 3 four-vals-of-get-prefixes))
+(defthm x86-fetch-decode-execute-opener-in-marking-view
+        ;; Note that we use get-prefixes-alt here instead of get-prefixes.
+        ;; TODO: Extend to VEX and EVEX prefixes when necessary.
+        (implies
+          (and
+            ;; Start: binding hypotheses.
+            (equal start-rip (rip x86))
+            (not (set-interrupt-flag-next x86))
+            ;; get-prefixes-alt:
+            (equal four-vals-of-get-prefixes (get-prefixes-alt start-rip 0 0 15 x86))
+            (equal flg-get-prefixes (mv-nth 0 four-vals-of-get-prefixes))
+            (equal prefixes (mv-nth 1 four-vals-of-get-prefixes))
+            (equal rex-byte (mv-nth 2 four-vals-of-get-prefixes))
+            (equal x86-1 (mv-nth 3 four-vals-of-get-prefixes))
 
-             (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
-             (equal prefix-length (prefixes->num prefixes))
-             (equal temp-rip0 (+ prefix-length start-rip 1))
+            (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
+            (equal prefix-length (prefixes->num prefixes))
+            (equal temp-rip0 (+ prefix-length start-rip 1))
 
-             ;; *** No VEX prefixes ***
-             (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
-             (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
-             ;; *** No EVEX prefixes ***
-             (not (equal opcode/vex/evex-byte #.*evex-byte0*))
+            ;; *** No VEX prefixes ***
+            (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+            (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+            ;; *** No EVEX prefixes ***
+            (not (equal opcode/vex/evex-byte #.*evex-byte0*))
 
-             (equal modr/m?
-                    (one-byte-opcode-ModR/M-p #.*64-bit-mode* opcode/vex/evex-byte))
+            (equal modr/m?
+                   (one-byte-opcode-ModR/M-p #.*64-bit-mode* opcode/vex/evex-byte))
 
-             ;; modr/m byte:
-             (equal three-vals-of-modr/m
-                    (if modr/m? (rml08 temp-rip0 :x x86-1) (mv nil 0 x86-1)))
-             (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
-             (equal modr/m (mv-nth 1 three-vals-of-modr/m))
-             (equal x86-2 (mv-nth 2 three-vals-of-modr/m))
+            ;; modr/m byte:
+            (equal three-vals-of-modr/m
+                   (if modr/m? (rml08 temp-rip0 :x x86-1) (mv nil 0 x86-1)))
+            (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
+            (equal modr/m (mv-nth 1 three-vals-of-modr/m))
+            (equal x86-2 (mv-nth 2 three-vals-of-modr/m))
 
-             (equal temp-rip1 (if modr/m? (1+ temp-rip0) temp-rip0))
-             (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
+            (equal temp-rip1 (if modr/m? (1+ temp-rip0) temp-rip0))
+            (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
 
-             ;; sib byte:
-             (equal three-vals-of-sib
-                    (if sib? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
-             (equal flg-sib (mv-nth 0 three-vals-of-sib))
-             (equal sib (mv-nth 1 three-vals-of-sib))
-             (equal x86-3 (mv-nth 2 three-vals-of-sib))
+            ;; sib byte:
+            (equal three-vals-of-sib
+                   (if sib? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
+            (equal flg-sib (mv-nth 0 three-vals-of-sib))
+            (equal sib (mv-nth 1 three-vals-of-sib))
+            (equal x86-3 (mv-nth 2 three-vals-of-sib))
 
-             (equal temp-rip2 (if sib? (1+ temp-rip1) temp-rip1))
-             ;; End: binding hypotheses.
+            (equal temp-rip2 (if sib? (1+ temp-rip1) temp-rip1))
+            ;; End: binding hypotheses.
 
-             (marking-view x86)
-             (64-bit-modep (double-rewrite x86))
-             (not (app-view x86))
-             (not (ms x86))
-             (not (fault x86))
-             (x86p x86)
-             (not (double-rewrite flg-get-prefixes))
-             (canonical-address-p temp-rip0)
-             (if modr/m?
-               (and (not (double-rewrite flg-modr/m))
-                    (canonical-address-p temp-rip1))
-               t)
-             (if sib?
-               (and (not (double-rewrite flg-sib))
-                    (canonical-address-p temp-rip2))
-               t)
-             ;; For get-prefixes-alt (we wouldn't need these hyps if we
-             ;; used get-prefixes):
-             (disjoint-p
-               (mv-nth 1 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86)))
-               (open-qword-paddr-list
-                 (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-             (not (mv-nth 0 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86))))
+            (marking-view x86)
+            (64-bit-modep (double-rewrite x86))
+            (not (app-view x86))
+            (not (ms x86))
+            (not (fault x86))
+            (x86p x86)
+            (not (double-rewrite flg-get-prefixes))
+            (canonical-address-p temp-rip0)
+            (if modr/m?
+              (and (not (double-rewrite flg-modr/m))
+                   (canonical-address-p temp-rip1))
+              t)
+            (if sib?
+              (and (not (double-rewrite flg-sib))
+                   (canonical-address-p temp-rip2))
+              t)
+            ;; For get-prefixes-alt (we wouldn't need these hyps if we
+            ;; used get-prefixes):
+            (disjoint-p
+              (mv-nth 1 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86)))
+              (open-qword-paddr-list
+                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+            (not (mv-nth 0 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86))))
 
-             ;; Print the rip and the first opcode byte of the instruction
-             ;; under consideration after all the non-trivial hyps (above) of
-             ;; this rule have been relieved:
-             (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
-                           (not (cw "              op0: ~s0 ] ~%"
-                                    (str::hexify (unquote opcode/vex/evex-byte)))))))
-           (equal (x86-fetch-decode-execute x86)
-                  (one-byte-opcode-execute
-                    #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
-                    opcode/vex/evex-byte modr/m sib x86-3)))
-         :hints
-         (("Goal"
-           :do-not '(preprocess)
-           :in-theory
-           (e/d (x86-fetch-decode-execute
-                  get-prefixes-alt
-                  x86-operation-mode)
-                (rewrite-get-prefixes-to-get-prefixes-alt
-                  one-byte-opcode-execute
-                  xlate-equiv-memory-and-mv-nth-0-rml08-cong
-                  xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
-                  xlate-equiv-memory-and-mv-nth-2-rml08
-                  signed-byte-p
-                  not
-                  member-equal
-                  mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                  remove-duplicates-equal
-                  combine-bytes
-                  byte-listp
-                  acl2::ash-0
-                  open-qword-paddr-list
-                  unsigned-byte-p-of-combine-bytes
-                  get-prefixes-opener-lemma-no-prefix-byte
-                  get-prefixes-opener-lemma-group-1-prefix-in-marking-view
-                  get-prefixes-opener-lemma-group-2-prefix-in-marking-view
-                  get-prefixes-opener-lemma-group-3-prefix-in-marking-view
-                  get-prefixes-opener-lemma-group-4-prefix-in-marking-view
-                  mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
-                  mv-nth-2-rb-in-system-level-marking-view
-                  (force) force))))))
+            ;; Print the rip and the first opcode byte of the instruction
+            ;; under consideration after all the non-trivial hyps (above) of
+            ;; this rule have been relieved:
+            (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                          (not (cw "              op0: ~s0 ] ~%"
+                                   (str::hexify (unquote opcode/vex/evex-byte)))))))
+          (equal (x86-fetch-decode-execute x86)
+                 (one-byte-opcode-execute
+                   #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
+                   opcode/vex/evex-byte modr/m sib x86-3)))
+        :hints
+        (("Goal"
+          :do-not '(preprocess)
+          :in-theory
+          (e/d (x86-fetch-decode-execute
+                 get-prefixes-alt
+                 x86-operation-mode)
+               (rewrite-get-prefixes-to-get-prefixes-alt
+                 one-byte-opcode-execute
+                 xlate-equiv-memory-and-mv-nth-0-rml08-cong
+                 xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
+                 xlate-equiv-memory-and-mv-nth-2-rml08
+                 signed-byte-p
+                 not
+                 member-equal
+                 mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                 remove-duplicates-equal
+                 combine-bytes
+                 byte-listp
+                 acl2::ash-0
+                 open-qword-paddr-list
+                 unsigned-byte-p-of-combine-bytes
+                 get-prefixes-opener-lemma-no-prefix-byte
+                 get-prefixes-opener-lemma-group-1-prefix-in-marking-view
+                 get-prefixes-opener-lemma-group-2-prefix-in-marking-view
+                 get-prefixes-opener-lemma-group-3-prefix-in-marking-view
+                 get-prefixes-opener-lemma-group-4-prefix-in-marking-view
+                 mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
+                 mv-nth-2-rb-in-system-level-marking-view
+                 (force) force)))))
 
 ;; ======================================================================

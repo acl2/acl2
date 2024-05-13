@@ -2,6 +2,7 @@
 
 (include-book "../../../../machine/paging")
 (include-book "la-to-pa-without-tlb-lemmas")
+(include-book "common-paging-lemmas")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
@@ -195,7 +196,19 @@
           :rule-classes :congruence
           :hints (("Goal" :in-theory (disable int-equiv
                                               bitops::cancel-loghead-under-logext
-                                              ia32e-la-to-pa)))))
+                                              ia32e-la-to-pa))))
+
+  (skip-proofs (defthm writing-non-page-table-memory-maintains-tlb-consistency
+                       (implies (not (member-p index
+                                               (xlation-governing-entries-paddrs lin-addr x86)))
+                                (equal (tlb-consistent lin-addr r-w-x (xw :mem index val x86))
+                                       (tlb-consistent lin-addr r-w-x x86)))
+                       ;; :hints (("Goal" :use (:instance xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-without-tlb-cong
+                       ;;                                 ()
+                       ;;                                 ) ))
+
+           ))
+  )
 
 (define tlb-consistent-n ((n natp)
                           (lin-addr integerp)
@@ -218,13 +231,38 @@
                                    (mv-nth 2 (ia32e-la-to-pa lin-addr2 r-w-x2 x86)))
                  (tlb-consistent-n n lin-addr r-w-x x86)))
 
+  (skip-proofs (defthm writing-non-page-table-memory-maintains-tlb-consistency-n
+                       (implies (not (member-p index
+                                               (all-xlation-governing-entries-paddrs n lin-addr x86)))
+                                (equal (tlb-consistent-n n lin-addr r-w-x (xw :mem index val x86))
+                                       (tlb-consistent-n n lin-addr r-w-x x86)))
+                       ;; :hints (("Goal" :use (:instance xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-without-tlb-cong
+                       ;;                                 ()
+                       ;;                                 ) ))
+
+           ))
+
   (local (include-book "arithmetic-5/top" :dir :system))
 
   (defthm tlb-consistent-n-implies-tlb-consistent
-          (implies (and (natp n)
-                        (canonical-address-p lin-addr)
+          (implies (and (case-split (canonical-address-p lin-addr))
                         (tlb-consistent-n n lin-addr-base r-w-x x86)
-                        (canonical-address-p lin-addr-base)
+                        (natp n)
+                        (case-split (canonical-address-p lin-addr-base))
                         (>= lin-addr lin-addr-base)
                         (< lin-addr (+ lin-addr-base n)))
-                   (tlb-consistent lin-addr r-w-x x86))))
+                   (tlb-consistent lin-addr r-w-x x86)))
+
+  (skip-proofs (defthm tlb-consistent-n-implies-tlb-consistent-n-subset
+                       (implies (and (natp n)
+                                     (tlb-consistent-n n lin-addr r-w-x x86)
+                                     (natp n2)
+                                     (<= lin-addr lin-addr2)
+                                     (<= (+ lin-addr2 n2) (+ lin-addr n)))
+                                (tlb-consistent-n n2 lin-addr2 r-w-x x86))))
+
+  (defthm tlb-consistent-n-1-is-tlb-consistent
+          (implies (canonical-address-p lin-addr)
+                   (equal (tlb-consistent-n 1 lin-addr r-w-x x86)
+                          (tlb-consistent lin-addr r-w-x x86))))
+  )

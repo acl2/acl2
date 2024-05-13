@@ -1072,17 +1072,22 @@
        ;; bad state.  Such checks are made in x86-run but I am duplicating them
        ;; here in case this function is being used at the top-level.
        ((when (or (ms x86) (fault x86))) x86)
+       (app-view? (app-view x86))
+
        (set-interrupt? (set-interrupt-flag-next x86))
        (x86 (b* ((ctx 'x86-fetch-decode-execute)
 
-                 ;; Increment the time stamp counter
-                 (time-stamp-counter (n64 (1+ (time-stamp-counter x86))))
-                 (x86 (!time-stamp-counter time-stamp-counter x86))
-
-                 ;; This is part of the clock device.
-                 (x86 (if (app-view x86)
+                 (x86 (if app-view?
                         x86
-                        (wm-low-64 #x100 time-stamp-counter x86)))
+                        (b* (;; Increment the time stamp counter
+                             (time-stamp-counter (n64 (1+ (time-stamp-counter x86))))
+                             (x86 (!time-stamp-counter time-stamp-counter x86))
+
+                             ;; This is part of the clock device.
+                             (x86 (if (app-view x86)
+                                    x86
+                                    (wm-low-64 #x100 time-stamp-counter x86))))
+                            x86)))
 
                  (proc-mode (x86-operation-mode x86))
                  (64-bit-modep (equal proc-mode #.*64-bit-mode*))
@@ -1287,6 +1292,7 @@
                         modr/m sib x86)))
                 x86))
 
+       ((when app-view?) x86)
 
        (last-clock-event (last-clock-event x86))
        (x86 (if (and (> last-clock-event 100000)
@@ -1336,7 +1342,81 @@
   (defthmd ms-fault-and-x86-fetch-decode-and-execute
            (implies (and (x86p x86)
                          (or (ms x86) (fault x86)))
-                    (equal (x86-fetch-decode-execute x86) x86))))
+                    (equal (x86-fetch-decode-execute x86) x86)))
+
+  (defthm x86-fetch-decode-execute-opener
+    ;; Note that this opener lemma applies to all supported modes of operation
+    ;; (see x86-operation-mode).
+
+    ;; TODO: Extend to VEX and EVEX prefixes.
+    (implies
+     (and
+      (app-view x86)
+      (not (ms x86))
+      (not (fault x86))
+      (equal proc-mode (x86-operation-mode x86))
+      (equal start-rip (read-*ip proc-mode x86))
+      (not (mv-nth 0 (get-prefixes proc-mode start-rip 0 0 15 x86)))
+      (equal prefixes (mv-nth 1 (get-prefixes proc-mode start-rip 0 0 15 x86)))
+      (equal rex-byte (mv-nth 2 (get-prefixes proc-mode start-rip 0 0 15 x86)))
+      (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
+      (equal prefix-length (prefixes->num prefixes))
+      (equal temp-rip0
+             (mv-nth 1 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
+
+      ;; *** No VEX prefixes ***
+      (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+      (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+      ;; *** No EVEX prefixes ***
+      (not (equal opcode/vex/evex-byte #.*evex-byte0*))
+
+      (equal modr/m?
+             (one-byte-opcode-ModR/M-p proc-mode opcode/vex/evex-byte))
+      (equal modr/m (if modr/m?
+                        (mv-nth 1 (rme08 proc-mode temp-rip0 #.*cs* :x x86))
+                      0))
+      (equal temp-rip1 (if modr/m?
+                           (mv-nth 1 (add-to-*ip proc-mode temp-rip0 1 x86))
+                         temp-rip0))
+      (equal p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+      (equal 16-bit-addressp (equal 2 (select-address-size proc-mode p4? x86)))
+      (equal sib? (and modr/m? (x86-decode-sib-p modr/m 16-bit-addressp)))
+      (equal sib (if sib? (mv-nth 1 (rme08 proc-mode temp-rip1 #.*cs* :x x86)) 0))
+
+      (equal temp-rip2 (if sib?
+                           (mv-nth 1 (add-to-*ip proc-mode temp-rip1 1 x86))
+                         temp-rip1))
+
+      (or (app-view x86) (not (marking-view x86)))
+      (not (mv-nth 0 (add-to-*ip proc-mode start-rip (1+ prefix-length) x86)))
+      (if modr/m?
+          (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip0 1 x86)))
+               (not (mv-nth 0 (rme08 proc-mode temp-rip0 #.*cs* :x x86))))
+        t)
+      (if sib?
+          (and (not (mv-nth 0 (add-to-*ip proc-mode temp-rip1 1 x86)))
+               (not (mv-nth 0 (rme08 proc-mode temp-rip1 #.*cs* :x x86))))
+        t)
+      (x86p x86)
+      ;; Print the rip and the first opcode byte of the instruction
+      ;; under consideration after all the non-trivial hyps (above) of
+      ;; this rule have been relieved:
+      (syntaxp
+       (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+            (not (cw "              op0: ~s0 ] ~%"
+                     (str::hexify (unquote opcode/vex/evex-byte)))))))
+     (equal
+      (x86-fetch-decode-execute x86)
+      (one-byte-opcode-execute
+       proc-mode start-rip temp-rip2 prefixes rex-byte
+       opcode/vex/evex-byte modr/m sib x86)))
+    :hints (("Goal"
+             :cases ((app-view x86))
+             :in-theory (e/d ()
+                             (one-byte-opcode-execute
+                              signed-byte-p
+                              not
+                              member-equal))))))
 
 (in-theory (e/d (vex-decode-and-execute
                  evex-decode-and-execute

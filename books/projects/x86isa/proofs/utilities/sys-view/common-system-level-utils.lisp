@@ -192,8 +192,15 @@
 
 ;; ======================================================================
 
-;; Lemmas about ia32e-la-to-pa and las-to-pas when an error is
+;; Lemmas about ia32e-la-to-pa-without-tlb and las-to-pas when an error is
 ;; encountered:
+
+(defthm mv-nth-1-ia32e-la-to-pa-without-tlb-when-error
+  (implies (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x x86))
+           (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-x x86)) 0))
+  :hints (("Goal" :in-theory (e/d (ia32e-la-to-pa-without-tlb
+                                   ia32e-la-to-pa-pml4-table)
+                                  (force (force))))))
 
 (defthm mv-nth-1-ia32e-la-to-pa-when-error
   (implies (mv-nth 0 (ia32e-la-to-pa lin-addr r-x x86))

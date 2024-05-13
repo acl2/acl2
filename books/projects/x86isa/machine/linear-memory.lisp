@@ -514,6 +514,12 @@
 
     ///
 
+(skip-proofs (defthm las-to-pas-including-non-canonical-address-p-is-err
+            (implies (and (not (canonical-address-p lin-addr))
+                          (<= base lin-addr)
+                          (< lin-addr (+ base n)))
+                     (mv-nth 0 (las-to-pas n base r-w-x x86)))))
+
     (defthm consp-mv-nth-1-las-to-pas
             (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
                           (not (zp n)))

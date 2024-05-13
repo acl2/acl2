@@ -419,9 +419,7 @@
   (if (mbt (not (app-view x86)))
       (b* ((cr3       (ctri *cr3* x86))
            ;; PML4 Table:
-           (pml4-base-addr (ash (cr3Bits->pdb cr3) 12))
-           (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
-           (lin-addr (logext #.*max-linear-address-size* (ash vpn 12))))
+           (pml4-base-addr (ash (cr3Bits->pdb cr3) 12)))
 
         (xlation-governing-entries-paddrs-for-pml4-table
          lin-addr pml4-base-addr x86))
@@ -447,11 +445,11 @@
   (defthm ia32e-la-to-pa-values-and-xw-mem-not-member
     (implies (and (not (member-p index (xlation-governing-entries-paddrs lin-addr (double-rewrite x86))))
                   (canonical-address-p lin-addr))
-             (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
-                         (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
-                  (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
-                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))  
+             (and (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (xw :mem index value x86)))
+                         (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))
+                  (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (xw :mem index value x86)))
+                         (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))))
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb) (xlation-governing-entries-paddrs-for-pml4-table)))))  
 
   (defthm xlation-governing-entries-paddrs-and-write-to-physical-memory-disjoint
     (implies (and (disjoint-p (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)) p-addrs)
@@ -578,10 +576,10 @@
   (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (physical-address-listp p-addrs)
                 (canonical-address-p lin-addr))
-           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
-                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
-                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
+           (and (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))
+                (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))))
   :hints (("Goal"
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) (xlation-governing-entries-paddrs)))))

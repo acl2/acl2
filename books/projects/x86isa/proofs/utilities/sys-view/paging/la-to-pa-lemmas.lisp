@@ -235,10 +235,10 @@
                         (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
         :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa)))))
 
-(defthm xlate-equiv-structures-and-mv-nth-2-ia32e-la-to-pa
-  (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-                          (double-rewrite x86))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (force (force))))))
+(defthm xlate-equiv-memory-and-mv-nth-2-ia32e-la-to-pa
+        (xlate-equiv-memory (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
+                            (double-rewrite x86))
+        :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory ia32e-la-to-pa) (force (force))))))
 
 (defthm xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-cong
   (implies (xlate-equiv-structures x86-1 x86-2)

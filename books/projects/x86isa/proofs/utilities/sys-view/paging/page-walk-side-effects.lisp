@@ -1353,10 +1353,10 @@
 (defthm mv-nth-2-ia32e-la-to-pa-in-terms-of-updates-no-errors
   (implies
    (and
-    (case-split (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))))
+    (case-split (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
     (canonical-address-p lin-addr)
     (x86p x86))
-   (equal (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
+   (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
           (if (or (xr :app-view nil x86)
                   (not (xr :marking-view nil x86)))
               x86
@@ -1366,14 +1366,14 @@
                      r-w-x x86)))))
   :hints (("Goal"
            :in-theory (e/d* (xlate-governing-qword-addresses
-                             ia32e-la-to-pa)
+                             ia32e-la-to-pa-without-tlb)
                             (bitops::logand-with-negated-bitmask
                              accessed-bit
                              dirty-bit)))))
 
 (defthm xw-mem-mv-nth-2-ia32e-la-to-pa-errors-commute
   (implies
-   (and (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86))
+   (and (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
         (disjoint-p (list index)
                     (open-qword-paddr-list
                      (xlate-governing-qword-addresses
@@ -1381,12 +1381,12 @@
         (canonical-address-p lin-addr))
    (equal (mv-nth
            2
-           (ia32e-la-to-pa lin-addr r-w-x (xw :mem index val x86)))
+           (ia32e-la-to-pa-without-tlb lin-addr r-w-x (xw :mem index val x86)))
           (xw :mem index val
               (mv-nth
                2
-               (ia32e-la-to-pa lin-addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa
+               (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb
                                     xlate-governing-qword-addresses)
                                    (bitops::logand-with-negated-bitmask
                                     accessed-bit
