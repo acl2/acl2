@@ -14,7 +14,7 @@
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
-(include-book "kestrel/fty/oct-digit-char" :dir :system)
+(include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
