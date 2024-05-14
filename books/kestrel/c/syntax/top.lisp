@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "concrete-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
