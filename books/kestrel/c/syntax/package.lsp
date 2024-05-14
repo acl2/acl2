@@ -43,7 +43,11 @@
                 std::defret-mutual
                 str::dec-digit-char
                 str::dec-digit-char-p
+                str::dec-digit-char-list
+                str::dec-digit-char-listp
                 str::hex-digit-char
                 str::hex-digit-char-p
+                str::hex-digit-char-list
+                str::hex-digit-char-listp
                 str::oct-digit-char
                 str::oct-digit-char-p)))
