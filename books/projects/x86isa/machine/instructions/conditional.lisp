@@ -456,7 +456,18 @@
 			reg/mem
 			rex-byte
 			x86)
-	  x86))
+          ;; The pseudocode in the Intel manual says that
+          ;; the high 32 bits are zeroed
+          ;; when in 64-bit mode the operand size is 32,
+          ;; even when the condition is false.
+          (if (and (equal operand-size 4) ; 32 bits
+                   (equal proc-mode #.*64-bit-mode*))
+              (!rgfi-size operand-size
+			  (reg-index reg rex-byte #.*r*)
+			  (loghead 32 (rgfi-size operand-size reg rex-byte x86))
+			  rex-byte
+			  x86)
+	    x86)))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
