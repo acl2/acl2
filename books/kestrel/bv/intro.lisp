@@ -25,6 +25,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
+(local (include-book "logand-b"))
 (local (include-book "slice-rules"))
 (local (include-book "slice"))
 (local (include-book "rules"))

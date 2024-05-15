@@ -19,6 +19,7 @@
 (include-book "bv-syntax")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
+(local (include-book "logand-b"))
 
 ;; These rules do step 1 of the conversion by inserting calls of trim.
 ;; Axe will need to have its own version of the rules, since they use syntaxp.
