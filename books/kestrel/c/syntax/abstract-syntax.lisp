@@ -1031,6 +1031,13 @@
   (:atomic ())
   :pred tyqualp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-tyqual
+  :short "An irrelevant type qualifier."
+  :type tyqualp
+  :body (tyqual-const))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist tyqual-list
@@ -1570,16 +1577,19 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod desiniter
-    :short "Fixtype of initializers with designations [C:6.7.9] [C:A.2.2]."
+    :short "Fixtype of initializers with optional designations
+            [C:6.7.9] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This has no direct corresponding nonterminal in the grammar in [C],
        but it is useful to define <i>initializer-list</i>,
        which is a non-empty sequence of initializers with designations.
-       A <i>designation</i> [C:6.7.9] [C:A.2.2] is captured here
-       as a list (which should be non-empty)
-       of designators (see @(tsee designor))."))
+       An optional <i>designation</i> [C:6.7.9] [C:A.2.2] is captured here
+       as a list of designators (see @(tsee designor)),
+       where the empty list means that the designation is absent,
+       while a non-empty list captures the designation,
+       which has a non-empty list of designators."))
     ((design designor-list)
      (init initer))
     :parents (abstract-syntax-for-tools expr/decls)
@@ -2003,6 +2013,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-const-expr
+  :short "An irrelevant constant expression."
+  :type const-exprp
+  :body (const-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-genassoc
   :short "An irrelevant generic association."
   :type genassocp
@@ -2010,10 +2027,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-const-expr
-  :short "An irrelevant constant expression."
-  :type const-exprp
-  :body (const-expr (irr-expr)))
+(defirrelevant irr-tyspec
+  :short "An irrelevant type specifier."
+  :type tyspecp
+  :body (tyspec-void))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-specqual
+  :short "An irrelevant type specifier or type qualifier."
+  :type specqualp
+  :body (specqual-tyspec (irr-tyspec)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-initer
+  :short "An irrelevant initializer."
+  :type initerp
+  :body (initer-single (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-desiniter
+  :short "An irrelevant initializer with optional designation."
+  :type desiniterp
+  :body (make-desiniter :design nil :init (irr-initer)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-designor
+  :short "An irrelevant designator."
+  :type designorp
+  :body (designor-dot (irr-ident)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
