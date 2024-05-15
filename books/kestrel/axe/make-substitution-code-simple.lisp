@@ -45,21 +45,21 @@
                  (maybe-replace-var term alist))
                 ((fquotep term) term)
                 (t (let ((fn (ffn-symb term)))
-                     (if (and (eq fn 'if) ;; TODO: consider also handling bvif, boolif, myif, maybe boolor and booland...
+                     (if (and (eq fn 'if) ;; TODO: consider also handling bvif, boolif, myif, bv-array-if, maybe boolor and booland...
                               (= 3 (len (fargs term))))
-                         (let* ((test (second term))
+                         (let* ((test (first (fargs term)))
                                 (test-result (,sublis-var-and-eval-name alist test interpreted-function-alist)))
                            (if (quotep test-result)
                                (,sublis-var-and-eval-name alist (if (unquote test-result) ;if the test is not nil
-                                                                       (third term) ;then part
-                                                                     (fourth term) ;else part
-                                                                     )
+                                                                    (second (fargs term)) ;then part
+                                                                  (third (fargs term)) ;else part
+                                                                  )
                                                              interpreted-function-alist)
                              ;;couldn't resolve if-test:
                              (list 'if
                                    test-result
-                                   (,sublis-var-and-eval-name alist (third term) interpreted-function-alist) ;then part
-                                   (,sublis-var-and-eval-name alist (fourth term) interpreted-function-alist) ;else part
+                                   (,sublis-var-and-eval-name alist (second (fargs term)) interpreted-function-alist) ;then part
+                                   (,sublis-var-and-eval-name alist (third (fargs term)) interpreted-function-alist) ;else part
                                    )))
                        ;;regular function call or lambda
                        ;; Substitute in the args:
