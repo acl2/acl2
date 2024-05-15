@@ -4550,8 +4550,7 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-
-            read-of-2 ; splits into 2 reads
+            read-of-2 ; splits into 2 reads -- todo: do better?
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
@@ -4599,7 +4598,19 @@
             acl2::bool-fix$inline-constant-opener
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
-            ;; trying opening these up if they surive to the proof stage (todo: add the rest, or drop these?):
+            ;; trying opening these up if they surive to the proof stage:
+            js-condition
+            jns-condition
+            jo-condition
+            jno-condition
+            jb-condition
+            jnb-condition
+            jbe-condition
+            jnbe-condition
+            jl-condition
+            jnl-condition
+            jle-condition
+            jnle-condition
             jp-condition
             jnp-condition
             jz-condition
