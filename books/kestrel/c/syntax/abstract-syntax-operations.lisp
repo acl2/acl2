@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
-  :parents (abstract-syntax-for-tools)
+  :parents (abstract-syntax)
   :short "Operations on the abstract syntax."
   :order-subtopics t
   :default-parent t)

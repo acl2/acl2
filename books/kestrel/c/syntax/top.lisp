@@ -67,5 +67,5 @@
    (xdoc::p
     "We also plan to prove theorems connecting this tool-oriented syntax
      with the language formalization in @(see c::language)."))
-  :order-subtopics (abstract-syntax-for-tools
-                    concrete-syntax-for-tools))
+  :order-subtopics (abstract-syntax
+                    concrete-syntax))
