@@ -10,13 +10,13 @@
 
 (in-package "C$")
 
-(include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
+(include-book "concrete-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc syntax-for-tools
+(defxdoc+ syntax-for-tools
   :parents (c::c)
   :short "A syntax of C for use by tools."
   :long
@@ -66,4 +66,6 @@
      after successful checking.")
    (xdoc::p
     "We also plan to prove theorems connecting this tool-oriented syntax
-     with the language formalization in @(see c::language).")))
+     with the language formalization in @(see c::language)."))
+  :order-subtopics (abstract-syntax-for-tools
+                    concrete-syntax-for-tools))
