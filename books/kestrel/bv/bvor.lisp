@@ -320,18 +320,6 @@
            :in-theory (e/d (zip) (unsigned-byte-p-of-bvor-gen
                                   unsigned-byte-p-of-bvor)))))
 
-;drop?
-(defthm slice-of-logior
-  (equal (slice low high (logior x y))
-         (logior (slice low high x)
-                 (slice low high y)))
-  :hints (("Goal" ;:cases ((equal low high) (< low high))
-           :in-theory (e/d (slice getbit)
-                           (slice-becomes-bvchop
-                            BVCHOP-1-BECOMES-GETBIT
-
-                            BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                            )))))
 ;good
 ;todo: replace the other
 (defthm slice-of-bvor-gen

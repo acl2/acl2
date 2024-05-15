@@ -20,6 +20,7 @@
 (include-book "bv-syntax")
 (include-book "rules") ;(local (include-book "rules"))
 (local (include-book "logior"))
+(local (include-book "logior-b"))
 (local (include-book "logxor-b"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -328,7 +329,7 @@
                (getbit n b)))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(in-theory (disable getbit-of-logior))
+;(in-theory (disable getbit-of-logior)) ; consider what to do here
 
 ;move
 (defthm getbit-of-bvchop-both

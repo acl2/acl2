@@ -1,7 +1,7 @@
 ; Rules about bitwise operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (include-book "bitnot")
 (include-book "bitor")
 (include-book "bvcat")
+(local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))
 (local (include-book "single-bit"))

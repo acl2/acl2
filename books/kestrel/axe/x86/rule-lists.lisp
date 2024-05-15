@@ -4320,7 +4320,7 @@
             acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
             unicity-of-1 ; simplified something that showed up in an error case
             bvcat-of-repeatbit-of-getbit-becomes-bvsx
-            bvcat-of-repeatit-tighten-64-32 ;gen!
+            bvcat-of-repeatbit-tighten-64-32 ;gen!
             acl2::bvlt-of-bvsx-arg2
             sbvlt-of-bvsx-32-16-constant
 ;            rflagsbits->af-of-if
