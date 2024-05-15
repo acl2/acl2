@@ -1,6 +1,6 @@
 ; A lightweight book about explode-nonnegative-integer
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,22 +13,12 @@
 (include-book "kestrel/typed-lists-light/all-digit-charsp" :dir :system)
 (local (include-book "digit-to-char"))
 (local (include-book "our-digit-char-p"))
+(local (include-book "print-base-p"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (in-theory (disable explode-nonnegative-integer))
-
-(local (in-theory (disable print-base-p)))
-
-;; Could move to a separate book
-(defthm print-base-p-forward
-  (implies (print-base-p print-base)
-           (and (integerp print-base)
-                (<= 2 print-base)
-                (<= print-base 16)))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable print-base-p))))
 
 (defthm true-listp-of-explode-nonnegative-integer
   (equal (true-listp (explode-nonnegative-integer n print-base ans))
