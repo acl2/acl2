@@ -47,7 +47,7 @@
      We plan to have ATC use this new tool-oriented abstract syntax.")
    (xdoc::p
     "Accompanying this tool-oriented abstract syntax,
-     we plan to add a concrete syntax, based on an ABNF grammar.
+     we also introduce a concrete syntax, based on an ABNF grammar.
      This is not a different syntax for C,
      but just a different formulation of the syntax of C,
      motivated by the fact that we want this tool-oriented syntax
@@ -58,7 +58,7 @@
      [C:5.1.1.2].")
    (xdoc::p
     "We also plan to add a parser and a pretty-printer
-     that connect these tool-oriented concrete and abstract syntax.
+     that connect concrete and abstract syntax.
      We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
      which may result in an elaboration of the abstract syntax,
