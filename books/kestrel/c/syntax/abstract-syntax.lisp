@@ -1570,16 +1570,19 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod desiniter
-    :short "Fixtype of initializers with designations [C:6.7.9] [C:A.2.2]."
+    :short "Fixtype of initializers with optional designations
+            [C:6.7.9] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This has no direct corresponding nonterminal in the grammar in [C],
        but it is useful to define <i>initializer-list</i>,
        which is a non-empty sequence of initializers with designations.
-       A <i>designation</i> [C:6.7.9] [C:A.2.2] is captured here
-       as a list (which should be non-empty)
-       of designators (see @(tsee designor))."))
+       An optional <i>designation</i> [C:6.7.9] [C:A.2.2] is captured here
+       as a list of designators (see @(tsee designor)),
+       where the empty list means that the designation is absent,
+       while a non-empty list captures the designation,
+       which has a non-empty list of designators."))
     ((design designor-list)
      (init initer))
     :parents (abstract-syntax-for-tools expr/decls)
