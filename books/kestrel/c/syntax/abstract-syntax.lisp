@@ -59,12 +59,15 @@
      "The fixtype @(tsee hex-digit-char-list) corresponds to
       <i>hexadecimal-digit-sequence</i> in [C:6.4.4.2] [C:A.1.5].")
     (xdoc::li
-     "The fixtypes @(tsee nat) and @(tsee nat-list) correspond to
+     "The fixtypes "
+     (xdoc::seetopic "fty::basetypes" "@('nat')")
+     " and @(tsee nat-list)
+      correspond to
       <i>c-char</i> and <i>c-char-sequence</i> in [C:6.4.4.4] [C:A.1.5],
       as well as to
       <i>s-char</i> and <i>s-char-sequence</i> in [C:6.4.5] [C:A.1.6]."))
    (xdoc::p
-    "The @(tsee ...-list) fixtypes are slightly more general than
+    "The @('...-list') fixtypes are slightly more general than
      <i>...-sequence</i> nonterminals in the grammar in [C],
      because the former include the empty list,
      while the latter only include non-empty sequences.
@@ -1145,7 +1148,7 @@
      which in turn must have a larger second lexicographic component.
      Thus, we add a dummy base case @(':dummy-base') to @(tsee dirabsdeclor),
      whch is unfortunate but perhaps unavoidable.
-     We will prohibit the occurrence of @(:dummy-base') via separate checks."))
+     We will prohibit the occurrence of @(':dummy-base') via separate checks."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1177,8 +1180,7 @@
       "There is a syntactic overlap between
        identifier expressions (variables) and (enumeration) constants.
        This ambiguity cannot be resolved purely syntactically.
-       During parsing, we classify those as identifier expressions
-       (see @(see parser)),
+       During parsing, we classify those as identifier expressions,
        and defer a possible re-classification to enumeration constant
        during a post-parsing static semantic analysis.")
      (xdoc::p
@@ -1193,8 +1195,7 @@
        because @('I') may be either an expression or a type name:
        we defer the resolution of this ambiguity
        to static semantic analysis after parsing;
-       during parsing, we classify that as a type name
-       (see @(see parser)).")
+       during parsing, we classify that as a type name.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1252,7 +1253,7 @@
        (xdoc::ahref "https://eli.thegreenplace.net/2007/11/24/the-context-sensitivity-of-cs-grammar/"
                     "This blog post."))
       (xdoc::li
-       (xdoc::ahref "https://web.archive.org/web/20131109145649/https://eli.thegreenplace.net/2011/05/02/the-context-sensitivity-of-c’s-grammar-revisited/"
+       (xdoc::ahref "https://web.archive.org/web/20131109145649/https://eli.thegreenplace.net/2011/05/02/the-context-sensitivity-of-cs-grammar-revisited/"
                     "This (web-archived) related blog post."))
       (xdoc::li
        (xdoc::ahref "https://stackoverflow.com/questions/17202409/how-typedef-name-identifier-issue-is-resolved-in-c"
@@ -1269,9 +1270,7 @@
        the identifier that is either a type name or an expression,
        and a subsequent expression.
        We prefer this approach to
-       performing any kind of semantic analysis during parsing.
-       See the @(see parser) for more details,
-       in particular @(tsee parse-cast-expression)."))
+       performing any kind of semantic analysis during parsing."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
     (:string ((unwrap stringlit)))
@@ -1396,7 +1395,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Generic associations are defined in @(tse genassoc).")
+      "Generic associations are defined in @(tsee genassoc).")
      (xdoc::p
       "This fixtype corresponds to <i>generic-assoc-list</i>
      in the grammar in [C]."))
