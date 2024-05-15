@@ -15,7 +15,8 @@
 (include-book "../evaluator-basic")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
-(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p
+(include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
+(local (include-book "kestrel/bv/bitops" :dir :system))
 
 (defund x86isa::n03$inline-unguarded (x)
   (declare (xargs :guard t))
@@ -588,6 +589,156 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun x86isa::sib->scale$inline-unguarded (x)
+  (declare (xargs :guard t))
+  (slice 7 6 (ifix x)))
+
+(defthm x86isa::sib->scale$inline-unguarded-correct
+  (equal (x86isa::sib->scale$inline-unguarded x)
+         (x86isa::sib->scale$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sib->scale$inline
+                                     x86isa::sib-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun x86isa::sib->index$inline-unguarded (x)
+  (declare (xargs :guard t))
+  (slice 5 3 (ifix x)))
+
+(defthm x86isa::sib->index$inline-unguarded-correct
+  (equal (x86isa::sib->index$inline-unguarded x)
+         (x86isa::sib->index$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sib->index$inline
+                                     x86isa::sib-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun x86isa::sib->base$inline-unguarded (x)
+  (declare (xargs :guard t))
+  (slice 2 0 (ifix x)))
+
+(defthm x86isa::sib->base$inline-unguarded-correct
+  (equal (x86isa::sib->base$inline-unguarded x)
+         (x86isa::sib->base$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sib->base$inline
+                                     x86isa::sib-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund acl2::assoc-keyword-unguarded (key l)
+  (declare (xargs :guard t))
+  (cond ((atom l) nil)
+        ((equal key (car l)) l)
+        (t (assoc-keyword-unguarded key (acl2::cdr-unguarded (acl2::cdr-unguarded l))))))
+
+(defthm assoc-keyword-unguarded-correct
+  (equal (acl2::assoc-keyword-unguarded key l)
+         (assoc-keyword key l))
+  :hints (("Goal" :in-theory (enable acl2::assoc-keyword-unguarded))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund acl2::header-unguarded (name l)
+  (declare (xargs :guard t))
+  (if (or (array1p name l)
+          (array2p name l))
+      (header name l)
+    ;; todo: make an assoc-eq-unguarded:
+    (acl2::assoc-equal-unguarded :header l)))
+
+(defthm header-unguarded-correct
+  (equal (acl2::header-unguarded name l)
+         (acl2::header name l))
+  :hints (("Goal" :in-theory (enable acl2::header-unguarded acl2::header))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund acl2::default-unguarded (name l)
+  (declare (xargs :guard t
+                  :guard-hints (("Goal" :in-theory (disable dimensions default)))))
+  (if (or (array1p name l)
+          (array2p name l))
+      ;; normal case:
+      (cadr (assoc-keyword :default (cdr (header name l))))
+    (acl2::car-unguarded (acl2::cdr-unguarded (acl2::assoc-keyword-unguarded :default (acl2::cdr-unguarded (acl2::header-unguarded name l)))))))
+
+(defthm default-unguarded-correct
+  (equal (acl2::default-unguarded name l)
+         (acl2::default name l))
+  :hints (("Goal" :in-theory (enable acl2::default-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; I hope this is still fast in the normal case.
+(defund acl2::aref1-unguarded (name l n)
+  (declare (xargs :guard t
+                  :guard-hints (("Goal" :in-theory (disable array1p header dimensions default)))))
+  (if (and (symbolp name)
+           (array1p name l)
+           (natp n)
+           (let ((dims (dimensions name l)))
+             (and (consp dims)
+                  (let ((len (car dims)))
+                    (and (natp len)
+                         (< n len))))))
+      ;; hope this is fast:
+      (aref1 name l n)
+    (let ((x (and (not (eq n :header))
+                  (acl2::assoc-equal-unguarded n l))))
+      (cond ((null x) (acl2::default-unguarded name l))
+            (t (acl2::cdr-unguarded x))))))
+
+(defthm aref1-unguarded-correct
+  (equal (acl2::aref1-unguarded name l n)
+         (acl2::aref1 name l n))
+  :hints (("Goal" :in-theory (enable acl2::aref1-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded (opcode)
+  (declare (xargs :guard t))
+  (acl2::aref1-unguarded 'x86isa::32-bit-mode-one-byte-has-modr/m
+                         x86isa::*32-bit-mode-one-byte-has-modr/m-ar*
+                         opcode))
+
+(defthm x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded-correct
+  (equal (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)
+         (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline opcode))
+  :hints (("Goal" :in-theory (e/d (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded
+                                   x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline)
+                                  (aref1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded (opcode)
+  (declare (xargs :guard t))
+  (acl2::aref1-unguarded 'x86isa::64-bit-mode-one-byte-has-modr/m
+                         x86isa::*64-bit-mode-one-byte-has-modr/m-ar*
+                         opcode))
+
+(defthm x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded-correct
+  (equal (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)
+         (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline opcode))
+  :hints (("Goal" :in-theory (e/d (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded
+                                   x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline)
+                                  (aref1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::one-byte-opcode-modr/m-p$inline-unguarded (proc-mode opcode)
+  (declare (xargs :guard t))
+  (if (equal proc-mode 0)
+      (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)
+    (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)))
+
+(defthm x86isa::one-byte-opcode-modr/m-p$inline-unguarded-correct
+  (equal (x86isa::one-byte-opcode-modr/m-p$inline-unguarded proc-mode opcode)
+         (x86isa::one-byte-opcode-modr/m-p$inline proc-mode opcode))
+  :hints (("Goal" :in-theory (enable x86isa::one-byte-opcode-modr/m-p$inline-unguarded
+                                     x86isa::one-byte-opcode-modr/m-p$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
   (append '(x86isa::canonical-address-p$inline ; unguarded
             (bitops::part-select-width-low$inline bitops::part-select-width-low$inline-unguarded)
@@ -646,7 +797,14 @@
             (x86isa::sf-spec32$inline x86isa::sf-spec32$inline-unguarded)
             (x86isa::zf-spec$inline x86isa::zf-spec$inline-unguarded)
             (x86isa::x86-decode-sib-p x86isa::x86-decode-sib-p-unguarded)
-            (x86isa::sib-fix$inline x86isa::sib-fix$inline-unguarded))
+            (x86isa::sib-fix$inline x86isa::sib-fix$inline-unguarded)
+            (x86isa::sib->base$inline x86isa::sib->base$inline-unguarded)
+            (x86isa::sib->index$inline x86isa::sib->index$inline-unguarded)
+            (x86isa::sib->scale$inline x86isa::sib->scale$inline-unguarded)
+            (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded)
+            (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded)
+            (x86isa::one-byte-opcode-modr/m-p$inline x86isa::one-byte-opcode-modr/m-p$inline-unguarded)
+            )
           *axe-evaluator-basic-fns-and-aliases*))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
