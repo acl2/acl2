@@ -19,7 +19,7 @@
 
 (in-theory (disable explode-nonnegative-integer))
 
-(local (in-theory (disable floor mod print-base-p)))
+(local (in-theory (disable print-base-p)))
 
 ;; Could move to a separate book
 (defthm print-base-p-forward
