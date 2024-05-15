@@ -2006,17 +2006,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-genassoc
-  :short "An irrelevant generic association."
-  :type genassocp
-  :body (genassoc-default (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defirrelevant irr-const-expr
   :short "An irrelevant constant expression."
   :type const-exprp
   :body (const-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-genassoc
+  :short "An irrelevant generic association."
+  :type genassocp
+  :body (genassoc-default (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
