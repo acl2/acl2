@@ -593,7 +593,7 @@
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                                                                            (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (unsigned-byte-p 60 count))
                           :stobjs rewrite-stobj
                           :measure (nfix count)
@@ -886,7 +886,7 @@
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                                                                            (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (unsigned-byte-p 60 count))
                           :stobjs rewrite-stobj
                           :split-types t
@@ -972,7 +972,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1044,7 +1044,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1111,7 +1111,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len) ;todo: name these 3?
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len) ;todo: name these 3?
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1173,7 +1173,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1240,7 +1240,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1307,7 +1307,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1379,7 +1379,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1426,7 +1426,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1492,7 +1492,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1553,7 +1553,7 @@
                                       (trees-to-memoizep trees-equal-to-tree)
                                       (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (info-worldp info)
-                                                                            (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                       (maybe-bounded-memoizationp memoization dag-len)
@@ -1753,7 +1753,7 @@
                                       (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
                                       (natp node-replacement-count)
                                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
-                                                                            (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                                      (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
                                       (unsigned-byte-p 60 count))
                           :stobjs rewrite-stobj
                           :measure (nfix count)
@@ -4598,7 +4598,6 @@
     ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
     ;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj).
     ;; TODO: Add support for assumptions that come in array form?
-    ;; TODO: Add support for rewriting nodes in (an approximation of) their contexts -- but disallow memoization in that case!
     (defund ,simplify-dag-aux-name (rev-dag ; the old dag, low nodes come first
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist ; the new DAG
                                     maybe-internal-context-array
@@ -4699,7 +4698,7 @@
                                   memoization info tries limits
                                   node-replacement-array
                                   node-replacement-count-for-this-node ; or just use node-replacement-count, as the relevant entires have been undone?
-                                  refined-assumption-alist
+                                  refined-assumption-alist ; the original one, not the extension for this node
                                   rewrite-stobj
                                   renumbering-stobj))))
 
@@ -4970,7 +4969,6 @@
 
     ;; Returns (mv erp dag-or-quotep).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
-    ;; TODO: Add support for rewriting nodes in their (approximate) contexts.
     (defund ,simplify-dag-name (dag
                                 assumptions
                                 interpreted-function-alist

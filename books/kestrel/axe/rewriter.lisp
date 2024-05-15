@@ -1,7 +1,7 @@
 ; The Axe Rewriter (somewhat old)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1669,6 +1669,7 @@
                                 priorities ;the priorities to use, or :default, ignored for rule-alists ;todo: drop this arg?
                                 interpreted-function-alist
                                 monitored-symbols
+                                print-monitor-message ; whether to print that we are monitoring the monitored-symbols
                                 remove-duplicate-rulesp
                                 memoizep
                                 use-internal-contextsp
@@ -1697,6 +1698,7 @@
                                   (alistp priorities))
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-symbols)
+                              (booleanp print-monitor-message)
                               (booleanp remove-duplicate-rulesp)
                               (booleanp memoizep)
                               (booleanp use-internal-contextsp)
@@ -1745,7 +1747,7 @@
                                                 nil))
          ((when erp) (mv erp nil state))
          (refined-assumption-alist (make-refined-assumption-alist refined-assumption-exprs)) ;the nodenums mentioned are in the new-context-array!
-         (- (and monitored-symbols (cw "(Monitoring: ~x0)~%" monitored-symbols))) ;move this?
+         (- (and monitored-symbols print-monitor-message (cw "(Monitoring: ~x0)~%" monitored-symbols)))
          (priorities (if (eq :default priorities)
                          (table-alist 'axe-rule-priorities-table (w state))
                        priorities))
@@ -1789,6 +1791,7 @@
                     print
                     interpreted-function-alist
                     monitored-symbols
+                    print-monitor-message
                     remove-duplicate-rulesp
                     memoizep
                     use-internal-contextsp
@@ -1858,6 +1861,7 @@
                              :default
                              interpreted-function-alist
                              monitored-symbols
+                             print-monitor-message
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
@@ -1885,6 +1889,7 @@
                     (print 'nil)
                     (interpreted-function-alist 'nil)
                     (monitor 'nil)
+                    (print-monitor-message 't)
                     (remove-duplicate-rulesp 't)
                     (memoizep 't)
                     (use-internal-contextsp 'nil) ;should t be the default instead?
@@ -1910,6 +1915,7 @@
                 ,print
                 ,interpreted-function-alist
                 ,monitor
+                ,print-monitor-message
                 ,remove-duplicate-rulesp
                 ,memoizep
                 ,use-internal-contextsp
@@ -1941,6 +1947,7 @@
                      print
                      interpreted-function-alist
                      monitored-symbols
+                     print-monitor-message
                      remove-duplicate-rulesp
                      memoizep
                      use-internal-contextsp
@@ -2015,6 +2022,7 @@
                              :default
                              interpreted-function-alist
                              monitored-symbols
+                             print-monitor-message
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
@@ -2046,6 +2054,7 @@
                      (print 'nil)
                      (interpreted-function-alist 'nil)
                      (monitor 'nil)
+                     (print-monitor-message 't)
                      (remove-duplicate-rulesp 't)
                      (memoizep 't)
                      (use-internal-contextsp 'nil) ;should t be the default instead?
@@ -2066,6 +2075,7 @@
                  ,slack-amount ,normalize-xors ,assumptions ,print-interval ,warn-missingp ,print
                  ,interpreted-function-alist
                  ,monitor
+                 ,print-monitor-message
                  ,remove-duplicate-rulesp
                  ,memoizep
                  ,use-internal-contextsp
@@ -2126,27 +2136,27 @@
 ;; (defmacro simplify-terms-to-new-terms (terms rule-alist &key (monitor 'nil))
 ;;   `(simplify-terms-to-new-terms-fn ,terms ,rule-alist ,monitor state))
 
-;;Returns (mv erp old-term new-term state) where old-term is nil if nothing simplified.
-;; TODO: Deprecate
-(defun find-a-term-to-simplify (terms-to-simplify rule-alist monitored-rules all-terms state)
-  (declare (xargs :mode :program :stobjs state))
-  (if (endp terms-to-simplify)
-      (mv nil nil nil state) ;failed to simplify anything
-    (let ((term (first terms-to-simplify)))
-      (mv-let (erp result-dag state)
-        ;; could instead call rewrite-term...
-        (simp-term term :rule-alist rule-alist
-                   :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
-                   :monitor monitored-rules
-                   :check-inputs nil)
-        (if erp
-            (mv erp nil nil state)
-          (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
-            (if (equal result-term term)
-                ;;no change, so keep looking
-                (find-a-term-to-simplify (rest terms-to-simplify) rule-alist monitored-rules all-terms state)
-              ;;term was simplified, so stop this pass:
-              (mv nil term result-term state))))))))
+;; ;;Returns (mv erp old-term new-term state) where old-term is nil if nothing simplified.
+;; ;; TODO: Deprecate
+;; (defun find-a-term-to-simplify (terms-to-simplify rule-alist monitored-symbols all-terms state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (if (endp terms-to-simplify)
+;;       (mv nil nil nil state) ;failed to simplify anything
+;;     (let ((term (first terms-to-simplify)))
+;;       (mv-let (erp result-dag state)
+;;         ;; could instead call rewrite-term...
+;;         (simp-term term :rule-alist rule-alist
+;;                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
+;;                    :monitor monitored-symbols
+;;                    :check-inputs nil)
+;;         (if erp
+;;             (mv erp nil nil state)
+;;           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
+;;             (if (equal result-term term)
+;;                 ;;no change, so keep looking
+;;                 (find-a-term-to-simplify (rest terms-to-simplify) rule-alist monitored-symbols all-terms state)
+;;               ;;term was simplified, so stop this pass:
+;;               (mv nil term result-term state))))))))
 
 ;; ;; See also improve-invars.
 ;; ;fixme handle boolands?
@@ -2155,11 +2165,11 @@
 ;; (defun simplify-terms (terms
 ;;                        ;;print
 ;;                        rule-alist
-;;                        monitored-rules
+;;                        monitored-symbols
 ;;                        state)
 ;;   (declare (xargs :mode :program :stobjs state))
 ;;   (mv-let (erp old-term new-term state)
-;;     (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
+;;     (find-a-term-to-simplify terms rule-alist monitored-symbols terms state)
 ;;     (if erp
 ;;         (mv erp nil state)
 ;;       (if (not old-term)
@@ -2167,9 +2177,9 @@
 ;;           (mv (erp-nil) terms state)
 ;;         (if (equal *t* new-term) ;todo: also check for *nil*?
 ;;             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
-;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
+;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-symbols state)
 ;;           (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
+;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-symbols state)))))))
 
 
 ;; ;; TODO: Deprecate in favor of simplify-terms-repeatedly
@@ -2177,14 +2187,14 @@
 ;; ;; others (being careful not to let two terms each simplify the other to true).
 ;; ;todo: maybe translate the terms
 ;; ;; Returns (mv erp new-terms state).
-;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-symbols state)
 ;;   (declare (xargs :guard (and (pseudo-term-listp terms)
 ;;                               (rule-alistp rule-alist)
-;;                               (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+;;                               (symbol-listp monitored-symbols)) ;todo: turn some of these into checks
 ;;                   :stobjs state
 ;;                   :mode :program))
 ;;   (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
-;;     (simplify-terms terms rule-alist monitored-rules state)))
+;;     (simplify-terms terms rule-alist monitored-symbols state)))
 
 ;; ;; TODO: Deprecate
 ;; ;; Returns (mv erp new-terms state).
@@ -2200,7 +2210,7 @@
                             done-terms ; an accumulator, also used as assumptions
                             ;;print
                             rule-alist
-                            monitored-rules
+                            monitored-symbols
                             memoizep
                             warn-missingp
                             againp
@@ -2208,7 +2218,7 @@
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (pseudo-term-listp done-terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)
+                              (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp)
                               (booleanp againp))
@@ -2222,27 +2232,28 @@
                      :rule-alist rule-alist
                      ;; Can assume all the other terms, because, if any is false, the whole conjunction is false:
                      :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
-                     :monitor monitored-rules
+                     :monitor monitored-symbols
+                     :print-monitor-message nil ; done once, outside this function
                      :memoizep memoizep
                      :warn-missingp warn-missingp
                      :check-inputs nil))
          ((when erp) (mv erp nil nil state))
          (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
-          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules memoizep warn-missingp againp state)
+          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-symbols memoizep warn-missingp againp state)
         (if (equal *t* result-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it:
-            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules memoizep warn-missingp againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
+            (simplify-terms-once (rest terms) done-terms rule-alist monitored-symbols memoizep warn-missingp againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
           (let ((conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules memoizep warn-missingp t state)))))))
+            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-symbols memoizep warn-missingp t state)))))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules memoizep warn-missingp state)
+(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-symbols memoizep warn-missingp state)
   (declare (xargs :guard (and (natp passes-left)
                               (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)
+                              (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp))
                   :stobjs state
@@ -2251,26 +2262,27 @@
       (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
               (mv (erp-nil) terms state))
     (b* (((mv erp new-terms againp state)
-          (simplify-terms-once terms nil rule-alist monitored-rules memoizep warn-missingp nil state))
+          (simplify-terms-once terms nil rule-alist monitored-symbols memoizep warn-missingp nil state))
          ((when erp) (mv erp nil state)))
       (if againp
-          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules memoizep warn-missingp state)
+          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-symbols memoizep warn-missingp state)
         (mv (erp-nil) new-terms state)))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly (terms rule-alist monitored-rules memoizep warn-missingp state)
+(defun simplify-terms-repeatedly (terms rule-alist monitored-symbols memoizep warn-missingp state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)
+                              (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp))
                   :stobjs state
                   :mode :program))
-  (prog2$ (and warn-missingp (print-missing-rules monitored-rules rule-alist)) ; do this just once, here
+  (progn$ (and warn-missingp (print-missing-rules monitored-symbols rule-alist)) ; do this just once, here
+          (and monitored-symbols (cw "(Monitoring: ~x0)~%" monitored-symbols))
           (let ((len (len terms)))
             ;; We add 1 so that if len=1 we get at least 2 passes:
-            (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules memoizep
+            (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-symbols memoizep
                                            nil ; don't warn again about missing monitored rules
                                            state))))
 
@@ -2300,6 +2312,7 @@
                           print
                           interpreted-function-alist
                           monitored-symbols
+                          print-monitor-message
                           remove-duplicate-rulesp
                           memoizep
                           ;; use-internal-contextsp
@@ -2354,6 +2367,7 @@
                              :default
                              interpreted-function-alist
                              monitored-symbols
+                             print-monitor-message
                              remove-duplicate-rulesp
                              memoizep
                              nil ;use-internal-contextsp
@@ -2383,6 +2397,7 @@
                           (print 'nil)
                           (interpreted-function-alist 'nil)
                           (monitor 'nil)
+                          (print-monitor-message 't)
                           (remove-duplicate-rulesp 't)
                           (memoizep 'nil)
                           ;; use-internal-contextsp
@@ -2407,6 +2422,7 @@
                       ,print
                       ,interpreted-function-alist
                       ,monitor
+                      ,print-monitor-message
                       ,remove-duplicate-rulesp
                       ,memoizep
                       ;; nil ;;use-internal-contextsp
@@ -2440,6 +2456,7 @@
                                             print
                                             interpreted-function-alist
                                             monitored-symbols
+                                            print-monitor-message
                                             remove-duplicate-rulesp
                                             memoizep
                                             ;; use-internal-contextsp
@@ -2469,6 +2486,7 @@
                        print
                        interpreted-function-alist
                        monitored-symbols
+                       print-monitor-message
                        remove-duplicate-rulesp
                        memoizep
                        ;; nil ;use-internal-contextsp
@@ -2499,6 +2517,7 @@
                                             (print 'nil)
                                             (interpreted-function-alist 'nil)
                                             (monitor 'nil)
+                                            (print-monitor-message 't)
                                             (remove-duplicate-rulesp 't)
                                             (memoizep 'nil)
                                             ;; use-internal-contextsp
@@ -2525,6 +2544,7 @@
                                         ,print
                                         ,interpreted-function-alist
                                         ,monitor
+                                        ,print-monitor-message
                                         ,remove-duplicate-rulesp
                                         ,memoizep
                                         ;;nil ;;use-internal-contextsp

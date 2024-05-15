@@ -34,7 +34,7 @@
     cons ; primitive
     consp ; primitive
     equal ; primitive
-    atom
+    atom ; unguarded
     integerp ; primitive
     rationalp ; primitive
     complex-rationalp ; primitive
@@ -49,13 +49,13 @@
     (pkg-imports pkg-imports-unguarded) ; primitive
     (pkg-witness pkg-witness-unguarded) ; primitive
     ;; todo: BAD-ATOM<= ?
-    natp
-    posp
-    booleanp
+    natp ; unguarded
+    posp ; unguarded
+    booleanp ; unguarded
     boolor
     booland
     bool-fix$inline
-    true-listp
+    true-listp ; unguarded
     true-list-listp
     (denominator denominator-unguarded) ; primitive
     (numerator numerator-unguarded) ; primitive
@@ -88,19 +88,19 @@
     (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded) ; primitive
     (zp zp-unguarded)
-    not
-    len
+    not ; unguarded
+    len ; unguarded
     (assoc-equal assoc-equal-unguarded)
     (lookup-equal lookup-equal-unguarded)
     (symbol< symbol<-unguarded)
     (symbol-name symbol-name-unguarded) ; primitive
     (symbol-package-name symbol-package-name-unguarded) ; primitive
-    unsigned-byte-p
+    unsigned-byte-p ; unguarded
     unsigned-byte-p-forced
     signed-byte-p ; unguarded
-    fix
-    ifix
-    nfix
+    fix ; unguarded
+    ifix ; unguarded
+    nfix ; unguarded
     (nth nth-unguarded)
     (mv-nth mv-nth-unguarded)
     (min min-unguarded)

@@ -42,7 +42,7 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
+(include-book "../rewriter") ; for the :legacy rewriter option ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -253,6 +253,7 @@
         (er hard? 'assumptions-for-input "Bad type: ~x0." type)
       (if (atom type) ; scalar
           ;; just put in the var name for the state component:
+          ;; todo: what about signed/unsigned?
           `((equal ,state-component ,var-name))
         (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
           (if (and (call-of :pointer type)
@@ -644,6 +645,8 @@
                                    )
                               (assumptions-for-inputs inputs
                                                       ;; todo: handle zmm regs and values passed on the stack?!:
+                                                      ;; handle structs that fit in 2 registers?
+                                                      ;; See the System V AMD64 ABI
                                                       '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                       stack-slots
                                                       text-offset
@@ -757,6 +760,7 @@
                         monitor
                         print
                         print-base
+                        rewriter
                         produce-function
                         non-executable
                         produce-theorem
@@ -787,6 +791,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (member-eq rewriter '(:x86 :legacy))
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
@@ -822,7 +827,7 @@
         (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base :legacy state))
+          step-limit step-increment memoizep monitor print print-base rewriter state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -964,6 +969,7 @@
                                (monitor 'nil)
                                (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
+                               (rewriter ':legacy) ; todo: try :x86
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (non-executable ':auto)  ;since stobj updates will not be let-bound
                                (produce-theorem 'nil) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
@@ -992,6 +998,7 @@
       ,monitor ; gets evaluated since not quoted
       ',print
       ',print-base
+      ',rewriter
       ',produce-function
       ',non-executable
       ',produce-theorem

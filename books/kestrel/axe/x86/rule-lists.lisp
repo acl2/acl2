@@ -2189,7 +2189,10 @@
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-of-xr-rgf-4
-     x86isa::fix-of-xr-rgf-4)
+     x86isa::fix-of-xr-rgf-4
+     x86isa::integerp-when-canonical-address-p-cheap
+     acl2::fix-when-integerp
+     acl2::equal-same)
    (acl2::lookup-rules)))
 
 ;move?
