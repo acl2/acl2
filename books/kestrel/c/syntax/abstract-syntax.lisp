@@ -1031,6 +1031,13 @@
   (:atomic ())
   :pred tyqualp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-tyqual
+  :short "An irrelevant type qualifier."
+  :type tyqualp
+  :body (tyqual-const))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist tyqual-list
@@ -2017,6 +2024,41 @@
   :short "An irrelevant generic association."
   :type genassocp
   :body (genassoc-default (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-tyspec
+  :short "An irrelevant type specifier."
+  :type tyspecp
+  :body (tyspec-void))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-specqual
+  :short "An irrelevant type specifier or type qualifier."
+  :type specqualp
+  :body (specqual-tyspec (irr-tyspec)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-initer
+  :short "An irrelevant initializer."
+  :type initerp
+  :body (initer-single (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-desiniter
+  :short "An irrelevant initializer with optional designation."
+  :type desiniterp
+  :body (make-desiniter :design nil :init (irr-initer)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-designor
+  :short "An irrelevant designator."
+  :type designorp
+  :body (designor-dot (irr-ident)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
