@@ -97,11 +97,14 @@
          (and (symbol-listp (strip-cars doublets))
               (pseudo-term-listp (strip-cadrs doublets)))))
 
-(defthm axe-tree-listp-of-keep-atoms-when-contextp
+(defthm axe-tree-listp-of-non-negated-nodenums-in-context-when-contextp
   (implies (and (contextp x)
                 (not (equal :false x)))
-           (axe-tree-listp (keep-atoms x)))
-  :hints (("Goal" :in-theory (enable keep-atoms contextp))))
+           (axe-tree-listp (non-negated-nodenums-in-context x)))
+  :hints (("Goal" :in-theory (e/d (non-negated-nodenums-in-context
+                                     contextp
+                                     natp-of-car-when-possibly-negated-nodenumsp)
+                                  (natp)))))
 
 ;move
 (defthm strip-cdrs-of-pairlis$-3
@@ -5735,8 +5738,8 @@
 ;;              (if (false-contextp context) ;move up? or not?
 ;;                  (prog2$ (cw "! Proof succeeded due to contradictory context !")
 ;;                          (mv (erp-nil) :proved))
-;;                (b* ((context-nodenums-to-assume (keep-atoms context)) ;fixme turn keep-atoms and keep-non-atoms into special functions for contexts?
-;;                     (context-negations-to-assume (keep-non-atoms context)) ;the ones surrounded by not
+;;                (b* ((context-nodenums-to-assume (non-negated-nodenums-in-context context))
+;;                     (context-negations-to-assume (negated-nodenums-in-context context)) ;the ones surrounded by not
 ;;                     ;;add the negated assumptions to the dag:
 ;;                     ((mv erp negated-assumption-literal-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;                      (merge-trees-into-dag-array-basic (append (negate-all context-nodenums-to-assume)
