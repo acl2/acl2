@@ -231,6 +231,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented Syntax"))
+
+   (xdoc::p
+    "A new sub-library has been added,
+     which contains an abstract syntax,
+     and accompanying concrete syntax formulation,
+     intended for use by tools like code generators and transformers.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
