@@ -523,7 +523,7 @@
     (cons (union-eq x (first y))
           (union-eq-with-all x (rest y)))))
 
-(defthm symbol-list-listp-of-union-eq-with-all
+(defthmd symbol-list-listp-of-union-eq-with-all
   (implies (and (symbol-listp x)
                 (symbol-list-listp y))
            (symbol-list-listp (union-eq-with-all x y)))
@@ -714,7 +714,7 @@
                                wrld
                                (cons new-nodenum-or-quotep new-nodenums-acc)))))
 
-(defthm apply-axe-use-instances-return-type
+(defthmd apply-axe-use-instances-return-type
   (mv-let (erp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
     (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc)
     (implies (and (not erp)
@@ -731,23 +731,23 @@
            :in-theory (e/d (apply-axe-use-instances)
                            (pseudo-termp)))))
 
-;drop?
-(defthm apply-axe-use-instances-bound
-  (mv-let (erp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
-    (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc)
-    (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
-    (implies (and (<= new-dag-len bound)
-                  (not erp)
-                  (nat-listp new-nodenums-acc)
-                  (all-< new-nodenums-acc dag-len)
-                  (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                  (axe-use-instance-listp axe-use-instances))
-             (bounded-darg-listp new-literal-nodenums bound)))
-  :hints (("Goal" :use (:instance apply-axe-use-instances-return-type)
-           :in-theory (disable apply-axe-use-instances-return-type))))
+;; ;drop?
+;; (defthmd apply-axe-use-instances-bound
+;;   (mv-let (erp new-literal-nodenums new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
+;;     (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc)
+;;     (declare (ignore new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
+;;     (implies (and (<= new-dag-len bound)
+;;                   (not erp)
+;;                   (nat-listp new-nodenums-acc)
+;;                   (all-< new-nodenums-acc dag-len)
+;;                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+;;                   (axe-use-instance-listp axe-use-instances))
+;;              (bounded-darg-listp new-literal-nodenums bound)))
+;;   :hints (("Goal" :use (:instance apply-axe-use-instances-return-type)
+;;            :in-theory (disable apply-axe-use-instances-return-type))))
 
 ;; the dag can't get smaller
-(defthm <=-of-mv-nth-3-of-apply-axe-use-instances
+(defthmd <=-of-mv-nth-3-of-apply-axe-use-instances
   (implies (and (not (mv-nth 0 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))) ; no error
                 (nat-listp new-nodenums-acc)
                 (all-< new-nodenums-acc dag-len)
@@ -757,7 +757,7 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances) (pseudo-termp)))))
 
-(defthm integerp-mv-nth-3-of-apply-axe-use-instances
+(defthmd integerp-mv-nth-3-of-apply-axe-use-instances
   (implies (integerp dag-len)
            (integerp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp-for-axe) (pseudo-termp
@@ -1009,7 +1009,12 @@
        (local (in-theory (enable natp-of-+-of-1-alt
                                  natp-of-car-when-bounded-darg-listp-gen
                                  nat-listp-forward-to-true-listp-for-axe
-                                 nat-listp-forward-to-rational-listp-for-axe)))
+                                 nat-listp-forward-to-rational-listp-for-axe
+                                 symbol-list-listp-of-union-eq-with-all
+                                 apply-axe-use-instances-return-type
+                                 ;apply-axe-use-instances-bound
+                                 <=-of-mv-nth-3-of-apply-axe-use-instances
+                                 integerp-mv-nth-3-of-apply-axe-use-instances)))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
