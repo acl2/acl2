@@ -180,6 +180,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-declspec
+  :short "An irrelevant declaration specifier."
+  :type declspecp
+  :body (declspec-tyspec (irr-tyspec)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initer
   :short "An irrelevant initializer."
   :type initerp
