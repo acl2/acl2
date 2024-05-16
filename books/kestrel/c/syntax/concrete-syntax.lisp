@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc concrete-syntax-for-tools
+(defxdoc concrete-syntax
   :parents (syntax-for-tools)
   :short "A formulation of the concrete syntax of C for use by tools."
   :long
@@ -27,7 +27,7 @@
      Here we provide a particular formulation of the concrete syntax of C
      that is tailored to tools that manipulate C code,
      and in particular that matches the abstract syntax
-     defined in @(see abstract-syntax-for-tools).")
+     defined in @(see abstract-syntax).")
    (xdoc::p
     "We start with an ABNF grammar that is based on the grammar in [C],
      but differs from that grammar because its purpose is

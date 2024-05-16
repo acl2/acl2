@@ -10,12 +10,13 @@
 
 (in-package "C$")
 
-(include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "abstract-syntax-operations")
+(include-book "concrete-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc syntax-for-tools
+(defxdoc+ syntax-for-tools
   :parents (c::c)
   :short "A syntax of C for use by tools."
   :long
@@ -46,7 +47,7 @@
      We plan to have ATC use this new tool-oriented abstract syntax.")
    (xdoc::p
     "Accompanying this tool-oriented abstract syntax,
-     we plan to add a concrete syntax, based on an ABNF grammar.
+     we also introduce a concrete syntax, based on an ABNF grammar.
      This is not a different syntax for C,
      but just a different formulation of the syntax of C,
      motivated by the fact that we want this tool-oriented syntax
@@ -57,7 +58,7 @@
      [C:5.1.1.2].")
    (xdoc::p
     "We also plan to add a parser and a pretty-printer
-     that connect these tool-oriented concrete and abstract syntax.
+     that connect concrete and abstract syntax.
      We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
      which may result in an elaboration of the abstract syntax,
@@ -65,4 +66,18 @@
      after successful checking.")
    (xdoc::p
     "We also plan to prove theorems connecting this tool-oriented syntax
-     with the language formalization in @(see c::language).")))
+     with the language formalization in @(see c::language).")
+   (xdoc::p
+    "All the items described above form a sub-library of our ACL2 library for C,
+     in the directory @('[books]/kestrel/c/syntax').
+     For this sub-library, we use a different package from @('C'),
+     in particular to separate otherwise possibly homonymous types and functions
+     in this tool-oriented abstract syntax as opposed to
+     the abstract syntax used for the language formalization
+     under @('[books]/kestrel/c/language').
+     We pick the name @('C$') for this sub-library,
+     where the @('$') conveys the idea of `syntax'.
+     This package naming pattern could be used for
+     ACL2 libraries (and sub-libraries) for other programming languages."))
+  :order-subtopics (abstract-syntax
+                    concrete-syntax))

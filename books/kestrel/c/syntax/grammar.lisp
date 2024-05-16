@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (concrete-syntax-for-tools)
+  :parents (concrete-syntax)
   :short "An ABNF grammar of C for use by tools."
   :long
   (xdoc::topstring

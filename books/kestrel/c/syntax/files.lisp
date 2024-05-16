@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ files
-  :parents (concrete-syntax-for-tools)
+  :parents (concrete-syntax)
   :short "A simple model and representation of files."
   :long
   (xdoc::topstring
