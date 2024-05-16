@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "files")
+(include-book "file-paths")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
