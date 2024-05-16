@@ -152,6 +152,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-funspec
+  :short "An irrelevant function specifier."
+  :type funspecp
+  :body (funspec-inline))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-expr
   :short "An irrelevant expression."
   :type exprp
