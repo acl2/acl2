@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ abstract-syntax-for-tools
+(defxdoc+ abstract-syntax
   :parents (syntax-for-tools)
   :short "An abstract syntax of C for use by tools."
   :long
@@ -127,13 +127,6 @@
      will result in specific forms of identifiers."))
   ((unwrap any))
   :pred identp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-ident
-  :short "An irrelevant identifier."
-  :type identp
-  :body (ident "IRRELEVANT"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,13 +354,6 @@
   (:upcase-e ())
   :pred dec-expo-prefixp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-dec-expo-prefix
-  :short "An irrelevant decimal exponent prefix."
-  :type dec-expo-prefixp
-  :body (dec-expo-prefix-locase-e))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum bin-expo-prefix
@@ -380,13 +366,6 @@
   (:locase-p ())
   (:upcase-p ())
   :pred bin-expo-prefixp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-bin-expo-prefix
-  :short "An irrelevant binary exponent prefix."
-  :type bin-expo-prefixp
-  :body (bin-expo-prefix-locase-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,15 +382,6 @@
    (sign? sign-option)
    (digits dec-digit-char-list))
   :pred dec-expop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-dec-expo
-  :short "An irrelevant decimal exponent."
-  :type dec-expop
-  :body (make-dec-expo :prefix (irr-dec-expo-prefix)
-                       :sign? nil
-                       :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,15 +411,6 @@
    (sign? sign-option)
    (digits dec-digit-char-list))
   :pred bin-expop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-bin-expo
-  :short "An irrelevant binary exponent."
-  :type bin-expop
-  :body (make-bin-expo :prefix (irr-bin-expo-prefix)
-                       :sign? nil
-                       :digits nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -623,13 +584,6 @@
    (4th hex-digit-char))
   :pred hex-quad-p)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-hex-quad
-  :short "An irrelevant quadruple of hexadecimal digits."
-  :type hex-quad-p
-  :body (make-hex-quad :1st #\0 :2nd #\0 :3rd #\0 :4th #\0))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum univ-char-name
@@ -664,13 +618,6 @@
   (:univ ((unwrap univ-char-name)))
   :pred escapep)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-escape
-  :short "An irrelevant escape."
-  :type escapep
-  :body (escape-hex nil))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum c-char
@@ -681,7 +628,7 @@
    (xdoc::p
     "This corresponds to <i>c-char</i> in the grammar in [C].")
    (xdoc::p
-    "As explained in @(see abstract-syntax-for-tools),
+    "As explained in @(see abstract-syntax),
      the natural numbers represent Unicode code points.
      We do not capture the restriction that the characters cannot be
      single quote, backslash, or new-line."))
@@ -755,13 +702,6 @@
   (:char ((unwrap cconst)))
   :pred constp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-const
-  :short "An irrelevant constant."
-  :type constp
-  :body (const-enum (ident "IRRELEVANT")))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption const-option
@@ -783,7 +723,7 @@
    (xdoc::p
     "This corresponds to <i>s-char</i> in the grammar in [C].")
    (xdoc::p
-    "As explained in @(see abstract-syntax-for-tools),
+    "As explained in @(see abstract-syntax),
      the natural numbers represent Unicode code points.
      We do not capture the restriction that the characters cannot be
      double quote, backslash, or new-line."))
@@ -841,20 +781,13 @@
     "This corresponds to <i>string-literal</i> in the grammar in [C].")
    (xdoc::p
     "The list of natural numbers corresponds to <i>s-char-sequence</i>.
-     As explained in @(see abstract-syntax-for-tools),
+     As explained in @(see abstract-syntax),
      these natural numbers represent Unicode code points.
      We do not capture here the requirement that these characters
      are not new-line, backslash, and double quote."))
   ((prefix eprefix-option)
    (schars s-char-list))
   :pred stringlitp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-stringlit
-  :short "An irrelevant string literal."
-  :type stringlitp
-  :body (make-stringlit :prefix nil :schars nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -898,13 +831,6 @@
   (:postdec ())
   (:sizeof ())
   :pred unopp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-unop
-  :short "An irrelevant unary operator."
-  :type unopp
-  :body (unop-address))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -982,13 +908,6 @@
   (:asg-ior ())
   :pred binopp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-binop
-  :short "An irrelevant binary operator."
-  :type binopp
-  :body (binop-asg))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum stoclaspec
@@ -1030,13 +949,6 @@
   (:volatile ())
   (:atomic ())
   :pred tyqualp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tyqual
-  :short "An irrelevant type qualifier."
-  :type tyqualp
-  :body (tyqual-const))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1160,7 +1072,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of expressions [C:6.5] [C:A.2.1]."
     :long
     (xdoc::topstring
@@ -1323,7 +1235,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of expressions."
     :long
     (xdoc::topstring
@@ -1339,7 +1251,7 @@
 
   (fty::defoption expr-option
     expr
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of optional expressions."
     :long
     (xdoc::topstring
@@ -1351,7 +1263,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod const-expr
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of constant expressions [C:6.6] [C:A.2.1]."
     :long
     (xdoc::topstring
@@ -1369,7 +1281,7 @@
 
   (fty::defoption const-expr-option
     const-expr
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of optional constant expressions."
     :long
     (xdoc::topstring
@@ -1381,7 +1293,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum genassoc
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of generic associations [C:6.5.1.1] [C:A.2.1]."
     :long
     (xdoc::topstring
@@ -1397,7 +1309,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist genassoc-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of generic associations."
     :long
     (xdoc::topstring
@@ -1415,7 +1327,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum tyspec
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of type specifiers [C:6.7.3] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1452,7 +1364,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum specqual
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of type specifiers and type qualifiers
             [C:6.7.2.1] [C:A.2.2]."
     :long
@@ -1471,7 +1383,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist specqual-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of type specifiers and type qualifiers."
     :long
     (xdoc::topstring
@@ -1489,7 +1401,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum alignspec
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of alignment specifiers [C:6.7.5] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1507,7 +1419,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum declspec
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of declaration specifiers [C:6.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1527,7 +1439,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist declspec-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of declaration specifiers."
     :long
     (xdoc::topstring
@@ -1545,7 +1457,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum initer
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of initializers [C:6.7.9] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1565,7 +1477,7 @@
 
   (fty::defoption initer-option
     initer
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of optional initializers."
     :long
     (xdoc::topstring
@@ -1592,14 +1504,14 @@
        which has a non-empty list of designators."))
     ((design designor-list)
      (init initer))
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :pred desiniterp
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist desiniter-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of initializers with designations."
     :long
     (xdoc::topstring
@@ -1617,7 +1529,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum designor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of designators [C:6.7.9] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1631,7 +1543,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist designor-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of designators."
     :long
     (xdoc::topstring
@@ -1646,7 +1558,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod declor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of declarators [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1667,7 +1579,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum dirdeclor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of direct declarators [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1717,7 +1629,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod absdeclor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of abstract declarators [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1736,7 +1648,7 @@
 
   (fty::defoption absdeclor-option
     absdeclor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of optional abstract declarators [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1748,7 +1660,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum dirabsdeclor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of direct abstract declarators [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1784,7 +1696,7 @@
 
   (fty::defoption dirabsdeclor-option
     dirabsdeclor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of optional direct abstract declarators."
     :long
     (xdoc::topstring
@@ -1796,7 +1708,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum paramdecl
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of parameter declarations [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1816,7 +1728,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist paramdecl-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of parameter declarations."
     :long
     (xdoc::topstring
@@ -1833,7 +1745,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod tyname
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of type names [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1847,7 +1759,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum strunispec
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of structure and union specifiers [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1866,7 +1778,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum structdecl
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of structure declarations [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1889,7 +1801,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist structdecl-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of structure declarations."
     :long
     (xdoc::topstring
@@ -1906,7 +1818,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum structdeclor
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of structure declarators [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1926,7 +1838,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist structdeclor-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of structure declarators."
     :long
     (xdoc::topstring
@@ -1943,7 +1855,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum enumspec
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of enumeration specifiers [C:6.7.2.2] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1961,7 +1873,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod enumer
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of enumerators [C:6.7.2.2] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1975,7 +1887,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist enumer-list
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of lists of enumerators."
     :long
     (xdoc::topstring
@@ -1992,7 +1904,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod statassert
-    :parents (abstract-syntax-for-tools expr/decls)
+    :parents (abstract-syntax expr/decls)
     :short "Fixtype of static assertion declarations [C:6.7.10] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -2003,106 +1915,6 @@
      (message stringlit))
     :pred statassertp
     :measure (two-nats-measure (acl2-count x) 2)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-expr
-  :short "An irrelevant expression."
-  :type exprp
-  :body (expr-ident (irr-ident)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-const-expr
-  :short "An irrelevant constant expression."
-  :type const-exprp
-  :body (const-expr (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-genassoc
-  :short "An irrelevant generic association."
-  :type genassocp
-  :body (genassoc-default (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tyspec
-  :short "An irrelevant type specifier."
-  :type tyspecp
-  :body (tyspec-void))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-specqual
-  :short "An irrelevant type specifier or type qualifier."
-  :type specqualp
-  :body (specqual-tyspec (irr-tyspec)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-initer
-  :short "An irrelevant initializer."
-  :type initerp
-  :body (initer-single (irr-expr)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-desiniter
-  :short "An irrelevant initializer with optional designation."
-  :type desiniterp
-  :body (make-desiniter :design nil :init (irr-initer)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-designor
-  :short "An irrelevant designator."
-  :type designorp
-  :body (designor-dot (irr-ident)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tyname
-  :short "An irrelevant type name."
-  :type tynamep
-  :body (tyname nil nil))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-statassert
-  :short "An irrelevant static assertion declaration."
-  :type statassertp
-  :body (make-statassert :test (irr-const-expr) :message (irr-stringlit)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-unary/postfix/primary-p ((expr exprp))
-  :returns (yes/no booleanp)
-  :short "Check if an expression is unary or postfix or primary."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to the grammar definition,
-     unary expressions include postfix and primary expressions;
-     the grammar defines expressions hierarchically.
-     So this test, performed on abstract syntax,
-     is equivalent to testing whether the expression
-     is a unary one according to the grammar."))
-  (and (member-eq (expr-kind expr)
-                  '(:ident
-                    :const
-                    :string
-                    :paren
-                    :gensel
-                    :arrsub
-                    :funcall
-                    :member
-                    :memberp
-                    :complit
-                    :unary
-                    :sizeof
-                    :alignof))
-       t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2147,13 +1959,6 @@
           (init initdeclor-list)))
   (:statassert ((unwrap statassert)))
   :pred declp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-decl
-  :short "An irrelevant declaration."
-  :type declp
-  :body (make-decl-decl :specs nil :init nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2203,7 +2008,7 @@
      than the one in @(see exprs/decls)."))
 
   (fty::deftagsum stmt
-    :parents (abstract-syntax-for-tools stmts/blocks)
+    :parents (abstract-syntax stmts/blocks)
     :short "Fixtype of statements [C:6.8] [C:A.2.3]."
     :long
     (xdoc::topstring
@@ -2249,7 +2054,7 @@
     :pred stmtp)
 
   (fty::deftagsum block-item
-    :parents (abstract-syntax-for-tools stmts/blocks)
+    :parents (abstract-syntax stmts/blocks)
     :short "Fixtype of block items [C:6.8.2] [C:A.2.3]."
     :long
     (xdoc::topstring
@@ -2260,7 +2065,7 @@
     :pred block-itemp)
 
   (fty::deflist block-item-list
-    :parents (abstract-syntax-for-tools stmts/blocks)
+    :parents (abstract-syntax stmts/blocks)
     :short "Fixtype of lists of block items."
     :long
     (xdoc::topstring
@@ -2301,13 +2106,6 @@
   (:decl ((unwrap decl)))
   :pred extdeclp)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-extdecl
-  :short "An irrelevant external declaration."
-  :type extdeclp
-  :body (extdecl-decl (irr-decl)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist extdecl-list
@@ -2336,13 +2134,6 @@
      to maintain a conceptual separation with translation units."))
   ((decls extdecl-list))
   :pred transunitp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-transunit
-  :short "An irrelevant translation unit."
-  :type transunitp
-  :body (transunit nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2382,10 +2173,3 @@
      that may be headers instead of source files."))
   ((unwrap filepath-transunit-map))
   :pred transunit-ensemblep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-transunit-ensemble
-  :short "An irrelevant ensemble of translation units."
-  :type transunit-ensemblep
-  :body (transunit-ensemble nil))
