@@ -19,6 +19,7 @@
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
 (include-book "sweep-and-merge-support")
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
+(include-book "kestrel/alists-light/clear-keys" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
@@ -3529,14 +3530,6 @@
           (cons (farg1 explan)
                 (terms-equated-to target (rest explans)))
         (terms-equated-to target (rest explans))))))
-
-;;todo: we already have something like this in alists-light
-(defun clear-keys (keys alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      alist
-    (clear-keys (rest keys) (remove-assoc-equal (first keys) alist))))
 
 (skip-proofs
  (mutual-recursion
