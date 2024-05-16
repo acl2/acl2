@@ -66,6 +66,18 @@
      after successful checking.")
    (xdoc::p
     "We also plan to prove theorems connecting this tool-oriented syntax
-     with the language formalization in @(see c::language)."))
+     with the language formalization in @(see c::language).")
+   (xdoc::p
+    "All the items described above form a sub-library of our ACL2 library for C,
+     in the directory @('[books]/kestrel/c/syntax').
+     For this sub-library, we use a different package from @('C'),
+     in particular to separate otherwise possibly homonymous types and functions
+     in this tool-oriented abstract syntax as opposed to
+     the abstract syntax used for the language formalization
+     under @('[books]/kestrel/c/language').
+     We pick the name @('C$') for this sub-library,
+     where the @('$') conveys the idea of `syntax'.
+     This package naming pattern could be used for
+     ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (abstract-syntax
                     concrete-syntax))
