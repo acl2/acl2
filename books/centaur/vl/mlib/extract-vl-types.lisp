@@ -272,7 +272,7 @@
                       (equal x.name :vl-bit)))
           (mv (raise "(or (equal x.name :vl-logic)
                     (equal x.name :vl-bit))
- failed for: " x) 0))
+ failed for: ~p0~%" x) 0))
          ((unless (equal x.signedp nil))
           (mv (raise "(equal x.signedp nil) failed for: " x) 0))
 
@@ -333,7 +333,7 @@
    (changer-macro-name 'changer-macro-name)
    (ranges-fn-name 'ranges-fn-name)
    ((pkg-sym symbolp) 'pkg-sym)
-   (constant-value 'nil))
+   (constant-value 'constant-value))
   (declare (ignorable name constant-value))
   `(
     (define ,changer-macro-name-aux (args)
@@ -559,13 +559,15 @@
 
               ;; accessor function expects indices only in a list such as '(1 2 3)
               (events
-               `((defsection ,symbol
-                   :autodoc nil
-                   :set-as-default-parent t
-                   :short ,(str::cat "Accessor, modifier, and debug functions for the extracted " name " VL coretype.")
-                   :long ,(str::cat
-                           (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
-                           "<p>For this type, 3 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value field),})</p> <p>A modifier: @({(change-|"name"| value field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"name"|-debug value optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")
+               `((,@(if constant-value
+                        '(progn)
+                      `(defsection ,symbol
+                         :autodoc nil
+                         :set-as-default-parent t
+                         :short ,(str::cat "Accessor, modifier, and debug functions for the extracted " name " VL coretype.")
+                         :long ,(str::cat
+                                 (if (assoc-equal name orig-def-alist) (cdr (assoc-equal name orig-def-alist)) "")
+                                 "<p>For this type, 3 ACL2 functions/macros are created for users. An accessor: @({(|" name "| value field),})</p> <p>A modifier: @({(change-|"name"| value field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"name"|-debug value optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions.</p>")))
 
                    (define ,ranges-fn-name ((start natp) (args true-listp))
                      ;;:short ,(str::cat "Calculate the bit locations that a
@@ -605,13 +607,16 @@
                    ;;short ,(str::cat "Debug macro for  @(see " name ") VL coretype.")
                    ;;:long "<p>See @(see vl::extract-vl-types) for explanation of arguments and how to use the debug functionality.</p>"
 
-                   (defmacro ,debug-macro-name (value &key exclude (depth-limit '1000))
+                   (defmacro ,debug-macro-name (,@(if constant-value nil '(value))
+                                               &key exclude (depth-limit '1000)
+                                               ,@(and constant-value `((value ',constant-value))))
                      (b* ((excludes (vl-types->acl2-types-parse-args-list exclude ',pkg-sym)))
                        (list ',debug-fn-name value (list 'quote excludes)
                              depth-limit)))
 
                    (table extracted-vl-types ',symbol
                           '((:type :vl-coretype)
+                            (:constant-value ,constant-value)
                             (:accessor-macro-name ,accessor-macro-name)
                             (:changer-macro-name ,changer-macro-name)
                             (:ranges-fn-name ,ranges-fn-name)
@@ -1104,11 +1109,18 @@ nil
           (:vl-explicitvalueparam
            (b* (((vl-explicitvalueparam x) x.type)
                 (constant-value-name (intern-in-package-of-symbol (str::cat "*"x.name"*") pkg-sym))
-
                 ((mv extra-events &)
-                 (if (member-equal
-                      (vl-datatype-kind x.type)
-                      '(:vl-usertype :vl-coretype))
+                 (if (or (equal (vl-datatype-kind x.type) :vl-usertype)
+                         (and (equal (vl-datatype-kind x.type) :vl-coretype)
+                              (equal (vl-coretype->name x.type) :vl-logic)
+                              ;; make sure  it is nit just a bit vector:
+                              (b* (((mv collected-dims &)
+                                    (vl-coretype-collect-dims x.type)))
+                                (and (consp collected-dims)
+                                     (vl-coretype-collected-dims-p collected-dims)
+                                     ;; slice size for the first dimension should be greater than 1.
+                                     (> (caar collected-dims) 1)))
+                              (not (cw "A constant value (~p0) (a :vl-coretype) is getting its debug/change/access macros~%" x.name))))
                      (vl-types->acl2-types-new-type x.name x.type
                                                     orig-def-alist pkg-sym
                                                     :constant-value constant-value-name)
@@ -1128,7 +1140,7 @@ nil
                          (if (assoc-equal x.name orig-def-alist) (cdr (assoc-equal x.name orig-def-alist)) "")
                          "@(def *|"x.name"|*)"
                          (if extra-events
-                             (str::cat "<p>Since this constant value is a special user type, 3 ACL2 functions/macros are created for users: an accessor, a modifier and a debugger.</p><p> An accessor: @({(|" x.name "| optional-field),})</p> <p>A modifier: @({(change-|"x.name"| field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"x.name"|-debug optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions. Note that since this type is a constant, these functions/macros do not explicitly take the \"value\". Instead, it uses the value of <tt>*|"x.name"|*</tt> by default. Passing an extra key argument \":value\" to any one of these macros/functions can override the value used.</p>")
+                             (str::cat "<p>Since this constant value is a special user type/an array, 3 ACL2 functions/macros are created for users: an accessor, a modifier and a debugger.</p><p> An accessor: @({(|" x.name "| optional-field),})</p> <p>A modifier: @({(change-|"x.name"| field-newval-pairs),}) </p> <p>And a debug function to print all the fields: @({(|"x.name"|-debug optional-args).})</p><p>These are generated with @(see vl::extract-vl-types). See @(see vl::extract-vl-types) to learn how to use these functions. Note that since this type is a constant, these functions/macros do not explicitly take the \"value\". Instead, it uses the value of <tt>*|"x.name"|*</tt> by default. Passing an extra key argument \":value\" to any one of these macros/functions can override the value used.</p>")
                            ""))
                  :autodoc nil
                  :set-as-default-parent t
