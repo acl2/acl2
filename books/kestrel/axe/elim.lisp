@@ -217,7 +217,7 @@
                      (not (member-eq (ffn-symb expr) fns)))
                 nil
 ;check the children:
-              (nodenum-only-appears-in (append-atoms (dargs expr) (rest worklist))
+              (nodenum-only-appears-in (append-nodenum-dargs (dargs expr) (rest worklist))
                                        dag-array dag-len nodenum fns
                                        (aset1 'done-array done-array possible-parent-nodenum t)))))))))
 

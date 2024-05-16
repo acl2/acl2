@@ -18,6 +18,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;dup in kestrel-acl2/utilities/string-utilities.lisp
 (local
@@ -125,24 +126,24 @@
   :hints (("Goal" :in-theory (enable max-nodenum-in-possibly-negated-nodenums
                                      max-nodenum-in-possibly-negated-nodenums-aux))))
 
-(defthm integerp-of-nth-when-possibly-negated-nodenumsp-cheap
+(defthm natp-of-nth-when-possibly-negated-nodenumsp-cheap
   (implies (and (possibly-negated-nodenumsp predicates-or-negations)
                 (natp n))
-           (equal (integerp (nth n predicates-or-negations))
+           (equal (natp (nth n predicates-or-negations))
                   (and (< n (len predicates-or-negations))
                        (not (consp (nth n predicates-or-negations))))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp nth) (nth-of-cdr)))))
+  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp nth natp-of-car-when-possibly-negated-nodenumsp) (nth-of-cdr natp)))))
 
-(defthm not-<-of-0-of-nth-when-possibly-negated-nodenumsp-cheap
-  (implies (and (possibly-negated-nodenumsp predicates-or-negations)
-                (<= k 0))
-           (not (< (nth n predicates-or-negations) k)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
-  :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp
-                                   nth
-                                   possibly-negated-nodenump)
-                                  (nth-of-cdr)))))
+;; (defthm not-<-of-0-of-nth-when-possibly-negated-nodenumsp-cheap
+;;   (implies (and (possibly-negated-nodenumsp predicates-or-negations)
+;;                 (<= k 0))
+;;            (not (< (nth n predicates-or-negations) k)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
+;;   :hints (("Goal" :in-theory (e/d (possibly-negated-nodenumsp
+;;                                    nth
+;;                                    possibly-negated-nodenump)
+;;                                   (nth-of-cdr)))))
 
 (defthm not-equal-of-1-and-len-of-nth-when-possibly-negated-nodenumsp-cheap
   (implies (possibly-negated-nodenumsp predicates-or-negations)
@@ -203,12 +204,14 @@
                   :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0
                                                          consp-when-<-of-0-and-nth
                                                          CONSP-WHEN-TRUE-LISTP
-                                                         )
+                                                         natp-of-nth-when-possibly-negated-nodenumsp-cheap
+                                                         integerp-when-natp)
                                                         (;<=-OF-NTH-0-AND-MAX-NODENUM-IN-POSSIBLY-NEGATED-NODENUMS
                                                          ;(:linear <=-OF-NTH-0-AND-MAX-NODENUM-IN-POSSIBLY-NEGATED-NODENUMS)
                                                          ;;PSEUDO-DAG-ARRAYP-MONOTONE
                                                          node-replacement-alist-for-context-aux-helper
                                                          <-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP
+                                                         natp
                                                          ))
                                  :do-not '(generalize eliminate-destructors)
                                  :use (

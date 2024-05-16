@@ -1022,7 +1022,7 @@
                                ;;if we passed in a test-case-array, just look-up the arg vals
                                (get-vals-of-args dargs test-case-array-name test-case-array)
                              ;;no test-case-array was passed in, so we have to compute the whole test case:
-                             (let* ((dargs-to-eval (keep-atoms dargs)))
+                             (let* ((dargs-to-eval (keep-nodenum-dargs dargs)))
                                (if (not dargs-to-eval)
                                    ;; args were all constants:
                                    dargs
@@ -7720,7 +7720,7 @@
                    (non-tagged-supporters-with-rec-fns-to-handle-aux (rest nodenums) miter-array-name miter-array tag-array-name tag-array done-array-name done-array acc state)
                  ;;function call (add the function to the accumulator, mark as done, and add children to the worklist):
                  (non-tagged-supporters-with-rec-fns-to-handle-aux
-                  (append (keep-atoms (dargs expr)) ;ffixme could pass in an acc to keep-atoms
+                  (append (keep-nodenum-dargs (dargs expr)) ;ffixme could pass in an acc to keep-nodenum-dargs
                           (rest nodenums))
                   miter-array-name miter-array tag-array-name tag-array
                   done-array-name
@@ -7729,12 +7729,6 @@
                       (add-to-set-eql nodenum acc)
                     acc)
                   state))))))))))
-
-(local
-  (defthm nat-listp-of-keep-atoms
-    (implies (darg-listp dargs)
-             (nat-listp (keep-atoms dargs)))
-    :hints (("Goal" :in-theory (enable keep-atoms)))))
 
 (verify-guards non-tagged-supporters-with-rec-fns-to-handle-aux)
 
@@ -8242,7 +8236,7 @@
                 (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
               (and (pure-fn-call-exprp expr)
                    ;;we checked nodenum, and now we have to check its children (the non-quotep args):
-                   (nodes-are-purep (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
+                   (nodes-are-purep (append-nodenum-dargs (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
                                     (aset1 'done-array-temp done-array nodenum t))))))))))
 
 ;; Checks whether nodenum and all of its supporters are pure.
