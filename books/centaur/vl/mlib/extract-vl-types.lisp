@@ -1106,7 +1106,9 @@ nil
                 (constant-value-name (intern-in-package-of-symbol (str::cat "*"x.name"*") pkg-sym))
 
                 ((mv extra-events &)
-                 (if (equal (vl-datatype-kind x.type) :vl-usertype)
+                 (if (member-equal
+                      (vl-datatype-kind x.type)
+                      '(:vl-usertype :vl-coretype))
                      (vl-types->acl2-types-new-type x.name x.type
                                                     orig-def-alist pkg-sym
                                                     :constant-value constant-value-name)
