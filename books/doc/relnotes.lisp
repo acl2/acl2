@@ -470,6 +470,10 @@
    (xdoc::p
     "The @('set::empty') function has been renamed to @(tsee set::emptyp).")
 
+   (xdoc::p
+    "A variant without backchain limit of the @(tsee double-containment) rule
+     has been added, disabled by default.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/typed-alists"
