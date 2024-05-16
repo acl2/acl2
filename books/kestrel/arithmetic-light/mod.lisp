@@ -141,6 +141,7 @@
 
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod")) ;todo
 (local (in-theory (disable INTEGERP-MINUS-X))) ;slow
+;(local (include-book "plus-and-times"))
 
 (defthm mod-of-mod-same-arg2
   (implies (and (rationalp x)
@@ -231,26 +232,24 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable equal-of-0-and-mod))))
 
+;rename?
 (defthm mod-of-*-lemma
   (implies (and (integerp x)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (* x y) y)
-                  0))
-  :hints (("Goal" :cases ((posp y)))))
+                  0)))
 
+;rename?
 (defthm mod-of-*-lemma-alt
   (implies (and (integerp x)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (* y x) y)
                   0)))
 
 (defthm mod-of-+-of-*-same-arg1-arg1
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ (* y x2) x1) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -258,8 +257,7 @@
 (defthm mod-of-+-of-*-same-arg1-arg2
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ (* x2 y) x1) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -267,8 +265,7 @@
 (defthm mod-of-+-of-*-same-arg2-arg2
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ x1 (* x2 y)) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -276,8 +273,7 @@
 (defthm mod-of-+-of-*-same-arg2-arg1
   (implies (and (rationalp x1)
                 (integerp x2)
-                (posp y) ;; todo: drop
-                )
+                (integerp y))
            (equal (mod (+ x1 (* y x2)) y)
                   (mod x1 y)))
   :hints (("Goal" :cases ((posp y)))))
@@ -300,8 +296,7 @@
 
 (defthm integerp-of-mod-of-1
   (equal (integerp (mod x 1))
-         (or (integerp x)
-             (not (acl2-numberp x))))
+         (integerp (fix x)))
   :hints (("Goal" :in-theory (enable mod))))
 
 ;quite aggressive
