@@ -19,6 +19,7 @@
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
 (include-book "sweep-and-merge-support")
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
+(include-book "kestrel/alists-light/clear-keys" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
@@ -31,7 +32,7 @@
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
-(include-book "kestrel/alists-light/clear-key" :dir :system)
+(include-book "kestrel/alists-light/remove-assoc-equal" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/fresh-names2" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
@@ -1021,7 +1022,7 @@
                                ;;if we passed in a test-case-array, just look-up the arg vals
                                (get-vals-of-args dargs test-case-array-name test-case-array)
                              ;;no test-case-array was passed in, so we have to compute the whole test case:
-                             (let* ((dargs-to-eval (keep-atoms dargs)))
+                             (let* ((dargs-to-eval (keep-nodenum-dargs dargs)))
                                (if (not dargs-to-eval)
                                    ;; args were all constants:
                                    dargs
@@ -3530,13 +3531,6 @@
                 (terms-equated-to target (rest explans)))
         (terms-equated-to target (rest explans))))))
 
-(defun clear-keys (keys alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      alist
-    (clear-keys (rest keys) (clear-key (first keys) alist))))
-
 (skip-proofs
  (mutual-recursion
   ;;the target is a tree.  first we try to express the whole thing.  then we
@@ -3682,7 +3676,7 @@
            (try-to-explain-terms-aux (cdr term-traces-alist) whole-term-traces-alist claims-acc explanation-graph formal-to-old-var-alist components-not-to-try-to-explain unchanged-components)
          (let* ((traces (cdr entry))
                 ;; we don't allow term to explain itself: ;fixme could we use the ignore-alist for this? ;fixme what about subterms?
-                (whole-term-traces-alist-without-term (clear-key term whole-term-traces-alist))
+                (whole-term-traces-alist-without-term (remove-assoc-equal term whole-term-traces-alist))
                 (explanation (try-to-express-whole-target-with-any-candidate term
                                                                              traces
                                                                              whole-term-traces-alist-without-term
@@ -3811,7 +3805,7 @@
                                                      ;;ffixme what about using a subcomponent of one component to explain a different component (or subcomponent)?
                                                      (append component-term-traces-alist
                                                              ;;don't use term to explain one of its components:
-                                                             (clear-key term whole-term-traces-alist) ;whole-term-traces-alist-without-term
+                                                             (remove-assoc-equal term whole-term-traces-alist) ;whole-term-traces-alist-without-term
                                                              )
                                                      claims-acc
                                                      explanation-graph formal-to-old-var-alist unchanged-components)
@@ -3821,7 +3815,7 @@
                   (length-traces (len-list-list traces))
                   ;;don't use term to explain its own length: ffixme what about a component of term???
                   (length-explanation (try-to-express-whole-target-with-any-candidate length-term length-traces
-                                                                                      (clear-key term whole-term-traces-alist) ;;whole-term-traces-alist-without-term (consider not clearing?)
+                                                                                      (remove-assoc-equal term whole-term-traces-alist) ;;whole-term-traces-alist-without-term (consider not clearing?)
                                                                                       (get-terms-to-ignore length-term explanation-graph) ;(lookup-equal length-term terms-to-ignore-alist)
                                                                                       formal-to-old-var-alist unchanged-components))
                   (- (and length-explanation (cw "(Can explain ~x0 as ~x1.)~%" length-term length-explanation)))
@@ -7726,7 +7720,7 @@
                    (non-tagged-supporters-with-rec-fns-to-handle-aux (rest nodenums) miter-array-name miter-array tag-array-name tag-array done-array-name done-array acc state)
                  ;;function call (add the function to the accumulator, mark as done, and add children to the worklist):
                  (non-tagged-supporters-with-rec-fns-to-handle-aux
-                  (append (keep-atoms (dargs expr)) ;ffixme could pass in an acc to keep-atoms
+                  (append (keep-nodenum-dargs (dargs expr)) ;ffixme could pass in an acc to keep-nodenum-dargs
                           (rest nodenums))
                   miter-array-name miter-array tag-array-name tag-array
                   done-array-name
@@ -7735,12 +7729,6 @@
                       (add-to-set-eql nodenum acc)
                     acc)
                   state))))))))))
-
-(local
-  (defthm nat-listp-of-keep-atoms
-    (implies (darg-listp dargs)
-             (nat-listp (keep-atoms dargs)))
-    :hints (("Goal" :in-theory (enable keep-atoms)))))
 
 (verify-guards non-tagged-supporters-with-rec-fns-to-handle-aux)
 
@@ -8248,7 +8236,7 @@
                 (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
               (and (pure-fn-call-exprp expr)
                    ;;we checked nodenum, and now we have to check its children (the non-quotep args):
-                   (nodes-are-purep (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
+                   (nodes-are-purep (append-nodenum-dargs (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
                                     (aset1 'done-array-temp done-array nodenum t))))))))))
 
 ;; Checks whether nodenum and all of its supporters are pure.
@@ -9721,7 +9709,7 @@
         (mv (erp-nil) nil state result-array-stobj)
       ;;and there must be a numcdrs formal such that the lst-formal is only used inside:
       ;; (endp (nthcdr <numcdrs-formal> <lst-formal>)) and (car (nthcdr <numcdrs-formal> <lst-formal>))
-      (let ((update-expr-alist-for-other-formals (clear-key lst-formal formal-update-expr-alist)))
+      (let ((update-expr-alist-for-other-formals (remove-assoc-equal lst-formal formal-update-expr-alist)))
         (find-numcdrs-formal-for-tail-rec-consumer
          update-expr-alist-for-other-formals
          (cons exit-test-expr (cons base-case-expr (strip-cdrs update-expr-alist-for-other-formals)))
@@ -9752,7 +9740,7 @@
 ;;                   lst-formal)))
 ;;      ;;and there must be a numcdrs formal such that the lst-formal is only used inside:
 ;;      ;; (endp (nthcdr <numcdrs-formal> <lst-formal>)) and (car (nthcdr <numcdrs-formal> <lst-formal>))
-;;      (let ((update-expr-alist-for-other-formals (clear-key lst-formal formal-update-expr-alist)))
+;;      (let ((update-expr-alist-for-other-formals (remove-assoc-equal lst-formal formal-update-expr-alist)))
 ;;        (find-numcdrs-formal-for-tail-rec-consumer
 ;;         update-expr-alist-for-other-formals
 ;;         (cons exit-test-expr (cons base-case-expr (strip-cdrs update-expr-alist-for-other-formals)))
@@ -9886,7 +9874,7 @@
        ((when erp) (mv erp nil nil state result-array-stobj))
        (formal-update-dag-alist (pairlis$-fast formals update-dags))
        ;;the alist for formals other than the numcdrs and lst formals:
-       (other-formal-update-dag-alist (clear-key numcdrs-formal (clear-key lst-formal formal-update-dag-alist)))
+       (other-formal-update-dag-alist (remove-assoc-equal numcdrs-formal (remove-assoc-equal lst-formal formal-update-dag-alist)))
        (dags-to-check (cons exit-test-dag
                             (cons base-case-dag
                                   (strip-cdrs other-formal-update-dag-alist))))
@@ -10144,7 +10132,7 @@
             (producer-formal-update-dag-alist (pairlis$ producer-formals producer-update-dags)) ;keeps the same order
             (consumer-formal-update-dag-alist (clear-keys (list lst-formal numcdrs-formal)
                                                          consumer-formal-update-dag-alist))
-            (producer-formal-update-dag-alist (clear-key produced-formal producer-formal-update-dag-alist))
+            (producer-formal-update-dag-alist (remove-assoc-equal produced-formal producer-formal-update-dag-alist))
             (remaining-consumer-formals (strip-cars consumer-formal-update-dag-alist))
             (remaining-producer-formals (strip-cars producer-formal-update-dag-alist))
             (new-fn (packnew 'composition-of-- consumer-fn '--and-- producer-fn))
