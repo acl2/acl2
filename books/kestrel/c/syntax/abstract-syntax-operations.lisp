@@ -208,6 +208,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-enumer
+  :short "An irrelevant enumerator."
+  :type enumerp
+  :body (make-enumer :name (irr-ident) :value nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-statassert
   :short "An irrelevant static assertion declaration."
   :type statassertp
