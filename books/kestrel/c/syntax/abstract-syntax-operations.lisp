@@ -138,6 +138,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-stoclaspec
+  :short "An irrelevant storage class specifier."
+  :type stoclaspecp
+  :body (stoclaspec-tydef))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyqual
   :short "An irrelevant type qualifier."
   :type tyqualp
