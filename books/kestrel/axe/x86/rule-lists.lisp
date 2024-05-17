@@ -2081,6 +2081,7 @@
             x86isa::wz512$inline
 
             x86isa::x86-operand-to-zmm/mem
+            64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
