@@ -118,7 +118,7 @@
 
 ;move this util
 
-(defun print-list-item-elided (item firstp fns-to-elide)
+(defun print-term-elided (item firstp fns-to-elide)
   (declare (xargs :guard (symbol-listp fns-to-elide)))
   (if (and (consp item)
            (member-eq (ffn-symb item) fns-to-elide))
@@ -133,20 +133,20 @@
       (cw " ~y0" item))))
 
 ;doesn't stack overflow when printing a large list
-(defun print-list-elided-aux (lst fns-to-elide)
+(defun print-terms-elided-aux (lst fns-to-elide)
   (declare (xargs :guard (and (true-listp lst)
                               (symbol-listp fns-to-elide))))
   (if (atom lst)
       nil
-    (prog2$ (print-list-item-elided (first lst) nil fns-to-elide)
-            (print-list-elided-aux (rest lst) fns-to-elide))))
+    (prog2$ (print-term-elided (first lst) nil fns-to-elide)
+            (print-terms-elided-aux (rest lst) fns-to-elide))))
 
-(defun print-list-elided (lst fns-to-elide)
+(defun print-terms-elided (lst fns-to-elide)
   (declare (xargs :guard (and (true-listp lst)
                               (symbol-listp fns-to-elide))))
   (if (consp lst)
-      (prog2$ (print-list-item-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
-              (prog2$ (print-list-elided-aux (rest lst) fns-to-elide)
+      (prog2$ (print-term-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
+              (prog2$ (print-terms-elided-aux (rest lst) fns-to-elide)
                       (cw ")")))
     (cw "nil") ; or could do ()
     ))
@@ -656,7 +656,7 @@
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
-                                                             (print-list-elided assumptions '(standard-assumptions-elf-64
+                                                             (print-terms-elided assumptions '(standard-assumptions-elf-64
                                                                                               standard-assumptions-mach-o-64
                                                                                               standard-assumptions-pe-64)) ; todo: more?
                                                              (cw ")~%"))))
@@ -702,7 +702,7 @@
        (- (and print (progn$ (cw "(Simplified assumptions:~%")
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
-                               (print-list-elided assumptions '(program-at ; the program can be huge
+                               (print-terms-elided assumptions '(program-at ; the program can be huge
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
