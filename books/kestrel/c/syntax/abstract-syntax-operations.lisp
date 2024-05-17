@@ -52,6 +52,7 @@
                     :complit
                     :unary
                     :sizeof
+                    :sizeof-ambig
                     :alignof))
        t))
 
@@ -138,10 +139,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-stoclaspec
+  :short "An irrelevant storage class specifier."
+  :type stoclaspecp
+  :body (stoclaspec-tydef))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyqual
   :short "An irrelevant type qualifier."
   :type tyqualp
   :body (tyqual-const))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-funspec
+  :short "An irrelevant function specifier."
+  :type funspecp
+  :body (funspec-inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,6 +192,13 @@
   :short "An irrelevant type specifier or type qualifier."
   :type specqualp
   :body (specqual-tyspec (irr-tyspec)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-declspec
+  :short "An irrelevant declaration specifier."
+  :type declspecp
+  :body (declspec-tyspec (irr-tyspec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

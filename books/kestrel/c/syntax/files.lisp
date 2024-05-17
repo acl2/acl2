@@ -10,7 +10,8 @@
 
 (in-package "C$")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "file-paths")
+
 (include-book "kestrel/fty/byte-list" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,21 +44,6 @@
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod filepath
-  :short "Fixtype of file paths."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we formalize a file path as anything,
-     which we wrap to keep things more abstract and separate.
-     In the future we may refine this type with more structure.
-     But note that, for instance,
-     we could already use strings with slashes and such as file paths."))
-  ((unwrap any))
-  :pred filepathp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod filedata
   :short "Fixtype of file data."
