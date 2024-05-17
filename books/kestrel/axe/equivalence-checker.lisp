@@ -7620,7 +7620,7 @@
                                  :in-theory (disable natp natp-of-max-array-elem2-when-depth-arrayp)))
                   :stobjs state))
   (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
        ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
        ;; TODO: Option to suppress this for speed?
@@ -15677,7 +15677,7 @@
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
                         ;; we show the simplified miter - that should contain everything interesting from the dag
-                        (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum)))))
+                        (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum)))))
 ;fixme finish this.  the point was not to merge two nodes of different array types - but get-type-of-nodenum may sometimes give unfortunate errors here.
 ;could look at how the two nodes are used.  if they are not used as arrays (or equated to arrays?) then it's okay to merge them?
         ;; (let* ((smaller-node-type (get-type-of-nodenum smaller-nodenum miter-array-name miter-array

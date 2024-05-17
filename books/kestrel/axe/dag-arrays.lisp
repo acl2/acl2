@@ -1390,11 +1390,6 @@
            (all-integerp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-(defthm all-<-of-keep-nodenum-dargs
-  (implies (bounded-darg-listp items nodenum)
-           (all-< (keep-nodenum-dargs items) nodenum))
-  :hints (("Goal" :in-theory (enable BOUNDED-DARG-LISTP keep-nodenum-dargs))))
-
 (defthm all-<-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr) ;nodenum is a free var - introduce a weak-dag-exprp?
                 (consp expr)

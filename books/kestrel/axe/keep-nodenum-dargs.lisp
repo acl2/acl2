@@ -13,6 +13,8 @@
 (in-package "ACL2")
 
 (include-book "darg-listp")
+(include-book "bounded-darg-listp")
+(include-book "kestrel/typed-lists-light/all-less" :dir :system)
 
 ;; Keep the nodenums from a list of nodenums and quoteps
 (defund keep-nodenum-dargs (dargs)
@@ -28,3 +30,8 @@
   (implies (darg-listp dargs)
            (nat-listp (keep-nodenum-dargs dargs)))
   :hints (("Goal" :in-theory (enable keep-nodenum-dargs))))
+
+(defthm all-<-of-keep-nodenum-dargs
+  (implies (bounded-darg-listp dargs bound)
+           (all-< (keep-nodenum-dargs dargs) bound))
+  :hints (("Goal" :in-theory (enable keep-nodenum-dargs bounded-darg-listp))))

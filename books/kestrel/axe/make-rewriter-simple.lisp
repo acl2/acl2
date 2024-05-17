@@ -433,6 +433,7 @@
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
        (local (include-book "kestrel/lists-light/last" :dir :system))
        (local (include-book "kestrel/lists-light/take" :dir :system))
+       (local (include-book "kestrel/lists-light/append" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
@@ -440,6 +441,7 @@
        (local (include-book "kestrel/arithmetic-light/types" :dir :system))
        (local (include-book "kestrel/utilities/if-rules" :dir :system))
        (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
+       (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
 
        (local (in-theory (disable wf-dagp wf-dagp-expander
@@ -475,7 +477,15 @@
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
                           myquotep-when-dag-exprp-and-quote
-                          rationalp-of-sub-tries)))
+                          rationalp-of-sub-tries
+                          append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs)))
+
+       ;todo: dup!
+       (local
+         (defthm nat-listp-of-reverse-list
+           (equal (nat-listp (reverse-list x))
+                  (all-natp x))
+           :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
@@ -762,15 +772,26 @@
                                              (< 100 (sub-tries tries old-try-count))
                                              (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                         (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
-                                                     (cw "Reason: Rewrote to:~%")
-                                                     (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
-                                                     (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%" alist refined-assumption-alist )
-                                                     ;;print these better?:
-                                                     ;;(cw "(node-replacement-array: ~x0)~%" node-replacement-array)
-                                                     (cw "(DAG:~%")
-                                                     (print-array2 'dag-array dag-array dag-len)
-                                                     (cw "))~%")))
+                                             (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
+                                                    ;; (relevant-nodes (let ((expr (aref1 'dag-array dag-array new-nodenum-or-quotep)))
+                                                    ;;                   (if (and (consp expr)
+                                                    ;;                            (not (eq 'quote (ffn-symb expr))))
+                                                    ;;                       (append-nodenum-dargs (dargs expr) relevant-nodes)
+                                                    ;;                     relevant-nodes)))
+                                                    )
+                                               (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
+                                                       (cw "Reason: Rewrote to:~%")
+                                                       (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
+                                                       (cw "(Alist: ~x0)~%(Refined assumption alist:" alist)
+                                                       (print-refined-assumption-alist-elided refined-assumption-alist '(foo)) ; todo: pass in the fns-to-elide
+                                                       (cw ")~%")
+                                                       (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                       (cw "(Relevant DAG nodes:~%")
+                                                       (if (consp relevant-nodes)
+                                                           (print-dag-array-nodes-and-supporters 'dag-array dag-array dag-len relevant-nodes)
+                                                         (cw "elided"))
+                                                       ;; (print-array2 'dag-array dag-array dag-len)
+                                                       (cw "))~%"))))
                                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))))))))))))
 
         ;; Returns (mv erp instantiated-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
@@ -4260,7 +4281,8 @@
                                 len-when-equal-of-car-and-quote-and-axe-treep
                                 consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep
                                 len-of-car-when-axe-treep
-                                member-equal-when-member-equal-and-subsetp-equal)
+                                member-equal-when-member-equal-and-subsetp-equal
+                                all-natp-when-nat-listp)
                                (dargp
                                 dargp-less-than
                                 natp
