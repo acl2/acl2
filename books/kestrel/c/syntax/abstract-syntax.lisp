@@ -1336,7 +1336,45 @@
        avoiding explicit modeling of the <i>struct-or-union</i> nonterminal.")
      (xdoc::p
       "We model <i>typedef-name</i>
-       by inlining the type name into the @(':tydef') case of this fixtype."))
+       by inlining the type name into the @(':tydef') case of this fixtype.")
+     (xdoc::p
+      "We also include two cases to model two kinds of syntactic ambiguities.")
+     (xdoc::p
+      "One kind of ambiguity has the form")
+     (xdoc::codeblock
+      "... _Atomic ( I ) ( J ) ...")
+     (xdoc::p
+      "where @('I') and @('J') are identifiers.
+       This could be
+       either the atomic type specifier @('_Atomic(I)')
+       followed by the declarator @('(J)'),
+       or the @('_Atomic') type qualifier
+       followed by the declarator @('(I)(J)').
+       This cannot be disambiguated purely syntactically.
+       The @(':atomic-ambig') case of this fixtype
+       captures the @('_Atomic(I)') part
+       (while the @('J') would be captured as a declarator),
+       as a type specifier, but marked as ambiguous,
+       so that, during post-parsing semantic analysis,
+       this construct (and the subsequent declarator)
+       can be re-classified into non-ambiguous constructs.")
+     (xdoc::p
+      "The other kind of ambiguity has the form")
+     (xdoc::codeblock
+      "... I ( J ) ...")
+     (xdoc::p
+      "where @('I') and @('J') are identifiers.
+       This could be
+       either the type specifier @('I') followed by the declarator @('(J)'),
+       or just the declarator @('I(J)').
+       This cannot be disambiguated purely syntactically.
+       The @(':tydef-ambig') case of this fixtype
+       captures the @('I') part
+       (while the @('(J)') part would be captured as a declarator),
+       as a type specifier, but marked as ambiguous,
+       so that, during post-parsing semantic analysis,
+       this construct (and the subsequent declarator)
+       can be re-classified into non-ambiguous constructs."))
     (:void ())
     (:char ())
     (:short ())
@@ -1349,10 +1387,12 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
+    (:atomic-ambig ((ident ident)))
     (:struct ((unwrap strunispec)))
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:tydef ((name ident)))
+    (:typedef-ambig ((ident ident)))
     :pred tyspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1440,54 +1480,12 @@
       "This does not directly correspond to
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
-       (see @(tsee declspec-list)).")
-     (xdoc::p
-      "Besides the obvious first five cases of this fixtype,
-       we have two additional ones to capture
-       two kinds of syntactic ambiguities.")
-     (xdoc::p
-      "One kind of ambiguity has the form")
-     (xdoc::codeblock
-      "... _Atomic ( I ) ( J ) ...")
-     (xdoc::p
-      "where @('I') and @('J') are identifiers.
-       This could be
-       either the atomic type specifier @('_Atomic(I)')
-       followed by the declarator @('(J)'),
-       or the @('_Atomic') type qualifier
-       followed by the declarator @('(I)(J)').
-       This cannot be disambiguated purely syntactically.
-       The @(':declspec-atomic-ambig') case of this fixtype
-       captures the @('_Atomic(I)') part
-       (while the @('J') would be captured as a declarator),
-       which is like a type specifier, but marked as ambiguous,
-       so that, during post-parsing semantic analysis,
-       this construct (and the subsequent declarator)
-       can be re-classified into non-ambiguous constructs.")
-     (xdoc::p
-      "The other kind of ambiguity has the form")
-     (xdoc::codeblock
-      "... I ( J ) ...")
-     (xdoc::p
-      "where @('I') and @('J') are identifiers.
-       This could be
-       either the type specifier @('I') followed by the declarator @('(J)'),
-       or just the declarator @('I(J)').
-       This cannot be disambiguated purely syntactically.
-       The @(':declspc-ident-ambig') case of this fixtype
-       captures the @('I') part
-       (while the @('(J)') part would be captured as a declarator),
-       which is like a type specifier, but marked as ambiguous,
-       so that, during post-parsing semantic analysis,
-       this construct (and the subsequent declarator)
-       can be re-classified into non-ambiguous constructs."))
+       (see @(tsee declspec-list))."))
     (:stocla ((unwrap stoclaspec)))
     (:tyspec ((unwrap tyspec)))
     (:tyqual ((unwrap tyqual)))
     (:funspec ((unwrap funspec)))
     (:alignspec ((unwrap alignspec)))
-    (:declspec-atomic-ambig ((ident ident)))
-    (:declspec-tydef-ambig ((ident ident)))
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
