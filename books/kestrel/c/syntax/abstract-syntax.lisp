@@ -1922,7 +1922,7 @@
     (:name-list ((name ident)
                  (list enumer-list)
                  (final-comma bool)))
-    :pred enumspec
+    :pred enumspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
