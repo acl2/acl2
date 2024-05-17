@@ -392,7 +392,7 @@
     (not (consp (CDR (LAST alist))))
     :rule-classes :type-prescription))
 
-;(include-book "kestrel/alists-light/clear-key" :dir :system)
+;(include-book "kestrel/alists-light/remove-assoc-equal" :dir :system)
 
 (defun clear-key2 (key alist)
   (declare (xargs :guard (alistp alist)))
