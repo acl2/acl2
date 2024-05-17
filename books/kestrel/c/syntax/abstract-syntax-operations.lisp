@@ -195,6 +195,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-alignspec
+  :short "An irrelevant alignment specifier."
+  :type alignspecp
+  :body (alignspec-alignas-ambig (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-declspec
   :short "An irrelevant declaration specifier."
   :type declspecp
