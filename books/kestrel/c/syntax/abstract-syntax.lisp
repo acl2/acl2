@@ -50,32 +50,14 @@
    (xdoc::p
     "Some library fixtypes already correspond to
      certain nonterminals in the grammar in [C]
-     and are thus not defined here, but just used:")
-   (xdoc::ul
-    (xdoc::li
-     "The fixtype @(tsee dec-digit-char-list) corresponds to
-      <i>digit-sequence</i> in [C:6.4.4.2] [C:A.1.5].")
-    (xdoc::li
-     "The fixtype @(tsee hex-digit-char-list) corresponds to
-      <i>hexadecimal-digit-sequence</i> in [C:6.4.4.2] [C:A.1.5].")
-    (xdoc::li
-     "The fixtypes "
-     (xdoc::seetopic "fty::basetypes" "@('nat')")
-     " and @(tsee nat-list)
-      correspond to
-      <i>c-char</i> and <i>c-char-sequence</i> in [C:6.4.4.4] [C:A.1.5],
-      as well as to
-      <i>s-char</i> and <i>s-char-sequence</i> in [C:6.4.5] [C:A.1.6]."))
+     and are thus not defined here, but just used.
+     Examples are fixtypes for digits (in different bases), and lists thereof.")
    (xdoc::p
     "The @('...-list') fixtypes are slightly more general than
-     <i>...-sequence</i> nonterminals in the grammar in [C],
+     <i>...-sequence</i> and <i>...-list</i> nonterminals in the grammar in [C],
      because the former include the empty list,
-     while the latter only include non-empty sequences.
-     The same applies to other fixtypes defined here:
-     while the grammar in [C] forces
-     certain sequences of entities to be non-empty,
-     our corresponding fixtypes include the empty list.
-     This makes things a bit simpler,
+     while the latter only include non-empty sequences/lists.
+     Including empty lists in our fixtypes makes things a bit simpler,
      partly because currently @(tsee fty::deflist)
      generates conflicting theorems if used
      both with @(':non-emptyp t') and with @(':non-emptyp nil')
