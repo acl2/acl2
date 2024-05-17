@@ -230,6 +230,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-strunispec
+  :short "An irrelevant structure or union specifier."
+  :type strunispecp
+  :body (strunispec-name (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-enumer
   :short "An irrelevant enumerator."
   :type enumerp
