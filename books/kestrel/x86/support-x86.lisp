@@ -1146,3 +1146,28 @@
 (defthm alignment-checking-enabled-p-of-if
   (equal (alignment-checking-enabled-p (if test x86 x86_2))
          (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This version has (canonical-address-p eff-addr) in the conclusion
+(defthm x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
+  (implies (and (not (equal seg-reg 4))
+                (not (equal seg-reg 5))
+                (or (not x86isa::check-alignment?)
+                    (x86isa::address-aligned-p eff-addr nbytes x86isa::mem-ptr?)))
+           (equal (rme-size 0 nbytes eff-addr seg-reg x86isa::r-x x86isa::check-alignment? x86 :mem-ptr? x86isa::mem-ptr?)
+                  (if (canonical-address-p eff-addr)
+                      (rml-size nbytes eff-addr x86isa::r-x x86)
+                    (list (list :non-canonical-address eff-addr) 0 x86)))))
+
+;; This version has (canonical-address-p eff-addr) in the conclusion
+(defthm x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
+  (implies (and (not (equal seg-reg 4))
+                (not (equal seg-reg 5))
+                (or (not x86isa::check-alignment?)
+                    (x86isa::address-aligned-p
+                      eff-addr nbytes x86isa::mem-ptr?)))
+           (equal (x86isa::wme-size 0 nbytes eff-addr seg-reg x86isa::val x86isa::check-alignment? x86 :mem-ptr? x86isa::mem-ptr?)
+                  (if (canonical-address-p eff-addr)
+                      (x86isa::wml-size nbytes eff-addr x86isa::val x86)
+                    (list (list :non-canonical-address eff-addr) x86)))))

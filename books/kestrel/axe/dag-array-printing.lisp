@@ -16,32 +16,17 @@
 ;; See alsod dag-array-printing2.lisp.
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
-(include-book "kestrel/typed-lists-light/all-natp" :dir :system)
+;(include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "dag-arrays")
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 
 ;move
-(local
- (defthm acl2-numberp-of-maxelem-2
-   (implies (and (all-natp lst) ;yuck
-                 (consp lst))
-            (acl2-numberp (maxelem lst)))))
+;; (local
+;;  (defthm acl2-numberp-of-maxelem-2
+;;    (implies (and (all-natp lst) ;yuck
+;;                  (consp lst))
+;;             (acl2-numberp (maxelem lst)))))
 
-;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
-;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
-;; TODO: This must already exist (keep-atoms?).
-(defund filter-nodenums (items acc)
-  (declare (xargs :guard (darg-listp items)))
-  (if (atom items)
-      acc
-    (if (consp (car items)) ;tests for quotep
-        (filter-nodenums (cdr items) acc)
-      (filter-nodenums (cdr items) (cons (car items) acc)))))
-
-(defthm true-listp-of-filter-nodenums
-  (equal (true-listp (filter-nodenums items acc))
-         (true-listp acc))
-  :hints (("Goal" :in-theory (enable filter-nodenums))))
 
 ;; TODO: Rename these functions to have "array" in their names.
 
@@ -70,7 +55,7 @@
                                               dag-array
                                               (if (and (consp expr)
                                                        (not (eq 'quote (ffn-symb expr))))
-                                                  (filter-nodenums (dargs expr) node-list)
+                                                  (append-nodenum-dargs (dargs expr) node-list)
                                                 node-list)
                                               nil)))
       ;;skip this node:
@@ -90,8 +75,7 @@
 
 ;; Prints the nodes whose numbers are in NODENUMS, and any supporting nodes.
 (defund print-dag-array-nodes-and-supporters (dag-array-name dag-array nodenums)
-  (declare (xargs :guard (and (all-natp nodenums)
-                              (true-listp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (consp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
                   :guard-hints (("Goal" :in-theory (enable maxelem ;todo
@@ -102,8 +86,7 @@
 
 ;; Separately prints the part of the DAG supporting each of the NODENUMS.
 (defund print-dag-array-node-and-supporters-lst (nodenums dag-array-name dag-array)
-  (declare (xargs :guard (and (all-natp nodenums)
-                              (true-listp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (if (consp nodenums)
                                   (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
                                 t))))
@@ -145,8 +128,7 @@
 
 (defun print-dag-nodes-as-terms (nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (all-natp nodenums)
-                              (true-listp nodenums)
+                              (nat-listp nodenums)
                               (all-< nodenums dag-len))))
   (if (endp nodenums)
       nil

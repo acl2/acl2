@@ -1,7 +1,7 @@
-; Clearing key in an alist
+; Clearing multiple keys in an alist
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; See also remove-assoc-equal.lisp.
 
 (defund clear-keys-aux (keys alist acc)
   (declare (xargs :guard (and (true-listp keys)

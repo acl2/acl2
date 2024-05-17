@@ -111,13 +111,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defthmd all-<-of-keep-atoms-when-darg-listp
+;; (defthmd all-<-of-keep-nodenum-dargs-when-darg-listp
 ;;   (implies (darg-listp x)
-;;            (equal (all-< (keep-atoms x) bound)
+;;            (equal (all-< (keep-nodenum-dargs x) bound)
 ;;                   (bounded-darg-listp x bound)))
-;;   :hints (("Goal" :in-theory (enable keep-atoms))))
+;;   :hints (("Goal" :in-theory (enable keep-nodenum-dargs))))
 
-;; (local (in-theory (enable all-<-of-keep-atoms-when-darg-listp)))
+;; (local (in-theory (enable all-<-of-keep-nodenum-dargs-when-darg-listp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2069,7 +2069,7 @@
                                        )))
                                (t nil))))
                   (if translatep
-                      (process-nodenums-for-translation (append-atoms args (rest worklist)) ; perhaps causes the children to be translated as well
+                      (process-nodenums-for-translation (append-nodenum-dargs args (rest worklist)) ; perhaps causes the children to be translated as well
                                                         depth-limit depth-array
                                                         (aset1 'handled-node-array handled-node-array nodenum t)
                                                         dag-array dag-len dag-parent-array known-nodenum-type-alist

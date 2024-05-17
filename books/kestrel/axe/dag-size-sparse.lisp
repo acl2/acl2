@@ -254,7 +254,7 @@
 ;;                                  ;;:cases ((equal 0 dag-len))
 ;;                                  :in-theory (e/d () (CONSP-FROM-LEN-CHEAP
 ;;                                                      sum-list-tail ;consp-cdr
-;;                                                      KEEP-ATOMS
+;;                                                      KEEP-NODENUM-DARGS
 ;;                                                      MAXELEM
 ;;                                                      dag-exprp
 ;;                                                      TRUE-LISTP-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-AUX))))))
@@ -282,7 +282,7 @@
 ;;                     ;; Handle the arguments first (eventually we'll come back to this node):
 ;;                     (size-array-for-nodes-aux (+ -1 steps-left) extended-worklist-or-nil dag-array-name dag-array dag-len size-array-name size-array)
 ;;                   ;;all args are done:
-;;                   (let* ((nodenums (keep-atoms args)) ;fixme don't bother to cons up this list?
+;;                   (let* ((nodenums (keep-nodenum-dargs args)) ;fixme don't bother to cons up this list?
 ;;                          (num-quotep-args (- (len args) (len nodenums)))
 ;;                          (arg-sizes (lookup-lst-array size-array-name size-array nodenums)) ;fixme don't bother to cons up this list?
 ;;                          (arg-sum (sum-list-tail arg-sizes)))
