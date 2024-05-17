@@ -1815,7 +1815,7 @@
 
   (fty::deftagsum strunispec
     :parents (abstract-syntax expr/decls)
-    :short "Fixtype of structure and union specifiers [C:6.7.2.1] [C:A.2.2]."
+    :short "Fixtype of structure or union specifiers [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
