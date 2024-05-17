@@ -1487,7 +1487,7 @@
     (:funspec ((unwrap funspec)))
     (:alignspec ((unwrap alignspec)))
     (:declspec-atomic-ambig ((ident ident)))
-    (:declspec-ident-ambig ((ident ident)))
+    (:declspec-tydef-ambig ((ident ident)))
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
