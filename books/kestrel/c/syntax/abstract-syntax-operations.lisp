@@ -237,6 +237,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-enumspec
+  :short "An irrelevant enumeration specifier."
+  :type enumspecp
+  :body (enumspec-name (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-enumer
   :short "An irrelevant enumerator."
   :type enumerp
