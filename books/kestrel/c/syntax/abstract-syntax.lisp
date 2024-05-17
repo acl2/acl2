@@ -1108,8 +1108,11 @@
        The @('sizeof') applied to an expression is instead captured
        in the @(':unary') case,
        since @(tsee unop) includes @('sizeof') for expressions.
-       During parsing, an expression of the form @('sizeof ( I )'),
-       where @('I') is an identifier,
+       During parsing, an expression of the form")
+     (xdoc::codeblock
+      "sizeof ( I )")
+     (xdoc::p
+      "where @('I') is an identifier,
        cannot be disambiguated on a purely syntactic basis,
        because @('I') may be either an expression or a type name:
        we defer the resolution of this ambiguity
@@ -1136,10 +1139,10 @@
      (xdoc::p
       "The remaining four kinds of expressions capture expressions of the form")
      (xdoc::codeblock
-      "(I) * E"
-      "(I) + E"
-      "(I) - E"
-      "(I) & E")
+      "( I ) * E"
+      "( I ) + E"
+      "( I ) - E"
+      "( I ) & E")
      (xdoc::p
       "where @('I') is an identifier
        and @('E') is an expression of a certain form
