@@ -4253,8 +4253,8 @@
   (append (debug-rules-common)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
-          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-DISJOINT2
             )))

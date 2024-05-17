@@ -1499,6 +1499,8 @@
 
 ;; similar to (append (keep-nodenum-dargs items) acc).
 ;move?
+;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
+;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
 (defund append-nodenum-dargs (items acc)
   (declare (xargs :guard (and (darg-listp items)
                               (true-listp acc))))

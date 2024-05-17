@@ -27,21 +27,6 @@
 ;;                  (consp lst))
 ;;             (acl2-numberp (maxelem lst)))))
 
-;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
-;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
-;; TODO: This must already exist (keep-nodenum-dargs?).
-(defund filter-nodenums (items acc)
-  (declare (xargs :guard (darg-listp items)))
-  (if (atom items)
-      acc
-    (if (consp (car items)) ;tests for quotep
-        (filter-nodenums (cdr items) acc)
-      (filter-nodenums (cdr items) (cons (car items) acc)))))
-
-(defthm true-listp-of-filter-nodenums
-  (equal (true-listp (filter-nodenums items acc))
-         (true-listp acc))
-  :hints (("Goal" :in-theory (enable filter-nodenums))))
 
 ;; TODO: Rename these functions to have "array" in their names.
 
@@ -70,7 +55,7 @@
                                               dag-array
                                               (if (and (consp expr)
                                                        (not (eq 'quote (ffn-symb expr))))
-                                                  (filter-nodenums (dargs expr) node-list)
+                                                  (append-nodenum-dargs (dargs expr) node-list)
                                                 node-list)
                                               nil)))
       ;;skip this node:
