@@ -1402,11 +1402,29 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>alignment-specifier</i> in the grammar in [C].
-       The two cases of this fixtype correspond to
+       The first two cases of this fixtype correspond to
        the two forms of @('_Alignas'),
-       one for type names and one for constant expressions."))
+       one for type names and one for constant expressions.
+       The third case is for ambiguous forms")
+     (xdoc::codeblock
+      "_Alignas ( I )")
+     (xdoc::p
+      "where @('I') is an identifier,
+       which may be either a type name or an expression.
+       There is no way to disambiguate this purely syntactically.
+       Although an identifier expression represents a variable,
+       which therefore may not be a legal constant expression,
+       syntactically a constant expression is just an expression:
+       its constancy is enforced post-parsing, as part of static semantics.
+       Therefore, we could parse an @('_Alignas') of the form above,
+       which is ambiguous until we disambiguate it semantically.
+       In addition, we may extend our abstract syntax
+       with preprocessing constructs,
+       and in that case identifiers may be @('#define') constants,
+       which would be constant expressions also according to static semantic."))
     (:alignas-type ((type tyname)))
     (:alignas-expr ((arg const-expr)))
+    (:alignas-ambig ((ident ident)))
     :pred alignspecp
     :base-case-override :alignas-expr
     :measure (two-nats-measure (acl2-count x) 2))
