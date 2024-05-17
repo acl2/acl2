@@ -152,6 +152,21 @@
   :hints (("Goal" :in-theory (e/d (mod-of-*-subst-arg2) (mod-of-expt-of-mod))
            :use (:instance mod-of-expt-of-mod (x x2)))))
 
+(defthm mod-of-expt-2-and-expt-2-when-<=
+  (implies (and (<= i2 i1)
+                (integerp i1)
+                (integerp i2))
+           (equal (mod (expt 2 i1) (expt 2 i2))
+                  0)))
+
+(defthm unsigned-byte-p-of-mod-of-expt
+  (implies (and (<= i size)
+                (integerp x)
+                (natp size)
+                (integerp i))
+           (unsigned-byte-p size (mod x (expt 2 i))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 (local (include-book "../../arithmetic-3/floor-mod/floor-mod"))
 
 (local
@@ -192,18 +207,3 @@
            (equal (mod (* x (expt 2 i)) (expt 2 j))
                   (* (expt 2 i)
                      (mod x (expt 2 (+ j (- i))))))))
-
-(defthm mod-of-expt-2-and-expt-2-when-<=
-  (implies (and (<= i2 i1)
-                (integerp i1)
-                (integerp i2))
-           (equal (mod (expt 2 i1) (expt 2 i2))
-                  0)))
-
-(defthm unsigned-byte-p-of-mod-of-expt
-  (implies (and (<= i size)
-                (integerp x)
-                (natp size)
-                (integerp i))
-           (unsigned-byte-p size (mod x (expt 2 i))))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
