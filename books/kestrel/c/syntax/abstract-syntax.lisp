@@ -78,7 +78,37 @@
      which include ASCII codes as a subset.
      Although natural numbers are more general that Unicode code points,
      and also more general than <i>c-char</i> and <i>s-char</i>,
-     it is fine for abstract syntax to be more general than concrete syntax."))
+     it is fine for abstract syntax to be more general than concrete syntax.")
+   (xdoc::p
+    "The syntax of C has some known ambiguities,
+     which cannot be disambiguated purely syntactically,
+     but need some (static) semantic.
+     Our abstract syntax fixtypes include cases
+     that capture these ambiguous constructions,
+     which are described when those fixtypes are introduced.
+     Here are some resources on the topic
+     (and more resources are easy to find):")
+   (xdoc::ul
+    (xdoc::li
+     (xdoc::ahref "https://en.wikipedia.org/wiki/Lexer_hack"
+                  "The Wikipedia page on the lexer hack."))
+    (xdoc::li
+     (xdoc::ahref "https://eli.thegreenplace.net/2007/11/24/the-context-sensitivity-of-cs-grammar/"
+                  "This blog post."))
+    (xdoc::li
+     (xdoc::ahref "https://web.archive.org/web/20131109145649/https://eli.thegreenplace.net/2011/05/02/the-context-sensitivity-of-cs-grammar-revisited/"
+                  "This (web-archived) related blog post."))
+    (xdoc::li
+     (xdoc::ahref "https://stackoverflow.com/questions/17202409/how-typedef-name-identifier-issue-is-resolved-in-c"
+                  "This Stack Overflow discussion."))
+    (xdoc::li
+     (xdoc::ahref "https://www.gnu.org/software/bison/manual/bison.html#Context-Dependency"
+                  "The Bison documentation about context dependencies.")))
+   (xdoc::p
+    "Unlike some approaches suggested in the above resources,
+     we prefer to defer the disambiguation of these constructs after parsing,
+     so that parsing is purely syntactical,
+     without the need for any semantic analysis during parsing."))
   :order-subtopics t
   :default-parent t)
 
@@ -1148,34 +1178,12 @@
        in particular to determine
        whether @('I') is a type name or an expression,
        based on what is in scope at that point.
-       Here are some resources that describe the issue
-       and approaches to handle it:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::ahref "https://en.wikipedia.org/wiki/Lexer_hack"
-                    "The Wikipedia page on the lexer hack."))
-      (xdoc::li
-       (xdoc::ahref "https://eli.thegreenplace.net/2007/11/24/the-context-sensitivity-of-cs-grammar/"
-                    "This blog post."))
-      (xdoc::li
-       (xdoc::ahref "https://web.archive.org/web/20131109145649/https://eli.thegreenplace.net/2011/05/02/the-context-sensitivity-of-cs-grammar-revisited/"
-                    "This (web-archived) related blog post."))
-      (xdoc::li
-       (xdoc::ahref "https://stackoverflow.com/questions/17202409/how-typedef-name-identifier-issue-is-resolved-in-c"
-                    "This Stack Overflow discussion."))
-      (xdoc::li
-       (xdoc::ahref "https://www.gnu.org/software/bison/manual/bison.html#Context-Dependency"
-                    "The Bison documentation about context dependencies.")))
-     (xdoc::p
-      "(And more resources should be easy to find.)
-       We handle the issue by extending our definition of expressions
-       with cases that represent syntactically ambiguous expressions:
+       Our definition of expressions includes
+       cases that represent syntactically ambiguous expressions:
        there are four cases, one for each unary/binary operator,
        and each case has two components, namely
        the identifier that is either a type name or an expression,
-       and a subsequent expression.
-       We prefer this approach to
-       performing any kind of semantic analysis during parsing."))
+       and a subsequent expression."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
     (:string ((unwrap stringlit)))
