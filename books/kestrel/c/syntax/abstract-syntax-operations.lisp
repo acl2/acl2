@@ -52,6 +52,7 @@
                     :complit
                     :unary
                     :sizeof
+                    :sizeof-ambig
                     :alignof))
        t))
 

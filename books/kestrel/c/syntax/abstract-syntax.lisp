@@ -1114,7 +1114,8 @@
        because @('I') may be either an expression or a type name:
        we defer the resolution of this ambiguity
        to static semantic analysis after parsing;
-       during parsing, we classify that as a type name.")
+       during parsing, we classify that as an ambiguous @('sizeof'),
+       for which we have the @(':sizeof-ambig') of this fixtype.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1210,6 +1211,7 @@
     (:unary ((op unop)
              (arg expr)))
     (:sizeof ((type tyname)))
+    (:sizeof-ambig ((ident ident)))
     (:alignof ((type tyname)))
     (:cast ((type tyname)
             (arg expr)))
