@@ -471,7 +471,8 @@
     "The @('set::empty') function has been renamed to @(tsee set::emptyp).")
 
    (xdoc::p
-    "A variant without backchain limit of the @(tsee double-containment) rule
+    "A variant without backchain limit
+     of the @(tsee set::double-containment) rule
      has been added, disabled by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
