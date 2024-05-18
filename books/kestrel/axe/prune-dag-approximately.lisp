@@ -566,6 +566,7 @@
                                                    nil ; print
                                                    (acl2::known-booleans (w state))
                                                    nil ; monitored-symbols
+                                                   nil ; fns-to-elide
                                                    nil ; normalize-xors
                                                    nil ; memoize
                                                    ))

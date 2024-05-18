@@ -372,6 +372,7 @@
                               :rule-alist rule-alist
                               :assumptions assumptions
                               :monitor rules-to-monitor
+                              ;; :fns-to-elide '(program-at) ; not supported
                               :use-internal-contextsp use-internal-contextsp
                               ;; pass print, so we can cause rule hits to be printed:
                               :print print ; :brief ;nil
@@ -389,6 +390,7 @@
                                         print
                                         (acl2::known-booleans (w state))
                                         rules-to-monitor
+                                        '(program-at) ; fns-to-elide
                                         t ; normalize-xors
                                         memoizep)
               (mv erp result state))))
@@ -473,6 +475,7 @@
                                             print
                                             (acl2::known-booleans (w state))
                                             rules-to-monitor
+                                            '(program-at) ; fns-to-elide
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
