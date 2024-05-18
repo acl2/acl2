@@ -3011,11 +3011,11 @@
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
             ;; protection value is read via the FS segment register):
             x86isa::rme-size-when-64-bit-modep-fs/gs
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs ; puts in wml-size
+            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
             x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::read-*ip-when-64-bit-modep
