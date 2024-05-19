@@ -195,6 +195,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-alignspec
+  :short "An irrelevant alignment specifier."
+  :type alignspecp
+  :body (alignspec-alignas-ambig (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-declspec
   :short "An irrelevant declaration specifier."
   :type declspecp
@@ -227,6 +234,20 @@
   :short "An irrelevant type name."
   :type tynamep
   :body (tyname nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-strunispec
+  :short "An irrelevant structure or union specifier."
+  :type strunispecp
+  :body (strunispec-name (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-enumspec
+  :short "An irrelevant enumeration specifier."
+  :type enumspecp
+  :body (enumspec-name (irr-ident)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
