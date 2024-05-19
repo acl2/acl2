@@ -583,13 +583,13 @@
 ;;         (cw "(~x0 ...)~%" fn)
 ;;       (print-fn-applications-on-darg-lists fn (cdr entry) firstp))))
 
-(defun print-refined-assumption-alist-elided-aux (alist fns-to-elide firstp)
+(defund print-refined-assumption-alist-elided-aux (alist fns-to-elide firstp)
   (declare (xargs :guard (and (refined-assumption-alistp alist)
                               (symbol-listp fns-to-elide)
                               (booleanp firstp))
                   :guard-hints (("Goal" :in-theory (enable refined-assumption-alistp)))))
   (if (atom alist)
-      nil
+      (cw ")") ; balances the paren printed for the first item
     (let ((entry (first alist)))
       (prog2$ (print-fn-applications-on-darg-lists (car entry) (cdr entry) fns-to-elide firstp)
               (print-refined-assumption-alist-elided-aux (rest alist) fns-to-elide nil)))))
@@ -598,8 +598,6 @@
   (declare (xargs :guard (and (refined-assumption-alistp alist)
                               (symbol-listp fns-to-elide))))
   (if (consp alist)
-      (prog2$ (cw "(~%") ;(print-refined-assumption-alist-entry-elided (first alist) t fns-to-elide) ;print the first element separately to put in an open paren
-              (prog2$ (print-refined-assumption-alist-elided-aux alist fns-to-elide t)
-                      (cw ")")))
+      (print-refined-assumption-alist-elided-aux alist fns-to-elide t)
     (cw "nil") ; or could print "()"
     ))
