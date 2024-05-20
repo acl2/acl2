@@ -1000,7 +1000,6 @@
 
     acl2::logext-trim-arg-axe-all
 
-    acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
 
     ;; this is needed to handle a divide:
@@ -1799,8 +1798,6 @@
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
-            acl2::bvplus-of-logext-arg2
-            acl2::bvplus-of-logext-arg3
             ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
 ;<-when-canonical-address-p
@@ -4395,8 +4392,6 @@
             logext-of-bool-to-bit
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
-            acl2::bvif-of-logext-arg3
-            acl2::bvif-of-logext-arg4
             acl2::equal-of-bvif-safe2
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )
@@ -4538,7 +4533,6 @@
             acl2::<-becomes-bvlt-dag-alt-gen-better2
             acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
-            acl2::bvuminus-of-logext
             acl2::bvlt-tighten-bind-and-bind-dag
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
@@ -4590,9 +4584,6 @@
             acl2::bvchop-of-bvsx
             acl2::bvchop-of-bvuminus-same
             acl2::bvsx-of-bvchop
-            acl2::bvplus-of-logext-arg2
-            acl2::bvplus-of-logext-arg3
-            acl2::bvuminus-of-logext
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
@@ -4627,5 +4618,6 @@
           (lifter-rules64-new) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
+          (acl2::bv-of-logext-rules)
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
