@@ -5054,7 +5054,7 @@
                                                      known-booleans))
            ((when erp) (mv erp nil))
            ;; Create the node-replacement-array and add relevant nodes to the DAG:
-           ;; TODO: Consider combining this with the above, in a single pass through the assumptions):
+           ;; TODO: Consider combining this with the above, in a single pass through the assumptions:
            ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (make-node-replacement-array-and-extend-dag assumptions
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
