@@ -2331,8 +2331,11 @@
     xw-becomes-set-esp
     xw-becomes-set-ebp
 
+    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
+    read-*ip-becomes-eip
+    xr-becomes-eip
+
     ;; Introduce register readers:
-    read-*ip-becomes-eip ; add a rule about xr as well?
     xr-becomes-eax
     xr-becomes-ebx
     xr-becomes-ecx
