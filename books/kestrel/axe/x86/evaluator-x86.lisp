@@ -16,7 +16,35 @@
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
+(include-book "kestrel/bv-lists/packbv" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
+
+(local
+  (in-theory (disable rational-listp
+                      integer-listp
+                      assoc-equal
+                      min
+                      max
+                      integer-range-p
+                      signed-byte-p
+                      x86isa::canonical-address-p$inline
+                      bvle)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund integer-range-p-unguarded (lower upper x)
+  (declare (xargs :guard t))
+  (and (integerp x)
+       (not (<-unguarded x lower))
+       (<-unguarded x upper)))
+
+(defthm integer-range-p-unguarded-correct
+  (equal (integer-range-p-unguarded lower upper x)
+         (integer-range-p lower upper x))
+  :hints (("Goal" :in-theory (enable integer-range-p-unguarded
+                                     integer-range-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund x86isa::n03$inline-unguarded (x)
   (declare (xargs :guard t))
@@ -73,6 +101,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::2bits-fix-unguarded (x)
+  (declare (xargs :guard t))
+  (x86isa::2bits-fix (loghead 2 (ifix x))))
+
+(defthm 2bits-fix-unguarded-correct
+  (equal (x86isa::2bits-fix-unguarded x)
+         (x86isa::2bits-fix x))
+  :hints (("Goal" :in-theory (enable x86isa::2bits-fix-unguarded X86ISA::2BITS-FIX))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund x86isa::4bits-fix-unguarded (x)
   (declare (xargs :guard t))
   (x86isa::4bits-fix (loghead 4 (ifix x))))
@@ -95,7 +134,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes-fix$inline-unguarded (x)
+(defund x86isa::10bits-fix-unguarded (x)
+  (declare (xargs :guard t))
+  (x86isa::10bits-fix (loghead 10 (ifix x))))
+
+(defthm 10bits-fix-unguarded-correct
+  (equal (x86isa::10bits-fix-unguarded x)
+         (x86isa::10bits-fix x))
+  :hints (("Goal" :in-theory (enable x86isa::10bits-fix-unguarded X86ISA::10BITS-FIX))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::prefixes-fix$inline-unguarded (x)
   (declare (xargs :guard t))
   (x86isa::prefixes-fix$inline (acl2::loghead$inline 52 (ifix x))))
 
@@ -128,7 +178,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun binary-logand-unguarded (i j)
+(defund binary-logand-unguarded (i j)
   (declare (xargs :guard t))
   (binary-logand (ifix i) (ifix j)))
 
@@ -139,7 +189,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun binary-logior-unguarded (i j)
+(defund binary-logior-unguarded (i j)
   (declare (xargs :guard t))
   (binary-logior (ifix i) (ifix j)))
 
@@ -150,7 +200,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::reg-index$inline-unguarded (reg rex-byte index)
+(defund x86isa::reg-index$inline-unguarded (reg rex-byte index)
   (declare (xargs :guard t))
   (if (logbitp-unguarded index rex-byte)
       (logior 8 (x86isa::n03$inline-unguarded reg))
@@ -163,7 +213,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::PREFIXES->OPR-unguarded (x)
+(defund X86ISA::PREFIXES->OPR-unguarded (x)
   (declare (xargs :guard t ))
   (X86ISA::PREFIXES->OPR (X86ISA::PREFIXES-FIX$inline-unguarded X)))
 
@@ -174,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes->nxt-unguarded (x)
+(defund x86isa::prefixes->nxt-unguarded (x)
   (declare (xargs :guard t ))
   (x86isa::prefixes->nxt (x86isa::prefixes-fix$inline-unguarded x)))
 
@@ -185,7 +235,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes->num-unguarded (x)
+(defund x86isa::prefixes->num-unguarded (x)
   (declare (xargs :guard t ))
   (x86isa::prefixes->num (x86isa::prefixes-fix$inline-unguarded x)))
 
@@ -196,7 +246,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes->lck-unguarded (x)
+(defund x86isa::prefixes->lck-unguarded (x)
   (declare (xargs :guard t ))
   (x86isa::prefixes->lck (x86isa::prefixes-fix$inline-unguarded x)))
 
@@ -207,7 +257,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes->adr-unguarded (x)
+(defund x86isa::prefixes->adr-unguarded (x)
   (declare (xargs :guard t ))
   (x86isa::prefixes->adr (x86isa::prefixes-fix$inline-unguarded x)))
 
@@ -218,7 +268,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes->seg-unguarded (x)
+(defund x86isa::prefixes->seg-unguarded (x)
   (declare (xargs :guard t ))
   (x86isa::prefixes->seg (x86isa::prefixes-fix$inline-unguarded x)))
 
@@ -229,7 +279,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::prefixes->rep-unguarded (x)
+(defund x86isa::prefixes->rep-unguarded (x)
   (declare (xargs :guard t ))
   (x86isa::prefixes->rep (x86isa::prefixes-fix$inline-unguarded x)))
 
@@ -240,7 +290,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::!prefixes->num-unguarded (num x)
+(defund x86isa::!prefixes->num-unguarded (num x)
   (declare (xargs :guard t))
   (x86isa::!prefixes->num (x86isa::4bits-fix-unguarded num)
                           (x86isa::prefixes-fix$inline-unguarded x)))
@@ -252,7 +302,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::!prefixes->nxt-unguarded (nxt x)
+(defund x86isa::!prefixes->nxt-unguarded (nxt x)
   (declare (xargs :guard t))
   (x86isa::!prefixes->nxt (x86isa::8bits-fix-unguarded nxt)
                           (x86isa::prefixes-fix$inline-unguarded x)))
@@ -264,7 +314,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun bitops::part-select-width-low$inline-unguarded (x width low)
+(defund bitops::part-select-width-low$inline-unguarded (x width low)
   (declare (xargs :guard t))
   (loghead$inline-unguarded width (logtail-unguarded low x)))
 
@@ -275,7 +325,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun zip-unguarded (x)
+(defund zip-unguarded (x)
   (declare (xargs :guard t))
   (zip (ifix x)))
 
@@ -297,7 +347,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::modr/m->r/m$inline-unguarded (x)
+(defund x86isa::modr/m->r/m$inline-unguarded (x)
   (declare (xargs :guard t))
   (x86isa::modr/m->r/m$inline (x86isa::modr/m-fix$inline-unguarded x)))
 
@@ -308,7 +358,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::modr/m->reg$inline-unguarded (x)
+(defund x86isa::modr/m->reg$inline-unguarded (x)
   (declare (xargs :guard t))
   (x86isa::modr/m->reg$inline (x86isa::modr/m-fix$inline-unguarded x)))
 
@@ -319,7 +369,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::modr/m->mod$inline-unguarded (x)
+(defund x86isa::modr/m->mod$inline-unguarded (x)
   (declare (xargs :guard t))
   (x86isa::modr/m->mod$inline (x86isa::modr/m-fix$inline-unguarded x)))
 
@@ -341,7 +391,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::rflagsbits->cf$inline-unguarded (x)
+(defund X86ISA::rflagsbits->cf$inline-unguarded (x)
   (declare (xargs :guard t))
   (X86ISA::rflagsbits->cf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -352,7 +402,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::rflagsbits->pf$inline-unguarded (x)
+(defund X86ISA::rflagsbits->pf$inline-unguarded (x)
   (declare (xargs :guard t))
   (X86ISA::rflagsbits->pf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -363,7 +413,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::rflagsbits->af$inline-unguarded (x)
+(defund X86ISA::rflagsbits->af$inline-unguarded (x)
   (declare (xargs :guard t))
   (X86ISA::rflagsbits->af$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -374,7 +424,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::rflagsbits->of$inline-unguarded (x)
+(defund X86ISA::rflagsbits->of$inline-unguarded (x)
   (declare (xargs :guard t))
   (X86ISA::rflagsbits->of$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -385,7 +435,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::rflagsbits->sf$inline-unguarded (x)
+(defund X86ISA::rflagsbits->sf$inline-unguarded (x)
   (declare (xargs :guard t))
   (X86ISA::rflagsbits->sf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -396,7 +446,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::rflagsbits->zf$inline-unguarded (x)
+(defund X86ISA::rflagsbits->zf$inline-unguarded (x)
   (declare (xargs :guard t))
   (X86ISA::rflagsbits->zf$inline (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -407,7 +457,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun X86ISA::!rflagsbits->af$inline-unguarded (af x)
+(defund X86ISA::!rflagsbits->af$inline-unguarded (af x)
   (declare (xargs :guard t))
   (X86ISA::!rflagsbits->af$inline (bfix$inline af) (X86ISA::rflagsbits-FIX$inline-unguarded X)))
 
@@ -418,7 +468,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::n08-to-i08$inline-unguarded (x)
+(defund x86isa::n08-to-i08$inline-unguarded (x)
   (declare (xargs :guard t))
   (logext-unguarded 8 x))
 
@@ -429,7 +479,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::n32-to-i32$inline-unguarded (x)
+(defund x86isa::n32-to-i32$inline-unguarded (x)
   (declare (xargs :guard t))
   (logext-unguarded 32 x))
 
@@ -440,7 +490,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::n64-to-i64$inline-unguarded (x)
+(defund x86isa::n64-to-i64$inline-unguarded (x)
   (declare (xargs :guard t))
   (logext-unguarded 64 x))
 
@@ -451,7 +501,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun evenp-unguarded (x)
+(defund evenp-unguarded (x)
   (declare (xargs :guard t ))
   (INTEGERP (binary-*-unguarded X (unary-/-unguarded 2))))
 
@@ -462,7 +512,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun logcount-unguarded (x)
+(defund logcount-unguarded (x)
   (declare (xargs :guard t ))
   (logcount (ifix x)))
 
@@ -473,7 +523,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun ash-unguarded (i c)
+(defund ash-unguarded (i c)
   (declare (xargs :guard t ))
   (ash (ifix i) (ifix c)))
 
@@ -484,7 +534,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::pf-spec8$inline-unguarded (result)
+(defund x86isa::pf-spec8$inline-unguarded (result)
   (declare (xargs :guard t))
   (bool->bit (not (logbitp 0 (logcount (ifix result))))))
 
@@ -495,7 +545,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::SF-SPEC8$inline-unguarded (result)
+(defund x86isa::SF-SPEC8$inline-unguarded (result)
   (declare (xargs :guard t))
   (ACL2::PART-SELECT (ifix RESULT) :LOW 7 :WIDTH 1))
 
@@ -507,7 +557,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::cf-spec32$inline-unguarded (raw-result)
+(defund x86isa::cf-spec32$inline-unguarded (raw-result)
   (declare (xargs :guard t))
   (bool->bit (not (unsigned-byte-p 32 raw-result))))
 
@@ -518,7 +568,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::pf-spec32$inline-unguarded (result)
+(defund x86isa::pf-spec32$inline-unguarded (result)
   (declare (xargs :guard t))
   (bool->bit (not (logbitp 0 (logcount (acl2::loghead$inline-unguarded 8 result))))))
 
@@ -529,7 +579,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::SF-SPEC32$inline-unguarded (result)
+(defund x86isa::SF-SPEC32$inline-unguarded (result)
   (declare (xargs :guard t))
   (acl2::part-select (acl2::loghead$inline-unguarded 32 result) :low 31 :width 1))
 
@@ -541,7 +591,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::of-spec32$inline-unguarded (signed-raw-result)
+(defund x86isa::of-spec32$inline-unguarded (signed-raw-result)
   (declare (xargs :guard t))
   (bool->bit (not (signed-byte-p 32 signed-raw-result))))
 
@@ -552,7 +602,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::zf-spec$inline-unguarded (result)
+(defund x86isa::zf-spec$inline-unguarded (result)
   (declare (xargs :guard t))
   (if (equal result 0) 1 0))
 
@@ -563,7 +613,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::x86-decode-sib-p-unguarded (modr/m 16-bit-addressp)
+(defund x86isa::x86-decode-sib-p-unguarded (modr/m 16-bit-addressp)
   (declare (xargs :guard t))
   (and (not 16-bit-addressp)
        (b* ((r/m (x86isa::modr/m->r/m$inline-unguarded modr/m))
@@ -578,7 +628,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::sib-fix$inline-unguarded (x)
+(defund x86isa::sib-fix$inline-unguarded (x)
   (declare (xargs :guard t))
   (loghead 8 (ifix x)))
 
@@ -589,38 +639,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::sib->scale$inline-unguarded (x)
+(defund x86isa::sib->scale$inline-unguarded (x)
   (declare (xargs :guard t))
   (slice 7 6 (ifix x)))
 
 (defthm x86isa::sib->scale$inline-unguarded-correct
   (equal (x86isa::sib->scale$inline-unguarded x)
          (x86isa::sib->scale$inline x))
-  :hints (("Goal" :in-theory (enable x86isa::sib->scale$inline
+  :hints (("Goal" :in-theory (enable x86isa::sib->scale$inline-unguarded
+                                     x86isa::sib->scale$inline
                                      x86isa::sib-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::sib->index$inline-unguarded (x)
+(defund x86isa::sib->index$inline-unguarded (x)
   (declare (xargs :guard t))
   (slice 5 3 (ifix x)))
 
 (defthm x86isa::sib->index$inline-unguarded-correct
   (equal (x86isa::sib->index$inline-unguarded x)
          (x86isa::sib->index$inline x))
-  :hints (("Goal" :in-theory (enable x86isa::sib->index$inline
+  :hints (("Goal" :in-theory (enable x86isa::sib->index$inline-unguarded
+                                     x86isa::sib->index$inline
                                      x86isa::sib-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun x86isa::sib->base$inline-unguarded (x)
+(defund x86isa::sib->base$inline-unguarded (x)
   (declare (xargs :guard t))
   (slice 2 0 (ifix x)))
 
 (defthm x86isa::sib->base$inline-unguarded-correct
   (equal (x86isa::sib->base$inline-unguarded x)
          (x86isa::sib->base$inline x))
-  :hints (("Goal" :in-theory (enable x86isa::sib->base$inline
+  :hints (("Goal" :in-theory (enable x86isa::sib->base$inline-unguarded
+                                     x86isa::sib->base$inline
                                      x86isa::sib-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -739,8 +792,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund acl2::packbv-unguarded (itemcount itemsize items)
+  (declare (xargs :guard t))
+  (if (zp (nfix itemcount))
+      0
+    (acl2::bvcat-unguarded itemsize (ifix (acl2::car-unguarded items))
+                           (* (fix itemsize) (fix (+ -1 (fix itemcount))))
+                           (acl2::packbv-unguarded (+ -1 (fix itemcount))
+                                                   itemsize (acl2::cdr-unguarded items)))))
+
+(defthm packbv-unguarded-correct
+  (equal (acl2::packbv-unguarded itemcount itemsize items)
+         (acl2::packbv itemcount itemsize items))
+  :hints (("Goal" :in-theory (enable acl2::packbv-unguarded
+                                     acl2::packbv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
-  (append '(x86isa::canonical-address-p$inline ; unguarded
+  (append '((integer-range-p integer-range-p-unguarded)
+            x86isa::canonical-address-p$inline ; unguarded
             (bitops::part-select-width-low$inline bitops::part-select-width-low$inline-unguarded)
             (lookup lookup-equal-unguarded)
             (x86isa::n03$inline x86isa::n03$inline-unguarded) ; other sizes?
@@ -751,9 +822,13 @@
             (x86isa::n08-to-i08$inline x86isa::n08-to-i08$inline-unguarded) ; other sizes?
             (x86isa::n32-to-i32$inline x86isa::n32-to-i32$inline-unguarded)
             (x86isa::n64-to-i64$inline x86isa::n64-to-i64$inline-unguarded)
+            (x86isa::2bits-fix x86isa::2bits-fix-unguarded)
             (x86isa::4bits-fix x86isa::4bits-fix-unguarded)
             (x86isa::8bits-fix x86isa::8bits-fix-unguarded)
+            (x86isa::10bits-fix x86isa::10bits-fix-unguarded)
             (loghead$inline loghead$inline-unguarded)
+            (logapp logapp-unguarded) ; for flags
+            (acl2::packbv acl2::packbv-unguarded)
             (x86isa::prefixes-fix$inline x86isa::prefixes-fix$inline-unguarded)
             (x86isa::prefixes->opr$inline x86isa::prefixes->opr-unguarded)
             (x86isa::prefixes->rep$inline x86isa::prefixes->rep-unguarded)
@@ -773,6 +848,7 @@
             (logcount logcount-unguarded)
             (zip zip-unguarded)
             (ash ash-unguarded)
+            (acl2::firstn acl2::firstn-unguarded)
             (logbitp logbitp-unguarded)
             (binary-logand binary-logand-unguarded)
             (binary-logior binary-logior-unguarded)
