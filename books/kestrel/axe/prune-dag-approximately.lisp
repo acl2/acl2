@@ -531,51 +531,67 @@
   (b* ((prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t))
        ((when (not prunep))
         (cw "(Note: No pruning to do.)~%")
-        (mv nil dag state))
-       (- (cw "(Pruning DAG with approximate contexts:~%"))
+        (mv (erp-nil) dag state))
+       (- (cw "(Pruning DAG with approx. contexts (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
+       (old-dag dag)
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (context-array (make-full-context-array-for-dag dag))
-       (dag-array (make-into-array 'dag-array dag))
-       (dag-len (+ 1 (top-nodenum-of-dag dag)))
-       (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
-       ((mv erp dag state)
-        (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array
-                                     print
-                                     60000     ;todo max-conflicts
-                                     nil       ; dag-acc
-                                     state))
-       ((when erp) (mv erp nil state))
-       ;; Ensure we can continue with the processing below:
-       ((when (> (top-nodenum-of-dag dag) *max-1d-array-index*)) (mv :dag-too-big nil state))
-       ;; There may be orphan nodes if some pruning was done:
-       (dag-or-quotep (drop-non-supporters dag))
-       ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
-       (dag dag-or-quotep) ; it's not a quotep
-       ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
-       ;; Similarly, try to get rid of calls of BOOL-FIX$INLINE that got introduced.
-       ;; And try to propagate successful resolution of tests upward in the DAG.
-       ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules)
-                                             (w state)))
-       ((when erp) (mv erp nil state))
-       ((mv erp dag-or-quotep) (simplify-dag-basic dag
-                                                   nil ; assumptions
-                                                   nil ; interpreted-function-alist
-                                                   nil ; limits
-                                                   rule-alist
-                                                   nil ; count-hits
-                                                   nil ; print
-                                                   (acl2::known-booleans (w state))
-                                                   nil ; monitored-symbols
-                                                   nil ; fns-to-elide
-                                                   nil ; normalize-xors
-                                                   nil ; memoize
-                                                   ))
+       ;; Do the pruning:
+       ((mv erp result-dag-or-quotep state)
+        (b* ((context-array (make-full-context-array-for-dag dag))
+             (dag-array (make-into-array 'dag-array dag))
+             (dag-len (+ 1 (top-nodenum-of-dag dag)))
+             (dag-parent-array (make-dag-parent-array-with-name2 dag-len 'dag-array dag-array 'dag-parent-array))
+             ((mv erp dag state) ; cannot be a quotep?
+              (prune-dag-approximately-aux dag dag-array dag-len dag-parent-array context-array
+                                           print
+                                           60000 ;todo max-conflicts
+                                           nil   ; dag-acc
+                                           state))
+             ((when erp) (mv erp nil state))
+             ;; Ensure we can continue with the processing below:
+             ((when (> (top-nodenum-of-dag dag) *max-1d-array-index*)) (mv :dag-too-big nil state))
+             ;; There may be orphan nodes if some pruning was done:
+             (dag-or-quotep (drop-non-supporters dag))
+             ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
+             (dag dag-or-quotep) ; it's not a quotep
+             ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
+             ;; Similarly, try to get rid of calls of BOOL-FIX$INLINE that got introduced.
+             ;; And try to propagate successful resolution of tests upward in the DAG.
+             ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules)
+                                                   (w state)))
+             ((when erp) (mv erp nil state))
+             ((mv erp dag-or-quotep) (simplify-dag-basic dag
+                                                         nil ; assumptions
+                                                         nil ; interpreted-function-alist
+                                                         nil ; limits
+                                                         rule-alist
+                                                         nil ; count-hits
+                                                         nil ; print
+                                                         (acl2::known-booleans (w state))
+                                                         nil ; monitored-symbols
+                                                         nil ; fns-to-elide
+                                                         nil ; normalize-xors
+                                                         nil ; memoize
+                                                         ))
+             ((when erp) (mv erp nil state)))
+          (mv (erp-nil) dag-or-quotep state)))
        ((when erp) (mv erp nil state))
        ((mv elapsed state) (real-time-since start-real-time state))
-       (- (cw "Done pruning DAG (")
+       (- (cw " (Pruning took ")
           (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
-          (cw "s.))~%")))
-    (mv (erp-nil) dag-or-quotep state)))
+          (cw "s.)~%"))
+       ((when (quotep result-dag-or-quotep))
+        (cw " Done pruning. Result: ~x0)~%" result-dag-or-quotep)
+        (mv (erp-nil) result-dag-or-quotep state))
+       ;; It's a dag:
+       (result-dag-len (len result-dag-or-quotep))
+       (result-dag-size (if (not (<= result-dag-len *max-1d-array-length*))
+                            "many" ; too big to call dag-or-quotep-size-fast (todo: impossible?)
+                          (dag-or-quotep-size-fast result-dag-or-quotep)))
+       (- (cw " Done pruning (~x0 nodes, ~x1 unique)." result-dag-size result-dag-len)
+          (and (equal old-dag dag) (cw " No change."))
+          (cw ")~%")))
+    (mv (erp-nil) result-dag-or-quotep state)))
 
 ;; Returns (mv erp dag-or-quotep state).
 (defund maybe-prune-dag-approximately (prune-branches dag print state)

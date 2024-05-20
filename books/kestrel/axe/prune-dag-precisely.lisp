@@ -166,7 +166,8 @@
         (mv nil dag state))
        ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune
        ;;todo: size also computed above
-       (- (cw "(Pruning DAG precisely (~x0 nodes, ~x1 unique)~%" (dag-or-quotep-size-fast dag) (len dag)))
+       (- (cw "(Pruning DAG precisely (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
+       (old-dag dag)
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (and (print-level-at-least-tp print)
                (progn$ (cw "(DAG:~%")
@@ -185,14 +186,16 @@
           (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
        ((when (quotep result-dag-or-quotep))
-        (cw "Done pruning DAG. Result: ~x0)~%" result-dag-or-quotep)
+        (cw " Done pruning. Result: ~x0)~%" result-dag-or-quotep)
         (mv (erp-nil) result-dag-or-quotep state))
        ;; It's a dag:
        (result-dag-len (len result-dag-or-quotep))
        (result-dag-size (if (not (<= result-dag-len *max-1d-array-length*))
                             "many" ; too big to call dag-or-quotep-size-fast (todo: impossible?)
                           (dag-or-quotep-size-fast result-dag-or-quotep)))
-       (- (cw "Done pruning DAG (~x0 nodes, ~x1 unique))~%" result-dag-size result-dag-len)))
+       (- (cw " Done pruning (~x0 nodes, ~x1 unique)." result-dag-size result-dag-len)
+          (and (equal old-dag dag) (cw " No change."))
+          (cw ")~%")))
     (mv nil result-dag-or-quotep state)))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
