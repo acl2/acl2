@@ -152,6 +152,9 @@
 (trace-parser vl-parse-pva-tail-fn)
 (trace-parser vl-parse-qmark-expression-fn)
 
+(trace-parser vl-parse-range-expression-fn)
+(trace-parser vl-parse-expression-fn)
+
 (run-exprtest
  (make-exprtest
   :input "1 ? 2 -> 3 : 4"
@@ -360,6 +363,50 @@
                             (:event nil
                              (:vl-posedge (id "clock"))
                              (:vl-negedge (:index nil (:dot "top" "reset") nil nil)))))
+
+   (make-exprtest :input "{a, b}[c] << d"
+                  :expect '(:vl-binary-shl
+                            nil
+                            (:bitselect
+                             nil
+                             (:vl-concat
+                              nil
+                              (id "a") (id "b"))
+                             (id "c"))
+                            (id "d")))
+
+   (make-exprtest :input "{a, b}[c:d] << e"
+                  :expect '(:vl-binary-shl
+                            nil
+                            (:partselect
+                             nil
+                             (:vl-concat
+                              nil
+                              (id "a") (id "b"))
+                             (:colon (id "c") (id "d")))
+                            (id "e")))
+
+   (make-exprtest :input "{a, b}[c+:d] << e"
+                  :expect '(:vl-binary-shl
+                            nil
+                            (:partselect
+                             nil
+                             (:vl-concat
+                              nil
+                              (id "a") (id "b"))
+                             (:pluscolon (id "c") (id "d")))
+                            (id "e")))
+
+   (make-exprtest :input "{a, b}[c-:d] << e"
+                  :expect '(:vl-binary-shl
+                            nil
+                            (:partselect
+                             nil
+                             (:vl-concat
+                              nil
+                              (id "a") (id "b"))
+                             (:minuscolon (id "c") (id "d")))
+                            (id "e")))
    ))
 
 (defconst *basic-precedence-tests*
