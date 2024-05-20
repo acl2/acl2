@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "files")
+(include-book "file-paths")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
@@ -50,32 +50,14 @@
    (xdoc::p
     "Some library fixtypes already correspond to
      certain nonterminals in the grammar in [C]
-     and are thus not defined here, but just used:")
-   (xdoc::ul
-    (xdoc::li
-     "The fixtype @(tsee dec-digit-char-list) corresponds to
-      <i>digit-sequence</i> in [C:6.4.4.2] [C:A.1.5].")
-    (xdoc::li
-     "The fixtype @(tsee hex-digit-char-list) corresponds to
-      <i>hexadecimal-digit-sequence</i> in [C:6.4.4.2] [C:A.1.5].")
-    (xdoc::li
-     "The fixtypes "
-     (xdoc::seetopic "fty::basetypes" "@('nat')")
-     " and @(tsee nat-list)
-      correspond to
-      <i>c-char</i> and <i>c-char-sequence</i> in [C:6.4.4.4] [C:A.1.5],
-      as well as to
-      <i>s-char</i> and <i>s-char-sequence</i> in [C:6.4.5] [C:A.1.6]."))
+     and are thus not defined here, but just used.
+     Examples are fixtypes for digits (in different bases), and lists thereof.")
    (xdoc::p
     "The @('...-list') fixtypes are slightly more general than
-     <i>...-sequence</i> nonterminals in the grammar in [C],
+     <i>...-sequence</i> and <i>...-list</i> nonterminals in the grammar in [C],
      because the former include the empty list,
-     while the latter only include non-empty sequences.
-     The same applies to other fixtypes defined here:
-     while the grammar in [C] forces
-     certain sequences of entities to be non-empty,
-     our corresponding fixtypes include the empty list.
-     This makes things a bit simpler,
+     while the latter only include non-empty sequences/lists.
+     Including empty lists in our fixtypes makes things a bit simpler,
      partly because currently @(tsee fty::deflist)
      generates conflicting theorems if used
      both with @(':non-emptyp t') and with @(':non-emptyp nil')
@@ -96,7 +78,37 @@
      which include ASCII codes as a subset.
      Although natural numbers are more general that Unicode code points,
      and also more general than <i>c-char</i> and <i>s-char</i>,
-     it is fine for abstract syntax to be more general than concrete syntax."))
+     it is fine for abstract syntax to be more general than concrete syntax.")
+   (xdoc::p
+    "The syntax of C has some known ambiguities,
+     which cannot be disambiguated purely syntactically,
+     but need some (static) semantic.
+     Our abstract syntax fixtypes include cases
+     that capture these ambiguous constructions,
+     which are described when those fixtypes are introduced.
+     Here are some resources on the topic
+     (and more resources are easy to find):")
+   (xdoc::ul
+    (xdoc::li
+     (xdoc::ahref "https://en.wikipedia.org/wiki/Lexer_hack"
+                  "The Wikipedia page on the lexer hack."))
+    (xdoc::li
+     (xdoc::ahref "https://eli.thegreenplace.net/2007/11/24/the-context-sensitivity-of-cs-grammar/"
+                  "This blog post."))
+    (xdoc::li
+     (xdoc::ahref "https://web.archive.org/web/20131109145649/https://eli.thegreenplace.net/2011/05/02/the-context-sensitivity-of-cs-grammar-revisited/"
+                  "This (web-archived) related blog post."))
+    (xdoc::li
+     (xdoc::ahref "https://stackoverflow.com/questions/17202409/how-typedef-name-identifier-issue-is-resolved-in-c"
+                  "This Stack Overflow discussion."))
+    (xdoc::li
+     (xdoc::ahref "https://www.gnu.org/software/bison/manual/bison.html#Context-Dependency"
+                  "The Bison documentation about context dependencies.")))
+   (xdoc::p
+    "Unlike some approaches suggested in the above resources,
+     we prefer to defer the disambiguation of these constructs after parsing,
+     so that parsing is purely syntactical,
+     without the need for any semantic analysis during parsing."))
   :order-subtopics t
   :default-parent t)
 
@@ -1108,13 +1120,17 @@
        The @('sizeof') applied to an expression is instead captured
        in the @(':unary') case,
        since @(tsee unop) includes @('sizeof') for expressions.
-       During parsing, an expression of the form @('sizeof ( I )'),
-       where @('I') is an identifier,
+       During parsing, an expression of the form")
+     (xdoc::codeblock
+      "sizeof ( I )")
+     (xdoc::p
+      "where @('I') is an identifier,
        cannot be disambiguated on a purely syntactic basis,
        because @('I') may be either an expression or a type name:
        we defer the resolution of this ambiguity
        to static semantic analysis after parsing;
-       during parsing, we classify that as a type name.")
+       during parsing, we classify that as an ambiguous @('sizeof'),
+       for which we have the @(':sizeof-ambig') of this fixtype.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1135,10 +1151,10 @@
      (xdoc::p
       "The remaining four kinds of expressions capture expressions of the form")
      (xdoc::codeblock
-      "(I) * E"
-      "(I) + E"
-      "(I) - E"
-      "(I) & E")
+      "( I ) * E"
+      "( I ) + E"
+      "( I ) - E"
+      "( I ) & E")
      (xdoc::p
       "where @('I') is an identifier
        and @('E') is an expression of a certain form
@@ -1162,34 +1178,12 @@
        in particular to determine
        whether @('I') is a type name or an expression,
        based on what is in scope at that point.
-       Here are some resources that describe the issue
-       and approaches to handle it:")
-     (xdoc::ul
-      (xdoc::li
-       (xdoc::ahref "https://en.wikipedia.org/wiki/Lexer_hack"
-                    "The Wikipedia page on the lexer hack."))
-      (xdoc::li
-       (xdoc::ahref "https://eli.thegreenplace.net/2007/11/24/the-context-sensitivity-of-cs-grammar/"
-                    "This blog post."))
-      (xdoc::li
-       (xdoc::ahref "https://web.archive.org/web/20131109145649/https://eli.thegreenplace.net/2011/05/02/the-context-sensitivity-of-cs-grammar-revisited/"
-                    "This (web-archived) related blog post."))
-      (xdoc::li
-       (xdoc::ahref "https://stackoverflow.com/questions/17202409/how-typedef-name-identifier-issue-is-resolved-in-c"
-                    "This Stack Overflow discussion."))
-      (xdoc::li
-       (xdoc::ahref "https://www.gnu.org/software/bison/manual/bison.html#Context-Dependency"
-                    "The Bison documentation about context dependencies.")))
-     (xdoc::p
-      "(And more resources should be easy to find.)
-       We handle the issue by extending our definition of expressions
-       with cases that represent syntactically ambiguous expressions:
+       Our definition of expressions includes
+       cases that represent syntactically ambiguous expressions:
        there are four cases, one for each unary/binary operator,
        and each case has two components, namely
        the identifier that is either a type name or an expression,
-       and a subsequent expression.
-       We prefer this approach to
-       performing any kind of semantic analysis during parsing."))
+       and a subsequent expression."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
     (:string ((unwrap stringlit)))
@@ -1210,6 +1204,7 @@
     (:unary ((op unop)
              (arg expr)))
     (:sizeof ((type tyname)))
+    (:sizeof-ambig ((ident ident)))
     (:alignof ((type tyname)))
     (:cast ((type tyname)
             (arg expr)))
@@ -1341,7 +1336,45 @@
        avoiding explicit modeling of the <i>struct-or-union</i> nonterminal.")
      (xdoc::p
       "We model <i>typedef-name</i>
-       by inlining the type name into the @(':tydef') case of this fixtype."))
+       by inlining the type name into the @(':tydef') case of this fixtype.")
+     (xdoc::p
+      "We also include two cases to model two kinds of syntactic ambiguities.")
+     (xdoc::p
+      "One kind of ambiguity has the form")
+     (xdoc::codeblock
+      "... _Atomic ( I ) ( J ) ...")
+     (xdoc::p
+      "where @('I') and @('J') are identifiers.
+       This could be
+       either the atomic type specifier @('_Atomic(I)')
+       followed by the declarator @('(J)'),
+       or the @('_Atomic') type qualifier
+       followed by the declarator @('(I)(J)').
+       This cannot be disambiguated purely syntactically.
+       The @(':atomic-ambig') case of this fixtype
+       captures the @('_Atomic(I)') part
+       (while the @('J') would be captured as a declarator),
+       as a type specifier, but marked as ambiguous,
+       so that, during post-parsing semantic analysis,
+       this construct (and the subsequent declarator)
+       can be re-classified into non-ambiguous constructs.")
+     (xdoc::p
+      "The other kind of ambiguity has the form")
+     (xdoc::codeblock
+      "... I ( J ) ...")
+     (xdoc::p
+      "where @('I') and @('J') are identifiers.
+       This could be
+       either the type specifier @('I') followed by the declarator @('(J)'),
+       or just the declarator @('I(J)').
+       This cannot be disambiguated purely syntactically.
+       The @(':tydef-ambig') case of this fixtype
+       captures the @('I') part
+       (while the @('(J)') part would be captured as a declarator),
+       as a type specifier, but marked as ambiguous,
+       so that, during post-parsing semantic analysis,
+       this construct (and the subsequent declarator)
+       can be re-classified into non-ambiguous constructs."))
     (:void ())
     (:char ())
     (:short ())
@@ -1354,10 +1387,12 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
+    (:atomic-ambig ((ident ident)))
     (:struct ((unwrap strunispec)))
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:tydef ((name ident)))
+    (:typedef-ambig ((ident ident)))
     :pred tyspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1407,11 +1442,29 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>alignment-specifier</i> in the grammar in [C].
-       The two cases of this fixtype correspond to
+       The first two cases of this fixtype correspond to
        the two forms of @('_Alignas'),
-       one for type names and one for constant expressions."))
+       one for type names and one for constant expressions.
+       The third case is for ambiguous forms")
+     (xdoc::codeblock
+      "_Alignas ( I )")
+     (xdoc::p
+      "where @('I') is an identifier,
+       which may be either a type name or an expression.
+       There is no way to disambiguate this purely syntactically.
+       Although an identifier expression represents a variable,
+       which therefore may not be a legal constant expression,
+       syntactically a constant expression is just an expression:
+       its constancy is enforced post-parsing, as part of static semantics.
+       Therefore, we could parse an @('_Alignas') of the form above,
+       which is ambiguous until we disambiguate it semantically.
+       In addition, we may extend our abstract syntax
+       with preprocessing constructs,
+       and in that case identifiers may be @('#define') constants,
+       which would be constant expressions also according to static semantic."))
     (:alignas-type ((type tyname)))
     (:alignas-expr ((arg const-expr)))
+    (:alignas-ambig ((ident ident)))
     :pred alignspecp
     :base-case-override :alignas-expr
     :measure (two-nats-measure (acl2-count x) 2))
@@ -1760,7 +1813,7 @@
 
   (fty::deftagsum strunispec
     :parents (abstract-syntax expr/decls)
-    :short "Fixtype of structure and union specifiers [C:6.7.2.1] [C:A.2.2]."
+    :short "Fixtype of structure or union specifiers [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1867,7 +1920,7 @@
     (:name-list ((name ident)
                  (list enumer-list)
                  (final-comma bool)))
-    :pred enumspec
+    :pred enumspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

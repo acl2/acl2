@@ -52,6 +52,7 @@
                     :complit
                     :unary
                     :sizeof
+                    :sizeof-ambig
                     :alignof))
        t))
 
@@ -138,10 +139,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-stoclaspec
+  :short "An irrelevant storage class specifier."
+  :type stoclaspecp
+  :body (stoclaspec-tydef))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyqual
   :short "An irrelevant type qualifier."
   :type tyqualp
   :body (tyqual-const))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-funspec
+  :short "An irrelevant function specifier."
+  :type funspecp
+  :body (funspec-inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,6 +195,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-alignspec
+  :short "An irrelevant alignment specifier."
+  :type alignspecp
+  :body (alignspec-alignas-ambig (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-declspec
+  :short "An irrelevant declaration specifier."
+  :type declspecp
+  :body (declspec-tyspec (irr-tyspec)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initer
   :short "An irrelevant initializer."
   :type initerp
@@ -205,6 +234,20 @@
   :short "An irrelevant type name."
   :type tynamep
   :body (tyname nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-strunispec
+  :short "An irrelevant structure or union specifier."
+  :type strunispecp
+  :body (strunispec-name (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-enumspec
+  :short "An irrelevant enumeration specifier."
+  :type enumspecp
+  :body (enumspec-name (irr-ident)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
