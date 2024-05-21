@@ -50,7 +50,7 @@
 ; The Intel and AMD documentation is ambiguous about the determination of the
 ; operand size of the PUSH and POP instructions in 64-bit mode.
 ;
-; The PUSH and POP instruction reference in Intel manual, Mar'17, Vol. 2 says
+; The PUSH and POP instruction reference in Intel manual, Dec'23, Vol. 2 says
 ; that the D flag of the current code segment descriptor determines the default
 ; operand size, and that this default size may be overridden by instruction
 ; prefixes 66H or REX.W. Section 3.4.5 of Vol. 3A says (in the description of
@@ -68,7 +68,7 @@
 ; prefix is irrelevant. (Note that the tables at the beginning of the PUSH and
 ; POP instructions disallow a 32-bit operand size in 64-bit mode.)
 ;
-; However, the PUSH and POP instruction reference in AMD manual, Jun'15, Vol. 3
+; However, the PUSH and POP instruction reference in AMD manual, Jun'23, Vol. 3
 ; says that in 64-bit mode the default operand size is 64 bits. Furthermore,
 ; Table A-2 of Intel manual, Vol. 2D shows a d64 superscript for the PUSH and
 ; POP instructions that are valid and encodable in 64-bit mode (except for the
@@ -84,7 +84,7 @@
 ; Also based on some experiments, we choose the second intepretations above in
 ; our formal model.
 ;
-; The documentation of PUSH in Intel manual, Mar'17, Vol. 2 includes a section
+; The documentation of PUSH in Intel manual, Dec'23, Vol. 2 includes a section
 ; "IA-32 Architecture Compatibiity" describing a slightly different behavior of
 ; PUSH ESP in 8086 processors. This is is currently not covered by our formal
 ; model below. To cover this, we may need to extend the X86 state with
@@ -126,7 +126,7 @@
        ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- operand-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :push flg)) ;; #SS(0)
 
-       ;; See "Z" in http://ref.x86asm.net/geek.html#x50
+       ;; See "Z" in  http://ref.x86asm.net/geek.html#x50
        (reg (mbe :logic (loghead 3 opcode)
 		 :exec (the (unsigned-byte 3)
 			 (logand #x07 opcode))))
@@ -228,7 +228,8 @@
        ;; Update the x86 state:
 
        ((mv flg x86)
-	(wme-size-opt proc-mode operand-size
+	(wme-size-opt proc-mode
+                      operand-size
 		      (the (signed-byte #.*max-linear-address-size*) new-rsp)
 		      #.*ss*
 		      E
@@ -311,7 +312,8 @@
 
        ;; Update the x86 state:
        ((mv flg1 x86)
-	(wme-size-opt proc-mode operand-size
+	(wme-size-opt proc-mode
+                      operand-size
 		      new-rsp
 		      #.*ss*
 		      (mbe :logic (loghead (ash operand-size 3) imm)
@@ -491,7 +493,7 @@
 	(!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
-       ;; (Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
+       ;; (Intel manual, Dec'23, Vol. 2 says, in the specification of POP,
        ;; that a POP SP/ESP/RSP instruction increments the stack pointer
        ;; before the popped data is written into the stack pointer,
        ;; so the order of the following two bindings is important)
