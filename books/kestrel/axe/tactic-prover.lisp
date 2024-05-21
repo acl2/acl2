@@ -284,6 +284,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitor
+                             nil ; fns-to-elide
                              nil ; memoizep
                              t ; count-hits ; todo: pass in
                              print
@@ -571,6 +572,7 @@
                             nil ; print
                             (known-booleans (w state))
                             monitor ; monitored-symbols
+                            nil ; fns-to-elide
                             normalize-xors
                             nil ; memoize
                             ))

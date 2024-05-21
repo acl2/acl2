@@ -147,7 +147,7 @@
                     (cw "~x0" expr)
                   (if (not (keep-nodenum-dargs (dargs expr)))
                       (cw "All args are constants so not printing a DAG.~%")
-                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (keep-nodenum-dargs (dargs expr)))))
+                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (+ 1 frame) (keep-nodenum-dargs (dargs expr)))))
                 (er hard? 'get-pc-from-frame "Unexpected frame: ~x0.  See DAG just above." expr)
                 (mv (erp-t) nil))))))
 

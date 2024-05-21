@@ -82,6 +82,7 @@
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
+;; TODO: Compare to the generated ,def-simplified-dag-name.
 (defund def-simplified-fn (defconst-name ;should begin and end with *
                             term
                             rules
@@ -130,6 +131,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitor
+                             nil ; fns-to-elide
                              memoizep
                              count-hits
                              print

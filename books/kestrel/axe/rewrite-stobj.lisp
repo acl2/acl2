@@ -34,6 +34,8 @@
   (interpreted-function-alist :type (satisfies interpreted-function-alistp) :initially nil)
   ;; Rules to be applied when rewriting, stored as a rule-alist:
   (rule-alist :type (satisfies rule-alistp) :initially nil)
+  ;; Functions to elide when printing failure info (e.g., the refined-assumption-alist) for monitored rules:
+  (fns-to-elide :type (satisfies symbol-listp) :initially nil)
   :inline t
   :renaming ((known-booleans get-known-booleans)
              (update-known-booleans put-known-booleans)
@@ -49,7 +51,9 @@
              (update-interpreted-function-alist put-interpreted-function-alist)
              (rule-alistp rule-alist-fieldp) ; since rule-alistp is already used!  can we suppress the recognizer in this case?
              (rule-alist get-rule-alist)
-             (update-rule-alist put-rule-alist)))
+             (update-rule-alist put-rule-alist)
+             (fns-to-elide get-fns-to-elide)
+             (update-fns-to-elide put-fns-to-elide)))
 
 ;; In case we turn off tau.
 (defthm true-listp-of-get-monitored-symbols
