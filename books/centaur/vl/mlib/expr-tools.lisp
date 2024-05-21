@@ -1347,6 +1347,8 @@ construct fast alists binding identifiers to things, etc.</p>"
     :vl-mintypmax (list x.min x.typ x.max)
     :vl-concat x.parts
     :vl-multiconcat (cons x.reps x.parts)
+    :vl-bitselect-expr (list x.subexp x.index)
+    :vl-partselect-expr (cons x.subexp (vl-partselect->subexprs x.part))
     :vl-stream (append (vl-slicesize->subexprs x.size)
                        (vl-streamexprlist->subexprs x.parts))
     :vl-call (append (vl-scopeexpr->subexprs x.name)
@@ -1367,7 +1369,8 @@ construct fast alists binding identifiers to things, etc.</p>"
              :expand ((vl-expr-count x)
                       (vl-maybe-expr-count (vl-stream->size x)))
              :in-theory (enable vl-maybe-expr-some->val)))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :otf-flg t)
 
   (local (in-theory (disable cons-equal double-containment)))
 
@@ -1409,6 +1412,11 @@ construct fast alists binding identifiers to things, etc.</p>"
       (change-vl-concat x :parts subexprs)
       :vl-multiconcat
       (change-vl-multiconcat x :reps (car subexprs) :parts (cdr subexprs))
+      :vl-bitselect-expr
+      (change-vl-bitselect-expr x :subexp (car subexprs) :index (cadr subexprs))
+      :vl-partselect-expr
+      (change-vl-partselect-expr x :subexp (car subexprs)
+                                 :part (vl-partselect-update-subexprs x.part (cdr subexprs)))
       :vl-stream
       (let ((nsizeexprs (len (vl-slicesize->subexprs x.size))))
         (change-vl-stream
@@ -2086,6 +2094,8 @@ throughout the expression, with repetition.  The resulting list may contain any
     :vl-mintypmax (change-vl-mintypmax x :atts (append-without-guard new-atts x.atts))
     :vl-concat (change-vl-concat x :atts (append-without-guard new-atts x.atts))
     :vl-multiconcat (change-vl-multiconcat x :atts (append-without-guard new-atts x.atts))
+    :vl-bitselect-expr (change-vl-bitselect-expr x :atts (append-without-guard new-atts x.atts))
+    :vl-partselect-expr (change-vl-partselect-expr x :atts (append-without-guard new-atts x.atts))
     :vl-stream (change-vl-stream x :atts (append-without-guard new-atts x.atts))
     :vl-call (change-vl-call x :atts (append-without-guard new-atts x.atts))
     :vl-cast (change-vl-cast x :atts (append-without-guard new-atts x.atts))

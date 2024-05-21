@@ -4086,6 +4086,109 @@ functions can assume all bits of it are good.</p>"
               (svex-multiconcat reps svexes sizes)))
           (mv (vttree-fix vttree) svex))
 
+        :vl-bitselect-expr
+        (b* (((vmv vttree subexp-svex subexp-size)
+              (vl-expr-to-svex-selfdet x.subexp nil ss scopes))
+             ((unless subexp-size)
+              (mv vttree (svex-x)))
+             ((when (vl-expr-resolved-p x.index))
+              (b* ((index (vl-resolved->val x.index))
+                   ((unless (<= 0 index))
+                    (mv (vfatal :type :vl-expr-bitselect-negative
+                                :msg "Negative bitselect on expression: ~a0"
+                                :args (list x))
+                        (svex-x)))
+                   (vttree (if (<= subexp-size index)
+                               (vwarn :type :vl-expr-bitselect-out-of-bounds
+                                      :msg "Selecting bit ~x0 of an expression of size ~x1: ~a2"
+                                      :args (list index subexp-size x))
+                             vttree)))
+                (mv vttree (sv::svcall sv::partsel (svex-int index) 1
+                                       (sv::svex-concat subexp-size
+                                                        subexp-svex (svex-x))))))
+             ((vmv vttree index-svex ?index-size) (vl-expr-to-svex-selfdet x.index nil ss scopes)))
+          (mv (vttree-fix vttree)
+              (sv::svcall sv::partsel index-svex 1
+                          (sv::svex-concat subexp-size subexp-svex (svex-x)))))
+
+        :vl-partselect-expr
+        (b* (((vmv vttree subexp-svex subexp-size) (vl-expr-to-svex-selfdet x.subexp nil ss scopes))
+             ((unless subexp-size)
+              (mv vttree (svex-x))))
+          (vl-partselect-case x.part
+            :none (mv vttree subexp-svex)
+            :range
+            (b* (((unless (vl-range-resolved-p x.part.range))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Unresolved range in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((vl-range x.part.range))
+                 (msb (vl-resolved->val x.part.range.msb))
+                 (lsb (vl-resolved->val x.part.range.lsb))
+                 ((unless (<= lsb msb))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Backward range in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((unless (<= 0 lsb))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Negative index in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((unless (< msb subexp-size))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "MSB out of range in partselect expression ~a0 (subexp width ~x1)"
+                              :args (list x subexp-size))
+                      (svex-x))))
+              (mv (vttree-fix vttree)
+                  (sv::svcall sv::partsel (svex-int lsb) (svex-int (+ 1 (- msb lsb)))
+                              (sv::svex-concat subexp-size subexp-svex (svex-x)))))
+            :plusminus
+            (b* (((unless (vl-expr-resolved-p x.part.width))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Unresolved width in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 (width (vl-resolved->val x.part.width))
+                 ((unless (<= 0 width))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Negative width in partselect expression ~a0"
+                              :args (list x))
+                      (svex-x)))
+                 ((unless (<= width subexp-size))
+                  (mv (vfatal :type :vl-expr-to-svex-fail
+                              :msg "Partselect width greater than expression size: ~a0 (subexp size: ~x1)"
+                              :args (list x subexp-size))
+                      (svex-x)))
+                 ((when (vl-expr-resolved-p x.part.base))
+                  (b* ((base (vl-resolved->val x.part.base))
+                       (lsb (if x.part.minusp
+                                (+ 1 (- base width))
+                              base))
+                       ((unless (<= 0 lsb))
+                        (mv (vfatal :type :vl-expr-to-svex-fail
+                                    :msg "Negative LSB in partselect expression ~a0"
+                                    :args (list x))
+                            (svex-x)))
+                       ((unless (<= (+ lsb width) subexp-size))
+                        (mv (vfatal :type :vl-expr-to-svex-fail
+                                    :msg "MSB out of range in partselect expression ~a0"
+                                    :args (list x))
+                            (svex-x))))
+                    (mv (vttree-fix vttree)
+                        (sv::svcall sv::partsel (svex-int lsb) (svex-int width)
+                                    (sv::svex-concat subexp-size subexp-svex (svex-x))))))
+                 ((vmv vttree base-svex ?base-size) (vl-expr-to-svex-selfdet x.part.base nil ss scopes))
+                 (lsb (if x.part.minusp
+                          (sv::svcall + base-svex
+                                      (sv::svcall + (svex-int 1)
+                                                  (sv::svcall sv::u- (svex-int width))))
+                        base-svex)))
+              (mv (vttree-fix vttree)
+                  (sv::svcall sv::partsel lsb (svex-int width)
+                              (sv::svex-concat subexp-size subexp-svex (svex-x)))))))
+
         :vl-inside
         (b* (((wvmv vttree elem-selfsize) (vl-expr-selfsize x.elem ss scopes))
              ((wvmv vttree elem-class)    (vl-expr-typedecide x.elem ss scopes))
