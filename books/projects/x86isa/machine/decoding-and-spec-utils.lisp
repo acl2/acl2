@@ -513,11 +513,11 @@ the @('fault') field instead.</li>
      which is also a signed 64-bit integer.
      </p>
      <p>
-     See Intel manual, Mar'17, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
-     and AMD manual, Apr'16, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
+     See Intel manual, Mar'23, Vol. 1, Sec. 6.2.3 and Sec. 6.2.5,
+     and AMD manual, Jun'23, Vol. 2, Sec 2.4.5 and Sec. 4.7.3.
      The actual size of the value returned by this function
      is @('StackAddrSize'),
-     introduced in Intel manual, Mar'17, Vol. 2, Sec. 3.1.1.9.
+     introduced in Intel manual, Dec'23, Vol. 2, Sec. 3.1.1.9.
      </p>
      <p>
      In 32-bit mode, the address-size override prefix (if present)
