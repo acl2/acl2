@@ -4478,7 +4478,6 @@
             jnl-condition-of-sf-spec64-and-0
             of-spec64-of-logext-64
             acl2::sbvlt-of-bvsx-arg2
-            acl2::bvsx-of-bvchop
 
             integerp-of-part-install-width-low$inline
             x86isa::sp-sse-cmp
@@ -4583,7 +4582,6 @@
             acl2::boolif-when-quotep-arg3
             acl2::bvchop-of-bvsx
             acl2::bvchop-of-bvuminus-same
-            acl2::bvsx-of-bvchop
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
