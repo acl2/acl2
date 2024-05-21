@@ -426,44 +426,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum dec-frac-const
+(fty::defprod dec-frac-const
   :short "Fixtype of decimal fractional constants [C:6.4.4.2] [C:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>fractional-constant</i>
      in the grammar in [C].
-     It covers the three possibilities of
+     It consists of the digits before and after the point.
+     Thus, it covers the three possibilities of
      (i) the point in the middle (with a left and right digit sequence),
      (ii) the point at the start (with just a right digit sequence), and
-     (iii) the point at the end (with just a left digit sequence).
-     This is structured slightly differently and more symmetrically
-     than in the grammar in [C]."))
-  (:middle ((left dec-digit-char-list)
-            (right dec-digit-char-list)))
-  (:start ((right dec-digit-char-list)))
-  (:end ((left dec-digit-char-list)))
+     (iii) the point at the end (with just a left digit sequence);
+     it also covers a fourth possibility, disalowed in the grammar in [C],
+     namely when there are no digits before or after the point.
+     This fourth possibilty makes the definition of this fixtype simpler,
+     and can be ruled out by predicates over this abstract syntax."))
+  ((before dec-digit-char-list)
+   (after dec-digit-char-list))
   :pred dec-frac-constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum hex-frac-const
+(fty::defprod hex-frac-const
   :short "Fixtype of hexadecimal fractional constants [C:6.4.4.2] [C:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>hexadecimal-fractional-constant</i>
      in the grammar in [C].
-     It covers the three possibilities of
+     It consists of the digits before and after the point.
+     Thus, it covers the three possibilities of
      (i) the point in the middle (with a left and right digit sequence),
      (ii) the point at the start (with just a right digit sequence), and
-     (iii) the point at the end (with just a left digit sequence).
-     This is structured slightly differently and more symmetrically
-     than in the grammar in [C]."))
-  (:middle ((left hex-digit-char-list)
-            (right hex-digit-char-list)))
-  (:start ((right hex-digit-char-list)))
-  (:end ((left hex-digit-char-list)))
+     (iii) the point at the end (with just a left digit sequence);
+     it also covers a fourth possibility, disalowed in the grammar in [C],
+     namely when there are no digits before or after the point.
+     This fourth possibilty makes the definition of this fixtype simpler,
+     and can be ruled out by predicates over this abstract syntax."))
+  ((before hex-digit-char-list)
+   (after hex-digit-char-list))
   :pred hex-frac-constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
