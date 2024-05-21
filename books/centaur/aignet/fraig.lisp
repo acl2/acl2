@@ -2629,6 +2629,11 @@
             (logtail 1 x1.count))
       (fraig-output-map-initial-equiv-start/count (cdr x) (+ x1.count (lnfix prev-count))))))
 
+(define fraig-output-map-total-count ((x fraig-output-map-p))
+  :returns (count natp :rule-classes :type-prescription)
+  (b* (((when (atom x)) 0)
+       ((fraig-output-map-entry x1) (car x)))
+    (+ x1.count (fraig-output-map-total-count (cdr x)))))
 
 
 (define bitarr-remove-marked ((n natp)
@@ -2835,8 +2840,15 @@
                    :count (* 2 config.n-outputs-are-initial-equiv-classes)))
           (list (make-fraig-output-map-entry
                  :type (make-fraig-output-type-initial-equiv-classes)
-                 :count (* 2 config.n-outputs-are-initial-equiv-classes))))))
-    config.output-map))
+                 :count (* 2 config.n-outputs-are-initial-equiv-classes)))))
+       (count (fraig-output-map-total-count config.output-map))
+       ((when (<= (num-outs aignet) count))
+        config.output-map))
+    (cons (make-fraig-output-map-entry
+           :type (make-fraig-output-type-simplify)
+           ;; If config.n-outputs-are-initial-equiv-classes is set too high, we'll complain in classes-init-n-outputs
+           :count (- (num-outs aignet) count))
+          config.output-map)))
 
 
 

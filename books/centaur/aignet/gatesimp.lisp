@@ -1,10 +1,6 @@
 ; AIGNET - And-Inverter Graph Networks
 ; Copyright (C) 2013 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright 2024 Intel Corp.
 ;
 ; License: (An MIT/X11-style license)
 ;

@@ -1,10 +1,6 @@
 ; AIGNET - And-Inverter Graph Networks
 ; Copyright (C) 2017 Centaur Technology
-;
-; Contact:
-;   Centaur Technology Formal Verification Group
-;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
-;   http://www.centtech.com/
+; Copyright 2024 Intel Corp.
 ;
 ; License: (An MIT/X11-style license)
 ;
@@ -141,10 +137,15 @@ setting of initial-equiv-classes-last.  If nonnil, then @('i') ranges from
 more than once.  Combinational equivalence is preserved for all outputs.  Not
 compatible with @(':miters-only') or @('output-map').")
    (initial-equiv-classes-last booleanp :default nil
-                                  "See the n-outputs-are-initial-equiv-classes option.")
+                               "See the n-outputs-are-initial-equiv-classes option.")
    (output-map fraig-output-map-p :default nil
-               "If this is empty, then all outputs are treated as nodes to simplify.  Otherwise, it gives an ordered list of @(see fraig-output-map-entry) objects determining how to treat the various ranges of objects. See @(see fraig-output-type) for the possible types.")
-   )
+               "If this is empty, then all outputs are treated as nodes to
+simplify.  Otherwise, it gives an ordered list of @(see fraig-output-map-entry)
+objects determining how to treat the various ranges of objects. See @(see
+fraig-output-type) for the possible types. Entries are applied in order, but if
+the total count of the output map is less than the number of primary outputs,
+then an implicit entry of type SIMPLIFY is added first with count equal to the
+difference."))
 
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."
