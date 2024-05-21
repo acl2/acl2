@@ -1710,7 +1710,15 @@
        and the @(':array-star') case captures the @('...[...*]') form.")
      (xdoc::p
       "In the @(':function-params') case,
-       we inline <i>parameter-type-list</i>."))
+       we inline <i>parameter-type-list</i>.")
+     (xdoc::p
+      "Grammatically, an <i>identifier-list</i>
+       is also a <i>parameter-type-list</i>,
+       because an identifier could be a type specifier (a @('typedef') name).
+       This cannot be disambiguated purely syntactically.
+       So, during parsing, we always generate the @(':function-params') case,
+       which may be re-classified into the @(':function-names') case
+       during post-parsing semantic analysis."))
     (:ident ((unwrap ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
