@@ -1359,12 +1359,11 @@
                   :expand ((:free (foo) (classes-wellformed-aux 0 foo))))))))
 
 
-(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes mark)
+(define classes-join-po-pairs ((idx natp) (offset natp) (n natp) aignet classes)
   ;; N is the maximum first index, offset is the offset of the second index.
   :guard (and (<= (+ offset n) (num-outs aignet))
               (<= idx n)
               (<= (num-fanins aignet) (classes-size classes))
-              (<= (num-fanins aignet) (bits-length mark))
               (classes-wellformed classes))
   :measure (nfix (- (nfix n) (nfix idx)))
   :returns new-classes
@@ -1374,11 +1373,8 @@
        (id1 (lit->var (outnum->fanin idx aignet)))
        (id2 (lit->var (outnum->fanin (+ (lnfix idx) (lnfix offset)) aignet)))
         
-       (classes (if (and (eql (get-bit id1 mark) 1)
-                         (eql (get-bit id2 mark) 1))
-                    (uf-join-classes-compress id1 id2 classes)
-                  classes)))
-    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes mark))
+       (classes (uf-join-classes-compress id1 id2 classes)))
+    (classes-join-po-pairs (1+ (lnfix idx)) offset n aignet classes))
   ///
   
   (defret classes-size/wellformed-of-<fn>
@@ -1419,8 +1415,8 @@
   
 
 
-(define classes-init-n-outputs ((n natp)
-                                (lastp "if nonnil, use the last 2N outputs instead of the first 2N outputs")
+(define classes-init-n-outputs ((n natp "number of pairs to consider")
+                                (start natp "starting point of the range of outputs")
                                 classes aignet)
   ;; Pairs the first N outputs with the next N outputs to form the initial equivalence classes.
   :returns (new-classes)
@@ -1440,33 +1436,24 @@
        (classes (resize-class-nexts size classes))
        (classes (resize-class-heads size classes))
        ((when (zp size)) classes)
-       ((acl2::local-stobjs mark)
-        (mv mark classes))
-       (mark (resize-bits size mark))
-       (mark (set-bit 0 1 mark)) ;; mark constant node
        (classes (classes-init-empty-aux (num-fanins aignet) classes))
-       ((when (> (* 2 (lnfix n)) (num-outs aignet)))
+       ((when (> (+ (lnfix start) (* 2 (lnfix n))) (num-outs aignet)))
         (cw " **********  TRANSFORMATION FAILED **********~%~
 Fraig transform was attempted with option ~x0 set to ~x1. ~
 When this value is a natural number N, there must be at least 2*N outputs, ~
 so in this case the aignet should have at least ~x2 outputs, but in fact it has ~x3.~%"
             :n-outputs-are-initial-equiv-classes
             (lnfix n) (* 2 (lnfix n)) (num-outs aignet))
-        (mv mark classes))
-       (regular-outs-start (if lastp 0 (* 2 (lnfix n))))
-       (regular-outs-end (if lastp
-                             (- (num-outs aignet) (* 2 (lnfix n)))
-                           (num-outs aignet)))
-       (mark (aignet-mark-dfs-outs-range regular-outs-start regular-outs-end mark aignet))
+        ;; the classes are empty, i.e. every node in its on equiv class, so the
+        ;; transform will just copy.  But (FIXME) we should add a way to
+        ;; prevent class refinement after this, since it will be useless.
+        classes)
                            
-       (classes (if lastp
-                    (b* ((start (- (num-outs aignet) (* 2 (lnfix n)))))
-                      (classes-join-po-pairs start n (+ start (lnfix n)) aignet classes mark))
-                  (classes-join-po-pairs 0 n n aignet classes mark)))
+       (classes (classes-join-po-pairs start n (+ (lnfix start) (lnfix n)) aignet classes))
        (classes (uf-fix-to-equiv-class-format 0 classes)))
     (classes-report-sizes classes)
     (classes-check-consistency (num-fanins aignet) classes)
-    (mv mark classes))
+    classes)
        
   ///
 

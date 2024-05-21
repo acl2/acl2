@@ -769,6 +769,30 @@
     (mv t nthcdr interp-st))
   :formula-check primitives-formula-checks)
 
+(define fgl-objectlist-revappend-to-obj ((x fgl-objectlist-p)
+                                         (acc fgl-object-p))
+  :returns (res fgl-object-p)
+  :verify-guards nil
+  (if (atom x)
+      (fgl-object-fix acc)
+    (fgl-objectlist-revappend-to-obj
+     (cdr x) (g-cons (car x) acc)))
+  ///
+  (Verify-guards fgl-objectlist-revappend-to-obj)
+  
+  (defret bfr-listp-of-<fn>
+    (implies (and (bfr-listp (fgl-objectlist-bfrlist x))
+                  (bfr-listp (fgl-object-bfrlist acc)))
+             (bfr-listp (fgl-object-bfrlist res))))
+  
+  (defret eval-of-<fn>
+    (equal (fgl-object-eval res env)
+           (revappend (fgl-objectlist-eval x env)
+                      (fgl-object-eval acc env)))
+    :hints (("goal" :induct <call>
+             :expand ((fgl-objectlist-eval x env))
+             :in-theory (enable revappend)))))  
+  
 
 (define fgl-take-aux ((n natp) (x fgl-object-p))
   :returns (mv ok (new-x fgl-object-p))
@@ -796,13 +820,46 @@
                     (take n (fgl-object-eval x env))))
     :hints (("goal" :induct <call>
              :in-theory (enable take)))))
+
+
+(define fgl-take-aux-tr ((n natp) (x fgl-object-p) (acc fgl-objectlist-p))
+  :returns (mv ok (new-x fgl-object-p))
+  :verify-guards nil
+  (if (zp n)
+      (mv t (fgl-objectlist-revappend-to-obj acc nil))
+    (fgl-object-case x
+      :g-concrete (mv t (fgl-objectlist-revappend-to-obj
+                         acc (g-concrete (ec-call (take n x.val)))))
+      :g-cons (fgl-take-aux-tr (1- n) x.cdr (cons x.car acc))
+      :g-boolean (mv t (fgl-objectlist-revappend-to-obj
+                        acc (g-concrete (acl2::repeat n nil))))
+      :g-integer (mv t (fgl-objectlist-revappend-to-obj
+                        acc (g-concrete (acl2::repeat n nil))))
+      :otherwise (mv nil nil)))
+  ///
+  (verify-guards fgl-take-aux-tr)
+  
+  (defret bfr-listp-of-<fn>
+    (implies (and (bfr-listp (fgl-object-bfrlist x))
+                  (bfr-listp (fgl-objectlist-bfrlist acc)))
+             (bfr-listp (fgl-object-bfrlist new-x)))
+    :hints (("goal" :induct <call>
+             :expand ((fgl-object-bfrlist x)))))
+  
+  (defret eval-of-<fn>
+    (implies ok
+             (equal (fgl-object-eval new-x env)
+                    (revappend (fgl-objectlist-eval acc env)
+                               (take n (fgl-object-eval x env)))))
+    :hints (("goal" :induct <call>
+             :in-theory (enable take acl2::repeat)))))
        
     
 (def-fgl-primitive take (n v)
   (b* (((unless (fgl-object-case n :g-concrete))
         (mv nil nil interp-st))
        (n (nfix (g-concrete->val n)))
-       ((mv ok take) (fgl-take-aux n v))
+       ((mv ok take) (fgl-take-aux-tr n v nil))
        ((unless ok)
         (mv nil nil interp-st)))
     (mv t take interp-st))

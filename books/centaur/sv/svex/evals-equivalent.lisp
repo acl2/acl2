@@ -33,6 +33,7 @@
 (include-book "centaur/fgl/checks" :dir :system)
 (include-book "centaur/fgl/make-isomorphic-def" :dir :system)
 (include-book "centaur/fgl/list-to-tree" :dir :system)
+(include-book "centaur/aignet/fraig-config" :dir :system)
 (local (include-book "alist-thms"))
 ;; (include-book "centaur/aignet/transforms" :dir :System)
 
@@ -211,21 +212,16 @@ to the svexes.</p>"
   (if (atom transforms)
       nil
     (cons (b* ((x (car transforms))
-               ((unless (and (consp x)
-                             (eq (car x) :fraig-config)
-                             (alistp (cdr x))))
+               ((unless (aignet::fraig-config-p x))
                 x)
+               ((aignet::fraig-config x))
                ;; Change the config: find the AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES entry
                ;; and replace it with `(AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES . ,n)
-               (alist (cdr x))
-               (n-outputs-entry (cdr (assoc 'AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES alist)))
-               ((unless n-outputs-entry)
-                (cons :fraig-config alist))
-               (alist (my-replace-assoc 
-                       'AIGNET::N-OUTPUTS-ARE-INITIAL-EQUIV-CLASSES (lnfix n) alist))
-               (alist (my-replace-assoc
-                       'AIGNET::INITIAL-EQUIV-CLASSES-LAST t alist)))
-            (cons :fraig-config alist))
+               ((unless x.n-outputs-are-initial-equiv-classes)
+                x))
+            (aignet::change-fraig-config x
+                                         :n-outputs-are-initial-equiv-classes n
+                                         :initial-equiv-classes-last t))
           (transforms-update-fraig-configs-for-n-outputs n (cdr transforms)))))
 
 ;; (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -522,6 +518,7 @@ to the svexes.</p>"
 
 
 (define hons-aig-accumulate-nodes (x acc)
+  :returns (nodes alistp :hyp (alistp acc))
   (b* (((when (atom x))
         (if (or (booleanp x)
                 (hons-get x acc))
@@ -535,6 +532,7 @@ to the svexes.</p>"
     (hons-aig-accumulate-nodes (cdr x) acc)))
 
 (define hons-aiglist-accumulate-nodes (x acc)
+  :returns (nodes alistp :hyp (alistp acc))
   (if (atom x)
       acc
     (hons-aiglist-accumulate-nodes
@@ -557,17 +555,25 @@ to the svexes.</p>"
 
 
 (define a4veclist-accumulate-upper-nodes ((x a4veclist-p) acc)
+  :returns (nodes alistp :hyp (alistp acc))
   (if (atom x)
       acc
-    (a4veclist-accumulate-nodes (cdr x)
-                                (hons-aiglist-accumulate-nodes (a4vec->upper (car x))
-                                                               acc))))
+    (a4veclist-accumulate-upper-nodes
+     (cdr x)
+     (hons-aiglist-accumulate-nodes (a4vec->upper (car x))
+                                    acc))))
 
 
 (define a4veclist-upper-subnodes ((x a4veclist-p))
+  :prepwork ((local (defthm alist-keys-is-strip-cars-when-alistp
+                      (implies (alistp x)
+                               (equal (alist-keys x)
+                                      (Strip-cars x)))
+                      :hints(("Goal" :in-theory (enable alist-keys))))))
   (b* ((acc (a4veclist-accumulate-upper-nodes x nil)))
     (fast-alist-free acc)
-    (alist-keys acc)))
+    (mbe :logic (alist-keys acc)
+         :exec (strip-cars acc))))
 
 
 
