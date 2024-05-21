@@ -1524,7 +1524,7 @@
   :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
 
 (defthm nat-listp-of-append-nodenum-dargs
-  (implies (and (darg-listp dargs)
-                (nat-listp acc))
-           (nat-listp (append-nodenum-dargs dargs acc)))
+  (implies (darg-listp dargs)
+           (equal (nat-listp (append-nodenum-dargs dargs acc))
+                  (nat-listp acc)))
   :hints (("Goal" :in-theory (enable append-nodenum-dargs nat-listp))))
