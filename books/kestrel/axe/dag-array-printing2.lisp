@@ -19,7 +19,7 @@
 
 ;; Print the term represented by NODENUM-OR-QUOTEP in the DAG, as a term if it
 ;; won't be too big, otherwise as the relevant nodes from the DAG.
-(defun print-dag-node-nicely (nodenum-or-quotep dag-array-name dag-array dag-len max-term-size)
+(defund print-dag-node-nicely (nodenum-or-quotep dag-array-name dag-array dag-len max-term-size)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (dargp-less-than nodenum-or-quotep dag-len)
                               (natp max-term-size))))

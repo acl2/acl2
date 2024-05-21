@@ -74,12 +74,16 @@
           (cw ")~%")))
 
 ;; Prints the nodes whose numbers are in NODENUMS, and any supporting nodes.
-(defund print-dag-array-nodes-and-supporters (dag-array-name dag-array nodenums)
+(defund print-dag-array-nodes-and-supporters (dag-array-name dag-array dag-len nodenums)
   (declare (xargs :guard (and (nat-listp nodenums)
                               (consp nodenums)
-                              (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums))))
-                  :guard-hints (("Goal" :in-theory (enable maxelem ;todo
-                                                           )))))
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (all-< nodenums dag-len))
+                  ;; :guard-hints (("Goal" :in-theory (enable maxelem ;todo
+                  ;;                                          )))
+                  )
+           (ignore dag-len) ; only used for the guard
+           )
   (progn$ (cw "(")
           (print-dag-array-aux (maxelem nodenums) dag-array-name dag-array nodenums t)
           (cw ")~%")))

@@ -2081,6 +2081,7 @@
             x86isa::wz512$inline
 
             x86isa::x86-operand-to-zmm/mem
+            64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
             )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
@@ -3010,11 +3011,11 @@
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
             ;; protection value is read via the FS segment register):
             x86isa::rme-size-when-64-bit-modep-fs/gs
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs ; puts in wml-size
+            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
             x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::read-*ip-when-64-bit-modep
