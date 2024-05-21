@@ -1523,8 +1523,20 @@
            (true-listp (append-nodenum-dargs args acc)))
   :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
 
+(defthm true-listp-of-append-nodenum-dargs-type
+  (implies (true-listp acc)
+           (true-listp (append-nodenum-dargs args acc)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
+
 (defthm nat-listp-of-append-nodenum-dargs
   (implies (darg-listp dargs)
            (equal (nat-listp (append-nodenum-dargs dargs acc))
                   (nat-listp acc)))
   :hints (("Goal" :in-theory (enable append-nodenum-dargs nat-listp))))
+
+(defthmd append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
+  (equal (append-nodenum-dargs items acc)
+         (append (reverse-list (keep-nodenum-dargs items))
+                 acc))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs keep-nodenum-dargs))))

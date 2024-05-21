@@ -433,6 +433,7 @@
        (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
        (local (include-book "kestrel/lists-light/last" :dir :system))
        (local (include-book "kestrel/lists-light/take" :dir :system))
+       (local (include-book "kestrel/lists-light/append" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
@@ -440,6 +441,7 @@
        (local (include-book "kestrel/arithmetic-light/types" :dir :system))
        (local (include-book "kestrel/utilities/if-rules" :dir :system))
        (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ;reduce?
+       (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
 
        (local (in-theory (disable wf-dagp wf-dagp-expander
@@ -475,7 +477,15 @@
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
                           myquotep-when-dag-exprp-and-quote
-                          rationalp-of-sub-tries)))
+                          rationalp-of-sub-tries
+                          append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs)))
+
+       ;todo: dup!
+       (local
+         (defthm nat-listp-of-reverse-list
+           (equal (nat-listp (reverse-list x))
+                  (all-natp x))
+           :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
        ;; Make a version of sublis-var-and-eval:
        (make-substitution-code-simple ,suffix ,evaluator-base-name)
@@ -762,15 +772,26 @@
                                              (< 100 (sub-tries tries old-try-count))
                                              (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                         (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
-                                                     (cw "Reason: Rewrote to:~%")
-                                                     (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
-                                                     (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%" alist refined-assumption-alist )
-                                                     ;;print these better?:
-                                                     ;;(cw "(node-replacement-array: ~x0)~%" node-replacement-array)
-                                                     (cw "(DAG:~%")
-                                                     (print-array2 'dag-array dag-array dag-len)
-                                                     (cw "))~%")))
+                                             (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
+                                                    ;; (relevant-nodes (let ((expr (aref1 'dag-array dag-array new-nodenum-or-quotep)))
+                                                    ;;                   (if (and (consp expr)
+                                                    ;;                            (not (eq 'quote (ffn-symb expr))))
+                                                    ;;                       (append-nodenum-dargs (dargs expr) relevant-nodes)
+                                                    ;;                     relevant-nodes)))
+                                                    )
+                                               (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
+                                                       (cw "Reason: Rewrote to:~%")
+                                                       (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
+                                                       (cw "(Alist: ~x0)~%(Refined assumption alist:~%" alist)
+                                                       (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
+                                                       (cw ")~%")
+                                                       (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                       (cw "(Relevant DAG nodes:~%")
+                                                       (if (consp relevant-nodes)
+                                                           (print-dag-array-nodes-and-supporters 'dag-array dag-array dag-len relevant-nodes)
+                                                         (cw "elided"))
+                                                       ;; (print-array2 'dag-array dag-array dag-len)
+                                                       (cw "))~%"))))
                                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array))))))))))))))
 
         ;; Returns (mv erp instantiated-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array).
@@ -4260,7 +4281,8 @@
                                 len-when-equal-of-car-and-quote-and-axe-treep
                                 consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep
                                 len-of-car-when-axe-treep
-                                member-equal-when-member-equal-and-subsetp-equal)
+                                member-equal-when-member-equal-and-subsetp-equal
+                                all-natp-when-nat-listp)
                                (dargp
                                 dargp-less-than
                                 natp
@@ -4978,6 +5000,7 @@
                                 print
                                 known-booleans
                                 monitored-symbols
+                                fns-to-elide
                                 normalize-xors
                                 memoize)
       (declare (xargs :guard (and (pseudo-dagp dag)
@@ -4990,6 +5013,7 @@
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp known-booleans)
                                   (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide)
                                   (booleanp normalize-xors)
                                   (booleanp memoize))
                       :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -5030,7 +5054,7 @@
                                                      known-booleans))
            ((when erp) (mv erp nil))
            ;; Create the node-replacement-array and add relevant nodes to the DAG:
-           ;; TODO: Consider combining this with the above, in a single pass through the assumptions):
+           ;; TODO: Consider combining this with the above, in a single pass through the assumptions:
            ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (make-node-replacement-array-and-extend-dag assumptions
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -5040,6 +5064,7 @@
          (renumbering-stobj rewrite-stobj)
            (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj)
              (b* ((rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
+                  (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
                   (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
                   (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
                   (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
@@ -5079,8 +5104,8 @@
                      (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
 
     (defthm ,(pack$ simplify-dag-name '-return-type)
-      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))))
-                    (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))
+                    (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
                     (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
@@ -5091,10 +5116,11 @@
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
                     (booleanp memoize))
-               (and (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
-                    (<= (len (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+               (and (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
+                    (<= (len (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
                         *max-1d-array-length*) ;; todo
                     ))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -5110,7 +5136,7 @@
 
     ;; ;; It's a consp either way
     ;; (defthm ,(pack$ simplify-dag-name '-return-type-corollary-1)
-    ;;   (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+    ;;   (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
     ;;                 (pseudo-dagp dag)
     ;;                 (< (top-nodenum dag) *max-1d-array-length*)
     ;;                 (pseudo-term-listp assumptions)
@@ -5123,14 +5149,14 @@
     ;;                 (symbol-listp monitored-symbols)
     ;;                 (booleanp normalize-xors)
     ;;                 (booleanp memoize))
-    ;;            (consp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
+    ;;            (consp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
     ;;                   )
     ;;   :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
     ;;            :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
 
     ;; Uses myquotep as the normal form.
     (defthm ,(pack$ simplify-dag-name '-return-type-corollary-2)
-      (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+      (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
                     (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
@@ -5141,16 +5167,17 @@
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
                     (booleanp memoize))
-               (equal (quotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
-                      (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))))
+               (equal (quotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
+                      (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
 
     ;; Uses myquotep as the normal form.
     (defthm ,(pack$ simplify-dag-name '-return-type-corollary-3)
-      (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))) ; no error
+      (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
                     (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
@@ -5161,10 +5188,11 @@
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp known-booleans)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
                     (booleanp memoize))
-               (equal (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize)))
-                      (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols normalize-xors memoize))))))
+               (equal (pseudo-dagp (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
+                      (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
 
@@ -5178,6 +5206,7 @@
                                  rule-alist
                                  interpreted-function-alist
                                  monitored-symbols
+                                 fns-to-elide
                                  memoizep
                                  ;; todo: add context array and other args?
                                  count-hits
@@ -5189,6 +5218,7 @@
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide)
                                   (booleanp memoizep)
                                   (booleanp count-hits)
                                   (print-levelp print)
@@ -5247,6 +5277,7 @@
             (with-local-stobj rewrite-stobj
               (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array rewrite-stobj)
                 (let* ((rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
+                       (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
                        (rewrite-stobj (put-known-booleans (known-booleans wrld) ;skip if memoizing since we can't use contexts?
                                                           rewrite-stobj))
                        (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
@@ -5287,19 +5318,20 @@
           (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array new-nodenum-or-quotep nil)))))
 
     (defthm ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)
-      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))) ; no error
+      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))) ; no error
                     (pseudo-termp term)
                     (pseudo-term-listp assumptions)
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp memoizep)
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
                     (plist-worldp wrld))
-               (or (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld)))
-                   (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld)))))
+               (or (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld)))
+                   (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld)))))
       :rule-classes nil
       :hints (("Goal" :in-theory (e/d (,simplify-term-name
                                        axe-treep-when-pseudo-termp
@@ -5314,51 +5346,54 @@
                                       (natp)))))
 
     (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
-      (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))))
-                    (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))) ; no error
+      (implies (and (equal 'quote (car (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))))
+                    (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))) ; no error
                     (pseudo-termp term)
                     (pseudo-term-listp assumptions)
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp memoizep)
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
                     (plist-worldp wrld))
-               (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld)))))
+               (consp (cdr (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld)))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
     (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
-      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))) ; no error
-                    (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld)))) ;not a constant
+      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))) ; no error
+                    (not (quotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld)))) ;not a constant
                     (pseudo-termp term)
                     (pseudo-term-listp assumptions)
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp memoizep)
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
                     (plist-worldp wrld))
-               (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))))
+               (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
     (defthm ,(pack$ 'myquotep-of-mv-nth-1-of- simplify-term-name)
-      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))) ; no error
-                    (not (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld)))) ;not a dag
+      (implies (and (not (mv-nth 0 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))) ; no error
+                    (not (pseudo-dagp (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld)))) ;not a dag
                     (pseudo-termp term)
                     (pseudo-term-listp assumptions)
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp memoizep)
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
                     (plist-worldp wrld))
-               (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))))
+               (myquotep (mv-nth 1 (,simplify-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5370,6 +5405,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitored-symbols
+                             fns-to-elide
                              memoizep
                              ;; todo: add context array and other args?
                              count-hits
@@ -5381,6 +5417,7 @@
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide)
                                   (booleanp memoizep)
                                   (booleanp count-hits)
                                   (print-levelp print)
@@ -5390,7 +5427,7 @@
                                               assumptions
                                               rule-alist
                                               interpreted-function-alist
-                                              monitored-symbols
+                                              monitored-symbols fns-to-elide
                                               memoizep
                                               ;; todo: add context array and other args?
                                               count-hits
@@ -5407,12 +5444,13 @@
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp memoizep)
                     (booleanp count-hits)
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (plist-worldp wrld))
-               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))))
+               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
                :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
@@ -5425,6 +5463,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitored-symbols
+                             fns-to-elide
                              memoizep
                              ;; todo: add context array and other args?
                              count-hits
@@ -5436,6 +5475,7 @@
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide)
                                   (booleanp memoizep)
                                   (booleanp count-hits)
                                   (print-levelp print)
@@ -5448,7 +5488,8 @@
                                assumptions
                                rule-alist
                                nil
-                               nil
+                               monitored-symbols
+                               fns-to-elide
                                nil
                                t
                                print
@@ -5459,7 +5500,7 @@
                                 assumptions
                                 rule-alist
                                 interpreted-function-alist
-                                monitored-symbols
+                                monitored-symbols fns-to-elide
                                 memoizep
                                 count-hits
                                 print
@@ -5469,7 +5510,7 @@
               (cons first-res rest-res)))))
 
     (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
-      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld)))
+      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld)))
       :rule-classes :type-prescription
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
@@ -5479,17 +5520,19 @@
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
                     (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
                     (booleanp memoizep)
                     (booleanp count-hits)
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (plist-worldp wrld))
-               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols memoizep count-hits print normalize-xors wrld))))
+               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors wrld))))
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; Returns an (mv erp event state).
+    ;; Macto helper function for ,def-simplified-dag-name
+    ;; Returns (mv erp event state).
     ;; todo: check if name already exists
     (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
                                          dag
@@ -5499,7 +5542,7 @@
                                          rules
                                          count-hits
                                          print
-                                         monitored-symbols
+                                         monitored-symbols fns-to-elide
                                          normalize-xors
                                          memoize
                                          whole-form
@@ -5514,6 +5557,7 @@
                                   (booleanp count-hits)
                                   (print-levelp print)
                                   (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide)
                                   (booleanp normalize-xors)
                                   (booleanp memoize)
                                   (consp whole-form)
@@ -5539,7 +5583,7 @@
                                                        count-hits
                                                        print
                                                        known-booleans
-                                                       monitored-symbols
+                                                       monitored-symbols fns-to-elide
                                                        normalize-xors
                                                        memoize))
            ((when erp) (mv erp nil state)))
@@ -5548,6 +5592,7 @@
                     (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake)))
             state)))
 
+    ;; A utility to simplify a dag and name the result.
     ;; Creates a constant named NAME, whose value is a DAG representing the simplified form of DAG.
     (defmacro ,def-simplified-dag-name (&whole whole-form
                                         name
@@ -5560,9 +5605,10 @@
                                         (count-hits 'nil)
                                         (print ':brief)
                                         (monitored-symbols 'nil)
+                                        (fns-to-elide 'nil)
                                         (normalize-xors 'nil)
                                         (memoize 't))
-      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols ,normalize-xors ,memoize ',whole-form state)))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols ,fns-to-elide ,normalize-xors ,memoize ',whole-form state)))
     ) ; end of the generated encapsulate
     ))
 

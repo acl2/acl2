@@ -220,6 +220,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitored-rules
+                             nil ; fns-to-elide
                              nil ; memoizep
                              nil ; count-hits
                              nil ; print

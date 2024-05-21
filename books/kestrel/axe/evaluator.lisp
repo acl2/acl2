@@ -302,17 +302,6 @@
          (negated-elems-listp width lst1 lst2))
   :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
 
-(defund firstn-unguarded (n lst)
-  (declare (xargs :guard t))
-  (if (true-listp lst)
-      (firstn (nfix n) lst)
-    (firstn (nfix n) (true-list-fix lst))))
-
-(defthm firstn-unguarded-correct
-  (equal (firstn-unguarded n lst)
-         (firstn n lst))
-  :hints (("Goal" :in-theory (enable firstn-unguarded))))
-
 ;; (defund getbit-is-always-0-unguarded (n items)
 ;;   (declare (xargs :guard t))
 ;;   (if (atom items)
