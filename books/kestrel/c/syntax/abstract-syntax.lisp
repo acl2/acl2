@@ -483,12 +483,13 @@
      This covers the three possibilities of
      (i) a (decimal) fractional significand without an exponent,
      (ii) a (decimal) fractional significand with a (decimal) exponent, and
-     (iii) a (decimal) integer significand with a (decimal) exponent."))
-  (:frac ((significand dec-frac-const)))
-  (:frac-expo ((significand dec-frac-const)
-               (expo dec-expo)))
-  (:int-expo ((significand dec-digit-char-list)
-              (expo dec-expo)))
+     (iii) a (decimal) integer significand with a (decimal) exponent.
+     The first two possibilities are modeled as
+     a fractional significand with an optional exponent."))
+  (:frac ((significand dec-frac-const)
+          (expo? dec-expo-option)))
+  (:int ((significand dec-digit-char-list)
+         (expo dec-expo)))
   :pred dec-core-fconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
