@@ -4540,7 +4540,7 @@
             ;; bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
-            acl2::bool-fix$inline-constant-opener
+            ;; acl2::bool-fix$inline-constant-opener
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
@@ -4596,7 +4596,7 @@
             ;bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
-            acl2::bool-fix$inline-constant-opener
+            ;; acl2::bool-fix$inline-constant-opener
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
             ;; trying opening these up if they surive to the proof stage (todo: add the rest, or drop these?):

@@ -46,7 +46,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 
-(def-constant-opener bool-fix$inline) ; or build into axe?
+;(def-constant-opener bool-fix$inline) ; or build into axe?
 
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
@@ -223,10 +223,6 @@
   :hints (("Goal" :cases ((integerp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; probably only needed for Axe
-(defthmd integerp-of-logxor
-  (integerp (logxor x y)))
 
 ;todo: generalize with a set of rules like the trim rules
 ;gen
