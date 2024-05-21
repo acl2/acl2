@@ -307,6 +307,13 @@
              (not (< (maxelem vals) -1)))
     :hints (("Goal" :in-theory (enable nat-listp)))))
 
+(local
+  (defthm integerp-of-maxelem-and--1-when-nat-listp
+    (implies (and (nat-listp vals)
+                  (consp vals))
+             (integerp (maxelem vals)))
+    :hints (("Goal" :in-theory (enable nat-listp)))))
+
 
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags
 ;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?

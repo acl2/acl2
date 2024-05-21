@@ -85,9 +85,14 @@
 ;only used for simple evaluators
 ;the generated term returns (mv hitp val) or (mv hitp val trace) depending on tracingp
 (defun make-apply-cases-for-arities-simple (current-arity arity-fn-call-alist-alist quoted-argsp innermost-callp tracingp acc)
-  (declare (xargs :guard (and (alistp arity-fn-call-alist-alist)
+  (declare (xargs :guard (and (integerp current-arity)
+                              (<= -1 current-arity)
+                              (alistp arity-fn-call-alist-alist)
+                              (nat-listp (strip-cars arity-fn-call-alist-alist))
                               (symbol-alist-listp (strip-cdrs arity-fn-call-alist-alist))
-                              )
+                              (booleanp quoted-argsp)
+                              (booleanp innermost-callp)
+                              (booleanp tracingp))
                   :measure (nfix (+ 1 current-arity))))
   (if (not (natp current-arity))
       acc
@@ -102,12 +107,11 @@
                                                      '(mv nil ;no hit
                                                        nil)
                                                    `(let (,@(bind-args-to-nths quoted-argsp current-arity))
-                                                      ,@(let ((eval-case-for-this-arity (make-eval-case-for-fns calls-for-this-arity
-                                                                                                                current-arity
-                                                                                                                tracingp
-                                                                                                                '(mv nil ;no hit
-                                                                                                                  nil))))
-                                                          `(,eval-case-for-this-arity))))
+                                                      ,(make-eval-case-for-fns calls-for-this-arity
+                                                                               current-arity
+                                                                               tracingp
+                                                                               '(mv nil ;no hit
+                                                                                 nil))))
                                               ,(if innermost-callp ;leave off the let:
                                                    acc
                                                  `(let ((args-to-walk-down (cdr args-to-walk-down)))
