@@ -31,7 +31,7 @@
 ;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
-(include-book "logand2") ; todo: rename logand-b?
+(include-book "logand-b")
 (include-book "logior")
 (include-book "logior-b")
 (include-book "logorc1")

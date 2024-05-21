@@ -29,7 +29,7 @@
 ;(include-book "numeric-lists")
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "keep-atoms")
+(include-book "keep-nodenum-dargs")
 ;(include-book "darg-listp")
 ;(include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/utilities/lists/add-to-set-theorems" :dir :system))
@@ -1497,31 +1497,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; similar to (append (keep-atoms items) acc).
+;; similar to (append (keep-nodenum-dargs items) acc).
 ;move?
-(defund append-atoms (items acc)
-  (declare (xargs :guard (true-listp items)))
+;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
+;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
+(defund append-nodenum-dargs (items acc)
+  (declare (xargs :guard (and (darg-listp items)
+                              (true-listp acc))))
   (if (endp items)
       acc
     (let ((item (first items)))
-      (append-atoms (rest items)
+      (append-nodenum-dargs (rest items)
                     (if (atom item)
                         (cons item acc)
                       acc)))))
 
-(defthm all-<-of-append-atoms
-  (equal (all-< (append-atoms args acc) bound)
-         (and (all-< (keep-atoms args) bound)
+(defthm all-<-of-append-nodenum-dargs
+  (equal (all-< (append-nodenum-dargs args acc) bound)
+         (and (all-< (keep-nodenum-dargs args) bound)
               (all-< acc bound)))
-  :hints (("Goal" :in-theory (enable keep-atoms append-atoms all-<))))
+  :hints (("Goal" :in-theory (enable keep-nodenum-dargs append-nodenum-dargs all-<))))
 
-(defthm true-listp-of-append-atoms
+(defthm true-listp-of-append-nodenum-dargs
   (implies (true-listp acc)
-           (true-listp (append-atoms args acc)))
-  :hints (("Goal" :in-theory (enable append-atoms))))
+           (true-listp (append-nodenum-dargs args acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
 
-(defthm nat-listp-of-append-atoms
-  (implies (and (darg-listp dargs)
-                (nat-listp acc))
-           (nat-listp (append-atoms dargs acc)))
-  :hints (("Goal" :in-theory (enable append-atoms nat-listp))))
+(defthm true-listp-of-append-nodenum-dargs-type
+  (implies (true-listp acc)
+           (true-listp (append-nodenum-dargs args acc)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
+
+(defthm nat-listp-of-append-nodenum-dargs
+  (implies (darg-listp dargs)
+           (equal (nat-listp (append-nodenum-dargs dargs acc))
+                  (nat-listp acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs nat-listp))))
+
+(defthmd append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
+  (equal (append-nodenum-dargs items acc)
+         (append (reverse-list (keep-nodenum-dargs items))
+                 acc))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs keep-nodenum-dargs))))

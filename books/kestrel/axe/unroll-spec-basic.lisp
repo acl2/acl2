@@ -209,6 +209,7 @@
                              rule-alist
                              interpreted-function-alist
                              monitor
+                             nil ; fns-to-elide
                              memoizep
                              count-hits
                              print

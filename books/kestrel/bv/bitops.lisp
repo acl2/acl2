@@ -19,6 +19,7 @@
 (include-book "rightrotate")
 (include-book "leftrotate")
 (local (include-book "rules"))
+(local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "intro"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))

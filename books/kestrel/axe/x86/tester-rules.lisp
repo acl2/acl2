@@ -41,6 +41,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -670,7 +671,7 @@
            (not (sbvlt 128 k (bvsx 128 64 x))))
   :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
-(defthm bvcat-of-repeatit-tighten-64-32 ;gen!
+(defthm bvcat-of-repeatbit-tighten-64-32 ;gen!
   (equal (bvcat 64 (repeatbit 32 bit) 32 lowval)
          (bvcat 32 (repeatbit 32 bit) 32 lowval)))
 

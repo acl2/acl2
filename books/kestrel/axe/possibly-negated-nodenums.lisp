@@ -120,28 +120,25 @@
 ;;   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
 ;;                                      possibly-negated-nodenump))))
 
-(defthm integerp-of-car-when-possibly-negated-nodenumsp-weaken-cheap
-  (implies (and (syntaxp (want-to-weaken (integerp (car items))))
+;; use consp as the normal form
+(defthmd natp-of-car-when-possibly-negated-nodenumsp
+  (implies (and ; (syntaxp (want-to-weaken (integerp (car items))))
                 (possibly-negated-nodenumsp items)
                 (consp items))
-           (equal (integerp (car items))
-                  (or (not (consp (car items)))
-                      (not (eq 'not (car (car items))))
-                      (not (natp (farg1 (car items))))
-                      (cdr (fargs (car items))))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
+           (equal (natp (car items))
+                  (not (consp (car items)))))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
                                      possibly-negated-nodenump))))
 
-(defthm consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap
-  (implies (and (syntaxp (want-to-weaken (consp (car items))))
-                (possibly-negated-nodenumsp items)
-                (consp items))
-           (equal (consp (car items))
-                  (not (natp (car items)))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
-  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
-                                     possibly-negated-nodenump))))
+;; (defthm consp-of-car-when-possibly-negated-nodenumsp-weaken-cheap
+;;   (implies (and (syntaxp (want-to-weaken (consp (car items))))
+;;                 (possibly-negated-nodenumsp items)
+;;                 (consp items))
+;;            (equal (consp (car items))
+;;                   (not (natp (car items)))))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
+;;   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
+;;                                      possibly-negated-nodenump))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

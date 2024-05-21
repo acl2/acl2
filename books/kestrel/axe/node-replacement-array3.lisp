@@ -250,9 +250,10 @@
                             ;;POSSIBLY-NEGATED-NODENUMP
                             ;;bounded-POSSIBLY-NEGATED-NODENUMSP
                             ;;bounded-POSSIBLY-NEGATED-NODENUMP
+                            natp-of-car-when-possibly-negated-nodenumsp
                             )
                            (BOUNDED-POSSIBLY-NEGATED-NODENUMP-WHEN-NOT-CONSP ; for speed
-                             )))))
+                            natp)))))
 
 (defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type-alen1
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
@@ -276,13 +277,15 @@
                            )
            :induct t
            :do-not '(generalize eliminate-destructors)
-           :in-theory (enable UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
+           :in-theory (e/d (UPDATE-NODE-REPLACEMENT-ARRAY-FOR-ASSUMING-POSSIBLY-NEGATED-NODENUMS
                               bounded-undo-pairsp
                               <-when-bounded-possibly-negated-nodenump
                               ;(:d STRIP-NOTS-FROM-POSSIBLY-NEGATED-NODENUMS)
                               ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
                               ;;POSSIBLY-NEGATED-NODENUMP
-                              ))))
+                              natp-of-car-when-possibly-negated-nodenumsp
+                              )
+                           (natp)))))
 
 (defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-when-not-consp
   (implies (not (consp possibly-negated-nodenums))

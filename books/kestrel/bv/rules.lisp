@@ -60,6 +60,7 @@
 (include-book "bitwise")
 (include-book "trim")
 (include-book "unsigned-byte-p-forced-rules") ; since some of the rules in this file introduce unsigned-byte-p-forced
+(local (include-book "logand-b"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
@@ -82,23 +83,23 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
 (local (include-book "floor-mod-expt"))
-(local (include-book "arith")) ;todo for integerp-squeeze
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system))
+(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ; for logext-identity
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system)) ;todo for mod-x-i*j-of-positives
 ;(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system)) ; for EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(local (in-theory (disable ;EQUAL-/
-                           logapp-0
-                           UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT ;move
-                           UNSIGNED-BYTE-P-PLUS
-                           LOGAND-WITH-MASK
-
+(local (in-theory (disable unsigned-byte-p-of-+-when-<-of-logtail-and-expt ;move
+                           ;; EQUAL-/
                            ;; floor-=-x/y ; these are prep for not including them at all
                            ;; floor-bounded-by-/
                            ;; mod-=-0
-                           )))
+
+                           ;; todo: eventually remove these when not brought in:
+                           logapp-0
+                           logand-with-mask
+                           unsigned-byte-p-plus)))
 
 ;rename
 (defthm bvchop-shift-gen-constant-version
@@ -184,12 +185,13 @@
            (equal (logext n (LOGTAIL M X))
                   (logtail m (logext (+ m n) x))))
   :hints (("Goal" :in-theory (e/d (slice
-                                   ;why does slice get introduced?
+                                   ;;why does slice get introduced?
                                    bvchop-of-logtail
-                                   logext) (;hack-6
-                                            BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                                   LOGBITP-IFF-GETBIT ;why? need getbit of logtail?
-                                                   )))))
+                                   logext LOGBITP-IFF-GETBIT)
+                                  ( ;hack-6
+                                   BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                                   ;LOGBITP-IFF-GETBIT ;why? need getbit of logtail?
+                                   )))))
 
 
 ;; (defthm zbp-times-2
@@ -201,47 +203,6 @@
 ;(in-theory (disable binary-logand binary-logxor))
 
 ;(local (in-theory (disable MOD-X-Y-=-X)))
-
-;slow
-(defthm logbitp-of-logxor
-  (implies (and (natp i)
-                (integerp j1)
-                (integerp j2))
-           (equal (logbitp i (logxor j1 j2))
-                  (xor (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
-                                  (LOGBITP-IFF-GETBIT ;fixme why?
-
-                                   mod-cancel
-                                   ;;for speed:
-
-                                   )))))
-
-(defthm logbitp-of-logand
-  (implies (and (natp i)
-                (integerp j1)
-                (integerp j2))
-           (equal (logbitp i (logand j1 j2))
-                  (and (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
-                                  (LOGBITP-IFF-GETBIT
-                                    mod-cancel
-                                   ;;for speed:
-
-                                   )))))
-
-(defthm logbitp-of-logior
-  (implies (and (natp i)
-                (integerp j1)
-                (integerp j2))
-           (equal (logbitp i (logior j1 j2))
-                  (or (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (e/d (logbitp EVENP-BECOMES-EQUAL-OF-0-AND-MOD oddp)
-                                  (LOGBITP-IFF-GETBIT
-                                    mod-cancel
-;for speed:
-
-                                   )))))
 
 (defthm logxor-of-logapp
   (implies (and (natp n)
@@ -327,7 +288,7 @@
            (equal (logext n (logior a b))
                   (logior (logext n a)
                           (logext n b))))
-  :hints (("Goal" :in-theory (e/d (logext getbit slice) (LOGAPP-0
+  :hints (("Goal" :in-theory (e/d (logext getbit slice) (;LOGAPP-0
                                                          BVCHOP-1-BECOMES-GETBIT
 
                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
@@ -1544,12 +1505,6 @@
 ;;         (bvchop HIGHSIZE HIGHVAL))
 ;;  :hints (("Goal" :in-theory (enable bvnot))))
 
-(defthm getbit-of-logior
-  (equal (getbit n (logior a b))
-         (logior (getbit n a)
-                 (getbit n b)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (getbit slice) (BVCHOP-OF-LOGTAIL-BECOMES-SLICE  BVCHOP-1-BECOMES-GETBIT)))))
 
 ;drop in favor of trim rules?
 (defthm slice-of-bvxor-tighten

@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2022 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,6 +14,7 @@
 (include-book "language/top")
 (include-book "representation/top")
 (include-book "atc/top")
+(include-book "syntax/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,7 +36,9 @@
      "A proof-generating C code generator for ACL2.
       This recognizes, and translates to C,
       the shallowly embedded ACL2 representation of C constructs,
-      and generates proofs based on the deep embedding."))
+      and generates proofs based on the deep embedding.")
+    (xdoc::li
+     "A tool-oriented syntax of C."))
    (xdoc::p
     "The library is work in progress.")
    (xdoc::p
@@ -55,4 +58,5 @@
   :order-subtopics (language
                     representation
                     atc
+                    c$::syntax
                     pack))

@@ -43,7 +43,7 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ;brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
+(include-book "../rewriter") ; for the :legacy rewriter option ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs versions of simp-dag and simplify-terms-repeatedly)
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -119,7 +119,7 @@
 
 ;move this util
 
-(defun print-list-item-elided (item firstp fns-to-elide)
+(defun print-term-elided (item firstp fns-to-elide)
   (declare (xargs :guard (symbol-listp fns-to-elide)))
   (if (and (consp item)
            (member-eq (ffn-symb item) fns-to-elide))
@@ -134,20 +134,20 @@
       (cw " ~y0" item))))
 
 ;doesn't stack overflow when printing a large list
-(defun print-list-elided-aux (lst fns-to-elide)
+(defun print-terms-elided-aux (lst fns-to-elide)
   (declare (xargs :guard (and (true-listp lst)
                               (symbol-listp fns-to-elide))))
   (if (atom lst)
       nil
-    (prog2$ (print-list-item-elided (first lst) nil fns-to-elide)
-            (print-list-elided-aux (rest lst) fns-to-elide))))
+    (prog2$ (print-term-elided (first lst) nil fns-to-elide)
+            (print-terms-elided-aux (rest lst) fns-to-elide))))
 
-(defun print-list-elided (lst fns-to-elide)
+(defun print-terms-elided (lst fns-to-elide)
   (declare (xargs :guard (and (true-listp lst)
                               (symbol-listp fns-to-elide))))
   (if (consp lst)
-      (prog2$ (print-list-item-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
-              (prog2$ (print-list-elided-aux (rest lst) fns-to-elide)
+      (prog2$ (print-term-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
+              (prog2$ (print-terms-elided-aux (rest lst) fns-to-elide)
                       (cw ")")))
     (cw "nil") ; or could do ()
     ))
@@ -254,6 +254,7 @@
         (er hard? 'assumptions-for-input "Bad type: ~x0." type)
       (if (atom type) ; scalar
           ;; just put in the var name for the state component:
+          ;; todo: what about signed/unsigned?
           `((equal ,state-component ,var-name))
         (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
           (if (and (call-of :pointer type)
@@ -372,6 +373,7 @@
                               :rule-alist rule-alist
                               :assumptions assumptions
                               :monitor rules-to-monitor
+                              ;; :fns-to-elide '(program-at) ; not supported
                               :use-internal-contextsp use-internal-contextsp
                               ;; pass print, so we can cause rule hits to be printed:
                               :print print ; :brief ;nil
@@ -389,8 +391,10 @@
                                         print
                                         (acl2::known-booleans (w state))
                                         rules-to-monitor
+                                        '(program-at) ; fns-to-elide
                                         t ; normalize-xors
-                                        memoizep)
+                                        nil ;memoizep, using nil so we get internal contexts
+                                        )
               (mv erp result state))))
          ((when erp) (mv erp nil state))
          ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -473,6 +477,7 @@
                                             print
                                             (acl2::known-booleans (w state))
                                             rules-to-monitor
+                                            '(program-at) ; fns-to-elide
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
@@ -645,6 +650,8 @@
                                    )
                               (assumptions-for-inputs inputs
                                                       ;; todo: handle zmm regs and values passed on the stack?!:
+                                                      ;; handle structs that fit in 2 registers?
+                                                      ;; See the System V AMD64 ABI
                                                       '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                       stack-slots
                                                       text-offset
@@ -654,7 +661,7 @@
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
-                                                             (print-list-elided assumptions '(standard-assumptions-elf-64
+                                                             (print-terms-elided assumptions '(standard-assumptions-elf-64
                                                                                               standard-assumptions-mach-o-64
                                                                                               standard-assumptions-pe-64)) ; todo: more?
                                                              (cw ")~%"))))
@@ -700,7 +707,7 @@
        (- (and print (progn$ (cw "(Simplified assumptions:~%")
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
-                               (print-list-elided assumptions '(program-at ; the program can be huge
+                               (print-terms-elided assumptions '(program-at ; the program can be huge
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
@@ -758,6 +765,7 @@
                         monitor
                         print
                         print-base
+                        rewriter
                         produce-function
                         non-executable
                         produce-theorem
@@ -788,6 +796,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (member-eq rewriter '(:x86 :legacy))
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
@@ -823,7 +832,7 @@
         (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base :legacy state))
+          step-limit step-increment memoizep monitor print print-base rewriter state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -965,6 +974,7 @@
                                (monitor 'nil)
                                (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
+                               (rewriter ':legacy) ; todo: try :x86
                                (produce-function 't) ;whether to produce a function, not just a constant dag, representing the result of the lifting
                                (non-executable ':auto)  ;since stobj updates will not be let-bound
                                (produce-theorem 'nil) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
@@ -993,6 +1003,7 @@
       ,monitor ; gets evaluated since not quoted
       ',print
       ',print-base
+      ',rewriter
       ',produce-function
       ',non-executable
       ',produce-theorem

@@ -76,28 +76,28 @@
 ;;                   (consp x))))
 
 (defthm all-<=-all-of-get-unexamined-nodenum-args
-  (implies (and (all-<=-all (keep-atoms args) worklist)
+  (implies (and (all-<=-all (keep-nodenum-dargs args) worklist)
                 (all-<=-all acc worklist))
            (all-<=-all (get-unexamined-nodenum-args args worklist-array acc) worklist))
-  :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args keep-atoms))))
+  :hints (("Goal" :in-theory (enable get-unexamined-nodenum-args keep-nodenum-dargs))))
 
-(defthm all-<=-of-keep-atoms
+(defthm all-<=-of-keep-nodenum-dargs
   (implies (and (bounded-darg-listp args (+ 1 nodenum))
                 (natp nodenum))
-           (all-<= (keep-atoms args) nodenum))
-  :hints (("Goal" :in-theory (enable bounded-darg-listp keep-atoms))))
+           (all-<= (keep-nodenum-dargs args) nodenum))
+  :hints (("Goal" :in-theory (enable bounded-darg-listp keep-nodenum-dargs))))
 
-(defthm all-<=-of-keep-atoms-of-dargs
+(defthm all-<=-of-keep-nodenum-dargs-of-dargs
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (consp (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))
                 (NOT (EQUAL 'QUOTE (CAR (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
                 (natp nodenum)
                 (< nodenum dag-len))
-           (all-<= (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))
+           (all-<= (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))
                    nodenum))
-  :hints (("Goal" :use (:instance all-<=-of-keep-atoms
+  :hints (("Goal" :use (:instance all-<=-of-keep-nodenum-dargs
                                   (args (dargs (aref1 dag-array-name dag-array nodenum))))
-           :in-theory (disable all-<=-of-keep-atoms))))
+           :in-theory (disable all-<=-of-keep-nodenum-dargs))))
 
 (defthm ALL-<=-ALL-when-ALL-<=-ALL-of-cdr-arg2
   (implies (and (ALL-<=-ALL x (cdr y))
@@ -107,7 +107,7 @@
                       (all-<= x (car y)))))
   :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
 
-(defthm all-<=-all-of-keep-atoms-of-dargs
+(defthm all-<=-all-of-keep-nodenum-dargs-of-dargs
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (consp (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))
                 (NOT (EQUAL 'QUOTE (CAR (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
@@ -115,17 +115,17 @@
                 (< nodenum dag-len)
                 (<=-all nodenum nodenums)
                 )
-           (all-<=-all (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))
+           (all-<=-all (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))
                        nodenums))
   :hints (("goal" :in-theory (enable <=-all)
            :induct (<=-all nodenum nodenums))
           ("subgoal *1/2"
-           :use (:instance all-<=-of-keep-atoms-of-dargs)
+           :use (:instance all-<=-of-keep-nodenum-dargs-of-dargs)
            :in-theory (e/d (<=-all)
-                           (ALL-<-OF-KEEP-ATOMS
-                            all-<=-of-keep-atoms-of-dargs
-                            all-<=-of-keep-atoms
-                            all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp
+                           (ALL-<-OF-KEEP-NODENUM-DARGS
+                            all-<=-of-keep-nodenum-dargs-of-dargs
+                            all-<=-of-keep-nodenum-dargs
+                            all-<-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
                             ;;bounded-darg-listp-of-args-when-bounded-dag-exprp
                             )))))
 

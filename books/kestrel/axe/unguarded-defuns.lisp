@@ -703,3 +703,27 @@
   (equal (logext-unguarded size i)
          (logext size i))
   :hints (("Goal" :in-theory (enable logext logext-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund firstn-unguarded (n lst)
+  (declare (xargs :guard t))
+  (if (true-listp lst)
+      (firstn (nfix n) lst)
+    (firstn (nfix n) (true-list-fix lst))))
+
+(defthm firstn-unguarded-correct
+  (equal (firstn-unguarded n lst)
+         (firstn n lst))
+  :hints (("Goal" :in-theory (enable firstn-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund logapp-unguarded (size i j)
+  (declare (xargs :guard t))
+  (logapp (nfix size) (ifix i) (ifix j)))
+
+(defthm logapp-unguarded-correct
+  (equal (logapp-unguarded size i j)
+         (logapp size i j))
+  :hints (("Goal" :in-theory (enable logapp-unguarded logapp))))

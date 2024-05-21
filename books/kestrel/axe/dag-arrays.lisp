@@ -1332,28 +1332,28 @@
                                   (m n))
            :in-theory (disable bounded-darg-listp-of-dargs-of-aref1))))
 
-(defthm all-natp-of-keep-atoms-when-bounded-darg-listp
+(defthm all-natp-of-keep-nodenum-dargs-when-bounded-darg-listp
   (implies (bounded-darg-listp items nodenum)
-           (all-natp (keep-atoms items)))
-  :hints (("Goal" :in-theory (enable keep-atoms
+           (all-natp (keep-nodenum-dargs items)))
+  :hints (("Goal" :in-theory (enable keep-nodenum-dargs
                                      dargs-when-not-consp-cheap))))
 
-(defthm all-natp-of-keep-atoms-of-dargs-when-bounded-dag-exprp
+(defthm all-natp-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr) ;nodenum is a free var - introduce a weak-dag-exprp?
                 (not (eq 'quote (car expr))))
-           (all-natp (keep-atoms (dargs expr))))
+           (all-natp (keep-nodenum-dargs (dargs expr))))
   :hints (("Goal" :in-theory (enable dargs-when-not-consp-cheap
                                      bounded-dag-exprp))))
 
-(defthm all-natp-of-keep-atoms-of-dargs-of-aref1
+(defthm all-natp-of-keep-nodenum-dargs-of-dargs-of-aref1
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array top-nodenum)
                 (natp nodenum)
                 (integerp top-nodenum)
                 (<= nodenum top-nodenum)
                 (not (eq 'quote (car (aref1 dag-array-name dag-array nodenum)))))
-           (all-natp (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))))
-  :hints (("Goal" :use (:instance all-natp-of-keep-atoms-of-dargs-when-bounded-dag-exprp (expr (aref1 dag-array-name dag-array nodenum)))
-           :in-theory (disable all-natp-of-keep-atoms-of-dargs-when-bounded-dag-exprp))))
+           (all-natp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))))
+  :hints (("Goal" :use (:instance all-natp-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp (expr (aref1 dag-array-name dag-array nodenum)))
+           :in-theory (disable all-natp-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp))))
 
 ;; (defthm true-listp-of-dargs-of-aref1-when-PSEUDO-DAG-ARRAYP-AUX
 ;;   (implies (and (PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY top-nodenum)
@@ -1372,77 +1372,72 @@
            (all-integerp x))
   :hints (("Goal" :in-theory (enable all-natp all-integerp))))
 
-(defthm all-integerp-of-keep-atoms-of-dargs-of-aref1
+(defthm all-integerp-of-keep-nodenum-dargs-of-dargs-of-aref1
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array top-nodenum)
                 (natp nodenum)
                 (integerp top-nodenum)
                 (<= nodenum top-nodenum)
                 (not (eq 'quote (car (aref1 dag-array-name dag-array nodenum)))))
-           (all-integerp (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))))
+           (all-integerp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))))
   :hints (("Goal" :in-theory (enable all-integerp-when-all-natp))))
 
-(defthm all-integerp-of-keep-atoms-of-dargs-of-aref1-when-pseudo-dag-arrayp
+(defthm all-integerp-of-keep-nodenum-dargs-of-dargs-of-aref1-when-pseudo-dag-arrayp
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (natp nodenum)
                 (integerp dag-len)
                 (< nodenum dag-len)
                 (not (eq 'quote (car (aref1 dag-array-name dag-array nodenum)))))
-           (all-integerp (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))))
+           (all-integerp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-(defthm all-<-of-keep-atoms
-  (implies (bounded-darg-listp items nodenum)
-           (all-< (keep-atoms items) nodenum))
-  :hints (("Goal" :in-theory (enable BOUNDED-DARG-LISTP keep-atoms))))
-
-(defthm all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp
+(defthm all-<-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp nodenum expr) ;nodenum is a free var - introduce a weak-dag-exprp?
                 (consp expr)
                 (not (eq 'quote (car expr))))
-           (all-< (keep-atoms (dargs expr))
+           (all-< (keep-nodenum-dargs (dargs expr))
                   nodenum)))
 
-(defthm all-<-of-keep-atoms-of-dargs-of-aref1
+(defthm all-<-of-keep-nodenum-dargs-of-dargs-of-aref1
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array top-nodenum)
                 (natp nodenum)
                 (integerp top-nodenum)
                 (<= nodenum top-nodenum)
                 (not (eq 'quote (car (aref1 dag-array-name dag-array nodenum)))))
-           (all-< (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))
+           (all-< (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))
                   nodenum))
-  :hints (("Goal" :use (:instance all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp (expr (aref1 dag-array-name dag-array nodenum)))
-           :in-theory (disable all-<-of-keep-atoms-of-dargs-when-bounded-dag-exprp))))
+  :hints (("Goal" :use (:instance all-<-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp (expr (aref1 dag-array-name dag-array nodenum)))
+           :in-theory (disable all-<-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp))))
 
-(defthm all-<-of-keep-atoms-of-dargs-of-aref1-when-pseudo-dag-arrayp
+(defthm all-<-of-keep-nodenum-dargs-of-dargs-of-aref1-when-pseudo-dag-arrayp
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 top-nodenum))
                 (natp nodenum)
                 (integerp top-nodenum)
                 (<= nodenum top-nodenum)
                 (not (eq 'quote (car (aref1 dag-array-name dag-array nodenum)))))
-           (all-< (keep-atoms (dargs (aref1 dag-array-name dag-array nodenum)))
+           (all-< (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array nodenum)))
                   nodenum))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-(defthm all-natp-of-keep-atoms
+(defthm all-natp-of-keep-nodenum-dargs
   (implies (darg-listp x)
-           (all-natp (keep-atoms x)))
-  :hints (("Goal" :in-theory (enable keep-atoms))))
+           (all-natp (keep-nodenum-dargs x)))
+  :hints (("Goal" :in-theory (enable keep-nodenum-dargs))))
 
-(defthm all-natp-of-keep-atoms-of-dargs-when-dag-exprp
+(defthm all-natp-of-keep-nodenum-dargs-of-dargs-when-dag-exprp
   (implies (and (dag-exprp expr)
                 (not (eq 'quote (car expr))))
-           (all-natp (keep-atoms (dargs expr)))))
+           (all-natp (keep-nodenum-dargs (dargs expr)))))
 
-;; (defthm nat-listp-of-keep-atoms
+;; (defthm nat-listp-of-keep-nodenum-dargs
 ;;   (implies (darg-listp x)
-;;            (nat-listp (keep-atoms x)))
-;;   :hints (("Goal" :in-theory (enable keep-atoms))))
+;;            (nat-listp (keep-nodenum-dargs x)))
+;;   :hints (("Goal" :in-theory (enable keep-nodenum-dargs))))
 
-;; (defthm nat-listp-of-keep-atoms-of-dargs-when-dag-exprp
+;; (defthm nat-listp-of-keep-nodenum-dargs-of-dargs-when-dag-exprp
 ;;   (implies (and (dag-exprp expr)
 ;;                 (not (eq 'quote (car expr))))
-;;            (nat-listp (keep-atoms (dargs expr))))
-;;   :hints (("Goal" :in-theory (enable keep-atoms))))
+;;            (nat-listp (keep-nodenum-dargs (dargs expr))))
+;;   :hints (("Goal" :in-theory (enable keep-nodenum-dargs))))
 
 ;; (defthm <-of-lemma-for-arg4-when-pseudo-dag-arrayp-aux
 ;;   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum)
@@ -2416,11 +2411,11 @@
                 (array1p array-name array))
            (bounded-darg-listp args (alen1 array-name (maybe-expand-array array-name array index)))))
 
-(defthm pseudo-dag-arrayp-list-of-append-atoms
+(defthm pseudo-dag-arrayp-list-of-append-nodenum-dargs
   (implies (and (pseudo-dag-arrayp-list args dag-array-name dag-array)
                 (pseudo-dag-arrayp-list acc dag-array-name dag-array))
-           (pseudo-dag-arrayp-list (append-atoms args acc) dag-array-name dag-array))
-  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-list append-atoms all-<))))
+           (pseudo-dag-arrayp-list (append-nodenum-dargs args acc) dag-array-name dag-array))
+  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-list append-nodenum-dargs all-<))))
 
 (defthm pseudo-dagp-aux-of-array-to-alist-aux
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)

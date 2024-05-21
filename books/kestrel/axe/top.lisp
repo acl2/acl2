@@ -112,7 +112,7 @@
 (include-book "instantiate-hyp-basic")
 (include-book "interpreted-function-alistp")
 (include-book "interpreted-function-alists")
-(include-book "keep-atoms")
+(include-book "keep-nodenum-dargs")
 (include-book "known-booleans")
 (include-book "known-predicates")
 (include-book "largest-non-quotep")

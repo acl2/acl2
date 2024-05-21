@@ -454,6 +454,12 @@ from the accompanying talk.</p>")
                        (subset Y X))))
   :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
+(defthmd double-containment-no-backchain-limit ; version w/o backchain limit
+  (implies (and (setp x)
+                (setp y))
+           (equal (equal x y)
+                  (and (subset x y)
+                       (subset y x)))))
 
 
 ; -------------------------------------------------------------------

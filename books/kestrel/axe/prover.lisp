@@ -1958,8 +1958,8 @@
           (break$) ; this should never happen?
           (mv (erp-nil) :proved state))
          ;; Add the negated assumptions (of all kinds) to the dag:
-         (context-nodenums-to-assume-true (keep-atoms context)) ; todo: turn keep-atoms and keep-non-atoms into special functions for contexts?
-         (context-nodenums-to-assume-false (strip-cadrs (keep-non-atoms context)))  ;strip off the nots from the ones surrounded by not
+         (context-nodenums-to-assume-true (non-negated-nodenums-in-context context))
+         (context-nodenums-to-assume-false (strip-cadrs (negated-nodenums-in-context context)))  ;strip off the nots from the ones surrounded by not
          (negated-assumption-trees (append (negate-all context-nodenums-to-assume-true)
                                            context-nodenums-to-assume-false
                                            (negate-terms assumptions))) ; todo: handle constant assumptions?

@@ -1179,3 +1179,23 @@
       nil
     (or (dag-expr-gives-rise-to-contextp (cdr (first dag)))
         (dag-has-internal-contextsp (rest dag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund non-negated-nodenums-in-context (context)
+  (declare (xargs :guard (non-false-contextp context)))
+  (if (endp context)
+      nil
+    (let ((item (first context)))
+      (if (consp item) ; checks if item is negated
+          (non-negated-nodenums-in-context (rest context))
+        (cons item (non-negated-nodenums-in-context (rest context)))))))
+
+(defund negated-nodenums-in-context (context)
+  (declare (xargs :guard (non-false-contextp context)))
+  (if (endp context)
+      nil
+    (let ((item (first context)))
+      (if (consp item) ; checks if item is negated
+          (cons item (negated-nodenums-in-context (rest context)))
+        (negated-nodenums-in-context (rest context))))))
