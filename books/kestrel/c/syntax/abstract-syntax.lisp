@@ -1345,18 +1345,61 @@
      (xdoc::p
       "One kind of ambiguity has the form")
      (xdoc::codeblock
-      "... _Atomic ( I ) ( J ) ...")
+      "... _Atomic ( I ) ( I1 ( I2 ( ... ( In ) ... ) ) )")
      (xdoc::p
-      "where @('I') and @('J') are identifiers.
+      "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
        This could be
        either the atomic type specifier @('_Atomic(I)')
-       followed by the declarator @('(J)'),
+       followed by the declarator @('(I1(I2(...(In)...)))'),
        or the @('_Atomic') type qualifier
-       followed by the declarator @('(I)(J)').
-       This cannot be disambiguated purely syntactically.
+       followed by the declarator @('(I)(I1(I2(...(In)...)))').")
+     (xdoc::p
+      "This ambiguity may be easier to understand
+       by thinking of the case @('n = 1') first:
+       both @('(I1)') and @('(I)(I1)') are declarators;
+       the second is a function declarator,
+       with @('I1') being the parameter type list or identifier list
+       (in the sense of @('parameter-type-list') and @('identifier-list')
+       in the ABNF grammar)
+       and @('I') being the function.
+       Recall that a parameter type list may be
+       a single type specifier that is an identifier (a @('typedef') name).
+       This is ambiguous only if @('I1') is an identifier:
+       if @('I1') were a non-identifier declarator,
+       then @('(I)(I1)') could not be a function declarator',
+       and we would have the type specifier @('_Atomic(I)')
+       followed by the declarator @('(I1)');
+       if @('I1') were a non-identifier declaration specifier,
+       then it could not be a declarator,
+       and we would have the type qualifier @('_Atomic')
+       followed by the function declarator @('(I)(I1)').")
+     (xdoc::p
+      "If we consider the case @('n = 2'):
+       either @('(I1(I2))') is a (parenthesized) function declarator
+       with @('I2') a parameter type list or identifier list;
+       or @('(I)(I1(I2))') is a function declarator
+       with parameter type list @('I1(I2)')
+       where @('I1') is a @('typedef') name
+       and @('(I2)') is a (parenthesized) declarator.
+       Again, this is ambiguous only if @('I2') is an identifier:
+       if @('I2') were a non-identifier declarator,
+       then @('I1(I2)') would be a parameter type list
+       and so we would have a type qualifier @('_Atomic')
+       followed by a function declarator @('(I)(I1(I2))');
+       if @('I2') were a non-identifier type specifier,
+       then @('I1(I2)') would be a function declarator
+       and we would have a type specifier @('_Atomic(I)')
+       followed by that function declarator.")
+     (xdoc::p
+      "Similar observations apply to the cases @('n > 2').
+       The ambiguity rests on having only identifiers in the chain.
+       If @('In') were not an identifier,
+       then we could disambiguate things backwards.")
+     (xdoc::p
+      "This kind of ambiguity cannot be resolved purely syntactically.
        The @(':atomic-ambig') case of this fixtype
        captures the @('_Atomic(I)') part
-       (while the @('J') would be captured as a declarator),
+       (while the @('(I1(I2(...(In)...)))') is captured as a declarator),
        as a type specifier, but marked as ambiguous,
        so that, during post-parsing semantic analysis,
        this construct (and the subsequent declarator)
@@ -1364,20 +1407,27 @@
      (xdoc::p
       "The other kind of ambiguity has the form")
      (xdoc::codeblock
-      "... I ( J ) ...")
+      "... I ( I1 ( I2 ( ... ( In ) ... ) ) ) ...")
      (xdoc::p
-      "where @('I') and @('J') are identifiers.
+      "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
        This could be
-       either the type specifier @('I') followed by the declarator @('(J)'),
-       or just the declarator @('I(J)').
+       either the type specifier @('I') (a @('typedef') name)
+       followed by the declarator @('(I1(I2(...(In)...)))'),
+       or just the declarator @('I(I1(I2(...(In)...)))').
+       The situation is quite analogous to the @('_Atomic') case above.
        This cannot be disambiguated purely syntactically.
        The @(':tydef-ambig') case of this fixtype
        captures the @('I') part
-       (while the @('(J)') part would be captured as a declarator),
+       (while the @('(I1(I2(...(In)...)))') part is captured as a declarator),
        as a type specifier, but marked as ambiguous,
        so that, during post-parsing semantic analysis,
        this construct (and the subsequent declarator)
-       can be re-classified into non-ambiguous constructs."))
+       can be re-classified into non-ambiguous constructs.")
+     (xdoc::p
+      "The above arguments for why this is an ambiguity,
+       and especially for why this is the only kind of ambiguity,
+       are somewhat tricky, and would benefit from a formal proof,
+       which we plan to tackle at some point."))
     (:void ())
     (:char ())
     (:short ())
