@@ -1,7 +1,7 @@
 ; A tool for making (non-simple) evaluators
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,8 @@
 
 ;; See tests in evaluator-tests.lisp.
 
+;; See also the newer tool make-evaluator-simple.lisp
+
 ;; TODO: Consider calling magic-ev-fncall when the function is not one that is
 ;; known to the evaluator (I guess we would have to pass in state).  That could
 ;; let some of the more exotic functions be dropped from the list of functions
@@ -24,7 +26,6 @@
 ;; and see how much it slows things down.  Note, however, that the evaluator is
 ;; also used to embed DAGs in terms, and we won't want to pass in state there...
 
-;; TODO: Consider splitting the interpreted-function-alist by arities.
 ;; TODO: Consider not returning (mv hit val).  Instead, duplicate the code after the mv-let in each branch?
 
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
@@ -90,7 +91,8 @@
 (defun make-apply-cases-for-arities (current-arity arity-fn-call-alist-alist quoted-argsp innermost-callp tracingp acc)
   (declare (xargs :guard (and (integerp current-arity)
                               (<= -1 current-arity)
-                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist))
+                              (arity-fn-call-alist-alistp arity-fn-call-alist-alist)
+                              (booleanp tracingp))
                   :guard-hints (("Goal" :in-theory (enable arity-fn-call-alist-alistp
                                                            strip-cdrs ;todo
                                                            )))
@@ -108,11 +110,10 @@
                                               '(mv nil ;no hit
                                                    nil)
                                             `(let (,@(bind-args-to-nths quoted-argsp current-arity))
-                                               ,@(let ((eval-case-for-this-arity (make-eval-case-for-fns calls-for-this-arity
-                                                                                                         current-arity
-                                                                                                         tracingp
-                                                                                                         '(mv nil ;no hit
-                                                                                                              nil))))
+                                               ,@(let ((eval-case-for-this-arity `(case fn
+                                                                                    ,@(make-eval-case-for-fns calls-for-this-arity
+                                                                                                              current-arity
+                                                                                                              tracingp))))
                                                    (if (and (= current-arity 4)
                                                             (= (len calls-for-this-arity) 2))
                                                        ;; special cases for arity 4 and 8 if we only have self-functions to eval, since arg4/arg8 is overwritten by the array-depth param
