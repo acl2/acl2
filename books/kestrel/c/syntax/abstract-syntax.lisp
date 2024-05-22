@@ -980,19 +980,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyqual-list
-  :short "Fixtype of lists of type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type qualifiers are defined in @(tsee tyqual)."))
-  :elt-type tyqual
-  :true-listp t
-  :elementp-of-nil nil
-  :pred tyqual-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deflist tyqual-list-list
   :short "Fixtype of lists of lists of type qualifiers."
   :long
