@@ -507,10 +507,10 @@
      This covers the two possibilities of
      (i) a (hexadecimal) fractional significand with a (binary) exponent and
      (iii) a (hexadecimal integer significand with a (binary) exponent."))
-  (:frac-expo ((significand hex-frac-const)
-               (expo bin-expo)))
-  (:int-expo ((significand hex-digit-char-list)
-              (expo bin-expop)))
+  (:frac ((significand hex-frac-const)
+          (expo bin-expo)))
+  (:int ((significand hex-digit-char-list)
+         (expo bin-expop)))
   :pred hex-core-fconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
