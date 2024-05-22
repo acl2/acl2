@@ -38,22 +38,38 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/idioms" :dir :system))
 
-
 ;; (in-theory (disable acl2::car-to-nth-0))
 ;; (in-theory (disable acl2::nth-of-cdr)) ;new
 ;; (in-theory (enable nth))
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
-(in-theory (disable ACL2::SMALL-INT-HACK)) ;slow
-(in-theory (disable ACL2::ZP-WHEN-GT-0)) ;slow
-(in-theory (disable ACL2::ZP-WHEN-INTEGERP)) ;slow
-(in-theory (disable ACL2::SLICE-TOO-HIGH-IS-0)) ;slow
-(in-theory (disable mv-nth))
+(in-theory (disable ACL2::SMALL-INT-HACK ;slow
+                    ACL2::ZP-WHEN-GT-0   ;slow
+                    ACL2::ZP-WHEN-INTEGERP ;slow
+                    ACL2::SLICE-TOO-HIGH-IS-0 ;slow
+                    mv-nth))
+
+;; could expand the bvminus
+(defthmd canonical-address-p-becomes-bvlt-of-bvminus
+  (implies (signed-byte-p 64 x)
+           (equal (canonical-address-p x)
+                  (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
+
+(defthmd canonical-address-p-becomes-bvlt-of-bvminus-strong
+  (equal (canonical-address-p x)
+         (and (signed-byte-p 64 x)
+              (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
 
 ;; Seems needed because the model adds 7 to rsp-8 and tests whether
 ;; the result is canonical.  I guess it's testing the highest address
-;; of the 8 bit block.
+;; of the 8 byte block.
 (defthm canonical-address-p-of-minus-1
   (implies (equal 0 (mod x 8))
            (equal (canonical-address-p (+ -1 x))
