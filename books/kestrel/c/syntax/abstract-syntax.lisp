@@ -426,44 +426,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum dec-frac-const
+(fty::defprod dec-frac-const
   :short "Fixtype of decimal fractional constants [C:6.4.4.2] [C:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>fractional-constant</i>
      in the grammar in [C].
-     It covers the three possibilities of
+     It consists of the digits before and after the point.
+     Thus, it covers the three possibilities of
      (i) the point in the middle (with a left and right digit sequence),
      (ii) the point at the start (with just a right digit sequence), and
-     (iii) the point at the end (with just a left digit sequence).
-     This is structured slightly differently and more symmetrically
-     than in the grammar in [C]."))
-  (:middle ((left dec-digit-char-list)
-            (right dec-digit-char-list)))
-  (:start ((right dec-digit-char-list)))
-  (:end ((left dec-digit-char-list)))
+     (iii) the point at the end (with just a left digit sequence);
+     it also covers a fourth possibility, disalowed in the grammar in [C],
+     namely when there are no digits before or after the point.
+     This fourth possibilty makes the definition of this fixtype simpler,
+     and can be ruled out by predicates over this abstract syntax."))
+  ((before dec-digit-char-list)
+   (after dec-digit-char-list))
   :pred dec-frac-constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum hex-frac-const
+(fty::defprod hex-frac-const
   :short "Fixtype of hexadecimal fractional constants [C:6.4.4.2] [C:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>hexadecimal-fractional-constant</i>
      in the grammar in [C].
-     It covers the three possibilities of
+     It consists of the digits before and after the point.
+     Thus, it covers the three possibilities of
      (i) the point in the middle (with a left and right digit sequence),
      (ii) the point at the start (with just a right digit sequence), and
-     (iii) the point at the end (with just a left digit sequence).
-     This is structured slightly differently and more symmetrically
-     than in the grammar in [C]."))
-  (:middle ((left hex-digit-char-list)
-            (right hex-digit-char-list)))
-  (:start ((right hex-digit-char-list)))
-  (:end ((left hex-digit-char-list)))
+     (iii) the point at the end (with just a left digit sequence);
+     it also covers a fourth possibility, disalowed in the grammar in [C],
+     namely when there are no digits before or after the point.
+     This fourth possibilty makes the definition of this fixtype simpler,
+     and can be ruled out by predicates over this abstract syntax."))
+  ((before hex-digit-char-list)
+   (after hex-digit-char-list))
   :pred hex-frac-constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -481,12 +483,13 @@
      This covers the three possibilities of
      (i) a (decimal) fractional significand without an exponent,
      (ii) a (decimal) fractional significand with a (decimal) exponent, and
-     (iii) a (decimal) integer significand with a (decimal) exponent."))
-  (:frac ((significand dec-frac-const)))
-  (:frac-expo ((significand dec-frac-const)
-               (expo dec-expo)))
-  (:int-expo ((significand dec-digit-char-list)
-              (expo dec-expo)))
+     (iii) a (decimal) integer significand with a (decimal) exponent.
+     The first two possibilities are modeled as
+     a fractional significand with an optional exponent."))
+  (:frac ((significand dec-frac-const)
+          (expo? dec-expo-option)))
+  (:int ((significand dec-digit-char-list)
+         (expo dec-expo)))
   :pred dec-core-fconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1338,43 +1341,121 @@
       "We model <i>typedef-name</i>
        by inlining the type name into the @(':tydef') case of this fixtype.")
      (xdoc::p
-      "We also include two cases to model two kinds of syntactic ambiguities.")
+      "We also include two cases to model
+       certain kinds of syntactic ambiguities.")
      (xdoc::p
       "One kind of ambiguity has the form")
      (xdoc::codeblock
-      "... _Atomic ( I ) ( J ) ...")
+      "... _Atomic ( I ) ( I1 ( I2 ( ... ( In ) ... ) ) )")
      (xdoc::p
-      "where @('I') and @('J') are identifiers.
+      "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
        This could be
        either the atomic type specifier @('_Atomic(I)')
-       followed by the declarator @('(J)'),
+       followed by the declarator @('(I1(I2(...(In)...)))'),
        or the @('_Atomic') type qualifier
-       followed by the declarator @('(I)(J)').
-       This cannot be disambiguated purely syntactically.
+       followed by the declarator @('(I)(I1(I2(...(In)...)))').")
+     (xdoc::p
+      "This ambiguity may be easier to understand
+       by thinking of the case @('n = 1') first:
+       both @('(I1)') and @('(I)(I1)') are declarators;
+       the second is a function declarator,
+       with @('I1') being the parameter type list or identifier list
+       (in the sense of @('parameter-type-list') and @('identifier-list')
+       in the ABNF grammar)
+       and @('I') being the function.
+       Recall that a parameter type list may be
+       a single type specifier that is an identifier (a @('typedef') name).
+       This is ambiguous only if @('I1') is an identifier:
+       if @('I1') were a non-identifier declarator,
+       then @('(I)(I1)') could not be a function declarator',
+       and we would have the type specifier @('_Atomic(I)')
+       followed by the declarator @('(I1)');
+       if @('I1') were a non-identifier declaration specifier,
+       then it could not be a declarator,
+       and we would have the type qualifier @('_Atomic')
+       followed by the function declarator @('(I)(I1)').")
+     (xdoc::p
+      "If we consider the case @('n = 2'):
+       either @('(I1(I2))') is a (parenthesized) function declarator
+       with @('I2') a parameter type list or identifier list;
+       or @('(I)(I1(I2))') is a function declarator
+       with parameter type list @('I1(I2)')
+       where @('I1') is a @('typedef') name
+       and @('(I2)') is a (parenthesized) declarator.
+       Again, this is ambiguous only if @('I2') is an identifier:
+       if @('I2') were a non-identifier declarator,
+       then @('I1(I2)') would be a parameter type list
+       and so we would have a type qualifier @('_Atomic')
+       followed by a function declarator @('(I)(I1(I2))');
+       if @('I2') were a non-identifier type specifier,
+       then @('I1(I2)') would be a function declarator
+       and we would have a type specifier @('_Atomic(I)')
+       followed by that function declarator.")
+     (xdoc::p
+      "Similar observations apply to the cases @('n > 2').
+       The ambiguity rests on having only identifiers in the chain.
+       If @('In') were not an identifier,
+       then we could disambiguate things backwards.")
+     (xdoc::p
+      "This kind of ambiguity cannot be resolved purely syntactically.
        The @(':atomic-ambig') case of this fixtype
        captures the @('_Atomic(I)') part
-       (while the @('J') would be captured as a declarator),
+       (while the @('(I1(I2(...(In)...)))') is captured as a declarator),
        as a type specifier, but marked as ambiguous,
        so that, during post-parsing semantic analysis,
        this construct (and the subsequent declarator)
        can be re-classified into non-ambiguous constructs.")
      (xdoc::p
-      "The other kind of ambiguity has the form")
+      "Another kind of ambiguity has the form")
      (xdoc::codeblock
-      "... I ( J ) ...")
+      "... I ( I1 ( I2 ( ... ( In ) ... ) ) ) ...")
      (xdoc::p
-      "where @('I') and @('J') are identifiers.
+      "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
        This could be
-       either the type specifier @('I') followed by the declarator @('(J)'),
-       or just the declarator @('I(J)').
+       either the type specifier @('I') (a @('typedef') name)
+       followed by the declarator @('(I1(I2(...(In)...)))'),
+       or just the declarator @('I(I1(I2(...(In)...)))').
+       The situation is quite analogous to the @('_Atomic') case above.
        This cannot be disambiguated purely syntactically.
        The @(':tydef-ambig') case of this fixtype
        captures the @('I') part
-       (while the @('(J)') part would be captured as a declarator),
+       (while the @('(I1(I2(...(In)...)))') part is captured as a declarator),
        as a type specifier, but marked as ambiguous,
        so that, during post-parsing semantic analysis,
        this construct (and the subsequent declarator)
-       can be re-classified into non-ambiguous constructs."))
+       can be re-classified into non-ambiguous constructs.")
+     (xdoc::p
+      "Other, simpler kinds of syntactic ambiguity are")
+     (xdoc::codeblock
+      "_Atomic ( I ) ,"
+      "_Atomic ( I ) ;")
+     (xdoc::p
+      "where @('I') is an idenfitier,
+       the comma ends a parameter declaration,
+       and the semicolo ends a declaration.
+       Each can be either an atomic type specifier,
+       or an atomic type qualifier followed by a parenthesized declarator.
+       We parse these as type specifiers, but marked as ambiguous.")
+     (xdoc::p
+      "Similar kinds of syntactic ambiguity are")
+     (xdoc::codeblock
+      "D I ,"
+      "D I ,")
+     (xdoc::p
+      "where @('D') is a declaration specifier,
+       @('I') is an identifier,
+       the comma ends a parameter declaration,
+       and the semicolo ends a declaration.
+       The identifier @('I') can be
+       either a type specifier (a @('typedef') name),
+       or a declarator.
+       We parse these as type specifiers, but marked as ambiguous.")
+     (xdoc::p
+      "The above arguments for why those are ambiguities,
+       and especially for why those are the only kinds of ambiguities
+       (related to type specifiers),
+       are somewhat tricky, and would benefit from a formal proof,
+       which we plan to tackle at some point."))
     (:void ())
     (:char ())
     (:short ())
@@ -1657,7 +1738,15 @@
        and the @(':array-star') case captures the @('...[...*]') form.")
      (xdoc::p
       "In the @(':function-params') case,
-       we inline <i>parameter-type-list</i>."))
+       we inline <i>parameter-type-list</i>.")
+     (xdoc::p
+      "Grammatically, an <i>identifier-list</i>
+       is also a <i>parameter-type-list</i>,
+       because an identifier could be a type specifier (a @('typedef') name).
+       This cannot be disambiguated purely syntactically.
+       So, during parsing, we always generate the @(':function-params') case,
+       which may be re-classified into the @(':function-names') case
+       during post-parsing semantic analysis."))
     (:ident ((unwrap ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
