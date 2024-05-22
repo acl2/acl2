@@ -1445,7 +1445,7 @@
       "where @('D') is a declaration specifier,
        @('I') is an identifier,
        the comma ends a parameter declaration,
-       and the semicolo ends a declaration.
+       and the semicolon ends a declaration.
        The identifier @('I') can be
        either a type specifier (a @('typedef') name),
        or a declarator.
