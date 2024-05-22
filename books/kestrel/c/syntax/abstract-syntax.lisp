@@ -1341,7 +1341,8 @@
       "We model <i>typedef-name</i>
        by inlining the type name into the @(':tydef') case of this fixtype.")
      (xdoc::p
-      "We also include two cases to model two kinds of syntactic ambiguities.")
+      "We also include two cases to model
+       certain kinds of syntactic ambiguities.")
      (xdoc::p
       "One kind of ambiguity has the form")
      (xdoc::codeblock
@@ -1405,7 +1406,7 @@
        this construct (and the subsequent declarator)
        can be re-classified into non-ambiguous constructs.")
      (xdoc::p
-      "The other kind of ambiguity has the form")
+      "Another kind of ambiguity has the form")
      (xdoc::codeblock
       "... I ( I1 ( I2 ( ... ( In ) ... ) ) ) ...")
      (xdoc::p
@@ -1424,8 +1425,35 @@
        this construct (and the subsequent declarator)
        can be re-classified into non-ambiguous constructs.")
      (xdoc::p
-      "The above arguments for why this is an ambiguity,
-       and especially for why this is the only kind of ambiguity,
+      "Other, simpler kinds of syntactic ambiguity are")
+     (xdoc::codeblock
+      "_Atomic ( I ) ,"
+      "_Atomic ( I ) ;")
+     (xdoc::p
+      "where @('I') is an idenfitier,
+       the comma ends a parameter declaration,
+       and the semicolo ends a declaration.
+       Each can be either an atomic type specifier,
+       or an atomic type qualifier followed by a parenthesized declarator.
+       We parse these as type specifiers, but marked as ambiguous.")
+     (xdoc::p
+      "Similar kinds of syntactic ambiguity are")
+     (xdoc::codeblock
+      "D I ,"
+      "D I ,")
+     (xdoc::p
+      "where @('D') is a declaration specifier,
+       @('I') is an identifier,
+       the comma ends a parameter declaration,
+       and the semicolo ends a declaration.
+       The identifier @('I') can be
+       either a type specifier (a @('typedef') name),
+       or a declarator.
+       We parse these as type specifiers, but marked as ambiguous.")
+     (xdoc::p
+      "The above arguments for why those are ambiguities,
+       and especially for why those are the only kinds of ambiguities
+       (related to type specifiers),
        are somewhat tricky, and would benefit from a formal proof,
        which we plan to tackle at some point."))
     (:void ())
