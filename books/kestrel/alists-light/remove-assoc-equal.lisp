@@ -22,19 +22,19 @@
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))
 
 (defthm len-of-remove-assoc-equal-linear
-  (<= (len (remove-assoc-equal key alist))
+  (<= (len (remove-assoc-equal x alist))
       (len alist))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))
 
 (defthm true-listp-of-remove-assoc-equal-type
   (implies (true-listp alist)
-           (true-listp (remove-assoc-equal key alist)))
+           (true-listp (remove-assoc-equal x alist)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))
 
 (defthm remove-assoc-equal-when-not-member-equal-of-strip-cars
-  (implies (not (member-equal key (strip-cars alist)))
-           (equal (remove-assoc-equal key alist)
+  (implies (not (member-equal x (strip-cars alist)))
+           (equal (remove-assoc-equal x alist)
                   (true-list-fix alist)))
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))
