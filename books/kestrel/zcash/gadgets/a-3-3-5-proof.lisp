@@ -318,7 +318,7 @@
                  pfield::mul-of-1-arg1-gen
                  pfield::mod-when-fep
                  pfield::neg-of-neg-gen
-                 ACL2::INTEGERP-WHEN-NATP-FOR-AXE
+                 ACL2::INTEGERP-WHEN-NATP
                  pfield::add-of-0-arg1
                  pfield::add-of-0-arg2
                  PFIELD::DIV-OF-0-ARG1
