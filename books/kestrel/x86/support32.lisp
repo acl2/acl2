@@ -1278,20 +1278,6 @@
 ;;                      4294967295)))
 ;;   :hints (("Goal" :in-theory (enable stack-segment-assumptions32))))
 
-(defthmd bvchop-when-negative-lemma
-  (implies (and (< x 0) ;stack is expanding downward (e.g., delta is -4)
-                (<= (- (expt 2 size)) x)
-                (integerp x)
-                (natp size))
-           (equal (bvchop size x)
-                  (+ (expt 2 size) x)))
-  :hints (("Goal"
-           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
-           :in-theory (e/d (bvchop
-                            UNSIGNED-BYTE-P
-                            ) (       ;acl2::mod-of-expt-of-2 ;mod
-                               ACL2::EQUAL-OF-+-AND-BV)))))
-
 (defthm <-when-<-one-of-less-strengthen
   (implies (and (syntaxp (acl2::want-to-strengthen (< x k)))
                 (syntaxp (quotep k))
