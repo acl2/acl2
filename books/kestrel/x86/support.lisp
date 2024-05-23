@@ -26,10 +26,12 @@
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "linear-memory"))
-(local (include-book "kestrel/bv/arith" :dir :system)) ; todo
 (local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
