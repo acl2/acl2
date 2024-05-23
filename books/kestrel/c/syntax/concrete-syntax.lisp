@@ -47,3 +47,17 @@
      We are not defining a different concrete syntax of C here.")
    (xdoc::p
     "We plan to add a parser and a pretty-printer.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define grammar-character-p ((char natp))
+  :returns (yes/no booleanp)
+  :short "Check if a character (code) is valid according to the ABNF grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is based on the definition of @('character') in the ABNF grammar.
+     At some point we should prove that
+     this definition is consistent with that ABNF grammar rule."))
+  (or (and (<= 9 char) (<= char 13))
+      (and (<= 32 char) (<= char 126))))
