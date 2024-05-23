@@ -507,10 +507,10 @@
      This covers the two possibilities of
      (i) a (hexadecimal) fractional significand with a (binary) exponent and
      (iii) a (hexadecimal integer significand with a (binary) exponent."))
-  (:frac-expo ((significand hex-frac-const)
-               (expo bin-expo)))
-  (:int-expo ((significand hex-digit-char-list)
-              (expo bin-expop)))
+  (:frac ((significand hex-frac-const)
+          (expo bin-expo)))
+  (:int ((significand hex-digit-char-list)
+         (expo bin-expop)))
   :pred hex-core-fconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -980,19 +980,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist tyqual-list
-  :short "Fixtype of lists of type qualifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type qualifiers are defined in @(tsee tyqual)."))
-  :elt-type tyqual
-  :true-listp t
-  :elementp-of-nil nil
-  :pred tyqual-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deflist tyqual-list-list
   :short "Fixtype of lists of lists of type qualifiers."
   :long
@@ -1445,7 +1432,7 @@
       "where @('D') is a declaration specifier,
        @('I') is an identifier,
        the comma ends a parameter declaration,
-       and the semicolo ends a declaration.
+       and the semicolon ends a declaration.
        The identifier @('I') can be
        either a type specifier (a @('typedef') name),
        or a declarator.
