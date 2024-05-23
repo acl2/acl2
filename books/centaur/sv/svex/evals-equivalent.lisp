@@ -26,6 +26,7 @@
 (in-package "SV")
 
 (include-book "symbolic")
+(include-book "centaur/fgl/bfrcount" :dir :system)
 (include-book "envs-agree-on-masks")
 (include-book "centaur/fgl/def-fgl-rewrite" :dir :system)
 (include-book "centaur/fgl/bfr" :dir :system)
@@ -224,6 +225,54 @@ to the svexes.</p>"
                                          :initial-equiv-classes-last t))
           (transforms-update-fraig-configs-for-n-outputs n (cdr transforms)))))
 
+
+#!aignet
+(define fraig-output-map-replace-counts ((counts nat-listp)
+                                         (outmap fraig-output-map-p))
+  :returns (new-outmap fraig-output-map-p)
+  (b* (((when (atom outmap)) nil)
+       ((when (atom counts)) (fraig-output-map-fix outmap))
+       (x1 (car outmap)))
+    (cons (change-fraig-output-map-entry x1 :count (car counts))
+          (fraig-output-map-replace-counts (cdr counts) (cdr outmap)))))
+    
+
+(define transforms-update-fraig-output-maps ((pair-count natp)
+                                             (outmap-counts nat-listp)
+                                             transforms)
+  (if (atom transforms)
+      nil
+    (cons (b* ((x (car transforms))
+               ((unless (aignet::fraig-config-p x))
+                x)
+               ((aignet::fraig-config x))
+               ;; - If the config has :n-outputs-are-initial-equiv-classes and
+               ;;   :output-map both, then we ignore the output-map (and we
+               ;;   warn about that in fraig-config-normalized-output-map, but
+               ;;   here too for good measure).
+               ;; - If :n-outputs-are-initial-equiv-classes and not output-map,
+               ;;   then we just set the n-outputs-are-initial-equiv-classes to
+               ;;   the pair-count.
+               ;; - If :output-map is set and not n-outputs-are-initial-equiv-classes,
+               ;;   then we replace the output map counts with the given outmap-counts.
+               ;;   Warn if the lengths differ.
+               ;; - If neither, leave it alone.
+               (- (and x.n-outputs-are-initial-equiv-classes x.output-map
+                       (cw "Warning! Malformed fraig config -- both n-outputs-are-initial-equiv-classes and output-map set.~%")))
+               ((when x.n-outputs-are-initial-equiv-classes)
+                (aignet::change-fraig-config x
+                                             :n-outputs-are-initial-equiv-classes pair-count
+                                             :initial-equiv-classes-last t))
+               ((when x.output-map)
+                (b* ((- (and (not (eql (len outmap-counts) (len x.output-map)))
+                             (cw "Warning! Output map has length ~x0 but the counts derived from the output-map-objects has length ~x1.~%"
+                                 (len x.output-map) (len outmap-counts))))
+                     (outmap (aignet::fraig-output-map-replace-counts outmap-counts x.output-map)))
+                  (aignet::change-fraig-config x :output-map outmap))))
+            x)
+          (transforms-update-fraig-output-maps pair-count outmap-counts (cdr transforms)))))
+
+  
 ;; (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 ;; (local (include-book "std/lists/nth" :dir :system))
 
@@ -1315,13 +1364,29 @@ in two symbolic SVEX environments."
                                     svexlist->a4vec-aig-env-for-varlist)
                                    (svexlist->a4vec-correct))))))
 
+#!fgl
+(define fgl-list-object-bfrcounts ((x fgl-object-p))
+  :returns (counts nat-listp)
+  :measure (fgl-object-count x)
+  :prepwork ((local
+              #!acl2
+              (defthm nat-listp-of-repeat
+                (implies (natp x)
+                         (nat-listp (repeat n x)))
+                :hints(("Goal" :in-theory (enable repeat))))))
+  (fgl-object-case x
+    :g-concrete (acl2::repeat (len x.val) 0)
+    :g-cons (cons (fgl-object-bfrcount x.car)
+                  (fgl-list-object-bfrcounts x.cdr))
+    :otherwise nil))
 
 (define svexlist-evals-equal-and-integerp-with-transforms ((x svexlist-p)
                                                            (env1 svex-env-p)
                                                            (env2 svex-env-p)
                                                            (symbolic-params alistp)
-                                                           (transforms))
-  (declare (ignorable symbolic-params transforms))
+                                                           (transforms)
+                                                           &key (output-map-objects))
+  (declare (ignorable symbolic-params transforms output-map-objects))
   (and (svexlist-evals-equal x env1 env2)
        (integer-listp (svexlist-eval x env1)))
   ///
@@ -1330,7 +1395,8 @@ in two symbolic SVEX environments."
 
 
   (fgl::def-fgl-rewrite svexlist-evals-equal-and-integerp-with-transforms-fgl
-    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms)
+    (equal (svexlist-evals-equal-and-integerp-with-transforms x env1 env2 symbolic-params transforms
+                                                              :output-map-objects output-map-objects)
            (b* ((orig-x x)
 
                 (env1 (make-fast-alist (svex-env-fix env1)))
@@ -1409,11 +1475,19 @@ in two symbolic SVEX environments."
                       (?foo (break$)))
                    (fgl::abort-rewrite (and (svexlist-evals-equal orig-x env1 env2)
                                             (integer-listp (svexlist-eval orig-x env1))))))
-                (transforms (transforms-update-fraig-configs-for-n-outputs len1 transforms)))
+                (omo-bfrcounts (fgl::syntax-bind
+                                omo-bfrcounts
+                                (fgl::fgl-list-object-bfrcounts output-map-objects)))
+                (transforms (if omo-bfrcounts
+                                (transforms-update-fraig-output-maps
+                                 len1
+                                 (append omo-bfrcounts (list (* 2 len1)))
+                                 transforms)
+                              (transforms-update-fraig-configs-for-n-outputs len1 transforms))))
                 
              (fgl::fgl-simplify-ordered evals-equal-and-integerp transforms
                                         :tracked-obj
-                                        (cons hint-iso1 hint-iso2))))
+                                        (list* output-map-objects hint-iso1 hint-iso2))))
     :hints(("Goal" :in-theory (e/d (svexlist-evals-equal
                                     SVEXLIST->A4VECS-FOR-VARLIST
                                     svexlist->a4vec-aig-env-for-varlist)

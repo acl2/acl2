@@ -2608,13 +2608,13 @@
 (define fraig-output-map-has-initial-equivs ((x fraig-output-map-p))
   (b* (((when (atom x)) nil)
        ((fraig-output-map-entry x1) (car x)))
-    (or (eq x1.type :initial-equiv-classes)
+    (or (fraig-output-type-case x1.type :initial-equiv-classes)
         (fraig-output-map-has-initial-equivs (cdr x)))))
 
 (define fraig-output-map-has-multiple-initial-equivs ((x fraig-output-map-p))
   (b* (((when (atom x)) nil)
        ((fraig-output-map-entry x1) (car x)))
-    (if (eq x1.type :initial-equiv-classes)
+    (if (fraig-output-type-case x1.type :initial-equiv-classes)
         (fraig-output-map-has-initial-equivs (cdr x))
       (fraig-output-map-has-multiple-initial-equivs (cdr x)))))
 
@@ -2624,7 +2624,7 @@
                (count natp :rule-classes :type-prescription))
   (b* (((when (atom x)) (mv 0 0))
        ((fraig-output-map-entry x1) (car x)))
-    (if (eq x1.type :initial-equiv-classes)
+    (if (fraig-output-type-case x1.type :initial-equiv-classes)
         (mv (lnfix prev-count)
             (logtail 1 x1.count))
       (fraig-output-map-initial-equiv-start/count (cdr x) (+ x1.count (lnfix prev-count))))))
@@ -2807,11 +2807,13 @@
        (mark (bitarr-remove-marked 0 (num-fanins aignet) mark mark2))
        ;; Then we unmark anything in mark corresponding to a node past the level limit, if there is a level limit.
        ((when (eql config.level-limit 0))
-        (mv mark2 mark))
+        (b* ((mark (set-bit 0 1 mark))) ;; always mark the constant node
+          (mv mark2 mark)))
        ((acl2::local-stobjs aignet-levels)
         (mv mark2 aignet-levels mark))
        (aignet-levels (aignet-record-levels aignet aignet-levels))
-       (mark (aignet-unmark-higher-levels 0 config.level-limit aignet-levels mark)))
+       (mark (aignet-unmark-higher-levels 0 config.level-limit aignet-levels mark))
+       (mark (set-bit 0 1 mark)))
     (mv mark2 aignet-levels mark))
   ///
   (defret len-of-<fn>
@@ -2876,6 +2878,8 @@
                          (classes-init-n-outputs count offset classes aignet)))
                       (t (classes-init (num-fanins aignet) classes))))
        (mark (fraig-create-aignet-node-mask aignet config mark))
+       (classes (classes-remove-unmarked 0 classes mark))
+       (- (classes-check-consistency (num-fanins aignet) classes))
        (s32v (mbe :logic (non-exec (create-s32v))
                   :exec s32v))
        (s32v (s32v-resize-cols config.initial-sim-words s32v))

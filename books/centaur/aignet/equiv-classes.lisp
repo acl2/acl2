@@ -66,7 +66,6 @@
 
 
 
-
 ;; (define classes-sized ((size natp) classes)
 ;;   (and (<= (lnfix size) (class-nexts-length classes))
 ;;        (<= (lnfix size) (class-heads-length classes)))
@@ -253,6 +252,111 @@
                (nfix v)
              (node-head n classes)))
     :hints(("Goal" :in-theory (enable node-head)))))
+
+
+;;   - Generally, a node's head points to the lowest-numbered node in its equiv
+;; class. But if that node is the lowest-numbered node in its equiv class, then
+;; it instead points to the last node in its equiv class.  So head == node
+;; indicates a singleton class.
+
+;;  - Generally, a node's next points to the next-higher-numbered node in its
+;;  equiv class. If next <= node, that indicates that node is the
+;;  highest-numbered in its equiv class, and it isn't important what next is.
+
+
+(define class-remove-unmarked ((n natp)
+                               (classes)
+                               (mark)
+                               (prev natp)
+                               (head natp))
+  ;; Remove all unmarked nodes from a class, assuming we've already found at
+  ;; least one node that is marked.
+  :guard (and (< n (classes-size classes))
+              (classes-wellformed classes)
+              (<= (classes-size classes) (bits-length mark))
+              (< prev n)
+              (< head n))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  :returns (new-classes)
+  (b* (((unless (mbt (and (classes-wellformed classes)
+                          (< (nfix n) (classes-size classes))
+                          (< (nfix prev) (nfix n))
+                          (< (nfix head) (nfix n)))))
+        classes)
+       (n (lnfix n))
+       (next (node-next n classes))
+       (marked (eql 1 (get-bit n mark)))
+       ((mv classes new-prev)
+        (if marked
+            ;; Keep this node in the class and it is the new prev.
+            (b* ((classes (node-set-head n head classes))
+                 (classes (node-set-next prev n classes)))
+              (mv classes n))
+          ;; Ignore and keep the current prev.
+          ;; Don't bother setting it to a singleton because we'll
+          ;; do so as part of the classes-remove-unmarked sweep.
+          (mv classes prev)))
+       ((when (< n next))
+        ;; recur through the rest of the class.
+        (class-remove-unmarked next classes mark new-prev head))
+       ;; Otherwise we're at the end of the class and new-prev is the final
+       ;; node of the class.
+       (classes (node-set-head head new-prev classes)))
+    (node-set-next new-prev new-prev classes))
+  ///
+  (defret <fn>-preserves-wellformed
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret <fn>-preserves-size
+    (equal (classes-size new-classes)
+           (classes-size classes))))
+
+       
+        
+
+
+(define classes-remove-unmarked ((n natp)
+                                 (classes)
+                                 (mark))
+  :returns (new-classes)
+  :guard (and (<= n (classes-size classes))
+              (classes-wellformed classes)
+              (<= (classes-size classes) (Bits-length mark)))
+  :measure (nfix (- (classes-size classes) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (classes-size classes) (nfix n)))
+                   :exec (eql (classes-size classes) n)))
+        classes)
+       (classes (if (eql 1 (get-bit n mark))
+                    ;; When we see a node that is marked, check its head.
+                    ;; - If the head >= n, or if the head is unmarked,
+                    ;; then n is either the head of a class or a singleton.
+                    ;; Otherwise, it has already been processed as part of a
+                    ;; previous class.
+                    (b* ((head (node-head n classes))
+                         ((unless (or (>= head (lnfix n))
+                                      (eql 0 (get-bit head mark))))
+                          classes)
+                         (next (node-next n classes))
+                         ;; (classes )
+                         ((when (<= next (lnfix n)))
+                          ;; singleton
+                          (node-set-head n n classes)))
+                      (class-remove-unmarked next classes mark n n))
+                  ;; When we see a node that is not marked,
+                  ;; set it to a singleton
+                  (b* ((classes (node-set-head n n classes)))
+                    (node-set-next n n classes)))))
+    (classes-remove-unmarked (1+ (lnfix n)) classes mark))
+  ///
+  (defret <fn>-preserves-wellformed
+    (implies (classes-wellformed classes)
+             (classes-wellformed new-classes)))
+
+  (defret <fn>-preserves-size
+    (equal (classes-size new-classes)
+           (classes-size classes))))
+       
 
 
 (define class-list ((n natp) classes)
@@ -2213,7 +2317,7 @@ so in this case the aignet should have at least ~x2 outputs, but in fact it has 
     (classes-counts-aux (1+ n) max nclasses nconst-lits nclass-lits classes)))
 
 (define classes-counts (classes &key ((start-node natp) '0))
-  :guard (<= start-node (classes-size classes))
+  :guard (and (<= start-node (classes-size classes)))
   :returns (mv (nclasses natp :rule-classes :type-prescription)
                (nconst-lits natp :rule-classes :type-prescription)
                (nclass-lits natp :rule-classes :type-prescription))
