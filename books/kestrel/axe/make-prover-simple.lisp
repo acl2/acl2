@@ -62,6 +62,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;move
 (defthm symbol-doublet-listp-forward-to-alistp
@@ -106,12 +107,6 @@
                                      natp-of-car-when-possibly-negated-nodenumsp)
                                   (natp)))))
 
-;move
-(defthm strip-cdrs-of-pairlis$-3
-  (equal (strip-cdrs (pairlis$ x y))
-         (take (len x) y))
-  :hints (("Goal" :in-theory (enable (:i len)))))
-
 (defthmd <-of--1-when-natp
   (implies (natp x)
            (not (< x -1))))
@@ -140,32 +135,6 @@
 ;;            (equal (consp x) (< 0 free)))
 ;;   :hints (("Goal" :in-theory (e/d ((:i len)) ( ;len-of-cdr
 ;;                                               )))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: Put these into a separate book and just locally include that book:
-
-(defthmd rationalp-when-natp-for-axe
-  (implies (natp x)
-           (rationalp x)))
-
-(defthmd rationalp-when-integerp-for-axe
-  (implies (integerp x)
-           (rationalp x)))
-
-(defthmd integerp-when-natp-for-axe
-  (implies (natp x)
-           (integerp x)))
-
-(defthmd nat-listp-forward-to-true-listp-for-axe
-  (implies (nat-listp x)
-           (true-listp x))
-  :rule-classes :forward-chaining)
-
-(defthmd nat-listp-forward-to-rational-listp-for-axe
-  (implies (nat-listp x)
-           (rational-listp x))
-  :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,8 +262,8 @@
     (:EXECUTABLE-COUNTERPART TRUE-LISTP)
     (:EXECUTABLE-COUNTERPART UNARY--)
     (:EXECUTABLE-COUNTERPART ZP)
-    (:forward-chaining nat-listp-forward-to-true-listp-for-axe)
-    (:forward-chaining nat-listp-forward-to-rational-listp-for-axe)
+    (:forward-chaining nat-listp-forward-to-true-listp)
+    (:forward-chaining nat-listp-forward-to-rational-listp)
     ;;(:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING ALISTP-FORWARD-TO-TRUE-LISTP)
     (:FORWARD-CHAINING ARRAY1P-FORWARD)
@@ -763,9 +732,9 @@
 (defthmd integerp-mv-nth-3-of-apply-axe-use-instances
   (implies (integerp dag-len)
            (integerp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
-  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp-for-axe) (pseudo-termp
-                                                                                        perm-implies-equal-subsetp-equal-1 ; why?
-                                                                                        )))))
+  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp) (pseudo-termp
+                                                                                perm-implies-equal-subsetp-equal-1 ; why?
+                                                                                )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -970,6 +939,7 @@
        (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/types" :dir :system))
        (local (include-book "kestrel/utilities/acl2-count" :dir :system))
        (local (include-book "kestrel/utilities/get-cpu-time" :dir :system))
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
@@ -1011,8 +981,8 @@
 
        (local (in-theory (enable natp-of-+-of-1-alt
                                  natp-of-car-when-bounded-darg-listp-gen
-                                 nat-listp-forward-to-true-listp-for-axe
-                                 nat-listp-forward-to-rational-listp-for-axe
+                                 nat-listp-forward-to-true-listp
+                                 nat-listp-forward-to-rational-listp
                                  symbol-list-listp-of-union-eq-with-all
                                  apply-axe-use-instances-return-type
                                  ;apply-axe-use-instances-bound
@@ -3024,7 +2994,7 @@
                                ;; consp-when-true-listp-and-non-nil
                                ;; rationalp-+
                                ;; rationalp-unary--
-                               rationalp-when-integerp-for-axe
+                               rationalp-when-integerp
                                integerp-of-sub-tries
                                axe-rule-hypp
                                stored-axe-rulep
@@ -3036,7 +3006,7 @@
                                true-listp-of-cons
                                axe-treep-when-consp-of-car
                                <=-of--1-and-largest-non-quotep-linear ; not-<-of-largest-non-quotep-and--1
-                               integerp-when-natp-for-axe
+                               integerp-when-natp
                                pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
                                integerp-of-maxelem2
                                integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
@@ -3979,7 +3949,7 @@
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options)
                                      (booleanp top-node-onlyp))
-                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe)
+                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp)
                                                                (natp))
                                         :do-not-induct t))))
          (b* ( ;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?
@@ -4355,7 +4325,7 @@
                                       (symbol-listp var-ordering)
                                       (simple-prover-optionsp options))
                           :stobjs state
-                          :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe) (natp))  :do-not-induct t))
+                          :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp) (natp))  :do-not-induct t))
                           :measure (+ 1 (nfix count)))
                    (type (unsigned-byte 59) count))
           (if (zp-fast count)
@@ -4524,11 +4494,11 @@
                                   ,apply-tactics-name
                                   <-OF-+-OF-1-STRENGTHEN-2
                                   NATP-OF-+-OF-1
-                                  rationalp-when-natp-for-axe)
+                                  rationalp-when-natp)
                                  (natp)))))
 
        (verify-guards ,apply-tactic-name :hints
-         (("Goal" :in-theory (e/d (simple-prover-tacticp simple-prover-tactic-listp <-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp-for-axe
+         (("Goal" :in-theory (e/d (simple-prover-tacticp simple-prover-tactic-listp <-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp
                                                          not-equal-of-len-and-1-when-dargp
                                                          natp-when-dargp ; trying
                                                          )
@@ -4612,7 +4582,7 @@
                                          ,apply-tactics-name
                                          <-of-+-of-1-strengthen-2
                                          natp-of-+-of-1
-                                         rationalp-when-natp-for-axe)
+                                         rationalp-when-natp)
                                         (natp)))))
 
        ;; Consider each of the RULE-ALISTS in order, for each applying the TACTIC.  TODO: What if the :tactic doesn't include :rewrite?
@@ -5494,9 +5464,9 @@
                     :in-theory (disable ,(pack$ 'prove-true-case-with- suffix '-prover-return-type)))))
 
        (verify-guards ,prove-true-case-name
-         :hints (("Goal" :in-theory (e/d (rationalp-when-natp-for-axe
+         :hints (("Goal" :in-theory (e/d (rationalp-when-natp
                                           <-of-+-of-1-strengthen-2
-                                          integerp-when-natp-for-axe)
+                                          integerp-when-natp)
                                          (natp)))))
 
        (defthm ,(pack$ 'prove-or-split-case-with- suffix '-prover-return-type-corollary-linear)
