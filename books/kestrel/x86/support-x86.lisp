@@ -29,7 +29,10 @@
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, to deal with truncate
 (local (include-book "kestrel/lists-light/nth" :dir :system))

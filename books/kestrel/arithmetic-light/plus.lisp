@@ -198,6 +198,10 @@
   (equal (< (+ y x) x)
          (< y 0)))
 
+(defthm <-of-+-cancel-2+-1
+  (equal (< (+ y x z) x)
+         (< (+ y z) 0)))
+
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
                          (quotep k1)))

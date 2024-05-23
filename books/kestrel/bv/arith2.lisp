@@ -1,7 +1,7 @@
 ; More rules about arithmetic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,6 @@
 
 ;; Arithmetic rules with more dependencies than the basic rules.
 
-(include-book "arith")
 (include-book "kestrel/utilities/polarity" :dir :system)
 
 ;Strengthen (< x (+ 1 y)) to (<= x y) when we know the values are integers.
@@ -45,4 +44,5 @@
                 (integerp x)) ;could be slow?
            (equal (< x k)
                   (< x (+ -1 k)) ;k-1 gets computed
-                  )))
+                  ))
+  :hints (("Goal" :cases ((< x k)))))

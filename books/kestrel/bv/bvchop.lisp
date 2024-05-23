@@ -877,3 +877,15 @@
                 (integerp y))
            (equal (bvchop size (+ x (* (expt 2 size) y)))
                   (bvchop size x))))
+
+;rename
+(defthmd bvchop-when-negative-lemma
+  (implies (and (< x 0)
+                (<= (- (expt 2 size)) x)
+                (integerp x)
+                (natp size))
+           (equal (bvchop size x)
+                  (+ (expt 2 size) x)))
+  :hints (("Goal"
+           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
+           :in-theory (enable bvchop unsigned-byte-p))))

@@ -85,6 +85,13 @@
   :hints (("Goal" :in-theory (e/d (--becomes-*-of--1)
                                   (*-of--1)))))
 
+;; Sometimes needed, to propagate the - further out.
+(defthmd *-of---arg1-gen
+  (equal (* (- x) y)
+         (- (* x y)))
+  :hints (("Goal" :in-theory (e/d (--becomes-*-of--1)
+                                  (*-of--1)))))
+
 (defthm *-of---arg2
   (equal (* x (- y))
          (- (* x y)))
@@ -497,8 +504,8 @@
 (defthm equal-of-*-and-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
-                (< 0 k2) ;gen
-                )
+                (acl2-numberp k2)
+                (not (equal 0 k2)))
            (equal (equal k1 (* k2 x))
                   (and (acl2-numberp k1)
                        (equal (/ k1 k2) (fix x)))))
