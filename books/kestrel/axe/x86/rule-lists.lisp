@@ -316,7 +316,6 @@
     x86isa::!fault x86isa::!fault$a ; exposes xw
     ))
 
-
 (defund read-over-write-rules ()
   (declare (xargs :guard t))
   '( ; rule to intro app-view?
@@ -437,8 +436,6 @@
     mxcsr-of-write-to-segment
     mxcsr-of-write-byte-to-segment
     ))
-
-
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
@@ -2348,6 +2345,14 @@
     get-flag-of-set-edx
     get-flag-of-set-esp
     get-flag-of-set-ebp
+
+    program-at-of-set-eip
+    program-at-of-set-eax
+    program-at-of-set-ebx
+    program-at-of-set-ecx
+    program-at-of-set-edx
+    program-at-of-set-esp
+    program-at-of-set-ebp
 
     code-segment-readable-bit-of-set-eip
     code-segment-readable-bit-of-set-eax
