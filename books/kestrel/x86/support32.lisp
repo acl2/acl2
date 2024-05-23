@@ -736,6 +736,11 @@
                   (bvchop 32 (eip x86))))
   :hints (("Goal" :in-theory (enable x86isa::read-*ip bvchop))))
 
+;; Introduces eip.
+(defthmd xr-becomes-eip
+  (equal (xr :rip nil x86)
+         (eip x86)))
+
 ;; Converting a valid effective address in the code segment to a linear address returns no error:
 (defthm not-mv-nth-0-of-ea-to-la-of-cs
   (implies (and (not (64-bit-modep x86))

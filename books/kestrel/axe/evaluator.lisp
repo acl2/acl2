@@ -337,7 +337,6 @@
 ;fixme add a test that all of these are functions, not macros
 ;todo: get rid of set-field, set-fields, and get-field
 ;todo: see adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
-;; TODO: The functions actually get checked in the reverse order of how they appear here -- change that
 (defund axe-evaluator-function-info ()
   (declare (xargs :guard t))
   (acons 1
