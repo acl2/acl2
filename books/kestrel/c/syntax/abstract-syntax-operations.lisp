@@ -279,6 +279,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-structdecl
+  :short "An irrelevant structure declaration."
+  :type structdeclp
+  :body (make-structdecl-member :specqual nil :declor nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-enumspec
   :short "An irrelevant enumeration specifier."
   :type enumspecp
