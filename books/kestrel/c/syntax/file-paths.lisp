@@ -41,3 +41,10 @@
      we could already use strings with slashes and such as file paths."))
   ((unwrap any))
   :pred filepathp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset filepath-set
+  :short "Fixtype for filepath sets."
+  :elt-type filepath
+  :pred filepath-setp)

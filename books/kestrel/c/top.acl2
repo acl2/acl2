@@ -1,1 +1,1 @@
-; cert-flags: ? t :ttags ((:quicklisp) (:oslib) (:quicklisp.osicat) (:open-output-channel!))
+; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:oslib) (:quicklisp.osicat) (:open-output-channel!))
