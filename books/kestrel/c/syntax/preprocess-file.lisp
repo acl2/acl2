@@ -239,9 +239,8 @@
   (xdoc::topstring
    (xdoc::p
      "This function preprocesses a @(see filepathp) using the system's C
-      preprocessor. See tests/preprocess-file.lisp for examples of usage. See
-      @(see preprocess-files) for a simlilar utility which handles a set of
-      files."))
+      preprocessor. See @(see preprocess-files) for a simlilar utility which
+      handles a set of files."))
   (macrolet
    ((iferr () '(cons "" (filepath nil))))
    (b* ((filename (filepath->unwrap file))
