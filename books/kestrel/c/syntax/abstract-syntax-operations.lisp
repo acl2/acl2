@@ -230,6 +230,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-dirabsdeclor
+  :short "An irrelevant direct abstract declarator."
+  :type dirabsdeclorp
+  :body (dirabsdeclor-dummy-base))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyname
   :short "An irrelevant type name."
   :type tynamep
