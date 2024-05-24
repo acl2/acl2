@@ -272,6 +272,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-structdeclor
+  :short "An irrelevant structure declarator."
+  :type structdeclorp
+  :body (structdeclor-declor (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-enumspec
   :short "An irrelevant enumeration specifier."
   :type enumspecp
