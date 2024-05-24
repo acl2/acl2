@@ -9,3 +9,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "portcullis")
+
+; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell))
