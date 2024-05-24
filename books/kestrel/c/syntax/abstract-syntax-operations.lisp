@@ -258,6 +258,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-paramdecl
+  :short "An irrelevant parameter declaration."
+  :type paramdeclp
+  :body (make-paramdecl-nonabstract :spec nil :decl (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyname
   :short "An irrelevant type name."
   :type tynamep
