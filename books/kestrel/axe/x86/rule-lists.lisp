@@ -4275,6 +4275,7 @@
             x86isa::canonical-address-p-between-special5
             x86isa::canonical-address-p-between-special5-alt
             x86isa::canonical-address-p-between-special6
+            x86isa::canonical-address-p-between-special7
             bitops::ash-is-expt-*-x
             acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
