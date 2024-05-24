@@ -153,6 +153,17 @@
   :elementp-of-nil nil
   :pred ident-listp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption ident-option
+  ident
+  :short "Fixtype of optional identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Identifiers are defined in @(tsee ident)."))
+  :pred ident-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lsuffix
@@ -1206,14 +1217,14 @@
             (else expr)))
     (:comma ((first expr)
              (next expr)))
-    (:cast/mul ((type/arg1 ident)
-                (arg/arg2 expr)))
-    (:cast/add ((type/arg1 ident)
-                (arg/arg2 expr)))
-    (:cast/sub ((type/arg1 ident)
-                (arg/arg2 expr)))
-    (:cast/and ((type/arg1 ident)
-                (arg/arg2 expr)))
+    (:cast/mul-ambig ((type/arg1 ident)
+                      (arg/arg2 expr)))
+    (:cast/add-ambig ((type/arg1 ident)
+                      (arg/arg2 expr)))
+    (:cast/sub-ambig ((type/arg1 ident)
+                      (arg/arg2 expr)))
+    (:cast/and-ambig ((type/arg1 ident)
+                      (arg/arg2 expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1887,7 +1898,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum strunispec
+  (fty::defprod strunispec
     :parents (abstract-syntax expr/decls)
     :short "Fixtype of structure or union specifiers [C:6.7.2.1] [C:A.2.2]."
     :long
@@ -1896,13 +1907,17 @@
       "This corresponds to <i>struct-or-union-specifier</i>
        in the grammar in [C], but without the initial <i>struct-or-union</i>.
        The only use of this fixtype is in @(tsee tyspec),
-       where we have two separate cases for structures and unions."))
-    (:name ((name ident)))
-    (:members ((members structdecl-list)))
-    (:name-members ((name ident)
-                    (members structdecl-list)))
+       where we have two separate cases for structures and unions.")
+     (xdoc::p
+      "This fixtype is a little broader than the grammar,
+       because it allows an absent name and no members.
+       But this definition is simpler,
+       and the disallowed case can be rules out
+       via predicates over the abstract syntax."))
+    ((name ident-option)
+     (members structdecl-list))
     :pred strunispecp
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

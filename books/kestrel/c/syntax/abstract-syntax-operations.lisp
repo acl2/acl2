@@ -240,7 +240,7 @@
 (defirrelevant irr-strunispec
   :short "An irrelevant structure or union specifier."
   :type strunispecp
-  :body (strunispec-name (irr-ident)))
+  :body (make-strunispec :name nil :members nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -13,6 +13,11 @@
 (include-book "grammar")
 (include-book "files")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc concrete-syntax
@@ -47,3 +52,29 @@
      We are not defining a different concrete syntax of C here.")
    (xdoc::p
     "We plan to add a parser and a pretty-printer.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define grammar-character-p ((char natp))
+  :returns (yes/no booleanp)
+  :short "Check if a character (code) is valid according to the ABNF grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is based on the definition of @('character') in the ABNF grammar.
+     At some point we should prove that
+     this definition is consistent with that ABNF grammar rule."))
+  (or (and (<= 9 char) (<= char 13))
+      (and (<= 32 char) (<= char 126))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist grammar-character-listp (x)
+  :guard (nat-listp x)
+  :short "Check if all the characters (codes) in a list
+          are valid according to the ABNF grammar."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This lifts @(tsee grammar-character-p) to lists of natural numbers."))
+  (grammar-character-p x))
