@@ -23,6 +23,7 @@
 ;; TODO: Some of these are not BV rules.
 
 ;(include-book "bv-rules-axe0") ;drop?
+(include-book "ihs/basic-definitions" :dir :system) ; for logmask
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)

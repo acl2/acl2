@@ -31,11 +31,11 @@
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "bvcat")) ;for BVCHOP-OF-LOGAPP-BIGGER
-(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, for floor-type-4
 
 (in-theory (disable logext))
 
-(defthm integerp-of-logext
+;; only needed for axe?
+(defthmd integerp-of-logext
   (integerp (logext size x)))
 
 (defthm logext-when-i-is-not-an-integer
@@ -61,7 +61,7 @@
 ;;                  (LOGAPP 31 (* X Y) w)))
 ;;  :hints (("Goal" :in-theory (enable logapp bvchop))))
 
-(in-theory (disable logbitp))
+(local (in-theory (disable logbitp)))
 
 ;; (thm
 ;;  (implies (and (integerp x)
@@ -227,19 +227,18 @@
 
 ;should (logext 0 0) be 0 or -1?
 
-;proof uses elim
 (defthm logext-does-nothing-rewrite
   (implies (posp size)
            (equal (equal x (logext size x))
                   (signed-byte-p size x)))
-  :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-IFF-GETBIT)))))
 
 ;; See also logext-identity
 (defthm logext-when-signed-byte-p
   (implies (signed-byte-p size x)
            (equal (logext size x)
                   x))
-  :hints (("Goal" :in-theory (e/d (logext logbitp logtail) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-IFF-GETBIT)))))
 
 ;hope the new hyps are okay
 (defthm bvchop-of-logext
@@ -316,13 +315,15 @@
   (implies (posp n)
            (equal (equal 0 (logext n x))
                   (equal 0 (bvchop n x))))
+  :otf-flg t
   :hints (("Goal" :in-theory (e/d (logext bvchop getbit slice logtail
                                           expt-of-+
-                                          mod-=-0)
-                                  (
-                                   bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice
-                                   )))))
+                                          ;mod-=-0
+                                          equal-of-0-and-mod
+                                          floor-when-integerp-of-quotient
+                                          )
+                                  (bvchop-1-becomes-getbit
+                                   bvchop-of-logtail-becomes-slice)))))
 
 (defthm logext-of-expt-same
   (implies (posp size)
