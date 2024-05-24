@@ -670,6 +670,16 @@
            (< (floor i j) 0))
   :rule-classes :type-prescription)
 
+;; Either i is negative and so is the quotient, or i/j rounds down to 0.
+(defthm <=-of-floor-when-<-type
+  (implies (and (< i j)
+                (<= 0 j) ; usual case
+                (rationalp i)
+                (rationalp j))
+           (<= (floor i j) 0))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable floor))))
+
 (defthm floor-minus-arg2
   (implies (and (force (rationalp x))
                 (rationalp y)
