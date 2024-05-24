@@ -230,6 +230,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-declor
+  :short "An irrelevant declarator."
+  :type declorp
+  :body (make-declor :pointers nil :decl (dirdeclor-ident (irr-ident))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-dirdeclor
   :short "An irrelevant direct declarator."
   :type dirdeclorp
