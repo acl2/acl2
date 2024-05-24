@@ -230,6 +230,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-absdeclor
+  :short "An irrelevant abstract declarator."
+  :type absdeclorp
+  :body (make-absdeclor :pointers nil :decl? nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-dirabsdeclor
   :short "An irrelevant direct abstract declarator."
   :type dirabsdeclorp
