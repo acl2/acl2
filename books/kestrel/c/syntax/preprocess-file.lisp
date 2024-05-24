@@ -149,7 +149,7 @@
                (filename stringp)
                state)
   :parents (preprocess-file)
-  :short "Make a temporary file by invoking mktemp via @(see tshell)."
+  :short "Make a temporary file by invoking mktemp via @(see acl2::tshell)."
   (b* ((mktemp-cmd
         (str::join (list "mktemp"
                          "-t"
@@ -183,7 +183,7 @@
    (state 'state))
   :returns (mv erp nil state)
   :parents (preprocess-file)
-  :short "Remove a file with @(see tshell)."
+  :short "Remove a file with @(see acl2::tshell)."
   (b* ((remove-file-cmd (str::join (list "rm" filename) " "))
        ((mv exit-status -)
         (acl2::tshell-call remove-file-cmd :print nil :save nil))
@@ -229,8 +229,9 @@
    (state 'state))
   :returns (mv erp
                (pair "A pair whose first value is the output file (if it is
-                      saved, nil otherwise), and whose second value is the
-                      preprocessed @(see filedata) (if read, nil otherwise).")
+                      saved, @('nil') otherwise), and whose second value is the
+                      preprocessed @(see filedata) (if read, @('nil')
+                      otherwise).")
                state)
   :parents (preprocessing)
   :short "Preprocess a single file."
@@ -353,12 +354,12 @@
                     "The map from filepaths to preprocessed filedata.")
                state)
   :parents (preprocessing preprocess-file)
-  :short "Preprocess as set of files."
+  :short "Preprocess a set of files."
   :long
   (xdoc::topstring
    (xdoc::p
      "This function preprocesses a @(see filepath-setp). See @(see
-      preprocess-fileset) for a similar utility which operates on individuals
+      preprocess-files) for a similar utility which operates on individuals
       files."))
   (b* (((when (emptyp files))
         (value (fileset nil)))
