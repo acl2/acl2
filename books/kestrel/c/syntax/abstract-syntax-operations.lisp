@@ -230,6 +230,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-dirdeclor
+  :short "An irrelevant direct declarator."
+  :type dirdeclorp
+  :body (dirdeclor-ident (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-absdeclor
   :short "An irrelevant abstract declarator."
   :type absdeclorp
