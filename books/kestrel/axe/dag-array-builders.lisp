@@ -793,3 +793,6 @@
              (empty-dag-array slack-amount)
              (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :in-theory (enable wf-dagp empty-dag-array))))
+
+;; Avoid making huge dags during proofs
+(in-theory (disable (:e empty-dag-array)))

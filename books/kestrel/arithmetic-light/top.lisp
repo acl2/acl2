@@ -25,6 +25,8 @@
 (include-book "times")
 (include-book "plus")
 (include-book "plus-and-minus")
+(include-book "plus-and-times")
+(include-book "plus-times-and-divide")
 (include-book "numerator")
 (include-book "numerator-and-denominator")
 (include-book "integerp")

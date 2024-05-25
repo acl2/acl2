@@ -51,11 +51,6 @@
                                   (y 1))
            :in-theory (disable equal-of-*-of-/))))
 
-(defthm /-of-*
-  (equal (/ (* x y))
-         (* (/ x) (/ y)))
-  :hints (("Goal" :cases ((acl2-numberp y)))))
-
 (defthm <-of-*-of-/-arg2-arg1
   (implies (and (< 0 x)
                 (rationalp x)

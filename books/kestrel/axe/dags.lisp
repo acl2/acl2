@@ -458,6 +458,12 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux))))
 
 ;keeping this disabled for now, since it could be expensive.
+(defthmd consp-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (consp dag))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+;keeping this disabled for now, since it could be expensive.
 (defthmd true-listp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
            (true-listp dag)))
@@ -472,6 +478,10 @@
            (natp (car (car dag))))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthmd natp-of-car-of-car-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (natp (car (car dag)))))
 
 (defthm pseudo-dagp-forward-to-posp-of-len
   (implies (pseudo-dagp dag)

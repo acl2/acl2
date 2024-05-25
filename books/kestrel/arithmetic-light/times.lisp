@@ -28,6 +28,11 @@
                 (integerp y))
            (integerp (* x y))))
 
+(defthm natp-of-*-when-natp-and-natp
+  (implies (and (natp x)
+                (natp y))
+           (natp (* x y))))
+
 (defthm equal-of-0-and-*
   (equal (equal 0 (* x y))
          (or (equal 0 (fix x))

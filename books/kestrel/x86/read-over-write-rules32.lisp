@@ -1100,3 +1100,17 @@
 
 (defthm fault-of-write-byte-to-segment (equal (fault (write-byte-to-segment eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-byte-to-segment))))
 (defthm fault-of-write-to-segment (equal (fault (write-to-segment n eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-to-segment))))
+
+(defthm program-at-of-set-eip
+  (equal (program-at prog-addr bytes (set-eip eip x86))
+         (program-at prog-addr bytes x86))
+  :hints (("Goal" :in-theory (enable set-eip program-at))))
+
+(defthm program-at-of-set-eax (equal (program-at addr bytes (set-eax val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-eax))))
+(defthm program-at-of-set-ebx (equal (program-at addr bytes (set-ebx val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-ebx))))
+(defthm program-at-of-set-ecx (equal (program-at addr bytes (set-ecx val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-ecx))))
+(defthm program-at-of-set-edx (equal (program-at addr bytes (set-edx val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-edx))))
+;; (defthm program-at-of-set-esi (equal (program-at addr bytes (set-esi val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-esi))))
+;; (defthm program-at-of-set-edi (equal (program-at addr bytes (set-edi val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-edi))))
+(defthm program-at-of-set-esp (equal (program-at addr bytes (set-esp val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-esp))))
+(defthm program-at-of-set-ebp (equal (program-at addr bytes (set-ebp val x86)) (program-at addr bytes x86)) :hints (("Goal" :in-theory (enable program-at set-ebp))))
