@@ -1974,7 +1974,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum structdeclor
+  (fty::defprod structdeclor
     :parents (abstract-syntax expr/decls)
     :short "Fixtype of structure declarators [C:6.7.2.1] [C:A.2.2]."
     :long
@@ -1983,14 +1983,15 @@
       "This corresponds to <i>struct-declarator</i> in the grammar in [C].
        This is part of structure declarations,
        so as discussed in @(tsee structdecl)
-       arguably a better name would be `member declarators'."))
-    (:declor ((unwrap declor)))
-    (:expr ((unwrap const-expr)))
-    (:declor-expr ((declor declor)
-                   (expr const-expr)))
+       arguably a better name would be `member declarators'.")
+     (xdoc::p
+      "To make this definition simpler,
+       we allow an absent declarator and an absent expression,
+       even though this is disallowed in the concrete syntax."))
+    ((declor declor-option)
+     (expr const-expr))
     :pred structdeclorp
-    :base-case-override :expr
-    :measure (two-nats-measure (acl2-count x) 2))
+    :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
