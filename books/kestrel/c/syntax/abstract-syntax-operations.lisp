@@ -296,7 +296,7 @@
 (defirrelevant irr-enumspec
   :short "An irrelevant enumeration specifier."
   :type enumspecp
-  :body (enumspec-name (irr-ident)))
+  :body (make-enumspec :name nil :list nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

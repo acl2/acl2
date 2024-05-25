@@ -1998,21 +1998,21 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum enumspec
+  (fty::defprod enumspec
     :parents (abstract-syntax expr/decls)
     :short "Fixtype of enumeration specifiers [C:6.7.2.2] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>enum-specifier</i> in the grammar in [C]."))
-    (:name ((unwrap ident)))
-    (:list ((unwrap enumer-list)
-            (final-comma bool)))
-    (:name-list ((name ident)
-                 (list enumer-list)
-                 (final-comma bool)))
+      "This corresponds to <i>enum-specifier</i> in the grammar in [C].")
+     (xdoc::p
+      "To make this definition simpler,
+       we allow an absent name and no enumerators,
+       even though this is disallowed in the concrete syntax."))
+    ((name ident-option)
+     (list enumer-list))
     :pred enumspecp
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
