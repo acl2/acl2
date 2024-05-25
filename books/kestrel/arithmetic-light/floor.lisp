@@ -441,26 +441,7 @@
 ;; TODO: Remove this:
 ;(local (include-book "arithmetic/inequalities" :dir :system)) ;for <-*-/-LEFT
 
-;move
-(defthm <-*-/-left-with-addend
-  (implies (and (< 0 y)
-                (real/rationalp x)
-                (rationalp k)
-                (real/rationalp y)
-                (real/rationalp a))
-           (equal (< (+ k (* x (/ y))) a)
-                  (< (+ (* k y) x) (* a y)))))
-
-;move
-(defthm <-*-/-left-with-addend-alt
-  (implies (and (< 0 y)
-                (real/rationalp x)
-                (rationalp k)
-                (real/rationalp y)
-                (real/rationalp a))
-           (equal (< a (+ k (* x (/ y))))
-                  (< (* a y) (+ (* k y) x))))
-)
+;; (local (include-book "plus-times-and-divide"))
 
 (in-theory (disable floor ceiling mod))
 
@@ -767,14 +748,14 @@
                 (<= (+ 1 k) (floor x j)))
            (<= (+ j (* j k)) x)))
 
-;move or drop
-(defthmd <-bound-hack
-  (implies (and (< x y)
-                (integerp x)
-                (integerp y)
-                (posp j))
-           (< (* j x) (+ j (* j y))))
-)
+;; ;move or drop
+;; (defthmd <-bound-hack
+;;   (implies (and (< x y)
+;;                 (integerp x)
+;;                 (integerp y)
+;;                 (posp j))
+;;            (< (* j x) (+ j (* j y))))
+;; )
 
 (defthmd floor-bound-lemma-2
   (implies (and (< (floor i j) (+ 1 k))

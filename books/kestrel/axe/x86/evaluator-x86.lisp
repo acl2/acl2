@@ -778,6 +778,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded (x86isa::mandatory-prefix x86isa::opcode)
+  (declare (xargs :guard t))
+  (case x86isa::mandatory-prefix
+    (102 (acl2::aref1-unguarded 'x86isa::64-bit-mode-two-byte-66-has-modr/m
+                x86isa::*64-bit-mode-two-byte-66-has-modr/m-ar*
+                x86isa::opcode))
+    (243 (acl2::aref1-unguarded 'x86isa::64-bit-mode-two-byte-f3-has-modr/m
+                x86isa::*64-bit-mode-two-byte-f3-has-modr/m-ar*
+                x86isa::opcode))
+    (242 (acl2::aref1-unguarded 'x86isa::64-bit-mode-two-byte-f2-has-modr/m
+                x86isa::*64-bit-mode-two-byte-f2-has-modr/m-ar*
+                x86isa::opcode))
+    (t
+     (acl2::aref1-unguarded
+      'x86isa::64-bit-mode-two-byte-no-prefix-has-modr/m
+      x86isa::*64-bit-mode-two-byte-no-prefix-has-modr/m-ar*
+      x86isa::opcode))))
+
+(defthm x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded-correct
+  (equal (x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded x86isa::mandatory-prefix x86isa::opcode)
+         (x86isa::64-bit-mode-two-byte-opcode-modr/m-p x86isa::mandatory-prefix x86isa::opcode))
+  :hints (("Goal" :in-theory (e/d (x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded
+                                   x86isa::64-bit-mode-two-byte-opcode-modr/m-p)
+                                  (aref1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund x86isa::one-byte-opcode-modr/m-p$inline-unguarded (proc-mode opcode)
   (declare (xargs :guard t))
   (if (equal proc-mode 0)
@@ -880,7 +907,7 @@
             (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded)
             (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded)
             (x86isa::one-byte-opcode-modr/m-p$inline x86isa::one-byte-opcode-modr/m-p$inline-unguarded)
-            )
+            (x86isa::64-bit-mode-two-byte-opcode-modr/m-p x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded))
           *axe-evaluator-basic-fns-and-aliases*))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):

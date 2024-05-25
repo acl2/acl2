@@ -1,7 +1,7 @@
 ; More rules about floor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "times"))
 (local (include-book "minus"))
+(local (include-book "divide"))
 (local (include-book "times-and-divide"))
 (local (include-book "plus"))
 (local (include-book "plus-and-minus"))
@@ -77,16 +78,6 @@
                   (/ i j)))
   :hints (("Goal" :use (:instance floor-when-divisible-cheap)
            :in-theory (disable floor-when-divisible-cheap))))
-
-;move?
-(defthm mod-is-0-when-multiple
-  (implies (and (integerp (/ x y)) ;can be expensive?
-                ;; (rationalp x)
-                (acl2-numberp y)
-                (not (equal 0 y)) ;move to conclusion?
-                )
-           (equal (mod x y)
-                  0)))
 
 ;make sure this doesn't loop
 ;fixme gen
@@ -153,7 +144,15 @@
             (<= (+ J (* J K)
                    (* J m (FLOOR N (* J m))))
                 N))
-   :hints (("Goal" :in-theory (disable FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3 FLOOR-UNIQUE-EQUAL-VERSION)
+   :hints (("Goal" :in-theory (disable FLOOR-BOUND-LEMMA2 FLOOR-BOUND-LEMMA3 FLOOR-UNIQUE-EQUAL-VERSION
+                                       ;; for speed:
+                                       mod-when-integerp-of-quotient
+                                       <-of-*-same-linear-special
+                                       floor-when-divisible
+                                       integerp-of-*-of-/-when-<-and-negative
+                                       <-of-0-and-*
+                                       floor-weak-monotone-linear-1
+                                       )
             :use ((:instance floor-unique (i n) (j j) (n (+ k (* m (FLOOR N (* m J))))))
 ;(:instance floor-bounded-by-/ (x n) (y (* 16 j)))
 ;(:instance floor-bounded-by-/ (x n) (y j))
@@ -252,8 +251,26 @@
                                           )))))
 
 (encapsulate ()
- (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
- (local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
+  (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
+  (defthm helper1
+    (implies (and (integerp n)
+                  (< 0 n)
+                  (integerp j)
+                  (< 0 j)
+                  (integerp m)
+                  (< 0 m))
+             (< (+ (floor n j)
+                   (- (* m (floor n (* j m)))))
+                m))
+    :hints (("Goal" :in-theory (disable  /r-when-abs-numerator=1
+                                         x*y>1-positive
+                                         integerp-of-*-of-/-when-<-and-negative
+                                         x*y>1-positive)))
+    ))
+
+(encapsulate ()
+; (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
+ ;(local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
  (defthm mod-of-floor-equal-rewrite
    (implies (and (posp n)
                  (posp j)
@@ -266,13 +283,22 @@
                         (< k m)
                         (<= (* k j) (mod n (* m j)))
                         (< (mod n (* m j)) (* j (+ 1 k))))))
+   :otf-flg t
    :hints (("Goal" :use (:instance helper-lemmm (m m ;17
                                                    ))
-            :in-theory (e/d ( ;mod
+            :in-theory (e/d ( mod
                              natp)
                             ( ;MOD-=-0 ;MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
-;FLOOR-=-X/Y
-                             FLOOR-WHEN-DIVISIBLE))))))
+                             ;;FLOOR-=-X/Y
+                             FLOOR-WHEN-DIVISIBLE
+                             ;; for speed:
+                             ;mod-x-y-=-x-for-rationals
+                             ;mod-x-y-=-x+y-for-rationals
+                             integerp-of-*-of-/-when-<-and-negative
+                             mod-when-<
+                             integerp-of-*-of-/-and-mod
+                             mod-less-than-1
+                             default-*-2))))))
 
 ;bozo gen the 1/4
 (defthm quotient-is-multiple

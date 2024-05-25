@@ -392,8 +392,7 @@
                                         rules-to-monitor
                                         '(program-at) ; fns-to-elide
                                         t ; normalize-xors
-                                        nil ;memoizep, using nil so we get internal contexts
-                                        )
+                                        memoizep)
               (mv erp result state))))
          ((when erp) (mv erp nil state))
          ((mv elapsed state) (acl2::real-time-since start-real-time state))

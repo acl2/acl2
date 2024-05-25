@@ -16,13 +16,13 @@
 ;; TODO: which do we prefer, lg or integer-length?  i think i like lg best,
 ;; but my current rules may target integer-length?
 
-(local (include-book "floor"))
-(local (include-book "mod"))
+(local (include-book "floor")) ; reduce?
+;(local (include-book "mod")) ; floor-mod-elim-rule was used in integer-length-of-+-of--1-when-not-power-of-2
 (local (include-book "expt"))
 ;(local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "times"))
-(local (include-book "numerator"))
+(local (include-book "numerator")) ; since floor calls numerator
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable integer-length))
@@ -56,7 +56,7 @@
   (implies (natp size)
            (equal (integer-length (+ -1 (expt 2 size)))
                   size))
-  :hints (("Goal" :in-theory (enable integer-length expt))))
+  :hints (("Goal" :in-theory (enable integer-length expt mod))))
 
 (local
  (defun double-floor-by-2-induct (i j)
@@ -267,7 +267,8 @@
                    (integer-length i)))
    :hints (("Goal" :expand ((integer-length i)
                             (integer-length (+ -1 i)))
-            :in-theory (e/d (integer-length) (integer-length-of-floor-by-2))))))
+            :induct (integer-length i)
+            :in-theory (e/d (integer-length mod) (integer-length-of-floor-by-2))))))
 
 (defthmd integer-length-of-+-of--1
   (implies (natp i)
