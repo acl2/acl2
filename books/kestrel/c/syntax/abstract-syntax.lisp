@@ -1708,6 +1708,19 @@
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
 
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defoption declor-option
+    declor
+    :parents (abstract-syntax expr/decls)
+    :short "Fixtype of optional declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Declarators are defined in @(tsee declor)."))
+    :pred declor-optionp
+    :measure (two-nats-measure (acl2-count x) 2))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum dirdeclor
