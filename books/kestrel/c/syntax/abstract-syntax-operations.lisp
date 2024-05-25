@@ -296,7 +296,7 @@
 (defirrelevant irr-enumspec
   :short "An irrelevant enumeration specifier."
   :type enumspecp
-  :body (make-enumspec :name nil :list nil))
+  :body (make-enumspec :name nil :list nil :final-comma nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

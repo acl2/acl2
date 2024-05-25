@@ -2024,7 +2024,8 @@
        we allow an absent name and no enumerators,
        even though this is disallowed in the concrete syntax."))
     ((name ident-option)
-     (list enumer-list))
+     (list enumer-list)
+     (final-comma bool))
     :pred enumspecp
     :measure (two-nats-measure (acl2-count x) 4))
 
