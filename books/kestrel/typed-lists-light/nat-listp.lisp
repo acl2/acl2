@@ -155,3 +155,15 @@
   (implies (nat-listp nats)
            (nat-listp (remove1-equal a nats)))
   :hints (("Goal" :in-theory (enable remove1-equal))))
+
+;; ACL2 may already have forward-chaining rules which together cover this inference.
+(defthmd nat-listp-forward-to-true-listp
+  (implies (nat-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+;; ACL2 may already have forward-chaining rules which together cover this inference.
+(defthmd nat-listp-forward-to-rational-listp
+  (implies (nat-listp x)
+           (rational-listp x))
+  :rule-classes :forward-chaining)

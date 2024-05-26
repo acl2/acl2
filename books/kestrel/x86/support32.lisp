@@ -736,6 +736,11 @@
                   (bvchop 32 (eip x86))))
   :hints (("Goal" :in-theory (enable x86isa::read-*ip bvchop))))
 
+;; Introduces eip.
+(defthmd xr-becomes-eip
+  (equal (xr :rip nil x86)
+         (eip x86)))
+
 ;; Converting a valid effective address in the code segment to a linear address returns no error:
 (defthm not-mv-nth-0-of-ea-to-la-of-cs
   (implies (and (not (64-bit-modep x86))
@@ -1277,20 +1282,6 @@
 ;;                                  (bvchop 32 (seg-hidden-basei 2 x86))))
 ;;                      4294967295)))
 ;;   :hints (("Goal" :in-theory (enable stack-segment-assumptions32))))
-
-(defthmd bvchop-when-negative-lemma
-  (implies (and (< x 0) ;stack is expanding downward (e.g., delta is -4)
-                (<= (- (expt 2 size)) x)
-                (integerp x)
-                (natp size))
-           (equal (bvchop size x)
-                  (+ (expt 2 size) x)))
-  :hints (("Goal"
-           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
-           :in-theory (e/d (bvchop
-                            UNSIGNED-BYTE-P
-                            ) (       ;acl2::mod-of-expt-of-2 ;mod
-                               ACL2::EQUAL-OF-+-AND-BV)))))
 
 (defthm <-when-<-one-of-less-strengthen
   (implies (and (syntaxp (acl2::want-to-strengthen (< x k)))

@@ -18,7 +18,6 @@
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-strengthen
 (include-book "kestrel/bv/defs" :dir :system) ;for bvplus, etc.
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system)) ; not trivial to remove, todo
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -739,11 +738,8 @@
   :otf-flg t
   :HINTS
   (("Goal"
-    :USE ((:INSTANCE acl2::split-signed-bv-top
-                     (size 64))
-          (:INSTANCE acl2::split-signed-bv-top
-                     (x y)
-                     (size 64)))
+    :USE ((:INSTANCE acl2::split-signed-bv-top (size 64))
+          (:INSTANCE acl2::split-signed-bv-top (x y) (size 64)))
     :IN-THEORY
     (E/D
      (zf-spec
@@ -755,7 +751,8 @@
       SIGNED-BYTE-P BVUMINUS
       BVMINUS SBVLT ACL2::GETBIT-OF-PLUS
       ACL2::EQUAL-OF-BITXOR-AND-1
-      BVCAT LOGAPP LOGEXT)
+      BVCAT LOGAPP LOGEXT
+      acl2::*-of---arg1-gen)
      (
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
@@ -1790,11 +1787,13 @@
 
 (defthm jz-condition-of-bvif-1-1-0
   (equal (jz-condition (bvif 1 test 1 0))
-         (acl2::bool-fix test)))
+         (acl2::bool-fix test))
+  :hints (("Goal" :cases ((acl2::bool-fix test)))))
 
 (defthm jnz-condition-of-bvif-1-0-1
   (equal (jnz-condition (bvif 1 test 0 1))
-         (acl2::bool-fix test)))
+         (acl2::bool-fix test))
+  :hints (("Goal" :cases ((acl2::bool-fix test)))))
 
 (defthm jnz-condition-of-bvif-1-1-0
   (equal (jnz-condition (bvif 1 test 1 0))
@@ -1830,11 +1829,13 @@
 
 (defthm jp-condition-of-bvif-1-1-0
   (equal (jp-condition (bvif 1 test 1 0))
-         (acl2::bool-fix test)))
+         (acl2::bool-fix test))
+  :hints (("Goal" :cases ((acl2::bool-fix test)))))
 
 (defthm jnp-condition-of-bvif-1-0-1
   (equal (jnp-condition (bvif 1 test 0 1))
-         (acl2::bool-fix test)))
+         (acl2::bool-fix test))
+  :hints (("Goal" :cases ((acl2::bool-fix test)))))
 
 (defthm jnp-condition-of-bvif-1-1-0
   (equal (jnp-condition (bvif 1 test 1 0))

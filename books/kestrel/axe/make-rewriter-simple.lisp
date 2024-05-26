@@ -300,8 +300,9 @@
          (simplify-trees-and-add-to-dag-name (pack$ 'simplify-trees-and-add-to-dag- suffix))
          ;; functions after the main mutual-recursion:
          (simplify-dag-expr-name (pack$ 'simplify-dag-expr- suffix))
-         (simplify-dag-aux-name (pack$ 'simplify-dag-aux- suffix))
+         (simplify-dag-aux-name (pack$ 'simplify-dag-aux- suffix)) ; rename simplify-dag-nodes...
          (simplify-dag-name (pack$ 'simplify-dag- suffix))
+         (simplify-dag-core-name (pack$ 'simplify-dag-core- suffix))
          (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
          (simp-term-name (pack$ 'simp-term- suffix))         ; produces a term
          (simp-terms-name (pack$ 'simp-terms- suffix)) ; produces a list of terms
@@ -435,6 +436,7 @@
        (local (include-book "kestrel/lists-light/take" :dir :system))
        (local (include-book "kestrel/lists-light/append" :dir :system))
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+       (local (include-book "kestrel/arithmetic-light/times" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
        (local (include-book "kestrel/arithmetic-light/less-than-or-equal" :dir :system))
@@ -444,7 +446,8 @@
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
 
-       (local (in-theory (disable wf-dagp wf-dagp-expander
+       (local (in-theory (disable mv-nth
+                                  wf-dagp wf-dagp-expander
                                   default-car
                                   default-cdr
                                   axe-treep
@@ -4990,6 +4993,180 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns (mv erp dag-or-quotep).
+    ;; This optionally takes an internal-context-array, but if one is given, memoize can't be non-nil.
+    ;; TODO: Perhas return info (hit-counts) or tries, to be summed across invocations.
+    (defund ,simplify-dag-core-name (dag
+                                     assumptions
+                                     ;; may be pre-loaded with context info:
+                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                     maybe-internal-context-array
+                                     interpreted-function-alist
+                                     limits
+                                     rule-alist
+                                     count-hits
+                                     print
+                                     known-booleans
+                                     monitored-symbols
+                                     fns-to-elide
+                                     normalize-xors
+                                     memoize)
+      (declare (xargs :guard (and (pseudo-dagp dag)
+                                  (< (top-nodenum dag) *max-1d-array-length*)
+                                  (pseudo-term-listp assumptions)
+                                  (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                                  (or (null maybe-internal-context-array)
+                                      (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag)))))
+                                  (rule-limitsp limits)
+                                  (rule-alistp rule-alist)
+                                  (booleanp count-hits)
+                                  (print-levelp print)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide)
+                                  (booleanp normalize-xors)
+                                  (booleanp memoize)
+                                  (not (and memoize
+                                            (not (null maybe-internal-context-array)))))
+                      :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                     :in-theory (e/d (not-<-of-0-when-natp-disabled
+                                                      acl2-numberp-when-natp
+                                                      natp-of-+-of--1-when-natp-disabled
+                                                      ;; natp-when-dargp ; too strong?
+                                                      <-of-+-of-1-when-integers
+                                                      natp-of-+-of-1
+                                                      integerp-of-renumberingi
+                                                      natp-of-renumberingi
+                                                      len-when-pseudo-dagp
+                                                      car-of-nth-when-pseudo-dagp)
+                                                     (natp))))))
+      (b* (;; The guard excludes the error here, but this is critical to soundness, so we check it
+           ;; in case this function is called from non-guard-verified code:
+           ((when (and memoize
+                       (not (null maybe-internal-context-array))))
+            (er hard? ',simplify-dag-core-name "It is unsound to memoize when using internal contexts.")
+            (mv :unsound nil))
+           (old-top-nodenum (top-nodenum dag))
+           (old-len (+ 1 old-top-nodenum))
+           ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
+           ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            ;; TODO: Make a version specialized to these array names:
+            (refine-assumptions-and-add-to-dag-array assumptions
+                                                     'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
+                                                     known-booleans))
+           ((when erp) (mv erp nil))
+           ;; Create the node-replacement-array and add relevant nodes to the DAG:
+           ;; TODO: Consider combining this with the above, in a single pass through the assumptions:
+           ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+            (make-node-replacement-array-and-extend-dag assumptions
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        known-booleans))
+           ((when erp) (mv erp nil)))
+        (with-local-stobjs
+         (renumbering-stobj rewrite-stobj)
+         (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj)
+           (b* ((rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
+                (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
+                (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
+                (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
+                (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
+                (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                (rewrite-stobj (put-print print rewrite-stobj))
+                (renumbering-stobj (resize-renumbering old-len renumbering-stobj))
+                ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
+                 (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
+                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                         maybe-internal-context-array
+                                         (and memoize (empty-memoization)) ; todo: add an option to make this bigger?
+                                         ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
+                                         ;; tracking hit counts for each rule is overkill:
+                                         (and count-hits print (empty-info-world)) ;used to track the number of rule hits
+                                         (and print (zero-tries)) ;todo: think about this
+                                         limits
+                                         node-replacement-array node-replacement-count refined-assumption-alist
+                                         rewrite-stobj
+                                         renumbering-stobj))
+                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj))
+                ;; See what the top node of the old dag became (after this point, we won't have access to renumbering-stobj anymore, due to with-local-stobj):
+                (new-top-nodenum-or-quotep (renumberingi old-top-nodenum renumbering-stobj)))
+             (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj))
+           ;; Cannot refer to the stobjs:
+           (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
+           (b* (((when erp) (mv erp nil))
+                ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
+                (- (and count-hits print (maybe-print-hit-counts print info)))
+                (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
+                (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
+                ;; todo: print the new len?
+                )
+             (if (quotep new-top-nodenum-or-quotep)
+                 (mv (erp-nil) new-top-nodenum-or-quotep)
+               (mv (erp-nil)
+                   (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+
+    (defthm ,(pack$ simplify-dag-core-name '-return-type)
+      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                                      limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))
+                    (not (mv-nth 0 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                            limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
+                    (pseudo-dagp dag)
+                    (< (top-nodenum dag) *max-1d-array-length*)
+                    (pseudo-term-listp assumptions)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (or (null maybe-internal-context-array)
+                        (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag)))))
+                    (rule-limitsp limits)
+                    (rule-alistp rule-alist)
+                    (booleanp count-hits)
+                    (print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
+                    (booleanp normalize-xors)
+                    (booleanp memoize))
+               (and (pseudo-dagp (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                                    limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
+                    (<= (len (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                                limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
+                        *max-1d-array-length*)))
+      :hints (("Goal" :do-not '(generalize eliminate-destructors)
+               :in-theory (e/d (,simplify-dag-core-name
+                                natp-of-renumberingi
+                                integerp-of-renumberingi
+                                <-of-+-of-1-when-integers
+                                len-when-pseudo-dagp
+                                car-of-nth-when-pseudo-dagp)
+                               (myquotep natp)))))
+
+    (defthm ,(pack$ simplify-dag-core-name '-return-type-corollary-linear)
+      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                                      limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))
+                    (not (mv-nth 0 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                            limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
+                    (pseudo-dagp dag)
+                    (< (top-nodenum dag) *max-1d-array-length*)
+                    (pseudo-term-listp assumptions)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (or (null maybe-internal-context-array)
+                        (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag)))))
+                    (rule-limitsp limits)
+                    (rule-alistp rule-alist)
+                    (booleanp count-hits)
+                    (print-levelp print)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp known-booleans)
+                    (symbol-listp monitored-symbols)
+                    (symbol-listp fns-to-elide)
+                    (booleanp normalize-xors)
+                    (booleanp memoize))
+               (and (not (< '1152921504606846973 (caar (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))))
+                    (<= 0 (caar (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))))
+               :rule-classes :linear
+               :hints (("Goal" :use ,(pack$ simplify-dag-core-name '-return-type)
+               :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap) (,(pack$ simplify-dag-core-name '-return-type))))))
+
+    ;; Returns (mv erp dag-or-quotep).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
     (defund ,simplify-dag-name (dag
                                 assumptions
@@ -5016,92 +5193,69 @@
                                   (symbol-listp fns-to-elide)
                                   (booleanp normalize-xors)
                                   (booleanp memoize))
-                      :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
-                                     :in-theory (e/d (not-<-of-0-when-natp-disabled
-                                                      acl2-numberp-when-natp
-                                                      natp-of-+-of--1-when-natp-disabled
-                                                      ;; natp-when-dargp ; too strong?
-                                                      <-of-+-of-1-when-integers
+                      :guard-hints (("Goal" ; :do-not '(generalize eliminate-destructors)
+                                     :in-theory (e/d (len-when-pseudo-dagp
+                                                      car-of-nth-when-pseudo-dagp
                                                       natp-of-+-of-1
-                                                      integerp-of-renumberingi
-                                                      natp-of-renumberingi
-                                                      len-when-pseudo-dagp
-                                                      car-of-nth-when-pseudo-dagp)
+                                                      natp-of-car-of-car-when-pseudo-dagp
+                                                      integerp-when-natp
+                                                      acl2-numberp-when-natp
+                                                      rationalp-when-natp
+                                                      true-listp-when-pseudo-dagp
+                                                      alistp-when-pseudo-dagp
+                                                      consp-when-pseudo-dagp
+                                                      top-nodenum ; expose car of car
+                                                      )
                                                      (natp))))))
-      (b* ((old-top-nodenum (top-nodenum dag))
-           (old-len (+ 1 old-top-nodenum))
-           (- (and print (cw "(Simplifying DAG (~x0 nodes, ~x1 assumptions):~%" old-len (len assumptions))))
-           (use-internal-contextsp (and (not memoize) ; unsound to use contexts if memoizing
-                                        (dag-has-internal-contextsp dag)))
-           (initial-array-size (if use-internal-contextsp (min *max-1d-array-length* (* 2 old-len)) old-len)) ; could make this adjustable
-           ;; Start with either an empty dag-array, or an array with all the nodes (if using contexts):
-           ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-            (if use-internal-contextsp
-                (b* ((dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
-                     ;; Make the auxiliary data structures for the DAG:
-                     ((mv dag-parent-array dag-constant-alist dag-variable-alist)
-                      (make-dag-indices 'dag-array dag-array 'dag-parent-array old-len)))
-                  (mv dag-array old-len dag-parent-array dag-constant-alist dag-variable-alist))
-              (empty-dag-array initial-array-size)))
-           (maybe-internal-context-array (if use-internal-contextsp
-                                             (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array)
-                                           nil))
-           ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
-           ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-            ;; TODO: Make a version specialized to these array names:
-            (refine-assumptions-and-add-to-dag-array assumptions
-                                                     'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
-                                                     known-booleans))
+      (b* ((top-nodenum (top-nodenum dag))
+           ((when (not (< top-nodenum *max-1d-array-length*)))
+            (mv :dag-too-big nil))
+           ;; If we are to memoize, start with a rewrite that memoizes but does not use internal contexts (for soundness):
+           ;; This may be critical to performance.
+           ((mv erp dag-or-quotep)
+            (if (not memoize)
+                (mv (erp-nil) dag)
+              (b* ((dag-len (+ 1 top-nodenum))
+                   (- (and print (cw "(Simplifying DAG with memoization and no internal contexts (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
+                   (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
+                   ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                    (empty-dag-array initial-array-size))
+                   ((mv erp dag-or-quotep)
+                    (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil interpreted-function-alist limits rule-alist
+                                             count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
+                   ((when erp) (mv erp nil))
+                   (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
+                   )
+                (mv (erp-nil) dag-or-quotep))))
            ((when erp) (mv erp nil))
-           ;; Create the node-replacement-array and add relevant nodes to the DAG:
-           ;; TODO: Consider combining this with the above, in a single pass through the assumptions:
-           ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-            (make-node-replacement-array-and-extend-dag assumptions
-                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                        known-booleans))
-           ((when erp) (mv erp nil)))
-        (with-local-stobjs
-         (renumbering-stobj rewrite-stobj)
-           (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj)
-             (b* ((rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
-                  (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
-                  (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
-                  (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
-                  (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                  (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
-                  (rewrite-stobj (put-print print rewrite-stobj))
-                  (renumbering-stobj (resize-renumbering old-len renumbering-stobj))
-                  ((mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj)
-                   (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
-                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                           maybe-internal-context-array
-                                           (and memoize (empty-memoization)) ; todo: add an option to make this bigger?
-                                           ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
-                                           ;; tracking hit counts for each rule is overkill:
-                                           (and count-hits print (empty-info-world)) ;used to track the number of rule hits
-                                           (and print (zero-tries)) ;todo: think about this
-                                           limits
-                                           node-replacement-array node-replacement-count refined-assumption-alist
-                                           rewrite-stobj
-                                           renumbering-stobj))
-                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj))
-                  ;; See what the top node of the old dag became (after this point, we won't have access to renumbering-stobj anymore, due to with-local-stobj):
-                  (new-top-nodenum-or-quotep (renumberingi old-top-nodenum renumbering-stobj)))
-               (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj))
-             ;; Cannot refer to the stobjs:
-             (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
-             (b* (((when erp) (mv erp nil))
-                  ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
-                  (- (and count-hits print (maybe-print-hit-counts print info)))
-                  (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
-                  (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
-                  ;; todo: print the new len?
-                  (- (and print (cw ")~%"))) ; balances "(Simplifying DAG"
-                  )
-               (if (quotep new-top-nodenum-or-quotep)
-                   (mv (erp-nil) new-top-nodenum-or-quotep)
-                 (mv (erp-nil)
-                     (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+           ((when (myquotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep))
+           (dag dag-or-quotep) ; it was not a quotep, so we rename it
+           )
+        ;; Continue (usually) with a pass that does use contexts (and does not memoize):
+        (if (and memoize ; means we already simplified above
+                 (not (dag-has-internal-contextsp dag)) ; no context info to use
+                 )
+            (mv (erp-nil) dag)
+          (b* ((top-nodenum (top-nodenum dag))
+               (dag-len (+ 1 top-nodenum))
+               (- (and print (cw "(Simplifying DAG with internal contexts and no memoization (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
+               (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
+               ;; Start with an array with all the nodes loaded (since we are using contexts):
+               (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
+               ;; Make the auxiliary data structures for the DAG:
+               ((mv dag-parent-array dag-constant-alist dag-variable-alist)
+                (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
+               (internal-context-array (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array))
+               ;; Do the rewriting:
+               ((mv erp dag-or-quotep)
+                (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array interpreted-function-alist limits rule-alist
+                                         count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors
+                                         nil ;memoize (would be unsound)
+                                         ))
+               ((when erp) (mv erp nil))
+               (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
+               )
+            (mv (erp-nil) dag-or-quotep)))))
 
     (defthm ,(pack$ simplify-dag-name '-return-type)
       (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))
@@ -5125,14 +5279,19 @@
                     ))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
                :in-theory (e/d (,simplify-dag-name
-                                       natp-of-renumberingi
-                                       integerp-of-renumberingi
-                                       <-of-+-of-1-when-integers
-                                       len-when-pseudo-dagp
-                                       car-of-nth-when-pseudo-dagp)
-                                      (myquotep
-                                       mv-nth ; why?
-                                       natp)))))
+                                len-when-pseudo-dagp
+                                car-of-nth-when-pseudo-dagp
+                                natp-of-+-of-1
+                                natp-of-car-of-car-when-pseudo-dagp
+                                integerp-when-natp
+                                acl2-numberp-when-natp
+                                rationalp-when-natp
+                                true-listp-when-pseudo-dagp
+                                alistp-when-pseudo-dagp
+                                consp-when-pseudo-dagp
+                                top-nodenum ; expose car of car
+                                )
+                               (myquotep natp)))))
 
     ;; ;; It's a consp either way
     ;; (defthm ,(pack$ simplify-dag-name '-return-type-corollary-1)
@@ -5531,7 +5690,7 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; Macto helper function for ,def-simplified-dag-name
+    ;; Macro helper function for ,def-simplified-dag-name
     ;; Returns (mv erp event state).
     ;; todo: check if name already exists
     (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create

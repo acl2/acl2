@@ -29,7 +29,10 @@
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, to deal with truncate
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -328,15 +331,6 @@
                     byte-listp
                     x86isa::combine-bytes))
 
-(defthm canonical-address-p-between
-  (implies (and (canonical-address-p low) ; low and high are free vars
-                (canonical-address-p high)
-                (<= low ad)
-                (<= ad high))
-           (equal (canonical-address-p ad)
-                  (integerp ad)))
-  :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
-
 (defun nth-of-create-canonical-address-list-induct (n count addr)
   (if (zp count)
       (list n count addr)
@@ -350,11 +344,7 @@
            (equal (nth n (x86isa::create-canonical-address-list count addr))
                   (+ n addr)))
   :hints (("Goal" :induct (nth-of-create-canonical-address-list-induct n count addr)
-           :in-theory (e/d (x86isa::create-canonical-address-list
-                            ;nth ;list::nth-of-cons
-                            )
-                           (;acl2::nth-of-cdr
-                            )))))
+           :in-theory (enable x86isa::create-canonical-address-list canonical-address-p))))
 
 ;i wonder if not having this but instead considering opening up x86isa::canonical-address-listp could be slowing down acl2.
 (defthm canonical-address-listp-of-cons
@@ -470,6 +460,15 @@
   (("Goal"
     :in-theory (enable canonical-address-p signed-byte-p))))
 
+(defthm canonical-address-p-between
+  (implies (and (canonical-address-p low) ; low and high are free vars
+                (<= low ad)
+                (canonical-address-p high)
+                (<= ad high))
+           (equal (canonical-address-p ad)
+                  (integerp ad)))
+  :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
+
 ;; These are for showing that x plus an offset is canonical:
 
 (defthm canonical-address-p-between-special1
@@ -515,22 +514,22 @@
 
 (defthm canonical-address-p-between-special5
   (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset))
+                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
                 (<= (+ k x) k2)
                 (natp k)
                 (natp x)
                 (natp k2))
-           ;; ex (BINARY-+ '192 (BINARY-+ TEXT-OFFSET (ASH (BVCHOP '32 (RDI X86)) '2)))
+           ;; ex (+ 192 (+ text-offset (ash (bvchop 32 (rdi x86)) 2)))
            (canonical-address-p (+ k text-offset x))))
 
-(DEFTHM CANONICAL-ADDRESS-P-BETWEEN-SPECIAL5-alt
-  (IMPLIES (AND (CANONICAL-ADDRESS-P TEXT-OFFSET)
-                (CANONICAL-ADDRESS-P (+ K2 TEXT-OFFSET))
-                (<= (+ K X) K2)
-                (NATP K)
-                (NATP X)
-                (NATP K2))
-           (CANONICAL-ADDRESS-P (+ K X TEXT-OFFSET))))
+(defthm canonical-address-p-between-special5-alt
+  (implies (and (canonical-address-p text-offset)
+                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+                (<= (+ k x) k2)
+                (natp k)
+                (natp x)
+                (natp k2))
+           (canonical-address-p (+ k x text-offset))))
 
 (defthm canonical-address-p-between-special6
   (implies (and (canonical-address-p (+ k1 base))
@@ -545,6 +544,20 @@
                 (integerp x2)
                 (integerp k2))
            (canonical-address-p (+ x1 x2 base))))
+
+(defthm canonical-address-p-between-special7
+  (implies (and (canonical-address-p (+ k1 base)) ; k1 is a free var
+                (syntaxp (quotep k1))
+                (<= k1 (+ x1 x2))
+                (canonical-address-p (+ k2 base)) ; k2 is a free var
+                (syntaxp (quotep k2))
+                (< k1 k2) ; break symmetry (fail fast)
+                (<= (+ x1 x2) k2)
+                (integerp k1)
+                (integerp x1)
+                (integerp x2)
+                (integerp k2))
+           (canonical-address-p (+ x1 base x2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -296,10 +296,6 @@
 
 (include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
 
-(in-theory (disable MOD-IS-0-WHEN-MULTIPLE ;todo: these are basically the same
-                    ;mod-when-multiple
-                    ))
-
 (defthmd floor-of-sum-no-split
   (implies (and (rationalp j)
                 (< 0 j)
@@ -7796,7 +7792,7 @@
                 (integerp j))
            (equal (MOD (* j i) j)
                   0))
-  :hints (("Goal" :in-theory (enable MOD-IS-0-WHEN-MULTIPLE))))
+  :hints (("Goal" :in-theory (enable))))
 
 (defthm SBVMODDOWN-of-bvmult-same-32-5-5-5
   (implies (and (bvle 5 x 6)
@@ -10669,7 +10665,7 @@
            (equal (integerp (* 1/32 x))
                   (equal 0 (bvchop 5 x))))
   :hints (("Goal" :in-theory (e/d (bvchop
-                                   MOD-IS-0-WHEN-MULTIPLE)
+                                   )
                                   (MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                    MOD-OF-EXPT-OF-2)))))
 
@@ -11428,7 +11424,7 @@
   (implies (integerp x)
            (equal (integerp (/ x 64))
                   (equal 0 (slice 5 0 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop mod-is-0-when-multiple)
+  :hints (("Goal" :in-theory (e/d (bvchop )
                                   (mod-of-expt-of-2
                                    mod-of-expt-of-2-constant-version)))))
 
@@ -11467,7 +11463,7 @@
                   (equal 0 (slice 5 0 x))))
   :hints
   (("Goal"
-    :in-theory (e/d (bvchop mod-is-0-when-multiple)
+    :in-theory (e/d (bvchop)
                     (mod-of-expt-of-2 mod-of-expt-of-2-constant-version)))))
 
 (defthmd *-of-1/64-when-multiple
@@ -13024,8 +13020,7 @@
                   (if (equal 0 (mod x 4))
                       (slice 5 2 x)
                     0)))
-  :hints (("Goal" :in-theory (e/d (slice logtail bvchop
-                                         mod-is-0-when-multiple)
+  :hints (("Goal" :in-theory (e/d (slice logtail bvchop)
                                   (anti-slice
                                    MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                    MOD-OF-EXPT-OF-2)))))

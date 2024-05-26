@@ -593,6 +593,7 @@
 ;; tests about the memoization:
 
 ;; no change, since memoizing prevents us from using the context
+;todo: support 2 passes, as we do for rewriting dags!
 (assert!
  (mv-let (erp res)
    (simplify-term-basic '(if (not (consp x)) (equal '3 (car x)) (equal '4 (car x)))

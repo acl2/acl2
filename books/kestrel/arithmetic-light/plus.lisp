@@ -50,6 +50,9 @@
 ;; the nth addend (1-based) and there are more addends, whereas "n" means x is
 ;; the nth addend and there are no more.
 
+;; In this series, there is a + on side of the equality and a variable on the
+;; other (but see the series just below).
+
 (defthm equal-of-+-cancel-1+
   (equal (equal (+ x y) x)
          (and (equal 0 (fix y))
@@ -61,35 +64,35 @@
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
-(defthm equal-of-+-cancel-same-2
+(defthm equal-of-+-cancel-2
   (equal (equal (+ y x) x)
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
 ;; Only needed for Axe, as ACL2 can match equalities either way?
-(defthmd equal-of-+-cancel-same-2-alt
+(defthmd equal-of-+-cancel-2-alt
   (equal (equal x (+ y x))
          (and (equal 0 (fix y))
               (acl2-numberp x))))
 
-(defthm equal-of-+-cancel-same-2+
+(defthm equal-of-+-cancel-2+
   (equal (equal (+ y1 x y2) x)
          (and (equal (+ y1 y2) 0)
               (acl2-numberp x))))
 
 ;; Only needed for Axe, as ACL2 can match equalities either way?
-(defthmd equal-of-+-cancel-same-2+-alt
+(defthmd equal-of-+-cancel-2+-alt
   (equal (equal x (+ y1 x y2))
          (and (equal (+ y1 y2) 0)
               (acl2-numberp x))))
 
-(defthm equal-of-+-cancel-same-3
+(defthm equal-of-+-cancel-3
   (equal (equal (+ y1 y2 x) x)
          (and (equal (+ y1 y2) 0)
               (acl2-numberp x))))
 
 ;; Only needed for Axe, as ACL2 can match equalities either way?
-(defthmd equal-of-+-cancel-same-3-alt
+(defthmd equal-of-+-cancel-3-alt
   (equal (equal x (+ y1 y2 x))
          (and (equal (+ y1 y2) 0)
               (acl2-numberp x))))
@@ -197,6 +200,10 @@
 (defthm <-of-+-cancel-2-1
   (equal (< (+ y x) x)
          (< y 0)))
+
+(defthm <-of-+-cancel-2+-1
+  (equal (< (+ y x z) x)
+         (< (+ y z) 0)))
 
 (defthm <-of-+-combine-constants-1
   (implies (syntaxp (and (quotep k2)
