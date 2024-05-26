@@ -27,15 +27,6 @@
 (local (include-book "../arithmetic-light/mod-and-expt"))
 (local (include-book "unsigned-byte-p"))
 
-(defthm getbit-type
-  (or (equal 0 (getbit n x))
-      (equal 1 (getbit n x)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (bvchop-of-logtail-becomes-slice)))))
-
-(in-theory (disable (:type-prescription getbit))) ;getbit-type is better
-
 (defthmd integerp-of-getbit
   (integerp (getbit index x)))
 
