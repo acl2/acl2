@@ -21,6 +21,7 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
+(include-book "ihs/basic-definitions" :dir :system) ; for logmaskp
 (include-book "kestrel/world-light/function-symbolsp" :dir :system)
 (include-book "kestrel/world-light/fn-definedp" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
