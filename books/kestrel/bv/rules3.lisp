@@ -1754,10 +1754,10 @@
   :hints (("Goal" :in-theory (enable bvcat LOGAPP bvchop-identity ;BAG::UNSIGNED-BYTE-P-FROM-BOUNDS
                                      ))))
 
-
+;move to axe?
 ;might be slow
-;would be nice if the dag-rewriter had backchain limits..
-(defthm bound-from-natp-fact
+;would be nice if the axe rewriter had backchain limits..
+(defthmd bound-from-natp-fact
   (implies (and (< k 0)
                 (natp x))
            (not (< x k))))
@@ -1941,7 +1941,7 @@
 
 ;should be cheap since n is a free var
 (defthm integerp-when-signed-byte-p
-  (implies (equal (signed-byte-p n x) ;the "equal xxx t" formulation is used in dag hyps
+  (implies (equal (signed-byte-p n x) ;the "equal xxx t" formulation is used in axe hyps
                   t)
            (integerp x)))
 
@@ -2059,18 +2059,6 @@
   :hints (("Goal" :in-theory (e/d (sbvlt ;logext getbit slice
                                    ) (anti-slice)))))
 
-;version for <=?
-(defthmd equal-when-bound-dag
-  (implies (and (syntaxp (quotep y))
-                ;(equal (< free x) t) ;awkward
-                (< free x)
-                (syntaxp (quotep free))
-                (<= y free))
-           (equal (equal y x)
-                  nil)))
-
-
-
 ;more like this? sort of need a bool-trim rule?
 (defthm booland-of-myif-arg1
   (equal (booland (myif test a b) c)
@@ -2146,7 +2134,7 @@
   :hints (("Goal" :in-theory (e/d (bvuminus bvcat bvminus) (bvminus-becomes-bvplus-of-bvuminus
                                                             )))))
 
-;gen or add non-dag trim rule?
+;gen or add non-axe trim rule?
 (defthm bvplus-of-bvcat
   (equal (bvplus 16 x (bvcat 24 y 8 0))
          (bvplus 16 x (bvcat 8 y 8 0)))

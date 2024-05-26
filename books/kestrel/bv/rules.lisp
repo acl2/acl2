@@ -1224,7 +1224,7 @@
       (farg2 term)
     term))
 
-;ffixme don't mess up associativity - see should-commute-args and make a non-dag version?
+;ffixme don't mess up associativity - see should-commute-args and make a non-axe version?
 (defund smaller-bvxor-arg (term1 term2)
 ; (declare (xargs :guard t)) ;todo add a guard
   (smaller-termp (strip-off-bvnot-call term1)
