@@ -28,7 +28,8 @@
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "logext-def")
+;(include-book "ihs/basic-definitions" :dir :system) ;for logext
 ;(include-book "to-signed")
 (include-book "bvcat2")
 (include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)

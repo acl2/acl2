@@ -17,6 +17,9 @@
 (include-book "syntaxp-evaluator-x86")
 (include-book "bind-free-evaluator-x86")
 
+;; Bad rule from x86 model:
+(in-theory (disable natp-when-gte-0))
+
 (local (in-theory (disable ;; these break the proofs below:
                            acl2::nth-when-zp ; loops with ACL2::CAR-OF-DARGS-BECOMES-NTH-0-OF-DARGS
                            reverse-removal ; introduces REV (not our normal form)

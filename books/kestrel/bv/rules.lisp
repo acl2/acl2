@@ -675,7 +675,8 @@
                                    ;logtail-bvchop
                                    logext) (bvchop-of-logtail
                                             logbitp-iff-getbit ;why - need getbit of logapp
-                                            bvchop-of-logtail-becomes-slice)))))
+                                            bvchop-of-logtail-becomes-slice
+                                            logbitp)))))
 
 ;todo: consider "pick a bit" proofs?
 
