@@ -1708,6 +1708,19 @@
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
 
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defoption declor-option
+    declor
+    :parents (abstract-syntax expr/decls)
+    :short "Fixtype of optional declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Declarators are defined in @(tsee declor)."))
+    :pred declor-optionp
+    :measure (two-nats-measure (acl2-count x) 2))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum dirdeclor
@@ -1961,7 +1974,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum structdeclor
+  (fty::defprod structdeclor
     :parents (abstract-syntax expr/decls)
     :short "Fixtype of structure declarators [C:6.7.2.1] [C:A.2.2]."
     :long
@@ -1970,14 +1983,15 @@
       "This corresponds to <i>struct-declarator</i> in the grammar in [C].
        This is part of structure declarations,
        so as discussed in @(tsee structdecl)
-       arguably a better name would be `member declarators'."))
-    (:declor ((unwrap declor)))
-    (:expr ((unwrap const-expr)))
-    (:declor-expr ((declor declor)
-                   (expr const-expr)))
+       arguably a better name would be `member declarators'.")
+     (xdoc::p
+      "To make this definition simpler,
+       we allow an absent declarator and an absent expression,
+       even though this is disallowed in the concrete syntax."))
+    ((declor declor-option)
+     (expr const-expr))
     :pred structdeclorp
-    :base-case-override :expr
-    :measure (two-nats-measure (acl2-count x) 2))
+    :measure (two-nats-measure (acl2-count x) 3))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -1998,21 +2012,22 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum enumspec
+  (fty::defprod enumspec
     :parents (abstract-syntax expr/decls)
     :short "Fixtype of enumeration specifiers [C:6.7.2.2] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>enum-specifier</i> in the grammar in [C]."))
-    (:name ((unwrap ident)))
-    (:list ((unwrap enumer-list)
-            (final-comma bool)))
-    (:name-list ((name ident)
-                 (list enumer-list)
-                 (final-comma bool)))
+      "This corresponds to <i>enum-specifier</i> in the grammar in [C].")
+     (xdoc::p
+      "To make this definition simpler,
+       we allow an absent name and no enumerators,
+       even though this is disallowed in the concrete syntax."))
+    ((name ident-option)
+     (list enumer-list)
+     (final-comma bool))
     :pred enumspecp
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

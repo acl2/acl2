@@ -230,6 +230,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-declor
+  :short "An irrelevant declarator."
+  :type declorp
+  :body (make-declor :pointers nil :decl (dirdeclor-ident (irr-ident))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-dirdeclor
+  :short "An irrelevant direct declarator."
+  :type dirdeclorp
+  :body (dirdeclor-ident (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-absdeclor
+  :short "An irrelevant abstract declarator."
+  :type absdeclorp
+  :body (make-absdeclor :pointers nil :decl? nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-dirabsdeclor
+  :short "An irrelevant direct abstract declarator."
+  :type dirabsdeclorp
+  :body (dirabsdeclor-dummy-base))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-paramdecl
+  :short "An irrelevant parameter declaration."
+  :type paramdeclp
+  :body (make-paramdecl-nonabstract :spec nil :decl (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-tyname
   :short "An irrelevant type name."
   :type tynamep
@@ -244,10 +279,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-structdeclor
+  :short "An irrelevant structure declarator."
+  :type structdeclorp
+  :body (make-structdeclor :declor (irr-declor) :expr (irr-const-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-structdecl
+  :short "An irrelevant structure declaration."
+  :type structdeclp
+  :body (make-structdecl-member :specqual nil :declor nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-enumspec
   :short "An irrelevant enumeration specifier."
   :type enumspecp
-  :body (enumspec-name (irr-ident)))
+  :body (make-enumspec :name nil :list nil :final-comma nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
