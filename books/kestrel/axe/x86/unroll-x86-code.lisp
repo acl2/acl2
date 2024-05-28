@@ -401,7 +401,7 @@
             (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
             (cw "s.)~%")) ; matches "(Running"
          ((when (quotep dag-or-quote)) (mv (erp-nil) dag-or-quote state))
-         (- (and ;print ;(acl2::print-level-at-least-tp print)
+         (- (and print ;(acl2::print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
                          (cw "~X01" dag-or-quote nil)
                          (cw ")~%"))))

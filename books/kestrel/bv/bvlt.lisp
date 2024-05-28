@@ -389,7 +389,7 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-when-bvlt-must-be-fake-free
-  (implies (and (not (bvlt free y x)) ;this free var is because the dag rewriter and dag prover dont support backchain limits
+  (implies (and (not (bvlt free y x)) ;this free var is because the axe rewriter and axe prover dont support backchain limits
                 (equal free size))
            (equal (bvlt size x y)
                   (not (equal (bvchop size y)
@@ -902,7 +902,7 @@
 
 ;add a bvlt and bvlt imply bvlt rule?
 
-;this looped before i put in the fakefree stuff (which is because the dag prover doesn have backchain limits)
+;this looped before i put in the fakefree stuff (which is because the axe prover doesn have backchain limits)
 (defthm bvlt-when-not-bvlt
   (implies (and (NOT (BVLT fakefreesize free x))
                 (equal fakefreesize size) ;gross?

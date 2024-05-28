@@ -1,7 +1,7 @@
 ; Refining assumptions for better matching
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -235,6 +235,16 @@
   (implies (natp dag-len)
            (natp (mv-nth 3 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))))
   :hints (("Goal" :in-theory (enable add-refined-assumptions-to-dag-array))))
+
+(defthm <=-of-mv-nth-3-of-add-refined-assumptions-to-dag-array
+  (implies (and (not (mv-nth 0 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))) ; no error
+                (pseudo-term-listp assumptions)
+                (all-consp assumptions) ; error below if any is a quotep
+                (symbol-listp (map-ffn-symb assumptions)) ; no lambdas
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist))
+           (<= dag-len (mv-nth 3 (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc))))
+  :hints (("Goal" :induct (add-refined-assumptions-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name acc)
+           :in-theory (enable add-refined-assumptions-to-dag-array pseudo-term-listp))))
 
 (defthm wf-dagp-of-add-refined-assumptions-to-dag-array
   (implies (and (pseudo-term-listp assumptions)

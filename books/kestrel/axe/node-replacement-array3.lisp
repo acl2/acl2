@@ -255,6 +255,27 @@
                            (BOUNDED-POSSIBLY-NEGATED-NODENUMP-WHEN-NOT-CONSP ; for speed
                             natp)))))
 
+(defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type-corollary
+  (implies (and (<= dag-len bound)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)
+                (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                ;(symbol-listp known-booleans)
+                (bounded-undo-pairsp undo-pairs-acc dag-len))
+           (mv-let (node-replacement-array node-replacement-count undo-pairs)
+             (update-node-replacement-array-for-assuming-possibly-negated-nodenums possibly-negated-nodenums
+                                                                                   node-replacement-array node-replacement-count
+                                                                                   dag-array dag-len
+                                                                                   known-booleans
+                                                                                   undo-pairs-acc)
+             (declare (ignore node-replacement-count node-replacement-array))
+             (bounded-undo-pairsp undo-pairs bound)))
+  :hints (("Goal" :use (:instance update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type)
+           :in-theory (disable update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type))))
+
 (defthm update-node-replacement-array-for-assuming-possibly-negated-nodenums-return-type-alen1
   (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (bounded-possibly-negated-nodenumsp possibly-negated-nodenums dag-len)

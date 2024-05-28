@@ -1,7 +1,7 @@
 ; More rules about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,17 +41,13 @@
 
 ;consider enabling or improving
 (defthmd usb-slice-helper
-  (IMPLIES (AND (UNSIGNED-BYTE-P N X)
-                (< M N)
-                (EQUAL (SLICE (+ -1 N) M X) 0)
-                (NATP M)
-                (NATP N)
-                )
-           (UNSIGNED-BYTE-P M X))
-  :hints (("Goal"
-           :in-theory (disable BVCAT-EQUAL-REWRITE
-                               ;;DAGIFY-INSIDE-HIDE-META-RULE
-                               ))))
+  (implies (and (unsigned-byte-p n x)
+                (< m n)
+                (equal (slice (+ -1 n) m x) 0)
+                (natp m)
+                (natp n))
+           (unsigned-byte-p m x))
+  :hints (("Goal" :in-theory (disable bvcat-equal-rewrite))))
 
 ;ex: (UNSIGNED-BYTE-P 8 (BVXOR 9 X$0 X$1))
 ;not sure where this should go

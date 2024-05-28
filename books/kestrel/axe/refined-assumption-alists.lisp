@@ -362,13 +362,14 @@
                 (symbol-listp known-boolean-fns)
                 ;; no errors:
                 (not (mv-nth 0 (refine-assumptions-and-add-to-dag-array assumptions dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist known-boolean-fns))))
-           (mv-let (erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (mv-let (erp refined-assumption-alist dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (refine-assumptions-and-add-to-dag-array assumptions dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist known-boolean-fns)
              (declare (ignore erp ))
-             (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+             (and (wf-dagp dag-array-name dag-array new-dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                   (refined-assumption-alistp refined-assumption-alist)
-                  (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                  (natp dag-len))))
+                  (bounded-refined-assumption-alistp refined-assumption-alist new-dag-len)
+                  (natp new-dag-len)
+                  (<= dag-len new-dag-len))))
   :hints (("Goal" :in-theory (e/d (refine-assumptions-and-add-to-dag-array) (natp)))))
 
 (defthm refine-assumptions-and-add-to-dag-array-return-type-gen

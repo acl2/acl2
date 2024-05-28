@@ -150,6 +150,16 @@
            (bounded-contextp item bound))
   :hints (("Goal" :in-theory (enable bounded-contextp bounded-axe-conjunctionp))))
 
+(defthm bounded-possibly-negated-nodenumsp-when-bounded-contextp
+  (implies (bounded-contextp context bound)
+           (equal (bounded-possibly-negated-nodenumsp context bound)
+                  (not (equal (false-context) context))))
+  :hints (("Goal" :in-theory (enable bounded-contextp bounded-possibly-negated-nodenumsp))))
+
+(defthm bounded-contextp-of-if
+  (equal (bounded-contextp (if test then else) bound)
+         (if test (bounded-contextp then bound) (bounded-contextp else bound))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund max-nodenum-in-possibly-negated-nodenums-aux (items acc)
@@ -660,6 +670,23 @@
 ;; Recognizes an array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
 (def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :default (true-context) :extra-vars (bound) :extra-guards ((natp bound)))
 
+(defthm bounded-context-arrayp-aux-monotone2
+  (implies (and (bounded-context-arrayp-aux array-name array n bound2)
+                (<= bound2 bound)
+                (natp bound)
+                (natp bound2))
+           (bounded-context-arrayp-aux array-name array n bound))
+  :hints (("Goal" :in-theory (enable  bounded-context-arrayp-aux))))
+
+;; this one is about the bound
+(defthm bounded-context-arrayp-monotone2
+  (implies (and (bounded-context-arrayp array-name array n bound2)
+                (<= bound2 bound)
+                (natp bound)
+                (natp bound2))
+           (bounded-context-arrayp array-name array n bound))
+  :hints (("Goal" :in-theory (enable bounded-context-arrayp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund get-context-via-parent (nodenum parent-nodenum dag-array-name dag-array dag-len context-array)
@@ -1111,6 +1138,22 @@
                 (bounded-possibly-negated-nodenumsp context dag-len))
            (all-dag-function-call-exprp (context-to-exprs context dag-array dag-len)))
   :hints (("Goal" :in-theory (e/d (context-to-exprs) (dag-function-call-exprp-redef)))))
+
+(local
+  (defthm bounded-dag-exprp-when-bounded-possibly-negated-nodenump
+    (implies (and (bounded-possibly-negated-nodenump item dag-len)
+                  (consp item))
+             (bounded-dag-exprp dag-len item))
+    :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump
+                                       bounded-dag-exprp)))))
+
+(defthm bounded-dag-expr-listp-of-context-to-exprs
+  (implies (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                (bounded-possibly-negated-nodenumsp context dag-len))
+           (bounded-dag-expr-listp dag-len (context-to-exprs context dag-array dag-len)))
+  :hints (("Goal" :in-theory (enable context-to-exprs bounded-contextp
+                                     bounded-possibly-negated-nodenumsp
+                                     context-item-to-maybe-expr))))
 
 ;; ;; Returns nil but prints.
 ;; (defun print-contexts (dag-lst)

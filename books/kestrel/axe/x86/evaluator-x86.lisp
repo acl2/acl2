@@ -16,6 +16,7 @@
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p$inline
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
+(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 
@@ -778,6 +779,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::one-byte-opcode-modr/m-p$inline-unguarded (proc-mode opcode)
+  (declare (xargs :guard t))
+  (if (equal proc-mode 0)
+      (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)
+    (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)))
+
+(defthm x86isa::one-byte-opcode-modr/m-p$inline-unguarded-correct
+  (equal (x86isa::one-byte-opcode-modr/m-p$inline-unguarded proc-mode opcode)
+         (x86isa::one-byte-opcode-modr/m-p$inline proc-mode opcode))
+  :hints (("Goal" :in-theory (enable x86isa::one-byte-opcode-modr/m-p$inline-unguarded
+                                     x86isa::one-byte-opcode-modr/m-p$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded (x86isa::mandatory-prefix x86isa::opcode)
   (declare (xargs :guard t))
   (case x86isa::mandatory-prefix
@@ -805,17 +820,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund x86isa::one-byte-opcode-modr/m-p$inline-unguarded (proc-mode opcode)
+(defund x86isa::32-bit-mode-two-byte-opcode-modr/m-p-unguarded (x86isa::mandatory-prefix x86isa::opcode)
   (declare (xargs :guard t))
-  (if (equal proc-mode 0)
-      (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)
-    (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded opcode)))
+  (case x86isa::mandatory-prefix
+    (102 (acl2::aref1-unguarded 'x86isa::32-bit-mode-two-byte-66-has-modr/m
+                x86isa::*32-bit-mode-two-byte-66-has-modr/m-ar*
+                x86isa::opcode))
+    (243 (acl2::aref1-unguarded 'x86isa::32-bit-mode-two-byte-f3-has-modr/m
+                x86isa::*32-bit-mode-two-byte-f3-has-modr/m-ar*
+                x86isa::opcode))
+    (242 (acl2::aref1-unguarded 'x86isa::32-bit-mode-two-byte-f2-has-modr/m
+                x86isa::*32-bit-mode-two-byte-f2-has-modr/m-ar*
+                x86isa::opcode))
+    (t
+     (acl2::aref1-unguarded
+      'x86isa::32-bit-mode-two-byte-no-prefix-has-modr/m
+      x86isa::*32-bit-mode-two-byte-no-prefix-has-modr/m-ar*
+      x86isa::opcode))))
 
-(defthm x86isa::one-byte-opcode-modr/m-p$inline-unguarded-correct
-  (equal (x86isa::one-byte-opcode-modr/m-p$inline-unguarded proc-mode opcode)
-         (x86isa::one-byte-opcode-modr/m-p$inline proc-mode opcode))
-  :hints (("Goal" :in-theory (enable x86isa::one-byte-opcode-modr/m-p$inline-unguarded
-                                     x86isa::one-byte-opcode-modr/m-p$inline))))
+(defthm x86isa::32-bit-mode-two-byte-opcode-modr/m-p-unguarded-correct
+  (equal (x86isa::32-bit-mode-two-byte-opcode-modr/m-p-unguarded x86isa::mandatory-prefix x86isa::opcode)
+         (x86isa::32-bit-mode-two-byte-opcode-modr/m-p x86isa::mandatory-prefix x86isa::opcode))
+  :hints (("Goal" :in-theory (e/d (x86isa::32-bit-mode-two-byte-opcode-modr/m-p-unguarded
+                                   x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
+                                  (aref1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::two-byte-opcode-modr/m-p$inline-unguarded (proc-mode x86isa::mandatory-prefix x86isa::opcode)
+  (declare (xargs :guard t))
+  (cond ((equal proc-mode 0)
+         (x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded
+          x86isa::mandatory-prefix
+          x86isa::opcode))
+        (t (x86isa::32-bit-mode-two-byte-opcode-modr/m-p-unguarded
+            x86isa::mandatory-prefix
+            x86isa::opcode))))
+
+(defthm x86isa::two-byte-opcode-modr/m-p$inline-unguarded-correct
+  (equal (x86isa::two-byte-opcode-modr/m-p$inline-unguarded proc-mode x86isa::mandatory-prefix x86isa::opcode)
+         (x86isa::two-byte-opcode-modr/m-p$inline proc-mode x86isa::mandatory-prefix x86isa::opcode))
+  :hints (("Goal" :in-theory (enable x86isa::two-byte-opcode-modr/m-p$inline-unguarded
+                                     x86isa::two-byte-opcode-modr/m-p$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -833,6 +879,27 @@
          (acl2::packbv itemcount itemsize items))
   :hints (("Goal" :in-theory (enable acl2::packbv-unguarded
                                      acl2::packbv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::check-instruction-length$inline-unguarded (start-rip temp-rip delta-rip)
+  (declare (xargs :guard t))
+  (b* ((start-rip (ifix start-rip))
+       (temp-rip (ifix temp-rip))
+       (delta-rip (nfix delta-rip))
+       (end-rip
+        (+ temp-rip
+           delta-rip))
+       (length
+        (- end-rip
+           start-rip)))
+    (and (> length 15) length)))
+
+(defthm x86isa::check-instruction-length$inline-unguarded-correct
+  (equal (x86isa::check-instruction-length$inline-unguarded start-rip temp-rip delta-rip)
+         (x86isa::check-instruction-length$inline start-rip temp-rip delta-rip))
+  :hints (("Goal" :in-theory (enable x86isa::check-instruction-length$inline-unguarded
+                                     x86isa::check-instruction-length$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -907,7 +974,10 @@
             (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded)
             (x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline x86isa::32-bit-mode-one-byte-opcode-modr/m-p$inline-unguarded)
             (x86isa::one-byte-opcode-modr/m-p$inline x86isa::one-byte-opcode-modr/m-p$inline-unguarded)
-            (x86isa::64-bit-mode-two-byte-opcode-modr/m-p x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded))
+            (x86isa::64-bit-mode-two-byte-opcode-modr/m-p x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded)
+            (x86isa::check-instruction-length$inline x86isa::check-instruction-length$inline-unguarded)
+            (x86isa::two-byte-opcode-modr/m-p$inline x86isa::two-byte-opcode-modr/m-p$inline-unguarded)
+            )
           *axe-evaluator-basic-fns-and-aliases*))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):

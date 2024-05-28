@@ -2245,3 +2245,17 @@
                       (bvequal ysize x y)
                     nil)))
   :hints (("Goal" :in-theory (enable bvequal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+;version for <=?
+;not a bv rule
+(defthmd equal-when-bound-dag
+  (implies (and (syntaxp (quotep y))
+                ;(equal (< free x) t) ;awkward
+                (< free x)
+                (syntaxp (quotep free))
+                (<= y free))
+           (equal (equal y x)
+                  nil)))

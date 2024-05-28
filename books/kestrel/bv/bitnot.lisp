@@ -103,7 +103,6 @@
                              ) (getbit-when-equal-of-constant-and-bvchop-constant-version
                                 bvchop-lognot-bvchop
                                 bvchop-1-becomes-getbit
-                                GETBIT-TYPE
                                 UNSIGNED-BYTE-P-OF-GETBIT)))))
 
 ;fixme redo things to go to bitnot and bitxor and redo rules to trigger on those?

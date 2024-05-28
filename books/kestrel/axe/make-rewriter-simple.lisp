@@ -4566,7 +4566,7 @@
                                (triesp new-tries)
                                (rule-limitsp new-limits)
                                (bounded-node-replacement-arrayp 'node-replacement-array new-node-replacement-array new-dag-len)
-                               (<= node-replacement-count (alen1 'node-replacement-array new-node-replacement-array))))))
+                               (<= (alen1 'node-replacement-array node-replacement-array) (alen1 'node-replacement-array new-node-replacement-array))))))
       :hints (("Goal" :in-theory (e/d (,simplify-dag-expr-name
                                        ;; todo: simplify this hint
                                        integerp-when-dargp
@@ -4618,6 +4618,37 @@
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-expr-name '-return-type))
                :in-theory (disable ,(pack$ simplify-dag-expr-name '-return-type)))))
 
+    (defthm ,(pack$ simplify-dag-expr-name '-return-type-corollary2)
+      (implies (and (natp old-nodenum)
+                    (bounded-dag-exprp old-nodenum expr)
+                    (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                    (maybe-bounded-memoizationp memoization dag-len)
+                    (info-worldp info)
+                    (triesp tries)
+                    (rule-limitsp limits)
+                    (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array dag-len)
+                    (natp node-replacement-count)
+                    (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
+                    (rewrite-stobjp rewrite-stobj)
+                    (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
+                    (< old-nodenum (renumbering-length renumbering-stobj))
+                    (bounded-good-renumbering-stobj (+ -1 old-nodenum) dag-len renumbering-stobj))
+               (mv-let (erp new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info new-tries new-limits
+                            new-node-replacement-array ; no real change
+                            )
+                 (,simplify-dag-expr-name expr
+                                          old-nodenum
+                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits
+                                          node-replacement-array node-replacement-count refined-assumption-alist
+                                          rewrite-stobj
+                                          renumbering-stobj)
+                 (declare (ignore new-nodenum-or-quotep new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info new-tries new-limits))
+                 (implies (and (not erp)
+                               (<= bound (alen1 'node-replacement-array node-replacement-array)))
+                          (<= bound (alen1 'node-replacement-array new-node-replacement-array)))))
+      :hints (("Goal" :use (:instance ,(pack$ simplify-dag-expr-name '-return-type))
+               :in-theory (disable ,(pack$ simplify-dag-expr-name '-return-type)))))
+
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
@@ -4641,7 +4672,7 @@
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                   (if (consp rev-dag)
                                       (or (null maybe-internal-context-array)
-                                          (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag))))))
+                                          (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag)))) dag-len))
                                     t)
                                   (maybe-bounded-memoizationp memoization dag-len)
                                   (not (and memoization maybe-internal-context-array)) ; would be unsound to have both
@@ -4689,9 +4720,11 @@
              (- (and print (= 0 (mod nodenum 1000)) (cw "Simplifying node ~x0.~%" nodenum)))
              (context-for-this-node (if maybe-internal-context-array (aref1 'context-array maybe-internal-context-array nodenum) (true-context)))
              (context-for-this-node (if (false-contextp context-for-this-node)
-                                        (cw "WARNING: False context for node ~x0.~%" nodenum)
-                                      (true-context) ; safe
-                                      ))
+                                        (prog2$ (cw "WARNING: False context for node ~x0.~%" nodenum)
+                                                (true-context) ; safe
+                                                )
+                                      context-for-this-node))
+             ;; (- (cw "Node ~x0 has ~x1 context items (array ~x2).~%" nodenum (len context-for-this-node) maybe-internal-context-array))
              ;; Temporarily push context info into the node-replacement-array:
              ((mv node-replacement-array node-replacement-count-for-this-node undo-pairs)
               (update-node-replacement-array-for-assuming-possibly-negated-nodenums context-for-this-node
@@ -4702,6 +4735,7 @@
              ;; Also include the context information in the assumptions used for free var matching:
              (context-exprs-for-this-node (context-to-exprs context-for-this-node dag-array dag-len))
              (refined-assumption-alist-for-this-node (extend-refined-assumption-alist context-exprs-for-this-node refined-assumption-alist))
+             (old-memoization memoization)
              ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array)
               (,simplify-dag-expr-name (cdr entry) ; the expr
                                        nodenum
@@ -4713,6 +4747,7 @@
                                        rewrite-stobj
                                        renumbering-stobj))
              ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj))
+             (memoization (if (null old-memoization) nil memoization)) ;; ensure the memoization did not become non-nil (todo: prove that this is unneeded and drop it)
              ;; Pop the context (if not using contexts, undo-pairs will be nil):
              (node-replacement-array (undo-writes-to-node-replacement-array undo-pairs node-replacement-array node-replacement-count-for-this-node dag-len))
              ;; Record the fact that NODENUM rewrote to NEW-NODENUM-OR-QUOTEP:
@@ -4736,7 +4771,7 @@
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
                         (or (null maybe-internal-context-array)
-                            (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag))))))
+                            (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag)))) dag-len))
                       t)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4783,6 +4818,10 @@
                                                       node-replacement-array node-replacement-count refined-assumption-alist
                                                       rewrite-stobj
                                                       renumbering-stobj)
+               :expand ((,simplify-dag-aux-name rev-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array memoization info tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj renumbering-stobj)
+                        (,simplify-dag-aux-name rev-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array nil info tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj renumbering-stobj)
+                        (,simplify-dag-aux-name rev-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil memoization info tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj renumbering-stobj)
+                        (,simplify-dag-aux-name rev-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil nil info tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj renumbering-stobj))
                :in-theory (enable ,simplify-dag-aux-name
                                   car-of-car-of-last-when-cars-increasing-by-1-linear
                                   ;maybe-dargp
@@ -4811,7 +4850,7 @@
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
                         (or (null maybe-internal-context-array)
-                            (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag))))))
+                            (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag)))) dag-len))
                       t)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4857,7 +4896,7 @@
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
                         (or (null maybe-internal-context-array)
-                            (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag))))))
+                            (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag)))) dag-len))
                       t)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4903,7 +4942,7 @@
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
                         (or (null maybe-internal-context-array)
-                            (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag))))))
+                            (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag)))) dag-len))
                       t)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -4951,7 +4990,7 @@
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (if (consp rev-dag)
                         (or (null maybe-internal-context-array)
-                            (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag))))))
+                            (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car (last rev-dag)))) dag-len))
                       t)
                     (maybe-bounded-memoizationp memoization dag-len)
                     (info-worldp info)
@@ -5016,7 +5055,7 @@
                                   (pseudo-term-listp assumptions)
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                   (or (null maybe-internal-context-array)
-                                      (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag)))))
+                                      (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag))) dag-len))
                                   (rule-limitsp limits)
                                   (rule-alistp rule-alist)
                                   (booleanp count-hits)
@@ -5116,7 +5155,7 @@
                     (pseudo-term-listp assumptions)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (or (null maybe-internal-context-array)
-                        (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag)))))
+                        (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag))) dag-len))
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
                     (booleanp count-hits)
@@ -5153,7 +5192,7 @@
                     (pseudo-term-listp assumptions)
                     (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                     (or (null maybe-internal-context-array)
-                        (context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag)))))
+                        (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag))) dag-len))
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
                     (booleanp count-hits)
