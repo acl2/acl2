@@ -96,26 +96,25 @@
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;rename
-(defthm bvlt-of-max
+(defthm not-bvlt-of-max-arg2
   (not (bvlt size (+ -1 (expt 2 size)) x))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;rename
-(defthm bvlt-of-max-constant-version
+(defthm not-bvlt-of-max-arg2-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (equal k (+ -1 (expt 2 size)))) ;gets computed
            (not (bvlt size k x))))
 
 ;todo: use polarities?
-(defthm bvlt-max-arg3
+(defthm bvlt-of-max-arg3
   (implies (natp size)
            (equal (bvlt size x (+ -1 (expt 2 size)))
                   (not (equal (+ -1 (expt 2 size)) (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;todo: use polarities?
-(defthm bvlt-max-arg3-constant-version
+(defthm bvlt-of-max-arg3-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (equal k (+ -1 (expt 2 size))) ;gets computed
@@ -123,32 +122,6 @@
            (equal (bvlt size x k)
                   (not (equal k (bvchop size x)))))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-;delete
-;; (defthm bvlt-max-val
-;;   (equal (bvlt 31 x 2147483647)
-;;          (not (equal 2147483647 (bvchop 31 x))))
-;;   :hints (("Goal" :in-theory (enable bvlt))))
-
-;delete
-;gen!
-;use polarities!
-;; (defthm bvlt-of-511
-;;   (equal (bvlt 9 x 511)
-;;          (not (equal 511 (bvchop 9 x))))
-;;   :hints (("Goal"
-;;            :cases ((natp size))
-;;            :in-theory (enable bvlt)
-;;                            )))
-
-;delete
-;; ;use polarity?
-;; ;gen!
-;; (defthm bvlt-32-max
-;;   (implies (equal k (+ -1 (expt 2 32)))
-;;            (equal (bvlt 32 x k)
-;;                   (not (equal (bvchop 32 x) k))))
-;;   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -402,17 +375,10 @@
 (defthm bvlt-of-max-minus-1-arg2-constant-version
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
-                (equal k (+ -2 (expt 2 size)))
-                (posp size)) ;gets computed
+                (equal k (+ -2 (expt 2 size))) ;gets computed
+                (posp size))
            (equal (bvlt size k x)
-                  (equal (+ -1 (expt 2 size)) (bvchop size x)))))
-
-;delete
-;; ;todo: gen!
-;; (defthm bvlt-2-max
-;;   (equal (bvlt 2 2 x)
-;;          (equal 3 (bvchop 2 x)))
-;;   :hints (("Goal" :in-theory (enable bvlt))))
+                  (equal (+ 1 k) (bvchop size x)))))
 
 ;can be expensive.  needs polarities
 (defthmd bvlt-when-bvlt-must-be
@@ -430,8 +396,6 @@
                               (bvchop size x)))))
   :hints (("Goal" :use bvlt-when-bvlt-must-be)))
 
-;induction proof?
-;wont match?
 (defthm bvlt-of-max-when-bvlt
   (implies (bvlt size x free)
            (bvlt size x (+ -1 (expt 2 size))))
@@ -444,6 +408,12 @@
                             ;;BVLT-TRANSITIVE-FREE-BACK
                             ;;BVLT-TRANSITIVE-FREE2-BACK
                             )))))
+
+(defthmd bvlt-of-max-when-bvlt-constant-version
+  (implies (and (syntaxp (quotep k))
+                (equal k (+ -1 (expt 2 size)))
+                (bvlt size x free))
+           (bvlt size x k)))
 
 ;rename
 (defthm bvlt-when-not-posp-arg1

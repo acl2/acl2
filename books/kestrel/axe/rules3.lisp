@@ -3111,21 +3111,9 @@
                   (bvcat (- size 2) x 2 0)))
   :hints (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
                                    bvmult bvcat logapp)
-                                  (
-                                   logapp-equal-rewrite
+                                  (logapp-equal-rewrite
                                    bvcat-equal-rewrite-alt bvcat-equal-rewrite
                                    )))))
-
-(defthm bvlt-of-max-arg2
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (equal k (+ -1 (expt 2 size))))
-           (equal (bvlt size k x)
-                  nil))
-  :hints (("Goal" :cases ((natp size))
-           :in-theory (e/d (bvlt unsigned-byte-p)
-                           (bvchop-chop-leading-constant
-                            )))))
 
 ;non-dag
 (defthm getbit-trim
@@ -6320,15 +6308,6 @@
   :hints (("Goal" :use (:instance bvdiv-equal-0-rewrite)
            :in-theory (disable bvdiv-equal-0-rewrite))))
 
-;todo: why is -dag in the name?
-(defthmd bvlt-of-max-when-bvlt-constant-dag
-  (implies (and (syntaxp (quotep k))
-                (equal k (+ -1 (expt 2 size)))
-                (bvlt size x free)
-                ;(natp size)
-                )
-           (bvlt size x k)))
-
 ;maybe always turn UNSIGNED-BYTE-P into bvlt if the argument is wider
 (defthm unsigned-byte-p-of-bvplus-wider-9-10
   (equal (unsigned-byte-p 9 (bvplus 10 k x))
@@ -7173,8 +7152,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus)
                                   (anti-bvplus
                                    plus-becomes-bvplus-free
-
-
                                    plus-becomes-bvplus)))))
 
 (defthm cdr-of-nthcdr-of-bvplus
@@ -7182,12 +7159,6 @@
            (equal (CDR (NTHCDR (bvplus size x y) lst))
                   (NTHCDR (bvplus (+ 1 size) 1 (bvplus size x y)) lst)))
   :hints (("Goal" :in-theory (enable cdr-of-nthcdr))))
-
-(defthm bvlt-max-63
-  (equal (BVLT 6 Y 63)
-         (not (equal (bvchop 6 y) 63)))
-  :hints (("Goal" :in-theory (enable bvlt))))
-
 
 (defthm bvmod-cancel-hack-8-1-44-6-1
   (implies (and ;(unsigned-byte-p 8 x)
@@ -7200,10 +7171,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvmod bvchop-of-sum-cases)
                                   (anti-bvplus
                                    plus-becomes-bvplus-free
-
-
-                                   plus-becomes-bvplus
-                                   )))))
+                                   plus-becomes-bvplus)))))
 
 (defthm bvmod-does-nothing-6-44
   (equal (equal x (bvmod '6 x '44))
@@ -7898,10 +7866,8 @@
                                   (MOD-BOUNDED-BY-MODULUS ;expensive!
                                    MOD-TYPE ;expensive!
                                    ;COLLECT-CONSTANTS-OVER-<
-                                   BVLT-OF-MAX
+                                   not-bvlt-of-max-arg2
                                    anti-bvplus
-
-
                                    plus-becomes-bvplus
                                    plus-becomes-bvplus-free
                                    +-of-minus-1-and-bv2
@@ -7910,7 +7876,6 @@
                                    mod-of-expt-of-2
                                    bvchop-1-becomes-getbit
                                    slice-becomes-getbit
-
                                    <-of-bvplus-becomes-bvlt-arg1
                                    <-of-bvplus-becomes-bvlt-arg2
                                    mod-sum-cases
@@ -8797,7 +8762,6 @@
                       0
                     4))))
 
-
 ;expensive?
 (defthm bvlt-of-max-when-both-narrow
   (implies (and (unsigned-byte-p 31 x)
@@ -8825,9 +8789,7 @@
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
-                            anti-bvplus plus-becomes-bvplus
-
-                            )))))
+                            anti-bvplus plus-becomes-bvplus)))))
 
 
 ;this helps get the sizes to be equal
@@ -9897,11 +9859,6 @@
                                       ;BVMULT-OF-EXPT2
                                       )
            :use (:instance bvlt-split (x y) (y x)))))
-
-;use polarity
-(defthm bvlt-of-max-2
-  (equal (BVLT '2 x '3)
-         (not (equal 3 (bvchop 2 x)))))
 
 ;use polarity??
 (defthm equal-of-slice-and-slice-when-bvchops-same

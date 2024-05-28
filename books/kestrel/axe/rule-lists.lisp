@@ -824,6 +824,10 @@
      bvlt-transitive-5-a
      bvlt-transitive-5-b
 
+     not-bvlt-of-max-arg2-constant-version
+     bvlt-of-max-when-bvlt-constant-version
+     bvlt-of-max-arg3-constant-version-axe
+
      not-equal-max-int-when-<=      ;new, rename
 
      repeatbit-of-1     ;new
@@ -2089,7 +2093,7 @@
     bvlt-of-max-minus-1-arg2-constant-version ;    bvlt-2-max
     bvlt-when-bound-dag
 ;    bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
-    bvlt-of-max-arg2          ;alt version?
+    not-bvlt-of-max-arg2          ;alt version?
     ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
     bvmod-of-power-of-2
     unsigned-byte-p-of-bvmod-gen ;remove since added to big list
@@ -2298,10 +2302,8 @@
      unsigned-byte-p-of-bvplus-wider-9-10
      bvlt-add-to-both-sides-constant-lemma-alt-no-split
      bvlt-add-to-both-sides-constant-lemma-alt ;new
-     bvlt-of-max
-     bvlt-of-max-constant-version
+     not-bvlt-of-max-arg2
 ;                        bvlt-of-max-when-bvlt
-     bvlt-of-max-when-bvlt-constant-dag
 
      ;;trying without these:
      ;;bvuminus-when-smaller-bind-free-dag ;this may be a bad idea
@@ -2325,7 +2327,6 @@
      turn-equal-around-axe4 ;this subsumes the other rules?
      bvlt-of-bvplus-32-31-trim-alt ;gen (but only when "trimmable"?)
      bvlt-of-bvplus-32-31-trim  ;gen (but only when "trimmable"?)
-     bvlt-max-arg3-constant-version ;bvlt-max-val               ;;add polarity!
 
 ;sbvlt-becomes-bvlt
 ;     sbvlt-becomes-bvlt-better
@@ -2466,7 +2467,6 @@
 ;     slice-when-bvlt-30-2-31-4 ;kill
      sha1-lemma-8
      equal-of-slice-and-slice-when-bvchops-same
-     bvlt-of-max-2
      bvlt-when-not-bvlt-of-slice-and-slice2
      bvlt-when-not-bvlt-of-slice-and-slice
      bvplus-of-bvmult-tighten
@@ -2772,7 +2772,7 @@
             equal-of-bvchop-and-constant-when-not-bvlt-constant-2
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
-            bvlt-of-max-arg3
+            bvlt-of-max-arg3-axe
             bvlt-of-constant-arg3
             bvlt-of-constant-arg2
             slice-when-bvlt-gen      ;wed mar 16 00:52:46 2011
