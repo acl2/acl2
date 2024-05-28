@@ -1433,6 +1433,9 @@ certification using @('make')."
 
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
+ <li>@('uses-preprocessor'): only certify when an external C preprocessor is
+ available. See @(see c$preprocessing).</li>
+
  </ul>
 
  <p>There is currently no @('cert_param') related to ACL2(p) (see @(see
