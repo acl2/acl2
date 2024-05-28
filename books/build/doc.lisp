@@ -1434,7 +1434,7 @@ certification using @('make')."
  <li>@('uses-quicklisp'): only certify when quicklisp is available</li>
 
  <li>@('uses-preprocessor'): only certify when an external C preprocessor is
- available. See @(see c$preprocessing).</li>
+ available. See @(see c$::preprocessing).</li>
 
  </ul>
 
