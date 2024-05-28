@@ -2248,20 +2248,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; not really bv rules...
-;; Only needed by Axe
-
-(defthmd integerp-of-logand (integerp (logand x y)))
-(defthmd integerp-of-logior (integerp (logior x y)))
-(defthmd integerp-of-logxor (integerp (logxor x y)))
-
-(def-constant-opener acl2::logmask$inline)
-(def-constant-opener acl2::binary-logand)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;rename
 ;version for <=?
+;not a bv rule
 (defthmd equal-when-bound-dag
   (implies (and (syntaxp (quotep y))
                 ;(equal (< free x) t) ;awkward
