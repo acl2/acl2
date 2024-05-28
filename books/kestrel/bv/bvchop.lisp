@@ -161,6 +161,10 @@
                        (integerp size1))))
   :hints (("Goal" :in-theory (enable bvchop UNSIGNED-BYTE-P))))
 
+(defthm bitp-of-bvchop-of-1-type
+  (bitp (bvchop 1 x))
+  :rule-classes :type-prescription)
+
 ;bozo drop any special cases
 (defthm bvchop-bound
   (implies (and (syntaxp (and (quotep k)

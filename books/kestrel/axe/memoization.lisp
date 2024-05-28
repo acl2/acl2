@@ -488,14 +488,23 @@
   (bounded-memo-alistp nil bound)
   :hints (("Goal" :in-theory (enable bounded-memo-alistp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-typed-acl2-array2 array-of-bounded-memo-alistsp (bounded-memo-alistp val bound)
   :extra-vars (bound)
   :extra-guards ((natp bound)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-memoizationp (memoization bound)
   (declare (xargs :guard (natp bound)))
   (and (array-of-bounded-memo-alistsp 'memoization memoization bound)
        (equal (alen1 'memoization memoization) *memoization-size*)))
+
+;; This allows us to use nil to mean "no memoization".
+(defthmd not-bounded-memoizationp-of-nil
+  (not (bounded-memoizationp nil bound))
+  :hints (("Goal" :in-theory (enable bounded-memoizationp))))
 
 (defthm array-of-memo-alistsp-aux-when-array-of-bounded-memo-alistsp-aux
   (implies (and (array-of-bounded-memo-alistsp-aux 'memoization memoization max bound)

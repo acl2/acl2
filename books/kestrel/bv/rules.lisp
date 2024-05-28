@@ -4999,10 +4999,8 @@
            :use ((:instance usb1-cases (x (LOGTAIL size (BVCHOP (+ 1 size) Y))))
                  (:instance usb1-cases (x (LOGTAIL size (BVCHOP (+ 1 size) x)))))
            :in-theory (e/d (bitnot getbit slice BVCHOP-OF-SUM-CASES bvplus logtail-of-bvchop)
-                           ( anti-slice bvchop-of-logtail
-; Matt K. mod 5/2016 (type-set bit for {1})
-;bitp-bvchop-1
-                                        )))))
+                           (anti-slice bvchop-of-logtail
+                                       bitp-of-bvchop-of-1-type)))))
 
 
 ;;only the lowest bit is of interest

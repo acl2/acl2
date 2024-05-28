@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -466,9 +466,8 @@
                                   (bvchop-of-logtail-becomes-slice)))))
 
 ;; In case we don't turn slice into getbit
-(defthm slice-same-type
-  (or (equal 0 (slice n n val))
-      (equal 1 (slice n n val)))
+(defthm bitp-of-slice-same-type
+  (bitp (slice n n x))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (slice)
                                   (bvchop-of-logtail-becomes-slice)))))
@@ -532,10 +531,6 @@
 
 
 (theory-invariant (incompatible (:rewrite bvchop-of-floor-of-expt-of-2-constant-version) (:definition slice)))
-
-(defthm bitp-of-slice-same-type
-  (bitp (slice n n x))
-  :rule-classes :type-prescription)
 
 (defthmd slice-same-when-not-0
   (implies (not (equal 0 (slice n n x)))
