@@ -136,18 +136,44 @@
     x86isa::sf-spec32$inline
     x86isa::sf-spec64
     x86isa::sf-spec64$inline
+
+    x86isa::add-af-spec8
+    x86isa::add-af-spec8$inline
+    x86isa::add-af-spec16
+    x86isa::add-af-spec16$inline
     x86isa::add-af-spec32
     x86isa::add-af-spec32$inline
     x86isa::add-af-spec64
     x86isa::add-af-spec64$inline
+
+    x86isa::sub-af-spec8
+    x86isa::sub-af-spec8$inline
+    x86isa::sub-af-spec16
+    x86isa::sub-af-spec16$inline
     x86isa::sub-af-spec32
     x86isa::sub-af-spec32$inline
     x86isa::sub-af-spec64
     x86isa::sub-af-spec64$inline
+    x86isa::sub-cf-spec8
+    x86isa::sub-cf-spec16
+    x86isa::sub-cf-spec32
+    x86isa::sub-cf-spec64
     x86isa::sub-of-spec8
     x86isa::sub-of-spec16
     x86isa::sub-of-spec32
     x86isa::sub-of-spec64
+    x86isa::sub-pf-spec8
+    x86isa::sub-pf-spec16
+    x86isa::sub-pf-spec32
+    x86isa::sub-pf-spec64
+    x86isa::sub-sf-spec8
+    x86isa::sub-sf-spec16
+    x86isa::sub-sf-spec32
+    x86isa::sub-sf-spec64
+    x86isa::sub-zf-spec8
+    x86isa::sub-zf-spec16
+    x86isa::sub-zf-spec32
+    x86isa::sub-zf-spec64
 
     x86isa::ror-spec
     x86isa::ror-spec-8
@@ -572,6 +598,8 @@
     *t*
     *nil*
     ffn-symb
+
+    define
 
     defp
 
