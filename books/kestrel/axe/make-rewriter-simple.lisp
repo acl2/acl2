@@ -4756,19 +4756,20 @@
                                                    -1)
                                                  dag-len renumbering-stobj)
                     (renumbering-stobjp renumbering-stobj))
-               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries limits node-replacement-array new-renumbering-stobj)
+               (mv-let (erp new-dag-array new-dag-len new-dag-parent-array new-dag-constant-alist new-dag-variable-alist new-memoization new-info tries new-limits node-replacement-array new-renumbering-stobj)
                  (,simplify-dag-aux-name rev-dag
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          maybe-internal-context-array memoization info tries limits
                                          node-replacement-array node-replacement-count refined-assumption-alist
                                          rewrite-stobj
                                          renumbering-stobj)
-                 (declare (ignore tries limits node-replacement-array))
+                 (declare (ignore tries node-replacement-array))
                  (implies (not erp)
                           (and (wf-dagp 'dag-array new-dag-array new-dag-len 'dag-parent-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist)
                                (info-worldp new-info)
                                (maybe-memoizationp new-memoization)
                                (iff new-memoization memoization)
+                               (rule-limitsp new-limits)
                                (renumbering-stobjp new-renumbering-stobj)
                                (bounded-good-renumbering-stobj (if (consp rev-dag)
                                                                 (car (car (last rev-dag)))
@@ -4992,7 +4993,7 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    ;; Returns (mv erp dag-or-quotep).
+    ;; Returns (mv erp dag-or-quotep limits).
     ;; This optionally takes an internal-context-array, but if one is given, memoize can't be non-nil.
     ;; TODO: Perhas return info (hit-counts) or tries, to be summed across invocations.
     (defund ,simplify-dag-core-name (dag
@@ -5045,7 +5046,7 @@
            ((when (and memoize
                        (not (null maybe-internal-context-array))))
             (er hard? ',simplify-dag-core-name "It is unsound to memoize when using internal contexts.")
-            (mv :unsound nil))
+            (mv :unsound nil limits))
            (old-top-nodenum (top-nodenum dag))
            (old-len (+ 1 old-top-nodenum))
            ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
@@ -5054,14 +5055,14 @@
             (refine-assumptions-and-add-to-dag-array assumptions
                                                      'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist
                                                      known-booleans))
-           ((when erp) (mv erp nil))
+           ((when erp) (mv erp nil limits))
            ;; Create the node-replacement-array and add relevant nodes to the DAG:
            ;; TODO: Consider combining this with the above, in a single pass through the assumptions:
            ((mv erp node-replacement-array node-replacement-count dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (make-node-replacement-array-and-extend-dag assumptions
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         known-booleans))
-           ((when erp) (mv erp nil)))
+           ((when erp) (mv erp nil limits)))
         (with-local-stobjs
          (renumbering-stobj rewrite-stobj)
          (mv-let (erp new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj)
@@ -5091,8 +5092,8 @@
                 (new-top-nodenum-or-quotep (renumberingi old-top-nodenum renumbering-stobj)))
              (mv (erp-nil) new-top-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array renumbering-stobj rewrite-stobj))
            ;; Cannot refer to the stobjs:
-           (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist limits node-replacement-array)) ; print some stats from these?
-           (b* (((when erp) (mv erp nil))
+           (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist node-replacement-array)) ; print some stats from these?
+           (b* (((when erp) (mv erp nil limits))
                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
                 (- (and count-hits print (maybe-print-hit-counts print info)))
                 (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
@@ -5100,9 +5101,10 @@
                 ;; todo: print the new len?
                 )
              (if (quotep new-top-nodenum-or-quotep)
-                 (mv (erp-nil) new-top-nodenum-or-quotep)
+                 (mv (erp-nil) new-top-nodenum-or-quotep limits)
                (mv (erp-nil)
-                   (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil))))))))
+                   (drop-non-supporters-array-with-name 'dag-array dag-array new-top-nodenum-or-quotep nil)
+                   limits)))))))
 
     (defthm ,(pack$ simplify-dag-core-name '-return-type)
       (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
@@ -5129,7 +5131,9 @@
                                                                     limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
                     (<= (len (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
                                                                 limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
-                        *max-1d-array-length*)))
+                        *max-1d-array-length*)
+                    (rule-limitsp (mv-nth 2 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
+                                                                limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
                :in-theory (e/d (,simplify-dag-core-name
                                 natp-of-renumberingi
@@ -5168,6 +5172,7 @@
 
     ;; Returns (mv erp dag-or-quotep).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
+    ;; TODO: Return the limits?
     (defund ,simplify-dag-name (dag
                                 assumptions
                                 interpreted-function-alist
@@ -5212,21 +5217,21 @@
             (mv :dag-too-big nil))
            ;; If we are to memoize, start with a rewrite that memoizes but does not use internal contexts (for soundness):
            ;; This may be critical to performance.
-           ((mv erp dag-or-quotep)
+           ((mv erp dag-or-quotep limits)
             (if (not memoize)
-                (mv (erp-nil) dag)
+                (mv (erp-nil) dag limits)
               (b* ((dag-len (+ 1 top-nodenum))
                    (- (and print (cw "(Simplifying DAG with memoization and no internal contexts (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
                    (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
                    ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                     (empty-dag-array initial-array-size))
-                   ((mv erp dag-or-quotep)
+                   ((mv erp dag-or-quotep limits)
                     (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil interpreted-function-alist limits rule-alist
                                              count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
-                   ((when erp) (mv erp nil))
+                   ((when erp) (mv erp nil limits))
                    (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                    )
-                (mv (erp-nil) dag-or-quotep))))
+                (mv (erp-nil) dag-or-quotep limits))))
            ((when erp) (mv erp nil))
            ((when (myquotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep))
            (dag dag-or-quotep) ; it was not a quotep, so we rename it
@@ -5247,7 +5252,9 @@
                 (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
                (internal-context-array (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array))
                ;; Do the rewriting:
-               ((mv erp dag-or-quotep)
+               ((mv erp dag-or-quotep
+                    & ;limits
+                    )
                 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array interpreted-function-alist limits rule-alist
                                          count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors
                                          nil ;memoize (would be unsound)
