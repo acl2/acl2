@@ -695,6 +695,23 @@
   :hints (("Goal" :use (:instance merge-terms-into-dag-array-basic-return-type)
            :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
 
+(defthm merge-terms-into-dag-array-basic-return-type-linear
+    (implies (and (pseudo-term-listp terms)
+                  (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                  (symbol-alistp var-replacement-alist)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                  ;;no errors:
+                  (not (mv-nth 0 (merge-terms-into-dag-array-basic terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+             (<= dag-len
+                      (mv-nth 3 (merge-terms-into-dag-array-basic
+                                 terms
+                                 var-replacement-alist
+                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                 interpreted-function-alist))))
+  :rule-classes :linear
+  :hints (("Goal" :use merge-terms-into-dag-array-basic-return-type
+           :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
+
 (defthm pseudo-dag-arrayp-after-merge-terms-into-dag-array-basic
   (implies (and (pseudo-term-listp terms)
                 (true-listp terms)
