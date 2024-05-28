@@ -1,4 +1,3 @@
-// #include <stdbooh.h>
 #include <stdbool.h>
 
 int main(void) {
