@@ -280,11 +280,11 @@
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
 
-    ;; todo: uncomment these but first organize rules:
-    ;;write-of-write-same
-    ;;write-of-write-of-write-same
-    ;;write-of-write-of-write-of-write-same
     ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+    write-of-write-same
+    write-of-write-of-write-same
+    write-of-write-of-write-of-write-same
+    ;; write-of-write-of-write-of-write-of-write-same
 
     write-of-bvchop-arg3-gen
     ))
@@ -1427,7 +1427,6 @@
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
-
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
@@ -4357,9 +4356,6 @@
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             acl2::equal-of-myif-arg1-safe
             acl2::equal-of-myif-arg2-safe
-            write-of-write-same ; todo: move to write-rules?
-            write-of-write-of-write-same
-            write-of-write-of-write-of-write-same
             acl2::bvminus-of-+-arg2
             acl2::bvminus-of-+-arg3
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
