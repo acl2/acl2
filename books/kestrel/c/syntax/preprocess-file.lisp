@@ -39,8 +39,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable acl2::tshell-call
-                    (:e acl2::tshell-call)))
+(in-theory (disable (:e acl2::tshell-call)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,9 +222,10 @@
                    \"clang\", \"cc\", etc.")
     '"cpp")
    ((extra-args string-listp
-                "Arguments to pass to the C preprocessor, in addition to \"-E\"
-                 and \"-P\".")
-    'nil)
+                "Arguments to pass to the C preprocessor, in addition to
+                 \"-E\". The default value is @('(list \"-P\")') (the flag
+                 @('\"-P\"') suppresses the generation of linemarkers).")
+    ''("-P"))
    (state 'state))
   :returns (mv erp
                (pair "A pair whose first value is the output file (if it is
@@ -240,7 +240,11 @@
    (xdoc::p
      "This function preprocesses a @(see filepathp) using the system's C
       preprocessor. See @(see preprocess-files) for a simlilar utility which
-      handles a set of files."))
+      handles a set of files.")
+   (xdoc::p
+     "By default, we pass the @('\"-P\"') flag to the preprocessor to disable
+      linemarkers. This behavior may be overriden by explicitly providing a
+      @(':extra-args') value."))
   (macrolet
    ((iferr () '(cons "" (filepath nil))))
    (b* ((filename (filepath->unwrap file))
@@ -257,7 +261,7 @@
              (value (absolute-filepath out))
            (mktemp (basename filename))))
         (preprocess-cmd
-          (str::join (append (list* preprocessor "-o" out "-E" "-P" extra-args)
+          (str::join (append (list* preprocessor "-o" out "-E" extra-args)
                              (list filename))
                      " "))
         ((mv exit-status -)
@@ -344,9 +348,10 @@
                    \"clang\", \"cc\", etc.")
     '"cpp")
    ((extra-args string-listp
-                "Arguments to pass to the C preprocessor, in addition to \"-E\"
-                 and \"-P\".")
-    'nil)
+                "Arguments to pass to the C preprocessor, in addition to
+                 \"-E\". The default value is @('(list \"-P\")') (the flag
+                 @('\"-P\"') suppresses the generation of linemarkers).")
+    ''("-P"))
    (state 'state))
   :returns (mv erp
                (map filesetp
