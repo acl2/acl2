@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-; cert_param: (uses-c-preprocessor)
+; cert_param: (uses-cpp)
 
 
 (include-book "std/testing/must-eval-to" :dir :system)

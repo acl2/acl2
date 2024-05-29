@@ -53,16 +53,19 @@
      "A collection of tools to invoke an external C preprocessor.")
    (xdoc::p
      "These tools appeal to a configurable C preprocessor, and the prerequisite
-     dependencies may not be present on all systems. Certification of books
-     which invoke these tools should therefore be predicated on the
-     @('uses-c-preprocessor') @(see build::cert_param) flag.")
+      dependencies may not be present on all systems. For books which use the
+      default preprocessor \"cpp\", certification may controlled with the the
+      @(see build::uses-cpp) @(see build::cert_param) flag.")
    (xdoc::p
-     "By default, the community books Makefile does not build such books.
-     Certification can be enabled by defining the \"USE_C_PREPROCESSOR\"
-     Makefile variable. E.g., to run a regression including preprocessing
-     books:")
+     "The community books Makefile will autodetect whether \"cpp\" is
+      available, and exclude books appropriately. Certification of such books
+      may be suppressed by manually undefining the Makefile variable
+      \"OS_HAS_CPP\". E.g., to run a regression excluding books calling cpp:")
    (xdoc::code
-     "USE_C_PREPROCESSOR=1 make regression"))
+     "OS_HAS_CPP= make regression")
+   (xdoc::p
+     "Further @(see build::cert_param) flags may need to be defined if using a
+      C preprocessor other than \"cpp\"."))
   :order-subtopics t)
 
 

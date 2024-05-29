@@ -409,9 +409,9 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
-ifeq ($(USE_C_PREPROCESSOR), )
-$(info Excluding books that invoke an external C preprocessor: [$(CERT_PL_USES_C_PREPROCESSOR)])
-OK_CERTS := $(filter-out $(CERT_PL_USES_C_PREPROCESSOR), $(OK_CERTS))
+ifeq ($(OS_HAS_CPP), )
+$(info Excluding books that invoke cpp: [$(CERT_PL_USES_CPP)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_CPP), $(OK_CERTS))
 endif
 
 ifeq ($(ACL2_HAS_REALS), )

@@ -77,22 +77,22 @@ use Cygwin_paths;
 # (do "$RealBin/certlib.pl") or die ("Error loading $RealBin/certlib.pl:\n!: $!\n\@: $@\n");
 # (do "$RealBin/paths.pl") or die ("Error loading $RealBin/paths.pl:\n!: $!\n\@: $@\n");
 
-my %reqparams = ("uses-glucose"        => "USES_GLUCOSE",
-                 "uses-ipasir"         => "USES_IPASIR",
-                 "uses-abc"            => "USES_ABC",
-                 "uses-smtlink"        => "USES_SMTLINK",
-                 "uses-stp"            => "USES_STP",
-                 "uses-quicklisp"      => "USES_QUICKLISP",
-                 "uses-c-preprocessor" => "USES_C_PREPROCESSOR",
-                 "ansi-only"           => "ANSI_ONLY",
-                 "uses-acl2r"          => "USES_ACL2R",
-                 "non-acl2r"           => "NON_ACL2R",
-                 "ccl-only"            => "CCL_ONLY",
-                 'non-cmucl'           => "NON_CMUCL",
-                 'non-lispworks'       => "NON_LISPWORKS",
-                 'non-allegro'         => "NON_ALLEGRO",
-                 'non-sbcl'            => "NON_SBCL",
-                 'non-gcl'             => "NON_GCL"
+my %reqparams = ("uses-glucose"   => "USES_GLUCOSE",
+                 "uses-ipasir"    => "USES_IPASIR",
+                 "uses-abc"       => "USES_ABC",
+                 "uses-smtlink"   => "USES_SMTLINK",
+                 "uses-stp"       => "USES_STP",
+                 "uses-quicklisp" => "USES_QUICKLISP",
+                 "uses-cpp"       => "USES_CPP",
+                 "ansi-only"      => "ANSI_ONLY",
+                 "uses-acl2r"     => "USES_ACL2R",
+                 "non-acl2r"      => "NON_ACL2R",
+                 "ccl-only"       => "CCL_ONLY",
+                 'non-cmucl'      => "NON_CMUCL",
+                 'non-lispworks'  => "NON_LISPWORKS",
+                 'non-allegro'    => "NON_ALLEGRO",
+                 'non-sbcl'       => "NON_SBCL",
+                 'non-gcl'        => "NON_GCL"
     );
 
 # use lib "/usr/lib64/perl5/5.8.8/x86_64-linux-thread-multi/Devel";
