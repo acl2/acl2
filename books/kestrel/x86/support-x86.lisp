@@ -1059,10 +1059,6 @@
 ;;                             ACL2::LOGtail-OF-LOGext ;loop
 ;;                             )))))
 
-;move
-(defthm bitp-of-sf-spec32
-  (acl2::bitp (sf-spec32 result)))
-
 (defthm unsigned-byte-p-1-of-sf-spec32
   (acl2::unsigned-byte-p 1 (sf-spec32 result)))
 
