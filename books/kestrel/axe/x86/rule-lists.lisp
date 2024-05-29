@@ -807,22 +807,22 @@
     x86isa::unsigned-byte-p-1-of-sub-af-spec32
 
     ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
-    x86isa::bitp-of-cf-spec-8
-    x86isa::bitp-of-cf-spec-16
-    x86isa::bitp-of-cf-spec-32
-    x86isa::bitp-of-cf-spec-64
-    x86isa::bitp-of-of-spec-8
-    x86isa::bitp-of-of-spec-16
-    x86isa::bitp-of-of-spec-32
-    x86isa::bitp-of-of-spec-64
-    x86isa::bitp-of-pf-spec-8
-    x86isa::bitp-of-pf-spec-16
-    x86isa::bitp-of-pf-spec-32
-    x86isa::bitp-of-pf-spec-64
-    x86isa::bitp-of-sf-spec-8
-    x86isa::bitp-of-sf-spec-16
-    x86isa::bitp-of-sf-spec-32
-    x86isa::bitp-of-sf-spec-64
+    x86isa::bitp-of-cf-spec8
+    x86isa::bitp-of-cf-spec16
+    x86isa::bitp-of-cf-spec32
+    x86isa::bitp-of-cf-spec64
+    x86isa::bitp-of-of-spec8
+    x86isa::bitp-of-of-spec16
+    x86isa::bitp-of-of-spec32
+    x86isa::bitp-of-of-spec64
+    x86isa::bitp-of-pf-spec8
+    x86isa::bitp-of-pf-spec16
+    x86isa::bitp-of-pf-spec32
+    x86isa::bitp-of-pf-spec64
+    x86isa::bitp-of-sf-spec8
+    x86isa::bitp-of-sf-spec16
+    x86isa::bitp-of-sf-spec32
+    x86isa::bitp-of-sf-spec64
     x86isa::bitp-of-zf-spec
     x86isa::bitp-of-add-af-spec8
     x86isa::bitp-of-add-af-spec16
@@ -1427,6 +1427,9 @@
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
+
+;; Do this late, to give the bitp rules a chance to fire first:
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
