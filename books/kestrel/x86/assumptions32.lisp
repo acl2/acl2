@@ -127,13 +127,13 @@
 
 ;; TODO: Add assumptions about the content of sections!
 (defun gen-standard-assumptions-mach-o-32 (target
-                                           parsed-pe
+                                           parsed-macho
                                            stack-slots)
   (declare (xargs :guard (and (lifter-targetp target)
                               (natp stack-slots))
                   :verify-guards nil ;todo
                   )
-           (ignore target parsed-pe) ;for now
+           (ignore target parsed-macho) ;for now
            )
   `((standard-state-assumption-32 x86)
     ;; The program counter is at the start of the routine to lift (this is
