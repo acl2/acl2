@@ -54,8 +54,8 @@
    (xdoc::p
      "These tools appeal to a configurable C preprocessor, and the prerequisite
       dependencies may not be present on all systems. For books which use the
-      default preprocessor \"cpp\", certification may controlled with the the
-      @(see build::uses-cpp) @(see build::cert_param) flag.")
+      default preprocessor \"cpp\", certification may be controlled with the
+      the @(see build::uses-cpp) @(see build::cert_param) flag.")
    (xdoc::p
      "The community books Makefile will autodetect whether \"cpp\" is
       available, and exclude books appropriately. Certification of such books
