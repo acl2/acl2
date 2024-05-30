@@ -126,6 +126,7 @@
             (gen-sections-assumptions-pe-32 sections base-of-code))))
 
 ;; TODO: Add assumptions about the content of sections!
+;; Note: This function is not very well tested.
 (defun gen-standard-assumptions-mach-o-32 (target
                                            parsed-macho
                                            stack-slots)
@@ -133,15 +134,21 @@
                               (natp stack-slots))
                   :verify-guards nil ;todo
                   )
-           (ignore target parsed-macho) ;for now
+           (ignore target) ;for now
            )
-  `((standard-state-assumption-32 x86)
-    ;; The program counter is at the start of the routine to lift (this is
-    ;; relative to the base of the code segment):
-    ;(equal (eip x86) ',offset-to-subroutine)
-    (stack-segment-assumptions32 ',stack-slots x86)
-    (code-and-stack-segments-separate x86) ;todo: allow this and other assumptions to be replaced by assumptions about a flat segmentation model
-    (return-address-okp x86)))
+  (let ((target 0)) ; todo: generalize - use the ignored target arg
+    `((standard-state-assumption-32 x86)
+      ;; The program counter is at the start of the routine to lift (this is
+      ;; relative to the base of the code segment):
+      ;;(equal (eip x86) ',offset-to-subroutine)
+      (stack-segment-assumptions32 ',stack-slots x86)
+      (code-and-stack-segments-separate x86) ;todo: allow this and other assumptions to be replaced by assumptions about a flat segmentation model
+      (return-address-okp x86)
+      (code-segment-assumptions32-for-code ',(acl2::get-mach-o-code parsed-macho)
+                                           ,target
+                                           x86)
+      ;; The PC is initially at the location of the lifting target:
+      (equal (eip x86) ,target))))
   ;; (let ((text-section-bytes (acl2::get-mach-o-code parsed-mach-o)) ;all the code, not just the given subroutine
   ;;       (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
   ;;       (subroutine-address (acl2::subroutine-address-mach-o subroutine-name parsed-mach-o)))
