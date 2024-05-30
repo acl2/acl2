@@ -1057,7 +1057,7 @@
                   (not (bvlt size x (+ 1 k)))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
 
-(defthmd bvlt-of-max-arg3
+(defthmd bvlt-of-max-arg3-constant-version-axe
   (implies (and (axe-rewrite-objective 't)
                 (syntaxp (and (quotep k)
                               (quotep size)))

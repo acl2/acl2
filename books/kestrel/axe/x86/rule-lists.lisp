@@ -4294,7 +4294,7 @@
             acl2::<-of-constant-and-+-of-constant ; for address calcs
             <-of-15-and-*-of-4
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-            acl2::bvlt-of-max-arg2
+            acl2::not-bvlt-of-max-arg2
             <-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
