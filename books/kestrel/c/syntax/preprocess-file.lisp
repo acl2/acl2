@@ -163,8 +163,8 @@
    ((out (or (not out)
              (stringp out))
          "This specifies the output file to which the preprocessed file is
-          saved. If @('nil'), a file will be created suitable with a name and
-          directory typical of temporary files (using the mktemp utility).")
+          saved. If @('nil'), a file will be created with a name and directory
+          typical of temporary files (see @(see oslib::tempfile)).")
     'nil)
    ((save "If @('t'), the output file is saved. If @('nil'), the file is
            removed after reading it in. If @(':auto'), the default value, the
@@ -305,8 +305,8 @@
    ((out-dir (or (not out-dir)
                  (stringp out-dir))
              "This specifies the directory that preprocessed output files are
-              saved to with posfix \".preprocessed\". If @('nil'), files will
-              be created with mktemp.")
+              saved to with posfix \".preprocessed\". If @('nil'), temporary
+              files will be created (see @(see oslib::tempfile))).")
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
