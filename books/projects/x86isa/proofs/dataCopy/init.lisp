@@ -67,21 +67,21 @@
 
 ;; O1 optimization:
 ;; 0000000000000000 <_copyData>:
-;;    0:	55                      push   %rbp
-;;    1:	48 89 e5                mov    %rsp,%rbp
-;;    4:	85 d2                   test   %edx,%edx
-;;    6:	74 1a                   je     22 <_copyData+0x22>
-;;    8:	89 d0                   mov    %edx,%eax
-;;    a:	48 c1 e0 02             shl    $0x2,%rax
-;;    e:	66 90                   xchg   %ax,%ax
-;;   10:	8b 0f                   mov    (%rdi),%ecx
-;;   12:	48 83 c7 04             add    $0x4,%rdi
-;;   16:	89 0e                   mov    %ecx,(%rsi)
-;;   18:	48 83 c6 04             add    $0x4,%rsi
-;;   1c:	48 83 c0 fc             add    $0xfffffffffffffffc,%rax
-;;   20:	75 ee                   jne    10 <_copyData+0x10>
-;;   22:	5d                      pop    %rbp
-;;   23:	c3                      retq
+;;    0:        55                      push   %rbp
+;;    1:        48 89 e5                mov    %rsp,%rbp
+;;    4:        85 d2                   test   %edx,%edx
+;;    6:        74 1a                   je     22 <_copyData+0x22>
+;;    8:        89 d0                   mov    %edx,%eax
+;;    a:        48 c1 e0 02             shl    $0x2,%rax
+;;    e:        66 90                   xchg   %ax,%ax
+;;   10:        8b 0f                   mov    (%rdi),%ecx
+;;   12:        48 83 c7 04             add    $0x4,%rdi
+;;   16:        89 0e                   mov    %ecx,(%rsi)
+;;   18:        48 83 c6 04             add    $0x4,%rsi
+;;   1c:        48 83 c0 fc             add    $0xfffffffffffffffc,%rax
+;;   20:        75 ee                   jne    10 <_copyData+0x10>
+;;   22:        5d                      pop    %rbp
+;;   23:        c3                      retq
 
 (defconst *copyData* ;; 15 instructions
   '(
