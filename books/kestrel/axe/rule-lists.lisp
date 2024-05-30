@@ -917,6 +917,7 @@
      ;; introduce-bvsx-25-7 ;fixme yuck
      bvsx-of-bvsx
      bvsx-of-bvchop
+     bvsx-when-equal-of-getbit-and-0
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
