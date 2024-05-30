@@ -141,19 +141,6 @@
       (concatenate 'string cbd filepath))))
 
 
-(define basename
-  ((filename stringp))
-  :returns (filename stringp)
-  :parents (preprocess-file)
-  :short "Extract the basename of a file path, assuming a Unix-style \"/\"
-          directory separator."
-  (b* (((mv success left right)
-        (acl2::split-string-last filename #\/)))
-    (if success
-        right
-      left)))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define preprocess-file
