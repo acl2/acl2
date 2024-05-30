@@ -2078,7 +2078,8 @@
 
             x86isa::x86-operand-to-zmm/mem
             64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
-            )))
+
+            acl2::integerp-of-ash)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
