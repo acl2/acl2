@@ -1471,7 +1471,7 @@
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:tydef ((name ident)))
-    (:typedef-ambig ((ident ident)))
+    (:tydef-ambig ((ident ident)))
     :pred tyspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
