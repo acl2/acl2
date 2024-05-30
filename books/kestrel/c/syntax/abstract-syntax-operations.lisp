@@ -27,37 +27,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-unary/postfix/primary-p ((expr exprp))
-  :returns (yes/no booleanp)
-  :short "Check if an expression is unary or postfix or primary."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to the grammar definition,
-     unary expressions include postfix and primary expressions;
-     the grammar defines expressions hierarchically.
-     So this test, performed on abstract syntax,
-     is equivalent to testing whether the expression
-     is a unary one according to the grammar."))
-  (and (member-eq (expr-kind expr)
-                  '(:ident
-                    :const
-                    :string
-                    :paren
-                    :gensel
-                    :arrsub
-                    :funcall
-                    :member
-                    :memberp
-                    :complit
-                    :unary
-                    :sizeof
-                    :sizeof-ambig
-                    :alignof))
-       t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defirrelevant irr-ident
   :short "An irrelevant identifier."
   :type identp
@@ -339,3 +308,34 @@
   :short "An irrelevant ensemble of translation units."
   :type transunit-ensemblep
   :body (transunit-ensemble nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-unary/postfix/primary-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is unary or postfix or primary."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to the grammar definition,
+     unary expressions include postfix and primary expressions;
+     the grammar defines expressions hierarchically.
+     So this test, performed on abstract syntax,
+     is equivalent to testing whether the expression
+     is a unary one according to the grammar."))
+  (and (member-eq (expr-kind expr)
+                  '(:ident
+                    :const
+                    :string
+                    :paren
+                    :gensel
+                    :arrsub
+                    :funcall
+                    :member
+                    :memberp
+                    :complit
+                    :unary
+                    :sizeof
+                    :sizeof-ambig
+                    :alignof))
+       t))
