@@ -18,6 +18,8 @@
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "oslib/rmtree" :dir :system)
+(include-book "oslib/tempfile" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 
 (include-book "file-paths")
@@ -154,64 +156,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Assumes tshell is started
-(define mktemp
-  ((file-prefix stringp)
-   &key
-   (state 'state))
-  :returns (mv (erp booleanp)
-               (filename stringp)
-               state)
-  :parents (preprocess-file)
-  :short "Make a temporary file by invoking mktemp via @(see acl2::tshell)."
-  (b* ((mktemp-cmd
-        (str::join (list "mktemp"
-                         "-t"
-                         (concatenate 'string file-prefix ".XXXXXX"))
-                   " "))
-       ((mv exit-status lines)
-        (acl2::tshell-call mktemp-cmd :print nil))
-       ((unless (int= 0 exit-status))
-        (er-soft-with
-          ""
-          "mktemp command ~x0 failed with nonzero exit status: ~x1"
-          mktemp-cmd
-          exit-status))
-       ((unless (consp lines))
-        (er-soft-with
-          ""
-          "mktemp command ~x0 did not return a file name"
-          mktemp-cmd)))
-    (value (first lines)))
-  :prepwork
-  ((defrulel stringp-of-car-when-string-listp
-     (implies (and (consp list)
-                   (string-listp list))
-              (stringp (car list))))))
-
-
-;; Assumes tshell is started
-(define remove-file
-  ((filename stringp)
-   &key
-   (state 'state))
-  :returns (mv erp nil state)
-  :parents (preprocess-file)
-  :short "Remove a file with @(see acl2::tshell)."
-  (b* ((remove-file-cmd (str::join (list "rm" filename) " "))
-       ((mv exit-status -)
-        (acl2::tshell-call remove-file-cmd :print nil :save nil))
-       ((unless (int= 0 exit-status))
-        (er-soft-with
-          ""
-          "remove-file command ~x0 failed with nonzero exit status: ~x1"
-          remove-file-cmd
-          exit-status)))
-    (value nil)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
   ((file filepathp
          "The C file to preprocess.")
@@ -274,10 +218,16 @@
         ((er out :iferr (iferr))
          (if out
              (value (absolute-filepath out))
-           (mktemp (basename filename))))
+           (b* (((mv temp state)
+                 (oslib::tempfile filename)))
+             (if temp
+                 (value temp)
+               (er-soft-with (iferr)
+                             "Could not create temporary file for ~x0"
+                             filename)))))
         (preprocess-cmd
-          (str::join (append (list* preprocessor "-o" out "-E" extra-args)
-                             (list filename))
+          (str::join (append (list* preprocessor "-E" extra-args)
+                             (list filename ">" out))
                      " "))
         ((mv exit-status -)
          (acl2::tshell-call preprocess-cmd :print nil :save nil))
@@ -300,7 +250,13 @@
         ((er - :iferr (iferr))
          (if save
              (value nil)
-           (remove-file out))))
+           (b* (((mv success state)
+                 (oslib::rmtree out)))
+             (if success
+                 (value nil)
+               (er-soft-with (iferr)
+                             "Could not remove output file: ~x0"
+                             out))))))
      (value (cons (and save out)
                   (and read (filedata bytes))))))
 
