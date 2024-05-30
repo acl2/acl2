@@ -201,7 +201,7 @@
        ;;  (x86-illegal-instruction msg start-rip temp-rip x86))
 
        ((the (unsigned-byte 8) mandatory-prefix)
-        (compute-mandatory-prefix-for-three-byte-opcode 
+        (compute-mandatory-prefix-for-three-byte-opcode
          proc-mode second-escape-byte opcode prefixes))
        (modr/m?
         (three-byte-opcode-ModR/M-p

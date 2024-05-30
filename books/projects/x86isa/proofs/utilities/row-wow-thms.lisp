@@ -82,7 +82,7 @@
   (implies (not (equal fd1 fd2))
            (equal (read-x86-file-des fd1 (write-x86-file-des fd2 fd2-field x86))
                   (read-x86-file-des fd1 x86)))
-  :hints (("Goal" 
+  :hints (("Goal"
            :cases ((x86p x86))
            :in-theory (e/d (read-x86-file-des
                             read-x86-file-des-logic
@@ -134,7 +134,7 @@
                             write-x86-file-contents-logic)
                            ()))))
 
-(defthm read-x86-file-contents-write-x86-file-contents-different-indices  
+(defthm read-x86-file-contents-write-x86-file-contents-different-indices
   (implies (and (not (equal name1 name2))
                 (x86p x86))
            (equal (read-x86-file-contents
