@@ -199,13 +199,13 @@ really good thing to do to keep the model simple.</p>"
 ;; I'm modeling only the following oflags for now (from
 ;; /usr/include/asm-generic/fcntl.h):
 
-(defconst *O_RDONLY*	#x00000000) ;;  open for reading only
-(defconst *O_WRONLY*	#x00000001) ;;  open for writing only
+(defconst *O_RDONLY*    #x00000000) ;;  open for reading only
+(defconst *O_WRONLY*    #x00000001) ;;  open for writing only
 (defconst *O_RDWR*      #x00000002) ;;  open for reading and writing
-(defconst *O_CREAT*	#x00000100) ;;  create file if it does not exist
+(defconst *O_CREAT*     #x00000100) ;;  create file if it does not exist
 (defconst *O_EXCL*      #x00000200) ;;  error if O_CREAT and file exists
-(defconst *O_TRUNC*	#x00001000) ;;  truncate size to 0
-(defconst *O_APPEND*	#x00002000) ;;  append on each write
+(defconst *O_TRUNC*     #x00001000) ;;  truncate size to 0
+(defconst *O_APPEND*    #x00002000) ;;  append on each write
 
 ;; I'm not going to worry about mode (which I'll probably call
 ;; :permissions in the future) right now.

@@ -76,8 +76,8 @@
   :modr/m t
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-  
-  :body  
+
+  :body
 
   (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*

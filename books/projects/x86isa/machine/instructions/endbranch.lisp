@@ -41,7 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -180,13 +180,13 @@
 
 (defconst *xchg*
   '(
-    ;; #x48 #xc7 #xc0 #x01 #x00 #x00 #x00 ;; movq	$0x1, %rax
-    ;; #x49 #xb8 #xff #xff #xff #xff #x00 #x00 #x00 #x00 ;; movabsq	$0xffffffff, %r8
-    ;; #x49 #x90 ;; xchgq	%r8, %rax
+    ;; #x48 #xc7 #xc0 #x01 #x00 #x00 #x00 ;; movq       $0x1, %rax
+    ;; #x49 #xb8 #xff #xff #xff #xff #x00 #x00 #x00 #x00 ;; movabsq     $0xffffffff, %r8
+    ;; #x49 #x90 ;; xchgq       %r8, %rax
 
-    #x48 #xc7 #xc0 #x01 #x00 #x00 #x00                ; movq	$0x1, %rax
-    #x49 #xb8 #xff #xff #xff #xff #x00 #x00 #x00 #x00 ; movabsq	$0xffffffff, %r8
-    #x66 #x41 #x90                                    ; xchgw	%r8w, %ax
+    #x48 #xc7 #xc0 #x01 #x00 #x00 #x00                ; movq    $0x1, %rax
+    #x49 #xb8 #xff #xff #xff #xff #x00 #x00 #x00 #x00 ; movabsq         $0xffffffff, %r8
+    #x66 #x41 #x90                                    ; xchgw   %r8w, %ax
 
     ))
 

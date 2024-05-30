@@ -60,7 +60,7 @@
 
 (defconst *misc-feature-flags*
   '(:1g-pages
-    :acpi :adx 
+    :acpi :adx
     ;; The following flag was listed as AESNI in the CPUID instruction
     ;; description, but on other instructions' pages, it is listed as AES.
     :aes
@@ -86,9 +86,9 @@
 
 (defconst *supported-feature-flags*
   (append *fp-simd-feature-flags*
-	  (list :avx :avx2 :bmi1 :bmi2)
-	  *avx512-feature-flags*
-	  *mode-feature-flags*
-	  *misc-feature-flags*))
+          (list :avx :avx2 :bmi1 :bmi2)
+          *avx512-feature-flags*
+          *mode-feature-flags*
+          *misc-feature-flags*))
 
 ;; ----------------------------------------------------------------------

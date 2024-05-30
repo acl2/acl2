@@ -734,7 +734,7 @@
     (defthm true-listp-of-cdr-cdr-assoc-rip-ret-alistp
       (implies (rip-ret-alistp xs)
                (true-listp (cdr (cdr (assoc-equal rip xs)))))
-      :hints (("goal" 
+      :hints (("goal"
                :in-theory (e/d (rip-ret-alistp) ())))))
 
    (local

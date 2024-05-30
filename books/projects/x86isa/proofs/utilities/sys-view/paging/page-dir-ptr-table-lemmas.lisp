@@ -42,7 +42,7 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
-(local 
+(local
  (in-theory
   (e/d (multiple-of-8-disjoint-with-addr-range-and-open-qword-paddr-list-to-member-p)
        (unsigned-byte-p signed-byte-p))))
@@ -209,7 +209,7 @@
                                     ia32e-page-tablesbits->r/w
                                     ia32e-page-tablesbits->p
                                     ia32e-page-tablesbits-fix)
-                                   ())           
+                                   ())
            :use ((:instance xlate-equiv-entries-and-logtail
                             (n 30)))))
   :rule-classes :congruence)
