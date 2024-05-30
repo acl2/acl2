@@ -160,8 +160,13 @@
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
-            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll)
-          *instruction-decoding-and-spec-rules*))
+            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll
+
+            ;; Improved versions of instruction semantic functions:
+            x86isa::x86-cbw/cwd/cdqe-redef)
+          (set-difference-equal *instruction-decoding-and-spec-rules*
+                                ;; We remove these because we have better versions:
+                                '(x86isa::x86-cbw/cwd/cdqe))))
 
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
