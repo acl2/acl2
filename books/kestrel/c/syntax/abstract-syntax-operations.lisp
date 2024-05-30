@@ -338,4 +338,5 @@
                     :sizeof
                     :sizeof-ambig
                     :alignof))
-       t))
+       t)
+  :hooks (:fix))
