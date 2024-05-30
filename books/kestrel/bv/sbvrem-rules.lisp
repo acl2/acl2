@@ -33,6 +33,7 @@
                            bvchop-upper-bound-linear-strong)))
 
 ;TODO: really it's "non-negative"
+;See also sbvrem-rewrite.
 (defthmd sbvrem-when-positive
   (implies (and (sbvle size 0 x)
                 (sbvle size 0 y)

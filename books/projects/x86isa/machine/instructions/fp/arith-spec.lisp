@@ -58,16 +58,16 @@
 ;; Specifications of FP MAX and MIN:
 
 (define sse-max/min-special (kind1
-			     (sign1     :type (unsigned-byte 1))
-			     (exp1  natp)
-			     (implicit1 :type (unsigned-byte 1))
-			     (frac1 natp)
-			     kind2
-			     (sign2     :type (unsigned-byte 1))
-			     (exp2 natp)
-			     (implicit2 :type (unsigned-byte 1))
-			     (frac2 natp)
-			     (operation :type (integer 0 36)))
+                             (sign1     :type (unsigned-byte 1))
+                             (exp1  natp)
+                             (implicit1 :type (unsigned-byte 1))
+                             (frac1 natp)
+                             kind2
+                             (sign2     :type (unsigned-byte 1))
+                             (exp2 natp)
+                             (implicit2 :type (unsigned-byte 1))
+                             (frac2 natp)
+                             (operation :type (integer 0 36)))
   :long "<p>This function checks whether the operands are SNaN or
   QNaN. If at least one of them is NaN or both of them are zeros, then
   it returns the second operand.  It also handles infinities.</p>
@@ -76,60 +76,60 @@
   invalid)</tt>.</p>"
   (cond
    ((or (eq kind1 'snan) (eq kind1 'qnan) (eq kind1 'indef)
-	(eq kind2 'snan) (eq kind2 'qnan) (eq kind2 'indef))
+        (eq kind2 'snan) (eq kind2 'qnan) (eq kind2 'indef))
     (mv t sign2 exp2 implicit2 frac2 t))
    ((and (eq kind1 'zero) (eq kind2 'zero))
     (mv t sign2 exp2 implicit2 frac2 nil))
    ((eq kind1 'inf)
     (if (or (and (int= operation #.*OP-MAX*) (int= sign1 0))
-	    (and (int= operation #.*OP-MIN*) (int= sign1 1)))
-	(mv t sign1 exp1 implicit1 frac1 nil)
+            (and (int= operation #.*OP-MIN*) (int= sign1 1)))
+        (mv t sign1 exp1 implicit1 frac1 nil)
       (mv t sign2 exp2 implicit2 frac2 nil)))
    ((eq kind2 'inf)
     (if (or (and (int= operation #.*OP-MAX*) (int= sign2 0))
-	    (and (int= operation #.*OP-MIN*) (int= sign2 1)))
-	(mv t sign2 exp2 implicit2 frac2 nil)
+            (and (int= operation #.*OP-MIN*) (int= sign2 1)))
+        (mv t sign2 exp2 implicit2 frac2 nil)
       (mv t sign1 exp1 implicit1 frac1 nil)))
    (t (mv nil 0 0 0 0 nil)))
   ///
 
   (defthm integerp-sse-max/min-special-1
     (implies (and (integerp sign1) (integerp sign2))
-	     (integerp (mv-nth 1 (sse-max/min-special
-				  kind1 sign1 exp1 implicit1 frac1
-				  kind2 sign2 exp2 implicit2 frac2
-				  operation))))
+             (integerp (mv-nth 1 (sse-max/min-special
+                                  kind1 sign1 exp1 implicit1 frac1
+                                  kind2 sign2 exp2 implicit2 frac2
+                                  operation))))
     :rule-classes :type-prescription)
 
   (defthm integerp-sse-max/min-special-2
     (implies (and (integerp exp1) (integerp exp2))
-	     (integerp (mv-nth 2 (sse-max/min-special
-				  kind1 sign1 exp1 implicit1 frac1
-				  kind2 sign2 exp2 implicit2 frac2
-				  operation))))
+             (integerp (mv-nth 2 (sse-max/min-special
+                                  kind1 sign1 exp1 implicit1 frac1
+                                  kind2 sign2 exp2 implicit2 frac2
+                                  operation))))
     :rule-classes :type-prescription)
 
   (defthm integerp-sse-max/min-special-3
     (implies (and (integerp implicit1) (integerp implicit2))
-	     (integerp (mv-nth 3 (sse-max/min-special
-				  kind1 sign1 exp1 implicit1 frac1
-				  kind2 sign2 exp2 implicit2 frac2
-				  operation))))
+             (integerp (mv-nth 3 (sse-max/min-special
+                                  kind1 sign1 exp1 implicit1 frac1
+                                  kind2 sign2 exp2 implicit2 frac2
+                                  operation))))
     :rule-classes :type-prescription)
 
   (defthm integerp-sse-max/min-special-4
     (implies (and (integerp frac1) (integerp frac2))
-	     (integerp (mv-nth 4 (sse-max/min-special
-				  kind1 sign1 exp1 implicit1 frac1
-				  kind2 sign2 exp2 implicit2 frac2
-				  operation))))
+             (integerp (mv-nth 4 (sse-max/min-special
+                                  kind1 sign1 exp1 implicit1 frac1
+                                  kind2 sign2 exp2 implicit2 frac2
+                                  operation))))
     :rule-classes :type-prescription))
 
 (define sse-max/min-sign (rat rat1 sign1 sign2)
   :guard (and (rationalp rat)
-	      (rationalp rat1)
-	      (integerp sign1)
-	      (integerp sign2))
+              (rationalp rat1)
+              (integerp sign1)
+              (integerp sign2))
   :inline t
   :no-function t
   (if (eql rat rat1) sign1 sign2)
@@ -137,68 +137,68 @@
 
   (defthm integerp-sse-max/min-sign
     (implies (forced-and (integerp sign1)
-			 (integerp sign2))
-	     (integerp (sse-max/min-sign rat rat1 sign1 sign2)))
+                         (integerp sign2))
+             (integerp (sse-max/min-sign rat rat1 sign1 sign2)))
     :rule-classes :type-prescription))
 
 (define sse-max/min ((operation :type (integer 0 36))
-		     (op1 natp)
-		     (op2 natp)
-		     (mxcsr :type (unsigned-byte 32))
-		     (exp-width posp)
-		     (frac-width posp))
+                     (op1 natp)
+                     (op2 natp)
+                     (mxcsr :type (unsigned-byte 32))
+                     (exp-width posp)
+                     (frac-width posp))
 
   (b* ((mxcsr (mbe :logic (loghead 32 mxcsr)
                    :exec mxcsr))
        ((mv kind1 sign1 exp1 implicit1 frac1)
-	(fp-decode op1 exp-width frac-width))
+        (fp-decode op1 exp-width frac-width))
        ((mv kind2 sign2 exp2 implicit2 frac2)
-	(fp-decode op2 exp-width frac-width))
+        (fp-decode op2 exp-width frac-width))
        (daz (logbitp #.*mxcsr-daz* mxcsr))
        ((mv kind1 exp1 frac1)
-	(sse-daz kind1 exp1 frac1 daz))
+        (sse-daz kind1 exp1 frac1 daz))
        ((mv kind2 exp2 frac2)
-	(sse-daz kind2 exp2 frac2 daz))
+        (sse-daz kind2 exp2 frac2 daz))
        ((mv special-ok sign exp & frac invalid)
-	(sse-max/min-special kind1 sign1 exp1 implicit1 frac1
-			     kind2 sign2 exp2 implicit2 frac2
-			     operation))
+        (sse-max/min-special kind1 sign1 exp1 implicit1 frac1
+                             kind2 sign2 exp2 implicit2 frac2
+                             operation))
 
        ;; Check invalid operation
        (mxcsr (if invalid (!mxcsrBits->ie 1 mxcsr) mxcsr))
        (im (logbitp #.*mxcsr-im* mxcsr))
        ((when (and invalid (not im)))
-	(mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
+        (mv 'invalid-operand-exception-is-not-masked 0 mxcsr))
 
        ;; Check denormal operand
        (de (denormal-exception kind1 kind2))
        (mxcsr (if de (!mxcsrBits->de 1 mxcsr) mxcsr))
        (dm (logbitp #.*mxcsr-dm* mxcsr))
        ((when (and de (not dm)))
-	(mv 'denormal-operand-exception-is-not-masked 0 mxcsr)))
+        (mv 'denormal-operand-exception-is-not-masked 0 mxcsr)))
 
     (if special-ok
-	(mv nil
-	    (fp-encode-integer sign exp frac exp-width frac-width)
-	    mxcsr)
+        (mv nil
+            (fp-encode-integer sign exp frac exp-width frac-width)
+            mxcsr)
       (b* ((bias (nfix (ec-call (RTL::bias (list nil (1+ frac-width) exp-width)))))
-	   (rat1 (fp-to-rat sign1 exp1 frac1 bias exp-width frac-width))
-	   (rat2 (fp-to-rat sign2 exp2 frac2 bias exp-width frac-width))
-	   (rat (case operation
-		  (#.*OP-MAX* (if (> rat1 rat2) rat1 rat2))
-		  (#.*OP-MIN* (if (< rat1 rat2) rat1 rat2))
-		  ;; Should never be reached.
-		  (otherwise 0)))
+           (rat1 (fp-to-rat sign1 exp1 frac1 bias exp-width frac-width))
+           (rat2 (fp-to-rat sign2 exp2 frac2 bias exp-width frac-width))
+           (rat (case operation
+                  (#.*OP-MAX* (if (> rat1 rat2) rat1 rat2))
+                  (#.*OP-MIN* (if (< rat1 rat2) rat1 rat2))
+                  ;; Should never be reached.
+                  (otherwise 0)))
 
-	   (sign (sse-max/min-sign rat rat1 sign1 sign2))
+           (sign (sse-max/min-sign rat rat1 sign1 sign2))
 
-	   (fp-result
-	    (rat-to-fp rat sign
-		       nil nil nil 0 ;; rc will not be used here.
-		       ;; I just put a dummy value 0.
-		       exp-width frac-width)))
+           (fp-result
+            (rat-to-fp rat sign
+                       nil nil nil 0 ;; rc will not be used here.
+                       ;; I just put a dummy value 0.
+                       exp-width frac-width)))
 
-	(mv nil fp-result mxcsr))))
+        (mv nil fp-result mxcsr))))
   ///
 
   (defthm integerp-result-sse-max/min
@@ -217,15 +217,15 @@
 ;; Single-Precision Operations:
 
 (define sp-sse-max/min ((operation :type (integer 0 36))
-			(op1       :type (unsigned-byte 32))
-			(op2       :type (unsigned-byte 32))
-			(mxcsr     :type (unsigned-byte 32)))
+                        (op1       :type (unsigned-byte 32))
+                        (op2       :type (unsigned-byte 32))
+                        (mxcsr     :type (unsigned-byte 32)))
   (b* (((mv flg result mxcsr)
-	(sse-max/min operation op1 op2 mxcsr
-		     #.*IEEE-SP-EXP-WIDTH* #.*IEEE-SP-FRAC-WIDTH*))
+        (sse-max/min operation op1 op2 mxcsr
+                     #.*IEEE-SP-EXP-WIDTH* #.*IEEE-SP-FRAC-WIDTH*))
        (result (n32 result))
        (mxcsr (mbe :logic (n32 mxcsr)
-		   :exec  mxcsr)))
+                   :exec  mxcsr)))
     (mv flg result mxcsr))
   ///
 
@@ -244,15 +244,15 @@
 ;; Double-Precision Operations:
 
 (define dp-sse-max/min ((operation :type (integer 0 36))
-			(op1       :type (unsigned-byte 64))
-			(op2       :type (unsigned-byte 64))
-			(mxcsr     :type (unsigned-byte 32)))
+                        (op1       :type (unsigned-byte 64))
+                        (op2       :type (unsigned-byte 64))
+                        (mxcsr     :type (unsigned-byte 32)))
   (b* (((mv flg result mxcsr)
-	(sse-max/min operation op1 op2 mxcsr
-		     #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
+        (sse-max/min operation op1 op2 mxcsr
+                     #.*IEEE-DP-EXP-WIDTH* #.*IEEE-DP-FRAC-WIDTH*))
        (result (n64 result))
        (mxcsr (mbe :logic (n32 mxcsr)
-		   :exec  mxcsr)))
+                   :exec  mxcsr)))
     (mv flg result mxcsr))
   ///
 
@@ -273,9 +273,9 @@
 ;; Top-level Single and Double Precision Arithmetic Operations:
 
 (define sp-sse-add/sub/mul/div/max/min ((operation :type (integer 0 36))
-					(op1       :type (unsigned-byte 32))
-					(op2       :type (unsigned-byte 32))
-					(mxcsr     :type (unsigned-byte 32)))
+                                        (op1       :type (unsigned-byte 32))
+                                        (op2       :type (unsigned-byte 32))
+                                        (mxcsr     :type (unsigned-byte 32)))
   (if (or (int= operation #.*OP-MAX*) (int= operation #.*OP-MIN*))
       (sp-sse-max/min operation op1 op2 mxcsr)
     (sp-sse-add/sub/mul/div operation op1 op2 mxcsr))
@@ -295,9 +295,9 @@
     :gen-linear t))
 
 (define dp-sse-add/sub/mul/div/max/min ((operation :type (integer 0 36))
-					(op1       :type (unsigned-byte 64))
-					(op2       :type (unsigned-byte 64))
-					(mxcsr     :type (unsigned-byte 32)))
+                                        (op1       :type (unsigned-byte 64))
+                                        (op2       :type (unsigned-byte 64))
+                                        (mxcsr     :type (unsigned-byte 32)))
   (if (or (int= operation #.*OP-MAX*) (int= operation #.*OP-MIN*))
       (dp-sse-max/min operation op1 op2 mxcsr)
     (dp-sse-add/sub/mul/div operation op1 op2 mxcsr))

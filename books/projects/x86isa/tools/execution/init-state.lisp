@@ -39,7 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "../../machine/x86"
-	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -65,18 +65,18 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((addr (caar alst))
-	    (byte (cdar alst))
-	    (rest (cdr  alst)))
-	(and (n64p addr)
-	     (n08p byte)
-	     (n64p-byte-alistp rest)))))
+            (byte (cdar alst))
+            (rest (cdr  alst)))
+        (and (n64p addr)
+             (n08p byte)
+             (n64p-byte-alistp rest)))))
   ///
 
   (defthm n64p-byte-alistp-fwd-chain-to-alistp
     (implies (n64p-byte-alistp alst)
-	     (alistp alst))
+             (alistp alst))
     :rule-classes :forward-chaining))
 
 (define load-program-into-memory
@@ -114,26 +114,26 @@
 
 
   (cond ((endp n64-bytes-lst) (mv nil x86))
-	(t
-	 (b* ((n64-addr (caar n64-bytes-lst))
-	      (byte (cdar n64-bytes-lst))
-	      ((mv flg addr)
-	       (let ((i48-addr (n64-to-i64 n64-addr)))
-		 (if (canonical-address-p i48-addr)
-		     (mv nil i48-addr)
-		   (mv t n64-addr))))
-	      ((when flg)
-	       (mv (cons 'load-program-into-memory 'non-canonical-address) x86))
-	      ((mv flg x86) (wml08 addr byte x86))
-	      ((when flg)
-	       (mv (cons 'load-program-into-memory 'wml08-error) x86)))
-	   (load-program-into-memory (cdr n64-bytes-lst) x86))))
+        (t
+         (b* ((n64-addr (caar n64-bytes-lst))
+              (byte (cdar n64-bytes-lst))
+              ((mv flg addr)
+               (let ((i48-addr (n64-to-i64 n64-addr)))
+                 (if (canonical-address-p i48-addr)
+                     (mv nil i48-addr)
+                   (mv t n64-addr))))
+              ((when flg)
+               (mv (cons 'load-program-into-memory 'non-canonical-address) x86))
+              ((mv flg x86) (wml08 addr byte x86))
+              ((when flg)
+               (mv (cons 'load-program-into-memory 'wml08-error) x86)))
+           (load-program-into-memory (cdr n64-bytes-lst) x86))))
 
   ///
 
   (defthm x86p-mv-nth-1-load-program-into-memory
     (implies (x86p x86)
-	     (x86p (mv-nth 1 (load-program-into-memory n64-program-lst x86))))))
+             (x86p (mv-nth 1 (load-program-into-memory n64-program-lst x86))))))
 
 ;; ======================================================================
 
@@ -148,14 +148,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index *64-bit-general-purpose-registers-len*)
-	     (unsigned-byte-p 64 value)
-	     (rgfi-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index *64-bit-general-purpose-registers-len*)
+             (unsigned-byte-p 64 value)
+             (rgfi-alistp rest))))))
 
 (define !rgfi-from-alist (rgf-alist x86)
   :guard (rgfi-alistp rgf-alist)
@@ -164,15 +164,15 @@
   @('rgf-alist'), which is required to be a @('rgfi-alistp')."
 
   (cond ((endp rgf-alist) x86)
-	(t (let ((x86 (!rgfi (caar rgf-alist) (n64-to-i64 (cdar rgf-alist)) x86)))
-	     (!rgfi-from-alist (cdr rgf-alist) x86))))
+        (t (let ((x86 (!rgfi (caar rgf-alist) (n64-to-i64 (cdar rgf-alist)) x86)))
+             (!rgfi-from-alist (cdr rgf-alist) x86))))
 
   ///
 
   (defthm x86p-!rgfi-from-alist
     (implies (and (rgfi-alistp rgf-alist)
-		  (x86p x86))
-	     (x86p (!rgfi-from-alist rgf-alist x86)))))
+                  (x86p x86))
+             (x86p (!rgfi-from-alist rgf-alist x86)))))
 
 (define ctri-alistp (alst)
   :parents (initialize-x86-state)
@@ -183,14 +183,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index *control-register-names-len*)
-	     (unsigned-byte-p 64 value)
-	     (ctri-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index *control-register-names-len*)
+             (unsigned-byte-p 64 value)
+             (ctri-alistp rest))))))
 
 (define !ctri-from-alist (ctr-alist x86)
   :parents (initialize-x86-state)
@@ -199,14 +199,14 @@
 
   :guard (ctri-alistp ctr-alist)
   (cond ((endp ctr-alist) x86)
-	(t (let ((x86 (!ctri (caar ctr-alist) (cdar ctr-alist) x86)))
-	     (!ctri-from-alist (cdr ctr-alist) x86))))
+        (t (let ((x86 (!ctri (caar ctr-alist) (cdar ctr-alist) x86)))
+             (!ctri-from-alist (cdr ctr-alist) x86))))
   ///
 
   (defthm x86p-!ctri-from-alist
     (implies (and (ctri-alistp ctr-alist)
-		  (x86p x86))
-	     (x86p (!ctri-from-alist ctr-alist x86)))))
+                  (x86p x86))
+             (x86p (!ctri-from-alist ctr-alist x86)))))
 
 (define msri-alistp (alst)
   :parents (initialize-x86-state)
@@ -218,14 +218,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index *model-specific-register-names-len*)
-	     (unsigned-byte-p 64 value)
-	     (msri-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index *model-specific-register-names-len*)
+             (unsigned-byte-p 64 value)
+             (msri-alistp rest))))))
 
 (define !msri-from-alist (msr-alist x86)
 
@@ -236,15 +236,15 @@
   :guard (msri-alistp msr-alist)
 
   (cond ((endp msr-alist) x86)
-	(t (let ((x86 (!msri (caar msr-alist) (cdar msr-alist) x86)))
-	     (!msri-from-alist (cdr msr-alist) x86))))
+        (t (let ((x86 (!msri (caar msr-alist) (cdar msr-alist) x86)))
+             (!msri-from-alist (cdr msr-alist) x86))))
 
   ///
 
   (defthm x86p-!msri-from-alist
     (implies (and (msri-alistp alist)
-		  (x86p x86))
-	     (x86p (!msri-from-alist alist x86)))))
+                  (x86p x86))
+             (x86p (!msri-from-alist alist x86)))))
 
 (define seg-visiblei-alistp (alst)
   :parents (initialize-x86-state)
@@ -256,14 +256,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index *segment-register-names-len*)
-	     (unsigned-byte-p 16 value)
-	     (seg-visiblei-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index *segment-register-names-len*)
+             (unsigned-byte-p 16 value)
+             (seg-visiblei-alistp rest))))))
 
 (define !seg-visiblei-from-alist (seg-visible-alist x86)
 
@@ -274,17 +274,17 @@
   :guard (seg-visiblei-alistp seg-visible-alist)
 
   (cond ((endp seg-visible-alist) x86)
-	(t (let ((x86 (!seg-visiblei (caar seg-visible-alist)
-				     (cdar seg-visible-alist)
-				     x86)))
-	     (!seg-visiblei-from-alist (cdr seg-visible-alist) x86))))
+        (t (let ((x86 (!seg-visiblei (caar seg-visible-alist)
+                                     (cdar seg-visible-alist)
+                                     x86)))
+             (!seg-visiblei-from-alist (cdr seg-visible-alist) x86))))
 
   ///
 
   (defthm x86p-!seg-visiblei-from-alist
     (implies (and (seg-visiblei-alistp alist)
-		  (x86p x86))
-	     (x86p (!seg-visiblei-from-alist alist x86)))))
+                  (x86p x86))
+             (x86p (!seg-visiblei-from-alist alist x86)))))
 
 (define seg-hidden-basei-alistp (alst)
   :parents (initialize-x86-state)
@@ -296,14 +296,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index #.*segment-register-names-len*)
-	     (unsigned-byte-p 64 value)
-	     (seg-hidden-basei-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index #.*segment-register-names-len*)
+             (unsigned-byte-p 64 value)
+             (seg-hidden-basei-alistp rest))))))
 
 (define seg-hidden-limiti-alistp (alst)
   :parents (initialize-x86-state)
@@ -315,14 +315,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index #.*segment-register-names-len*)
-	     (unsigned-byte-p 32 value)
-	     (seg-hidden-limiti-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index #.*segment-register-names-len*)
+             (unsigned-byte-p 32 value)
+             (seg-hidden-limiti-alistp rest))))))
 
 (define seg-hidden-attri-alistp (alst)
   :parents (initialize-x86-state)
@@ -334,14 +334,14 @@
   (if (atom alst)
       (equal alst nil)
     (if (atom (car alst))
-	nil
+        nil
       (let ((index (caar alst))
-	    (value (cdar alst))
-	    (rest  (cdr  alst)))
-	(and (natp index)
-	     (< index #.*segment-register-names-len*)
-	     (unsigned-byte-p 16 value)
-	     (seg-hidden-attri-alistp rest))))))
+            (value (cdar alst))
+            (rest  (cdr  alst)))
+        (and (natp index)
+             (< index #.*segment-register-names-len*)
+             (unsigned-byte-p 16 value)
+             (seg-hidden-attri-alistp rest))))))
 
 (define !seg-hidden-basei-from-alist (seg-hidden-alist x86)
 
@@ -353,18 +353,18 @@
   :guard (seg-hidden-basei-alistp seg-hidden-alist)
 
   (cond ((endp seg-hidden-alist) x86)
-	(t (let ((x86 (!seg-hidden-basei
-		       (caar seg-hidden-alist)
-		       (cdar seg-hidden-alist)
-		       x86)))
-	     (!seg-hidden-basei-from-alist (cdr seg-hidden-alist) x86))))
+        (t (let ((x86 (!seg-hidden-basei
+                       (caar seg-hidden-alist)
+                       (cdar seg-hidden-alist)
+                       x86)))
+             (!seg-hidden-basei-from-alist (cdr seg-hidden-alist) x86))))
 
   ///
 
   (defthm x86p-!seg-hidden-basei-from-alist
     (implies (and (seg-hidden-basei-alistp alist)
-		  (x86p x86))
-	     (x86p (!seg-hidden-basei-from-alist alist x86)))))
+                  (x86p x86))
+             (x86p (!seg-hidden-basei-from-alist alist x86)))))
 
 (define !seg-hidden-limiti-from-alist (seg-hidden-alist x86)
 
@@ -376,18 +376,18 @@
   :guard (seg-hidden-limiti-alistp seg-hidden-alist)
 
   (cond ((endp seg-hidden-alist) x86)
-	(t (let ((x86 (!seg-hidden-limiti
-		       (caar seg-hidden-alist)
-		       (cdar seg-hidden-alist)
-		       x86)))
-	     (!seg-hidden-limiti-from-alist (cdr seg-hidden-alist) x86))))
+        (t (let ((x86 (!seg-hidden-limiti
+                       (caar seg-hidden-alist)
+                       (cdar seg-hidden-alist)
+                       x86)))
+             (!seg-hidden-limiti-from-alist (cdr seg-hidden-alist) x86))))
 
   ///
 
   (defthm x86p-!seg-hidden-limiti-from-alist
     (implies (and (seg-hidden-limiti-alistp alist)
-		  (x86p x86))
-	     (x86p (!seg-hidden-limiti-from-alist alist x86)))))
+                  (x86p x86))
+             (x86p (!seg-hidden-limiti-from-alist alist x86)))))
 
 (define !seg-hidden-attri-from-alist (seg-hidden-alist x86)
 
@@ -399,54 +399,54 @@
   :guard (seg-hidden-attri-alistp seg-hidden-alist)
 
   (cond ((endp seg-hidden-alist) x86)
-	(t (let ((x86 (!seg-hidden-attri
-		       (caar seg-hidden-alist)
-		       (cdar seg-hidden-alist)
-		       x86)))
-	     (!seg-hidden-attri-from-alist (cdr seg-hidden-alist) x86))))
+        (t (let ((x86 (!seg-hidden-attri
+                       (caar seg-hidden-alist)
+                       (cdar seg-hidden-alist)
+                       x86)))
+             (!seg-hidden-attri-from-alist (cdr seg-hidden-alist) x86))))
 
   ///
 
   (defthm x86p-!seg-hidden-attri-from-alist
     (implies (and (seg-hidden-attri-alistp alist)
-		  (x86p x86))
-	     (x86p (!seg-hidden-attri-from-alist alist x86)))))
+                  (x86p x86))
+             (x86p (!seg-hidden-attri-from-alist alist x86)))))
 
 ;; ======================================================================
 
 (define init-x86-state
   (status start-addr
-	  gprs ctrs msrs seg-visibles
-	  seg-hidden-bases
-	  seg-hidden-limits
-	  seg-hidden-attrs
-	  flags mem x86)
+          gprs ctrs msrs seg-visibles
+          seg-hidden-bases
+          seg-hidden-limits
+          seg-hidden-attrs
+          flags mem x86)
 
   :parents (initialize-x86-state)
   :short "A convenient function to populate the x86 state's
   instruction pointer, registers, and memory."
   :guard (and (canonical-address-p start-addr)
-	      (rgfi-alistp gprs)
-	      (ctri-alistp ctrs)
-	      (msri-alistp msrs)
-	      (seg-visiblei-alistp seg-visibles)
-	      (seg-hidden-basei-alistp seg-hidden-bases)
-	      (seg-hidden-limiti-alistp seg-hidden-limits)
-	      (seg-hidden-attri-alistp seg-hidden-attrs)
-	      (n64p flags)
-	      (n64p-byte-alistp mem))
+              (rgfi-alistp gprs)
+              (ctri-alistp ctrs)
+              (msri-alistp msrs)
+              (seg-visiblei-alistp seg-visibles)
+              (seg-hidden-basei-alistp seg-hidden-bases)
+              (seg-hidden-limiti-alistp seg-hidden-limits)
+              (seg-hidden-attri-alistp seg-hidden-attrs)
+              (n64p flags)
+              (n64p-byte-alistp mem))
 
   :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
   :returns (mv flg
-	       (x86 x86p :hyp :guard))
+               (x86 x86p :hyp :guard))
 
   (b* ((x86 (!ms status x86))
        (x86 (!fault status x86))
        (x86 (!rip start-addr x86))
        ((mv flg0 x86)
-	(load-program-into-memory mem x86))
+        (load-program-into-memory mem x86))
        ((when flg0)
-	(mv (cons 'load-program-into-memory flg0) x86))
+        (mv (cons 'load-program-into-memory flg0) x86))
        (x86 (!rgfi-from-alist gprs x86)) ;; General-Purpose Registers
        (x86 (!msri-from-alist msrs x86)) ;; Model-Specific Registers
        (x86 (!ctri-from-alist ctrs x86)) ;; Control Registers
@@ -460,19 +460,19 @@
 ;; ======================================================================
 
 (define init-x86-state-64 (status
-			   (start-addr canonical-address-p)
-			   (gprs rgfi-alistp)
-			   (ctrs ctri-alistp)
-			   (msrs msri-alistp)
-			   (seg-visibles seg-visiblei-alistp)
-			   (seg-hidden-bases seg-hidden-basei-alistp)
-			   (seg-hidden-limits seg-hidden-limiti-alistp)
-			   (seg-hidden-attrs seg-hidden-attri-alistp)
-			   (flags n64p)
-			   (mem n64p-byte-alistp)
-			   x86)
+                           (start-addr canonical-address-p)
+                           (gprs rgfi-alistp)
+                           (ctrs ctri-alistp)
+                           (msrs msri-alistp)
+                           (seg-visibles seg-visiblei-alistp)
+                           (seg-hidden-bases seg-hidden-basei-alistp)
+                           (seg-hidden-limits seg-hidden-limiti-alistp)
+                           (seg-hidden-attrs seg-hidden-attri-alistp)
+                           (flags n64p)
+                           (mem n64p-byte-alistp)
+                           x86)
   :returns (mv flg
-	       (x86 x86p :hyp :guard))
+               (x86 x86p :hyp :guard))
   :parents (initialize-x86-state)
   :short "A variant of @(tsee init-x86-state) that ensures 64-bit mode."
   :long
@@ -492,12 +492,12 @@
    But we find this function convenient for now.
    </p>"
   (b* (((mv flg x86)
-	(init-x86-state status start-addr gprs ctrs msrs
-			seg-visibles
-			seg-hidden-bases
-			seg-hidden-limits
-			seg-hidden-attrs
-			flags mem x86))
+        (init-x86-state status start-addr gprs ctrs msrs
+                        seg-visibles
+                        seg-hidden-bases
+                        seg-hidden-limits
+                        seg-hidden-attrs
+                        flags mem x86))
        ((when flg) (mv t x86))
        ;; set IA32_EFER.LMA to 1:
        (ia32_efer (n12 (msri #.*ia32_efer-idx* x86)))
@@ -512,12 +512,12 @@
 
   (defrule 64-bit-modep-of-init-x86-state-64
     (b* (((mv flg x86-new)
-	  (init-x86-state-64
-	   status start-addr gprs ctrs msrs seg-visibles
-	   seg-hidden-bases seg-hidden-limits seg-hidden-attrs
-	   flags mem x86)))
+          (init-x86-state-64
+           status start-addr gprs ctrs msrs seg-visibles
+           seg-hidden-bases seg-hidden-limits seg-hidden-attrs
+           flags mem x86)))
       (implies (not flg)
-	       (64-bit-modep x86-new)))
+               (64-bit-modep x86-new)))
     :enable (64-bit-modep)))
 
 ;; ======================================================================
