@@ -449,7 +449,7 @@
                          (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
                   (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (xw :mem index value x86)))
                          (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))  
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (xlation-governing-entries-paddrs-for-pml4-table)))))
 
   (defthm xlation-governing-entries-paddrs-and-write-to-physical-memory-disjoint
     (implies (and (disjoint-p (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)) p-addrs)

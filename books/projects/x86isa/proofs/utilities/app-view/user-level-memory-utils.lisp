@@ -452,7 +452,7 @@
            )
   :hints (("Goal"
            :in-theory (e/d* (push-ash-inside-logior)
-                            (unsigned-byte-p                             
+                            (unsigned-byte-p
                              (:meta acl2::mv-nth-cons-meta))))))
 
 ;; ----------------------------------------------------------------------

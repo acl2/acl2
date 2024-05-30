@@ -2273,7 +2273,6 @@
      consp-when-len-equal-constant
      add-to-end
      car-of-bv-array-write
-     sbvrem-when-positive
 ;     bvlt-tighten-free-alt ;problems? ;Tue Aug 31 19:45:37 2010
 ;     bvlt-tighten-free ;problems? ;Tue Aug 31 19:45:37 2010
      bvplus-tighten-arg2
@@ -2354,7 +2353,12 @@
 ;     bvplus-minus-4-tighten-32-gen ;wed apr  7 19:47:05 2010
      plus-of-minus-3-bv-5
      sbvmoddown-32-4-non-neg ;gen
+
+     sbvrem-when-positive
+     sbvrem-of-bvchop-arg2
+     sbvrem-of-bvchop-arg3
      sbvrem-rewrite
+
      sbvdiv-when-y-negative
 ;sbvdiv-when-x-negative
      bvdiv-of-4
