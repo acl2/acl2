@@ -940,7 +940,8 @@ abstract-declarator = pointer
 
 direct-abstract-declarator =
       "(" abstract-declarator ")"
-    / [ direct-abstract-declarator ] "[" [ assignment-expression ] "]"
+    / [ direct-abstract-declarator ]
+      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
     / [ direct-abstract-declarator ]
       "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
     / [ direct-abstract-declarator ]
