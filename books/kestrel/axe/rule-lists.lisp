@@ -826,7 +826,8 @@
 
      not-bvlt-of-max-arg2-constant-version
      bvlt-of-max-when-bvlt-constant-version
-     bvlt-of-max-arg3-constant-version-axe
+     bvlt-of-max-arg3-constant-version-axe ; has a rewrite-objective
+     bvlt-of-max-minus-1-arg2-constant-version
 
      not-equal-max-int-when-<=      ;new, rename
 
@@ -997,7 +998,7 @@
      ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
      slice-becomes-bvchop
-     slice-of-slice-gen-better
+     slice-of-slice
 ;            slice-of-bvcat-hack-gen-better-case-1 ;trying the real versions
 ;           slice-of-bvcat-hack-gen-better-case-2
 ;          slice-of-bvcat-hack-gen-better-case-3
@@ -2090,10 +2091,10 @@
     bvlt-self ;drop
     bvlt-of-bvcat-arg3-bvmult-version
     bvdiv-31-4
-    bvlt-of-max-minus-1-arg2-constant-version ;    bvlt-2-max
+
     bvlt-when-bound-dag
 ;    bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
-    not-bvlt-of-max-arg2          ;alt version?
+;    not-bvlt-of-max-arg2          ;alt version?
     ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
     bvmod-of-power-of-2
     unsigned-byte-p-of-bvmod-gen ;remove since added to big list
@@ -2302,7 +2303,7 @@
      unsigned-byte-p-of-bvplus-wider-9-10
      bvlt-add-to-both-sides-constant-lemma-alt-no-split
      bvlt-add-to-both-sides-constant-lemma-alt ;new
-     not-bvlt-of-max-arg2
+;     not-bvlt-of-max-arg2
 ;                        bvlt-of-max-when-bvlt
 
      ;;trying without these:
