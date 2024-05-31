@@ -251,7 +251,7 @@
 (defirrelevant irr-structdeclor
   :short "An irrelevant structure declarator."
   :type structdeclorp
-  :body (make-structdeclor :declor (irr-declor) :expr (irr-const-expr)))
+  :body (make-structdeclor :declor (irr-declor) :expr? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

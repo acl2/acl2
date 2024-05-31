@@ -1989,7 +1989,7 @@
        we allow an absent declarator and an absent expression,
        even though this is disallowed in the concrete syntax."))
     ((declor declor-option)
-     (expr const-expr))
+     (expr? const-expr-option))
     :pred structdeclorp
     :measure (two-nats-measure (acl2-count x) 3))
 
