@@ -2061,7 +2061,6 @@
     booleanp-of-all-same
     booleanp-of-all-equal$
     equal-of-constant-and-repeat
-    equal-of-constant-and-bvuminus
     equal-of-bvmult-and-expt-of-2-constant-version
     slice-of-times-of-expt-constant-version
     bvplus-of-*-arg2
