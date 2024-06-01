@@ -9140,12 +9140,16 @@
                ((subsetp-eq (evens (cdar edcls)) keywords)
                 (chk-xargs-keywords1 (cdr edcls) keywords ctx state))
                (t (er soft ctx
-                      "The only acceptable XARGS keyword~#0~[ in this ~
-                       context is~/s in this context are~] ~&0.  Thus, ~
-                       the keyword~#1~[ ~&1 is~/s ~&1 are~] illegal."
+                      "The only acceptable XARGS keyword~#0~[ in this context ~
+                       is~/s in this context are~] ~&0.  Thus, the ~
+                       keyword~#1~[ ~&1 is~/s ~&1 are~] illegal.~#2~[~/  ~
+                       Perhaps you meant :HINTS instead of :MEASURE-HINTS.~]"
                       keywords
                       (set-difference-eq (evens (cdar edcls))
-                                         keywords)))))
+                                         keywords)
+                      (if (member-eq :measure-hints (evens (cdar edcls)))
+                          1
+                        0)))))
         (t (chk-xargs-keywords1 (cdr edcls) keywords ctx state))))
 
 (defun chk-xargs-keywords (lst keywords ctx state)

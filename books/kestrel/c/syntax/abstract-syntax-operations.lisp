@@ -27,37 +27,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-unary/postfix/primary-p ((expr exprp))
-  :returns (yes/no booleanp)
-  :short "Check if an expression is unary or postfix or primary."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to the grammar definition,
-     unary expressions include postfix and primary expressions;
-     the grammar defines expressions hierarchically.
-     So this test, performed on abstract syntax,
-     is equivalent to testing whether the expression
-     is a unary one according to the grammar."))
-  (and (member-eq (expr-kind expr)
-                  '(:ident
-                    :const
-                    :string
-                    :paren
-                    :gensel
-                    :arrsub
-                    :funcall
-                    :member
-                    :memberp
-                    :complit
-                    :unary
-                    :sizeof
-                    :sizeof-ambig
-                    :alignof))
-       t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defirrelevant irr-ident
   :short "An irrelevant identifier."
   :type identp
@@ -282,7 +251,7 @@
 (defirrelevant irr-structdeclor
   :short "An irrelevant structure declarator."
   :type structdeclorp
-  :body (make-structdeclor :declor (irr-declor) :expr (irr-const-expr)))
+  :body (make-structdeclor :declor? nil :expr? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,3 +308,96 @@
   :short "An irrelevant ensemble of translation units."
   :type transunit-ensemblep
   :body (transunit-ensemble nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-unary/postfix/primary-p ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is unary or postfix or primary."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to the grammar definition,
+     unary expressions include postfix and primary expressions;
+     the grammar defines expressions hierarchically.
+     So this test, performed on abstract syntax,
+     is equivalent to testing whether the expression
+     is a unary one according to the grammar."))
+  (and (member-eq (expr-kind expr)
+                  '(:ident
+                    :const
+                    :string
+                    :paren
+                    :gensel
+                    :arrsub
+                    :funcall
+                    :member
+                    :memberp
+                    :complit
+                    :unary
+                    :sizeof
+                    :sizeof-ambig
+                    :alignof))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dirabsdeclor-decl?-nil-p ((dirabsdeclor dirabsdeclorp))
+  :returns (yes/no booleanp)
+  :short "Check if a direct abstract declarator has
+          a @('decl?') component that is @('nil')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This excludes the base case(s) of direct abstract declarators.
+     All the other recursive cases have a @('decl?') component."))
+  (dirabsdeclor-case
+   dirabsdeclor
+   :dummy-base nil
+   :paren nil
+   :array (not dirabsdeclor.decl?)
+   :array-static1 (not dirabsdeclor.decl?)
+   :array-static2 (not dirabsdeclor.decl?)
+   :array-star (not dirabsdeclor.decl?)
+   :function (not dirabsdeclor.decl?))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define combine-dirabsdeclor-into-dirabsdeclor ((dirabsdeclor1 dirabsdeclorp)
+                                                (dirabsdeclor2 dirabsdeclorp))
+  :guard (dirabsdeclor-decl?-nil-p dirabsdeclor2)
+  :returns (dirabsdeclor dirabsdeclorp)
+  :short "Combine a direct abstract declarator into another."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A direct abstract declarator has, except for the base case(s),
+     a slot @('decl?') for another optional direct abstract declarator;
+     this follows the structure of the grammar.
+     The real base case is just one, a parenthesized abstract declarator;
+     the other base case is a dummy one (see @(tsee dirabsdeclor)).")
+   (xdoc::p
+    "This function stores @('dirabsdeclor1')
+     into the @('decl?') slot of @('dirabsdeclor2'),
+     obtaining a new combined direct abstract declarator,
+     provided that @('dirabsdeclor2') has that slot and contains @('nil'),
+     as required by the guard."))
+  (b* ((dirabsdeclor1 (dirabsdeclor-fix dirabsdeclor1)))
+    (dirabsdeclor-case
+     dirabsdeclor2
+     :dummy-base (prog2$ (impossible) (irr-dirabsdeclor))
+     :paren (prog2$ (impossible) (irr-dirabsdeclor))
+     :array (change-dirabsdeclor-array dirabsdeclor2
+                                       :decl? (dirabsdeclor-fix dirabsdeclor1))
+     :array-static1 (change-dirabsdeclor-array-static1 dirabsdeclor2
+                                                       :decl? dirabsdeclor1)
+     :array-static2 (change-dirabsdeclor-array-static2 dirabsdeclor2
+                                                       :decl? dirabsdeclor1)
+     :array-star (change-dirabsdeclor-array-star dirabsdeclor2
+                                                 :decl? dirabsdeclor1)
+     :function (change-dirabsdeclor-function dirabsdeclor2
+                                             :decl? dirabsdeclor1)))
+  :guard-hints (("Goal" :in-theory (enable dirabsdeclor-decl?-nil-p)))
+  :hooks (:fix))
