@@ -18,6 +18,8 @@
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "oslib/rmtree" :dir :system)
+(include-book "oslib/tempfile" :dir :system)
 (include-book "std/strings/cat" :dir :system)
 
 (include-book "file-paths")
@@ -39,8 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable acl2::tshell-call
-                    (:e acl2::tshell-call)))
+(in-theory (disable (:e acl2::tshell-call)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,7 +52,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "A collection of tools to invoke an external C preprocessor."))
+     "A collection of tools to invoke an external C preprocessor.")
+   (xdoc::p
+     "These tools appeal to a configurable C preprocessor, and the prerequisite
+      dependencies may not be present on all systems. For books which use the
+      default preprocessor \"cpp\", certification may be controlled with the
+      the @(see build::uses-cpp) @(see build::cert_param) flag.")
+   (xdoc::p
+     "The community books Makefile will autodetect whether \"cpp\" is
+      available, and exclude books appropriately. Certification of such books
+      may be suppressed by manually undefining the Makefile variable
+      \"OS_HAS_CPP\". E.g., to run a regression excluding books calling cpp:")
+   (xdoc::code
+     "OS_HAS_CPP= make regression")
+   (xdoc::p
+     "Further @(see build::cert_param) flags may need to be defined if using a
+      C preprocessor other than \"cpp\"."))
   :order-subtopics t)
 
 
@@ -125,78 +141,7 @@
       (concatenate 'string cbd filepath))))
 
 
-(define basename
-  ((filename stringp))
-  :returns (filename stringp)
-  :parents (preprocess-file)
-  :short "Extract the basename of a file path, assuming a Unix-style \"/\"
-          directory separator."
-  (b* (((mv success left right)
-        (acl2::split-string-last filename #\/)))
-    (if success
-        right
-      left)))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Assumes tshell is started
-(define mktemp
-  ((file-prefix stringp)
-   &key
-   (state 'state))
-  :returns (mv (erp booleanp)
-               (filename stringp)
-               state)
-  :parents (preprocess-file)
-  :short "Make a temporary file by invoking mktemp via @(see acl2::tshell)."
-  (b* ((mktemp-cmd
-        (str::join (list "mktemp"
-                         "-t"
-                         (concatenate 'string file-prefix ".XXXXXX"))
-                   " "))
-       ((mv exit-status lines)
-        (acl2::tshell-call mktemp-cmd :print nil))
-       ((unless (int= 0 exit-status))
-        (er-soft-with
-          ""
-          "mktemp command ~x0 failed with nonzero exit status: ~x1"
-          mktemp-cmd
-          exit-status))
-       ((unless (consp lines))
-        (er-soft-with
-          ""
-          "mktemp command ~x0 did not return a file name"
-          mktemp-cmd)))
-    (value (first lines)))
-  :prepwork
-  ((defrulel stringp-of-car-when-string-listp
-     (implies (and (consp list)
-                   (string-listp list))
-              (stringp (car list))))))
-
-
-;; Assumes tshell is started
-(define remove-file
-  ((filename stringp)
-   &key
-   (state 'state))
-  :returns (mv erp nil state)
-  :parents (preprocess-file)
-  :short "Remove a file with @(see acl2::tshell)."
-  (b* ((remove-file-cmd (str::join (list "rm" filename) " "))
-       ((mv exit-status -)
-        (acl2::tshell-call remove-file-cmd :print nil :save nil))
-       ((unless (int= 0 exit-status))
-        (er-soft-with
-          ""
-          "remove-file command ~x0 failed with nonzero exit status: ~x1"
-          remove-file-cmd
-          exit-status)))
-    (value nil)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define preprocess-file
   ((file filepathp
@@ -205,8 +150,8 @@
    ((out (or (not out)
              (stringp out))
          "This specifies the output file to which the preprocessed file is
-          saved. If @('nil'), a file will be created suitable with a name and
-          directory typical of temporary files (using the mktemp utility).")
+          saved. If @('nil'), a file will be created with a name and directory
+          typical of temporary files (see @(see oslib::tempfile)).")
     'nil)
    ((save "If @('t'), the output file is saved. If @('nil'), the file is
            removed after reading it in. If @(':auto'), the default value, the
@@ -223,9 +168,10 @@
                    \"clang\", \"cc\", etc.")
     '"cpp")
    ((extra-args string-listp
-                "Arguments to pass to the C preprocessor, in addition to \"-E\"
-                 and \"-P\".")
-    'nil)
+                "Arguments to pass to the C preprocessor, in addition to
+                 \"-E\". The default value is @('(list \"-P\")') (the flag
+                 @('\"-P\"') suppresses the generation of linemarkers).")
+    ''("-P"))
    (state 'state))
   :returns (mv erp
                (pair "A pair whose first value is the output file (if it is
@@ -240,7 +186,11 @@
    (xdoc::p
      "This function preprocesses a @(see filepathp) using the system's C
       preprocessor. See @(see preprocess-files) for a simlilar utility which
-      handles a set of files."))
+      handles a set of files.")
+   (xdoc::p
+     "By default, we pass the @('\"-P\"') flag to the preprocessor to disable
+      linemarkers. This behavior may be overriden by explicitly providing a
+      @(':extra-args') value."))
   (macrolet
    ((iferr () '(cons "" (filepath nil))))
    (b* ((filename (filepath->unwrap file))
@@ -255,10 +205,16 @@
         ((er out :iferr (iferr))
          (if out
              (value (absolute-filepath out))
-           (mktemp (basename filename))))
+           (b* (((mv temp state)
+                 (oslib::tempfile filename)))
+             (if temp
+                 (value temp)
+               (er-soft-with (iferr)
+                             "Could not create temporary file for ~x0"
+                             filename)))))
         (preprocess-cmd
-          (str::join (append (list* preprocessor "-o" out "-E" "-P" extra-args)
-                             (list filename))
+          (str::join (append (list* preprocessor "-E" extra-args)
+                             (list filename ">" out))
                      " "))
         ((mv exit-status -)
          (acl2::tshell-call preprocess-cmd :print nil :save nil))
@@ -281,7 +237,13 @@
         ((er - :iferr (iferr))
          (if save
              (value nil)
-           (remove-file out))))
+           (b* (((mv success state)
+                 (oslib::rmtree out)))
+             (if success
+                 (value nil)
+               (er-soft-with (iferr)
+                             "Could not remove output file: ~x0"
+                             out))))))
      (value (cons (and save out)
                   (and read (filedata bytes))))))
 
@@ -330,8 +292,8 @@
    ((out-dir (or (not out-dir)
                  (stringp out-dir))
              "This specifies the directory that preprocessed output files are
-              saved to with posfix \".preprocessed\". If @('nil'), files will
-              be created with mktemp.")
+              saved to with posfix \".preprocessed\". If @('nil'), temporary
+              files will be created (see @(see oslib::tempfile))).")
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
@@ -344,9 +306,10 @@
                    \"clang\", \"cc\", etc.")
     '"cpp")
    ((extra-args string-listp
-                "Arguments to pass to the C preprocessor, in addition to \"-E\"
-                 and \"-P\".")
-    'nil)
+                "Arguments to pass to the C preprocessor, in addition to
+                 \"-E\". The default value is @('(list \"-P\")') (the flag
+                 @('\"-P\"') suppresses the generation of linemarkers).")
+    ''("-P"))
    (state 'state))
   :returns (mv erp
                (map filesetp

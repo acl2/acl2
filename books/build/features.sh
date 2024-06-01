@@ -170,6 +170,15 @@ EXPORTED_VARS += OS_HAS_STP
 EOF
 fi
 
+echo "Determining whether cpp is installed" 1>&2
+if cpp --version 2>/dev/null;
+then
+    cat >> Makefile-features <<EOF
+export OS_HAS_CPP ?= 1
+EXPORTED_VARS += OS_HAS_CPP
+EOF
+fi
+
 cat >> Makefile-features <<EOF
 EXPORT_SHELL_ENV := \$(foreach v,\$(EXPORTED_VARS),\$(v)='\$(\$(v))')
 EOF
