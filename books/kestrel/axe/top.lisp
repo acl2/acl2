@@ -188,6 +188,7 @@
 (include-book "refined-assumption-alists")
 (include-book "refined-assumption-alists2")
 (include-book "remove-duplicates-from-sorted-list")
+(include-book "remove-gaps")
 (include-book "renaming-array")
 (include-book "replace-node")
 (include-book "replace-using-assumptions")
