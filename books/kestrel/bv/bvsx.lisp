@@ -77,6 +77,18 @@
                   x))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;; May be expensive?
+(defthm bvsx-when-equal-of-getbit-and-0
+  (implies (and (equal (getbit (+ -1 old-size) x) 0)
+                (<= old-size new-size)
+                (integerp new-size)
+                (posp old-size))
+           (equal (bvsx new-size old-size x)
+                  ;; or could chop down to old-size - 1, but we leave that
+                  ;; to a separate rule (for now)
+                  (bvchop old-size x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
 ;gen
 ;rename to bvsx-alt-def
 (defthmd bvsx-rewrite

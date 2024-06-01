@@ -10,6 +10,8 @@
 
 (in-package "X86ISA")
 
+;; TODO: Remove "sub" from the name of this book
+
 ;(include-book "std/basic/arith-equiv-defs" :dir :system) ; for bool->bit
 (include-book "projects/x86isa/machine/rflags-spec" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -169,7 +171,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+;todo: package prefixes
 (defthm x86isa::bitp-of-sub-cf-spec8 (bitp (x86isa::sub-cf-spec8 dst src)))
 (defthm x86isa::bitp-of-sub-cf-spec16 (bitp (x86isa::sub-cf-spec16 dst src)))
 (defthm x86isa::bitp-of-sub-cf-spec32 (bitp (x86isa::sub-cf-spec32 dst src)))
@@ -195,25 +197,25 @@
 (defthm x86isa::bitp-of-sub-zf-spec32 (bitp (x86isa::sub-zf-spec32 dst src)))
 (defthm x86isa::bitp-of-sub-zf-spec64 (bitp (x86isa::sub-zf-spec64 dst src)))
 
-(defthm x86isa::bitp-of-cf-spec-8 (bitp (x86isa::cf-spec8 x)))
-(defthm x86isa::bitp-of-cf-spec-16 (bitp (x86isa::cf-spec16 x)))
-(defthm x86isa::bitp-of-cf-spec-32 (bitp (x86isa::cf-spec32 x)))
-(defthm x86isa::bitp-of-cf-spec-64 (bitp (x86isa::cf-spec64 x)))
+(defthm x86isa::bitp-of-cf-spec8 (bitp (x86isa::cf-spec8 x)))
+(defthm x86isa::bitp-of-cf-spec16 (bitp (x86isa::cf-spec16 x)))
+(defthm x86isa::bitp-of-cf-spec32 (bitp (x86isa::cf-spec32 x)))
+(defthm x86isa::bitp-of-cf-spec64 (bitp (x86isa::cf-spec64 x)))
 
-(defthm x86isa::bitp-of-of-spec-8 (bitp (x86isa::of-spec8 x)))
-(defthm x86isa::bitp-of-of-spec-16 (bitp (x86isa::of-spec16 x)))
-(defthm x86isa::bitp-of-of-spec-32 (bitp (x86isa::of-spec32 x)))
-(defthm x86isa::bitp-of-of-spec-64 (bitp (x86isa::of-spec64 x)))
+(defthm x86isa::bitp-of-of-spec8 (bitp (x86isa::of-spec8 x)))
+(defthm x86isa::bitp-of-of-spec16 (bitp (x86isa::of-spec16 x)))
+(defthm x86isa::bitp-of-of-spec32 (bitp (x86isa::of-spec32 x)))
+(defthm x86isa::bitp-of-of-spec64 (bitp (x86isa::of-spec64 x)))
 
-(defthm x86isa::bitp-of-pf-spec-8 (bitp (x86isa::pf-spec8 x)))
-(defthm x86isa::bitp-of-pf-spec-16 (bitp (x86isa::pf-spec16 x)))
-(defthm x86isa::bitp-of-pf-spec-32 (bitp (x86isa::pf-spec32 x)))
-(defthm x86isa::bitp-of-pf-spec-64 (bitp (x86isa::pf-spec64 x)))
+(defthm x86isa::bitp-of-pf-spec8 (bitp (x86isa::pf-spec8 x)))
+(defthm x86isa::bitp-of-pf-spec16 (bitp (x86isa::pf-spec16 x)))
+(defthm x86isa::bitp-of-pf-spec32 (bitp (x86isa::pf-spec32 x)))
+(defthm x86isa::bitp-of-pf-spec64 (bitp (x86isa::pf-spec64 x)))
 
-(defthm x86isa::bitp-of-sf-spec-8 (bitp (x86isa::sf-spec8 x)))
-(defthm x86isa::bitp-of-sf-spec-16 (bitp (x86isa::sf-spec16 x)))
-(defthm x86isa::bitp-of-sf-spec-32 (bitp (x86isa::sf-spec32 x)))
-(defthm x86isa::bitp-of-sf-spec-64 (bitp (x86isa::sf-spec64 x)))
+(defthm x86isa::bitp-of-sf-spec8 (bitp (x86isa::sf-spec8 x)))
+(defthm x86isa::bitp-of-sf-spec16 (bitp (x86isa::sf-spec16 x)))
+(defthm x86isa::bitp-of-sf-spec32 (bitp (x86isa::sf-spec32 x)))
+(defthm x86isa::bitp-of-sf-spec64 (bitp (x86isa::sf-spec64 x)))
 
 (defthm x86isa::bitp-of-zf-spec (bitp (x86isa::zf-spec x)))
 

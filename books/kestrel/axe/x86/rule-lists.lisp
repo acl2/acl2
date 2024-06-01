@@ -160,8 +160,13 @@
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
-            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll)
-          *instruction-decoding-and-spec-rules*))
+            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll
+
+            ;; Improved versions of instruction semantic functions:
+            x86isa::x86-cbw/cwd/cdqe-redef)
+          (set-difference-equal *instruction-decoding-and-spec-rules*
+                                ;; We remove these because we have better versions:
+                                '(x86isa::x86-cbw/cwd/cdqe))))
 
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
@@ -807,22 +812,22 @@
     x86isa::unsigned-byte-p-1-of-sub-af-spec32
 
     ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
-    x86isa::bitp-of-cf-spec-8
-    x86isa::bitp-of-cf-spec-16
-    x86isa::bitp-of-cf-spec-32
-    x86isa::bitp-of-cf-spec-64
-    x86isa::bitp-of-of-spec-8
-    x86isa::bitp-of-of-spec-16
-    x86isa::bitp-of-of-spec-32
-    x86isa::bitp-of-of-spec-64
-    x86isa::bitp-of-pf-spec-8
-    x86isa::bitp-of-pf-spec-16
-    x86isa::bitp-of-pf-spec-32
-    x86isa::bitp-of-pf-spec-64
-    x86isa::bitp-of-sf-spec-8
-    x86isa::bitp-of-sf-spec-16
-    x86isa::bitp-of-sf-spec-32
-    x86isa::bitp-of-sf-spec-64
+    x86isa::bitp-of-cf-spec8
+    x86isa::bitp-of-cf-spec16
+    x86isa::bitp-of-cf-spec32
+    x86isa::bitp-of-cf-spec64
+    x86isa::bitp-of-of-spec8
+    x86isa::bitp-of-of-spec16
+    x86isa::bitp-of-of-spec32
+    x86isa::bitp-of-of-spec64
+    x86isa::bitp-of-pf-spec8
+    x86isa::bitp-of-pf-spec16
+    x86isa::bitp-of-pf-spec32
+    x86isa::bitp-of-pf-spec64
+    x86isa::bitp-of-sf-spec8
+    x86isa::bitp-of-sf-spec16
+    x86isa::bitp-of-sf-spec32
+    x86isa::bitp-of-sf-spec64
     x86isa::bitp-of-zf-spec
     x86isa::bitp-of-add-af-spec8
     x86isa::bitp-of-add-af-spec16
@@ -1427,6 +1432,9 @@
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
+
+;; Do this late, to give the bitp rules a chance to fire first:
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
@@ -2075,7 +2083,8 @@
 
             x86isa::x86-operand-to-zmm/mem
             64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
-            )))
+
+            acl2::integerp-of-ash)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.

@@ -977,7 +977,7 @@
             (x86isa::64-bit-mode-two-byte-opcode-modr/m-p x86isa::64-bit-mode-two-byte-opcode-modr/m-p-unguarded)
             (x86isa::check-instruction-length$inline x86isa::check-instruction-length$inline-unguarded)
             (x86isa::two-byte-opcode-modr/m-p$inline x86isa::two-byte-opcode-modr/m-p$inline-unguarded)
-            )
+            (acl2::aref1 acl2::aref1-unguarded))
           *axe-evaluator-basic-fns-and-aliases*))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
