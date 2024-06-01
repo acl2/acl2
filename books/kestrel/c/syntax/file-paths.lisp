@@ -45,6 +45,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset filepath-set
-  :short "Fixtype for filepath sets."
+  :short "Fixtype of sets of file paths."
   :elt-type filepath
   :pred filepath-setp)

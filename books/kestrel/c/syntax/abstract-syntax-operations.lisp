@@ -283,6 +283,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-initdeclor
+  :short "An irrelevant initializer declarator."
+  :type initdeclorp
+  :body (make-initdeclor :declor (irr-declor) :init? nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-decl
   :short "An irrelevant declaration."
   :type declp
