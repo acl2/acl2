@@ -949,7 +949,7 @@
                 (<= k (* 4 stack-slots-needed)) ;think about this
                 (x86p x86))
            (not (bvlt 32 (esp x86) k)))
-  :hints (("Goal" :in-theory (e/d (bvlt) (stack-segment-assumptions32)))))
+  :hints (("Goal" :in-theory (e/d (bvlt esp) ()))))
 
 (defthm not-equal-of-esp-when-stack-segment-assumptions32
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
