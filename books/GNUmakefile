@@ -409,6 +409,11 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
+ifeq ($(OS_HAS_CPP), )
+$(info Excluding books that invoke cpp: [$(CERT_PL_USES_CPP)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_CPP), $(OK_CERTS))
+endif
+
 ifeq ($(ACL2_HAS_REALS), )
 $(info Excluding ACL2(r)-only books: [$(CERT_PL_USES_ACL2R)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_ACL2R), $(OK_CERTS))
