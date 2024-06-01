@@ -4,10 +4,14 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:quicklisp.osicat) (:oslib))
+(ld "../package.lsp")
+
+(reset-prehistory)
+
+(in-package "C$")

@@ -1773,7 +1773,7 @@
                   (tyquals tyqual-list)))
     (:function-params ((decl dirdeclor)
                        (params paramdecl-list)
-                       (ellipses bool)))
+                       (ellipsis bool)))
     (:function-names ((decl dirdeclor)
                       (names ident-list)))
     :pred dirdeclorp
@@ -1841,7 +1841,7 @@
     (:array-star ((decl? dirabsdeclor-option)))
     (:function ((decl? dirabsdeclor-option)
                 (params paramdecl-list)
-                (ellipses bool)))
+                (ellipsis bool)))
     :pred dirabsdeclorp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1941,13 +1941,13 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>struct-declaration</i> in the grammar of [C].
-     Despite its name in the grammar and in this fixtype,
-     this applies to both structures and unions;
-     in fact, it is not a declaration of a structure,
-     but instead it is a declarations of a member of a structure or union.
-     So something like <i>member-declaration</i>
-     would be a better name for this grammar nonterminal,
-     but our fixtype name reflects the current grammar."))
+       Despite its name in the grammar and in this fixtype,
+       this applies to both structures and unions;
+       in fact, it is not a declaration of a structure,
+       but instead it is a declarations of a member of a structure or union.
+       So something like <i>member-declaration</i>
+       would be a better name for this grammar nonterminal,
+       but our fixtype name reflects the current grammar."))
     (:member ((specqual specqual-list)
               (declor structdeclor-list)))
     (:statassert ((unwrap statassert)))
