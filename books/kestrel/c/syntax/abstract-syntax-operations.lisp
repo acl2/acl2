@@ -297,6 +297,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-stmt
+  :short "An irrelevant statement."
+  :type stmtp
+  :body (stmt-compound nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-extdecl
   :short "An irrelevant external declaration."
   :type extdeclp
