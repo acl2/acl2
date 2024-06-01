@@ -1773,7 +1773,7 @@
                   (tyquals tyqual-list)))
     (:function-params ((decl dirdeclor)
                        (params paramdecl-list)
-                       (ellipses bool)))
+                       (ellipsis bool)))
     (:function-names ((decl dirdeclor)
                       (names ident-list)))
     :pred dirdeclorp
@@ -1841,7 +1841,7 @@
     (:array-star ((decl? dirabsdeclor-option)))
     (:function ((decl? dirabsdeclor-option)
                 (params paramdecl-list)
-                (ellipses bool)))
+                (ellipsis bool)))
     :pred dirabsdeclorp
     :measure (two-nats-measure (acl2-count x) 0))
 
