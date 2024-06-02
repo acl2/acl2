@@ -29010,6 +29010,10 @@ Lisp definition."
   `(not (logicp ,fn ,wrld)))
 
 (defconst *stobjs-out-invalid*
+
+; Warning: If you add to the list below, then modify term-stobjs-out
+; accordingly.
+
   '(if return-last do$ read-user-stobj-alist))
 
 (defun stobjs-out (fn w)
