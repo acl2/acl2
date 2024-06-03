@@ -12,6 +12,7 @@
 
 (include-book "std/strings/hex" :dir :system)
 (include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -32,7 +33,8 @@
    (xdoc::p
     "Since there are functions in @(see std/strings)
      that operate on @(tsee hex-digit-char-list*p),
-     we provide a bridge theorem between the two recognizers."))
+     we provide a bridge theorem between the two recognizers,
+     which we can use to satisfy the guards of those functions."))
   (hex-digit-char-p x)
   :true-listp t
   :elementp-of-nil nil
@@ -43,4 +45,34 @@
              (hex-digit-char-list*p x))
     :hints (("Goal"
              :induct t
-             :in-theory (enable str::hex-digit-char-list*p)))))
+             :in-theory (enable hex-digit-char-list*p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection hex-digit-char-listp-results
+  :parents (hex-digit-char-listp)
+  :short "Theorems about results of @(see std/strings) functions
+          that return lists of hexadecimal digit characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Those @(see std/strings) are accompanied by
+     theorems that they return @(tsee hex-digit-char-list*p),
+     but they in fact return true lists,
+     so here we add theorems that they return @(tsee hex-digit-char-listp)."))
+
+  (acl2::defrule hex-digit-char-listp-of-basic-nat-to-hex-chars
+    (hex-digit-char-listp (basic-nat-to-hex-chars nat))
+    :induct t
+    :enable (basic-nat-to-hex-chars
+             hex-digit-char-listp
+             digit-to-char))
+
+  (acl2::defrule hex-digit-char-listp-of-nat-to-hex-chars-aux
+    (implies (hex-digit-char-listp acc)
+             (hex-digit-char-listp (nat-to-hex-chars-aux nat acc)))
+    :enable nat-to-hex-chars-aux)
+
+  (acl2::defrule hex-digit-char-listp-of-nat-to-hex-chars
+    (hex-digit-char-listp (nat-to-hex-chars nat))
+    :enable nat-to-hex-chars))

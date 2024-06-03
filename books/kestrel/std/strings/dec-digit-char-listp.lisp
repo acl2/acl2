@@ -12,7 +12,10 @@
 
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+
+(local (include-book "arithmetic-3/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -32,7 +35,8 @@
    (xdoc::p
     "Since there are functions in @(see std/strings)
      that operate on @(tsee dec-digit-char-list*p),
-     we provide a bridge theorem between the two recognizers."))
+     we provide a bridge theorem between the two recognizers,
+     which we can use to satisfy the guards of those functions."))
   (dec-digit-char-p x)
   :true-listp t
   :elementp-of-nil nil
@@ -43,4 +47,34 @@
              (dec-digit-char-list*p x))
     :hints (("Goal"
              :induct t
-             :in-theory (enable str::dec-digit-char-list*p)))))
+             :in-theory (enable dec-digit-char-list*p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dec-digit-char-listp-results
+  :parents (dec-digit-char-listp)
+  :short "Theorems about results of @(see std/strings) functions
+          that return lists of decimal digit characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Those @(see std/strings) are accompanied by
+     theorems that they return @(tsee dec-digit-char-list*p),
+     but they in fact return true lists,
+     so here we add theorems that they return @(tsee dec-digit-char-listp)."))
+
+  (std::defrule dec-digit-char-listp-of-basic-nat-to-dec-chars
+    (dec-digit-char-listp (basic-nat-to-dec-chars nat))
+    :induct t
+    :enable (basic-nat-to-dec-chars
+             dec-digit-char-listp
+             digit-to-char))
+
+  (std::defrule dec-digit-char-listp-of-nat-to-dec-chars-aux
+    (implies (dec-digit-char-listp acc)
+             (dec-digit-char-listp (nat-to-dec-chars-aux nat acc)))
+    :enable nat-to-dec-chars-aux)
+
+  (std::defrule dec-digit-char-listp-of-nat-to-dec-chars
+    (dec-digit-char-listp (nat-to-dec-chars nat))
+    :enable nat-to-dec-chars))
