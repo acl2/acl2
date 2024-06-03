@@ -719,8 +719,9 @@
                 (natp size)
                 (natp k))
            (equal (bvlt size (bvplus size k2 x) k)
-                  (or (bvlt size (bvminus size (+ -1) k2) x)
-                      (bvlt size x (bvminus size k k2)))))
+                  (if (bvlt size (bvminus size (+ -1) k2) x)
+                      t
+                    (bvlt size x (bvminus size k k2)))))
   :hints (("Goal" :in-theory (enable bvplus bvlt bvchop-of-sum-cases bvminus))))
 
 (defthm bvlt-of-bvplus-constant-and-constant-gen
@@ -733,8 +734,9 @@
                   (if (bvlt size k k2)
                       (and (bvle size (- k2) x)
                            (bvlt size x (- k k2)))
-                    (or (bvlt size (bvminus size (+ -1) k2) x)
-                        (bvlt size x (bvminus size k k2))))))
+                    (if (bvlt size (bvminus size (+ -1) k2) x)
+                        t
+                      (bvlt size x (bvminus size k k2))))))
   :hints (("Goal" :use (bvlt-of-bvplus-constant-and-constant-other
                          bvlt-of-bvplus-constant-and-constant)
            :in-theory (disable bvlt-of-bvplus-constant-and-constant-other
