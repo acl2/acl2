@@ -237,7 +237,10 @@
     "A new sub-library has been added,
      which contains an abstract syntax,
      and accompanying concrete syntax formulation,
-     intended for use by tools like code generators and transformers.")
+     intended for use by tools like code generators and transformers.
+     This sub-library also includes
+     a parser from the concrete to the abstract syntax,
+     as well as an ACL2 tool to invoke an external C preprocessor.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
