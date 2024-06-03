@@ -703,8 +703,10 @@
 #+ccl
 (declaim (notinline memq))
 
+; Fix CMUCL bug through April 2024.
 #+cmucl
-(progn
+(unless (let ((c #.(code-char 181)))
+          (eql (char-upcase c) c))
 
 (defvar *old-char-upcase* (symbol-function 'char-upcase))
 
@@ -723,26 +725,80 @@
 ; acl2-check.lisp (search there for "char-upcase-cmucl" to print a useful error
 ; when encountering a violation for code 181 in CMUCL.
 
-  (declare (type character x))
+  (declare (type character x)
+           (special *old-char-upcase*))
   (if (eql x #.(code-char 181))
-      (error "(char-upcase (code-char 181)) is not supported in CMUCL.")
+      x ; (error "(char-upcase (code-char 181)) is not supported in CMUCL.")
     (funcall *old-char-upcase* x)))
-
-(defun string-upcase-cmucl (x)
-  (declare (type string x))
-  (let ((p (position #.(code-char 181) x)))
-    (if p
-        (error "(string-upcase has been applied to a string that~%~
-                contains the character with code 181 at position ~s.~%~
-                This is not supported in CMUCL."
-               p)
-      (funcall *old-string-upcase* x))))
 
 (ext:without-package-locks
 (defun char-upcase (x)
-  (char-upcase-cmucl x))
-(defun string-upcase (x)
-  (string-upcase-cmucl x)))
+  (char-upcase-cmucl x)))
+
+(defun string-upcase-cmucl (x &key (start 0) (end nil))
+  (declare (special *old-string-upcase*))
+  (let* ((x (string x))
+         (p (position #.(code-char 181) x :start start :end end)))
+    (if p
+        (substitute #.(code-char 181)
+                    #.(char-upcase (code-char 181))
+                    x
+                    :start start :end end)
+      (funcall *old-string-upcase* x :start start :end end))))
+
+(ext:without-package-locks
+(defun string-upcase (x &key (start 0) (end nil))
+  (string-upcase-cmucl x :start start :end end)))
+
+)
+
+; Fix SBCL bug, fixed in SBCL on 6/2/2024.
+#+sbcl
+(unless (= (char-code (char (string-downcase (coerce (list #.(code-char 192))
+                                                     'string))
+                            0))
+           (char-code (char-downcase #.(code-char 192))))
+
+; See https://bugs.launchpad.net/sbcl/+bug/2067841 for explanation of an SBCL
+; bug (fixed on June 2, 2024) necessitating a fix such as this one.
+; In short, the following two should be equal, but were not.
+
+;   (let ((s (string-downcase (coerce (list (code-char 192)) 'string))))
+;     (char-code (char s 0))) ; 224
+
+;   (char-code (char-downcase (code-char 192))) ; 192
+
+; For another example: The middle character of
+; (string-downcase (string-upcase 
+;                   (coerce (list #\7 (code-char 224) #\A) 'string)))
+; should be a lower-case a with a "grave" (`) accent, but without this fix it
+; was upper-case.
+
+(defvar *old-string-downcase* (symbol-function 'string-downcase))
+
+(defun string-downcase-sbcl (x &key (start 0) (end nil))
+  (declare (special *old-string-downcase*))
+  (let* ((x (string x))
+         (p (position #.(code-char 192) x :start start :end end)))
+    (if p
+        (if end
+            (concatenate 'string
+                         (subseq x 0 p)
+                         (coerce (loop for i from p to (1- end)
+                                       collect (char-downcase (char x i)))
+                                 'string)
+                         (subseq x end (length x)))
+          (concatenate 'string
+                       (subseq x 0 p)
+                       (coerce (loop for i from p to (1- (length x))
+                                     collect (char-downcase (char x i)))
+                               'string)))
+      (funcall *old-string-downcase* x :start start :end end))))
+
+(sb-ext:without-package-locks
+(defun string-downcase (x &key (start 0) (end nil))
+  (string-downcase-sbcl x :start start :end end)))
+
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
