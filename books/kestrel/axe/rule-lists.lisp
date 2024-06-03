@@ -734,7 +734,6 @@
      bvcat-of-ifix-arg2
      bvcat-of-ifix-arg4
 
-
      bvplus-of-bvplus-of-bvuminus
 
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
@@ -1865,8 +1864,7 @@
 
 (defun bvplus-rules ()
   (declare (xargs :guard t))
-  '(
-            ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
+  '(;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
     bvplus-commutative-axe
     bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
     bvplus-associative))
@@ -2094,7 +2092,7 @@
     bvdiv-31-4
 
     bvlt-when-bound-dag
-;    bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
+    ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
 ;    not-bvlt-of-max-arg2          ;alt version?
     ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
     bvmod-of-power-of-2
@@ -2281,7 +2279,7 @@
 
      bvplus-10-shrink-to-9
 
-;                               bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
+     ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
      <-becomes-bvlt-alt-dag
      assoc-equal-of-cons
      bvplus-commutative-axe
