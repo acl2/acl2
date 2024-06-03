@@ -1796,7 +1796,6 @@
             ;; stuff from the timessix example:
             ;acl2::getbit-of-bvchop
 
-            x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
