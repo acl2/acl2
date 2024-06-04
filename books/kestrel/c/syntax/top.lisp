@@ -101,4 +101,5 @@
   :order-subtopics (abstract-syntax
                     concrete-syntax
                     preprocessing
-                    parser))
+                    parser
+                    printer))
