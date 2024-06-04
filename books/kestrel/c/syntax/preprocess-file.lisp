@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
 
@@ -25,7 +24,6 @@
 (include-book "file-paths")
 (include-book "files")
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -35,14 +33,11 @@
 
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
-
 (local (in-theory (disable acl2::error1+)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-theory (disable (:e acl2::tshell-call)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,7 +64,6 @@
      "Further @(see build::cert_param) flags may need to be defined if using a
       C preprocessor other than \"cpp\"."))
   :order-subtopics t)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +96,6 @@
            (true-listp files))
   :rule-classes :compound-recognizer)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro er-soft-with (val str &rest str-args)
@@ -117,7 +110,6 @@
   (equal (mv-nth 1 (acl2::error1+ ctx erp val str alist state))
          val)
   :enable (acl2::error1+))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,7 +131,6 @@
           (prog2$ (raise "cbd is not a string")
                   "")))
       (concatenate 'string cbd filepath))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,7 +272,6 @@
                                                            extra-args
                                                            state)))))
     :enable (preprocess-file-fn)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
