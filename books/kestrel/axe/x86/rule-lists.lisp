@@ -1027,9 +1027,13 @@
 (defun if-rules ()
   (declare (xargs :guard t))
   '(acl2::if-nil-t
+    acl2::if-t-nil-becomes-bool-fix
     acl2::if-of-not
-    x86isa::if-of-if-same-arg2
-    x86isa::if-of-if-arg3-same
+    acl2::if-of-if-same-arg2
+    acl2::if-of-if-same-arg3
+    acl2::if-of-if-t-nil
+    acl2::if-of-if-of-cons-arg1-arg2
+    acl2::if-of-if-of-cons-arg1-arg3
     ))
 
 ;; For this strategy, we lower the IF when the 2 states have the same PC and no
@@ -2316,10 +2320,7 @@
             mv-nth-1-of-rme-size-of-set-edx-when-app-view
 
             write-to-segment-of-set-eip
-            write-byte-to-segment-of-set-eip
-
-            if-of-if-of-cons-and-nil
-            )))
+            write-byte-to-segment-of-set-eip)))
 
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
@@ -4514,7 +4515,6 @@
             acl2::bvcat-of-slice-of-bvsx-same
             not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
             not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-            if-of-if-of-cons-and-nil ; why not already included
             acl2::bvplus-commutative-increasing-axe
             acl2::bvplus-commutative-2-increasing-axe
             ;;acl2::equal-same

@@ -1,7 +1,7 @@
 ; Rules about IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -108,3 +108,33 @@
   (implies (not (equal v1 v2))
            (equal (if (equal v1 x) nil (equal v2 x))
                   (equal v2 x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd if-of-if-of-cons-arg1-arg2
+  (equal (if (if x (cons a b) y) z w)
+         (if (if x t y) z w)))
+
+(defthmd if-of-if-of-cons-arg1-arg3
+  (equal (if (if x y (cons a b)) z w)
+         (if (if x y t) z w)))
+
+;; drop since we turn the cons into t and then apply the t-nil rule
+;; ;move
+;; ;can help when the inner if returns an error (a cons) or nil
+;; (defthmd if-of-if-of-cons-and-nil
+;;   (equal (if (if test (cons a b) nil) tp ep)
+;;          (if test tp ep)))
+
+(defthmd if-t-nil-when-booleanp
+  (implies (booleanp test)
+           (equal (if test t nil)
+                  test)))
+
+(defthmd if-of-if-same-arg2
+  (equal (if test (if test tp ep) ep2)
+         (if test tp ep2)))
+
+(defthmd if-of-if-same-arg3
+  (equal (if test x (if test y z))
+         (if test x z)))
