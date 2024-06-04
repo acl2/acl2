@@ -73,9 +73,12 @@
      to obtain preprocessed source files,
      which can be then parsed by our parser.")
    (xdoc::p
-    "We also plan to add a pretty-printer
-     that connect concrete and abstract syntax.
-     We also plan to add a checker on the abstract syntax
+    "We also provide a (pretty-)printer that turns our abstract syntax
+     into concrete syntax that is valid C code.
+     Like the parser and the abstract syntax,
+     our printer covers all the C constructs after preprocessing.")
+   (xdoc::p
+    "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
      which may result in an elaboration of the abstract syntax,
      e.g. to enhance the abstract syntax with types and other information
