@@ -1,7 +1,7 @@
-; Unsigned bit-vector "less than" comparison
+; Rules about BVLT
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,38 +11,14 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvlt-def")
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
 (include-book "bvminus") ;drop! but is used below
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-;fixme some of these could be macros...
-;unsigned less-than
-(defund bvlt (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (< (bvchop size x)
-     (bvchop size y)))
 
-;unsigned less-than-or-equal
-(defun bvle (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (not (bvlt size y x)))
-
-;unsigned greater-than
-(defun bvgt (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (bvlt size y x))
-
-;unsigned greater-than-or-equal
-(defun bvge (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (not (bvlt size x y)))
 
 ;rename
 (defthm bvlt-of-0-arg3
