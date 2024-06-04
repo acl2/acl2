@@ -1551,7 +1551,7 @@
             ;; x86isa::xw-of-xr
             ;; xw-of-rflags-does-nothing ; use a more general rule?
             ;; alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
-            alignment-checking-enabled-p-of-!rflags-of-xr
+            alignment-checking-enabled-p-of-!rflags
             ;; get-flag-of-xw-rflags-of-xr-rflags
             get-flag-of-!rflags-of-xr
             ;; xw-of-rflags-of-xw
@@ -2177,7 +2177,7 @@
      x86isa::canonical-address-p-of-if
      the-check
      acl2::lookup-eq-safe
-     eql
+     eql ; just include base-rules?
      acl2::+-commutative-axe
      unicity-of-0
      ;; all-addreses-of-stack-slots
@@ -2560,7 +2560,7 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    bvchop-of-+-of-esp-becomes-+-of-esp ; new, let's us drop the bvchop
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
 
@@ -4311,8 +4311,7 @@
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;rflagsbits->af-of-myif
-            acl2::eql ; drop soon?
-            acl2::equal-of-constant-and-bvuminus
+            ;; acl2::equal-of-constant-and-bvuminus
             ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvif-of-myif-arg3 ; introduces bvif

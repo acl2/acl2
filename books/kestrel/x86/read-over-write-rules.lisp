@@ -60,18 +60,19 @@
 (defthm alignment-checking-enabled-p-of-set-mxcsr (equal (alignment-checking-enabled-p (set-mxcsr mxcsr x86)) (alignment-checking-enabled-p x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 (defthm alignment-checking-enabled-p-of-set-ms (equal (alignment-checking-enabled-p (set-ms ms x86)) (alignment-checking-enabled-p x86)) :hints (("Goal" :in-theory (enable set-ms))))
 
-;improve?
-(defthm alignment-checking-enabled-p-of-!rflags-of-xr
-  (implies (equal (get-flag :ac x86_1) (get-flag :ac x86_2))
-           (equal (alignment-checking-enabled-p (!rflags (xr ':rflags 'nil x86_1) x86_2))
-                  (alignment-checking-enabled-p x86_2)))
-  :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag))))
+;; alignment-checking is a conjunction of 3 checks
+(defthm alignment-checking-enabled-p-of-!rflags
+  (implies (equal (rflagsbits->ac rflags) (get-flag :ac x86))
+           (equal (alignment-checking-enabled-p (!rflags rflags x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag rflagsbits->ac x86isa::rflagsbits-fix))))
 
-(defthm alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
-  (implies (equal (get-flag :ac x86_1) (get-flag :ac x86_2))
-           (equal (alignment-checking-enabled-p (xw :rflags nil (xr :rflags nil x86_1) x86_2))
-                  (alignment-checking-enabled-p x86_2)))
-  :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag))))
+;; not needed?
+(defthm alignment-checking-enabled-p-of-xw-rflags
+  (implies (equal (rflagsbits->ac rflags) (get-flag :ac x86))
+           (equal (alignment-checking-enabled-p (xw :rflags nil rflags x86))
+                  (alignment-checking-enabled-p x86)))
+  :hints (("Goal" :in-theory (enable !rflags alignment-checking-enabled-p get-flag rflagsbits->ac x86isa::rflagsbits-fix))))
 
 (defthm 64-bit-modep-of-set-undef (equal (64-bit-modep (set-undef undef x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm 64-bit-modep-of-set-mxcsr (equal (64-bit-modep (set-mxcsr mxcsr x86)) (64-bit-modep x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
