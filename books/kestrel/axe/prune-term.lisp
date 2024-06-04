@@ -42,7 +42,11 @@
                            default-cdr
                            CONSP-FROM-LEN-CHEAP
                            state-p
-                           nth)))
+                           nth
+                           ;; not sure if these help:
+                           ;;pseudo-term-listp
+                           ;;quotep
+                           )))
 
 (defund lookup-with-default (key alist default)
   (declare (xargs :guard (and (eqlablep key)
@@ -107,41 +111,49 @@
 ;; Fixup assumption when it will obviously loop when used as a directed equality.
 ;; could check for (equal <constant> <x>) here too, but Axe may be smart enough to reorient that
 ;; Returns a possibly-empty list.
-(defund fixup-assumption (assumption)
-  (declare (xargs :guard (pseudo-termp assumption)))
+(defund fixup-assumption (assumption print)
+  (declare (xargs :guard (and (pseudo-termp assumption)
+                              (print-levelp print))))
   (if (not (and (consp assumption)
                 (eq 'equal (ffn-symb assumption))
                 (eql 2 (len (fargs assumption))) ;for guards
                 ))
       (list assumption)
     (if (subtermp (farg1 assumption) (farg2 assumption))
-        (prog2$ (cw "(Note: re-orienting equality assumption ~x0.)~%" assumption)
+        (prog2$ (and (print-level-at-least-briefp print)
+                     (cw "(Note: re-orienting equality assumption ~x0.)~%" assumption))
                 `((equal ,(farg2 assumption) ,(farg1 assumption))))
       (if (quotep (farg1 assumption))
           (list assumption)
         (if (quotep (farg2 assumption))
             `((equal ,(farg1 assumption) ,(farg2 assumption)))
-          (prog2$ (cw "(Note: Dropping equality assumption ~x0.)~%" assumption)
+          (prog2$ (and (print-level-at-least-briefp print)
+                       (cw "(Note: Dropping equality assumption ~x0.)~%" assumption))
                   nil))))))
 
-(defthm pseudo-term-listp-of-fixup-assumption
-  (implies (pseudo-termp assumption)
-           (pseudo-term-listp (fixup-assumption assumption)))
-  :hints (("Goal" :in-theory (enable fixup-assumption))))
+(local
+  (defthm pseudo-term-listp-of-fixup-assumption
+    (implies (pseudo-termp assumption)
+             (pseudo-term-listp (fixup-assumption assumption print)))
+    :hints (("Goal" :in-theory (enable fixup-assumption)))))
 
 ;; Reorder equalities that obviously loop (because a term is equated to a
 ;; superterm).  TODO: Perform a more thorough analysis of possible looping.
-(defund fixup-assumptions (assumptions)
-  (declare (xargs :guard (pseudo-term-listp assumptions)))
+(defund fixup-assumptions (assumptions print)
+  (declare (xargs :guard (and (pseudo-term-listp assumptions)
+                              (print-levelp print))))
   (if (endp assumptions)
       nil
-    (union-equal (fixup-assumption (first assumptions))
-                 (fixup-assumptions (rest assumptions)))))
+    (union-equal (fixup-assumption (first assumptions) print)
+                 (fixup-assumptions (rest assumptions) print))))
 
-(defthm pseudo-term-listp-of-fixup-assumptions
-  (implies (pseudo-term-listp assumptions)
-           (pseudo-term-listp (fixup-assumptions assumptions)))
-  :hints (("Goal" :in-theory (enable fixup-assumptions))))
+(local
+  (defthm pseudo-term-listp-of-fixup-assumptions
+    (implies (pseudo-term-listp assumptions)
+             (pseudo-term-listp (fixup-assumptions assumptions print)))
+    :hints (("Goal" :in-theory (enable fixup-assumptions)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund get-equalities (assumptions)
   (declare (xargs :guard (pseudo-term-listp assumptions)))
@@ -156,7 +168,6 @@
   (implies (pseudo-term-listp assumptions)
            (pseudo-term-listp (get-equalities assumptions)))
   :hints (("Goal" :in-theory (enable get-equalities))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -300,7 +311,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Thread through a print option
 (mutual-recursion
  ;; Returns (mv erp result-term state) where RESULT-TERM is equal
  ;; to TERM. Tries to rewrite each if/myif/boolif/bvif test using context from all overarching
@@ -352,7 +362,7 @@
                           (mv (erp-nil) then-branch state)
                         (let ((test-conjuncts (get-conjuncts-of-term2 test)))
                           (prune-term-aux then-branch
-                                          (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                          (union-equal (fixup-assumptions test-conjuncts print) assumptions)
                                           (union-equal (get-equalities test-conjuncts) equality-assumptions)
                                           rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
@@ -364,7 +374,7 @@
                         ;; TODO: Perhaps call get-disjunction and handle a possible constant returned?:
                         (let ((negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test))))
                           (prune-term-aux else-branch
-                                          (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                          (union-equal (fixup-assumptions negated-test-conjuncts print) assumptions)
                                           (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                           rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
@@ -415,7 +425,7 @@
                           (mv (erp-nil) then-branch state)
                         (let ((test-conjuncts (get-conjuncts-of-term2 test)))
                           (prune-term-aux then-branch
-                                          (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                          (union-equal (fixup-assumptions test-conjuncts print) assumptions)
                                           (union-equal (get-equalities test-conjuncts) equality-assumptions)
                                           rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
@@ -426,7 +436,7 @@
                           (mv (erp-nil) else-branch state)
                         (let ((negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test))))
                           (prune-term-aux else-branch
-                                          (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                          (union-equal (fixup-assumptions negated-test-conjuncts print) assumptions)
                                           (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                           rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
@@ -476,7 +486,7 @@
                           (mv (erp-nil) then-branch state)
                         (let ((test-conjuncts (get-conjuncts-of-term2 test)))
                           (prune-term-aux then-branch
-                                          (union-equal (fixup-assumptions test-conjuncts) assumptions)
+                                          (union-equal (fixup-assumptions test-conjuncts print) assumptions)
                                           (union-equal (get-equalities test-conjuncts) equality-assumptions)
                                           rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
@@ -487,7 +497,7 @@
                           (mv (erp-nil) else-branch state)
                         (let ((negated-test-conjuncts (negate-disjuncts (get-disjuncts-of-term2 test))))
                           (prune-term-aux else-branch
-                                          (union-equal (fixup-assumptions negated-test-conjuncts) assumptions)
+                                          (union-equal (fixup-assumptions negated-test-conjuncts print) assumptions)
                                           (union-equal (get-equalities negated-test-conjuncts) equality-assumptions)
                                           rule-alist interpreted-function-alist monitored-rules call-stp print state))))
                      ((when erp) (mv erp nil state))
@@ -597,7 +607,6 @@
 ;; Returns (mv erp changep result-term state).
 ;; TODO: Print some stats about the pruning process?
 ;; TODO: Allow rewriting to be suppressed (just call STP)?
-;; TODO: Allow printing to be suppressed.
 (defund prune-term (term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
@@ -613,7 +622,7 @@
        ;; (- (cw "(Term: ~x0)~%" term))  ;; TODO: Print, but only if small (and thread through a print arg)
        ((mv erp new-term state)
         (prune-term-aux term
-                        (fixup-assumptions assumptions)
+                        (fixup-assumptions assumptions print)
                         (get-equalities assumptions)
                         rule-alist
                         interpreted-function-alist
