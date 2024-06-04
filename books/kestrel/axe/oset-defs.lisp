@@ -52,7 +52,8 @@
 
 (defun set::in (a x)
   (declare (xargs :guard (set::setp x)
-                  :verify-guards nil))
+                  ;;:verify-guards nil
+                  ))
   (mbe :logic (and (not (set::emptyp x))
                    (or (equal a (set::head x))
                        (set::in a (set::tail x))))
