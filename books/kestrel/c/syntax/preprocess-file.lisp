@@ -10,8 +10,8 @@
 
 (in-package "C$")
 
-(include-book "std/util/bstar" :dir :system)
-(include-book "std/util/define" :dir :system)
+(include-book "file-paths")
+(include-book "files")
 
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
@@ -20,24 +20,18 @@
 (include-book "oslib/rmtree" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
 (include-book "std/strings/cat" :dir :system)
+(include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
 
-(include-book "file-paths")
-(include-book "files")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
-(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
-
 (local (in-theory (disable acl2::error1+)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:e acl2::tshell-call)))
+(local (in-theory (disable (:e acl2::tshell-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,6 +233,7 @@
                   (and read (filedata bytes))))))
 
   ///
+
   (defrule consp-of-mv-nth-1-of-preprocess-file
     (consp (mv-nth 1 (preprocess-file-fn filename
                                          save
