@@ -23,68 +23,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Library Extensions
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule str::dec-digit-char-listp-of-basic-nat-to-dec-chars
-  (dec-digit-char-listp (str::basic-nat-to-dec-chars nat))
-  :induct t
-  :enable (str::basic-nat-to-dec-chars
-           dec-digit-char-listp
-           digit-to-char)
-  :prep-books ((include-book "arithmetic-3/top" :dir :system)))
-
-(defrule str::dec-digit-char-listp-of-nat-to-dec-chars-aux
-  (implies (dec-digit-char-listp acc)
-           (dec-digit-char-listp (str::nat-to-dec-chars-aux nat acc)))
-  :enable str::nat-to-dec-chars-aux)
-
-(defrule dec-digit-char-listp-of-nat-to-dec-chars
-  (dec-digit-char-listp (str::nat-to-dec-chars nat))
-  :enable str::nat-to-dec-chars)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule str::oct-digit-char-listp-of-basic-nat-to-oct-chars
-  (oct-digit-char-listp (str::basic-nat-to-oct-chars nat))
-  :induct t
-  :enable (str::basic-nat-to-oct-chars
-           oct-digit-char-listp
-           digit-to-char
-           ifix)
-  :prep-books ((include-book "ihs/logops-lemmas" :dir :system)
-               (include-book "arithmetic-3/top" :dir :system)))
-
-(defrule str::oct-digit-char-listp-of-nat-to-oct-chars-aux
-  (implies (oct-digit-char-listp acc)
-           (oct-digit-char-listp (str::nat-to-oct-chars-aux nat acc)))
-  :enable str::nat-to-oct-chars-aux)
-
-(defrule oct-digit-char-listp-of-nat-to-oct-chars
-  (oct-digit-char-listp (str::nat-to-oct-chars nat))
-  :enable str::nat-to-oct-chars)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule str::hex-digit-char-listp-of-basic-nat-to-hex-chars
-  (hex-digit-char-listp (str::basic-nat-to-hex-chars nat))
-  :induct t
-  :enable (str::basic-nat-to-hex-chars
-           hex-digit-char-listp
-           digit-to-char))
-
-(defrule str::hex-digit-char-listp-of-nat-to-hex-chars-aux
-  (implies (hex-digit-char-listp acc)
-           (hex-digit-char-listp (str::nat-to-hex-chars-aux nat acc)))
-  :enable str::nat-to-hex-chars-aux)
-
-(defrule hex-digit-char-listp-of-nat-to-hex-chars
-  (hex-digit-char-listp (str::nat-to-hex-chars nat))
-  :enable str::nat-to-hex-chars)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ printer
   :parents (syntax-for-tools)
   :short "A printer of C from the abstract syntax."
