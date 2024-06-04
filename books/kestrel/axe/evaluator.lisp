@@ -58,7 +58,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
-(include-book "kestrel/maps/maps" :dir :system) ;for key-list
+(include-book "kestrel/maps/maps" :dir :system) ;for key-list, todo: brings in too much, like osets
 (include-book "make-evaluator")
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
