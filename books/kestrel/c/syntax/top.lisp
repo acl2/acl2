@@ -14,6 +14,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
 (include-book "preprocess-file")
+(include-book "parser")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,9 +59,26 @@
      with preprocessing being a distinguished translation phase
      [C:5.1.1.2].")
    (xdoc::p
-    "We also plan to add a parser and a pretty-printer
-     that connect concrete and abstract syntax.
-     We also plan to add a checker on the abstract syntax
+    "We also provide a parser from the concrete syntax to the abstract syntax.
+     The parser is an initial version;
+     it covers all of the C constructs after preprocessing,
+     but has limitations in the handling of
+     certain inherently ambiguous constructs
+     that are notoriously complex in C;
+     we will improve our parser in this respect soon.")
+   (xdoc::p
+    "In order to process typical C code,
+     we also provide an ACL2 tool to invoke a C preprocessor.
+     The tool can be run on headers and source files,
+     to obtain preprocessed source files,
+     which can be then parsed by our parser.")
+   (xdoc::p
+    "We also provide a (pretty-)printer that turns our abstract syntax
+     into concrete syntax that is valid C code.
+     Like the parser and the abstract syntax,
+     our printer covers all the C constructs after preprocessing.")
+   (xdoc::p
+    "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
      which may result in an elaboration of the abstract syntax,
      e.g. to enhance the abstract syntax with types and other information
@@ -82,4 +100,6 @@
      ACL2 libraries (and sub-libraries) for other programming languages."))
   :order-subtopics (abstract-syntax
                     concrete-syntax
-                    preprocessing))
+                    preprocessing
+                    parser
+                    printer))
