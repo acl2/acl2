@@ -476,7 +476,7 @@
                                             print
                                             (acl2::known-booleans (w state))
                                             rules-to-monitor
-                                            '(program-at) ; fns-to-elide
+                                            '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
