@@ -35,7 +35,7 @@
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system) ;for prefixp
 ;(include-book "std/osets/top" :dir :system) ;for set::in
-(include-book "std/osets/membership" :dir :system) ;for set::in
+(include-book "oset-defs")
 
 ;fixme add more
 ;fixme add theorems to justify these?
