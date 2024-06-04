@@ -432,6 +432,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "The recognizers of digit characters in various bases
+     have been renamed to have the suffix @('-list*p'),
+     because they are loose list recognizers.
+     New recognizers have been added with suffix @('-listp')
+     for true lists of such digit characters.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
