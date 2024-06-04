@@ -14,8 +14,8 @@
 ;; This file deals with the bouncycastle version of AES that is neither the
 ;; "Light" one nor the "Fast" one.
 
-;; This version of the proof bit-blasts the variables.
-;; See also aes-128-encrypt-regular-and-spec-alt.lisp.
+;; This version of the proof avoids bit-blasting the variables.
+;; See also aes-128-encrypt-regular-and-spec.lisp
 
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/jvm/unroll-java-code" :dir :system :ttags :all)
@@ -36,26 +36,25 @@
 
 (defconst *key-byte-count* 16) ; AES-128 has 128 key bits (= 16 bytes)
 
-;; Unroll the spec:
+;; Unroll the spec, creating the DAG constant *aes-128-encrypt-spec-dag*:
 (unroll-spec-basic *aes-128-encrypt-spec-dag*
-                   `(list-to-bv-array '8 (aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16)
-                                                               ,(bit-blasted-symbolic-byte-list 'key *key-byte-count*)))
+                   `(list-to-bv-array '8 (aes::aes-128-encrypt ,(symbolic-byte-list 'in 16)
+                                                               ,(symbolic-byte-list 'key *key-byte-count*)))
                    :rules :auto
                    :extra-rules (introduce-bv-array-rules) ; turns nth into bv-array-read
-                   )
+                   :assumptions :bytes)
 
-;; Unroll the code:
+;; Unroll the code, creating the DAG constant *aes-128-encrypt-regular-dag*:
 ;; NOTE: This assumes that the AES classes have not been initialized yet, so
 ;; they get initialized during lifting, which is a bit un-general.
 (unroll-java-code *aes-128-encrypt-regular-dag*
                   "AESEncryptRegularDriver.driver([B[B[B)[B"
                   :array-length-alist `((key . ,*key-byte-count*)
                                         (in . 16)
-                                        (out . 16))
-                  :vars-for-array-elements :bits)
+                                        (out . 16)))
 
 ;; Prove equivalence of unrolled code and spec:
 (prove-equivalence *aes-128-encrypt-regular-dag*
                    *aes-128-encrypt-spec-dag*
-                   :types (bit-types-for-vars (append (make-bit-var-list-for-bytes *key-byte-count* 'key)
-                                                      (make-bit-var-list-for-bytes 16 'in))))
+                   :types (byte-types-for-vars (append (make-var-names 'in 16)
+                                                       (make-var-names 'key *key-byte-count*))))
