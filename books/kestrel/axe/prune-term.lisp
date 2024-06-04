@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -202,7 +202,7 @@
 
 ;; Tries to resolve the TEST assuming the ASSUMPTIONS and EQUALITY-ASSUMPTIONS.  Uses rewriting and STP.
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
-;; (It may be the case that the test can be shown to be other true and false,
+;; (It may be the case that the test can be shown to be both true and false,
 ;; because the assumptions contradict, in which case the entire enclosing
 ;; IF/MYIF/BOOLIF/BVIF may be irrelevant.)
 ;; TODO: Allow STP to run longer (more conflicts) for IFs that are higher up in the term, since resolving such an IF throws away more stuff.
