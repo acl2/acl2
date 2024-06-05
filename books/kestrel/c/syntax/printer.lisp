@@ -2972,7 +2972,8 @@
                         (pstate (print-decl-list fundef.decls pstate)))
                      pstate)
                  (print-astring " " pstate)))
-       (pstate (print-block (stmt-compound->items fundef.body) pstate)))
+       (pstate (print-block (stmt-compound->items fundef.body) pstate))
+       (pstate (print-new-line pstate)))
     pstate)
   :hooks (:fix))
 
