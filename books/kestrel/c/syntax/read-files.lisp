@@ -309,6 +309,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-files-fn ((args true-listp) (ctx ctxp) state)
+  :short "Event expansion of @(tsee read-files) from the inputs."
   (b* (((mv erp event state)
         (read-files-process-inputs-and-gen-defconst args state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
@@ -316,5 +317,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro read-files (&rest args)
-  `(make-event-terse (read-files-fn ',args 'read-files state)))
+(defsection read-files-definition
+  :short "Definition of the @(tsee read-files) macro."
+  (defmacro read-files (&rest args)
+    `(make-event-terse (read-files-fn ',args 'read-files state))))
