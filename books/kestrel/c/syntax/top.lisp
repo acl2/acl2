@@ -17,6 +17,7 @@
 (include-book "parser")
 (include-book "read-files")
 (include-book "parse-files")
+(include-book "print-files")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,4 +107,5 @@
                     parser
                     printer
                     read-files
-                    parse-files))
+                    parse-files
+                    print-files))
