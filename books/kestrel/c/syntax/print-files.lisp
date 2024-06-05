@@ -210,6 +210,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define print-files-fn ((args true-listp) (ctx ctxp) state)
+  :returns (mv erp event state)
   :short "Event expansion of @(tsee print-files) from the inputs."
   (b* (((mv erp event)
         (print-files-process-inputs-and-gen-defconst args (w state)))
