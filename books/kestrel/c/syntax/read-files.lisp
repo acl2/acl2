@@ -18,6 +18,7 @@
 
 (local (include-book "kestrel/std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -26,12 +27,6 @@
 (set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel alistp-when-symbol-alistp
-  (implies (symbol-alistp x)
-           (alistp x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruledl byte-listp-becomes-unsigned-byte-listp-8
   (equal (byte-listp x)
@@ -216,7 +211,8 @@
         (reterr (msg "The :PREPROCESS input must be T or NIL, ~
                       but it is ~x0 instead."
                      preprocess))))
-    (retok const paths preprocess)))
+    (retok const paths preprocess))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
