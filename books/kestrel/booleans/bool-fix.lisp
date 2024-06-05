@@ -1,7 +1,7 @@
 ; A book about bool-fix, which coerces a value to a boolean.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,3 +41,9 @@
 
 ;; This helps justify some things that Axe does:
 (defcong iff equal (bool-fix$inline x) 1 :hints (("Goal" :in-theory (enable bool-fix))))
+
+(defthmd if-t-nil-becomes-bool-fix
+  (equal (if x t nil)
+         (bool-fix x)))
+
+(theory-invariant (incompatible (:rewrite if-t-nil-becomes-bool-fix) (:definition bool-fix$inline)))

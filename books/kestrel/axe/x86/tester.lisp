@@ -382,6 +382,7 @@
           rules-to-monitor
           print
           10 ; print-base (todo: consider 16)
+          t ; untranslatep (todo: make this an option)
           rewriter
           state))
        ((when erp) (mv erp nil nil state))

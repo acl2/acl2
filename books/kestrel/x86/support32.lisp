@@ -4849,12 +4849,6 @@
          (read-stack-dword eff-addr x86))
   :hints (("Goal" :in-theory (enable read-stack-dword))))
 
-;move
-;can help when the inner if returns an error (a cons) or nil
-(defthm if-of-if-of-cons-and-nil
-  (equal (if (if test (cons a b) nil) tp ep)
-         (if test tp ep)))
-
 ; Helps resolve updates to ESP.
 ; Note that this replaces BVPLUS with +.  TODO: Think about when we want this.
 ;; todo: do we need a version for 64-bit?

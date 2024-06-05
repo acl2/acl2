@@ -19,7 +19,7 @@
 (include-book "kestrel/utilities/quote" :dir :system)
 
  ;since the functions are mentioned below (todo: make sure all functions mentioned below are included):
-(include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/bv/bvlt-def" :dir :system)
 (include-book "kestrel/bv/sbvlt" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
