@@ -39,6 +39,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable state-p natp w
                            ;; for speed:
@@ -47,33 +48,6 @@
                            default-+-2
                            default-cdr
                            member-equal)))
-
-;move
-(local
-  (defthm symbolp-when-member-equal
-    (implies (and (member-equal x lst)
-                  (symbol-listp lst))
-             (symbolp x))
-    :hints (("Goal" :in-theory (enable member-equal)))))
-
-(local
-  (defthm member-equal-of-singleton
-    (implies (and (syntaxp (quotep lst))
-                  (= 1 (len lst)))
-             (iff (member-equal x lst)
-                  (equal x (first lst))))
-    :hints (("Goal" :in-theory (enable member-equal)))))
-
-(defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
-  (implies (weak-dagp-aux dag)
-           (integer-listp (strip-cars dag)))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
-
-(defthm bounded-possibly-negated-nodenumsp-when-bounded-contextp
-  (implies (bounded-contextp context bound)
-           (equal (bounded-possibly-negated-nodenumsp context bound)
-                  (not (equal (false-context) context))))
-  :hints (("Goal" :in-theory (enable bounded-contextp))))
 
 ;move:
 
@@ -168,6 +142,8 @@
 
 (ensure-rules-known (prune-dag-post-rewrite-rules))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
 ;; TODO: Also use rewriting?  See also try-to-resolve-test.
 (defund try-to-resolve-node-with-stp (nodenum-or-quotep
@@ -235,16 +211,13 @@
     (prog2$ (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))
             (mv (erp-nil) :unknown state))))
 
-(defthm w-of-mv-nth-2-of-try-to-resolve-node-with-stp
-  (equal (w (mv-nth 2 (try-to-resolve-node-with-stp dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable try-to-resolve-node-with-stp))))
+(local
+  (defthm w-of-mv-nth-2-of-try-to-resolve-node-with-stp
+    (equal (w (mv-nth 2 (try-to-resolve-node-with-stp dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable try-to-resolve-node-with-stp)))))
 
-(defthm true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
-  (implies (and (pseudo-dagp dag)
-                (consp dag))
-           (true-listp (dargs (cdr (car dag)))))
-  :rule-classes :type-prescription)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These justify the pruning done by prune-dag-approximately-aux:
 (thm (implies test (equal (myif test x y) (if test x y)))) ; myif can be treated just like if

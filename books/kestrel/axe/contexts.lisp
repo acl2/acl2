@@ -125,6 +125,13 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-contextp contextp))))
 
+;; limit?
+(defthm bounded-possibly-negated-nodenumsp-when-bounded-contextp
+  (implies (bounded-contextp context bound)
+           (equal (bounded-possibly-negated-nodenumsp context bound)
+                  (not (equal (false-context) context))))
+  :hints (("Goal" :in-theory (enable bounded-contextp))))
+
 (defthm bounded-contextp-monotone
   (implies (and (bounded-contextp context bound1)
                 (<= bound1 bound)

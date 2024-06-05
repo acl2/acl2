@@ -146,11 +146,15 @@
               (weak-dagp-aux dag)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-
-(defthm rational-listp-of-strip-cars-when-weak-dagp-aux
+(defthm rational-listp-of-strip-cars-when-weak-dagp-aux-cheap
   (implies (weak-dagp-aux dag)
            (rational-listp (strip-cars dag)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
+  (implies (weak-dagp-aux dag)
+           (integer-listp (strip-cars dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm weak-dagp-aux-of-cdr
   (implies (weak-dagp-aux dag)
@@ -1275,6 +1279,12 @@
   (implies (pseudo-dagp dag)
            (consp (car dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthm true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
+  (implies (and (pseudo-dagp dag)
+                (consp dag))
+           (true-listp (dargs (cdr (car dag)))))
+  :rule-classes :type-prescription)
 
 (defthm dag-exprp-of-cdr-of-car-when-weak-dagp
   (implies (weak-dagp dag)
