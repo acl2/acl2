@@ -26,4 +26,5 @@
                  (fileset->unwrap *stdbool-printed*))))
  "int main(void) {
   return (int) 0;
-}")
+}
+")
