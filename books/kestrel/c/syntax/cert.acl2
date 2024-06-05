@@ -10,4 +10,4 @@
 
 (include-book "portcullis")
 
-; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:quicklisp.osicat) (:oslib))
+; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:quicklisp.osicat) (:oslib) (:file-io!))
