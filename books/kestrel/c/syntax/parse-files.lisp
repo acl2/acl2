@@ -208,6 +208,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-files-fn ((args true-listp) (ctx ctxp) state)
+  :returns (mv erp event state)
   :short "Event expansion of @(tsee parse-files) from the inputs."
   (b* (((mv erp event)
         (parse-files-process-inputs-and-gen-defconst args (w state)))
