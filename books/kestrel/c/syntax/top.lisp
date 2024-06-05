@@ -16,6 +16,7 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "read-files")
+(include-book "parse-files")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,4 +105,5 @@
                     preprocessing
                     parser
                     printer
-                    read-files))
+                    read-files
+                    parse-files))
