@@ -43,7 +43,7 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "This macro takes as the name of a named constant
+     "This macro takes as input the name of a named constant
       whose value is a file set (see @(tsee filset)),
       uses the @(see parser) to parse the file set
       into a translation unit ensemble (see @(tsee transunit-ensemble)),
