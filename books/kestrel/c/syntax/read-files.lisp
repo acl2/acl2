@@ -276,7 +276,7 @@
     "Based on the @(':proprocess') flag,
      either we read the files directly,
      or we read and preprocess them.
-     We put the fileset into a quoted constant
+     We put the file set into a quoted constant
      to define the named constant."))
   (b* (((reterr) '(_) state)
        ((erp fileset state)
