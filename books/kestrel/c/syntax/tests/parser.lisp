@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parser
- parse-declaration-specifier
+ parse-external-declaration-list
  "struct mystruct
 {
    int *val;
