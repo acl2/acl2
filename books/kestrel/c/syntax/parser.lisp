@@ -4972,7 +4972,7 @@
    (xdoc::p
     "A structure declarator may start with a declarator,
      or with a colon."))
-  (or (token-direct-declarator-start-p token?)
+  (or (token-declarator-start-p token?)
       (equal token? (token-punctuator ":")))
   ///
 
