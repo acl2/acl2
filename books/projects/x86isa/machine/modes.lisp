@@ -46,7 +46,6 @@
 (include-book "std/bitsets/bignum-extract" :dir :system) ;; For 64-bit-modep
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 ;; ======================================================================
 

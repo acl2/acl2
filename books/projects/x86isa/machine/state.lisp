@@ -269,6 +269,30 @@
                   :initially t)
     (:doc "</li>")
 
+    (:doc "<li>@('ENABLE-PERIPHERALS'): This field also acts as a
+    switch. When its value is @('t'), then the model's peripherals
+    (timer and TTY) are enabled. Otherwise, the model acts like
+    there are no peripherals. This only applies when the model
+    is in @('sys-view').<br/>")
+    (enable-peripherals :type (satisfies booleanp)
+                        :fix (acl2::bool-fix x)
+                        :initially t)
+    (:doc "</li>")
+
+    (:doc "<li>@('HANDLE-INTERRUPTS'): This field also acts as a
+    switch. When its value is @('t'), then exceptions and interrupts
+    are handled using handlers in the IDT. Otherwise, exceptions and
+    interrupts cause the ms or fault fields to be set after instruction
+    execution, which terminates execution when using x86-run. This
+    only applies when the model is in @('sys-view'). Note: The timer
+    peripheral triggers interrupts, and they won't be handled unless
+    this is @('t'), so if you are using it, you probably want to enable
+    this.<br/>")
+    (handle-exceptions :type (satisfies booleanp)
+                       :fix (acl2::bool-fix x)
+                       :initially t)
+    (:doc "</li>")
+
     (:doc "<li>@('OS-INFO'): This field is meaningful only in
     @('app-view') mode to model system call behavior.<br/>")
     (os-info :type (satisfies keywordp)
@@ -616,19 +640,19 @@
              collect
              (intern$ (symbol-name i) "KEYWORD"))))
 
+(define tlb-keyp (key)
+  :enabled t
+  :guard t
+  (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
+           (< (loghead 2 key) 3)))
+
 (define tlb-entryp (x)
   :guard t
+  :enabled t
   (b* (((unless (consp x)) nil)
        ((cons key val) x))
-      (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
-           (< (loghead 2 key) 3)
-           (unsigned-byte-p (- #.*physical-address-size* 12) val)))
-  ///
-  (defthm constraints-on-tlb-entryp
-          (equal (tlb-entryp (cons key val))
-                 (and (unsigned-byte-p (+ (- #.*max-linear-address-size* 12) 4) key)
-                      (< (loghead 2 key) 3)
-                      (unsigned-byte-p (- #.*physical-address-size* 12) val)))))
+      (and  (tlb-keyp key)
+            (unsigned-byte-p (- #.*physical-address-size* 12) val))))
 
 (define tlbp (tlb)
   :guard t

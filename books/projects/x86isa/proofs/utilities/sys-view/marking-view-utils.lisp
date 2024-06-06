@@ -99,37 +99,45 @@
                               (term-order r-w-x-2 r-w-x-1)))
                 (not (mv-nth 0 (las-to-pas n lin-addr r-w-x-1 x86)))
                 (not (mv-nth 0 (las-to-pas n lin-addr r-w-x-2 x86)))
+                ;; If the tlb is not consistent, it is entirely
+                ;; possible that these will map to different addresses
+                ;; since the tlb key includes perms
+                (tlb-consistent-n n lin-addr r-w-x-1 x86)
+                (tlb-consistent-n n lin-addr r-w-x-2 x86)
                 (64-bit-modep x86))
            (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x-2 x86))
                   (mv-nth 1 (las-to-pas n lin-addr r-w-x-1 x86))))
   :hints (("Goal"
-           :in-theory (e/d* (las-to-pas) ())
+           :in-theory (e/d* (las-to-pas tlb-consistent-n)
+                            (tlb-consistent-implies-we-can-lookup-without-tlb))
            :induct (r-w-x-irrelevant-ind-scheme n lin-addr r-w-x-1 r-w-x-2 x86 x86))
           (if (equal (car id) '(0 1))
               '(:expand ((las-to-pas n lin-addr r-w-x-1 x86)
                          (las-to-pas n lin-addr r-w-x-2 x86)))
             nil)))
 
-(defthm r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
-  (implies (and (bind-free (find-almost-matching-las-to-pas
-                            'r-w-x-1 n lin-addr mfc state)
-                           (r-w-x-1))
-                (syntaxp (and (not (eq r-w-x-2 r-w-x-1))
-                              ;; r-w-x-2 must be smaller than r-w-x-1.
-                              (term-order r-w-x-2 r-w-x-1)))
-                (not (equal r-w-x-1 :w))
-                (not (equal r-w-x-2 :w))
-                (not (mv-nth 0 (las-to-pas n lin-addr r-w-x-1 (double-rewrite x86))))
-                (not (mv-nth 0 (las-to-pas n lin-addr r-w-x-2 (double-rewrite x86)))))
-           (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x-2 x86))
-                  (mv-nth 2 (las-to-pas n lin-addr r-w-x-1 x86))))
-  :hints (("Goal"
-           :in-theory (e/d* (las-to-pas) ())
-           :induct (r-w-x-irrelevant-ind-scheme n lin-addr r-w-x-1 r-w-x-2 x86 x86))
-          (if (equal (car id) '(0 1))
-              '(:expand ((las-to-pas n lin-addr r-w-x-1 x86)
-                         (las-to-pas n lin-addr r-w-x-2 x86)))
-            nil)))
+;; This used to hold before the addition of the TLB. Now it doesn't because
+;; address translation may modify the TLB, and the key includes the permissions.
+;; (defthm r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors
+;;   (implies (and (bind-free (find-almost-matching-las-to-pas
+;;                             'r-w-x-1 n lin-addr mfc state)
+;;                            (r-w-x-1))
+;;                 (syntaxp (and (not (eq r-w-x-2 r-w-x-1))
+;;                               ;; r-w-x-2 must be smaller than r-w-x-1.
+;;                               (term-order r-w-x-2 r-w-x-1)))
+;;                 (not (equal r-w-x-1 :w))
+;;                 (not (equal r-w-x-2 :w))
+;;                 (not (mv-nth 0 (las-to-pas n lin-addr r-w-x-1 (double-rewrite x86))))
+;;                 (not (mv-nth 0 (las-to-pas n lin-addr r-w-x-2 (double-rewrite x86)))))
+;;            (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x-2 x86))
+;;                   (mv-nth 2 (las-to-pas n lin-addr r-w-x-1 x86))))
+;;   :hints (("Goal"
+;;            :in-theory (e/d* (las-to-pas) ())
+;;            :induct (r-w-x-irrelevant-ind-scheme n lin-addr r-w-x-1 r-w-x-2 x86 x86))
+;;           (if (equal (car id) '(0 1))
+;;               '(:expand ((las-to-pas n lin-addr r-w-x-1 x86)
+;;                          (las-to-pas n lin-addr r-w-x-2 x86)))
+;;             nil)))
 
 (defthm combine-mv-nth-2-las-to-pas-same-r-w-x
   (implies (and (equal lin-addr-2 (+ n-1 lin-addr-1))
@@ -509,11 +517,37 @@
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
 
+(defthm ia32e-la-to-pa-without-tlb-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
+  (implies (and (disjoint-p
+                 (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
+                 (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
+                (canonical-address-p lin-addr)
+                (64-bit-modep (double-rewrite x86)))
+           (and
+            (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                             (mv-nth 1 (wb n-w write-addr w value x86))))
+                   (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))
+            (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                             (mv-nth 1 (wb n-w write-addr w value x86))))
+                   (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             disjoint-p-commutative
+                             member-p
+                             ia32e-la-to-pa-without-tlb
+                             xlation-governing-entries-paddrs)
+                            (wb
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
 (defthm ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
   (implies (and (disjoint-p
                  (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
                  (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (canonical-address-p lin-addr)
+                (tlb-consistent lin-addr r-w-x x86)
                 (64-bit-modep (double-rewrite x86)))
            (and
             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
@@ -527,7 +561,6 @@
            :in-theory (e/d* (disjoint-p
                              disjoint-p-commutative
                              member-p
-                             ia32e-la-to-pa
                              xlation-governing-entries-paddrs)
                             (wb
                              bitops::logand-with-negated-bitmask
@@ -552,6 +585,7 @@
             (disjoint-p
              (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
              (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86)))
+            (tlb-consistent-n n lin-addr r-w-x x86)
             (64-bit-modep (double-rewrite x86)))
            (and
             (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x
@@ -563,7 +597,7 @@
   :hints (("Goal"
            :induct (las-to-pas n lin-addr r-w-x
                                (mv-nth 1 (wb n-w write-addr w value x86)))
-           :in-theory (e/d* ()
+           :in-theory (e/d* (tlb-consistent-n)
                             (disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p
                              wb
                              xlation-governing-entries-paddrs
@@ -619,6 +653,7 @@
              ;; pertaining to the read.
              (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
              (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86)))
+            (tlb-consistent-n n lin-addr r-w-x x86)
             (not (app-view x86))
             (64-bit-modep (double-rewrite x86)))
            (and
@@ -657,6 +692,7 @@
                 (not (mv-nth 0 (las-to-pas n-w write-addr :w (double-rewrite x86))))
                 (unsigned-byte-p (ash n-w 3) value)
                 (natp n-w)
+                (tlb-consistent-n n lin-addr r-w-x x86)
                 (64-bit-modep (double-rewrite x86))
                 (x86p x86))
            (equal (mv-nth 1 (rb n lin-addr r-w-x
@@ -702,6 +738,13 @@
                 (equal x86-1 x86-2)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ()))))
 
+(defthm paging-equiv-memory-is-equal-in-app-view
+  ;; TODO: Move to paging/gather-paging-structures.lisp?
+  (implies (app-view x86-1)
+           (iff (paging-equiv-memory x86-1 x86-2)
+                (equal x86-1 x86-2)))
+  :hints (("Goal" :in-theory (e/d* (paging-equiv-memory) ()))))
+
 (defthm xlate-equiv-memory-is-equal-in-non-64-bit-mode
   ;; TODO: Move to paging/gather-paging-structures.lisp?
   (implies (not (64-bit-modep x86-1))
@@ -709,29 +752,38 @@
                 (equal x86-1 x86-2)))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory) ()))))
 
+(defthm paging-equiv-memory-is-equal-in-non-64-bit-mode
+  ;; TODO: Move to paging/gather-paging-structures.lisp?
+  (implies (not (64-bit-modep x86-1))
+           (iff (paging-equiv-memory x86-1 x86-2)
+                (equal x86-1 x86-2)))
+  :hints (("Goal" :in-theory (e/d* (paging-equiv-memory) ()))))
+
 (defsection xlate-equiv-memory-and-rml08
   :parents (system-level-marking-view-proof-utilities)
 
-  (defthmd xlate-equiv-memory-and-rvm08
+  (defthmd paging-equiv-memory-and-rvm08
     (implies (and (xr :app-view nil (double-rewrite x86-1))
-                  (xlate-equiv-memory (double-rewrite x86-1) x86-2))
+                  (paging-equiv-memory (double-rewrite x86-1) x86-2))
              (and (equal (mv-nth 0 (rvm08 lin-addr x86-1))
                          (mv-nth 0 (rvm08 lin-addr x86-2)))
                   (equal (mv-nth 1 (rvm08 lin-addr x86-1))
                          (mv-nth 1 (rvm08 lin-addr x86-2)))))
-    :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory)
+    :hints (("Goal" :in-theory (e/d* (paging-equiv-memory)
                                      (force (force))))))
 
 
-  (defthm xlate-equiv-memory-and-mv-nth-0-rml08-cong
-    (implies (xlate-equiv-memory x86-1 x86-2)
+  (defthm paging-equiv-memory-and-mv-nth-0-rml08-cong
+    (implies (paging-equiv-memory x86-1 x86-2)
              (equal (mv-nth 0 (rml08 lin-addr r-w-x x86-1))
                     (mv-nth 0 (rml08 lin-addr r-w-x x86-2))))
     :hints
     (("Goal" :cases ((xr :app-view nil x86-1))
       :in-theory (e/d* (rml08 disjoint-p member-p)
                        (force (force)))
-      :use ((:instance xlate-equiv-memory-and-rvm08))))
+      :use ((:instance paging-equiv-memory-and-rvm08)
+            (:instance paging-equiv-memory-implies-equal-app-view-1
+                       (x86 x86-1) (x86-equiv x86-2)))))
     :rule-classes :congruence)
 
   (defthmd xlate-equiv-memory-and-xr-mem-from-rest-of-memory
@@ -741,8 +793,8 @@
             'xlate-equiv-memory-and-xr-mem-from-rest-of-memory
             x86-1 'x86-2 mfc state)
            (x86-2))
-          (syntaxp (not (equal x86-1 x86-2)))
           (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+          (syntaxp (not (equal x86-1 x86-2)))
           (disjoint-p (list j)
                       (open-qword-paddr-list
                        (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
@@ -751,15 +803,32 @@
      (equal (xr :mem j x86-1) (xr :mem j x86-2)))
     :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory disjoint-p) ()))))
 
-  (defthm xlate-equiv-memory-and-mv-nth-1-rml08
+  (defthmd paging-equiv-memory-and-xr-mem-from-rest-of-memory
     (implies
      (and (bind-free
-           (find-an-xlate-equiv-x86
-            'xlate-equiv-memory-and-mv-nth-1-rml08
+           (find-an-paging-equiv-x86
+            'paging-equiv-memory-and-xr-mem-from-rest-of-memory
+            x86-1 'x86-2 mfc state)
+           (x86-2))
+          (paging-equiv-memory (double-rewrite x86-1) x86-2)
+          (syntaxp (not (equal x86-1 x86-2)))
+          (disjoint-p (list j)
+                      (open-qword-paddr-list
+                       (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+          (natp j)
+          (< j *mem-size-in-bytes*))
+     (equal (xr :mem j x86-1) (xr :mem j x86-2)))
+    :hints (("Goal" :in-theory (e/d* (paging-equiv-memory disjoint-p) ()))))
+
+  (defthm paging-equiv-memory-and-mv-nth-1-rml08
+    (implies
+     (and (bind-free
+           (find-an-paging-equiv-x86
+            'paging-equiv-memory-and-mv-nth-1-rml08
             x86-1 'x86-2 mfc state)
            (x86-2))
           (syntaxp (not (equal x86-1 x86-2)))
-          (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+          (paging-equiv-memory (double-rewrite x86-1) x86-2)
           (disjoint-p
            (list (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86-1))))
            (open-qword-paddr-list
@@ -774,23 +843,279 @@
                                member-p
                                las-to-pas)
                               (force (force)))
-             :use ((:instance xlate-equiv-memory-and-xr-mem-from-rest-of-memory
+             :use ((:instance paging-equiv-memory-and-xr-mem-from-rest-of-memory
                               (j (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-1)))
                               (x86-1 (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-1)))
                               (x86-2 (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
-                   (:instance xlate-equiv-memory-and-rvm08)))))
+                   (:instance paging-equiv-memory-and-rvm08)))))
 
   (defthm xlate-equiv-memory-and-two-mv-nth-2-rml08-cong
     (implies (xlate-equiv-memory x86-1 x86-2)
              (xlate-equiv-memory (mv-nth 2 (rml08 lin-addr r-w-x x86-1))
                                  (mv-nth 2 (rml08 lin-addr r-w-x x86-2))))
-    :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force)))))
-    :rule-classes :congruence)
+    :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force))))))
+
+  (defthm paging-equiv-memory-and-two-mv-nth-2-rml08-cong
+          (implies (paging-equiv-memory x86-1 x86-2)
+                   (paging-equiv-memory (mv-nth 2 (rml08 lin-addr r-w-x x86-1))
+                                        (mv-nth 2 (rml08 lin-addr r-w-x x86-2))))
+          :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force)))))
+          :rule-classes :congruence)
+
+  (defthm paging-equiv-memory-mv-nth-2-rml08
+          (implies (64-bit-modep (double-rewrite x86))
+                   (paging-equiv-memory x86 (mv-nth 2 (rml08 lin-addr r-w-x x86))))
+          :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force))))))
 
   (defthm xlate-equiv-memory-and-mv-nth-2-rml08
     (implies (64-bit-modep (double-rewrite x86))
              (xlate-equiv-memory (mv-nth 2 (rml08 lin-addr r-w-x x86)) x86))
     :hints (("Goal" :in-theory (e/d* (rml08 rb) (force (force)))))))
+
+;; ======================================================================
+
+;; rb in system-level marking view:
+
+(defsection rb-in-system-level-marking-view
+  :parents (system-level-marking-view-proof-utilities)
+
+  (defthm xr-fault-rb-state-in-sys-view
+    (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+             (equal (xr :fault index (mv-nth 2 (rb n lin-addr r-w-x x86)))
+                    (xr :fault index x86)))
+    :hints (("Goal" :in-theory (e/d* (las-to-pas rb) (force (force))))))
+
+  (defthm rb-and-xw-flags-state-in-sys-view
+    (implies (and (equal (rflagsBits->ac (double-rewrite value))
+                         (rflagsBits->ac (rflags x86)))
+                  (x86p x86))
+             (equal (mv-nth 2 (rb n lin-addr r-w-x (xw :rflags nil value x86)))
+                    (xw :rflags nil value (mv-nth 2 (rb n lin-addr r-w-x x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (rb) (force (force))))))
+
+  (defthm mv-nth-0-rb-and-paging-equiv-memory-cong
+    (implies (paging-equiv-memory x86-1 x86-2)
+             (equal (mv-nth 0 (rb n lin-addr r-w-x x86-1))
+                    (mv-nth 0 (rb n lin-addr r-w-x x86-2))))
+    :hints (("Goal" :in-theory (e/d* (rb) (force (force)))))
+    :rule-classes :congruence)
+
+  (defthm read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures-0
+          (implies
+            (and (bind-free
+                   (find-an-xlate-equiv-x86
+                     'read-from-physical-memory-and-xlate-equiv-memory
+                     x86-1 'x86-2 mfc state)
+                   (x86-2))
+                 (syntaxp (and (not (eq x86-2 x86-1))
+                               ;; x86-2 must be "smaller" than x86-1.
+                               (term-order x86-2 x86-1)))
+                 (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+                 (physical-address-listp p-addrs)
+                 (disjoint-p
+                   p-addrs
+                   (open-qword-paddr-list
+                     (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
+            (equal (read-from-physical-memory p-addrs x86-1)
+                   (read-from-physical-memory p-addrs x86-2)))
+          :hints (("Goal"
+                   :do-not '(generalize)
+                   :in-theory (e/d* (disjoint-p)
+                                    ()))
+                  (and (consp (car id))
+                       (< 1 (len (car id)))
+                       '(:use (:instance xlate-equiv-memory-and-xr-mem-from-rest-of-memory
+                                         (j (car p-addrs)))))))
+
+  (defthm read-from-physical-memory-and-paging-equiv-memory-disjoint-from-paging-structures-0
+    (implies
+     (and (bind-free
+           (find-an-paging-equiv-x86
+            'read-from-physical-memory-and-paging-equiv-memory
+            x86-1 'x86-2 mfc state)
+           (x86-2))
+          (syntaxp (and (not (eq x86-2 x86-1))
+                        ;; x86-2 must be "smaller" than x86-1.
+                        (term-order x86-2 x86-1)))
+          (paging-equiv-memory (double-rewrite x86-1) x86-2)
+          (physical-address-listp p-addrs)
+          (disjoint-p
+           p-addrs
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
+     (equal (read-from-physical-memory p-addrs x86-1)
+            (read-from-physical-memory p-addrs x86-2)))
+    :hints (("Goal"
+             :in-theory (e/d* (paging-equiv-memory-and-xr-mem-from-rest-of-memory disjoint-p)
+                              ()))))
+
+  (defthm read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
+    (implies
+     (and (bind-free
+           (find-an-xlate-equiv-x86
+            'read-from-physical-memory-and-xlate-equiv-memory
+            x86-1 'x86-2 mfc state)
+           (x86-2))
+          (syntaxp (and (not (eq x86-2 x86-1))
+                        ;; x86-2 must be "smaller" than x86-1.
+                        (term-order x86-2 x86-1)))
+          (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-2)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))))
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
+     (equal (read-from-physical-memory (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)) x86-1)
+            (read-from-physical-memory (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)) x86-2))))
+
+  (defthm read-from-physical-memory-and-paging-equiv-memory-disjoint-from-paging-structures
+    (implies
+     (and (bind-free
+           (find-an-paging-equiv-x86
+            'read-from-physical-memory-and-paging-equiv-memory
+            x86-1 'x86-2 mfc state)
+           (x86-2))
+          (syntaxp (and (not (eq x86-2 x86-1))
+                        ;; x86-2 must be "smaller" than x86-1.
+                        (term-order x86-2 x86-1)))
+          (paging-equiv-memory (double-rewrite x86-1) x86-2)
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-2)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))))
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
+     (equal (read-from-physical-memory (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)) x86-1)
+            (read-from-physical-memory (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)) x86-2))))
+
+  (defthm xlate-equiv-memory-tlb-consistent-n-implies-equal-las-to-pas
+          (implies
+            (and (xlate-equiv-memory x86-1 x86-2)
+                 (syntaxp (and (not (eq x86-2 x86-1))
+                               ;; x86-2 must be "smaller" than x86-1.
+                               (term-order x86-2 x86-1)))
+                 (tlb-consistent-n n lin-addr r-w-x x86-1)
+                 (tlb-consistent-n n lin-addr r-w-x x86-2))
+            (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
+                        (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2)))
+                 (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
+                        (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2)))))
+          :hints (("Goal"
+                   :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
+                                 (las-to-pas n lin-addr r-w-x x86-2))
+                   :in-theory (enable las-to-pas tlb-consistent-n))))
+
+  (defthm mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+    (implies
+     (and (bind-free
+           (find-an-xlate-equiv-x86
+            'mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+            x86-1 'x86-2 mfc state)
+           (x86-2))
+          (syntaxp (and
+                    (not (eq x86-2 x86-1))
+                    ;; x86-2 must be "smaller" than x86-1.
+                    (term-order x86-2 x86-1)))
+          (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-2)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))))
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+          (tlb-consistent-n n lin-addr r-w-x x86-1)
+          (tlb-consistent-n n lin-addr r-w-x x86-2)
+          (64-bit-modep (double-rewrite x86-1)))
+     (equal (mv-nth 1 (rb n lin-addr r-w-x x86-1))
+            (mv-nth 1 (rb n lin-addr r-w-x x86-2))))
+    :hints (("Goal" :do-not-induct t :in-theory (e/d* (rb) ()))))
+
+  (defthm mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures
+    (implies
+     (and (bind-free
+           (find-an-paging-equiv-x86
+            'mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures
+            x86-1 'x86-2 mfc state)
+           (x86-2))
+          (syntaxp (and
+                    (not (eq x86-2 x86-1))
+                    ;; x86-2 must be "smaller" than x86-1.
+                    (term-order x86-2 x86-1)))
+          (paging-equiv-memory (double-rewrite x86-1) x86-2)
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-2)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))))
+          (disjoint-p
+           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
+           (open-qword-paddr-list
+            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+          (64-bit-modep (double-rewrite x86-1)))
+     (equal (mv-nth 1 (rb n lin-addr r-w-x x86-1))
+            (mv-nth 1 (rb n lin-addr r-w-x x86-2))))
+    :hints (("Goal" :do-not-induct t :in-theory (e/d* (rb) ()))))
+
+  (defthm mv-nth-2-rb-and-xlate-equiv-memory
+          (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+                        (64-bit-modep (double-rewrite x86)))
+                   (xlate-equiv-memory (mv-nth 2 (rb n lin-addr r-w-x x86))
+                                        (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  (defthm mv-nth-2-rb-and-paging-equiv-memory
+          (implies (and (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
+                        (64-bit-modep (double-rewrite x86)))
+                   (paging-equiv-memory (mv-nth 2 (rb n lin-addr r-w-x x86))
+                                        (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (rb) (force (force))))))
+
+  (defthm mv-nth-1-rb-after-mv-nth-2-rb
+    ;; This rule will come in useful when rb isn't rewritten to
+    ;; rb-alt, i.e., for reads from the paging structures.  Hence,
+    ;; I'll use disjoint-p$ in the hyps here instead of disjoint-p.
+    (implies
+     (and
+      (disjoint-p$
+       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
+       (all-xlation-governing-entries-paddrs n-2 lin-addr-2 (double-rewrite x86)))
+      (disjoint-p$
+       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
+       (all-xlation-governing-entries-paddrs n-1 lin-addr-1 (double-rewrite x86)))
+      (64-bit-modep (double-rewrite x86)))
+     (equal (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1
+                          (mv-nth 2 (rb n-2 lin-addr-2 r-w-x-2 x86))))
+            (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1 x86))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (rb disjoint-p$) (force (force))))))
+
+  (defthm mv-nth-1-rb-after-mv-nth-2-las-to-pas
+    (implies
+     (and
+      (disjoint-p
+       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
+       (all-xlation-governing-entries-paddrs n-2 lin-addr-2 (double-rewrite x86)))
+      (disjoint-p
+       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
+       (all-xlation-governing-entries-paddrs n-1 lin-addr-1 (double-rewrite x86)))
+      (not (app-view x86))
+      (64-bit-modep (double-rewrite x86)))
+     (equal
+      (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1
+                    (mv-nth 2 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86))))
+      (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))))
+    :hints (("Goal"
+             :do-not-induct t
+             :in-theory (e/d* (rb) (force (force)))))))
 
 ;; ======================================================================
 
@@ -806,7 +1131,8 @@
      (implies
       (and (not (app-view x86))
            (not (equal fld :mem))
-           (not (equal fld :fault)))
+           (not (equal fld :fault))
+           (not (equal fld :tlb)))
       (equal (xr fld index
                  (mv-nth
                   3 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
@@ -815,14 +1141,20 @@
               :induct (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
               :in-theory (e/d* (get-prefixes rml08 rb las-to-pas)
                                (rme08
+                                get-prefixes-opener-lemma-group-3-prefix
+                                get-prefixes-opener-lemma-group-4-prefix
                                 negative-logand-to-positive-logand-with-integerp-x
                                 unsigned-byte-p-of-logior
                                 acl2::loghead-identity
-                                not force (force)))))))
+                                not force (force))))
+             (and (consp id)
+                  (equal (len (cadr id)) 1)
+               '(:cases ((equal proc-mode #.*64-bit-mode*)))))))
 
   (defthmd xr-not-mem-and-get-prefixes
     (implies
      (and (not (equal fld :mem))
+          (not (equal fld :tlb))
           (not (equal fld :fault)))
      (equal (xr fld index (mv-nth
                            3
@@ -845,7 +1177,7 @@
   (make-event
    (generate-xr-over-write-thms
     (remove-elements-from-list
-     '(:mem :fault)
+     '(:mem :fault :tlb)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (acl2::formals 'get-prefixes (w state))
@@ -861,7 +1193,6 @@
                        (:definition rme08$inline)
                        (:linear mv-nth-1-idiv-spec)
                        (:linear mv-nth-1-div-spec)
-                       (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view)
                        (:rewrite ia32e-la-to-pa-in-app-view)
                        (:type-prescription 64-bit-modep)
                        (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
@@ -869,7 +1200,6 @@
                        (:rewrite xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa)
                        (:rewrite default-+-2)
                        (:rewrite default-+-1)
-                       (:rewrite r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-when-no-errors)
                        (:type-prescription x86p)
                        (:rewrite xr-ia32e-la-to-pa)
                        (:rewrite xr-mv-nth-2-ia32e-la-to-pa-when-error)
@@ -886,7 +1216,6 @@
                        (:definition rb-1)
                        (:linear member-p-pos-value)
                        (:linear member-p-pos-1-value)
-                       (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-view)
                        (:rewrite acl2::zp-when-integerp)
                        (:rewrite default-<-2)
                        (:meta acl2::cancel_times-equal-correct)
@@ -916,7 +1245,6 @@
                        (:type-prescription disjoint-p)
                        (:rewrite rb-1-returns-x86-app-view)
                        (:linear size-of-rb-1)
-                       (:rewrite read-from-physical-memory-and-mv-nth-2-ia32e-la-to-pa)
                        (:rewrite get-prefixes-opener-lemma-group-4-prefix)
                        (:rewrite acl2::ifix-when-not-integerp)
                        (:rewrite ea-to-la-when-64-bit-modep-and-not-fs/gs)
@@ -927,7 +1255,6 @@
                         all-mem-except-paging-structures-equal-aux-and-xr-mem-from-rest-of-memory)
                        (:rewrite
                         all-mem-except-paging-structures-equal-and-xr-mem-from-rest-of-memory)
-                       (:rewrite r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors)
                        (:type-prescription cr8bits-p$inline)
                        (:type-prescription 4bits-p)
                        (:rewrite cr8bits-p-when-unsigned-byte-p)
@@ -940,8 +1267,6 @@
                        (:rewrite disjoint-p-subset-p)
                        (:rewrite rationalp-implies-acl2-numberp)
                        (:type-prescription n08p-mv-nth-1-rvm08)
-                       (:rewrite
-                        get-prefixes-does-not-modify-x86-state-in-system-level-non-marking-view)
                        (:rewrite bitops::unsigned-byte-p-incr)
                        (:linear size-of-combine-bytes)
                        (:linear bitops::expt-2-lower-bound-by-logbitp)
@@ -1012,7 +1337,8 @@
           (not (equal fld :msr))
           (not (equal fld :fault))
           (not (equal fld :app-view))
-          (not (equal fld :marking-view)))
+          (not (equal fld :marking-view))
+          (not (equal fld :tlb)))
      (and
       (equal
        (mv-nth
@@ -1070,7 +1396,8 @@
           (not (equal fld :msr))
           (not (equal fld :fault))
           (not (equal fld :app-view))
-          (not (equal fld :marking-view)))
+          (not (equal fld :marking-view))
+          (not (equal fld :tlb)))
      (equal
       (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt
                               (xw fld index value x86)))
@@ -1103,7 +1430,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view)
+            :msr :fault :app-view :marking-view :tlb)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1119,7 +1446,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible :seg-hidden-base
             :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view)
+            :msr :fault :app-view :marking-view :tlb)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1135,7 +1462,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view)
+            :msr :fault :app-view :marking-view :tlb)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element 'proc-mode #.*64-bit-mode*
@@ -1151,7 +1478,7 @@
     (remove-elements-from-list
      '(:mem :rflags :ctr :seg-visible
             :seg-hidden-base :seg-hidden-limit :seg-hidden-attr
-            :msr :fault :app-view :marking-view)
+            :msr :fault :app-view :marking-view :tlb)
      *x86-field-names-as-keywords*)
     'get-prefixes
     (replace-element
@@ -1540,125 +1867,85 @@
                     (:type-prescription bitops::logand-natp-type-1)
                     (:rewrite bitops::logsquash-cancel)))))
 
-  (defthm xlate-equiv-memory-and-two-get-prefixes-values
-    (implies
-     (and
-      (bind-free
-       (find-an-xlate-equiv-x86
-        'xlate-equiv-memory-and-two-get-prefixes-values
-        x86-1 'x86-2 mfc state)
-       (x86-2))
-      (syntaxp (not (equal x86-1 x86-2)))
-      (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-      (canonical-address-p start-rip)
-      (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86-1))))
-      (disjoint-p
-       (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86-1)))
-       (open-qword-paddr-list
-        (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
-      (64-bit-modep (double-rewrite x86-1)))
-     (and
-      (equal
-       (mv-nth
-        0 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
-       (mv-nth
-        0 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))
-      (equal
-       (mv-nth
-        1 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
-       (mv-nth
-        1 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))
-      (equal
-       (mv-nth
-        2 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
-       (mv-nth
-        2 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))))
-    :hints
-    (("Goal"
-      :induct
-      (get-prefixes-two-x86-induct-hint
-       start-rip prefixes rex-byte cnt x86-1 x86-2)
-      :in-theory
-      (e/d* (get-prefixes disjoint-p
-                          member-p las-to-pas
-                          mv-nth-0-las-to-pas-subset-p)
-            ()))
-     (if
-         ;; Apply to all subgoals under a top-level induction.
-         (and (consp (car id))
-              (< 1 (len (car id))))
-         '(:expand
-           ((las-to-pas cnt start-rip :x x86-1)
-            (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1)
-            (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2))
-           :use
-           ((:instance xlate-equiv-memory-and-mv-nth-0-rml08-cong
-                       (lin-addr start-rip)
-                       (r-w-x :x))
-            (:instance xlate-equiv-memory-and-mv-nth-1-rml08
-                       (lin-addr start-rip)
-                       (r-w-x :x)))
-           :in-theory
-           (e/d* (disjoint-p
-                  member-p
-                  get-prefixes
-                  las-to-pas)
-                 (rml08
-                  mv-nth-0-las-to-pas-subset-p
-                  xlate-equiv-memory-and-mv-nth-0-rml08-cong
-                  xlate-equiv-memory-and-mv-nth-1-rml08
-                  (:rewrite mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p))))
-       nil)))
+  (defthm paging-equiv-memory-and-two-get-prefixes-values
+          (implies
+            (and
+              (bind-free
+                (find-an-paging-equiv-x86
+                  'paging-equiv-memory-and-two-get-prefixes-values
+                  x86-1 'x86-2 mfc state)
+                (x86-2))
+              (syntaxp (not (equal x86-1 x86-2)))
+              (paging-equiv-memory (double-rewrite x86-1) x86-2)
+              (canonical-address-p start-rip)
+              (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86-1))))
+              (disjoint-p
+                (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86-2)))
+                (open-qword-paddr-list
+                  (gather-all-paging-structure-qword-addresses (double-rewrite x86-2))))
+              (disjoint-p
+                (mv-nth 1 (las-to-pas cnt start-rip :x (double-rewrite x86-1)))
+                (open-qword-paddr-list
+                  (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+              (64-bit-modep (double-rewrite x86-1)))
+            (and
+              (equal
+                (mv-nth
+                  0 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+                (mv-nth
+                  0 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))
+              (equal
+                (mv-nth
+                  1 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+                (mv-nth
+                  1 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))
+              (equal
+                (mv-nth
+                  2 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+                (mv-nth
+                  2 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2)))))
+          :hints
+          (("Goal"
+            :induct
+            (get-prefixes-two-x86-induct-hint
+              start-rip prefixes rex-byte cnt x86-1 x86-2)
+            :in-theory
+            (e/d* (get-prefixes disjoint-p
+                                member-p las-to-pas
+                                mv-nth-0-las-to-pas-subset-p)
+                  ()))
+           ;; Apply to all subgoals under a top-level induction.
+           (and (consp (car id))
+                (< 1 (len (car id)))
+                '(
+                  ;; There's one subgoal where for some reason it expands the term with x86-1
+                  ;; but not the one with x86-2
+                  :expand
+                  ((get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2))))))
 
-  (defthm xlate-equiv-memory-and-mv-nth-3-get-prefixes
+  (defthm paging-equiv-memory-and-mv-nth-3-get-prefixes
     (implies
      (and (not (app-view (double-rewrite x86)))
           (marking-view (double-rewrite x86))
           (canonical-address-p start-rip)
           (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86))))
           (64-bit-modep (double-rewrite x86)))
-     (xlate-equiv-memory
-      (mv-nth 3 (get-prefixes
-                 #.*64-bit-mode* start-rip prefixes rex-byte cnt x86))
+     (paging-equiv-memory
+      (mv-nth 3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86))
       (double-rewrite x86)))
     :hints
-    (("Goal"
-      :induct (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86)
-      :in-theory (e/d* (get-prefixes mv-nth-0-las-to-pas-subset-p subset-p)
-                       (rml08
-                        acl2::ash-0
-                        acl2::zip-open
-                        cdr-create-canonical-address-list
-                        force (force))))
-     (if
-         ;; Apply to all subgoals under a top-level induction.
-         (and (consp (car id))
-              (< 1 (len (car id))))
-         '(:in-theory (e/d* (subset-p get-prefixes mv-nth-0-las-to-pas-subset-p)
-                            (rml08
-                             acl2::ash-0
-                             acl2::zip-open
-                             force (force)))
-                      :expand ((las-to-pas cnt start-rip :x x86))
-                      :use ((:instance xlate-equiv-memory-and-las-to-pas
-                                       (n (+ -1 cnt))
-                                       (lin-addr (+ 1 start-rip))
-                                       (r-w-x :x)
-                                       (x86-1
-                                        (mv-nth 2
-                                                (las-to-pas 1 start-rip :x x86)))
-                                       (x86-2 x86))))
-       nil)))
+    (("Goal" :in-theory (enable get-prefixes las-to-pas))))
 
-  (defthmd xlate-equiv-memory-and-two-mv-nth-3-get-prefixes
+  (defthmd paging-equiv-memory-and-two-mv-nth-3-get-prefixes
     (implies
-     (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+     (and (paging-equiv-memory (double-rewrite x86-1) x86-2)
           (not (app-view x86-2))
           (marking-view (double-rewrite x86-2))
+          (marking-view (double-rewrite x86-1))
           (canonical-address-p start-rip)
           (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86-2))))
           (64-bit-modep x86-2))
-     (xlate-equiv-memory
+     (paging-equiv-memory
       (mv-nth
        3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
       (mv-nth
@@ -1666,167 +1953,40 @@
     :hints
     (("Goal"
       :use
-      ((:instance xlate-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-1))
-       (:instance xlate-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-2)))
+      ((:instance paging-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-1))
+       (:instance paging-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-2)))
       :in-theory (e/d* ()
-                       (xlate-equiv-memory-and-mv-nth-3-get-prefixes
+                       (paging-equiv-memory-and-mv-nth-3-get-prefixes
                         acl2::ash-0
                         acl2::zip-open
-                        cdr-create-canonical-address-list))))))
+                        cdr-create-canonical-address-list))
+      )))
 
-;; ======================================================================
-
-;; rb in system-level marking view:
-
-(defsection rb-in-system-level-marking-view
-  :parents (system-level-marking-view-proof-utilities)
-
-  (defthm xr-fault-rb-state-in-sys-view
-    (implies (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
-             (equal (xr :fault index (mv-nth 2 (rb n lin-addr r-w-x x86)))
-                    (xr :fault index x86)))
-    :hints (("Goal" :in-theory (e/d* (las-to-pas rb) (force (force))))))
-
-  (defthm rb-and-xw-flags-state-in-sys-view
-    (implies (and (equal (rflagsBits->ac (double-rewrite value))
-                         (rflagsBits->ac (rflags x86)))
-                  (x86p x86))
-             (equal (mv-nth 2 (rb n lin-addr r-w-x (xw :rflags nil value x86)))
-                    (xw :rflags nil value (mv-nth 2 (rb n lin-addr r-w-x x86)))))
-    :hints (("Goal"
-             :do-not-induct t
-             :in-theory (e/d* (rb) (force (force))))))
-
-  (defthm mv-nth-0-rb-and-xlate-equiv-memory-cong
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (equal (mv-nth 0 (rb n lin-addr r-w-x x86-1))
-                    (mv-nth 0 (rb n lin-addr r-w-x x86-2))))
-    :hints (("Goal" :in-theory (e/d* (rb) (force (force)))))
-    :rule-classes :congruence)
-
-  (defthm read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
+  (defthmd paging-equiv-memory-and-two-mv-nth-3-get-prefixes
     (implies
-     (and (bind-free
-           (find-an-xlate-equiv-x86
-            'read-from-physical-memory-and-xlate-equiv-memory
-            x86-1 'x86-2 mfc state)
-           (x86-2))
-          (syntaxp (and (not (eq x86-2 x86-1))
-                        ;; x86-2 must be "smaller" than x86-1.
-                        (term-order x86-2 x86-1)))
-          (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-          (disjoint-p
-           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
-           (open-qword-paddr-list
-            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
-     (equal (read-from-physical-memory (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)) x86-1)
-            (read-from-physical-memory (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1)) x86-2)))
-    :hints (("Goal"
-             :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
-                           (las-to-pas n lin-addr r-w-x x86-2))
-             :in-theory (e/d* (las-to-pas disjoint-p)
-                              (disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p force (force))))
-            (if
-                ;; Apply to all subgoals under a top-level induction.
-                (and (consp (car id))
-                     (< 1 (len (car id))))
-                '(:in-theory
-                  (e/d* (las-to-pas disjoint-p)
-                        (disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p force (force)))
-                  :use ((:instance xlate-equiv-memory-and-xr-mem-from-rest-of-memory
-                                   (j (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-1)))
-                                   (x86-1 x86-1)
-                                   (x86-2 x86-2))))
-              nil)))
-
-  (defthm mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-    (implies
-     (and (bind-free
-           (find-an-xlate-equiv-x86
-            'mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
-            x86-1 'x86-2 mfc state)
-           (x86-2))
-          (syntaxp (and
-                    (not (eq x86-2 x86-1))
-                    ;; x86-2 must be "smaller" than x86-1.
-                    (term-order x86-2 x86-1)))
-          (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-          (disjoint-p
-           (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))
-           (open-qword-paddr-list
-            (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
-          (64-bit-modep (double-rewrite x86-1)))
-     (equal (mv-nth 1 (rb n lin-addr r-w-x x86-1))
-            (mv-nth 1 (rb n lin-addr r-w-x x86-2))))
-    :hints (("Goal"
-             :do-not-induct t
-             :use
-             ((:instance read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures)
-              (:instance read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
-                         (x86-1 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-1)))
-                         (x86-2 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-2)))))
-             :in-theory (e/d* (rb)
-                              (read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures
-                               force (force))))))
-
-  (defthm mv-nth-2-rb-and-xlate-equiv-memory
-    (implies (and (marking-view (double-rewrite x86))
-                  (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86))))
-                  (not (app-view (double-rewrite x86)))
-                  (64-bit-modep (double-rewrite x86)))
-             (xlate-equiv-memory (mv-nth 2 (rb n lin-addr r-w-x x86))
-                                 (double-rewrite x86)))
-    :hints (("Goal" :in-theory (e/d* () (force (force))))))
-
-  (defthmd xlate-equiv-memory-and-two-mv-nth-2-rb
-    (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                  (64-bit-modep x86-2)
-                  (marking-view x86-1)
-                  (not (mv-nth 0 (las-to-pas n lin-addr r-w-x (double-rewrite x86-1)))))
-             (xlate-equiv-memory (mv-nth 2 (rb n lin-addr r-w-x x86-1))
-                                 (mv-nth 2 (rb n lin-addr r-w-x x86-2))))
-    :hints (("Goal" :in-theory (e/d* () (mv-nth-2-rb-and-xlate-equiv-memory))
-             :use ((:instance mv-nth-2-rb-and-xlate-equiv-memory (x86 x86-1))
-                   (:instance mv-nth-2-rb-and-xlate-equiv-memory (x86 x86-2))))))
-
-  (defthm mv-nth-1-rb-after-mv-nth-2-rb
-    ;; This rule will come in useful when rb isn't rewritten to
-    ;; rb-alt, i.e., for reads from the paging structures.  Hence,
-    ;; I'll use disjoint-p$ in the hyps here instead of disjoint-p.
-    (implies
-     (and
-      (disjoint-p$
-       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
-       (all-xlation-governing-entries-paddrs n-2 lin-addr-2 (double-rewrite x86)))
-      (disjoint-p$
-       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
-       (all-xlation-governing-entries-paddrs n-1 lin-addr-1 (double-rewrite x86)))
-      (64-bit-modep (double-rewrite x86)))
-     (equal (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1
-                          (mv-nth 2 (rb n-2 lin-addr-2 r-w-x-2 x86))))
-            (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1 x86))))
-    :hints (("Goal"
-             :do-not-induct t
-             :in-theory (e/d* (rb disjoint-p$) (force (force))))))
-
-  (defthm mv-nth-1-rb-after-mv-nth-2-las-to-pas
-    (implies
-     (and
-      (disjoint-p
-       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
-       (all-xlation-governing-entries-paddrs n-2 lin-addr-2 (double-rewrite x86)))
-      (disjoint-p
-       (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
-       (all-xlation-governing-entries-paddrs n-1 lin-addr-1 (double-rewrite x86)))
-      (not (app-view x86))
-      (64-bit-modep (double-rewrite x86)))
-     (equal
-      (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1
-                    (mv-nth 2 (las-to-pas n-2 lin-addr-2 r-w-x-2 x86))))
-      (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))))
-    :hints (("Goal"
-             :do-not-induct t
-             :in-theory (e/d* (rb) (force (force)))))))
+     (and (paging-equiv-memory (double-rewrite x86-1) x86-2)
+          (not (app-view x86-2))
+          (marking-view (double-rewrite x86-2))
+          (marking-view (double-rewrite x86-1))
+          (canonical-address-p start-rip)
+          (not (mv-nth 0 (las-to-pas cnt start-rip :x (double-rewrite x86-2))))
+          (64-bit-modep x86-2))
+     (paging-equiv-memory
+      (mv-nth
+       3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-1))
+      (mv-nth
+       3 (get-prefixes #.*64-bit-mode* start-rip prefixes rex-byte cnt x86-2))))
+    :hints
+    (("Goal"
+      :use
+      ((:instance paging-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-1))
+       (:instance paging-equiv-memory-and-mv-nth-3-get-prefixes (x86 x86-2)))
+      :in-theory (e/d* ()
+                       (paging-equiv-memory-and-mv-nth-3-get-prefixes
+                        acl2::ash-0
+                        acl2::zip-open
+                        cdr-create-canonical-address-list))
+      ))))
 
 ;; ======================================================================
 
@@ -1875,38 +2035,31 @@
 
 ;; Lemmas about program-at:
 
-(local (in-theory
-        (e/d* (rb
-               wb
-               canonical-address-p
-               program-at
-               las-to-pas
-               all-xlation-governing-entries-paddrs
-               unsigned-byte-p
-               signed-byte-p)
-              ())))
-
-(defthmd program-at-and-xlate-equiv-memory
+(defthmd program-at-and-paging-equiv-memory
   (implies
    (and (bind-free
-         (find-an-xlate-equiv-x86
-          'program-at-and-xlate-equiv-memory
+         (find-an-paging-equiv-x86
+          'program-at-and-paging-equiv-memory
           x86-1 'x86-2 mfc state)
          (x86-2))
         (syntaxp (and (not (eq x86-2 x86-1))
                       ;; x86-2 must be smaller than x86-1.
                       (term-order x86-2 x86-1)))
-        (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+        (paging-equiv-memory (double-rewrite x86-1) x86-2)
         (disjoint-p
          (mv-nth 1 (las-to-pas (len bytes) prog-addr :x (double-rewrite x86-1)))
          (open-qword-paddr-list
-          (gather-all-paging-structure-qword-addresses (double-rewrite x86-1)))))
+          (gather-all-paging-structure-qword-addresses (double-rewrite x86-1))))
+        (disjoint-p
+         (mv-nth 1 (las-to-pas (len bytes) prog-addr :x (double-rewrite x86-2)))
+         (open-qword-paddr-list
+          (gather-all-paging-structure-qword-addresses (double-rewrite x86-2)))))
    (equal (program-at prog-addr bytes x86-1)
           (program-at prog-addr bytes x86-2)))
   :hints (("Goal"
-           :in-theory (e/d* (program-at)
-                            (mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures))
-           :use ((:instance mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
+           :in-theory (e/d* (program-at disjoint-p)
+                            (mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures))
+           :use ((:instance mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures
                             (n (len bytes))
                             (lin-addr prog-addr)
                             (r-w-x :x))))))
@@ -1941,13 +2094,13 @@
      (all-xlation-governing-entries-paddrs
       (len bytes) prog-addr (double-rewrite x86)))
     (not (app-view x86))
-    (64-bit-modep (double-rewrite x86)))
+    (64-bit-modep (double-rewrite x86))
+    (tlb-consistent-n (len bytes) prog-addr :x x86))
    (equal (program-at prog-addr bytes (mv-nth 1 (wb n-w write-addr w value x86)))
           (program-at prog-addr bytes x86)))
   :hints (("Goal"
-           :in-theory (e/d (program-at)
-                           (rb wb
-                               disjointness-of-all-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs-subset-p)))))
+           :in-theory (e/d (program-at disjoint-p las-to-pas all-xlation-governing-entries-paddrs)
+                           (rb wb)))))
 
 ;; Lemmas to read a byte of an instruction when symbolically
 ;; simulating a program:
@@ -1960,11 +2113,12 @@
      (mv-nth 1 (las-to-pas n lin-addr r-w-x (double-rewrite x86)))
      (all-xlation-governing-entries-paddrs n lin-addr (double-rewrite x86)))
     (posp n)
-    (64-bit-modep (double-rewrite x86)))
+    (64-bit-modep (double-rewrite x86))
+    (tlb-consistent-n n lin-addr r-w-x x86))
    (equal (mv-nth 1 (rb n lin-addr r-w-x x86))
           (logior (mv-nth 1 (rb 1 lin-addr r-w-x x86))
                   (ash (mv-nth 1 (rb (1- n) (1+ lin-addr) r-w-x x86)) 8))))
-  :hints (("Goal" :in-theory (e/d (rb disjoint-p)
+  :hints (("Goal" :in-theory (e/d (rb disjoint-p las-to-pas tlb-consistent-n all-xlation-governing-entries-paddrs)
                                   (acl2::mv-nth-cons-meta force (force))))))
 
 (local
@@ -2054,6 +2208,64 @@
       (mv flgs (if flgs nil (cons p-addr p-addrs))
           x86))))
 
+(defthmd equal-components-equal-integers
+         (implies (and (natp n)
+                       (integerp x)
+                       (integerp y))
+                  (equal (and (equal (loghead n x)
+                                     (loghead n y))
+                              (equal (ash x (- n))
+                                     (ash y (- n))))
+                         (equal x y)))
+         :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct
+                                            logtail** bitops::logtail-induct
+                                            ash** bitops::ash**-induct))))
+
+(defthmd equal-logior-disjoint-equal-components
+         (implies
+           (and (unsigned-byte-p n x)
+                (unsigned-byte-p n z)
+                (equal (loghead n y) 0)
+                (equal (loghead n w) 0)
+                (natp n))
+           (equal (equal (logior x y)
+                         (logior z w))
+                  (and (equal x z)
+                       (equal (ash y (- n))
+                              (ash w (- n)))
+                       )))
+         :hints (("Goal" :use (:instance equal-components-equal-integers
+                                         (x (logior x y))
+                                         (y (logior z w))))))
+
+(define phys-mem-values-same (addrs x86-1 x86-2)
+  :non-executable t
+  :enabled t
+  (if (atom addrs)
+    t
+    (and (equal (xr :mem (car addrs) x86-1)
+                (xr :mem (car addrs) x86-2))
+         (phys-mem-values-same (cdr addrs) x86-1 x86-2))))
+
+(defthm read-from-physical-memory-x86-states-phys-mem-same
+        (implies (phys-mem-values-same addrs x86-1 x86-2)
+                 (equal (read-from-physical-memory addrs x86-1)
+                        (read-from-physical-memory addrs x86-2))))
+
+(defthm phys-mem-values-same-ia32e-la-to-pa
+        (implies (disjoint-p addrs (xlation-governing-entries-paddrs lin-addr x86))
+                 (phys-mem-values-same addrs x86 (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))
+        :hints (("Goal" :in-theory (enable disjoint-p))))
+
+(defthm phys-mem-values-same-comm
+        (equal (phys-mem-values-same addrs x86-1 x86-2)
+               (phys-mem-values-same addrs x86-2 x86-1))
+               :hints (("Goal" :in-theory (enable disjoint-p))))
+
+(defthm loghead-0-equal
+        (implies (equal x 0)
+                 (equal (loghead n x) 0)))
+
 (local
  (defthmd read-from-physical-memory-subset-p-of-las-to-pas
    (implies
@@ -2071,6 +2283,8 @@
      (natp j) (natp i)
      (<= j i)
      (x86p x86)
+     (tlb-consistent-n j addr r-w-x x86)
+     (tlb-consistent-n i addr r-w-x x86)
      (64-bit-modep (double-rewrite x86)))
     (equal (read-from-physical-memory
             (mv-nth 1 (las-to-pas j addr r-w-x x86)) x86)
@@ -2080,43 +2294,48 @@
              (mv-nth 1 (las-to-pas i addr r-w-x x86)) x86))))
    :hints
    (("Goal"
+     :do-not '(generalize)
      :induct (las-to-pas-two-n-ind-hint i j addr r-w-x x86)
      :in-theory (e/d* (read-from-physical-memory
                        las-to-pas)
-                      ()))
-    (if (equal (car id) '(0 1))
-        '(:use ((:instance mv-nth-0-las-to-pas-subset-p
-                           (n-1 i)
-                           (addr-1 addr)
-                           (n-2 j)
-                           (addr-2 addr))
-                (:instance mv-nth-1-las-to-pas-subset-p
-                           (n-1 i)
-                           (addr-1 addr)
-                           (n-2 j)
-                           (addr-2 addr))
-                (:instance all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-                           (n-1 j)
-                           (addr-1 addr)
-                           (n-2 i)
-                           (addr-2 addr)))
-               :in-theory (e/d* (disjoint-p
-                                 subset-p
-                                 rb-rb-subset-helper-1
-                                 rb-rb-subset-helper-2
-                                 signed-byte-p
-                                 ifix
-                                 nfix
-                                 rb-1-opener-theorem)
-                                ((:definition member-equal)
-                                 mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                                 acl2::commutativity-2-of-+
-                                 infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
-                                 mv-nth-1-las-to-pas-subset-p
-                                 all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-                                 unsigned-byte-p
-                                 signed-byte-p)))
-      nil))))
+                      (tlb-consistent-implies-we-can-lookup-without-tlb)))
+    (and (consp (car id))
+                (< 1 (len (car id)))
+                '(:use ((:instance n08p-xr-mem (i (mv-nth 1 (ia32e-la-to-pa addr r-w-x x86))))
+                        (:instance tlb-consistent-n-implies-tlb-consistent-subset
+                                   (n i)
+                                   (k (1- i))
+                                   (lin-addr-base addr)
+                                   (lin-addr (1+ addr)))
+                        (:instance read-from-physical-memory-x86-states-phys-mem-same
+                                   (addrs (mv-nth 1 (las-to-pas (+ -1 i)
+                                                    (+ 1 addr)
+                                                    r-w-x x86)))
+                                   (x86-1 (mv-nth 2 (ia32e-la-to-pa addr r-w-x x86)))
+                                   (x86-2 x86))
+                        (:instance read-from-physical-memory-x86-states-phys-mem-same
+                                   (addrs (mv-nth 1 (las-to-pas (+ -1 j)
+                                                    (+ 1 addr)
+                                                    r-w-x x86)))
+                                   (x86-1 (mv-nth 2 (ia32e-la-to-pa addr r-w-x x86)))
+                                   (x86-2 x86))
+                        (:instance tlb-consistent-n-implies-tlb-consistent-subset
+                                   (n i)
+                                   (k (1- j))
+                                   (lin-addr-base addr)
+                                   (lin-addr (1+ addr)))
+                        (:instance mv-nth-0-las-to-pas-subset-p
+                                   (n-1 (1- i))
+                                   (addr-1 (1+ addr))
+                                   (n-2 (1- j))
+                                   (addr-2 (1+ addr))))
+                       :in-theory (e/d (las-to-pas equal-logior-disjoint-equal-components)
+                                       (elem-p-of-xr-mem
+                                         n08p-xr-mem
+                                         acl2::simplify-logior
+                                         bitops::logior-equal-0
+                                         mv-nth-0-las-to-pas-subset-p
+                                         tlb-consistent-implies-we-can-lookup-without-tlb)))))))
 
 (local
  (defthmd rb-rb-same-start-address-different-op-sizes-helper
@@ -2139,40 +2358,14 @@
          (not (app-view x86))
          (marking-view x86)
          (x86p x86)
+         (tlb-consistent-n i addr r-w-x x86)
+         (tlb-consistent-n j addr r-w-x x86)
          (64-bit-modep (double-rewrite x86)))
     (equal (mv-nth 1 (rb j addr r-w-x x86))
            (loghead (ash j 3) val)))
    :hints (("Goal"
-            :induct (las-to-pas-two-n-ind-hint i j addr r-w-x x86)
-            :in-theory (e/d* (disjoint-p
-                              rb-rb-subset-helper-1
-                              rb-rb-subset-helper-2)
-                             ((:definition member-equal)
-                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                              acl2::commutativity-2-of-+
-                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
-                              mv-nth-1-las-to-pas-subset-p
-                              all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-                              disjoint-p-append-2
-                              signed-byte-p
-                              unsigned-byte-p)))
-           ("Subgoal *1/3"
-            :in-theory (e/d* (disjoint-p
-                              rb-rb-subset-helper-1
-                              rb-rb-subset-helper-2)
-                             ((:definition member-equal)
-                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                              acl2::commutativity-2-of-+
-                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
-                              mv-nth-1-las-to-pas-subset-p
-                              all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs
-                              disjoint-p-append-2
-                              signed-byte-p
-                              unsigned-byte-p))
-            :use ((:instance read-from-physical-memory-subset-p-of-las-to-pas
-                             (i (+ -1 i))
-                             (j (+ -1 j))
-                             (addr (+ 1 addr))))))))
+            :in-theory (e/d* (rb) ())
+            :use ((:instance read-from-physical-memory-subset-p-of-las-to-pas))))))
 
 (defthmd rb-rb-same-start-address-different-op-sizes
   (implies
@@ -2190,6 +2383,7 @@
         (not (app-view x86))
         (marking-view x86)
         (x86p x86)
+        (tlb-consistent-n i addr r-w-x x86)
         (64-bit-modep (double-rewrite x86)))
    (equal (mv-nth 1 (rb j addr r-w-x x86))
           (loghead (ash j 3) val)))
@@ -2264,7 +2458,6 @@
                       (:rewrite default-+-2)
                       (:rewrite size-of-read-from-physical-memory)
                       (:rewrite mv-nth-1-las-to-pas-when-error)
-                      (:rewrite mv-nth-2-las-to-pas-system-level-non-marking-view)
                       (:rewrite consp-mv-nth-1-las-to-pas)
                       (:rewrite acl2::loghead-identity)
                       (:rewrite unsigned-byte-p-of-logtail)
@@ -2274,7 +2467,6 @@
                       (:rewrite default-<-1)
                       (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
                       (:rewrite xr-mv-nth-2-ia32e-la-to-pa-when-error)
-                      (:rewrite mv-nth-2-ia32e-la-to-pa-system-level-non-marking-view)
                       (:rewrite mv-nth-1-ia32e-la-to-pa-when-error)
                       (:rewrite acl2::unsigned-byte-p-plus)
                       (:rewrite xr-ia32e-la-to-pa)
@@ -2284,8 +2476,6 @@
                       (:rewrite disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                       (:rewrite r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
                       (:rewrite canonical-address-p-limits-thm-3)
-                      (:rewrite r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-when-no-errors)
-                      (:rewrite r-w-x-is-irrelevant-for-mv-nth-2-las-to-pas-when-no-errors)
                       (:rewrite bitops::signed-byte-p-monotonicity)
                       (:type-prescription len)
                       (:definition binary-append)
@@ -2347,8 +2537,6 @@
                                 . 2)
                       (:rewrite bitops::basic-signed-byte-p-of-+-with-cin
                                 . 1)
-                      (:rewrite
-                       read-from-physical-memory-and-xlate-equiv-memory-disjoint-from-paging-structures)
                       (:rewrite acl2::natp-rw)
                       (:rewrite default-unary-minus)
                       (:rewrite acl2::zp-open)
@@ -2387,14 +2575,18 @@
            (not (app-view x86))
            (marking-view x86)
            (x86p x86)
+           (tlb-consistent-n i addr-i r-w-x x86)
            (64-bit-modep (double-rewrite x86)))
       (equal (mv-nth 1 (rb j addr-j r-w-x x86))
              (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
      :hints (("Goal"
+              :do-not '(generalize)
               :induct (list (rb-rb-induction-scheme j addr-j i addr-i val x86)
                             (las-to-pas i addr-i r-w-x x86)
                             (las-to-pas j addr-j r-w-x x86))
-              :in-theory (e/d* (signed-byte-p
+              :in-theory (e/d* (rb
+                                signed-byte-p
+                                canonical-address-p
                                 ifix
                                 nfix
                                 rb-1-opener-theorem)
@@ -2427,16 +2619,18 @@
                          ;;            (n-2 j)
                          ;;            (addr-2 addr-i))
                          )
-                   :in-theory (e/d* (rb-rb-subset-helper-1
+                   :in-theory (e/d* (rb
+                                     rb-rb-subset-helper-1
                                      rb-rb-subset-helper-2
                                      rb-rb-subset-helper-3
                                      signed-byte-p
                                      ifix
                                      nfix
-                                     rb-1-opener-theorem)
+                                     rb-1-opener-theorem
+                                     canonical-address-p)
                                     (unsigned-byte-p
                                      ;; mv-nth-1-las-to-pas-subset-p
-                                     signed-byte-p)))
+                                     )))
                nil)))))
 
 (local
@@ -2456,7 +2650,8 @@
                 (all-xlation-governing-entries-paddrs j addr-i x86)))
    :hints (("Goal"
             :do-not-induct t
-            :in-theory (e/d* ()
+            :expand ((las-to-pas i addr-i r-w-x x86))
+            :in-theory (e/d* (las-to-pas)
                              (mv-nth-1-las-to-pas-subset-p
                               all-xlation-governing-entries-paddrs-subset-p-all-xlation-governing-entries-paddrs))
             :use ((:instance mv-nth-1-las-to-pas-subset-p
@@ -2494,6 +2689,7 @@
         (not (app-view x86))
         (marking-view x86)
         (64-bit-modep (double-rewrite x86))
+        (tlb-consistent-n i addr-i r-w-x x86)
         (x86p x86))
    (equal (mv-nth 1 (rb j addr-j r-w-x x86))
           (part-select val :low (ash (- addr-j addr-i) 3) :width (ash j 3))))
@@ -2522,6 +2718,7 @@
             (marking-view x86)
             (byte-listp bytes)
             (64-bit-modep (double-rewrite x86))
+            (tlb-consistent-n (len bytes) prog-addr :x x86)
             (x86p x86))
            (equal (mv-nth 1 (rb n lin-addr :x x86))
                   ;; During symbolic simulation of a program, we'd
@@ -2568,6 +2765,7 @@
             (not (app-view x86))
             (marking-view x86)
             (64-bit-modep (double-rewrite x86))
+            (tlb-consistent-n (len bytes) prog-addr :x x86)
             (x86p x86))
            (equal (mv-nth 1 (rb 1 lin-addr :x x86))
                   (nth (- lin-addr prog-addr) bytes)))

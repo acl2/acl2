@@ -296,7 +296,18 @@ recommend using these functions at the top-level.</p>")
     :hints (("Goal" :in-theory (e/d* (pos) ()))))
 
   (defthmd addr-range-ifix
-    (equal (addr-range n (ifix x)) (addr-range n x))))
+    (equal (addr-range n (ifix x)) (addr-range n x)))
+
+  (defthm integerp-addr-range-member
+          (implies (member-p x (addr-range n m))
+                   (integerp x)))
+
+  (defthm addr-range-not-member-out-of-range
+          (implies (and (natp n)
+                        (integerp addr)
+                        (< el addr)
+                        (>= el (+ addr n)))
+                   (not (member-p el (addr-range n addr))))))
 
 ;; ======================================================================
 

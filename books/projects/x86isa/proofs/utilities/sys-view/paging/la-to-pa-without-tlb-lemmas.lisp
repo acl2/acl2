@@ -391,9 +391,10 @@
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-without-tlb
         ;; without the 64-bit mode hyp, this theorem is not true,
         ;; because ia32e-la-to-pa-without-tlb may mark bits in the state
-        (xlate-equiv-memory
-          (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
-          (double-rewrite x86))
+        (implies (64-bit-modep x86)
+                 (xlate-equiv-memory
+                   (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                   (double-rewrite x86)))
         :hints (("Goal" :do-not '(preprocess)
                  :in-theory (e/d* (xlate-equiv-memory)
                                   (bitops::logand-with-negated-bitmask
@@ -414,17 +415,17 @@
    ;; the 64-bit mode hyp makes the proof of this theorem easy
    ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa-without-tlb above),
    ;; but could this hyp be removed from here?
-   (and
+   (implies (64-bit-modep x86)
+     (and
+      (equal
+        (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1
+                                              (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x-2 x86))))
+        (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1 x86)))
 
-     (equal
-       (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1
-                                             (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x-2 x86))))
-       (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1 x86)))
-
-     (equal
-       (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1
-                                             (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x-2 x86))))
-       (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1 x86))))
+      (equal
+        (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1
+                                              (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr-2 r-w-x-2 x86))))
+        (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr-1 r-w-x-1 x86)))))
 
   :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa-without-tlb)))))
 

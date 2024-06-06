@@ -1348,30 +1348,30 @@
 
 ;; ======================================================================
 
-;; Top-level page walk function:
+;; Top-level page walk function
+(defthm mv-nth-2-ia32e-la-to-pa-without-tlb-in-terms-of-updates-no-errors
+        (implies
+          (and
+            (member r-w-x '(:r :w :x))
+            (case-split (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+            (canonical-address-p lin-addr)
+            (x86p x86))
+          (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                 (if (or (xr :app-view nil x86)
+                         (not (xr :marking-view nil x86)))
+                   x86
+                   (mv-nth 1
+                           (update-a/d-bits
+                             (xlate-governing-qword-addresses lin-addr x86)
+                             r-w-x x86)))))
+        :hints (("Goal"
+                 :in-theory (e/d* (xlate-governing-qword-addresses
+                                    ia32e-la-to-pa-without-tlb)
+                                  (bitops::logand-with-negated-bitmask
+                                    accessed-bit
+                                    dirty-bit)))))
 
-(defthm mv-nth-2-ia32e-la-to-pa-in-terms-of-updates-no-errors
-  (implies
-   (and
-    (case-split (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
-    (canonical-address-p lin-addr)
-    (x86p x86))
-   (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
-          (if (or (xr :app-view nil x86)
-                  (not (xr :marking-view nil x86)))
-              x86
-            (mv-nth 1
-                    (update-a/d-bits
-                     (xlate-governing-qword-addresses lin-addr x86)
-                     r-w-x x86)))))
-  :hints (("Goal"
-           :in-theory (e/d* (xlate-governing-qword-addresses
-                             ia32e-la-to-pa-without-tlb)
-                            (bitops::logand-with-negated-bitmask
-                             accessed-bit
-                             dirty-bit)))))
-
-(defthm xw-mem-mv-nth-2-ia32e-la-to-pa-errors-commute
+(defthm xw-mem-mv-nth-2-ia32e-la-to-pa-without-tlb-errors-commute
   (implies
    (and (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
         (disjoint-p (list index)

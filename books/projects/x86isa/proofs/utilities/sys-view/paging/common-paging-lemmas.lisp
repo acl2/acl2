@@ -572,7 +572,7 @@
 
 ;; Other misc. events:
 
-(defthm ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint
+(defthm ia32e-la-to-pa-without-tlb-values-and-write-to-physical-memory-disjoint
   (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
                 (physical-address-listp p-addrs)
                 (canonical-address-p lin-addr))
@@ -583,6 +583,18 @@
   :hints (("Goal"
            :induct (write-to-physical-memory p-addrs bytes x86)
            :in-theory (e/d* (disjoint-p) (xlation-governing-entries-paddrs)))))
+
+(defthm ia32e-la-to-pa-values-and-write-to-physical-memory-disjoint
+  (implies (and (disjoint-p p-addrs (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)))
+                (physical-address-listp p-addrs)
+                (canonical-address-p lin-addr))
+           (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))
+                (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (write-to-physical-memory p-addrs bytes x86)))
+                       (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x (double-rewrite x86))))))
+  :hints (("Goal"
+           :induct (write-to-physical-memory p-addrs bytes x86)
+           :in-theory (e/d* (disjoint-p ia32e-la-to-pa) (xlation-governing-entries-paddrs)))))
 
 (defthm rm-low-64-and-paging-entry-no-page-fault-p
   (equal (rm-low-64 index
@@ -738,3 +750,291 @@
                              force (force))))))
 
 ;; ======================================================================
+
+;; Lemmas showing the invariance of ia32e-la-to-pa on xlation-governing-entries-paddrs
+
+;; The lemma at the end of this encapsulate allows me to show that when performing aligned
+;; accesses, the addresses are either equal or the bytes accessed are disjoint. The lemma
+;; proven is more general then I need, but I found it easier to prove that way.
+(encapsulate
+  ()
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (local (defthm integers-congruent-mod-k-are-either-equal-or-have-difference-at-least-k
+                 (implies (and (natp k)
+                               (integerp n)
+                               (integerp m)
+                               (equal (mod n k)
+                                      (mod m k)))
+                          (or (equal n m)
+                              (>= (abs (- n m)) k)))))
+
+  (defthm equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+          (implies (and (natp n)
+                        (natp k)
+                        (integerp x)
+                        (equal (loghead n x) k)
+                        (integerp y)
+                        (equal (loghead n y) k)
+                        (integerp m)
+                        (< 0 m)
+                        (<= m (ash 1 n)))
+                   (or (equal x y)
+                       (disjoint-p (addr-range m x)
+                                   (addr-range m y))))
+          :hints (("Goal" :in-theory (e/d (loghead) (addr-range))
+                   :use (:instance integers-congruent-mod-k-are-either-equal-or-have-difference-at-least-k
+                                   (n x) (m y) (k (ash 1 n)))))))
+
+;; There are two theorems at the end of this encapsulate I care about. The rest of these
+;; lemmas are here to prove that theorem. The number of lemmas here is pretty ridiculous, but
+;; I suppose that is just a consequence of each level of the paging hierarchy having a separate
+;; function and choosing not to enable all of them at once.
+
+;; The lemmas prove fairly quickly, so it's not too bad.
+
+(make-event
+  `(progn
+     ,@(loop$
+         for accessor in '(page-size ia32e-pml4eBits->pdpt ia32e-pde-pg-tableBits->pt ia32e-pdpte-pg-dirbits->pd ia32e-pte-4k-pagebits->page
+                           ia32e-page-tablesbits->xd ia32e-page-tablesbits->u/s page-read-write page-present ia32e-pde-2mb-pagebits->page
+                           ia32e-pdpte-1gb-pagebits->page)
+         collect
+         `(progn
+            ,@(loop$
+                for setter in '(set-dirty-bit set-accessed-bit)
+                collect `(defthm ,(acl2::packn (list accessor '-over- setter))
+                                 (equal (,accessor (,setter x))
+                                        (,accessor x))
+                                 :hints (("Goal" :in-theory (enable ,accessor ,setter
+                                                                    !ia32e-page-tablesbits->d
+                                                                    !ia32e-page-tablesbits->a
+                                                                    ia32e-page-tablesbits->ps
+                                                                    ia32e-pdpte-pg-dirbits->pd
+                                                                    ia32e-pdpte-pg-dirbits-fix
+                                                                    ia32e-page-tablesbits-fix
+                                                                    ia32e-pml4ebits-fix
+                                                                    ia32e-pde-pg-tablebits-fix
+                                                                    ia32e-pte-4k-pagebits-fix
+                                                                    ia32e-pde-2mb-pagebits-fix
+                                                                    ia32e-page-tablesbits->r/w
+                                                                    ia32e-page-tablesbits->p
+                                                                    ia32e-pdpte-1gb-pagebits-fix)))))))))
+
+(encapsulate
+  ()
+
+  (progn
+      (make-event
+        `(progn
+           ,@(loop$
+               for level in *paging-levels*
+               collect
+               `(defthm
+                  ,(acl2::packn (list '64-bit-aligned-bits-invariant-under-ia32e-la-to-pa- level))
+                  (implies
+                    (and (integerp access-addr)
+                         (equal (loghead 3 access-addr) 0))
+                    (and ,@(loop$ for accessor in '(page-size ia32e-pml4ebits->pdpt ia32e-pde-pg-tableBits->pt)
+                                  collect `(equal
+                                             (,accessor
+                                               (rm-low-64
+                                                 access-addr
+                                                 (mv-nth 2 (,(acl2::packn (list 'ia32e-la-to-pa- level)) (logext 48 lin-addr) level-base-addr
+                                                                                                         ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                                                         wp smep smap ac nxe r-w-x cpl x86))))
+                                             (,accessor (rm-low-64 access-addr (double-rewrite x86)))))))
+                  :hints (("Goal"
+                           :use (:instance
+                                  equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+                                  (n 3) (m 8) (k 0)
+                                  (x access-addr)
+                                  (y (,(acl2::packn (list level '-entry-addr))
+                                       (logext 48 lin-addr)
+                                       (logand 18446744073709547520
+                                               (loghead 52 level-base-addr)))))
+                           :in-theory (e/d* (,(acl2::packn (list 'ia32e-la-to-pa- level)))
+                                            (mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault))))))))
+
+      (make-event 
+        `(progn
+           ,@(loop$ for level in *paging-levels*
+                    collect
+                    (b* ((xlation-governing-entries-fn (acl2::packn (list 'xlation-governing-entries-paddrs-for- level)))
+                         (la-to-pa-fn (acl2::packn (list 'ia32e-la-to-pa- level))))
+                        `(progn
+                           ,@(loop$
+                               for accessor in '(ia32e-pml4eBits->pdpt ia32e-pde-pg-tableBits->pt ia32e-pdpte-pg-dirbits->pd)
+                               collect
+                               `(defthm ,(acl2::packn (list accessor '-aligned-read-over- la-to-pa-fn))
+                                        (implies (and (integerp addr)
+                                                      (equal (loghead 3 addr) 0))
+                                                 (equal (,accessor
+                                                          (rm-low-64 addr (mv-nth 2 (,la-to-pa-fn (logext 48 lin-addr) base-addr
+                                                                                                  ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                                                  wp smep smap ac nxe r-w-x cpl x86))))
+                                                        (,accessor (rm-low-64 addr x86))))
+                                        :hints (("Goal" :in-theory (enable ,la-to-pa-fn)
+                                                 :use (:instance
+                                                        equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+                                                        (n 3) (m 8) (k 0)
+                                                        (x (,(acl2::packn (list level '-entry-addr))
+                                                             (logext 48 lin-addr)
+                                                             (logand 18446744073709547520
+                                                                     (loghead 52 base-addr))))
+                                                        (y addr))
+                                                 ))))
+                           (defthm ,(acl2::packn (list xlation-governing-entries-fn
+                                                       '-invariant-under-aligned-access-bit-write))
+                                   (implies (and (not (app-view x86))
+                                                 (integerp entry-addr)
+                                                 (equal (loghead 3 entry-addr) 0))
+                                            (equal (,xlation-governing-entries-fn
+                                                     lin-addr2 addr
+                                                     (wm-low-64 entry-addr
+                                                                (set-accessed-bit (rm-low-64 entry-addr x86))
+                                                                x86))
+                                                   (,xlation-governing-entries-fn lin-addr2 addr x86)))
+                                   :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn)
+                                            :use (:instance
+                                                   equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+                                                   (n 3) (m 8) (k 0)
+                                                   (x (,(acl2::packn (list level '-entry-addr)) lin-addr2 addr))
+                                                   (y entry-addr)))))
+                           (defthm ,(acl2::packn (list xlation-governing-entries-fn
+                                                       '-invariant-under-aligned-dirty-bit-write))
+                                   (implies (and (not (app-view x86))
+                                                 (integerp entry-addr)
+                                                 (equal (loghead 3 entry-addr) 0))
+                                            (equal (,xlation-governing-entries-fn
+                                                     lin-addr2 addr
+                                                     (wm-low-64 entry-addr
+                                                                (set-dirty-bit (rm-low-64 entry-addr x86))
+                                                                x86))
+                                                   (,xlation-governing-entries-fn lin-addr2 addr x86)))
+                                   :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn)
+                                            :use (:instance
+                                                   equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+                                                   (n 3) (m 8) (k 0)
+                                                   (x (,(acl2::packn (list level '-entry-addr)) lin-addr2 addr))
+                                                   (y entry-addr)))))
+                           (defthm ,(acl2::packn (list xlation-governing-entries-fn
+                                                       '-invariant-under-aligned-access-bit-and-dirty-bit-write))
+                                   (implies (and (not (app-view x86))
+                                                 (integerp entry-addr)
+                                                 (equal (loghead 3 entry-addr) 0))
+                                            (equal (,xlation-governing-entries-fn
+                                                     lin-addr2 addr
+                                                     (wm-low-64 entry-addr
+                                                                (set-dirty-bit (set-accessed-bit (rm-low-64 entry-addr x86)))
+                                                                x86))
+                                                   (,xlation-governing-entries-fn lin-addr2 addr x86)))
+                                   :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn)
+                                            :use (:instance
+                                                   equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+                                                   (n 3) (m 8) (k 0)
+                                                   (x (,(acl2::packn (list level '-entry-addr)) lin-addr2 addr))
+                                                   (y entry-addr)))))
+                           (defthm ,(acl2::packn (list xlation-governing-entries-fn
+                                                       '-invariant-under-paging-entry-no-page-fault-p))
+                                   (equal (,xlation-governing-entries-fn
+                                            lin-addr2 addr
+                                            (mv-nth 2 (paging-entry-no-page-fault-p typ lin-addr entry us rw xd wp smep
+                                                                                    smap ac nxe r-w-x cpl x86)))
+                                          (,xlation-governing-entries-fn lin-addr2 addr x86))
+
+                                   :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn))))
+                           (defthm ,(acl2::packn (list xlation-governing-entries-fn
+                                                       '-invariant-under-
+                                                       la-to-pa-fn))
+                                   (equal (,xlation-governing-entries-fn
+                                            lin-addr2 addr
+                                            (mv-nth 2 (,la-to-pa-fn (logext 48 lin-addr) base-addr
+                                                                    ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                    wp smep smap ac nxe r-w-x cpl x86)))
+                                          (,xlation-governing-entries-fn lin-addr2 addr x86))
+                                   :hints (("Goal" :in-theory (enable ,xlation-governing-entries-fn ,la-to-pa-fn)
+                                            :use (:instance
+                                                   equal-loghead-n-k-integers-are-either-equal-or-disjoint-p-addr-range-m<=2^n
+                                                   (n 3) (m 8) (k 0)
+                                                   (x (,(acl2::packn (list level '-entry-addr)) lin-addr2 addr))
+                                                   (y (,(acl2::packn (list level '-entry-addr))
+                                                        (logext 48 lin-addr)
+                                                        (logand 18446744073709547520
+                                                                (loghead 52 base-addr))))))))))))))
+
+  (defthm xlation-governing-entries-paddrs-invariant-under-ia32e-la-to-pa-without-tlb
+          (equal (xlation-governing-entries-paddrs lin-addr2 (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                 (xlation-governing-entries-paddrs lin-addr2 (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb xlation-governing-entries-paddrs) ()))))
+
+  (defthm xlation-governing-entries-paddrs-invariant-under-ia32e-la-to-pa
+          (equal (xlation-governing-entries-paddrs lin-addr2 (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                 (xlation-governing-entries-paddrs lin-addr2 (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ())))))
+
+(defthm xlation-governing-entries-paddrs-invariant-under-las-to-pas
+          (equal (xlation-governing-entries-paddrs lin-addr2 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
+                 (xlation-governing-entries-paddrs lin-addr2 (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
+
+;; In a similar fashion, we show that address translation is invariant under writing to a non-paging structure
+;; address
+
+(encapsulate
+  ()
+
+  (local
+    (make-event
+      `(progn
+         ,@(loop$ for level in *paging-levels*
+                  collect
+                  (b* ((xlation-governing-entries-fn (acl2::packn (list 'xlation-governing-entries-paddrs-for- level)))
+                       (la-to-pa-fn (acl2::packn (list 'ia32e-la-to-pa- level))))
+                      `(progn
+                         (defthm ,(acl2::packn (list la-to-pa-fn
+                                                     '-invariant-under-write-to-non-
+                                                     xlation-governing-entries-fn))
+                                 (implies (and (canonical-address-p lin-addr)
+                                               (unsigned-byte-p 52 base-addr)
+                                               (equal (loghead 12 base-addr) 0)
+                                               (not (member-p index (,xlation-governing-entries-fn lin-addr base-addr x86))))
+                                          (and (equal (mv-nth 0 (,la-to-pa-fn lin-addr base-addr
+                                                                              ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                              wp smep smap ac nxe r-w-x cpl
+                                                                              (xw :mem index val x86)))
+                                                      (mv-nth 0 (,la-to-pa-fn lin-addr base-addr
+                                                                              ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                              wp smep smap ac nxe r-w-x cpl x86)))
+                                               (equal (mv-nth 1 (,la-to-pa-fn lin-addr base-addr
+                                                                              ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                              wp smep smap ac nxe r-w-x cpl
+                                                                              (xw :mem index val x86)))
+                                                      (mv-nth 1 (,la-to-pa-fn lin-addr base-addr
+                                                                              ,@(if (equal level 'pml4-table) nil '(us rw xd))
+                                                                              wp smep smap ac nxe r-w-x cpl x86)))))
+                                 :hints (("goal" :in-theory (e/d (,la-to-pa-fn ,xlation-governing-entries-fn disjoint-p)
+                                                                 (addr-range-1)))))))))))
+
+  (defthm ia32e-la-to-pa-without-tlb-invariant-under-write-to-non-xlation-governing-entry-paddr
+          (implies (and (canonical-address-p lin-addr)
+                        (not (member-p index (xlation-governing-entries-paddrs lin-addr x86))))
+                   (and (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                                     (xw :mem index val x86)))
+                               (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+                        (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x
+                                                                     (xw :mem index val x86)))
+                               (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (enable ia32e-la-to-pa-without-tlb xlation-governing-entries-paddrs))))
+
+  (defthm ia32e-la-to-pa-invariant-under-write-to-non-xlation-governing-entry-paddr
+          (implies (and (canonical-address-p lin-addr)
+                        (not (member-p index (xlation-governing-entries-paddrs lin-addr x86))))
+                   (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
+                                                         (xw :mem index val x86)))
+                               (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+                        (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x
+                                                         (xw :mem index val x86)))
+                               (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86)))))
+          :hints (("Goal" :in-theory (enable ia32e-la-to-pa)))))

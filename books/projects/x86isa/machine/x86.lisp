@@ -965,6 +965,51 @@
                         (mv-nth 0 (read-tty x86)))
                    (unsigned-byte-p 8 (mv-nth 0 (read-tty x86))))))
 
+(define x86-exec-peripherals (x86)
+  :guard-hints (("Goal" :use ((:instance ELEM-P-OF-XR-LAST-CLOCK-EVENT (i nil) (x86$a x86))
+                              (:instance ELEM-P-OF-XR-TIME-STAMP-COUNTER (i nil) (x86$a x86)))
+                        :in-theory (disable ELEM-P-OF-XR-LAST-CLOCK-EVENT ELEM-P-OF-XR-TIME-STAMP-COUNTER)))
+  :returns (x86 x86p :hyp (x86p x86))
+  (b* (((when (app-view x86)) x86)
+       ;; Increment the time stamp counter
+       (time-stamp-counter (n64 (1+ (time-stamp-counter x86))))
+       (x86 (!time-stamp-counter time-stamp-counter x86))
+
+       ;; This is part of the clock device.
+       (x86 (if (app-view x86)
+              x86
+              (wm-low-64 #x100 time-stamp-counter x86)))
+
+       (last-clock-event (last-clock-event x86))
+       (x86 (if (and (> last-clock-event 100000)
+                     (equal (rflagsBits->intf (rflags x86)) 1)
+                     (not (equal (memi #x108 x86) 0))
+                     (not (fault x86)))
+              (b* ((x86 (!last-clock-event 0 x86))
+                   (x86 (!fault (cons '(:interrupt 32) (fault x86)) x86)))
+                  x86)
+              (!last-clock-event (1+ last-clock-event) x86)))
+
+       ;; Time to check for any TTY output
+       ;; The TTY protocol is simple. If 0x3F9 is nonzero
+       ;; 0x3F8 has an output character. (physical addresses of course)
+       (x86 (b* ((tty-byte-valid (not (equal (memi #x3F9 x86) 0)))
+                 ((when (not tty-byte-valid)) x86)
+                 (tty-output-byte (memi #x3F8 x86))
+                 (x86 (!memi #x3F9 0 x86))
+                 (x86 (write-tty tty-output-byte x86)))
+              x86))
+       ;; We check if the tty input buffer is empty
+       ;; If so, we write the new byte and set valid flag
+       (x86 (b* ((tty-write-byte-valid (not (equal (memi #x3FB x86) 0)))
+                 ((when tty-write-byte-valid) x86)
+                 ((mv tty-input x86) (read-tty x86))
+                 ((when (equal tty-input nil)) x86)
+                 (x86 (!memi #x3FA tty-input x86))
+                 (x86 (!memi #x3FB 1 x86)))
+                x86)))
+      x86))
+
 (define x86-fetch-decode-execute (x86)
 
   :parents (x86-decoder)
@@ -1025,26 +1070,6 @@
                            (natp x))
                       (unsigned-byte-p n x))))
 
-   (local (defthm integerp-last-clock-event
-                  (integerp (xr :last-clock-event i x86))
-                  :hints (("Goal" :use (:instance elem-p-of-xr-last-clock-event (i i) (x86$a x86))))))
-
-   (local (defthm rationalp-last-clock-event
-                  (rationalp (xr :last-clock-event i x86))
-                  :hints (("Goal" :use (:instance elem-p-of-xr-last-clock-event (i i) (x86$a x86))))))
-
-   (local (defthm natp-1+-last-clock-event
-                  (natp (1+ (xr :last-clock-event i x86)))
-                  :hints (("Goal" :use (:instance elem-p-of-xr-last-clock-event (i i) (x86$a x86))))))
-
-   (local (defthm integerp-time-stamp-counter
-                  (integerp (xr :time-stamp-counter i x86))
-                  :hints (("Goal" :use (:instance elem-p-of-xr-time-stamp-counter (i i) (x86$a x86))))))
-
-   (local (defthm rationalp-time-stamp-counter
-                  (rationalp (xr :time-stamp-counter i x86))
-                  :hints (("Goal" :use (:instance elem-p-of-xr-time-stamp-counter (i i) (x86$a x86))))))
-
    (local (in-theory (e/d* ()
                            (signed-byte-p
                              unsigned-byte-p
@@ -1076,18 +1101,6 @@
 
        (set-interrupt? (set-interrupt-flag-next x86))
        (x86 (b* ((ctx 'x86-fetch-decode-execute)
-
-                 (x86 (if app-view?
-                        x86
-                        (b* (;; Increment the time stamp counter
-                             (time-stamp-counter (n64 (1+ (time-stamp-counter x86))))
-                             (x86 (!time-stamp-counter time-stamp-counter x86))
-
-                             ;; This is part of the clock device.
-                             (x86 (if (app-view x86)
-                                    x86
-                                    (wm-low-64 #x100 time-stamp-counter x86))))
-                            x86)))
 
                  (proc-mode (x86-operation-mode x86))
                  (64-bit-modep (equal proc-mode #.*64-bit-mode*))
@@ -1294,37 +1307,12 @@
 
        ((when app-view?) x86)
 
-       (last-clock-event (last-clock-event x86))
-       (x86 (if (and (> last-clock-event 100000)
-                     (equal (rflagsBits->intf (rflags x86)) 1)
-                     (not (equal (memi #x108 x86) 0))
-                     (not (fault x86)))
-              (b* ((x86 (!last-clock-event 0 x86))
-                   (x86 (!fault (cons '(:interrupt 32) (fault x86)) x86)))
-                  x86)
-              (!last-clock-event (1+ last-clock-event) x86)))
-
-       (x86 (handle-faults x86))
-
-       ;; At this point, the CPU is done executing (except for setting the interrupt flag if needed)
-       ;; Time to check for any TTY output
-       ;; The TTY protocol is simple. If 0x3F9 is nonzero
-       ;; 0x3F8 has an output character. (physical addresses of course)
-       (x86 (b* ((tty-byte-valid (not (equal (memi #x3F9 x86) 0)))
-                 ((when (not tty-byte-valid)) x86)
-                 (tty-output-byte (memi #x3F8 x86))
-                 (x86 (!memi #x3F9 0 x86))
-                 (x86 (write-tty tty-output-byte x86)))
+       (x86 (if (enable-peripherals x86)
+              (x86-exec-peripherals x86)
               x86))
-       ;; We check if the tty input buffer is empty
-       ;; If so, we write the new byte and set valid flag
-       (x86 (b* ((tty-write-byte-valid (not (equal (memi #x3FB x86) 0)))
-                 ((when tty-write-byte-valid) x86)
-                 ((mv tty-input x86) (read-tty x86))
-                 ((when (equal tty-input nil)) x86)
-                 (x86 (!memi #x3FA tty-input x86))
-                 (x86 (!memi #x3FB 1 x86)))
-                x86))
+       (x86 (if (handle-exceptions x86)
+              (handle-faults x86)
+              x86))
 
        ((when set-interrupt?) (!rflags (logior (ash 1 9)
                                                (rflags x86))

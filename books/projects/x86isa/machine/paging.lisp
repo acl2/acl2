@@ -46,7 +46,6 @@
 ;; except IA-32e paging from our model.
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 ;; ======================================================================
 
@@ -989,7 +988,155 @@
                              bitops::unsigned-byte-p-incr
                              weed-out-irrelevant-logand-when-first-operand-constant
                              negative-logand-to-positive-logand-with-integerp-x
-                             (tau-system))))))
+                             (tau-system)))))
+
+   (define paging-entry-no-page-fault-p-did-fault? ((u/s-all :type (unsigned-byte 1))
+                       (r/w-all :type (unsigned-byte 1))
+                       (x/d-all :type (unsigned-byte 1))
+                       (wp      :type (unsigned-byte 1))
+                       (smep    :type (unsigned-byte 1))
+                       (smap    :type (unsigned-byte 1))
+                       (ac      :type (unsigned-byte 1))
+                       (nxe     :type (unsigned-byte 1))
+                       (r-w-x   :type (member :r :w :x))
+                       (cpl     :type (unsigned-byte 2))
+                       (supervisor-mode-access-type :type (unsigned-byte 1)))
+     :returns (fault? booleanp)
+     :enabled t
+     (or
+       ;; Read fault:
+       (and (equal r-w-x :r)
+            (if (< cpl 3)
+              (if (equal u/s-all 0)
+                ;; Data may be read (implicitly or explicitly)
+                ;; from any supervisor-mode address.
+                nil
+                ;; Data reads from user-mode pages
+                (if (equal smap 0)
+                  ;; If CR4.SMAP = 0, data may be read from
+                  ;; any user-mode address.
+                  nil
+                  ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and the
+                  ;; access is explicit, data may be read from any
+                  ;; user-mode address. If EFLAGS.AC = 0 or the
+                  ;; access is implicit, data may not be read from
+                  ;; any user-mode address.
+                  (or (equal supervisor-mode-access-type 1)
+                      (equal ac 0))))
+              ;; In user mode (CPL = 3), data may be read from
+              ;; any linear address with a valid translation
+              ;; for which the U/S flag (bit 2) is 1 in every
+              ;; paging-structure entry controlling the trans-
+              ;; lation.
+              (equal u/s-all 0)))
+       ;; Write fault:
+       (and (equal r-w-x :w)
+            (if (< cpl 3)
+              (if (equal u/s-all 0)
+                ;; Data writes to supervisor-mode addresses.
+
+                ;; If CR0.WP = 0, data may be written to
+                ;; any supervisor-mode address.  If CR0.WP
+                ;; = 1, data may be written to any
+                ;; supervisor-mode address with a
+                ;; translation for which the R/W flag (bit
+                ;; 1) is 1 in every paging-structure entry
+                ;; controlling the translation.
+                (and (equal wp 1)
+                     (equal r/w-all 0))
+
+                ;; Data writes to user-mode addresses.
+
+                (if (equal wp 0)
+                  ;; If CR4.SMAP = 0, data may be written to
+                  ;; any user-mode address.  If CR4.SMAP = 1:
+                  ;; If EFLAGS.AC = 1 and the access is
+                  ;; explicit, data may be written to any
+                  ;; user-mode address. If EFLAGS.AC = 0 or
+                  ;; the access is implicit, data may not be
+                  ;; written to any user-mode address.
+                  (if (equal smap 0)
+                    nil
+                    (or (equal supervisor-mode-access-type 1)
+                        (equal ac 0)))
+
+                  ;; If CR4.SMAP = 0, data may be written to
+                  ;; any user-mode address with a translation
+                  ;; for which the R/W flag is 1 in every
+                  ;; paging-structure entry controlling the
+                  ;; translation.
+                  (if (equal smap 0)
+                    (equal r/w-all 0)
+                    ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and
+                    ;; the access is explicit, data may be
+                    ;; written to any user-mode address with a
+                    ;; translation for which the R/W flag is 1
+                    ;; in every paging-structure entry
+                    ;; controlling the translation. If
+                    ;; EFLAGS.AC = 0 or the access is implicit,
+                    ;; data may not be written to any user-mode
+                    ;; address.
+                    (if (and (equal supervisor-mode-access-type 0)
+                             (equal ac 1))
+                      (equal r/w-all 0)
+                      t))))
+              ;; In user mode (CPL = 3), data may be written
+              ;; to any linear address with a valid
+              ;; translation for which both the R/W flag and
+              ;; the U/S flag are 1 in every paging-structure
+              ;; entry controlling the translation.
+              (or (equal u/s-all 0)
+                  (equal r/w-all 0))))
+       ;; Instruction fetch fault:
+       (and (equal r-w-x :x)
+            (if (< cpl 3)
+
+              (if (equal u/s-all 0)
+                ;; Instruction fetches from supervisor-mode addresses.
+
+                ;; If IA32_EFER.NXE = 0, instructions may be
+                ;; fetched from any supervisor-mode
+                ;; address. If IA32_EFER.NXE = 1,
+                ;; instructions may be fetched from any
+                ;; supervisor-mode address with a translation
+                ;; for which the XD flag (bit 63) is 0 in
+                ;; every paging-structure entry controlling
+                ;; the translation.
+                (if (equal nxe 0)
+                  nil
+                  (equal x/d-all 1))
+
+                ;; Instruction fetches from user-mode addresses.
+
+                (if (equal smep 0)
+                  ;; If CR4.SMEP = 0, if IA32_EFER.NXE =
+                  ;; 0, instructions may be fetched from
+                  ;; any user-mode address, and if
+                  ;; IA32_EFER.NXE = 1, instructions may
+                  ;; be fetched from any user-mode address
+                  ;; with a translation for which the XD
+                  ;; flag is 0 in every paging-structure
+                  ;; entry controlling the translation.
+                  (if (equal nxe 0)
+                    nil
+                    (equal x/d-all 1))
+                  ;; If CR4.SMEP = 1, instructions may not
+                  ;; be fetched from any user-mode address.
+                  t))
+
+              ;; In user mode (CPL = 3): If IA32_EFER.NXE = 0,
+              ;; instructions may be fetched from any linear
+              ;; address with a valid translation for which
+              ;; the U/S flag is 1 in every paging-structure
+              ;; entry controlling the translation.  If
+              ;; IA32_EFER.NXE = 1, instructions may be
+              ;; fetched from any linear address with a valid
+              ;; translation for which the U/S flag is 1 and
+              ;; the XD flag is 0 in every paging-structure
+              ;; entry controlling the translation.
+              (or (equal u/s-all 0)
+                  (and (equal nxe 1)
+                       (equal x/d-all 1))))))))
 
   :guard (not (app-view x86))
   :returns (mv flg val (x86 x86p :hyp (x86p x86)
@@ -1072,140 +1219,8 @@
                         nxe)))
           (page-fault-exception lin-addr err-no x86)))
 
-       ((when (or
-                ;; Read fault:
-                (and (equal r-w-x :r)
-                     (if (< cpl 3)
-                       (if (equal u/s-all 0)
-                         ;; Data may be read (implicitly or explicitly)
-                         ;; from any supervisor-mode address.
-                         nil
-                         ;; Data reads from user-mode pages
-                         (if (equal smap 0)
-                           ;; If CR4.SMAP = 0, data may be read from
-                           ;; any user-mode address.
-                           nil
-                           ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and the
-                           ;; access is explicit, data may be read from any
-                           ;; user-mode address. If EFLAGS.AC = 0 or the
-                           ;; access is implicit, data may not be read from
-                           ;; any user-mode address.
-                           (or (equal supervisor-mode-access-type 1)
-                               (equal ac 0))))
-                       ;; In user mode (CPL = 3), data may be read from
-                       ;; any linear address with a valid translation
-                       ;; for which the U/S flag (bit 2) is 1 in every
-                       ;; paging-structure entry controlling the trans-
-                       ;; lation.
-                       (equal u/s-all 0)))
-                ;; Write fault:
-                (and (equal r-w-x :w)
-                     (if (< cpl 3)
-                       (if (equal u/s-all 0)
-                         ;; Data writes to supervisor-mode addresses.
-
-                         ;; If CR0.WP = 0, data may be written to
-                         ;; any supervisor-mode address.  If CR0.WP
-                         ;; = 1, data may be written to any
-                         ;; supervisor-mode address with a
-                         ;; translation for which the R/W flag (bit
-                         ;; 1) is 1 in every paging-structure entry
-                         ;; controlling the translation.
-                         (and (equal wp 1)
-                              (equal r/w-all 0))
-
-                         ;; Data writes to user-mode addresses.
-
-                         (if (equal wp 0)
-                           ;; If CR4.SMAP = 0, data may be written to
-                           ;; any user-mode address.  If CR4.SMAP = 1:
-                           ;; If EFLAGS.AC = 1 and the access is
-                           ;; explicit, data may be written to any
-                           ;; user-mode address. If EFLAGS.AC = 0 or
-                           ;; the access is implicit, data may not be
-                           ;; written to any user-mode address.
-                           (if (equal smap 0)
-                             nil
-                             (or (equal supervisor-mode-access-type 1)
-                                 (equal ac 0)))
-
-                           ;; If CR4.SMAP = 0, data may be written to
-                           ;; any user-mode address with a translation
-                           ;; for which the R/W flag is 1 in every
-                           ;; paging-structure entry controlling the
-                           ;; translation.
-                           (if (equal smap 0)
-                             (equal r/w-all 0)
-                             ;; If CR4.SMAP = 1: If EFLAGS.AC = 1 and
-                             ;; the access is explicit, data may be
-                             ;; written to any user-mode address with a
-                             ;; translation for which the R/W flag is 1
-                             ;; in every paging-structure entry
-                             ;; controlling the translation. If
-                             ;; EFLAGS.AC = 0 or the access is implicit,
-                             ;; data may not be written to any user-mode
-                             ;; address.
-                             (if (and (equal supervisor-mode-access-type 0)
-                                      (equal ac 1))
-                               (equal r/w-all 0)
-                               t))))
-                       ;; In user mode (CPL = 3), data may be written
-                       ;; to any linear address with a valid
-                       ;; translation for which both the R/W flag and
-                       ;; the U/S flag are 1 in every paging-structure
-                       ;; entry controlling the translation.
-                       (or (equal u/s-all 0)
-                           (equal r/w-all 0))))
-                ;; Instruction fetch fault:
-                (and (equal r-w-x :x)
-                     (if (< cpl 3)
-
-                       (if (equal u/s-all 0)
-                         ;; Instruction fetches from supervisor-mode addresses.
-
-                         ;; If IA32_EFER.NXE = 0, instructions may be
-                         ;; fetched from any supervisor-mode
-                         ;; address. If IA32_EFER.NXE = 1,
-                         ;; instructions may be fetched from any
-                         ;; supervisor-mode address with a translation
-                         ;; for which the XD flag (bit 63) is 0 in
-                         ;; every paging-structure entry controlling
-                         ;; the translation.
-                         (if (equal nxe 0)
-                           nil
-                           (equal x/d-all 1))
-
-                         ;; Instruction fetches from user-mode addresses.
-
-                         (if (equal smep 0)
-                           ;; If CR4.SMEP = 0, if IA32_EFER.NXE =
-                           ;; 0, instructions may be fetched from
-                           ;; any user-mode address, and if
-                           ;; IA32_EFER.NXE = 1, instructions may
-                           ;; be fetched from any user-mode address
-                           ;; with a translation for which the XD
-                           ;; flag is 0 in every paging-structure
-                           ;; entry controlling the translation.
-                           (if (equal nxe 0)
-                             nil
-                             (equal x/d-all 1))
-                           ;; If CR4.SMEP = 1, instructions may not
-                           ;; be fetched from any user-mode address.
-                           t))
-
-                       ;; In user mode (CPL = 3): If IA32_EFER.NXE = 0,
-                       ;; instructions may be fetched from any linear
-                       ;; address with a valid translation for which
-                       ;; the U/S flag is 1 in every paging-structure
-                       ;; entry controlling the translation.  If
-                       ;; IA32_EFER.NXE = 1, instructions may be
-                       ;; fetched from any linear address with a valid
-                       ;; translation for which the U/S flag is 1 and
-                       ;; the XD flag is 0 in every paging-structure
-                       ;; entry controlling the translation.
-                       (or (equal u/s-all 0)
-                           (and (equal nxe 1)
-                                (equal x/d-all 1)))))))
+       ((when (paging-entry-no-page-fault-p-did-fault? u/s-all r/w-all x/d-all wp smep smap
+                                                       ac nxe r-w-x cpl supervisor-mode-access-type))
         (let ((err-no (page-fault-err-no
                         page-present r-w-x cpl rsvd smep
                         1 ;; pae
@@ -1237,34 +1252,41 @@
                                         ignored)))
                           (xr fld index x86))))
 
+  (defthm rm-low-64-paging-entry-no-page-fault-p
+          (equal (rm-low-64 addr (mv-nth 2 (paging-entry-no-page-fault-p
+                                             structure-type lin-addr entry
+                                             u/s-acc r/w-acc x/d-acc
+                                             wp smep smap ac nxe r-w-x cpl x86
+                                             ignored)))
+                 (rm-low-64 addr x86)))
+
   (defthm paging-entry-no-page-fault-p-xw-values
-          (implies (not (equal fld :fault))
-                   (and (equal (mv-nth 0
-                                       (paging-entry-no-page-fault-p
-                                         structure-type lin-addr entry
-                                         u/s-acc r/w-acc x/d-acc
-                                         wp smep smap ac nxe r-w-x cpl
-                                         (xw fld index value x86)
-                                         ignored))
-                               (mv-nth 0
-                                       (paging-entry-no-page-fault-p
-                                         structure-type lin-addr entry
-                                         u/s-acc r/w-acc x/d-acc
-                                         wp smep smap ac nxe r-w-x cpl x86
-                                         ignored)))
-                        (equal (mv-nth 1
-                                       (paging-entry-no-page-fault-p
-                                         structure-type lin-addr entry
-                                         u/s-acc r/w-acc x/d-acc
-                                         wp smep smap ac nxe r-w-x cpl
-                                         (xw fld index value x86)
-                                         ignored))
-                               (mv-nth 1
-                                       (paging-entry-no-page-fault-p
-                                         structure-type lin-addr entry
-                                         u/s-acc r/w-acc x/d-acc
-                                         wp smep smap ac nxe r-w-x cpl x86
-                                         ignored))))))
+          (and (equal (mv-nth 0
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe r-w-x cpl
+                                (xw fld index value x86)
+                                ignored))
+                      (mv-nth 0
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe r-w-x cpl x86
+                                ignored)))
+               (equal (mv-nth 1
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe r-w-x cpl
+                                (xw fld index value x86)
+                                ignored))
+                      (mv-nth 1
+                              (paging-entry-no-page-fault-p
+                                structure-type lin-addr entry
+                                u/s-acc r/w-acc x/d-acc
+                                wp smep smap ac nxe r-w-x cpl x86
+                                ignored)))))
 
   (defthm paging-entry-no-page-fault-p-xw-state
           (implies (not (equal fld :fault))
@@ -1441,9 +1463,86 @@
                                       structure-type lin-addr-2 entry
                                       u/s-acc r/w-acc x/d-acc
                                       wp smep smap ac nxe r-w-x cpl x86))))
-          :rule-classes :congruence))
+          :rule-classes :congruence)
+
+  (defthm paging-entry-no-page-fault-p-invariant-under-paging-entry-no-page-fault-p
+           (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe r-w-x cpl
+                                   (mv-nth 2 (paging-entry-no-page-fault-p
+                                               structure-type2 lin-addr2 entry2
+                                               u/s-acc2 r/w-acc2 x/d-acc2
+                                               wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                               x86))))
+                       (mv-nth 0 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe r-w-x cpl x86)))
+                (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe r-w-x cpl
+                                   (mv-nth 2 (paging-entry-no-page-fault-p
+                                               structure-type2 lin-addr2 entry2
+                                               u/s-acc2 r/w-acc2 x/d-acc2
+                                               wp2 smep2 smap2 ac2 nxe2 r-w-x2 cpl2
+                                               x86))))
+                       (mv-nth 1 (paging-entry-no-page-fault-p
+                                   structure-type lin-addr entry
+                                   u/s-acc r/w-acc x/d-acc
+                                   wp smep smap ac nxe r-w-x cpl x86))))
+           :hints (("Goal" :in-theory (disable paging-entry-no-page-fault-p-did-fault?))))
+
+  (defthm paging-entry-no-page-fault-p-invariant-under-setting-dirty-bit
+          (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-dirty-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))
+                      (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86)))
+               (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-dirty-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))
+                      (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d (ia32e-page-tablesbits-fix !ia32e-page-tablesbits->d
+                                           ia32e-page-tablesbits->u/s ia32e-page-tablesbits->r/w
+                                           ia32e-page-tablesbits->xd ia32e-page-tablesbits->p
+                                           ia32e-page-tablesbits->ps)
+                                          (paging-entry-no-page-fault-p-did-fault?)))))
+
+  (defthm paging-entry-no-page-fault-p-invariant-under-setting-accessed-bit
+          (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-accessed-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))
+                      (mv-nth 0 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86)))
+               (equal (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr (set-accessed-bit entry)
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))
+                      (mv-nth 1 (paging-entry-no-page-fault-p
+                                  structure-type lin-addr entry
+                                  u/s-acc r/w-acc x/d-acc
+                                  wp smep smap ac nxe r-w-x cpl x86))))
+          :hints (("Goal" :in-theory (e/d (ia32e-page-tablesbits-fix !ia32e-page-tablesbits->a
+                                           ia32e-page-tablesbits->u/s ia32e-page-tablesbits->r/w
+                                           ia32e-page-tablesbits->xd ia32e-page-tablesbits->p
+                                           ia32e-page-tablesbits->ps)
+                                          (paging-entry-no-page-fault-p-did-fault?))))))
 
 ;; ======================================================================
+
+(defconst *paging-levels* '(page-table page-directory page-dir-ptr-table pml4-table))
 
 (define ia32e-la-to-pa-page-table
   ((lin-addr  :type (signed-byte   #.*max-linear-address-size*))
@@ -1644,7 +1743,6 @@
 
   (defthm ia32e-la-to-pa-page-table-xw-values
           (implies (and (not (equal fld :mem))
-                        (not (equal fld :fault))
                         (not (equal fld :app-view)))
                    (and (equal (mv-nth 0
                                        (ia32e-la-to-pa-page-table
@@ -2016,7 +2114,6 @@
 
   (defthm ia32e-la-to-pa-page-directory-xw-values
           (implies (and (not (equal fld :mem))
-                        (not (equal fld :fault))
                         (not (equal fld :app-view)))
                    (and (equal (mv-nth 0
                                        (ia32e-la-to-pa-page-directory
@@ -2400,7 +2497,6 @@
 
   (defthm ia32e-la-to-pa-page-dir-ptr-table-xw-values
           (implies (and (not (equal fld :mem))
-                        (not (equal fld :fault))
                         (not (equal fld :app-view)))
                    (and (equal (mv-nth 0
                                        (ia32e-la-to-pa-page-dir-ptr-table
@@ -2698,7 +2794,6 @@
 
   (defthm ia32e-la-to-pa-pml4-table-xw-values
           (implies (and (not (equal fld :mem))
-                        (not (equal fld :fault))
                         (not (equal fld :app-view)))
                    (and (equal (mv-nth 0
                                        (ia32e-la-to-pa-pml4-table
@@ -2834,6 +2929,10 @@
 
     (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
                         :exec lin-addr))
+         (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x))
+                              r-w-x
+                              :r)
+                     :exec r-w-x))
          (cr0
            ;; CR0 is still a 32-bit register in 64-bit mode.
            (n32 (ctri *cr0* x86)))
@@ -2922,7 +3021,6 @@
   (defthm ia32e-la-to-pa-without-tlb-xw-values
           (implies (and (not (equal fld :mem))
                         (not (equal fld :rflags))
-                        (not (equal fld :fault))
                         (not (equal fld :ctr))
                         (not (equal fld :msr))
                         (not (equal fld :seg-visible))
@@ -3025,7 +3123,12 @@
 
   (defthm ia32e-la-to-pa-without-tlb-fixes-address
           (equal (ia32e-la-to-pa-without-tlb (logext 48 lin-addr) r-w-x x86)
-                 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
+                 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)))
+
+  (defthm ia32e-la-to-pa-without-tlb-fixes-perm
+          (implies (not (member-p r-w-x '(:r :w :x)))
+                   (equal (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86)
+                          (ia32e-la-to-pa-without-tlb lin-addr :r x86)))))
 
 (define ia32e-la-to-pa
   ((lin-addr :type (signed-byte   #.*max-linear-address-size*)
@@ -3046,6 +3149,71 @@
                                           member-equal
                                           not))))
 
+  :prepwork
+  ((make-event
+     `(define tlb-key ((vpn :type (unsigned-byte ,(- *max-linear-address-size* 12)))
+                       (r-w-x :type (member :r :w :x))
+                       (cpl :type (unsigned-byte 2)))
+        :returns (key tlb-keyp)
+        :prepwork ((local (in-theory (disable unsigned-byte-p))))
+        (b* ((vpn (mbe :logic (loghead ,(- *max-linear-address-size* 12) vpn)
+                       :exec vpn))
+             (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x))
+                                  r-w-x
+                                  :r)
+                         :exec r-w-x))
+             (cpl (mbe :logic (loghead 2 cpl) :exec cpl)))
+            (logapp 2 
+                    (case r-w-x
+                      (:r 0)
+                      (:w 1)
+                      (:x 2))
+                    (logapp 2 cpl vpn)))
+        ///
+        (defthm equal-ash-implies-equal
+                (implies (and (natp n)
+                              (integerp a)
+                              (integerp b))
+                         (equal (equal (ash a n)
+                                       (ash b n))
+                                (equal a b)))
+                :hints (("Goal" :in-theory (enable ash** bitops::ash**-induct))))
+
+        (defthm natp-integer-length-0
+                (implies (natp x)
+                         (equal (equal (integer-length x) 0)
+                                (equal x 0))))
+
+        (defthm equal-logapp-equal-components
+                (implies (and (natp n)
+                              (natp a)
+                              (<= (integer-length a) n)
+                              (integerp b)
+                              (natp c)
+                              (<= (integer-length c) n)
+                              (integerp d))
+                         (equal (equal (logapp n a b)
+                                       (logapp n c d))
+                                (and (equal a c)
+                                     (equal b d))))
+                :hints (("Goal" :in-theory (enable logapp** bitops::logapp-induct))))
+
+        (defthm tlb-key-injective
+                (equal (equal (tlb-key a b c)
+                              (tlb-key d e f))
+                       (and (equal (loghead ,(- *max-linear-address-size* 12) a)
+                                   (loghead ,(- *max-linear-address-size* 12) d))
+                            (equal (if (member b '(:r :w :x))
+                                     b
+                                     :r)
+                                   (if (member e '(:r :w :x))
+                                     e
+                                     :r))
+                            (equal (loghead 2 c) (loghead 2 f))))
+                :rule-classes :rewrite
+                :hints (("Goal" :in-theory (disable bitops::logapp-of-loghead
+                                                    bitops::logapp-of-i-0)))))))
+
   ;; If lin-addr is not canonical, we should throw a general
   ;; protection exception (#GP(0)).  (Or a stack fault (#SS) as
   ;; appropriate?)
@@ -3054,21 +3222,15 @@
 
     (b* ((lin-addr (mbe :logic (logext 48 (loghead 48 lin-addr))
                         :exec lin-addr))
+         (r-w-x (mbe :logic (if (member r-w-x '(:r :w :x)) r-w-x :r)
+                     :exec r-w-x))
          (vpn (logtail 12 (loghead #.*max-linear-address-size* lin-addr)))
          (tlb (tlb x86))
 
-         (tlb-key (logior 
-                    (ash vpn 4)
-                    (ash (cpl x86) 2)
-                    (case r-w-x
-                      (:r 0)
-                      (:w 1)
-                      (:x 2))))
+         (tlb-key (tlb-key vpn r-w-x (cpl x86)))
          ;; The useless looking and is necessary to coerce the return value of member
          ;; to boolean, which is necessary cause mbt requires t, not just a truthy value
-         (tlb-entry (if (mbt (and (member r-w-x '(:r :w :x)) t))
-                      (cdr (hons-get tlb-key tlb))
-                      nil))
+         (tlb-entry (cdr (hons-get tlb-key tlb)))
          ((when tlb-entry) (mv nil 
                                (logapp 12 lin-addr tlb-entry)
                                x86))
@@ -3078,9 +3240,7 @@
          ((when flg) (mv flg phys-addr x86))
          (ppn (logtail 12 phys-addr))
          ;; The use of and is for the same reason as the one documented above
-         (x86 (if (mbt (and (member r-w-x '(:r :w :x)) t))
-                (!tlb (hons-acons tlb-key ppn tlb) x86)
-                x86)))
+         (x86 (!tlb (hons-acons tlb-key ppn tlb) x86)))
         (mv flg phys-addr x86))
 
     (mv t 0 x86))
@@ -3229,7 +3389,17 @@
           :hints (("Goal" :in-theory (e/d () (logexting-maintains-same-page))
                           :use ((:instance logexting-maintains-same-page
                                            (x lin-addr) (y lin-addr-2) (n 48)))))
-          :rule-classes :congruence))
+          :rule-classes :congruence)
+
+  (defthmd ia32e-la-to-pa-fixes-address
+           (implies (not (canonical-address-p lin-addr))
+                    (equal (ia32e-la-to-pa lin-addr r-w-x x86)
+                           (ia32e-la-to-pa (logext 48 lin-addr) r-w-x x86))))
+
+  (defthm ia32e-la-to-pa-fixes-perm
+          (implies (not (member-p r-w-x '(:r :w :x)))
+            (equal (ia32e-la-to-pa lin-addr r-w-x x86)
+                   (ia32e-la-to-pa lin-addr :r x86)))))
 
 ;; ======================================================================
 

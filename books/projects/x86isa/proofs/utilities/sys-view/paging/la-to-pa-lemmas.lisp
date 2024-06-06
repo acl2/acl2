@@ -37,8 +37,9 @@
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 
 (in-package "X86ISA")
+(include-book "pml4-table-lemmas" :ttags :all)
 (include-book "gather-paging-structures-thms" :ttags :all)
-(include-book "tlb")
+(include-book "tlb" :ttags :all)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -206,39 +207,19 @@
   :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) ()))))
 
 (defthmd xlate-equiv-memory-and-ia32e-la-to-pa
-  (implies (and (tlb-consistent lin-addr r-w-x x86-1)
-                (tlb-consistent lin-addr r-w-x x86-2)
-                (xlate-equiv-memory (double-rewrite x86-1) x86-2))
+  (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+                (tlb-consistent lin-addr r-w-x x86-1)
+                (tlb-consistent lin-addr r-w-x x86-2))
            (and
             (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86-1))
                    (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86-2)))
             (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-1))
-                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-2)))))
-  :hints (("Goal" :in-theory (e/d* ()
-                                   ()))))
+                   (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-2))))))
 
-(defthm xlate-equiv-memory-and-mv-nth-0-ia32e-la-to-pa
-        (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                      (tlb-consistent lin-addr r-w-x x86-1)
-                      (tlb-consistent lin-addr r-w-x x86-2)
-                      (syntaxp (not (equal x86-1 x86-2))))
-                 (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86-1))
-                        (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
-        :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa)))))
-
-(defthm xlate-equiv-memory-and-mv-nth-1-ia32e-la-to-pa
-        (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                      (tlb-consistent lin-addr r-w-x x86-1)
-                      (tlb-consistent lin-addr r-w-x x86-2)
-                      (syntaxp (not (equal x86-1 x86-2))))
-                 (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-1))
-                        (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
-        :hints (("Goal" :use ((:instance xlate-equiv-memory-and-ia32e-la-to-pa)))))
-
-(defthm xlate-equiv-memory-and-mv-nth-2-ia32e-la-to-pa
-        (xlate-equiv-memory (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-                            (double-rewrite x86))
-        :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory ia32e-la-to-pa) (force (force))))))
+(defthm xlate-equiv-structures-and-mv-nth-2-ia32e-la-to-pa
+  (xlate-equiv-structures (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
+                          (double-rewrite x86))
+  :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa) (force (force))))))
 
 (defthm xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-cong
   (implies (xlate-equiv-structures x86-1 x86-2)
@@ -395,15 +376,18 @@
   :rule-classes :congruence)
 
 (defthm xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa
-        (xlate-equiv-memory
-          (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
-          (double-rewrite x86))
-        :hints (("Goal" :do-not '(preprocess)
-                 :in-theory (e/d* (xlate-equiv-memory)
-                                  (bitops::logand-with-negated-bitmask
-                                    accessed-bit
-                                    dirty-bit
-                                    not)))))
+  ;; without the 64-bit mode hyp, this theorem is not true,
+  ;; because ia32e-la-to-pa may mark bits in the state
+  (implies (64-bit-modep x86)
+           (xlate-equiv-memory
+            (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :do-not '(preprocess)
+           :in-theory (e/d* (xlate-equiv-memory)
+                            (bitops::logand-with-negated-bitmask
+                             accessed-bit
+                             dirty-bit
+                             not)))))
 
 (defthm xlate-equiv-memory-with-two-mv-nth-2-ia32e-la-to-pa-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
@@ -415,18 +399,39 @@
   :hints (("Goal" :in-theory (enable xlate-equiv-memory))))
 
 (defthm two-page-walks-ia32e-la-to-pa
-        (implies (and (tlb-consistent lin-addr-1 r-w-x-1 x86)
-                      (tlb-consistent lin-addr-2 r-w-x-2 x86))
-                 (and
-                   (equal
-                     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1
-                                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
-                     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))
-                   (equal
-                     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1
-                                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
-                     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))))
-        :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa)))))
+  (implies
+   ;; the 64-bit mode hyp makes the proof of this theorem easy
+   ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa above),
+   ;; but could this hyp be removed from here?
+   (64-bit-modep x86)
+   (and
+
+    (equal
+     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1
+                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
+     (mv-nth 0 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))
+
+    (equal
+     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1
+                               (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
+     (mv-nth 1 (ia32e-la-to-pa lin-addr-1 r-w-x-1 x86)))))
+
+  :hints (("Goal" :in-theory (e/d* () (ia32e-la-to-pa)))))
+
+(defthm paging-equiv-memory-and-mv-nth-2-ia32e-la-to-pa
+        (implies (64-bit-modep x86)
+                 (paging-equiv-memory (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))
+                                      (double-rewrite x86)))
+        :hints (("Goal" :in-theory (e/d* (paging-equiv-memory)
+                                         (force (force))))))
+
+(defthm paging-equiv-memory-and-two-mv-nth-2-ia32e-la-to-pa-cong
+        (implies (paging-equiv-memory x86-1 x86-2)
+                 (paging-equiv-memory (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-1))
+                                      (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86-2))))
+        :rule-classes :congruence
+        :hints (("Goal" :in-theory (enable paging-equiv-memory))))
+
 
 (in-theory (e/d* () (ia32e-la-to-pa)))
 
@@ -470,49 +475,55 @@
 ;; Lemmas about las-to-pas:
 
 (defthmd xlate-equiv-memory-and-las-to-pas
-         (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                       (tlb-consistent-n n lin-addr r-w-x x86-1)
-                       (tlb-consistent-n n lin-addr r-w-x x86-2)
-                       (syntaxp (not (equal x86-1 x86-2))))
-                  (and
-                    (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
-                           (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2)))
-                    (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
-                           (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2)))))
-         :hints (("Goal" :in-theory (enable tlb-consistent-n)
-                  :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
-                                (las-to-pas n lin-addr r-w-x x86-2)))))
-
-(defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas
-        (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                      (tlb-consistent-n n lin-addr r-w-x x86-1)
-                      (tlb-consistent-n n lin-addr r-w-x x86-2)
-                      (syntaxp (not (equal x86-1 x86-2))))
-                 (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
-                        (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2))))
-        :hints (("Goal" :use (:instance xlate-equiv-memory-and-las-to-pas))))
-
-(defthm xlate-equiv-memory-and-mv-nth-1-las-to-pas
-        (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
-                      (tlb-consistent-n n lin-addr r-w-x x86-1)
-                      (tlb-consistent-n n lin-addr r-w-x x86-2)
-                      (syntaxp (not (equal x86-1 x86-2))))
-                 (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
-                        (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2))))
-        :hints (("Goal" :use (:instance xlate-equiv-memory-and-las-to-pas))))
+  (implies (and (xlate-equiv-memory (double-rewrite x86-1) x86-2)
+                (tlb-consistent-n n lin-addr r-w-x x86-1)
+                (tlb-consistent-n n lin-addr r-w-x x86-2))
+           (and
+            (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-1))
+                   (mv-nth 0 (las-to-pas n lin-addr r-w-x x86-2)))
+            (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
+                   (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2)))))
+  :hints (("Goal"
+           :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
+                         (las-to-pas n lin-addr r-w-x x86-2))
+           :in-theory (enable tlb-consistent-n))))
 
 (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas
-        (xlate-equiv-memory
-          (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
-          (double-rewrite x86))
-        :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86))))
+  ;; the 64-bit mode hyp makes the proof of this theorem easy
+  ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa),
+  ;; but could this hyp be removed from here?
+  (implies (64-bit-modep (double-rewrite x86))
+           (xlate-equiv-memory
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86))))
 
 (defthm xlate-equiv-memory-with-two-mv-nth-2-las-to-pas-cong
   (implies (xlate-equiv-memory x86-1 x86-2)
            (xlate-equiv-memory
             (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-1))
             (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-2))))
-  :hints (("Goal"
+  :hints (("Goal" :in-theory (enable xlate-equiv-memory)
+           :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
+                         (las-to-pas n lin-addr r-w-x x86-2))))
+  :rule-classes :congruence)
+
+(defthm paging-equiv-memory-with-mv-nth-2-las-to-pas
+  ;; the 64-bit mode hyp makes the proof of this theorem easy
+  ;; (via paging-equiv-memory-with-mv-nth-2-ia32e-la-to-pa),
+  ;; but could this hyp be removed from here?
+  (implies (64-bit-modep (double-rewrite x86))
+           (paging-equiv-memory
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
+            (double-rewrite x86)))
+  :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86))))
+
+(defthm paging-equiv-memory-with-two-mv-nth-2-las-to-pas-cong
+  (implies (paging-equiv-memory x86-1 x86-2)
+           (paging-equiv-memory
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-1))
+            (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-2))))
+  :hints (("Goal" :in-theory (enable paging-equiv-memory)
            :induct (cons (las-to-pas n lin-addr r-w-x x86-1)
                          (las-to-pas n lin-addr r-w-x x86-2))))
   :rule-classes :congruence)

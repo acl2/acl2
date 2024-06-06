@@ -1695,7 +1695,8 @@
     (bound-x86-term mfc state)
   (declare (xargs :stobjs (state) :mode :program)
            (ignorable state))
-  (b* ((call (acl2::find-call-lst 'xlate-equiv-structures (acl2::mfc-clause mfc)))
+  (b* ((call (or (acl2::find-call-lst 'xlate-equiv-structures (acl2::mfc-clause mfc))
+                 (acl2::find-call-lst 'xlate-equiv-memory (acl2::mfc-clause mfc))))
        ((when (not call))
         ;; xlate-equiv-structures term not encountered.
         nil)
@@ -2178,8 +2179,8 @@
 
   (if (and (equal (xr :app-view nil x86-1) nil)
            (equal (xr :app-view nil x86-2) nil)
-           (equal (64-bit-modep x86-1)
-                  (64-bit-modep x86-2)))
+           (64-bit-modep x86-1)
+           (64-bit-modep x86-2))
 
       (and (xlate-equiv-structures x86-1 x86-2)
            (all-mem-except-paging-structures-equal x86-1 x86-2))

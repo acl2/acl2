@@ -3,9 +3,9 @@
 (include-book "../../../../machine/paging")
 (include-book "la-to-pa-without-tlb-lemmas")
 (include-book "common-paging-lemmas")
+(include-book "paging-equiv")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
 
 (define tlb-consistent ((lin-addr canonical-address-p)
                         (r-w-x    :type (member  :r :w :x))
@@ -27,152 +27,14 @@
           (implies (atom (xr :tlb nil x86))
                    (tlb-consistent lin-addr r-w-x x86)))
 
-  ;; Taken from ihsext-basics book
-  ;; For some reason, it's local in that book rather than just disabled
-  (local (defthmd ash-of-logior
-                  (implies (natp size)
-                           (equal (ash (logior a b) size)
-                                  (logior (ash a size)
-                                          (ash b size))))
-                  :hints(("Goal" :in-theory (enable* ihsext-inductions
-                                                     ihsext-redefs)))))
-
-  ;; So many lemmas have to be proved to get the later theorems
-  ;; to be accepted. There's got to be a better way.
-
-  (local (defthmd logior-ash-ash-logior
-                  (implies (and (natp n)
-                                (natp m)
-                                (<= n m)
-                                (integerp x)
-                                (integerp y))
-                           (equal (logior (ash x n)
-                                          (ash y m))
-                                  (ash (logior x 
-                                               (ash y (- m n)))
-                                       n)))
-                  :hints (("Goal" :in-theory (enable ash-of-logior)))))
-
-  (local (defthmd logior-ash-to-logapp
-                  (implies (and (natp x)
-                                (integerp y)
-                                (natp n)
-                                (>= n (integer-length x)))
-                           (equal (logior x (ash y n))
-                                  (logapp n x y)))
-                  :hints (("Goal" :in-theory (enable logtail** bitops::logtail-induct
-                                                     logior** bitops::logior-induct
-                                                     logapp** bitops::logapp-induct)))))
-
-  (local (defthmd equal-logapps-equal-components
-                  (implies (and (integerp x)
-                                (integerp y)
-                                (integerp z)
-                                (integerp w)
-                                (natp n))
-                           (equal (equal (logapp n x y)
-                                         (logapp n z w))
-                                  (and (equal (loghead n x)
-                                              (loghead n z))
-                                       (equal y w))))
-                  :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct
-                                                     logapp** bitops::logapp-induct)))))
-
-  (local (defthmd loghead-ident-nat-integer-length
-                  (implies (and (natp n)
-                                (natp x)
-                                (>= n (integer-length x)))
-                           (equal (loghead n x)
-                                  x))
-                  :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct)))))
-
-  (local (defthmd equal-logior-disjoint
-                  (implies (and (natp x)
-                                (natp y)
-                                (integerp z)
-                                (integerp w)
-                                (natp n)
-                                (>= n (max (integer-length x)
-                                           (integer-length y))))
-                           (equal (equal (logior x (ash z n))
-                                         (logior y (ash w n)))
-                                  (and (equal x y)
-                                       (equal z w))))
-                  :hints (("Goal" :in-theory (enable logior-ash-to-logapp
-                                                     loghead-ident-nat-integer-length
-                                                     equal-logapps-equal-components)))))
-
-
-  (local (defthmd loghead-logtail-swap
-                  (implies (and (natp n)
-                                (natp m))
-                           (equal (loghead m (logtail n x))
-                                  (logtail n (loghead (+ n m) x))))
-                  :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct
-                                                     logtail** bitops::logtail-induct)))))
-
-  (local (defthm equal-logapp-equal-components
-                 (implies (and (natp n)
-                               (integerp x)
-                               (integerp y)
-                               (integerp z))
-                          (equal (equal (logapp n x y)
-                                        z)
-                                 (and (equal (loghead n x)
-                                             (loghead n z))
-                                      (equal y (logtail n z)))))
-                 :hints (("Goal" :in-theory (enable logapp** bitops::logapp-induct
-                                                    loghead** bitops::loghead-induct
-                                                    logtail** bitops::logtail-induct)))))
-
-  (local (defthm logtail-of-logext
-                 (implies (and (natp n)
-                               (natp m)
-                               (> m n))
-                          (equal (logtail n (logext m x))
-                                 (logext (- m n)
-                                         (logtail n x))))
-                 :hints (("Goal" :in-theory (enable logtail** bitops::logtail-induct
-                                                    logext** bitops::logext-induct)))))
-
-  (local (defthm equal-logheads-means-equal-logexts
-                 (implies (and (integerp n)
-                               (> n 0)
-                               (integerp x)
-                               (integerp y))
-                          (equal (equal (loghead n x)
-                                        (loghead n y))
-                                 (equal (logext n x)
-                                        (logext n y))))
-                 :hints (("Goal" :in-theory (enable loghead** bitops::loghead-induct
-                                                    logext** bitops::logext-induct)))))
-
-  (local (defthm equal-logtail-loghead-implies-equal-logtail-logext
-                 (implies (and (natp n)
-                               (natp m)
-                               (< n m))
-                          (equal (equal (logtail n (loghead m x))
-                                        (logtail n (loghead m y)))
-                                 (equal (logtail n (logext m x))
-                                        (logtail n (logext m y)))))))
-
   (defthm translating-addresses-maintains-consistency
           (equal (tlb-consistent lin-addr r-w-x
                                  (mv-nth 2 (ia32e-la-to-pa lin-addr2 r-w-x2 x86)))
                  (tlb-consistent lin-addr r-w-x x86))
-          :hints (("Goal" :in-theory (e/d (equal-logior-disjoint
-                                            loghead-logtail-swap
-                                            segment-selectorbits->rpl
-                                            logior-ash-ash-logior)
-                                          (acl2::simplify-logior
-                                            fty::logapp-of-logext
-                                            bitops::logtail-of-loghead
-                                            bitops::cancel-logext-under-loghead
-                                            ia32e-la-to-pa-without-tlb-fixes-address))
-                   :use (:instance logtails<=12-equal-implies-same-page
-                                   (x (logext 48 lin-addr))
-                                   (y (logext 48 lin-addr2))
-                                   (n 12)))))
+          :hints (("Goal"  :in-theory (e/d ()
+                                           (ia32e-la-to-pa-without-tlb-fixes-address))
+                   :use ((:instance logext-n-same-page-if-loghead-logtail-equal
+                                    (n 48) (k 36) (a lin-addr) (b lin-addr2))))))
 
   (defthm same-page-lin-addrs-have-same-tlb-consistent
           (implies (same-page lin-addr lin-addr2)
@@ -198,17 +60,39 @@
                                               bitops::cancel-loghead-under-logext
                                               ia32e-la-to-pa))))
 
-  (skip-proofs (defthm writing-non-page-table-memory-maintains-tlb-consistency
-                       (implies (not (member-p index
-                                               (xlation-governing-entries-paddrs lin-addr x86)))
-                                (equal (tlb-consistent lin-addr r-w-x (xw :mem index val x86))
-                                       (tlb-consistent lin-addr r-w-x x86)))
-                       ;; :hints (("Goal" :use (:instance xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-without-tlb-cong
-                       ;;                                 ()
-                       ;;                                 ) ))
+  (defthm writing-non-page-table-memory-maintains-tlb-consistency
+          (implies (disjoint-p (list index)
+                               (xlation-governing-entries-paddrs (logext 48 lin-addr) x86))
+                   (equal (tlb-consistent lin-addr r-w-x (xw :mem index val x86))
+                          (tlb-consistent lin-addr r-w-x x86)))
+          :hints (("Goal" :in-theory (disable ia32e-la-to-pa-without-tlb-fixes-address))))
 
-           ))
-  )
+  (local (in-theory (disable ia32e-la-to-pa tlb-consistent)))
+
+  (defthm las-to-pas-maintains-tlb-consistency
+          (implies (tlb-consistent lin-addr r-w-x x86)
+                   (tlb-consistent lin-addr r-w-x
+                                   (mv-nth 2 (las-to-pas n lin-addr2 r-w-x2 x86))))
+          :hints (("Goal" :in-theory (enable las-to-pas))))
+
+  (defthm write-to-physical-memory-maintains-tlb-consistency
+          (implies (and (disjoint-p
+                          p-addrs
+                          (xlation-governing-entries-paddrs (logext 48 lin-addr) (double-rewrite x86)))
+                        (tlb-consistent lin-addr r-w-x x86))
+                   (tlb-consistent lin-addr r-w-x
+                                   (write-to-physical-memory p-addrs value x86)))
+          :hints (("Goal" :in-theory (enable disjoint-p write-to-physical-memory))))
+
+  (defthm wb-maintains-tlb-consistency
+          (implies (and (not (app-view x86))
+                        (disjoint-p
+                          (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
+                          (xlation-governing-entries-paddrs (logext 48 lin-addr) (double-rewrite x86)))
+                        (tlb-consistent lin-addr r-w-x x86))
+                   (tlb-consistent lin-addr r-w-x
+                                   (mv-nth 1 (wb n-w write-addr w value x86))))
+          :hints (("Goal" :in-theory (enable wb)))))
 
 (define tlb-consistent-n ((n natp)
                           (lin-addr integerp)
@@ -231,38 +115,79 @@
                                    (mv-nth 2 (ia32e-la-to-pa lin-addr2 r-w-x2 x86)))
                  (tlb-consistent-n n lin-addr r-w-x x86)))
 
-  (skip-proofs (defthm writing-non-page-table-memory-maintains-tlb-consistency-n
-                       (implies (not (member-p index
-                                               (all-xlation-governing-entries-paddrs n lin-addr x86)))
-                                (equal (tlb-consistent-n n lin-addr r-w-x (xw :mem index val x86))
-                                       (tlb-consistent-n n lin-addr r-w-x x86)))
-                       ;; :hints (("Goal" :use (:instance xlate-equiv-structures-and-two-mv-nth-2-ia32e-la-to-pa-without-tlb-cong
-                       ;;                                 ()
-                       ;;                                 ) ))
+  (defthm writing-non-page-table-memory-maintains-tlb-consistency-n
+          (implies (not (member-p index
+                                  (all-xlation-governing-entries-paddrs n lin-addr x86)))
+                   (equal (tlb-consistent-n n lin-addr r-w-x (xw :mem index val x86))
+                          (tlb-consistent-n n lin-addr r-w-x x86)))
+          :hints (("Goal" :in-theory (e/d (disjoint-p) (ia32e-la-to-pa)))))
 
-           ))
+  ;; (skip-proofs (defthm tlb-consistent-n-non-canonical
+  ;;                      (implies (not (tlb-consistent-n n lin-addr r-w-x x86))
+  ;;                               (canonical-address-p lin-addr))))
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
   (defthm tlb-consistent-n-implies-tlb-consistent
-          (implies (and (case-split (canonical-address-p lin-addr))
-                        (tlb-consistent-n n lin-addr-base r-w-x x86)
+          (implies (and (tlb-consistent-n n lin-addr-base r-w-x x86)
                         (natp n)
+                        (case-split (canonical-address-p lin-addr))
                         (case-split (canonical-address-p lin-addr-base))
                         (>= lin-addr lin-addr-base)
                         (< lin-addr (+ lin-addr-base n)))
-                   (tlb-consistent lin-addr r-w-x x86)))
+                   (tlb-consistent lin-addr r-w-x x86))
+          :hints (("Goal" ;; :cases ()
+                   )))
 
-  (skip-proofs (defthm tlb-consistent-n-implies-tlb-consistent-n-subset
-                       (implies (and (natp n)
-                                     (tlb-consistent-n n lin-addr r-w-x x86)
-                                     (natp n2)
-                                     (<= lin-addr lin-addr2)
-                                     (<= (+ lin-addr2 n2) (+ lin-addr n)))
-                                (tlb-consistent-n n2 lin-addr2 r-w-x x86))))
+  (defthm tlb-consistent-n-implies-tlb-consistent-subset
+          (implies (and (tlb-consistent-n n lin-addr-base r-w-x x86)
+                        (case-split (canonical-address-p lin-addr-base))
+                        (case-split (canonical-address-p lin-addr))
+                        (natp n)
+                        (>= lin-addr lin-addr-base)
+                        (< lin-addr (+ lin-addr-base n))
+                        (natp k)
+                        (<= (+ lin-addr k) (+ lin-addr-base n)))
+                   (tlb-consistent-n k lin-addr r-w-x x86)))
 
   (defthm tlb-consistent-n-1-is-tlb-consistent
           (implies (canonical-address-p lin-addr)
                    (equal (tlb-consistent-n 1 lin-addr r-w-x x86)
-                          (tlb-consistent lin-addr r-w-x x86))))
-  )
+                          (tlb-consistent lin-addr r-w-x x86)))
+          :hints (("Goal" :expand (tlb-consistent-n 1 lin-addr r-w-x x86))))
+
+  (defthm writing-non-page-table-memory-maintains-tlb-consistent-n
+          (implies (disjoint-p (list index)
+                               (all-xlation-governing-entries-paddrs n (logext 48 lin-addr) x86))
+                   (equal (tlb-consistent-n n lin-addr r-w-x (xw :mem index val x86))
+                          (tlb-consistent-n n lin-addr r-w-x x86)))
+          :hints (("Goal" :in-theory (disable ia32e-la-to-pa-without-tlb-fixes-address))))
+
+  (local (in-theory (disable ia32e-la-to-pa)))
+
+  (defthm las-to-pas-maintains-tlb-consistent-n
+          (implies (tlb-consistent-n n lin-addr r-w-x x86)
+                   (tlb-consistent-n n lin-addr r-w-x
+                                   (mv-nth 2 (las-to-pas n2 lin-addr2 r-w-x2 x86))))
+          :hints (("Goal" :in-theory (enable tlb-consistent-n)
+                          :induct (tlb-consistent-n n lin-addr r-w-x x86)
+                   )))
+
+  (defthm write-to-physical-memory-maintains-tlb-consistent-n
+          (implies (and (disjoint-p
+                          p-addrs
+                          (all-xlation-governing-entries-paddrs n (logext 48 lin-addr) (double-rewrite x86)))
+                        (tlb-consistent-n n lin-addr r-w-x x86))
+                   (tlb-consistent-n n lin-addr r-w-x
+                                   (write-to-physical-memory p-addrs value x86)))
+          :hints (("Goal" :in-theory (enable disjoint-p write-to-physical-memory))))
+
+  (defthm wb-maintains-tlb-consistent-n
+          (implies (and (not (app-view x86))
+                        (disjoint-p
+                          (mv-nth 1 (las-to-pas n-w write-addr :w (double-rewrite x86)))
+                          (all-xlation-governing-entries-paddrs n (logext 48 lin-addr) (double-rewrite x86)))
+                        (tlb-consistent-n n lin-addr r-w-x x86))
+                   (tlb-consistent-n n lin-addr r-w-x
+                                   (mv-nth 1 (wb n-w write-addr w value x86))))
+          :hints (("Goal" :in-theory (enable wb)))))

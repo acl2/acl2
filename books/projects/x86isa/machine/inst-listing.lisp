@@ -51,6 +51,9 @@
 
 ;; ----------------------------------------------------------------------
 
+;; TODO document the format of this
+;; (see also ``create-dispatch-for-opcodes'' in ".../machine/dispatch-creator.lisp")
+
 (defconst *pre-one-byte-opcode-map*
   '((INST "ADD" (OP :OP #x0)
           (ARG :OP1 '(E B) :OP2 '(G B))

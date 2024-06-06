@@ -40,6 +40,7 @@
 (include-book "physical-memory-utils")
 (include-book "gl-lemmas")
 (include-book "bind-free-utils")
+(include-book "paging/tlb")
 (include-book "clause-processors/find-subterms" :dir :system)
 (include-book "clause-processors/find-matching" :dir :system)
 
@@ -382,6 +383,371 @@
                              bitops::logand-with-negated-bitmask
                              (:meta acl2::mv-nth-cons-meta)
                              force (force))))))
+
+(defthmd r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-pml4-table-when-no-errors
+  (implies (and (not (mv-nth 0
+                             (ia32e-la-to-pa-pml4-table
+                              lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86)))
+                (syntaxp (not (eq r-x-2 r-x-1)))
+                (not (mv-nth 0
+                             (ia32e-la-to-pa-pml4-table
+                              lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))))
+           (equal (mv-nth 1
+                          (ia32e-la-to-pa-pml4-table
+                           lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))
+                  (mv-nth 1
+                          (ia32e-la-to-pa-pml4-table
+                           lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86))))
+  :hints (("Goal"
+           :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
+                            (lin-addr (logext 48 lin-addr))
+                            (base-addr
+                             (ash
+                              (ia32e-pml4ebits->pdpt
+                               (rm-low-64 (pml4-table-entry-addr
+                                           (logext 48 lin-addr)
+                                           (logand 18446744073709547520
+                                                   (loghead 52 base-addr)))
+                                          x86))
+                              12))
+                            (u/s-acc
+                             (page-user-supervisor
+                              (rm-low-64 (pml4-table-entry-addr
+                                          (logext 48 lin-addr)
+                                          (logand 18446744073709547520
+                                                  (loghead 52 base-addr)))
+                                         x86)))
+                            (r/w-acc
+                             (page-read-write
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))
+                            (x/d-acc
+                             (page-execute-disable
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-pml4-table)
+                            (bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
+(defthmd r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-without-tlb-when-no-errors
+  (implies (and
+            (bind-free (find-almost-matching-ia32e-la-to-pas
+                        'r-x-1 lin-addr mfc state)
+                       (r-x-1))
+            (syntaxp (and (not (eq r-x-2 r-x-1))
+                          ;; r-x-2 must be "smaller" than r-x-1.
+                          (term-order r-x-2 r-x-1)))
+            (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))))
+           (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))
+                  (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86))))
+  :hints (("Goal"
+           :use ((:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-pml4-table-when-no-errors
+                            (lin-addr (logext 48 lin-addr))
+                            (cpl (cpl x86))
+                            (base-addr
+                             (ash (cr3bits->pdb (xr :ctr *cr3* x86)) 12))
+                            (wp
+                             (cr0bits->wp (loghead 32 (xr :ctr *cr0* x86))))
+                            (smep
+                             (cr4bits->smep (loghead 22 (xr :ctr *cr4* x86))))
+                            (smap
+                             (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
+                            (ac
+                             (rflagsbits->ac (xr :rflags nil x86)))
+                            (nxe
+                             (ia32_eferbits->nxe
+                              (loghead 12 (xr :msr *ia32_efer-idx* x86))))
+                            (r-x-1 (if (member r-x-1 '(:r :w :x)) r-x-1 :r))
+                            (r-x-2 (if (member r-x-2 '(:r :w :x)) r-x-2 :r))))
+           :in-theory (e/d* (ia32e-la-to-pa-without-tlb) ()))))
+
+(defthm r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors
+  (implies (and
+            (bind-free (find-almost-matching-ia32e-la-to-pas
+                        'r-x-1 lin-addr mfc state)
+                       (r-x-1))
+            (syntaxp (and (not (eq r-x-2 r-x-1))
+                          ;; r-x-2 must be "smaller" than r-x-1.
+                          (term-order r-x-2 r-x-1)))
+            (tlb-consistent lin-addr r-x-1 x86)
+            (tlb-consistent lin-addr r-x-2 x86)
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-1 x86)))
+            (not (mv-nth 0 (ia32e-la-to-pa lin-addr r-x-2 x86))))
+           (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-2 x86))
+                  (mv-nth 1 (ia32e-la-to-pa lin-addr r-x-1 x86))))
+  :hints (("Goal" :use (:instance r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-without-tlb-when-no-errors))))
+
+;; ----------------------------------------------------------------------
+
+(defthmd r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-table-when-no-errors
+  (implies (and (not (mv-nth 0
+                             (ia32e-la-to-pa-page-table
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-x-1 cpl x86)))
+                (syntaxp (not (eq r-x-2 r-x-1)))
+                (not (equal r-x-1 :w))
+                (not (equal r-x-2 :w))
+                (not (mv-nth 0
+                             (ia32e-la-to-pa-page-table
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-x-2 cpl x86))))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-page-table
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-x-2 cpl x86))
+                  (mv-nth 2
+                          (ia32e-la-to-pa-page-table
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-x-1 cpl x86))))
+  :hints (("Goal"
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-page-table)
+                            (bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
+(defthmd r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-directory-when-no-errors
+  (implies (and (not (mv-nth 0
+                             (ia32e-la-to-pa-page-directory
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-x-1 cpl x86)))
+                (syntaxp (not (eq r-x-2 r-x-1)))
+                (not (equal r-x-1 :w))
+                (not (equal r-x-2 :w))
+                (not (mv-nth 0
+                             (ia32e-la-to-pa-page-directory
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-x-2 cpl x86))))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-page-directory
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-x-2 cpl x86))
+                  (mv-nth 2
+                          (ia32e-la-to-pa-page-directory
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-x-1 cpl x86))))
+  :hints (("Goal"
+           :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-table-when-no-errors
+                            (lin-addr (logext 48 lin-addr))
+                            (base-addr
+                             (ash
+                              (ia32e-pde-pg-tablebits->pt
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (logand
+                              u/s-acc
+                              (page-user-supervisor
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (r/w-acc
+                             (logand
+                              r/w-acc
+                              (page-read-write
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (x/d-acc
+                             (logand
+                              x/d-acc
+                              (page-execute-disable
+                               (rm-low-64
+                                (page-directory-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-page-directory)
+                            (bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
+(defthmd r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
+  (implies (and (not (mv-nth 0
+                             (ia32e-la-to-pa-page-dir-ptr-table
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-x-1 cpl x86)))
+                (syntaxp (not (eq r-x-2 r-x-1)))
+                (not (equal r-x-1 :w))
+                (not (equal r-x-2 :w))
+                (not (mv-nth 0
+                             (ia32e-la-to-pa-page-dir-ptr-table
+                              lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                              wp smep smap ac nxe r-x-2 cpl x86))))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-page-dir-ptr-table
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-x-2 cpl x86))
+                  (mv-nth 2
+                          (ia32e-la-to-pa-page-dir-ptr-table
+                           lin-addr base-addr u/s-acc r/w-acc x/d-acc
+                           wp smep smap ac nxe r-x-1 cpl x86))))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-directory-when-no-errors
+                            (lin-addr (logext 48 lin-addr))
+                            (base-addr
+                             (ash
+                              (ia32e-pdpte-pg-dirbits->pd
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (logand
+                              u/s-acc
+                              (page-user-supervisor
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (r/w-acc
+                             (logand
+                              r/w-acc
+                              (page-read-write
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))
+                            (x/d-acc
+                             (logand
+                              x/d-acc
+                              (page-execute-disable
+                               (rm-low-64
+                                (page-dir-ptr-table-entry-addr
+                                 (logext 48 lin-addr)
+                                 (logand 18446744073709547520
+                                         (loghead 52 base-addr)))
+                                x86))))))
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-page-dir-ptr-table)
+                            (r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-page-table-when-no-errors
+                             bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
+(defthmd r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-pml4-table-when-no-errors
+  (implies (and (not (mv-nth 0
+                             (ia32e-la-to-pa-pml4-table
+                              lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86)))
+                (syntaxp (not (eq r-x-2 r-x-1)))
+                (not (equal r-x-1 :w))
+                (not (equal r-x-2 :w))
+                (not (mv-nth 0
+                             (ia32e-la-to-pa-pml4-table
+                              lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))))
+           (equal (mv-nth 2
+                          (ia32e-la-to-pa-pml4-table
+                           lin-addr base-addr wp smep smap ac nxe r-x-2 cpl x86))
+                  (mv-nth 2
+                          (ia32e-la-to-pa-pml4-table
+                           lin-addr base-addr wp smep smap ac nxe r-x-1 cpl x86))))
+  :hints (("Goal"
+           :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table-when-no-errors
+                            (lin-addr (logext 48 lin-addr))
+                            (base-addr
+                             (ash
+                              (ia32e-pml4ebits->pdpt
+                               (rm-low-64
+                                (pml4-table-entry-addr (logext 48 lin-addr)
+                                                       (logand 18446744073709547520
+                                                               (loghead 52 base-addr)))
+                                x86))
+                              12))
+                            (u/s-acc
+                             (page-user-supervisor
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))
+                            (r/w-acc
+                             (page-read-write
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))
+                            (x/d-acc
+                             (page-execute-disable
+                              (rm-low-64
+                               (pml4-table-entry-addr (logext 48 lin-addr)
+                                                      (logand 18446744073709547520
+                                                              (loghead 52 base-addr)))
+                               x86)))))
+           :do-not-induct t
+           :in-theory (e/d* (disjoint-p
+                             member-p
+                             ia32e-la-to-pa-pml4-table)
+                            (bitops::logand-with-negated-bitmask
+                             (:meta acl2::mv-nth-cons-meta)
+                             force (force))))))
+
+(defthm r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-without-tlb-when-no-errors
+  (implies (and (bind-free (find-almost-matching-ia32e-la-to-pas
+                            'r-x-1 lin-addr mfc state)
+                           (r-x-1))
+                (syntaxp (and
+                          (not (eq r-x-2 r-x-1))
+                          ;; r-x-2 must be "smaller" than r-x-1.
+                          (term-order r-x-2 r-x-1)))
+                (not (equal r-x-1 :w))
+                (not (equal r-x-2 :w))
+                (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86)))
+                (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))))
+           (equal (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-x-2 x86))
+                  (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-x-1 x86))))
+  :hints (("Goal"
+           :use ((:instance r/x-is-irrelevant-for-mv-nth-2-ia32e-la-to-pa-pml4-table-when-no-errors
+                            (lin-addr (logext 48 lin-addr))
+                            (cpl (cpl x86))
+                            (base-addr
+                             (ash (cr3bits->pdb (xr :ctr *cr3* x86)) 12))
+                            (wp (cr0bits->wp (loghead 32 (xr :ctr *cr0* x86))))
+                            (smep (cr4bits->smep (loghead 22 (xr :ctr *cr4* x86))))
+                            (smap (cr4bits->smap (loghead 22 (xr :ctr *cr4* x86))))
+                            (ac (rflagsbits->ac (xr :rflags nil x86)))
+                            (nxe (ia32_eferbits->nxe
+                                  (loghead 12 (xr :msr *ia32_efer-idx* x86))))
+                            (r-x-1 (if (member r-x-1 '(:r :w :x)) r-x-1 :r))
+                            (r-x-2 (if (member r-x-2 '(:r :w :x)) r-x-2 :r))))
+           :in-theory (e/d* (ia32e-la-to-pa-without-tlb) ()))))
 
 ;; ======================================================================
 
