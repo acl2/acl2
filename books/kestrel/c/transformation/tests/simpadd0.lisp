@@ -1,0 +1,62 @@
+; C Library
+;
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "C2C")
+
+(include-book "../simpadd0")
+
+(include-book "../../syntax/parser")
+(include-book "../../syntax/printer")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *filepath*
+  (filepath "file.c"))
+
+(defconst *old-filedata*
+  (filedata
+   (acl2::string=>nats
+    "int main(void) {
+  int x = 5;
+  return x + 0;
+}
+")))
+
+(defconst *old-fileset*
+  (fileset
+   (omap::update *filepath*
+                 *old-filedata*
+                 nil)))
+
+(defconst *old-transunits*
+  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset*)))
+    (if erp
+        (cw "~@0" erp)
+      transunits)))
+
+(defconst *new-transunits*
+  (simpadd0-transunit-ensemble *old-transunits*))
+
+(defconst *new-fileset*
+  (c$::print-fileset *new-transunits*))
+
+(defconst *new-filedata*
+  (omap::lookup *filepath*
+                (fileset->unwrap *new-fileset*)))
+
+(assert-event
+ (equal
+  (acl2::nats=>string
+   (filedata->unwrap *new-filedata*))
+  "int main(void) {
+  int x = 5;
+  return x;
+}
+"))

@@ -19,6 +19,8 @@
 (include-book "parse-files")
 (include-book "print-files")
 (include-book "write-files")
+(include-book "read-and-parse-files")
+(include-book "print-and-write-files")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,7 +82,13 @@
     "We also provide a (pretty-)printer that turns our abstract syntax
      into concrete syntax that is valid C code.
      Like the parser and the abstract syntax,
-     our printer covers all the C constructs after preprocessing.")
+     our printer covers all the C constructs after preprocessing.
+     This printer is an initial version;
+     we plan to improve it in various respects,
+     in particular by supporting printing options
+     (e.g. for right margin).")
+   (xdoc::p
+    "We also provide event macros to read, parse, print, and write files.")
    (xdoc::p
     "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
@@ -110,4 +118,6 @@
                     read-files
                     parse-files
                     print-files
-                    write-files))
+                    write-files
+                    read-and-parse-files
+                    print-and-write-files))

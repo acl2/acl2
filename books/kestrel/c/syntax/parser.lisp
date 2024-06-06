@@ -736,13 +736,15 @@
      in the manner that should be obvious from the body of this macro.
      Note that the fourth term is optional,
      in case we want to provide additional information."))
-  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%"
+  `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
+                 [from function ~x4]~%"
                 ,expected
                 ,where
                 ,found
                 ,(if extra
                      `(msg " ~@0" ,extra)
-                   ""))))
+                   "")
+                __function__)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -8956,15 +8958,24 @@
        ;; it may be a type specifier (a typedef name),
        ;; or it could be a declarator,
        ;; which could always follow a list of declaration specifiers.
-       ;; So we need to read more tokens
+       ;; So we need to read more tokens.
        ((and token (token-case token :ident)) ; declspec ident
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
+           ;; If token2 is an equal sign, a comma, or a semicolon,
+           ;; the identifier must be a declarator,
+           ;; so we have reached the end of the declaration specifiers.
+           ((or (equal token2 (token-punctuator "=")) ; declspec ident =
+                (equal token2 (token-punctuator ",")) ; declspec ident ,
+                (equal token2 (token-punctuator ";"))) ; declspec ident ;
+            (b* ((pstate (unread-token pstate)) ; declspec ident
+                 (pstate (unread-token pstate))) ; declspec
+              (retok (list declspec) first-span pstate)))
            ;; If token2 is an open parenthesis,
            ;; we may be in the ambiguous situation
            ;; discussed in :DOC TYSPEC,
            ;; so we try to classify what follows.
-           ((equal token2 (token-punctuator "("))
+           ((equal token2 (token-punctuator "(")) ; declspec ident (
             (b* (((erp classification num-tokens pstate)
                   (classify-partys/declor/ambig pstate)))
               (partys/declor/ambig-case
@@ -9013,8 +9024,7 @@
            ;; so we have reached the end of
            ;; the list of declaraton specifiers
            ;; and we return the one parsed above.
-           ((equal token2 (token-punctuator "["))
-            ;; declspec ident [
+           ((equal token2 (token-punctuator "[")) ; declspec ident [
             (b* ((pstate (unread-tokens 2 pstate))) ; declspec
               (retok (list declspec)
                      first-span
@@ -9024,8 +9034,7 @@
            ;; We put it back and we recursively call this function,
            ;; combining the result with
            ;; the declaration specifier parsed above.
-           (t
-            ;; declspec ident other
+           (t ; declspec ident other
             (b* ((pstate ; declspec ident
                   (if token2 (unread-token pstate) pstate))
                  (pstate (unread-token pstate)) ; declspec
@@ -9039,8 +9048,7 @@
        ;; there must be another declaration specifier.
        ;; We recursively call this function, combining the result
        ;; with the previous parsed specifier or qualifier.
-       ((token-declaration-specifier-start-p token)
-        ;; declspec declspec...
+       ((token-declaration-specifier-start-p token) ; declspec declspec...
         (b* ((pstate (unread-token pstate)) ; declspec
              ((erp declspecs last-span pstate) ; declspec declspecs
               (parse-declaration-specifiers pstate)))

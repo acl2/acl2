@@ -15,6 +15,7 @@
 (include-book "representation/top")
 (include-book "atc/top")
 (include-book "syntax/top")
+(include-book "transformation/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,5 +59,6 @@
   :order-subtopics (language
                     representation
                     atc
-                    c$::syntax
+                    c$::syntax-for-tools
+                    c2c::transformation-tools
                     pack))
