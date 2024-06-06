@@ -42,3 +42,11 @@ struct bar
 {
  int val;
 };")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int ith(int *a) {
+ return a[0];
+}")
