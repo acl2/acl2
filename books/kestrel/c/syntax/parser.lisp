@@ -227,11 +227,11 @@
   (if token
       (token-case
        token
-       :keyword (msg "the keyword ~s0" token.unwrap)
+       :keyword (msg "the keyword ~x0" token.unwrap)
        :ident "an identifier"
        :const "a constant"
        :stringlit "a string literal"
-       :punctuator (msg "the punctuator ~s0" token.unwrap))
+       :punctuator (msg "the punctuator ~x0" token.unwrap))
     "end of file"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3563,7 +3563,8 @@
           (= char (char-code #\})) ; }
           (= char (char-code #\~)) ; ~
           (= char (char-code #\?)) ; ?
-          (= char (char-code #\,))) ; ,
+          (= char (char-code #\,)) ; ,
+          (= char (char-code #\;))) ; ;
       (retok (lexeme-token
               (token-punctuator (str::implode (list (code-char char)))))
              (make-span :start first-pos :end first-pos)
@@ -3878,7 +3879,7 @@
      (t (reterr-msg :where (position-to-msg first-pos)
                     :expected "a white-space character ~
                                (space, ~
-                               new-line
+                               new-line, ~
                                horizontal tab, ~
                                vertical tab, ~
                                form feed) ~
@@ -3985,7 +3986,14 @@
           ((when (not lexeme?))
            (retok nil span pstate))
           ((when (lexeme-case lexeme? :token))
-           (retok (lexeme-token->unwrap lexeme?) span pstate)))
+           (b* ((token (lexeme-token->unwrap lexeme?))
+                (pstate (change-parstate
+                         pstate
+                         :tokens-read (cons (make-token+span
+                                             :token token
+                                             :span span)
+                                            (parstate->tokens-read pstate)))))
+             (retok token span pstate))))
        (read-token-loop pstate))
      :measure (parsize pstate)
      :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -3996,7 +4004,10 @@
        (<= (parsize new-pstate)
            (parsize pstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable parsize))
+               '(:use parsize-of-lex-lexeme-uncond)))
 
      (defret parsize-of-read-token-loop-cond
        (implies (and (not erp)
@@ -4004,7 +4015,10 @@
                 (<= (parsize new-pstate)
                     (1- (parsize pstate))))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable parsize))
+               '(:use parsize-of-lex-lexeme-cond)))))
 
   ///
 
@@ -4106,7 +4120,7 @@
        ((erp token span pstate) (read-token pstate))
        ((unless (equal token (token-punctuator punct))) ; implies non-nil
         (reterr-msg :where (position-to-msg (span->start span))
-                    :expected (msg "the punctuator \"~s0\"" punct)
+                    :expected (msg "the punctuator ~x0" punct)
                     :found (token-to-msg token))))
     (retok span pstate))
 
@@ -4958,7 +4972,7 @@
    (xdoc::p
     "A structure declarator may start with a declarator,
      or with a colon."))
-  (or (token-direct-declarator-start-p token?)
+  (or (token-declarator-start-p token?)
       (equal token? (token-punctuator ":")))
   ///
 
@@ -7095,14 +7109,8 @@
              (curr-span (span-join prev-span span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
        (t ; prev-expr other
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "an open parenthesis ~
-                               or an open square bracket ~
-                               or a dot ~
-                               or an arrow ~
-                               or a postincrement operator ~
-                               or a postdecrement operator"
-                    :found (token-to-msg token)))))
+        (b* ((pstate (if token (unread-token pstate) pstate))) ; prev-expr
+          (retok (expr-fix prev-expr) (span-fix prev-span) pstate)))))
     :measure (two-nats-measure (parsize pstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -12319,7 +12327,7 @@
         (b* (((unless (msgp erp))
               (raise "Internal error: ~x0 is not a message." erp)
               (reterr t)))
-          (reterr (msg "Error in file ~x0: ~@1" path erp)))))
+          (reterr (msg "Error in file ~x0: ~@1" (filepath->unwrap path) erp)))))
     (retok tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

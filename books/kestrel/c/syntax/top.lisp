@@ -15,6 +15,10 @@
 (include-book "concrete-syntax")
 (include-book "preprocess-file")
 (include-book "parser")
+(include-book "read-files")
+(include-book "parse-files")
+(include-book "print-files")
+(include-book "write-files")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,4 +106,8 @@
                     concrete-syntax
                     preprocessing
                     parser
-                    printer))
+                    printer
+                    read-files
+                    parse-files
+                    print-files
+                    write-files))

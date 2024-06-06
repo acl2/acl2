@@ -10,9 +10,8 @@
 
 (in-package "C$")
 
-
-(include-book "std/util/bstar" :dir :system)
-(include-book "std/util/define" :dir :system)
+(include-book "file-paths")
+(include-book "files")
 
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
@@ -21,28 +20,18 @@
 (include-book "oslib/rmtree" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
 (include-book "std/strings/cat" :dir :system)
+(include-book "std/util/bstar" :dir :system)
+(include-book "std/util/define" :dir :system)
 
-(include-book "file-paths")
-(include-book "files")
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
-(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
-
-
 (local (in-theory (disable acl2::error1+)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:e acl2::tshell-call)))
-
+(local (in-theory (disable (:e acl2::tshell-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,7 +45,7 @@
    (xdoc::p
      "These tools appeal to a configurable C preprocessor, and the prerequisite
       dependencies may not be present on all systems. For books which use the
-      default preprocessor \"cpp\", certification may be controlled with the
+      default preprocessor \"cpp\", certification may be controlled with
       the @(see build::uses-cpp) @(see build::cert_param) flag.")
    (xdoc::p
      "The community books Makefile will autodetect whether \"cpp\" is
@@ -69,7 +58,6 @@
      "Further @(see build::cert_param) flags may need to be defined if using a
       C preprocessor other than \"cpp\"."))
   :order-subtopics t)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +90,6 @@
            (true-listp files))
   :rule-classes :compound-recognizer)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro er-soft-with (val str &rest str-args)
@@ -117,7 +104,6 @@
   (equal (mv-nth 1 (acl2::error1+ ctx erp val str alist state))
          val)
   :enable (acl2::error1+))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,7 +125,6 @@
           (prog2$ (raise "cbd is not a string")
                   "")))
       (concatenate 'string cbd filepath))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,6 +233,7 @@
                   (and read (filedata bytes))))))
 
   ///
+
   (defrule consp-of-mv-nth-1-of-preprocess-file
     (consp (mv-nth 1 (preprocess-file-fn filename
                                          save
@@ -281,7 +267,6 @@
                                                            extra-args
                                                            state)))))
     :enable (preprocess-file-fn)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1467,7 +1467,7 @@
        but rather allow the same expression to have, in effect,
        different priorities (a form of subtyping)."))
     (b* ((actual-prio (expr->priority expr))
-         (parenp (expr-priority-<= expected-prio actual-prio))
+         (parenp (not (expr-priority-<= expected-prio actual-prio)))
          (pstate (if parenp
                      (print-astring "(" pstate)
                    pstate))
@@ -2972,7 +2972,8 @@
                         (pstate (print-decl-list fundef.decls pstate)))
                      pstate)
                  (print-astring " " pstate)))
-       (pstate (print-block (stmt-compound->items fundef.body) pstate)))
+       (pstate (print-block (stmt-compound->items fundef.body) pstate))
+       (pstate (print-new-line pstate)))
     pstate)
   :hooks (:fix))
 
