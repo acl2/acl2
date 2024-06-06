@@ -3762,7 +3762,7 @@
                    (make-span :start first-pos :end first-pos)
                    pstate))))))
 
-     ((= char (char-code #\-)) ; >
+     ((= char (char-code #\>)) ; >
       (b* (((erp char2 pos2 pstate) (read-char pstate)))
         (cond
          ((not char2) ; > EOF
