@@ -86,10 +86,7 @@
       "Name of the existing constant that contains the file set.")
      (xdoc::p
       "This must be a symbol that names an existing named constant,
-       whose value must be a file set.")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-fileset*') be this symbol.")))
+       whose value must be a file set.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
