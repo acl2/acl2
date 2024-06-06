@@ -8962,6 +8962,15 @@
        ((and token (token-case token :ident)) ; declspec ident
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
+           ;; If token2 is an equal sign, a comma, or a semicolon,
+           ;; the identifier must be a declarator,
+           ;; so we have reached the end of the declaration specifiers.
+           ((or (equal token2 (token-punctuator "=")) ; declspec ident =
+                (equal token2 (token-punctuator ",")) ; declspec ident ,
+                (equal token2 (token-punctuator ";"))) ; declspec ident ;
+            (b* ((pstate (unread-token pstate)) ; declspec ident
+                 (pstate (unread-token pstate))) ; declspec
+              (retok (list declspec) first-span pstate)))
            ;; If token2 is an open parenthesis,
            ;; we may be in the ambiguous situation
            ;; discussed in :DOC TYSPEC,
