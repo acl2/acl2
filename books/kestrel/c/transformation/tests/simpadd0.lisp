@@ -24,6 +24,7 @@
   (filedata
    (acl2::string=>nats
     "int main(void) {
+  int x = 5;
   return x + 0;
 }
 ")))
@@ -55,6 +56,7 @@
   (acl2::nats=>string
    (filedata->unwrap *new-filedata*))
   "int main(void) {
+  int x = 5;
   return x;
 }
 "))

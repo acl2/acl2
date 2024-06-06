@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "files")
+(include-book "printer")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "kestrel/std/system/constant-value" :dir :system)
@@ -38,11 +39,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc write-files
+(defxdoc print-and-write-files
 
   :parents (syntax-for-tools)
 
-  :short "Write files to the file system from a file set constant."
+  :short "Print and write files to the file system
+          from a translation unit ensemble constant."
 
   :long
 
@@ -53,16 +55,10 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "This macro takes as input the name of a named constant
-      whose value is a file set (see @(tsee fileset)),
-      and writes the files to the file system,
-      at the paths that are the keys of the file set map.")
-
-    (xdoc::p
-     "This macro can be used after @(tsee print-files),
-      which prints a translation unit ensemble
-      (which is the abstract syntax representation of a file set)
-      to a file set.")
+     "This macro combines @(tsee print-files) and @(tsee write-files),
+      but without creating a named constant for the fileset.
+      It just takes a named constant for the translation unit ensemble,
+      and writes the files obtained by printing the ensemble.")
 
     (xdoc::p
      "This macro currently does not perform very thorough input validation,
@@ -73,7 +69,7 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(write-files :const ...  ; no default"
+     "(print-and-write-files :const ...  ; no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -83,10 +79,11 @@
     (xdoc::desc
      "@(':const')"
      (xdoc::p
-      "Name of the existing constant that contains the file set.")
+      "Name of the existing constant that contains
+       the translation unit ensemble.")
      (xdoc::p
       "This must be a symbol that names an existing named constant,
-       whose value must be a file set.")))
+       whose value must be a translation unit ensemble.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,46 +91,48 @@
 
     (xdoc::p
      "This macro generates one file in the file system
-      for each element of the file set,
+      for each element of the translation unit ensemble,
       at the paths that are the keys of the file set map.
       Non-absolute paths are relative to
       the connected book directory (see @(tsee cbd))."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ write-files-implementation
-  :parents (write-files)
-  :short "Implementation of @(tsee write-files)."
+(defxdoc+ print-and-write-files-implementation
+  :parents (print-and-write-files)
+  :short "Implementation of @(tsee print-and-write-files)."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *write-files-allowed-options*
-  :short "Keyword options accepted by @(tsee write-files)."
+(defval *print-and-write-files-allowed-options*
+  :short "Keyword options accepted by @(tsee print-and-write-files)."
   (list :const)
   ///
-  (assert-event (keyword-listp *write-files-allowed-options*))
-  (assert-event (no-duplicatesp-eq *write-files-allowed-options*)))
+  (assert-event (keyword-listp *print-and-write-files-allowed-options*))
+  (assert-event (no-duplicatesp-eq *print-and-write-files-allowed-options*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-files-process-inputs ((args true-listp) (wrld plist-worldp))
-  :returns (mv erp (fileset filesetp))
+(define print-and-write-files-process-inputs ((args true-listp)
+                                              (wrld plist-worldp))
+  :returns (mv erp (tunits transunit-ensemblep))
   :short "Process the inputs."
-  (b* (((reterr) (fileset nil))
+  (b* (((reterr) (transunit-ensemble nil))
        ;; Check and obtain options.
        ((mv erp extra options)
-        (partition-rest-and-keyword-args args *write-files-allowed-options*))
+        (partition-rest-and-keyword-args
+         args *print-and-write-files-allowed-options*))
        ((when erp)
         (reterr (msg "The inputs must be the options ~&0, ~
                       but instead they are ~x1."
-                     *write-files-allowed-options*
+                     *print-and-write-files-allowed-options*
                      args)))
        ((when extra)
         (reterr (msg "The only allowed inputs are the options ~&0, ~
                       but instead the extra inputs ~x1 were supplied."
-                     *write-files-allowed-options*
+                     *print-and-write-files-allowed-options*
                      extra)))
        ;; Process :CONST input.
        (const-option (assoc-eq :const options))
@@ -145,32 +144,35 @@
         (reterr (msg "The :CONST input must be a symbol, ~
                       but it is ~x0 instead."
                      const)))
-       (fileset (acl2::constant-value const wrld))
-       ((unless (filesetp fileset))
+       (tunits (acl2::constant-value const wrld))
+       ((unless (transunit-ensemblep tunits))
         (reterr (msg "The value of the ~x0 named constant ~
                       specified by the :CONST input ~
-                      must satisfy FILESETP, ~
+                      must satisfy TRANSUNIT-ENSEMBLEP, ~
                       but instead its value is ~x1."
                      const
-                     fileset))))
-    (retok fileset))
+                     tunits))))
+    (retok tunits))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-files-gen-files ((fileset filesetp) state)
+(define print-and-write-files-gen-files ((tunits transunit-ensemblep) state)
   :returns (mv erp state)
-  :short "Write a file set to the file system."
+  :short "Write a translation unit ensemble to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We go through the file set,
+    "We go through the file set
+     obtained by printing the translation unit ensemble,
      and write the data of each value in the map
      to the path of the associated key in the map."))
-  (write-files-gen-files-loop (fileset->unwrap fileset) state)
+  (b* ((fileset (print-fileset tunits)))
+    (print-and-write-files-gen-files-loop (fileset->unwrap fileset) state))
 
   :prepwork
-  ((define write-files-gen-files-loop ((map filepath-filedata-mapp) state)
+  ((define print-and-write-files-gen-files-loop ((map filepath-filedata-mapp)
+                                                 state)
      :returns (mv erp state)
      :parents nil
      (b* (((reterr) state)
@@ -183,40 +185,42 @@
                         path-string)))
           ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
                                                       path-string
-                                                      'write-files
+                                                      'print-and-write-files
                                                       state))
           ((when erp)
            (reterr (msg "Writing ~x0 failed." path-string))))
-       (write-files-gen-files-loop (omap::tail map) state)))))
+       (print-and-write-files-gen-files-loop (omap::tail map) state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-files-process-inputs-and-gen-files ((args true-listp) state)
+(define print-and-write-files-process-inputs-and-gen-files ((args true-listp)
+                                                            state)
   :returns (mv erp state)
   :short "Process the inputs and generate the constant event."
   (b* (((reterr) state)
-       ((erp fileset) (write-files-process-inputs args (w state)))
-       ((erp state) (write-files-gen-files fileset state)))
+       ((erp fileset) (print-and-write-files-process-inputs args (w state)))
+       ((erp state) (print-and-write-files-gen-files fileset state)))
     (retok state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write-files-fn ((args true-listp) (ctx ctxp) state)
+(define print-and-write-files-fn ((args true-listp) (ctx ctxp) state)
   :returns (mv erp (event pseudo-event-formp) state)
-  :short "Event expansion of @(tsee write-files) from the inputs."
+  :short "Event expansion of @(tsee print-and-write-files) from the inputs."
   :long
   (xdoc::topstring
    (xdoc::p
     "We do not really need an event, so we use @(tsee value-triple)
      with @(':invisible') to prevent any spurious printing."))
   (b* (((mv erp state)
-        (write-files-process-inputs-and-gen-files args state))
+        (print-and-write-files-process-inputs-and-gen-files args state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value '(value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection write-files-definition
-  :short "Definition of the @(tsee write-files) macro."
-  (defmacro write-files (&rest args)
-    `(make-event-terse (write-files-fn ',args 'write-files state))))
+(defsection print-and-write-files-definition
+  :short "Definition of the @(tsee print-and-write-files) macro."
+  (defmacro print-and-write-files (&rest args)
+    `(make-event-terse
+      (print-and-write-files-fn ',args 'print-and-write-files state))))

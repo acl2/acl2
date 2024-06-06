@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "preprocess-file")
+(include-book "parser")
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/std/util/error-value-tuples" :dir :system)
@@ -44,11 +45,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc read-files
+(defxdoc read-and-parse-files
 
   :parents (syntax-for-tools)
 
-  :short "Read files from the file system to a file set constant."
+  :short "Read and parse files from the file system
+          to a translation unit ensemble constant."
 
   :long
 
@@ -59,14 +61,9 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "This macro takes as input a list of file paths,
-      reads those files from the file system,
-      and generates an ACL2 @(tsee defconst)
-      containing a file set (see @(tsee fileset))
-      with the content of the given files.
-      Optionally, this macro can use the @(tsee preprocess-files) tool
-      to preprocess the given files prior to generate the constant,
-      so that the constant will contain the preprocessed files.")
+     "This macro combines @(tsee read-files) and @(tsee parse-files),
+      but without creating a named constant for the fileset.
+      It just creates a named constant for the translation unit ensemble.")
 
     (xdoc::p
      "This macro currently does not perform very thorough input validation,
@@ -77,9 +74,9 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(read-files :const      ...  ; no default"
-     "            :files      ...  ; no default"
-     "            :preprocess ...  ; default nil"
+     "(read-and-parse-files :const      ...  ; no default"
+     "                      :files      ...  ; no default"
+     "                      :preprocess ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,7 +86,8 @@
     (xdoc::desc
      "@(':const')"
      (xdoc::p
-      "Name of the generated constant that contains the file set.")
+      "Name of the generated constant that contains
+       the translation unit ensemble.")
      (xdoc::p
       "This must be a symbol that is a valid name for a new named constant.")
      (xdoc::p
@@ -125,57 +123,58 @@
     (xdoc::desc
      "@('*const*')"
      (xdoc::p
-      "The named constant containing the file set
-       obtained by reading, and optionally preprocessing,
+      "The named constant containing the translation unit ensemble
+       obtained by reading, optionally preprocessing, and parsing
        the files at the specified file paths.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ read-files-implementation
-  :parents (read-files)
-  :short "Implementation of @(tsee read-files)."
+(defxdoc+ read-and-parse-files-implementation
+  :parents (read-and-parse-files)
+  :short "Implementation of @(tsee read-and-parse-files)."
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defval *read-files-allowed-options*
-  :short "Keyword options accepted by @(tsee read-files)."
+(defval *read-and-parse-files-allowed-options*
+  :short "Keyword options accepted by @(tsee read-and-parse-files)."
   (list :const
         :files
         :preprocess)
   ///
-  (assert-event (keyword-listp *read-files-allowed-options*))
-  (assert-event (no-duplicatesp-eq *read-files-allowed-options*)))
+  (assert-event (keyword-listp *read-and-parse-files-allowed-options*))
+  (assert-event (no-duplicatesp-eq *read-and-parse-files-allowed-options*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-strings-to-paths ((strings string-listp))
+(define read-and-parse-files-strings-to-paths ((strings string-listp))
   :returns (paths filepath-setp)
   :short "Turn a list of strings into a set of file paths."
   (cond ((endp strings) nil)
         (t (set::insert (filepath (car strings))
-                        (read-files-strings-to-paths (cdr strings)))))
+                        (read-and-parse-files-strings-to-paths (cdr strings)))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-process-inputs ((args true-listp))
+(define read-and-parse-files-process-inputs ((args true-listp))
   :returns (mv erp (const symbolp) (paths filepath-setp) (preprocess booleanp))
   :short "Process the inputs."
   (b* (((reterr) nil nil nil)
        ;; Check and obtain options.
        ((mv erp extra options)
-        (partition-rest-and-keyword-args args *read-files-allowed-options*))
+        (partition-rest-and-keyword-args
+         args *read-and-parse-files-allowed-options*))
        ((when erp)
         (reterr (msg "The inputs must be the options ~&0, ~
                       but instead they are ~x1."
-                     *read-files-allowed-options*
+                     *read-and-parse-files-allowed-options*
                      args)))
        ((when extra)
         (reterr (msg "The only allowed inputs are the options ~&0, ~
                       but instead the extra inputs ~x1 were supplied."
-                     *read-files-allowed-options*
+                     *read-and-parse-files-allowed-options*
                      extra)))
        ;; Process :CONST input.
        (const-option (assoc-eq :const options))
@@ -201,7 +200,7 @@
         (reterr (msg "The :FILES input must be a list without duplicates, ~
                       but the supplied ~x0 has duplicates."
                      files)))
-       (paths (read-files-strings-to-paths files))
+       (paths (read-and-parse-files-strings-to-paths files))
        ;; Process :PREPROCESS input.
        (preprocess-option (assoc-eq :preprocess options))
        (preprocess (if preprocess-option
@@ -216,7 +215,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-read ((paths filepath-setp) state)
+(define read-and-parse-files-read ((paths filepath-setp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read a file set from a given set of paths."
   :long
@@ -238,14 +237,14 @@
         (reterr (msg "Reading ~x0 failed." (filepath->unwrap path))))
        (data (filedata bytes))
        ((erp fileset state)
-        (read-files-read (set::tail paths) state)))
+        (read-and-parse-files-read (set::tail paths) state)))
     (retok (fileset (omap::update path data (fileset->unwrap fileset)))
            state))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-read-and-preprocess ((paths filepath-setp) state)
+(define read-and-parse-files-read-and-preprocess ((paths filepath-setp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read and preprocess a file set from a given set of paths."
   :long
@@ -264,10 +263,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-gen-defconst ((const symbolp)
-                                 (paths filepath-setp)
-                                 (preprocess booleanp)
-                                 state)
+(define read-and-parse-files-gen-defconst ((const symbolp)
+                                           (paths filepath-setp)
+                                           (preprocess booleanp)
+                                           state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Generate the named constant event."
   :long
@@ -276,19 +275,22 @@
     "Based on the @(':proprocess') flag,
      either we read the files directly,
      or we read and preprocess them.
-     We put the file set into a quoted constant
+     We parse the file set
+     We put the fileset into a quoted constant
      to define the named constant."))
   (b* (((reterr) '(_) state)
        ((erp fileset state)
         (if preprocess
-            (read-files-read-and-preprocess paths state)
-          (read-files-read paths state)))
-       (event `(defconst ,const ',fileset)))
+            (read-and-parse-files-read-and-preprocess paths state)
+          (read-and-parse-files-read paths state)))
+       ((erp tunits) (parse-fileset fileset))
+       (event `(defconst ,const ',tunits)))
     (retok event state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-process-inputs-and-gen-defconst ((args true-listp) state)
+(define read-and-parse-files-process-inputs-and-gen-defconst ((args true-listp)
+                                                              state)
   :returns (mv erp
                (event pseudo-event-formp
                       :hints
@@ -297,24 +299,25 @@
   :short "Process the inputs and generate the constant event."
   (b* (((reterr) '(_) state)
        ((erp const paths preprocess)
-        (read-files-process-inputs args))
+        (read-and-parse-files-process-inputs args))
        ((erp event state)
-        (read-files-gen-defconst const paths preprocess state)))
+        (read-and-parse-files-gen-defconst const paths preprocess state)))
     (retok event state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-fn ((args true-listp) (ctx ctxp) state)
+(define read-and-parse-files-fn ((args true-listp) (ctx ctxp) state)
   :returns (mv erp event state)
-  :short "Event expansion of @(tsee read-files) from the inputs."
+  :short "Event expansion of @(tsee read-and-parse-files) from the inputs."
   (b* (((mv erp event state)
-        (read-files-process-inputs-and-gen-defconst args state))
+        (read-and-parse-files-process-inputs-and-gen-defconst args state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read-files-definition
-  :short "Definition of the @(tsee read-files) macro."
-  (defmacro read-files (&rest args)
-    `(make-event-terse (read-files-fn ',args 'read-files state))))
+(defsection read-and-parse-files-definition
+  :short "Definition of the @(tsee read-and-parse-files) macro."
+  (defmacro read-and-parse-files (&rest args)
+    `(make-event-terse
+      (read-and-parse-files-fn ',args 'read-and-parse-files state))))

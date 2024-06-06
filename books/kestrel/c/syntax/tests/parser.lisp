@@ -12,13 +12,13 @@
 
 (include-book "../parser")
 
-(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-parser (parse-fn input-string)
   `(assert-event
-    (b* (((mv erp & & &)
+    (b* ((,(if (eq parse-fn 'parse-external-declaration-list)
+               '(mv erp & & & &)
+             '(mv erp & & &))
           (,parse-fn (init-parstate (acl2::string=>nats ,input-string)))))
       (if erp
           (cw "~@0" erp) ; CW returns nil, so ASSERT-EVENT fails
@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parser
- parse-declaration-specifier
+ parse-external-declaration-list
  "struct mystruct
 {
    int *val;
@@ -36,7 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parser
- parse-declaration-specifier
+ parse-external-declaration-list
  "typedef void foo;
 struct bar
 {
