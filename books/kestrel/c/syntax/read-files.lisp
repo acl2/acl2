@@ -216,7 +216,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-read-fileset ((paths filepath-setp) state)
+(define read-files-read ((paths filepath-setp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read a file set from a given set of paths."
   :long
@@ -238,14 +238,14 @@
         (reterr (msg "Reading ~x0 failed." (filepath->unwrap path))))
        (data (filedata bytes))
        ((erp fileset state)
-        (read-files-read-fileset (set::tail paths) state)))
+        (read-files-read (set::tail paths) state)))
     (retok (fileset (omap::update path data (fileset->unwrap fileset)))
            state))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-read-and-preprocess-fileset ((paths filepath-setp) state)
+(define read-files-read-and-preprocess ((paths filepath-setp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read and preprocess a file set from a given set of paths."
   :long
@@ -281,8 +281,8 @@
   (b* (((reterr) '(_) state)
        ((erp fileset state)
         (if preprocess
-            (read-files-read-and-preprocess-fileset paths state)
-          (read-files-read-fileset paths state)))
+            (read-files-read-and-preprocess paths state)
+          (read-files-read paths state)))
        (event `(defconst ,const ',fileset)))
     (retok event state)))
 
