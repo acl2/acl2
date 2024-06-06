@@ -1168,10 +1168,6 @@
                       (equal k3 k1)
                     (equal k3 k2)))))
 
-(defthm if-of-if-same-arg2
-  (equal (if test (if test tp ep) ep2)
-         (if test tp ep2)))
-
 ;could be bad
 (defthmd member-p-of-if-arg1
   (equal (member-p (if test tp ep) lst)
@@ -1282,10 +1278,6 @@
 ;;TODO: Maybe we should have axe split the simulation instead of proving all these if lifting rules.
 
 ;why is axe reasoning about CHECK-DCL-GUARDIAN? it's mentioned in X86ISA::X86-FETCH-DECODE-EXECUTE
-
-(defthm if-of-if-arg3-same
-  (equal (if test x (if test y z))
-         (if test x z)))
 
 (defthm <-of-if-arg2
   (implies (syntaxp (and (quotep y)
@@ -1444,11 +1436,6 @@
          (if test
              (xw ':rip '0 pc1 x86)
            (xw ':rip '0 pc2 x86))))
-
-;move
-(defthm acl2::if-t-nil
-  (equal (if x t nil)
-         (acl2::bool-fix x)))
 
 (defthm xr-of-myif
   (equal (xr fld index (acl2::myif test then else))

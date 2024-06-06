@@ -1,6 +1,6 @@
 ; Some changes to the open-source x86 model
 ;
-; Copyright (C) 2022-2023 Kestrel Technology, LLC
+; Copyright (C) 2022-2024 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "projects/x86isa/machine/instructions/shifts-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/or-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/signextend" :dir :system) ; brings in ttags
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/bvashr" :dir :system)
@@ -2878,3 +2879,53 @@
                nil))))
   :hints (("Goal" :in-theory (e/d (x86isa::idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
                                   (acl2::sbvlt-rewrite)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This avoids a case split when dping the sign extension.
+(defthm x86isa::x86-cbw/cwd/cdqe-redef
+  (equal (x86isa::x86-cbw/cwd/cdqe
+           proc-mode start-rip x86isa::temp-rip prefixes rex-byte x86isa::opcode x86isa::modr/m x86isa::sib x86)
+
+  (b* ((x86isa::?ctx 'x86isa::x86-cbw/cwd/cdqe))
+    (b*
+        (((the (integer 1 8)
+            x86isa::register-size)
+          (x86isa::select-operand-size
+            proc-mode nil
+            rex-byte nil prefixes nil nil nil x86))
+         ((the (integer 1 4) x86isa::src-size)
+          (ash x86isa::register-size -1))
+         ((the (unsigned-byte 32) src)
+          (mbe
+            :logic
+            (x86isa::rgfi-size x86isa::src-size *rax* rex-byte x86)
+            :exec
+            (case x86isa::src-size
+              (1 (x86isa::rr08 *rax* rex-byte x86))
+              (2 (x86isa::rr16 *rax* x86))
+              (4 (x86isa::rr32 *rax* x86))
+              (otherwise 0))))
+         (old-bits (* 8 x86isa::src-size))
+         (new-bits (* 8 x86isa::register-size))
+         (dst (acl2::bvsx new-bits old-bits src))
+         ;; (dst
+         ;;   (if (logbitp (the (integer 0 32)
+         ;;                  (1- (the (integer 0 32)
+         ;;                        (ash x86isa::src-size 3))))
+         ;;                src)
+         ;;       (x86isa::trunc x86isa::register-size
+         ;;                      (case x86isa::src-size
+         ;;                        (1 (x86isa::n08-to-i08 src))
+         ;;                        (2 (x86isa::n16-to-i16 src))
+         ;;                        (t (x86isa::n32-to-i32 src))))
+         ;;     src))
+         (x86 (x86isa::!rgfi-size x86isa::register-size
+                                  *rax* dst rex-byte x86))
+         (x86 (x86isa::write-*ip proc-mode x86isa::temp-rip x86)))
+      x86)))
+  :hints (("Goal" :in-theory (enable x86isa::x86-cbw/cwd/cdqe
+                                     acl2::bvsx
+                                     x86isa::rr32
+                                     x86isa::rr16
+                                     x86isa::rr08))))

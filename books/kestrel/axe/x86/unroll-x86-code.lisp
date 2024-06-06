@@ -334,7 +334,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
@@ -347,6 +347,7 @@
                                   (natp prune))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (booleanp untranslatep)
                               (booleanp memoizep)
                               (natp total-steps)
                               (member-eq rewriter '(:x86 :legacy)))
@@ -476,7 +477,7 @@
                                             print
                                             (acl2::known-booleans (w state))
                                             rules-to-monitor
-                                            '(program-at) ; fns-to-elide
+                                            '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             t ; normalize-xors
                                             memoizep)
                     (mv erp result state))))
@@ -492,7 +493,11 @@
                               (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                                          (set-print-base-radix print-base state)
                                        state))
-                              (- (cw "~X01" (untranslate (dag-to-term dag) nil (w state)) nil))
+                              (- (cw "~X01" (let ((term (dag-to-term dag)))
+                                              (if untranslatep
+                                                  (untranslate term nil (w state))
+                                                term))
+                                     nil))
                               (state (set-print-base-radix 10 state)) ;make event sets it to 10
                               (- (cw ")~%")))
                            state)
@@ -508,7 +513,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter
+                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter
                           total-steps
                           state))))))
 
@@ -533,6 +538,7 @@
                              monitor
                              print
                              print-base
+                             untranslatep
                              rewriter
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
@@ -557,6 +563,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (booleanp untranslatep)
                               (member-eq rewriter '(:x86 :legacy)))
                   :stobjs (state)
                   :mode :program))
@@ -728,7 +735,7 @@
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil state))
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base memoizep rewriter 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep rewriter 0 state))
        ((when erp) (mv erp nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -764,6 +771,7 @@
                         monitor
                         print
                         print-base
+                        untranslatep
                         rewriter
                         produce-function
                         non-executable
@@ -795,6 +803,7 @@
                                   (eq :debug monitor))
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
+                              (booleanp untranslatep)
                               (member-eq rewriter '(:x86 :legacy))
                               (booleanp produce-function)
                               (member-eq non-executable '(t nil :auto))
@@ -831,7 +840,7 @@
         (unroll-x86-code-core target parsed-executable
           assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base rewriter state))
+          step-limit step-increment memoizep monitor print print-base untranslatep rewriter state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -863,7 +872,11 @@
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
-                    (cw "~X01" (untranslate (dag-to-term result-dag) nil (w state)) nil)
+                    (cw "~X01" (let ((term (dag-to-term result-dag)))
+                                 (if untranslatep
+                                     (untranslate term nil (w state))
+                                   term))
+                        nil)
                     (cw ")~%"))
           (progn$ (cw "(DAG:~%")
                   (cw "~X01" result-dag nil)
@@ -891,7 +904,7 @@
                                                                    ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns (w state)) (w state))
                                                                    '0 ;array depth (not very important)
                                                                    )))
-               (function-body-untranslated (untranslate function-body nil (w state))) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
+               (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
                (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
@@ -973,6 +986,7 @@
                                (monitor 'nil)
                                (print ':brief)             ;how much to print
                                (print-base '10)       ; 10 or 16
+                               (untranslatep 't)
                                (rewriter ':x86)
                                (produce-function 't) ;whether to produce a function, not just a dag constant, representing the result of the lifting
                                (non-executable ':auto)  ;since stobj updates will not be let-bound
@@ -1002,6 +1016,7 @@
       ,monitor ; gets evaluated since not quoted
       ',print
       ',print-base
+      ',untranslatep
       ',rewriter
       ',produce-function
       ',non-executable

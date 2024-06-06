@@ -237,7 +237,10 @@
     "A new sub-library has been added,
      which contains an abstract syntax,
      and accompanying concrete syntax formulation,
-     intended for use by tools like code generators and transformers.")
+     intended for use by tools like code generators and transformers.
+     This sub-library also includes
+     a parser from the concrete to the abstract syntax,
+     as well as an ACL2 tool to invoke an external C preprocessor.")
 
    ;;;;;;;;;;;;;;;;;;;;
 
@@ -426,6 +429,17 @@
     "@(tsee Read-string) and @('read-string-light-fn') now take a required package
      argument, which can be @('nil') to represent the @(see current-package),
      thus providing the previous behavior.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "The recognizers of digit characters in various bases
+     have been renamed to have the suffix @('-list*p'),
+     because they are loose list recognizers.
+     New recognizers have been added with suffix @('-listp')
+     for true lists of such digit characters.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

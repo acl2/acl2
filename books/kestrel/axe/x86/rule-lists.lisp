@@ -160,8 +160,13 @@
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
-            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll)
-          *instruction-decoding-and-spec-rules*))
+            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll
+
+            ;; Improved versions of instruction semantic functions:
+            x86isa::x86-cbw/cwd/cdqe-redef)
+          (set-difference-equal *instruction-decoding-and-spec-rules*
+                                ;; We remove these because we have better versions:
+                                '(x86isa::x86-cbw/cwd/cdqe))))
 
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
@@ -807,22 +812,22 @@
     x86isa::unsigned-byte-p-1-of-sub-af-spec32
 
     ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
-    x86isa::bitp-of-cf-spec-8
-    x86isa::bitp-of-cf-spec-16
-    x86isa::bitp-of-cf-spec-32
-    x86isa::bitp-of-cf-spec-64
-    x86isa::bitp-of-of-spec-8
-    x86isa::bitp-of-of-spec-16
-    x86isa::bitp-of-of-spec-32
-    x86isa::bitp-of-of-spec-64
-    x86isa::bitp-of-pf-spec-8
-    x86isa::bitp-of-pf-spec-16
-    x86isa::bitp-of-pf-spec-32
-    x86isa::bitp-of-pf-spec-64
-    x86isa::bitp-of-sf-spec-8
-    x86isa::bitp-of-sf-spec-16
-    x86isa::bitp-of-sf-spec-32
-    x86isa::bitp-of-sf-spec-64
+    x86isa::bitp-of-cf-spec8
+    x86isa::bitp-of-cf-spec16
+    x86isa::bitp-of-cf-spec32
+    x86isa::bitp-of-cf-spec64
+    x86isa::bitp-of-of-spec8
+    x86isa::bitp-of-of-spec16
+    x86isa::bitp-of-of-spec32
+    x86isa::bitp-of-of-spec64
+    x86isa::bitp-of-pf-spec8
+    x86isa::bitp-of-pf-spec16
+    x86isa::bitp-of-pf-spec32
+    x86isa::bitp-of-pf-spec64
+    x86isa::bitp-of-sf-spec8
+    x86isa::bitp-of-sf-spec16
+    x86isa::bitp-of-sf-spec32
+    x86isa::bitp-of-sf-spec64
     x86isa::bitp-of-zf-spec
     x86isa::bitp-of-add-af-spec8
     x86isa::bitp-of-add-af-spec16
@@ -1029,9 +1034,13 @@
 (defun if-rules ()
   (declare (xargs :guard t))
   '(acl2::if-nil-t
+    acl2::if-t-nil-becomes-bool-fix
     acl2::if-of-not
-    x86isa::if-of-if-same-arg2
-    x86isa::if-of-if-arg3-same
+    acl2::if-of-if-same-arg2
+    acl2::if-of-if-same-arg3
+    acl2::if-of-if-t-nil
+    acl2::if-of-if-of-cons-arg1-arg2
+    acl2::if-of-if-of-cons-arg1-arg3
     ))
 
 ;; For this strategy, we lower the IF when the 2 states have the same PC and no
@@ -1435,6 +1444,9 @@
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
 
+;; Do this late, to give the bitp rules a chance to fire first:
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
+
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
 
@@ -1546,7 +1558,7 @@
             ;; x86isa::xw-of-xr
             ;; xw-of-rflags-does-nothing ; use a more general rule?
             ;; alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
-            alignment-checking-enabled-p-of-!rflags-of-xr
+            alignment-checking-enabled-p-of-!rflags
             ;; get-flag-of-xw-rflags-of-xr-rflags
             get-flag-of-!rflags-of-xr
             ;; xw-of-rflags-of-xw
@@ -1795,7 +1807,6 @@
             ;; stuff from the timessix example:
             ;acl2::getbit-of-bvchop
 
-            x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
@@ -2082,7 +2093,8 @@
 
             x86isa::x86-operand-to-zmm/mem
             64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
-            )))
+
+            acl2::integerp-of-ash)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -2172,7 +2184,7 @@
      x86isa::canonical-address-p-of-if
      the-check
      acl2::lookup-eq-safe
-     eql
+     eql ; just include base-rules?
      acl2::+-commutative-axe
      unicity-of-0
      ;; all-addreses-of-stack-slots
@@ -2317,8 +2329,6 @@
 
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
-
-            if-of-if-of-cons-and-nil
             ))
    '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
      acl2::bvminus-of-+-arg2
@@ -2562,7 +2572,7 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    bvchop-of-+-of-esp-becomes-+-of-esp ; new, let's us drop the bvchop
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
 
@@ -4313,8 +4323,7 @@
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;rflagsbits->af-of-myif
-            acl2::eql ; drop soon?
-            acl2::equal-of-constant-and-bvuminus
+            ;; acl2::equal-of-constant-and-bvuminus
             ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvif-of-myif-arg3 ; introduces bvif
@@ -4515,7 +4524,6 @@
             acl2::bvcat-of-slice-of-bvsx-same
             not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
             not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-            if-of-if-of-cons-and-nil ; why not already included
             acl2::bvplus-commutative-increasing-axe
             acl2::bvplus-commutative-2-increasing-axe
             ;;acl2::equal-same

@@ -126,7 +126,7 @@
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvminus))))
 
-(defthm bvminus-normalize-constant-arg1
+(defthm bvminus-normalize-constant-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (unsigned-byte-p size k))
@@ -134,6 +134,17 @@
                 )
            (equal (bvminus size k x)
                   (bvminus size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+;rename
+(defthm bvminus-normalize-constant-arg3
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
+           (equal (bvminus size x k)
+                  (bvminus size x (bvchop size k))))
   :hints (("Goal" :in-theory (enable bvminus))))
 
 (defthm bvminus-of-bvuminus

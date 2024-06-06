@@ -283,10 +283,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-initdeclor
+  :short "An irrelevant initializer declarator."
+  :type initdeclorp
+  :body (make-initdeclor :declor (irr-declor) :init? nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-decl
   :short "An irrelevant declaration."
   :type declp
   :body (make-decl-decl :specs nil :init nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-stmt
+  :short "An irrelevant statement."
+  :type stmtp
+  :body (stmt-compound nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-block-item
+  :short "An irrelevant block item."
+  :type block-itemp
+  :body (block-item-stmt (irr-stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

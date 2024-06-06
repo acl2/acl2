@@ -347,7 +347,7 @@
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
      acl2::bool-fix-when-booleanp
-     acl2::if-t-nil
+     acl2::if-t-nil-becomes-bool-fix
      acl2::mv-nth-of-if
      x86isa::canonical-address-p-of-if
      x86isa::+-of-if-arg1

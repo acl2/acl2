@@ -13,6 +13,7 @@
 (include-book "centaur/fty/portcullis" :dir :system)
 (include-book "kestrel/c/portcullis" :dir :system)
 (include-book "kestrel/utilities/omaps/portcullis" :dir :system)
+(include-book "oslib/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,6 +22,7 @@
               (set-difference-eq *std-pkg-symbols*
                                  '(position
                                    read-char
+                                   read-files
                                    schar
                                    unread-char))
               '(any
@@ -31,13 +33,17 @@
                 defirrelevant
                 defmacro+
                 defxdoc+
+                er-soft+
                 erp
                 impossible
+                keyword-listp
+                make-event-terse
                 nat
                 nat-list
                 nat-optionp
                 nats=>string
                 pos
+                pseudo-event-formp
                 reterr
                 retok
                 unsigned-byte-listp

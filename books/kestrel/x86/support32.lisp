@@ -941,6 +941,34 @@
                                      segment-max-eff-addr32
                                      segment-base-and-bounds))))
 
+;; in case we are going to bvlt instead of <
+(defthm not-bvlt-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (natp stack-slots-needed)
+                (<= k (* 4 stack-slots-needed)) ;think about this
+                (x86p x86))
+           (not (bvlt 32 (esp x86) k)))
+  :hints (("Goal" :in-theory (e/d (bvlt esp) ()))))
+
+(defthm not-equal-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (natp stack-slots-needed)
+                (< k (* 4 stack-slots-needed)) ;think about this
+                (x86p x86))
+           (not (equal (esp x86) k)))
+  :hints (("Goal" :in-theory (e/d (bvlt) (stack-segment-assumptions32)))))
+
+(defthm not-equal-of-esp-when-stack-segment-assumptions32-alt
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (natp k)
+                (natp stack-slots-needed)
+                (< k (* 4 stack-slots-needed)) ;think about this
+                (x86p x86))
+           (not (equal k (esp x86))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (stack-segment-assumptions32)))))
+
 ;; Turn a call of read-*sp into a call of ESP, which is a much simpler function.
 (defthm read-*sp-becomes-esp
   (implies (and (segment-is-32-bitsp *ss* x86)
@@ -4820,12 +4848,6 @@
   (equal (read-from-segment 4 eff-addr *ss* x86)
          (read-stack-dword eff-addr x86))
   :hints (("Goal" :in-theory (enable read-stack-dword))))
-
-;move
-;can help when the inner if returns an error (a cons) or nil
-(defthm if-of-if-of-cons-and-nil
-  (equal (if (if test (cons a b) nil) tp ep)
-         (if test tp ep)))
 
 ; Helps resolve updates to ESP.
 ; Note that this replaces BVPLUS with +.  TODO: Think about when we want this.
