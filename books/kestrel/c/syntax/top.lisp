@@ -86,6 +86,8 @@
      in particular by supporting printing options
      (e.g. for right margin).")
    (xdoc::p
+    "We also provide event macros to read, parse, print, and write files.")
+   (xdoc::p
     "We also plan to add a checker on the abstract syntax
      for the static constraints on C code (i.e. type checker etc.),
      which may result in an elaboration of the abstract syntax,
