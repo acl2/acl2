@@ -10,7 +10,7 @@
 
 (in-package "C2C")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "simpadd0")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,4 +24,4 @@
      The transformations may have different purposes.")
    (xdoc::p
     "These transformation tools operate on the abstract syntax
-     defines in @(see syntax-for-tools).")))
+     defines in @(see c$::syntax-for-tools).")))
