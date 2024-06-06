@@ -777,6 +777,7 @@
 ;; TODO: Think about this...
 (defconst *common-acl2-formals*
   '(x y z m n size i
+    x1 x2 y1 y2
     free
     freesize
     ))
