@@ -1372,19 +1372,19 @@
       (retok (escape-simple (simple-escape-qmark)) pos pstate))
      ((= char (char-code #\\)) ; \ \
       (retok (escape-simple (simple-escape-bslash)) pos pstate))
-     ((= char (char-code #\\)) ; \ a
+     ((= char (char-code #\a)) ; \ a
       (retok (escape-simple (simple-escape-a)) pos pstate))
-     ((= char (char-code #\\)) ; \ b
+     ((= char (char-code #\b)) ; \ b
       (retok (escape-simple (simple-escape-b)) pos pstate))
-     ((= char (char-code #\\)) ; \ f
+     ((= char (char-code #\f)) ; \ f
       (retok (escape-simple (simple-escape-f)) pos pstate))
-     ((= char (char-code #\\)) ; \ n
+     ((= char (char-code #\n)) ; \ n
       (retok (escape-simple (simple-escape-n)) pos pstate))
-     ((= char (char-code #\\)) ; \ r
+     ((= char (char-code #\r)) ; \ r
       (retok (escape-simple (simple-escape-r)) pos pstate))
-     ((= char (char-code #\\)) ; \ t
+     ((= char (char-code #\t)) ; \ t
       (retok (escape-simple (simple-escape-t)) pos pstate))
-     ((= char (char-code #\\)) ; \ v
+     ((= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos pstate))
      ((and (<= (char-code #\0) char)
            (<= char (char-code #\7))) ; \ octdig
