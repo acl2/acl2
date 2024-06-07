@@ -258,7 +258,7 @@
   (b* (((reterr) (fileset nil) state)
        ((mv erp fileset state) (preprocess-files paths))
        ((when erp)
-        (reterr (msg "Preprocessing of ~x0 failes." paths))))
+        (reterr (msg "Preprocessing of ~x0 failed." paths))))
     (retok fileset state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
