@@ -50,3 +50,26 @@ struct bar
  "int ith(int *a) {
  return a[0];
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void foo (int val) {
+ printf(\"Val = %d\\n\", val);
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int main() { }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int foo (unsigned int v)
+{
+ return (v >> 1);
+}")
