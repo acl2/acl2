@@ -17,6 +17,8 @@
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "oslib/dirname" :dir :system)
+(include-book "oslib/mkdir" :dir :system)
 (include-book "oslib/rmtree" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
 (include-book "std/strings/cat" :dir :system)
@@ -107,27 +109,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; filepath utilities
-
-(define absolute-filepath
-  ((filepath stringp)
-   &key
-   (state 'state))
-  :returns (filepath stringp)
-  :parents (preprocess-file)
-  :short "Makes the filepath absolute using the @(see cbd)."
-  (if (or (int= 0 (length filepath))
-          (eql #\/ (char filepath 0)))
-      (mbe :exec filepath
-           :logic (if (stringp filepath) filepath ""))
-    (b* ((cbd (f-get-global 'acl2::connected-book-directory state))
-         ((unless (stringp cbd))
-          (prog2$ (raise "cbd is not a string")
-                  "")))
-      (concatenate 'string cbd filepath))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
   ((file filepathp
          "The C file to preprocess.")
@@ -189,7 +170,8 @@
                 save))
         ((er out :iferr (iferr))
          (if out
-             (value (absolute-filepath out))
+             (value (mbe :exec out
+                         :logic (if (stringp out) out "")))
            (b* (((mv temp state)
                  (oslib::tempfile filename)))
              (if temp
@@ -197,6 +179,15 @@
                (er-soft-with (iferr)
                              "Could not create temporary file for ~x0"
                              filename)))))
+        ((er out-dirname :iferr (iferr))
+         (oslib::dirname out))
+        ((er -)
+         (b* (((mv success state)
+               (oslib::mkdir out-dirname)))
+           (if success
+               (value nil)
+             (er-soft-with (iferr)
+                           "Could not make directory: ~x0" out-dirname))))
         (preprocess-cmd
           (str::join (append (list* preprocessor "-E" extra-args)
                              (list filename ">" out))
