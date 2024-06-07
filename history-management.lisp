@@ -5276,9 +5276,9 @@
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 
-; In certify-book-fn we find a comment stating that "we are trying to record
-; whether there was a skip-proofs form in the present book, not merely on
-; behalf of an included book".  That is why here, we replace value
+; In certify-book-step-2 we find a comment stating that "we are trying to
+; record whether there was a skip-proofs form in the present book, not merely
+; on behalf of an included book".  That is why here, we replace value
 ; (:include-book ...) for 'skip-proofs-seen.
 
                                 (eq (car old) :include-book))))
