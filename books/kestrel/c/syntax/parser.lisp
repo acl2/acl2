@@ -5233,6 +5233,10 @@
          ;; we must have a declarator.
          ((equal token2 (token-punctuator "[")) ; ( ident [
           (retok (partys/declor/ambig-declor) 2 pstate))
+         ;; If token2 is a star,
+         ;; we must have a parameter type declaration.
+         ((equal token2 (token-punctuator "*")) ; ( ident *
+          (retok (partys/declor/ambig-partys) 2 pstate))
          ;; In all other cases, we have an error.
          (t ; ( ident other
           (reterr-msg :where (position-to-msg (span->start span2))
