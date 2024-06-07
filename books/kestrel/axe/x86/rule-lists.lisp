@@ -922,6 +922,13 @@
   '(acl2::bvchop-of-*-becomes-bvmult
     acl2::getbit-of-*-becomes-getbit-of-bvmult
     acl2::slice-of-*-becomes-slice-of-bvmult
+    acl2::bvuminus-of-+
+    acl2::bvminus-of-+-arg2 ; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?
+    acl2::bvminus-of-+-arg3
+    acl2::bvif-of-+-arg4
+    acl2::bvif-of-+-arg3
+    acl2::bvif-of---arg3
+    acl2::bvif-of---arg4
     ;; todo: more
     ))
 
@@ -947,7 +954,7 @@
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
-    acl2::bvuminus-of-+
+
     acl2::logapp-becomes-bvcat-bind-free-axe
     acl2::logtail-becomes-slice-bind-free-axe
     acl2::logtail-of-bvchop-becomes-slice ; todo: other way?
@@ -1528,7 +1535,7 @@
           (x86-type-rules)
           (logops-to-bv-rules)
           (acl2::bv-of-logext-rules)
-          (arith-to-bv-rules) ; todo: try
+          (arith-to-bv-rules)
           (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
@@ -2222,7 +2229,8 @@
 ;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
-  (append (lifter-rules-common)
+  (set-difference-equal
+   (append (lifter-rules-common)
           (read-over-write-rules32)
           '(x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
@@ -2320,7 +2328,11 @@
             mv-nth-1-of-rme-size-of-set-edx-when-app-view
 
             write-to-segment-of-set-eip
-            write-byte-to-segment-of-set-eip)))
+            write-byte-to-segment-of-set-eip
+            ))
+   '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
+     acl2::bvminus-of-+-arg2
+     acl2::bvminus-of-+-arg3)))
 
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
@@ -2998,7 +3010,7 @@
     esp-of-xw
     ebp-of-xw
 
-    bvplus-of-constant-and-esp-when-overflow
+    bvplus-of-constant-and-esp-when-overflow ; caused loops with turning + into bvplus
     ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
 
     read-stack-dword-of-write-to-segment-diff-segments
@@ -4364,8 +4376,6 @@
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             acl2::equal-of-myif-arg1-safe
             acl2::equal-of-myif-arg2-safe
-            acl2::bvminus-of-+-arg2
-            acl2::bvminus-of-+-arg3
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
             acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus
@@ -4575,10 +4585,6 @@
             acl2::if-becomes-myif ; todo: do we want this when lifting?
             acl2::myif-becomes-bvif-1-axe
             acl2::bvchop-of-myif
-            acl2::bvif-of-+-arg4
-            acl2::bvif-of-+-arg3
-            acl2::bvif-of---arg3
-            acl2::bvif-of---arg4
             acl2::integerp-of---when-integerp
             acl2::equal-of-bvplus-move-bvminus-better
             acl2::equal-of-bvplus-move-bvminus-alt-better
