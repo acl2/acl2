@@ -17,6 +17,8 @@
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "oslib/dirname" :dir :system)
+(include-book "oslib/mkdir" :dir :system)
 (include-book "oslib/rmtree" :dir :system)
 (include-book "oslib/tempfile" :dir :system)
 (include-book "std/strings/cat" :dir :system)
@@ -107,27 +109,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; filepath utilities
-
-(define absolute-filepath
-  ((filepath stringp)
-   &key
-   (state 'state))
-  :returns (filepath stringp)
-  :parents (preprocess-file)
-  :short "Makes the filepath absolute using the @(see cbd)."
-  (if (or (int= 0 (length filepath))
-          (eql #\/ (char filepath 0)))
-      (mbe :exec filepath
-           :logic (if (stringp filepath) filepath ""))
-    (b* ((cbd (f-get-global 'acl2::connected-book-directory state))
-         ((unless (stringp cbd))
-          (prog2$ (raise "cbd is not a string")
-                  "")))
-      (concatenate 'string cbd filepath))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
   ((file filepathp
          "The C file to preprocess.")
@@ -183,13 +164,20 @@
          (er-soft-with (iferr)
                        "Filepath is not a string: ~x0"
                        filename))
+        (canonical-filename (canonical-pathname filename nil state))
+        ((unless (stringp canonical-filename))
+         (er-soft-with (iferr)
+                       "Filepath does not exist: ~x0"
+                       filename))
+        (filename canonical-filename)
         (- (acl2::tshell-ensure))
         (save (if (eq :auto save)
                   (and out t)
                 save))
         ((er out :iferr (iferr))
          (if out
-             (value (absolute-filepath out))
+             (value (mbe :exec out
+                         :logic (if (stringp out) out "")))
            (b* (((mv temp state)
                  (oslib::tempfile filename)))
              (if temp
@@ -197,6 +185,15 @@
                (er-soft-with (iferr)
                              "Could not create temporary file for ~x0"
                              filename)))))
+        ((er out-dirname :iferr (iferr))
+         (oslib::dirname out))
+        ((er -)
+         (b* (((mv success state)
+               (oslib::mkdir out-dirname)))
+           (if success
+               (value nil)
+             (er-soft-with (iferr)
+                           "Could not make directory: ~x0" out-dirname))))
         (preprocess-cmd
           (str::join (append (list* preprocessor "-E" extra-args)
                              (list filename ">" out))
@@ -277,8 +274,8 @@
    ((out-dir (or (not out-dir)
                  (stringp out-dir))
              "This specifies the directory that preprocessed output files are
-              saved to with posfix \".preprocessed\". If @('nil'), temporary
-              files will be created (see @(see oslib::tempfile))).")
+              saved to with posfix \".i\". If @('nil'), temporary files will be
+              created (see @(see oslib::tempfile))).")
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
@@ -306,7 +303,7 @@
   (xdoc::topstring
    (xdoc::p
      "This function preprocesses a @(see filepath-setp). See @(see
-      preprocess-files) for a similar utility which operates on individuals
+      preprocess-file) for a similar utility which operates on individuals
       files."))
   (b* (((when (emptyp files))
         (value (fileset nil)))
@@ -317,7 +314,7 @@
                                      out-dir
                                      "/"
                                      filename
-                                     ".preprocessed")))))
+                                     ".i")))))
        ((er (cons - filedata) :iferr (fileset nil))
         (preprocess-file (head files)
                          :out out
