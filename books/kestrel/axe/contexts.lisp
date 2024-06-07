@@ -99,6 +99,12 @@
          (possibly-negated-nodenump item))
   :hints (("Goal" :in-theory (enable contextp))))
 
+(defthm contextp-when-nat-listp-cheap
+  (implies (nat-listp context)
+           (contextp context))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable contextp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-contextp (context bound)
@@ -124,6 +130,13 @@
            (contextp context))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-contextp contextp))))
+
+;; limit?
+(defthm bounded-possibly-negated-nodenumsp-when-bounded-contextp
+  (implies (bounded-contextp context bound)
+           (equal (bounded-possibly-negated-nodenumsp context bound)
+                  (not (equal (false-context) context))))
+  :hints (("Goal" :in-theory (enable bounded-contextp))))
 
 (defthm bounded-contextp-monotone
   (implies (and (bounded-contextp context bound1)
@@ -159,6 +172,12 @@
 (defthm bounded-contextp-of-if
   (equal (bounded-contextp (if test then else) bound)
          (if test (bounded-contextp then bound) (bounded-contextp else bound))))
+
+(defthm bounded-contextp-when-nat-listp
+  (implies (nat-listp context)
+           (equal (bounded-contextp context bound)
+                  (all-< context bound)))
+  :hints (("Goal" :in-theory (enable bounded-contextp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -670,22 +689,52 @@
 ;; Recognizes an array whose values are bounded contexts (contexts contaning nodenums less than BOUND).
 (def-typed-acl2-array bounded-context-arrayp (bounded-contextp val bound) :default (true-context) :extra-vars (bound) :extra-guards ((natp bound)))
 
-(defthm bounded-context-arrayp-aux-monotone2
+;; this one allows the bound to differ
+(defthm bounded-context-arrayp-aux-monotone-gen
   (implies (and (bounded-context-arrayp-aux array-name array n bound2)
                 (<= bound2 bound)
+                (<= m n)
+                (integerp m)
+                (integerp n)
                 (natp bound)
                 (natp bound2))
-           (bounded-context-arrayp-aux array-name array n bound))
-  :hints (("Goal" :in-theory (enable  bounded-context-arrayp-aux))))
+           (bounded-context-arrayp-aux array-name array m bound))
+  :hints (("subgoal *1/3" :use (:instance type-of-aref1-when-bounded-context-arrayp-aux
+                                          (index m)
+                                          (top-index n)
+                                          (bound bound2))
+           :in-theory (disable type-of-aref1-when-bounded-context-arrayp-aux))
+          ("Goal" :induct (bounded-context-arrayp-aux array-name array m bound)
+           :in-theory (enable  bounded-context-arrayp-aux))))
 
-;; this one is about the bound
-(defthm bounded-context-arrayp-monotone2
+;; this one allows the bound to differ
+(defthm bounded-context-arrayp-monotone-gen
   (implies (and (bounded-context-arrayp array-name array n bound2)
                 (<= bound2 bound)
+                (<= m n)
+                (natp m)
+                (integerp n)
                 (natp bound)
                 (natp bound2))
-           (bounded-context-arrayp array-name array n bound))
+           (bounded-context-arrayp array-name array m bound))
   :hints (("Goal" :in-theory (enable bounded-context-arrayp))))
+
+(defthm context-arrayp-aux-when-bounded-context-arrayp-aux
+  (implies (and (bounded-context-arrayp-aux array-name array index2 bound) ; bound is a free var
+                (<= index index2)
+                (integerp index2))
+           (context-arrayp-aux array-name array index))
+  :hints (("Goal" :expand (context-arrayp-aux array-name array index)
+           :in-theory (enable bounded-context-arrayp-aux
+                                     context-arrayp-aux))))
+
+(defthm context-arrayp-when-bounded-context-arrayp
+  (implies (and (bounded-context-arrayp array-name array num-valid-indices2 bound) ; bound is a free var
+                (<= num-valid-indices num-valid-indices2)
+                (natp num-valid-indices))
+           (context-arrayp array-name array num-valid-indices))
+  :hints (("Goal" :in-theory (enable context-arrayp
+                                     bounded-context-arrayp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1046,9 +1095,9 @@
                 (<= (len dag) *max-1d-array-length*)
                 (<= (len dag) bound)
                 (natp bound)
-                (<= len (len dag))
-                (natp len))
-           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) len bound))
+                (<= num-valid-indices (len dag))
+                (natp num-valid-indices))
+           (bounded-context-arrayp 'context-array (make-full-context-array-for-dag dag) num-valid-indices bound))
   :hints (("Goal" :use (:instance bounded-context-arrayp-of-make-full-context-array-for-dag)
            :in-theory (disable bounded-context-arrayp-of-make-full-context-array-for-dag))))
 
