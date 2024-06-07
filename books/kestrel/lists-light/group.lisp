@@ -1,7 +1,7 @@
 ; A function to divide a list into fixed-sized chunks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -87,7 +87,7 @@
                 (posp n))
            (equal (integerp (* (/ n) x))
                   (equal x 0)))
-  :hints (("Goal" :use (:instance integerp-of-small-helper)
+  :hints (("Goal" :use integerp-of-small-helper
            :in-theory (disable integerp-of-small-helper))))
 
 (defthm <-of-/-same
@@ -159,7 +159,7 @@
            (implies (<= 2 (FLOOR i j))
                     (<= (* 2 j) i)))
   :hints (("Goal"
-           :use ((:instance my-FLOOR-UPPER-BOUND)
+           :use (my-FLOOR-UPPER-BOUND
                  ;(:instance <-*-/-LEFT (x i) (a 2) (y j))
                  )
            :in-theory (disable my-FLOOR-UPPER-BOUND
@@ -174,7 +174,7 @@
            (< I (* 2 J)))
   :hints (("Goal"
            :use ( ;(:instance FLOOR-UPPER-BOUND-better (x i) (y j))
-                 (:instance my-FLOOR-lower-BOUND))
+                 my-FLOOR-lower-BOUND)
            :in-theory (disable my-FLOOR-UPPER-BOUND
                                my-FLOOR-UPPER-BOUND
                                ))))
@@ -192,7 +192,7 @@
                 (natp i))
            (equal (< 1 (FLOOR i j))
                   (<= (* 2 j) i)))
-  :hints (("Goal" :use (:instance floor-bound-hack-3)
+  :hints (("Goal" :use floor-bound-hack-3
            :in-theory (disable floor-bound-hack-3))))
 
 (local (in-theory (enable floor-must-be-1)))
@@ -233,7 +233,7 @@
                 (< 0 j))
            (equal (< i (+ 1 (* j (FLOOR i j))))
                   (integerp (/ i j))))
-  :hints (("Goal" :use (:instance <-of-times-of-floor-and-same)
+  :hints (("Goal" :use <-of-times-of-floor-and-same
            :in-theory (disable <-of-times-of-floor-and-same))))
 
 ;use polarity?
@@ -244,7 +244,7 @@
            (equal (< (+ 1 (* j (FLOOR i j))) i)
                   (not (or (integerp (/ i j))
                            (equal i (+ 1 (* j (FLOOR i j))))))))
-  :hints (("Goal" :use (:instance my-floor-upper-bound)
+  :hints (("Goal" :use my-floor-upper-bound
            :in-theory (disable my-floor-upper-bound
 ;                               floor-bound-lemma3
                                ))))
@@ -524,7 +524,7 @@
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
   :hints (("Goal"
-           :use ((:instance group-of-append-1)
+           :use (group-of-append-1
                  (:instance group-of-append-2 (x (NTHCDR (* N (FLOOR (LEN X) N)) X))))
            :in-theory (enable group-of-append-2 mod))))
 
