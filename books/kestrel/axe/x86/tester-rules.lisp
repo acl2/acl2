@@ -238,18 +238,6 @@
          (bvxor size x (bvxor size y z)))
   :hints (("Goal" :in-theory (enable bvxor))))
 
-(DEFTHM ACL2::BVIF-OF---ARG3
-  (IMPLIES (INTEGERP X)
-           (EQUAL (BVIF ACL2::SIZE ACL2::TEST (- X) ACL2::Z)
-                  (BVIF ACL2::SIZE ACL2::TEST (BVuminus ACL2::SIZE X) ACL2::Z)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BVIF BVuminus bvminus))))
-
-(DEFTHM ACL2::BVIF-OF---ARG4
-  (IMPLIES (INTEGERP X)
-           (EQUAL (BVIF ACL2::SIZE ACL2::TEST ACL2::Z (- X))
-                  (BVIF ACL2::SIZE ACL2::TEST ACL2::Z (BVuminus ACL2::SIZE X))))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BVIF BVuminus bvminus))))
-
 (defthm bvdiv-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
