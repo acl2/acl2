@@ -1372,19 +1372,19 @@
       (retok (escape-simple (simple-escape-qmark)) pos pstate))
      ((= char (char-code #\\)) ; \ \
       (retok (escape-simple (simple-escape-bslash)) pos pstate))
-     ((= char (char-code #\\)) ; \ a
+     ((= char (char-code #\a)) ; \ a
       (retok (escape-simple (simple-escape-a)) pos pstate))
-     ((= char (char-code #\\)) ; \ b
+     ((= char (char-code #\b)) ; \ b
       (retok (escape-simple (simple-escape-b)) pos pstate))
-     ((= char (char-code #\\)) ; \ f
+     ((= char (char-code #\f)) ; \ f
       (retok (escape-simple (simple-escape-f)) pos pstate))
-     ((= char (char-code #\\)) ; \ n
+     ((= char (char-code #\n)) ; \ n
       (retok (escape-simple (simple-escape-n)) pos pstate))
-     ((= char (char-code #\\)) ; \ r
+     ((= char (char-code #\r)) ; \ r
       (retok (escape-simple (simple-escape-r)) pos pstate))
-     ((= char (char-code #\\)) ; \ t
+     ((= char (char-code #\t)) ; \ t
       (retok (escape-simple (simple-escape-t)) pos pstate))
-     ((= char (char-code #\\)) ; \ v
+     ((= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos pstate))
      ((and (<= (char-code #\0) char)
            (<= char (char-code #\7))) ; \ octdig
@@ -3762,7 +3762,7 @@
                    (make-span :start first-pos :end first-pos)
                    pstate))))))
 
-     ((= char (char-code #\-)) ; >
+     ((= char (char-code #\>)) ; >
       (b* (((erp char2 pos2 pstate) (read-char pstate)))
         (cond
          ((not char2) ; > EOF
@@ -5272,11 +5272,18 @@
      ((or (token-declarator-start-p token) ; ( declor...
           (token-abstract-declarator-start-p token)) ; ( absdeclor...
       (retok (partys/declor/ambig-declor) 1 pstate))
+     ;; If token is a closed parenthesis,
+     ;; it is like the case of having a parameter declaration,
+     ;; even though there are no actual parameter declarations
+     ;; (i.e. we have a function declarator with no arguments).
+     ((equal token (token-punctuator ")")) ; ( )
+      (retok (partys/declor/ambig-partys) 1 pstate))
      ;; In all other cases, we have an error.
      (t ; ( other
       (reterr-msg :where (position-to-msg (span->start span))
                   :expected "an identifier ~
                              or an open parenthesis ~
+                             or a closed parenthesis ~
                              or an open square bracket ~
                              or a star"
                   :found (token-to-msg token)))))
@@ -6319,26 +6326,29 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
+       ;; If token is an open parenthesis,
+       ;; we may have a cast expression proper or a unary expression,
+       ;; and we may also have the ambiguity discussed in :DOC EXPR.
        ((equal token (token-punctuator "(")) ; (
         (b* (((erp token2 span2 pstate) (read-token pstate)))
           (cond
+           ;; If token2 is an identifier, things are still ambiguous:
+           ;; the identifier could be (part of) an expression,
+           ;; or it could be a type name.
            ((and token2 (token-case token2 :ident)) ; ( ident
             (b* (((erp token3 span3 pstate) (read-token pstate)))
               (cond
-               ((token-postfix-expression-rest-start-p token3) ; ( ident...
-                (b* ((pstate (unread-token pstate)) ; ( ident
-                     (pstate (unread-token pstate)) ; (
-                     ((erp expr & pstate) ; ( expr
-                      (parse-postfix-expression pstate))
-                     ((erp last-span pstate) ; ( expr )
-                      (read-punctuator ")" pstate)))
-                  (retok (expr-paren expr)
-                         (span-join span last-span)
-                         pstate)))
+               ;; If token3 is a closed parenthesis,
+               ;; things are still ambiguous:
+               ;; we could have a parenthesized identifier expression,
+               ;; or the identifier could be a type name.
                ((equal token3 (token-punctuator ")")) ; ( ident )
                 (b* ((ident (token-ident->unwrap token2))
                      ((erp token4 & pstate) (read-token pstate)))
                   (cond
+                   ;; If token4 is an open curly brace,
+                   ;; we have resolved the ambiguity:
+                   ;; we must have a compund literal.
                    ((equal token4 (token-punctuator "{")) ; ( ident ) {
                     (b* ((pstate (unread-token pstate)) ; ( ident )
                          (tyname (make-tyname
@@ -6346,6 +6356,10 @@
                                                    (tyspec-tydef ident)))
                                   :decl? nil)))
                       (parse-compound-literal tyname span pstate)))
+                   ;; If token4 is a star, it may be a unary or binary operator:
+                   ;; we have a syntactic ambiguity,
+                   ;; but what follows must be a cast expression,
+                   ;; whether the star is unary or binary.
                    ((equal token4 (token-punctuator "*")) ; ( ident ) *
                     (b* (((erp expr last-span pstate) ; ( ident ) * expr
                           (parse-cast-expression pstate)))
@@ -6354,6 +6368,12 @@
                               :arg/arg2 expr)
                              (span-join span last-span)
                              pstate)))
+                   ;; If token4 is a plus or minus,
+                   ;; it could be a unary or binary operator,
+                   ;; similarly to the star case.
+                   ;; We have a syntactic ambiguity.
+                   ;; We parse a multiplicative expression after that,
+                   ;; which is needed in case the plus or minus is binary.
                    ((token-additive-operator-p token4) ; ( ident ) +-
                     (b* (((erp expr last-span pstate) ; ( ident ) +- expr
                           (parse-multiplicative-expression pstate)))
@@ -6361,6 +6381,11 @@
                               token4 ident expr)
                              (span-join span last-span)
                              pstate)))
+                   ;; If token4 is an ampersand,
+                   ;; it could be a unary or binary operator,
+                   ;; analogously to the cases above of start, plus, and minus.
+                   ;; We parse a equality expression after that,
+                   ;; in case the ampersand is binary.
                    ((or (equal token4 (token-punctuator "&")))
                     (b* (((erp expr last-span pstate) ; ( ident ) & expr
                           (parse-equality-expression pstate)))
@@ -6369,6 +6394,10 @@
                               :arg/arg2 expr)
                              (span-join span last-span)
                              pstate)))
+                   ;; If token4 may start a (cast) expression,
+                   ;; we have resolved the ambiguity:
+                   ;; the identifier must be a type name,
+                   ;; and we were parsing a proper cast expression all along.
                    ((token-unary-expression-start-p token4) ; ( ident ) expr...
                     (b* ((pstate (unread-token pstate)) ; ( ident )
                          ((erp expr last-span pstate) ; ( ident ) expr
@@ -6382,21 +6411,29 @@
                         :arg expr)
                        (span-join span last-span)
                        pstate)))
+                   ;; If token4 may not start an expression,
+                   ;; we have resolved the ambiguity:
+                   ;; we must simply have a parenthesized identifier expression.
                    (t ; ( ident ) other
                     (b* ((pstate
                           (if token (unread-token pstate) pstate))) ; ( ident )
                       (retok (expr-paren (expr-ident ident))
                              (span-join span span3)
                              pstate))))))
+               ;; If token3 is not a closed parenthesis,
+               ;; the identifier must be the start of an expression,
+               ;; so we put back the tokens and we parse an expression,
+               ;; and then the closed parenthesis after that.
                (t ; ( ident other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "a parenthesis ~
-                                       or an open square bracket ~
-                                       or a member access operator ~
-                                       (dot or arrow) ~
-                                       or a postincrement operator ~
-                                       or a postdecrement operator"
-                            :found (token-to-msg token3))))))
+                (b* ((pstate (if token3 (unread-token pstate) pstate)) ; ( ident
+                     (pstate (unread-token pstate)) ; (
+                     ((erp expr & pstate) ; ( expr
+                      (parse-expression pstate))
+                     ((erp last-span pstate) ; ( expr )
+                      (read-punctuator ")" pstate)))
+                  (retok (expr-paren expr)
+                         (span-join span last-span)
+                         pstate))))))
            ((token-expression-start-p token2) ; ( expr...
             (b* ((pstate (unread-token pstate)) ; (
                  ((erp expr & pstate) (parse-expression pstate))
@@ -9879,15 +9916,29 @@
        ;; but we only generate the :FUNCTION-PARAMS variant,
        ;; as explained above.
        ((equal token (token-punctuator "(")) ; (
-        (b* (((erp paramdecls ellipsis & pstate) ; ( params [, ...]
-              (parse-parameter-declaration-list pstate))
-             ((erp last-span pstate) ; ( params [, ...] )
-              (read-punctuator ")" pstate)))
-          (retok (make-dirdeclor-function-params :decl prev-dirdeclor
-                                                 :params paramdecls
-                                                 :ellipsis ellipsis)
-                 (span-join prev-span last-span)
-                 pstate)))
+        (b* (((erp token2 span2 pstate) (read-token pstate)))
+          (cond
+           ;; If token2 is a closed parenthesis,
+           ;; we have no parameter declarations.
+           ((equal token2 (token-punctuator ")")) ; ( )
+            (retok (make-dirdeclor-function-params :decl prev-dirdeclor
+                                                   :params nil
+                                                   :ellipsis nil)
+                   (span-join prev-span span2)
+                   pstate))
+           ;; If token2 is anything else,
+           ;; we must have a list of one or more parameter declarations.
+           (t ; ( other
+            (b* ((pstate (if token2 (unread-token pstate) pstate))
+                 ((erp paramdecls ellipsis & pstate) ; ( params [, ...]
+                  (parse-parameter-declaration-list pstate))
+                 ((erp last-span pstate) ; ( params [, ...] )
+                  (read-punctuator ")" pstate)))
+              (retok (make-dirdeclor-function-params :decl prev-dirdeclor
+                                                     :params paramdecls
+                                                     :ellipsis ellipsis)
+                     (span-join prev-span last-span)
+                     pstate))))))
        ;; If token is anything else,
        ;; we have reached the end of the direct declarator.
        (t ; other
