@@ -1284,7 +1284,8 @@
   (implies (and (pseudo-dagp dag)
                 (consp dag))
            (true-listp (dargs (cdr (car dag)))))
-  :rule-classes :type-prescription)
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
 (defthm dag-exprp-of-cdr-of-car-when-weak-dagp
   (implies (weak-dagp dag)
