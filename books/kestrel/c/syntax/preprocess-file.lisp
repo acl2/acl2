@@ -268,8 +268,8 @@
    ((out-dir (or (not out-dir)
                  (stringp out-dir))
              "This specifies the directory that preprocessed output files are
-              saved to with posfix \".preprocessed\". If @('nil'), temporary
-              files will be created (see @(see oslib::tempfile))).")
+              saved to with posfix \".i\". If @('nil'), temporary files will be
+              created (see @(see oslib::tempfile))).")
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
@@ -297,7 +297,7 @@
   (xdoc::topstring
    (xdoc::p
      "This function preprocesses a @(see filepath-setp). See @(see
-      preprocess-files) for a similar utility which operates on individuals
+      preprocess-file) for a similar utility which operates on individuals
       files."))
   (b* (((when (emptyp files))
         (value (fileset nil)))
@@ -308,7 +308,7 @@
                                      out-dir
                                      "/"
                                      filename
-                                     ".preprocessed")))))
+                                     ".i")))))
        ((er (cons - filedata) :iferr (fileset nil))
         (preprocess-file (head files)
                          :out out
