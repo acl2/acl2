@@ -1430,7 +1430,7 @@
      (xdoc::p
       "where @('I') is an idenfitier,
        the comma ends a parameter declaration,
-       and the semicolo ends a declaration.
+       and the semicolon ends a declaration.
        Each can be either an atomic type specifier,
        or an atomic type qualifier followed by a parenthesized declarator.
        We parse these as type specifiers, but marked as ambiguous.")
