@@ -66,8 +66,6 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(in-theory (disable add-to-end))
-
 ;(local (in-theory (disable CADR-BECOMES-NTH-OF-1))) ;need better acl2-count rules about nth (maybe when we know the length...)
 
  ;for speed

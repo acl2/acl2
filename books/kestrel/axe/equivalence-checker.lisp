@@ -103,13 +103,6 @@
            (not (< (maxelem x) (nth n x))))
   :hints (("Goal" :in-theory (enable maxelem (:i nth)))))
 
-;;move
-(defthm nat-listp-of-add-to-end
-  (implies (and (nat-listp lst)
-                (natp val))
-           (nat-listp (add-to-end val lst)))
-  :hints (("Goal" :in-theory (enable add-to-end))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;move
