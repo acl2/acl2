@@ -380,6 +380,12 @@
                                  (mv-nth 2 (ia32e-la-to-pa lin-addr2 r-w-x2 x862)))
                  (paging-equiv-n n lin-addr r-w-x x86 x862))))
 
+(defthm paging-equiv-n-app-view
+        (implies (and (app-view x86-1)
+                      (app-view x86-2))
+                 (paging-equiv-n n lin-addr r-w-x x86-1 x86-2))
+        :hints (("Goal" :in-theory (enable ia32e-la-to-pa))))
+
 (define paging-equiv (x86-1 x86-2)
   :verify-guards nil
   :non-executable t
@@ -440,7 +446,12 @@
           :hints (("Goal" :in-theory (disable paging-equiv)
                    :use ((:instance ia32e-la-to-pa-paging-equiv-canonical-address-p)
                          (:instance ia32e-la-to-pa-paging-equiv-canonical-address-p
-                                    (lin-addr (logext 48 lin-addr))))))))
+                                    (lin-addr (logext 48 lin-addr)))))))
+
+  (defthm paging-equiv-app-view
+          (implies (and (app-view x86-1)
+                        (app-view x86-2))
+                   (paging-equiv x86-1 x86-2))))
 
 (in-theory (disable paging-equiv))
 
@@ -455,6 +466,16 @@
                  (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-1))
                         (mv-nth 1 (las-to-pas n lin-addr r-w-x x86-2))))
         :rule-classes :congruence)
+
+(defthm mv-nth-2-las-to-pas-paging-equiv-cong
+        (implies (paging-equiv x86-1 x86-2)
+                 (paging-equiv (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-1))
+                               (mv-nth 2 (las-to-pas n lin-addr r-w-x x86-2))))
+        :rule-classes :congruence)
+
+(defthm mv-nth-2-las-to-pas-paging-equiv
+        (paging-equiv (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
+                      x86))
 
 (include-book "gather-paging-structures" :ttags :all)
 

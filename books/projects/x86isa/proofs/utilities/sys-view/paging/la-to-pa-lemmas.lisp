@@ -488,6 +488,12 @@
                          (las-to-pas n lin-addr r-w-x x86-2))
            :in-theory (enable tlb-consistent-n))))
 
+(defthm xlate-equiv-structures-with-mv-nth-2-las-to-pas
+        (xlate-equiv-structures
+          (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
+          (double-rewrite x86))
+        :hints (("Goal" :induct (las-to-pas n lin-addr r-w-x x86))))
+
 (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas
   ;; the 64-bit mode hyp makes the proof of this theorem easy
   ;; (via xlate-equiv-memory-with-mv-nth-2-ia32e-la-to-pa),

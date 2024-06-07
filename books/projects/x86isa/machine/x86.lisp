@@ -760,6 +760,31 @@
     :hints (("Goal" :in-theory (e/d (get-prefixes-opener-lemma-no-prefix-byte-pre)
                                     (rme08 get-prefixes)))))
 
+  (defthm get-prefixes-opener-lemma-group-1-prefix
+    (b* (((mv flg byte byte-x86)
+          (rme08 proc-mode start-rip #.*cs* :x x86))
+         (prefix-byte-group-code (get-one-byte-prefix-array-code byte)))
+      (implies
+       (and (or (app-view x86)
+                (not (marking-view x86)))
+            (not flg) ;; No error in reading a byte
+            (equal prefix-byte-group-code 1)
+            (not (zp cnt))
+            (not (mv-nth 0 (add-to-*ip proc-mode start-rip 1 x86))))
+       (equal (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
+              (let ((prefixes
+                     (if (equal byte #.*lock*)
+                         (!prefixes->lck byte prefixes)
+                       (!prefixes->rep byte prefixes))))
+                (get-prefixes
+                 proc-mode (1+ start-rip) prefixes 0 (1- cnt) byte-x86)))))
+    :hints (("Goal"
+             :in-theory
+             (e/d* (add-to-*ip)
+                   (rb
+                    unsigned-byte-p
+                    negative-logand-to-positive-logand-with-integerp-x)))))
+
   (defthm get-prefixes-opener-lemma-group-2-prefix
     (b* (((mv flg byte byte-x86)
           (rme08 proc-mode start-rip #.*cs* :x x86))
