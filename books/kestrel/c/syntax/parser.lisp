@@ -5272,11 +5272,18 @@
      ((or (token-declarator-start-p token) ; ( declor...
           (token-abstract-declarator-start-p token)) ; ( absdeclor...
       (retok (partys/declor/ambig-declor) 1 pstate))
+     ;; If token is a closed parenthesis,
+     ;; it is like the case of having a parameter declaration,
+     ;; even though there are no actual parameter declarations
+     ;; (i.e. we have a function declarator with no arguments).
+     ((equal token (token-punctuator ")")) ; ( )
+      (retok (partys/declor/ambig-partys) 1 pstate))
      ;; In all other cases, we have an error.
      (t ; ( other
       (reterr-msg :where (position-to-msg (span->start span))
                   :expected "an identifier ~
                              or an open parenthesis ~
+                             or a closed parenthesis ~
                              or an open square bracket ~
                              or a star"
                   :found (token-to-msg token)))))
@@ -9879,15 +9886,29 @@
        ;; but we only generate the :FUNCTION-PARAMS variant,
        ;; as explained above.
        ((equal token (token-punctuator "(")) ; (
-        (b* (((erp paramdecls ellipsis & pstate) ; ( params [, ...]
-              (parse-parameter-declaration-list pstate))
-             ((erp last-span pstate) ; ( params [, ...] )
-              (read-punctuator ")" pstate)))
-          (retok (make-dirdeclor-function-params :decl prev-dirdeclor
-                                                 :params paramdecls
-                                                 :ellipsis ellipsis)
-                 (span-join prev-span last-span)
-                 pstate)))
+        (b* (((erp token2 span2 pstate) (read-token pstate)))
+          (cond
+           ;; If token2 is a closed parenthesis,
+           ;; we have no parameter declarations.
+           ((equal token2 (token-punctuator ")")) ; ( )
+            (retok (make-dirdeclor-function-params :decl prev-dirdeclor
+                                                   :params nil
+                                                   :ellipsis nil)
+                   (span-join prev-span span2)
+                   pstate))
+           ;; If token2 is anything else,
+           ;; we must have a list of one or more parameter declarations.
+           (t ; ( other
+            (b* ((pstate (if token2 (unread-token pstate) pstate))
+                 ((erp paramdecls ellipsis & pstate) ; ( params [, ...]
+                  (parse-parameter-declaration-list pstate))
+                 ((erp last-span pstate) ; ( params [, ...] )
+                  (read-punctuator ")" pstate)))
+              (retok (make-dirdeclor-function-params :decl prev-dirdeclor
+                                                     :params paramdecls
+                                                     :ellipsis ellipsis)
+                     (span-join prev-span last-span)
+                     pstate))))))
        ;; If token is anything else,
        ;; we have reached the end of the direct declarator.
        (t ; other
