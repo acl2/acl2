@@ -12243,6 +12243,8 @@
        ((erp token span pstate) (read-token pstate))
        ((when (not token)) ; extdecl EOF
         (retok (list extdecl) first-span (span->start span) pstate))
+       ;; extdecl other
+       (pstate (unread-token pstate)) ; extdecl
        ((erp extdecls last-span eof-pos pstate) ; extdecl extdecls
         (parse-external-declaration-list pstate)))
     (retok (cons extdecl extdecls)
