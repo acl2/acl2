@@ -28,20 +28,20 @@
 (acl2::must-succeed
   (acl2::must-eval-to-t
     (b* (((er (cons out -))
-          (preprocess-file (filepath "stdbool.c") :out "stdbool.c.preprocessed")))
+          (preprocess-file (filepath "stdbool.c") :out "stdbool.i")))
       (value (stringp out)))))
 
 (acl2::must-succeed
-  (preprocess-file (filepath "stdbool.c.preprocessed")))
+  (preprocess-file (filepath "stdbool.i")))
 
 (acl2::must-succeed
-  (preprocess-file (filepath "stdbool.c") :out "stdbool.c.preprocessed" :save nil))
+  (preprocess-file (filepath "stdbool.c") :out "stdbool.i" :save nil))
 
 (acl2::must-fail
   (preprocess-file (filepath "nonexistent-file.c")))
 
 (acl2::must-succeed
-  (preprocess-file (filepath "stdint.c")))
+  (preprocess-file (filepath "../tests/stdint.c")))
 
 (acl2::must-succeed
   (preprocess-files

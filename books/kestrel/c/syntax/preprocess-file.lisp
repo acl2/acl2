@@ -164,6 +164,12 @@
          (er-soft-with (iferr)
                        "Filepath is not a string: ~x0"
                        filename))
+        (canonical-filename (canonical-pathname filename nil state))
+        ((unless (stringp canonical-filename))
+         (er-soft-with (iferr)
+                       "Filepath does not exist: ~x0"
+                       filename))
+        (filename canonical-filename)
         (- (acl2::tshell-ensure))
         (save (if (eq :auto save)
                   (and out t)
