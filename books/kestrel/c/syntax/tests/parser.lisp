@@ -73,3 +73,10 @@ struct bar
 {
  return (v >> 1);
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void encrypt (uint32_t* v) {
+}")
