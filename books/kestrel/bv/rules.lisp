@@ -40,7 +40,6 @@
 (include-book "bvdiv")
 ;;(include-book "sbvdiv")
 ;;(include-book "sbvdivdown")
-;(include-book "bvsx")
 (include-book "repeatbit2")
 (include-book "bvshr")
 (include-book "bvshl")
