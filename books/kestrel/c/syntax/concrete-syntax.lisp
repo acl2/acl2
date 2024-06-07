@@ -28,14 +28,14 @@
    (xdoc::p
     "See @(see syntax-for-tools) for background.")
    (xdoc::p
-    "The concrete syntax of C is one, and it is defined in [C].
-     Here we provide a particular formulation of the concrete syntax of C
+    "The concrete syntax of C is defined in [C].
+     Here we provide a formulation of the concrete syntax of C
      that is tailored to tools that manipulate C code,
      and in particular that matches the abstract syntax
      defined in @(see abstract-syntax).")
    (xdoc::p
     "We start with an ABNF grammar that is based on the grammar in [C],
-     but differs from that grammar because its purpose is
+     but is not identical to that grammar because its purpose is
      to capture constructs both before and after preprocessing at the same time.
      Initially it actually only captures preprocessed code,
      but we plan to add a growing collection of preprocessing constructs.
@@ -49,7 +49,9 @@
      (each formulation consisting of a grammar
      and of extra-grammatical requirements)
      of the same unique concrete syntax of C.
-     We are not defining a different concrete syntax of C here.")
+     We are not defining a different concrete syntax of C here.
+     However, we are instantiating certain aspects of the concrete syntax
+     which [C] leaves open, such as the exact character set used.")
    (xdoc::p
     "We plan to add a parser and a pretty-printer.")))
 

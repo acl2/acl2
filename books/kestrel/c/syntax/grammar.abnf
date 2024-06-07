@@ -48,11 +48,11 @@
 
 ; Since our grammar formulation aims at capturing at the same time
 ; the phrase structure of the code and some preprocessing constructs,
-; we regard our grammars as defining two phases:
+; we regard our grammars as defining just two phases:
 ; one for the lexical organization
 ; (which therefore includes both tokens and some preprocessing tokens),
 ; and one for a phrase structure that may also include preprocessing constructs
-; (which therefore is an extension of the phrase structure in [C]).
+; (which therefore is an extension of the phrase structure grammar in [C]).
 
 ; Our ABNF grammar does not consider
 ; the trigraph sequences handled in the first phase in [C:5.1.1.2]
@@ -66,7 +66,7 @@
 ; This can be easily enforced outside the grammar as well.
 
 ; Another aspect that our grammar does not cover is
-; the concatenation of adjacent string literal (see phase 6 in [C:5.1.1.2]).
+; the concatenation of adjacent string literals (see phase 6 in [C:5.1.1.2]).
 ; This does not affect the lexing of the code, since string literals are tokens,
 ; but the parser would need to accept adjacent string literals.
 ; In the (phrase structure) grammar, this could be accommodated
@@ -86,7 +86,7 @@
 ; in a form that includes the phrase structure
 ; with at least some preprocessing constructs.
 ; Actually, right now we do not capture any preprocessing construct,
-; but we plan to do that soon; this is the initial version.
+; but we plan to do that soon; this is just an initial version.
 
 ; However, C preprocessing operates at a low lexical level,
 ; so it may be difficult or impossible to capture
@@ -96,8 +96,8 @@
 ; This ABNF grammar covers at least all preprocessed code.
 
 ; In that case, the preprocessing may be done via an external tool,
-; e.g. (a component of) some existing C compilers.
-; We may also build our own preprocessor in ACL2.
+; e.g. (a component of) some existing C compiler.
+; We may also build our own preprocessor in ACL2 at some point.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -187,12 +187,12 @@ character = basic-character
 
 ; ASCII control characters like backspace (%x08) are potentially dangerous
 ; because they may make code appear different from what it is,
-; depending on where it is displayed (editor, shell etc.).
+; depending on where it is displayed (editor, shell, etc.).
 ; These dangers are similar to Trojan Source,
 ; which is based on bidirectional Unicode characters.
 ; [C] is silent on the matter; it does not even prescribe ASCII or Unicode.
 ; For now we exclude all those characters, in the definition above;
-; note that none of the characters defined above exhibit these dangers.
+; note that none of the characters defined above exhibits these dangers.
 
 ; [C] does not prescribe how lines should be terminated,
 ; but assumes a new-line character [C:5.2.1].
@@ -244,7 +244,9 @@ graphic-character-not-single-quote-or-backslash = %x21-23 ; ! " #
                                                 ; omits '
                                                 / %x28-2f ; ( ) * + , - . /
                                                 / %x3a-3f ; : ; < = > ?
-                                                / %x5b-5f ; [ \ ] ^ _
+                                                / %x5b    ; [
+                                                ; omits \
+                                                / %x5d-5f ; ] ^ _
                                                 / %x7b-7e ; { | } ~
 
 graphic-character-not-double-quote-or-backslash =
@@ -253,7 +255,9 @@ graphic-character-not-double-quote-or-backslash =
     / %x23    ; #
     / %x25-2f ; % & ' ( ) * + , - . /
     / %x3a-3f ; : ; < = > ?
-    / %x5b-5f ; [ \ ] ^ _
+    / %x5b    ; [
+    ; omits \
+    / %x5d-5f ; ] ^ _
     / %x7b-7e ; { | } ~
 
 basic-character-not-star = letter
@@ -304,7 +308,7 @@ character-not-double-quote-or-backslash-or-new-line =
 ; White Space [C:6.4/3]
 
 ; [C] designates the following as white-space characters:
-; space, horizontal tab, vertical tab, form feed, and new-line.
+; space, horizontal tab, vertical tab, form feed, and new line.
 ; It designates white space as not only these characters, but also comments.
 ; We introduce an ABNF rule (which has no counterpart grammar rule in [C])
 ; for white-space characters (not comments, which are defined separately).
@@ -349,17 +353,6 @@ line-comment = "//" *character-not-new-line
 ; we mix together preprocessing tokens and (non-preprocessing) tokens.
 ; Currently they are all (non-preprocessing) tokens,
 ; but will add some preprocessing tokens.
-
-; There is a lexical overlap between identifiers and constants,
-; specifically enumeration constants, which are identifiers (see definition).
-; This means that, when lexing, we cannot discern whether an identifier
-; is an identifier token or a constant token;
-; however, the distinction still makes sense for (pretty-)printing,
-; and so we include the overlap in this rule, faithfully to [C].
-; Lexing can be disambiguated in other ways,
-; e.g. by first assuming that identifiers are identifier tokens,
-; and then re-classifying them as enumeration constants during type checking
-; (in general one needs static semantic information to make that determination).
 
 token = keyword
       / identifier
@@ -485,12 +478,13 @@ hexadecimal-constant = hexadecimal-prefix hexadecimal-digit
 
 hexadecimal-prefix = %i"0x"
 
-nonzero-digit = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+nonzero-digit = %x31-39 ; 1-9
 
-octal-digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7"
+octal-digit = %x30-37 ; 0-7
 
-hexadecimal-digit = "0" / "1" / "2" / "3" / "4" / "5" / "6" / "7"
-                  / %i"a" / %i"b" / %i"c" / %i"d" / %i"e" / %i"f"
+hexadecimal-digit = %x30-39 ; 0-9
+                  / %x61-66 ; a-f
+                  / %x41-46 ; A-F
 
 integer-suffix = unsigned-suffix [ long-suffix ]
                / unsigned-suffix [ long-long-suffix ]
@@ -566,7 +560,7 @@ simple-escape-sequence = "\'"
                        / %s"\t"
                        / %s"\v"
 
-octal-escape-sequence = octal-digit
+octal-escape-sequence = "\" octal-digit
                       / "\" octal-digit octal-digit
                       / "\" octal-digit octal-digit octal-digit
 
@@ -578,7 +572,7 @@ hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
 ; String literals [C:A.1.6] [C:6.4.5]
 
 string-literal =
-    [ encoding-prefix ] double-quote [ s-char-sequence] double-quote
+    [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
 
 encoding-prefix = %s"u8"
                 / %i"u"

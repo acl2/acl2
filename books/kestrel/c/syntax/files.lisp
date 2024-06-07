@@ -26,7 +26,7 @@
      of the content of a translation unit,
      which corresponds to the content of a file
      after it has been subjected to preprocessing
-     (which may add from from @('#include')d headers).
+     (which may add content from @('#include')d headers).
      Recall that for now we only represent C code after preprocessing,
      so the correspondence between translation units and file contents is exact.
      The content of a file can be represented as a list of bytes,
