@@ -626,8 +626,8 @@
 
      ;; or should we always open bvminus to bvplus of bvuminus?
      bvminus-same                             ;tue dec 15 12:03:12 2015
-     bvplus-bvminus-same
-     bvplus-bvminus-same-arg2
+     bvplus-of-bvminus-same-arg2
+     bvplus-of-bvminus-same-arg3
      bvminus-of-0-arg1
      bvminus-of-0-arg2
      bvminus-of-0-arg3
@@ -1125,7 +1125,6 @@
 
     ;; leftrotate32-cases
     leftrotate32alt ;this is what we rewrite to if we want to expand stuff
-;    bvplus-of-bvminus
 ;    unsigned-byte-p-of-bvminus-gen-better
     bvchop-upper-bound-3-constant-version
     slice-bound-3-constant-version ;bozo make a dag version

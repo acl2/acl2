@@ -1945,14 +1945,6 @@
            (unsigned-byte-p n (bvmult m x y)))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm bvplus-of-bvminus-same
-  (implies (and (natp n)
-                (integerp x)
-                (integerp k2))
-           (equal (bvplus n k2 (bvminus n x k2))
-                  (bvchop n x)))
-  :hints (("Goal" :in-theory (enable bvminus bvplus))))
-
 ;bozo analogue for bvand?
 (defthm bitand-of-slice-arg1
   (implies (and (<= low high)
