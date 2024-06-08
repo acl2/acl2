@@ -14192,7 +14192,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev ; *ev-shortcut-okp*
     ev-lst ; *ev-shortcut-okp*
     allegro-allocate-slowly-fn ; sys:gsgc-parameter
-    certify-book-fn ; si::sgc-on
+    certify-book-step-3+
+    certify-book-fn
     translate11-local-def ; special-form-or-op-p
     include-book-fn1
     include-book-fn
