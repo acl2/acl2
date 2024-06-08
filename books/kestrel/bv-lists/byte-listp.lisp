@@ -1,4 +1,4 @@
-; Recognize a true list of (8-bit) bytes
+; Rules about byte-listp.
 ;
 ; Copyright (C) 2020-2024 Kestrel Institute
 ; The definition of byte-listp is in books/kestrel/fty/byte-list.lisp.
@@ -11,21 +11,11 @@
 
 (in-package "ACL2")
 
-;; The purpose of this book is to provide byte-listp without bringing
+;; The purpose of this book is to provide rules about byte-listp without bringing
 ;; in lots of other machinery.
 
+(include-book "byte-listp-def")
 (include-book "kestrel/bv/bytep" :dir :system)
-
-;; Matches what's in books/kestrel/fty
-(defund byte-listp (x)
-  (declare (xargs :guard t
-                  :measure (acl2-count x)))
-  (let ((__function__ 'byte-listp))
-    (declare (ignorable __function__))
-    (if (atom x)
-        (eq x nil)
-      (and (bytep (car x))
-           (byte-listp (cdr x))))))
 
 (defthm byte-listp-forward-to-true-listp
   (implies (byte-listp x)

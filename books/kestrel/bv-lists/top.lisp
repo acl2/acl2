@@ -15,6 +15,7 @@
 (include-book "unsigned-byte-listp")
 (include-book "signed-byte-listp-def")
 
+(include-book "byte-listp-def")
 (include-book "byte-listp")
 
 (include-book "bit-listp")
