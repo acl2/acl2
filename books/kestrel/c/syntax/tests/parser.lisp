@@ -80,3 +80,19 @@ struct bar
  parse-external-declaration-list
  "void encrypt (uint32_t* v) {
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void encrypt () {
+  uint32_t v0=1;
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void foo () {
+  gen_config_t gen_config = {100};
+}")
