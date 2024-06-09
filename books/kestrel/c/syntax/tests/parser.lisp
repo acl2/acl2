@@ -55,6 +55,14 @@ struct bar
 
 (test-parser
  parse-external-declaration-list
+ "int ith(int a[]) {
+ return a[0];
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
