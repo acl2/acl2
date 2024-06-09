@@ -8380,6 +8380,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define parse-specifier-qualifier-list ((declor-may-follow booleanp)
+                                          (tyspec-seenp booleanp)
                                           (pstate parstatep))
     :returns (mv erp
                  (specquals specqual-listp)
@@ -8399,123 +8400,43 @@
        in which case the list of specifiers and qualifiers
        may only be followed by an abstract declarator.")
      (xdoc::p
-      "We parse a specifier or qualifier,
-       which must exist because the list must not be empty.
-       Then we need to decide whether we have reached the end of the list
-       or there may be another specifier or qualifier.
-       If the next token is an identifier,
-       and if a declarator may follow,
-       then we may have the ambiguity discussed in @(tsee tyspec),
-       which we need to handle appropriately (see comments in code)."))
+      "The @('tyspec-seenp') flag has the same purpose
+       as in @(tsee parse-declaration-specifiers):
+       see that function's documentation.
+       Lists of specifiers and qualifiers have the same restrictions
+       as lists of declaration specifiers with respect to
+       type specifiers, which we use to resolve identifier ambiguities."))
     (b* (((reterr) nil (irr-span) (irr-parstate))
          (psize (parsize pstate))
-         ((erp specqual first-span pstate)
+         ((erp specqual first-span pstate) ; specqual
           (parse-specifier/qualifier declor-may-follow pstate))
          ((unless (mbt (<= (parsize pstate) (1- psize))))
           (reterr :impossible))
-         ((erp token span pstate) (read-token pstate)))
+         (tyspec-seenp (or tyspec-seenp
+                           (specqual-case specqual :tyspec)))
+         ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is an identifier,
-       ;; it may be a type specifier (a typedef name),
-       ;; but there are two cases based on whether
-       ;; a declarator may follow or not.
-       ((and token (token-case token :ident))
-        ;; specqual ident
-        (if declor-may-follow
-            ;; If a declarator may follow,
-            ;; the identifier could also be (the start of) a declarator,
-            ;; so we need to read more tokens.
-            (b* (((erp token2 & pstate) (read-token pstate)))
-              (cond
-               ;; If token2 is an open parenthesis,
-               ;; we may be in the ambiguous situation
-               ;; discussed in :DOC TYSPEC,
-               ;; so we try to classify what follows.
-               ((equal token2 (token-punctuator "("))
-                ;; specqual ident (
-                (b* (((erp classification num-tokens pstate)
-                      (classify-partys/declor/ambig pstate)))
-                  (partys/declor/ambig-case
-                   classification
-                   ;; If what follows is a parameter list,
-                   ;; the identifier must be the start of a declarator,
-                   ;; so the list of specifiers and qualifiers has ended,
-                   ;; and we return the singleton list of the
-                   ;; specifier or qualifier parsed above.
-                   :partys ; specqual ident ( partys...
-                   (b* ((pstate ; specqual
-                         (unread-tokens (+ 2 num-tokens) pstate)))
-                     (retok (list specqual) first-span pstate))
-                   ;; If what follows is a declarator,
-                   ;; the identifier must be a type specifier,
-                   ;; so we put it back and call this function recursively,
-                   ;; because there is at least one more
-                   ;; specifier or qualifier in the list.
-                   ;; We combine the resulting list with
-                   ;; the specifier or qualifier parsed above.
-                   :declor ; specqual ident ( declor...
-                   (b* ((pstate ; specqual
-                         (unread-tokens (+ 2 num-tokens) pstate))
-                        ((erp specquals last-span pstate) ; specqual specquals
-                         (parse-specifier-qualifier-list declor-may-follow
-                                                         pstate)))
-                     (retok (cons specqual specquals)
-                            (span-join first-span last-span)
-                            pstate))
-                   ;; If what follows is ambiguous,
-                   ;; we generate an ambiguous type specifier
-                   ;; with the (initial) identifier,
-                   ;; and we return a two-element list
-                   ;; with that one preceded by
-                   ;; the specifier or qualifier parsed above.
-                   :ambig ; specqual ident ( ident1 ( ...
-                   (b* ((pstate ; specqual ident
-                         (unread-tokens (1+ num-tokens) pstate)))
-                     (retok (list specqual
-                                  (specqual-tyspec
-                                   (tyspec-tydef-ambig
-                                    (token-ident->unwrap token))))
-                            (span-join first-span span)
-                            pstate)))))
-               ;; If token2 is an open square bracket,
-               ;; the identifier must be part of an array declarator,
-               ;; so we have reached the end of
-               ;; the list of specifiers and qualifiers
-               ;; and we return the one parsed above.
-               ((equal token2 (token-punctuator "["))
-                ;; specqual ident [
-                (b* ((pstate (unread-tokens 2 pstate))) ; specqual
-                  (retok (list specqual)
-                         first-span
-                         pstate)))
-               ;; If token2 is anything else,
-               ;; the identifier must be a type specifier.
-               ;; We put it back and we recursively call this function,
-               ;; combining the result with
-               ;; the specifier or qualifier parsed above.
-               (t
-                ;; specqual ident other
-                (b* ((pstate ; specqual ident
-                      (if token2 (unread-token pstate) pstate))
-                     (pstate (unread-token pstate)) ; specqual
-                     ((erp specquals last-span pstate) ; specqual specquals
-                      (parse-specifier-qualifier-list declor-may-follow
-                                                      pstate)))
-                  (retok (cons specqual specquals)
-                         (span-join first-span last-span)
-                         pstate)))))
-          ;; If a declarator may not follow
-          ;; the list of specifiers and qualifiers
-          ;; (i.e. if the DECLOR-MAY-FOLLOW flag is NIL),
-          ;; the identifier must be a type specifier.
-          ;; We put it back and recursively call this function,
-          ;; combining the result with
-          ;; the specifier or qualifier parsed above.
-          ;; Recall that we are in this situation here:
-          ;; specqual ident
+       ;; syntactically it may be a type specifier (a typedef name),
+       ;; or it could be (the start of) a declarator,
+       ;; but we use the TYSPEC-SEENP flag to resolve the ambiguity.
+       ((and token (token-case token :ident)) ; specqual ident
+        (if tyspec-seenp
+            ;; If we have already parsed a type specifier,
+            ;; the identifier must be (the start of) a declarator,
+            ;; so we put it back and return the singleton list of
+            ;; the specifier or qualifier that we have parsed above.
+            (b* ((pstate (unread-token pstate))) ; declspec
+              (retok (list specqual) first-span pstate))
+          ;; If we have not already parsed a type specifier,
+          ;; the identifier must be a type specifier,
+          ;; so we put it back and we recursively call this function,
+          ;; combining its results with
+          ;; the specifier or qualifier that we have parsed above.
           (b* ((pstate (unread-token pstate)) ; specqual
                ((erp specquals last-span pstate) ; specqual specquals
                 (parse-specifier-qualifier-list declor-may-follow
+                                                tyspec-seenp
                                                 pstate)))
             (retok (cons specqual specquals)
                    (span-join first-span last-span)
@@ -8529,7 +8450,9 @@
         ;; specqual specqual...
         (b* ((pstate (unread-token pstate)) ; specqual
              ((erp specquals last-span pstate) ; specqual specquals
-              (parse-specifier-qualifier-list declor-may-follow pstate)))
+              (parse-specifier-qualifier-list declor-may-follow
+                                              tyspec-seenp
+                                              pstate)))
           (retok (cons specqual specquals)
                  (span-join first-span last-span)
                  pstate)))
@@ -10090,6 +10013,7 @@
              (psize (parsize pstate))
              ((erp specquals span pstate) ; specquals
               (parse-specifier-qualifier-list t ; declor-may-follow
+                                              nil ; tyspec-seenp
                                               pstate))
              ((unless (mbt (<= (parsize pstate) (1- psize))))
               (reterr :impossible))
@@ -10293,7 +10217,8 @@
     (b* (((reterr) (irr-tyname) (irr-span) (irr-parstate))
          (psize (parsize pstate))
          ((erp specquals span pstate) ; specquals
-          (parse-specifier-qualifier-list nil
+          (parse-specifier-qualifier-list nil ; declor-may-follow
+                                          nil ; tyspec-seenp
                                           pstate))
          ((unless (mbt (<= (parsize pstate) (1- psize))))
           (reterr :impossible))
