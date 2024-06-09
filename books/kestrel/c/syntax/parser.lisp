@@ -8973,7 +8973,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-declaration-specifiers ((pstate parstatep))
+  (define parse-declaration-specifiers ((tyspec-seenp booleanp)
+                                        (pstate parstatep))
     :returns (mv erp
                  (declspecs declspec-listp)
                  (span spanp)
@@ -8986,104 +8987,67 @@
       "We parse a declaration specifier,
        which must exist because the list must not be empty.
        Then we need to decide whether we have reached the end of the list
-       or there may be another declaration specifier."))
+       or there may be another declaration specifier.
+       If the next token is an identifier,
+       it could be a @('typedef') name
+       or (the start of) a declarator.
+       To resolve this ambiguity,
+       we exploit the fact that
+       a list of declaration specifiers must contain
+       at least one type specifier [C:6.7.2/2]
+       and only the multisets listed in [C:6.7.2/2].
+       One of those multisets is a single identifier (a @('typedef') name).
+       So we carry around a flag saying whether
+       we have encountered at least one type specifier in the list or not.
+       Initially the flag is @('nil'),
+       and it gets set when @(tsee parse-declaration-specifier)
+       returns amy type specifier.
+       This flag participates in the decision of whether an identifier
+       must be another declaration specifier (a type specifier)
+       or (the start of) a declarator:
+       if the flag is @('t'),
+       it means that we have already encountered
+       at least one type specifier,
+       and therefore the identifier cannot be another one,
+       and it must be (the start of) a declarator;
+       if the flag is @('nil'),
+       the identifier cannot be (the start of) a declarator,
+       because we have not found a type specifier yet,
+       and thus the identifier must be the missing type specifier."))
     (b* (((reterr) nil (irr-span) (irr-parstate))
          (psize (parsize pstate))
          ((erp declspec first-span pstate) ; declspec
           (parse-declaration-specifier pstate))
          ((unless (mbt (<= (parsize pstate) (1- psize))))
           (reterr :impossible))
-         ((erp token span pstate) (read-token pstate)))
+         (tyspec-seenp (or tyspec-seenp
+                           (declspec-case declspec :tyspec)))
+         ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is an identifier,
-       ;; it may be a type specifier (a typedef name),
-       ;; or it could be a declarator,
-       ;; which could always follow a list of declaration specifiers.
-       ;; So we need to read more tokens.
+       ;; syntactically it may be a type specifier (a typedef name),
+       ;; or it could be (the start of) a declarator,
+       ;; but we use the TYSPEC-SEENP flag to resolve the ambiguity,
+       ;; as explained in the documentation above.
        ((and token (token-case token :ident)) ; declspec ident
-        (b* (((erp token2 & pstate) (read-token pstate)))
-          (cond
-           ;; If token2 is an equal sign, a comma, or a semicolon,
-           ;; the identifier must be a declarator,
-           ;; so we have reached the end of the declaration specifiers.
-           ((or (equal token2 (token-punctuator "=")) ; declspec ident =
-                (equal token2 (token-punctuator ",")) ; declspec ident ,
-                (equal token2 (token-punctuator ";"))) ; declspec ident ;
-            (b* ((pstate (unread-token pstate)) ; declspec ident
-                 (pstate (unread-token pstate))) ; declspec
-              (retok (list declspec) first-span pstate)))
-           ;; If token2 is an open parenthesis,
-           ;; we may be in the ambiguous situation
-           ;; discussed in :DOC TYSPEC,
-           ;; so we try to classify what follows.
-           ((equal token2 (token-punctuator "(")) ; declspec ident (
-            (b* (((erp classification num-tokens pstate)
-                  (classify-partys/declor/ambig pstate)))
-              (partys/declor/ambig-case
-               classification
-               ;; If what follows is a parameter list,
-               ;; the identifier must be the start of a declarator,
-               ;; so the list of declaration specifiers has ended,
-               ;; and we return the singleton list of the
-               ;; declaration specifier parsed above.
-               :partys ; declspec ident ( partys...
-               (b* ((pstate ; declspec
-                     (unread-tokens (+ 2 num-tokens) pstate)))
-                 (retok (list declspec) first-span pstate))
-               ;; If what follows is a declarator,
-               ;; the identifier must be a type specifier,
-               ;; so we put it back and call this function recursively,
-               ;; because there is at least one more
-               ;; declaration specifier in the list.
-               ;; We combine the resulting list with
-               ;; the declaration specifier parsed above.
-               :declor ; declspec ident ( declor...
-               (b* ((pstate ; declspec
-                     (unread-tokens (+ 2 num-tokens) pstate))
-                    ((erp declspecs last-span pstate) ; declspec declspecs
-                     (parse-declaration-specifiers pstate)))
-                 (retok (cons declspec declspecs)
-                        (span-join first-span last-span)
-                        pstate))
-               ;; If what follows is ambiguous,
-               ;; we generate an ambiguous type specifier
-               ;; with the (initial) identifier,
-               ;; and we return a two-element list
-               ;; with that one preceded by
-               ;; the declaration specifier parsed above.
-               :ambig ; declspec ident ( ident1 ( ...
-               (b* ((pstate ; declspec ident
-                     (unread-tokens (1+ num-tokens) pstate)))
-                 (retok (list declspec
-                              (declspec-tyspec
-                               (tyspec-tydef-ambig
-                                (token-ident->unwrap token))))
-                        (span-join first-span span)
-                        pstate)))))
-           ;; If token2 is an open square bracket,
-           ;; the identifier must be part of an array declarator,
-           ;; so we have reached the end of
-           ;; the list of declaraton specifiers
-           ;; and we return the one parsed above.
-           ((equal token2 (token-punctuator "[")) ; declspec ident [
-            (b* ((pstate (unread-tokens 2 pstate))) ; declspec
-              (retok (list declspec)
-                     first-span
-                     pstate)))
-           ;; If token2 is anything else,
-           ;; the identifier must be a type specifier.
-           ;; We put it back and we recursively call this function,
-           ;; combining the result with
-           ;; the declaration specifier parsed above.
-           (t ; declspec ident other
-            (b* ((pstate ; declspec ident
-                  (if token2 (unread-token pstate) pstate))
-                 (pstate (unread-token pstate)) ; declspec
-                 ((erp declspecs last-span pstate) ; declspec declspec
-                  (parse-declaration-specifiers pstate)))
-              (retok (cons declspec declspecs)
-                     (span-join first-span last-span)
-                     pstate))))))
+        (if tyspec-seenp
+            ;; If we have already parsed a type specifier,
+            ;; the identifier must be (the start of) a declarator,
+            ;; so we put it back and return the singleton list of
+            ;; the declaration specifier that we have parsed above.
+            (b* ((pstate (unread-token pstate))) ; declspec
+              (retok (list declspec) first-span pstate))
+          ;; If we have not already parsed a type specifier,
+          ;; the identifier must be a type specifier,
+          ;; so we put it back and we recursively call this function,
+          ;; combining its results with
+          ;; the declaration specifier that we have parsed above.
+          (b* ((pstate (unread-token pstate)) ; declspec
+               ((erp declspecs last-span pstate) ; declspec declspecs
+                (parse-declaration-specifiers tyspec-seenp pstate)))
+            (retok (cons declspec declspecs)
+                   (span-join first-span last-span)
+                   pstate))))
        ;; If token may start a declaration specifier,
        ;; since it is not an identifier (which we have considered above),
        ;; there must be another declaration specifier.
@@ -9092,12 +9056,12 @@
        ((token-declaration-specifier-start-p token) ; declspec declspec...
         (b* ((pstate (unread-token pstate)) ; declspec
              ((erp declspecs last-span pstate) ; declspec declspecs
-              (parse-declaration-specifiers pstate)))
+              (parse-declaration-specifiers tyspec-seenp pstate)))
           (retok (cons declspec declspecs)
                  (span-join first-span last-span)
                  pstate)))
        ;; If token is something else,
-       ;; there cannot be another specifier and qualifier,
+       ;; there cannot be another declaration specifier,
        ;; so we return the singleton list with
        ;; the previous parsed declaratio specifier.
        (t ; declspec other
@@ -10229,7 +10193,7 @@
     (b* (((reterr) (irr-paramdecl) (irr-span) (irr-parstate))
          (psize (parsize pstate))
          ((erp declspecs span pstate) ; declspecs
-          (parse-declaration-specifiers pstate))
+          (parse-declaration-specifiers nil pstate))
          ((unless (mbt (<= (parsize pstate) (1- psize))))
           (reterr :impossible))
          ((erp token & pstate) (read-token pstate)))
@@ -11249,7 +11213,7 @@
      ((token-declaration-specifier-start-p token) ; decspec...
       (b* ((pstate (unread-token pstate)) ;
            ((erp declspecs span pstate) ; declspecs
-            (parse-declaration-specifiers pstate))
+            (parse-declaration-specifiers nil pstate))
            ((erp token2 span2 pstate) (read-token pstate)))
         (cond
          ;; If token2 may start a declarator,
@@ -12113,7 +12077,7 @@
      (t
       (b* ((pstate (if token (unread-token pstate) pstate))
            ((erp declspecs span pstate) ; declspecs
-            (parse-declaration-specifiers pstate))
+            (parse-declaration-specifiers nil pstate))
            ((erp token2 span2 pstate) (read-token pstate)))
         (cond
          ;; If token2 is a semicolon,
