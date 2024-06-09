@@ -9794,12 +9794,21 @@
                                                        :expr expr)
                          (span-join prev-span last-span)
                          pstate))))))
+           ;; If token2 is a closed square bracket,
+           ;; we have an empty array construct.
+           ((equal token2 (token-punctuator "]")) ; [ ]
+            (retok (make-dirdeclor-array :decl prev-dirdeclor
+                                         :tyquals nil
+                                         :expr? nil)
+                   (span-join prev-span span2)
+                   pstate))
            ;; If token2 is anything else, it is an error.
            (t ; [ other
             (reterr-msg :where (position-to-msg (span->start span2))
                         :expected "a type qualifier ~
                                    or an expression ~
-                                   or the 'static' keyword"
+                                   or the 'static' keyword ~
+                                   or a closed square bracket"
                         :found (token-to-msg token2))))))
        ;; If token is an open parenthesis,
        ;; we have a function construct,
