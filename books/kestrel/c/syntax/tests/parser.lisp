@@ -96,3 +96,9 @@ struct bar
  "void foo () {
   gen_config_t gen_config = {100};
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int A [] = {0,1,2,3};")
