@@ -3273,8 +3273,7 @@
 ; See the note following the defun of do$ for an illustration of a bug in an
 ; earlier version of the definition.
 
-(defun do$ (measure-fn alist do-fn finally-fn values
-                       untrans-measure untrans-do-loop$)
+(defun do$ (measure-fn alist do-fn finally-fn values dolia)
   (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
 
 ; I don't actually need to know that alist is an alist.  If I insert it as
@@ -3282,7 +3281,8 @@
 ;                             (alistp alist)
 
                               (apply$-guard do-fn '(nil))
-                              (apply$-guard finally-fn '(nil)))
+                              (apply$-guard finally-fn '(nil))
+                              (weak-dolia-p dolia))
                   :mode :program
                   :measure (lex-fix (apply$ measure-fn (cons alist 'nil)))
                   :well-founded-relation l<
@@ -3310,34 +3310,39 @@
             nil)))
      ((l< (lex-fix (apply$ measure-fn (list new-alist)))
           (lex-fix (apply$ measure-fn (list alist))))
-      (do$ measure-fn new-alist do-fn finally-fn values
-           untrans-measure untrans-do-loop$))
-     (t
-      (prog2$
-       (er hard? 'do$
-           "The measure, ~x0, used in the do loop$ statement~%~Y12~%failed to ~
-            decrease!  Recall that do$ tracks the values of do loop$ ~
-            variables in an alist.  The measure is computed using the values ~
-            in the alist from before and after execution of the body.  We ~
-            cannot print the values of double floats and live stobjs, if any ~
-            are found in the alist, because they are raw Lisp objects, not ~
-            ACL2 objects.  Before execution of the do body the alist ~
-            was~%~Y32.~|After the execution of the do body the alist ~
-            was~%~Y42.~|Before the execution of the body the measure ~
-            was~%~x5.~|After the execution of the body the measure ~
-            was~%~x6.~|~%Logically, in this situation the do$ returns the ~
-            value of a term whose output signature is ~x7, where the value of ~
-            any component of type :df is #d0.0 and the value of any stobj ~
-            component is the last latched value of that stobj."
-           untrans-measure
-           untrans-do-loop$
-           nil
-           (eviscerate-do$-alist alist)
-           (eviscerate-do$-alist new-alist)
-           (apply$ measure-fn (list alist))
-           (apply$ measure-fn (list new-alist))
-           values)
-       (loop$-default-values values new-alist))))))
+      (do$ measure-fn new-alist do-fn finally-fn values dolia))
+     (t (prog2$
+         (let ((all-stobj-names (true-list-fix
+                                 (access dolia dolia :all-stobj-names)))
+               (untrans-measure (access dolia dolia :untrans-measure))
+               (untrans-do-loop$ (access dolia dolia :untrans-do-loop$)))
+           (er hard? 'do$
+               "The measure, ~x0, used in the do loop$ ~
+                statement~%~Y12~%failed to decrease!  Recall that do$ tracks ~
+                the values of do loop$ variables in an alist.  The measure is ~
+                computed using the values in the alist from before and after ~
+                execution of the body.  We cannot print the values of double ~
+                floats and live stobjs, if any are found in the alist, ~
+                because they are raw Lisp objects, not ACL2 objects.  We ~
+                print any double float as its corresponding rational and ~
+                simply print the name of any live stobj (as a ~
+                string).~%~%Before execution of the do body the alist ~
+                was~%~Y32.~|After the execution of the do body the alist ~
+                was~%~Y42.~|Before the execution of the body the measure ~
+                was~%~x5.~|After the execution of the body the measure ~
+                was~%~x6.~|~%Logically, in this situation the do$ returns the ~
+                value of a term whose output signature is ~x7, where the ~
+                value of any component of type :df is #d0.0 and the value of ~
+                any stobj component is the last latched value of that stobj."
+               untrans-measure
+               untrans-do-loop$
+               nil
+               (eviscerate-do$-alist alist all-stobj-names)
+               (eviscerate-do$-alist new-alist all-stobj-names)
+               (apply$ measure-fn (list alist))
+               (apply$ measure-fn (list new-alist))
+               values))
+         (loop$-default-values values new-alist))))))
 )
 
 ; About a bug in DO$ in ACL2 Version_8.5

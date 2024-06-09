@@ -1680,7 +1680,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Designators are defines in @(tsee designor)."))
+      "Designators are defined in @(tsee designor)."))
     :elt-type designor
     :true-listp t
     :elementp-of-nil nil
