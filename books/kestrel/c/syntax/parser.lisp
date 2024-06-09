@@ -11840,15 +11840,73 @@
     (b* (((reterr) (irr-block-item) (irr-span) (irr-parstate))
          ((erp token & pstate) (read-token pstate)))
       (cond
+       ;; If token is an identifier,
+       ;; we may have a declaration or an expression statement,
+       ;; so we read more tokens.
+       ((and token (token-case token :ident)) ; ident
+        (b* (((erp token2 & pstate) (read-token pstate)))
+          (cond
+           ;; If token2 may start a declaration specifier,
+           ;; we cannot have an expression (statement).
+           ;; Note that identifiers are
+           ;; possible starts of declaration specifiers,
+           ;; so this check also covers the case of
+           ;; a second identifier following the first identifier,
+           ;; where the second identifier cannot be a declaration specifier
+           ;; (because, as noted in PARSE-DECLARATION-SPECIFIERS,
+           ;; there may be at most one type specifier
+           ;; in a list of declaration specifiers),
+           ;; and thus the second identifier must be
+           ;; (the start of) a declarator.
+           ((token-declaration-specifier-start-p token2) ; ident declspec...
+            (b* ((pstate (unread-token pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp decl span pstate) (parse-declaration pstate))) ; decl
+              (retok (block-item-decl decl) span pstate)))
+           ;; If token2 is an open parenthesis,
+           ;; things are still ambiguous,
+           ;; because we could have a function call
+           ;; or a declaration with a parenthesized declarator.
+           ;; For now we commit to a function call,
+           ;; which should be much more common,
+           ;; but we should revisit this code and handle things properly.
+           ;; Note that some situations may be inherently ambiguous,
+           ;; which we plan to capture as such,
+           ;; deferring the disambiguation to post-parsing semantic analysis.
+           ((equal token2 (token-punctuator "(")) ; ident (
+            (b* ((pstate (unread-token pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
+              (retok (block-item-stmt stmt) span pstate)))
+           ;; If token2 is a star,
+           ;; things are still ambiguous,
+           ;; because we may have a declaration
+           ;; with a starred declarator,
+           ;; or a multiplication expression.
+           ;; The latter situation seems much less common,
+           ;; so for now we commit to a declaration,
+           ;; but we should revisit this code for more complete treatment.
+           ((equal token2 (token-punctuator "*")) ; ident *
+            (b* ((pstate (unread-token pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp decl span pstate) (parse-declaration pstate))) ; decl
+              (retok (block-item-decl decl) span pstate)))
+           ;; In all other cases,
+           ;; we commit to an expression statement.
+           (t ; ident other
+            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; ident
+                 (pstate (unread-token pstate)) ;
+                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
+              (retok (block-item-stmt stmt) span pstate))))))
        ;; If token may start a declaration specifier,
-       ;; but is not an identifier, we commit to a declaration.
-       ((and (token-declaration-specifier-start-p token) ; declspec...
-             (not (token-case token :ident)))
+       ;; since we have already considered the case of an identifier above,
+       ;; we must have a declaration.
+       ((token-declaration-specifier-start-p token) ; declspec...
         (b* ((pstate (unread-token pstate)) ;
              ((erp decl span pstate) ; decl
               (parse-declaration pstate)))
           (retok (block-item-decl decl) span pstate)))
-       ;; Otherwise, we commit to a statement.
+       ;; Otherwise, we must have a statement.
        (t ; other
         (b* ((pstate (if token (unread-token pstate) pstate)) ;
              ((erp stmt span pstate) ; stmt
