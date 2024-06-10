@@ -12729,7 +12729,7 @@
 ; arity for the style of the loop$ scion.
 
   (case-match term
-    (('do$ & & ('quote obj1) ('quote obj2) & & &)
+    (('do$ & & ('quote obj1) ('quote obj2) & &)
      (and (well-formed-lambda-objectp obj1 wrld)
           (well-formed-lambda-objectp obj2 wrld)
           (equal (length (lambda-object-formals obj1)) 1)

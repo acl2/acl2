@@ -16490,9 +16490,7 @@ its attachment is ignored during proofs"))))
          (mv-let (term ttree)
            (if (and (eq fn 'DO$)
                     (quotep (fargn term 6))
-                    (quotep (fargn term 7))
-                    (unquote (fargn term 6)) ; both non-nil
-                    (unquote (fargn term 7)))
+                    (unquote (fargn term 6)))
 
 ; We rewrite any non-nil quoted irrelevant arg of a DO$ call to 'nil and blame
 ; DO$.  It's a mild stretch to blame this on DO$ since technically it's an
@@ -16504,7 +16502,6 @@ its attachment is ignored during proofs"))))
                                     (fargn term 3)
                                     (fargn term 4)
                                     (fargn term 5)
-                                    *nil*
                                     *nil*))
                    (push-lemma (fn-rune-nume 'do$ nil nil wrld)
                                ttree))

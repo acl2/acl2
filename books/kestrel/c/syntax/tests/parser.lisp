@@ -55,6 +55,14 @@ struct bar
 
 (test-parser
  parse-external-declaration-list
+ "int ith(int a[]) {
+ return a[0];
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
@@ -80,3 +88,25 @@ struct bar
  parse-external-declaration-list
  "void encrypt (uint32_t* v) {
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void encrypt () {
+  uint32_t v0=1;
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void foo () {
+  gen_config_t gen_config = {100};
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int A [] = {0,1,2,3};")
