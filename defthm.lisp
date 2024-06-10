@@ -11270,7 +11270,7 @@
            (t
             (er-let* ((apat (if abstraction-spec
                                 (translate (cadr abstraction-spec)
-                                           '(nil) nil t ctx (w state) state)
+                                           t t t ctx (w state) state)
                                 (value nil)))
                       (condition (if condition-spec
                                      (translate-break-condition
