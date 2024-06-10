@@ -1,7 +1,7 @@
 ; Tools for manipulating conjunctions and disjunctions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -204,9 +204,14 @@
     :flag get-disjuncts-of-term)
   :hints (("Goal" :in-theory (enable get-disjuncts-of-term get-conjuncts-of-term))))
 
-(defun get-conjuncts-of-terms (terms)
+(defund get-conjuncts-of-terms (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
       nil
     (union-equal (get-conjuncts-of-term (first terms))
                  (get-conjuncts-of-terms (rest terms)))))
+
+(defthm pseudo-term-listp-of-get-conjuncts-of-terms
+  (implies (pseudo-term-listp terms)
+           (pseudo-term-listp (get-conjuncts-of-terms terms)))
+  :hints (("Goal" :in-theory (enable get-conjuncts-of-terms))))
