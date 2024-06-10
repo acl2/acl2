@@ -957,6 +957,19 @@
   (:register ())
   :pred stoclaspecp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist stoclaspec-list
+  :short "Fixtype of lists of storage class specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Storage class specifiers are defined in @(tsee stoclaspec)."))
+  :elt-type stoclaspec
+  :true-listp t
+  :elementp-of-nil nil
+  :pred stoclaspec-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum tyqual
