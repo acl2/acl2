@@ -73,26 +73,13 @@
                               nth-of-0
                               nth-when-not-consp-cheap))))
 
-(defthm lookup-equal-forward-to-assoc-equal
-  (implies (lookup-equal key alist)
-           (assoc-equal key alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-;dup
-(defthm assoc-equal-when-lookup-equal-cheap
-  (implies (lookup-equal term var-replacement-alist)
-           (assoc-equal term var-replacement-alist))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
 ;dup
 (defthm dargp-less-than-of-lookup-equal
   (implies (and (lookup-equal term var-replacement-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist)
                                                 dag-len))
            (dargp-less-than (lookup-equal term var-replacement-alist) dag-len))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs))))
 
 (defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
@@ -115,12 +102,6 @@
   :hints (("Goal" :induct t
            :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
-
-;dup
-(defthmd not-equal-of-len-and-1-when-dargp
-  (implies (dargp x)
-           (not (equal (len x) 1)))
-  :hints (("Goal" :in-theory (enable dargp myquotep))))
 
 ;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
