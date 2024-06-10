@@ -14766,7 +14766,7 @@
                   ((LEX-FIX (APPLY$ MEASURE-FN (CONS ALIST 'NIL)))
                    IF MV-LIST RETURN-LAST))
    (((LEXP (LEX-FIX (APPLY$ MEASURE-FN (CONS ALIST 'NIL))))))
-   (DO$ 7)))
+   (DO$ 6)))
  ((JUSTIFICATION (START END)
                  (NIL O-P . O<)
                  ((NFIX (BINARY-+ (BINARY-+ '1 END)

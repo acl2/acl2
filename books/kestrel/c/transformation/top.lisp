@@ -24,4 +24,4 @@
      The transformations may have different purposes.")
    (xdoc::p
     "These transformation tools operate on the abstract syntax
-     defines in @(see c$::syntax-for-tools).")))
+     defined in @(see c$::syntax-for-tools).")))
