@@ -133,3 +133,4 @@
                    ((mv-nth 1 (remove-guard-holders1-lst lst lamp)))))))
 
 (verify-guards remove-guard-holders1)
+

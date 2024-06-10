@@ -21,6 +21,7 @@
 (include-book "write-files")
 (include-book "read-and-parse-files")
 (include-book "print-and-write-files")
+(include-book "langdef-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +98,10 @@
      after successful checking.")
    (xdoc::p
     "We also plan to prove theorems connecting this tool-oriented syntax
-     with the language formalization in @(see c::language).")
+     with the formal language definition in @(see c::language).
+     We already provide a (partial) mapping
+     from the tool-oriented abstract syntax
+     to the abstract syntax of the formal language definition.")
    (xdoc::p
     "All the items described above form a sub-library of our ACL2 library for C,
      in the directory @('[books]/kestrel/c/syntax').
@@ -120,4 +124,5 @@
                     print-files
                     write-files
                     read-and-parse-files
-                    print-and-write-files))
+                    print-and-write-files
+                    mapping-to-language-definition))

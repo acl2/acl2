@@ -957,6 +957,19 @@
   (:register ())
   :pred stoclaspecp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist stoclaspec-list
+  :short "Fixtype of lists of storage class specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Storage class specifiers are defined in @(tsee stoclaspec)."))
+  :elt-type stoclaspec
+  :true-listp t
+  :elementp-of-nil nil
+  :pred stoclaspec-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum tyqual
@@ -1430,7 +1443,7 @@
      (xdoc::p
       "where @('I') is an idenfitier,
        the comma ends a parameter declaration,
-       and the semicolo ends a declaration.
+       and the semicolon ends a declaration.
        Each can be either an atomic type specifier,
        or an atomic type qualifier followed by a parenthesized declarator.
        We parse these as type specifiers, but marked as ambiguous.")
