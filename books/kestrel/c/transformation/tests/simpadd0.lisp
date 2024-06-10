@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *filepath*
+(defconst *old-filepath*
   (filepath "file.c"))
 
 (defconst *old-filedata*
@@ -31,7 +31,7 @@
 
 (defconst *old-fileset*
   (fileset
-   (omap::update *filepath*
+   (omap::update *old-filepath*
                  *old-filedata*
                  nil)))
 
@@ -47,8 +47,11 @@
 (defconst *new-fileset*
   (c$::print-fileset *new-transunits*))
 
+(defconst *new-filepath*
+  (filepath "file.simpadd0.c"))
+
 (defconst *new-filedata*
-  (omap::lookup *filepath*
+  (omap::lookup *new-filepath*
                 (fileset->unwrap *new-fileset*)))
 
 (assert-event
