@@ -49,6 +49,7 @@
                               (byte-list-listp (strip-cdrs alist))
                               (true-listp acc)
                               (natp count))
+                  :guard-hints (("Goal" :in-theory (enable byte-listp)))
                   :stobjs constant-pool))
   (if (endp alist)
       (mv nil (reverse acc) constant-pool count)
