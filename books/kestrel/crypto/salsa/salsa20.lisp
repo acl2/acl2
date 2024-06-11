@@ -30,6 +30,20 @@
 
 (local (in-theory (disable nth)))
 
+(local
+  (defthm byte-listp-forward-to-all-integerp
+    (implies (byte-listp x)
+             (acl2::all-integerp x))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable byte-listp)))))
+
+(local
+  (defthm byte-listp-forward-to-all-unsigned-byte-p
+    (implies (byte-listp x)
+             (acl2::all-unsigned-byte-p 8 x))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable byte-listp)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize a word (32-bits, according to the spec)
