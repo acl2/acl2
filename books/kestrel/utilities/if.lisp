@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
+
 ;; Some simple rewrite rules about IF.  These may be needed by Axe if not by
 ;; ACL2.  I suppose some might help during backchaining, but most of this
 ;; knowledge may be built into ACL2, and the ACL2 rewriter usually handles IF
@@ -19,6 +21,10 @@
 (defthmd if-same-branches
   (equal (if test x x)
          x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Are these ever needed?
 
 (defthmd if-of-t
   (equal (if t thenpart elsepart)
@@ -34,24 +40,57 @@
   (equal (if nil thenpart elsepart)
          elsepart))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd if-of-not
   (equal (if (not test) x y)
          (if test y x)))
 
+(defthmd if-of-bool-fix
+  (equal (if (bool-fix test) x y)
+         (if test x y))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd if-of-t-and-nil-when-booleanp
+  (implies (booleanp test)
+           (equal (if test t nil)
+                  test)))
+
+(defthmd if-of-t-and-nil-becomes-bool-fix
+  (equal (if test t nil)
+         (bool-fix test))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
+
+;rename
 (defthmd if-nil-t
   (equal (if test nil t)
          (not test)))
 
-(defthmd if-of-t-and-nil-when-booleanp
-  (implies (booleanp x)
-           (equal (if x t nil)
-                  x)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;rename if-same-arg2-when-booleanp
 (defthm if-x-x-y-when-booleanp
-  (implies (and (syntaxp (not (quotep x))) ; avoid loops
-                (booleanp x))
-           (equal (if x x y)
-                  (if x t y))))
+  (implies (and (syntaxp (not (quotep test))) ; avoid loops
+                (booleanp test))
+           (equal (if test test else)
+                  (if test t else))))
+
+;rename if-same-arg3
+(defthm if-x-y-x
+  (equal (if test then test)
+         (if test then nil)))
+
+(defthmd if-of-not-same-arg2
+  (equal (if test (not test) else)
+         (if test nil else)))
+
+(defthm if-of-not-same-arg3
+  (equal (if test then (not test))
+         (if test then t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; When rewriting an IF in an IFF context (e.g., when it appears in the test of
 ;; another IF), replace (if test t nil) with just the test.  This was needed
@@ -59,8 +98,6 @@
 (defthm if-of-t-and-nil-under-iff
   (iff (if test t nil)
        test))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,6 +129,18 @@
                       (equal z x)
                     (equal z y)))))
 
+;; (defthm equal-of-constant-and-if
+;;   (implies (syntaxp (quotep k))
+;;            (equal (equal k (if x y z))
+;;                   (if x (equal k y) (equal k z)))))
+
+;; (defthm equal-of-if-and-constant
+;;   (implies (syntaxp (quotep k))
+;;            (equal (equal (if x y z) k)
+;;                   (if x (equal y k) (equal z k)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Enable, for backchaining?  Will it even fire?
 (defthmd not-of-if
   (equal (not (if test tp ep))
@@ -111,10 +160,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;gen the cons?
 (defthmd if-of-if-of-cons-arg1-arg2
   (equal (if (if x (cons a b) y) z w)
          (if (if x t y) z w)))
 
+;gen the cons?
 (defthmd if-of-if-of-cons-arg1-arg3
   (equal (if (if x y (cons a b)) z w)
          (if (if x y t) z w)))
@@ -126,11 +177,6 @@
 ;;   (equal (if (if test (cons a b) nil) tp ep)
 ;;          (if test tp ep)))
 
-(defthmd if-t-nil-when-booleanp
-  (implies (booleanp test)
-           (equal (if test t nil)
-                  test)))
-
 (defthmd if-of-if-same-arg2
   (equal (if test (if test tp ep) ep2)
          (if test tp ep2)))
@@ -138,3 +184,15 @@
 (defthmd if-of-if-same-arg3
   (equal (if test x (if test y z))
          (if test x z)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename?
+(defthmd if-thm
+  (equal (if (if test test t) then else)
+         then))
+
+;or go via bool-fix
+(defthmd if-of-if-t-nil
+  (equal (if (if test t nil) foo bar)
+         (if test foo bar)))
