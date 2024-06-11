@@ -28,15 +28,14 @@
      after it has been subjected to preprocessing
      (which may add content from @('#include')d headers).
      Recall that for now we only represent C code after preprocessing,
-     so the correspondence between translation units and file contents is exact.
+     so the correspondence between translation units and file contents
+     is exact for now (but we will relax this eventually).
      The content of a file can be represented as a list of bytes,
      which must be parsed into a translation unit.")
    (xdoc::p
     "Often a C program, or a C library, or other meaningful C code component,
-     consists of multiple translation units,
-     i.e. to multiple files.
-     This is even more the case if we consider headers, besides source files,
-     as we plan to do in future extensions.
+     consists of multiple translation units, more in general multiple files,
+     which in the future will include both headers and source files.
      So here we introduce a notion of a file set as a collection of files,
      purported to contain, together,
      a C program, or C library, or other meaningful C component."))
