@@ -65,7 +65,7 @@
       containing a file set (see @(tsee fileset))
       with the content of the given files.
       Optionally, this macro can use the @(tsee preprocess-files) tool
-      to preprocess the given files prior to generate the constant,
+      to preprocess the given files prior to generating the constant,
       so that the constant will contain the preprocessed files.")
 
     (xdoc::p
@@ -77,9 +77,9 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(read-files :const      ...  ; no default"
-     "            :files      ...  ; no default"
-     "            :preprocess ...  ; default nil"
+     "(read-files :const        ...  ; no default"
+     "            :files        ...  ; no default"
+     "            :preprocessor ...  ; default \"cpp\""
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,15 +108,14 @@
       "This input to this macro is not evaluated."))
 
     (xdoc::desc
-     "@(':preprocess') &mdash; default @('nil')"
+     "@(':preprocessor') &mdash; default @('\"cpp\"')"
      (xdoc::p
-      "Flag saying whether the files must be preprocessed or not.")
+      "Flag indicating the preprocessor to use, if any.")
      (xdoc::p
-      "This must be @('t') or @('nil').")
+      "This must be @('nil') or a @(tsee stringp).")
      (xdoc::p
-      "If this is @('t'), the @(tsee preprocess-file) tool
-       is called on the files read at the file paths,
-       obtaining a file set that is stored in the generated named constant.")))
+      "If this is a @(tsee stringp), the @(tsee preprocess-file) tool is called
+       on the files read at the file paths using the indicated preprocesser.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +142,7 @@
   :short "Keyword options accepted by @(tsee read-files)."
   (list :const
         :files
-        :preprocess)
+        :preprocessor)
   ///
   (assert-event (keyword-listp *read-files-allowed-options*))
   (assert-event (no-duplicatesp-eq *read-files-allowed-options*)))
@@ -161,7 +160,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-files-process-inputs ((args true-listp))
-  :returns (mv erp (const symbolp) (paths filepath-setp) (preprocess booleanp))
+  :returns (mv erp
+               (const symbolp)
+               (paths filepath-setp)
+               (preprocessor (or (not preprocessor)
+                                 (stringp preprocessor))
+                             :rule-classes (:rewrite :type-prescription)))
   :short "Process the inputs."
   (b* (((reterr) nil nil nil)
        ;; Check and obtain options.
@@ -203,15 +207,16 @@
                      files)))
        (paths (read-files-strings-to-paths files))
        ;; Process :PREPROCESS input.
-       (preprocess-option (assoc-eq :preprocess options))
-       (preprocess (if preprocess-option
-                       (cdr preprocess-option)
-                     nil))
-       ((unless (booleanp preprocess))
-        (reterr (msg "The :PREPROCESS input must be T or NIL, ~
+       (preprocessor-option (assoc-eq :preprocessor options))
+       (preprocessor (if preprocessor-option
+                         (cdr preprocessor-option)
+                       "cpp"))
+       ((unless (or (not preprocessor)
+                    (stringp preprocessor)))
+        (reterr (msg "The :PREPROCESSOR input must be a STRINGP or NIL, ~
                       but it is ~x0 instead."
-                     preprocess))))
-    (retok const paths preprocess))
+                     preprocessor))))
+    (retok const paths preprocessor))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -245,7 +250,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-files-read-and-preprocess ((paths filepath-setp) state)
+(define read-files-read-and-preprocess ((paths filepath-setp)
+                                        (preprocessor stringp)
+                                        state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read and preprocess a file set from a given set of paths."
   :long
@@ -257,7 +264,7 @@
    (xdoc::p
     "We tell the preprocessing tool not to save any files."))
   (b* (((reterr) (fileset nil) state)
-       ((mv erp fileset state) (preprocess-files paths))
+       ((mv erp fileset state) (preprocess-files paths :preprocessor preprocessor))
        ((when erp)
         (reterr (msg "Preprocessing of ~x0 failed." paths))))
     (retok fileset state)))
@@ -266,22 +273,23 @@
 
 (define read-files-gen-defconst ((const symbolp)
                                  (paths filepath-setp)
-                                 (preprocess booleanp)
+                                 (preprocessor (or (not preprocessor)
+                                                   (stringp preprocessor)))
                                  state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Generate the named constant event."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the @(':proprocess') flag,
+    "Based on the @(':proprocessor') flag,
      either we read the files directly,
      or we read and preprocess them.
      We put the file set into a quoted constant
      to define the named constant."))
   (b* (((reterr) '(_) state)
        ((erp fileset state)
-        (if preprocess
-            (read-files-read-and-preprocess paths state)
+        (if preprocessor
+            (read-files-read-and-preprocess paths preprocessor state)
           (read-files-read paths state)))
        (event `(defconst ,const ',fileset)))
     (retok event state)))
@@ -296,10 +304,10 @@
                state)
   :short "Process the inputs and generate the constant event."
   (b* (((reterr) '(_) state)
-       ((erp const paths preprocess)
+       ((erp const paths preprocessor)
         (read-files-process-inputs args))
        ((erp event state)
-        (read-files-gen-defconst const paths preprocess state)))
+        (read-files-gen-defconst const paths preprocessor state)))
     (retok event state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
