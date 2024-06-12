@@ -13,6 +13,7 @@
 (include-book "simpadd0")
 
 (include-book "../syntax/langdef-mapping")
+(include-book "../syntax/abstract-syntax-operations")
 
 (include-book "../atc/symbolic-execution-rules/top")
 
@@ -23,31 +24,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines declor/dirdeclor-ident
-
-  (define declor-ident ((declor declorp))
-    :returns (ident c$::identp)
-    (dirdeclor-ident (c$::declor->decl declor))
-    :measure (declor-count declor))
-
-  (define dirdeclor-ident ((dirdeclor dirdeclorp))
-    :returns (ident c$::identp)
-    (dirdeclor-case
-     dirdeclor
-     :ident dirdeclor.unwrap
-     :paren (declor-ident dirdeclor.unwrap)
-     :array (dirdeclor-ident dirdeclor.decl)
-     :array-static1 (dirdeclor-ident dirdeclor.decl)
-     :array-static2 (dirdeclor-ident dirdeclor.decl)
-     :array-star (dirdeclor-ident dirdeclor.decl)
-     :function-params (dirdeclor-ident dirdeclor.decl)
-     :function-names (dirdeclor-ident dirdeclor.decl))
-    :measure (dirdeclor-count dirdeclor))
-
-  :hints (("Goal" :in-theory (enable o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,7 +108,7 @@
                                                    (cdr extdecls)))
           (fundef (c$::extdecl-fundef->unwrap extdecl))
           (declor (c$::fundef->declor fundef))
-          (fun (declor-ident declor))
+          (fun (c$::declor->ident declor))
           (event (simpadd0-gen-proof-for-fun term-old
                                              term-new
                                              fun))
