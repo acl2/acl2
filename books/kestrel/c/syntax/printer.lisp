@@ -1675,10 +1675,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "A constant expression is a synonym of an expression in the grammar,
-       so it is always printed with the minimum priority
-       (that of a top-level expression)."))
-    (print-expr (const-expr->unwrap cexpr) (expr-priority-expr) pstate)
+      "A constant expression is
+       a synonym of a conditional expression in the grammar,
+       so we use that as priority."))
+    (print-expr (const-expr->unwrap cexpr) (expr-priority-cond) pstate)
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1743,6 +1743,9 @@
                   (pstate (print-tyname tyspec.type pstate))
                   (pstate (print-astring ")" pstate)))
                pstate)
+     ;; For now we allow an ambiguous _Atomic,
+     ;; even though it should disappear during static semantic elaboration,
+     ;; and printing is normally done after that elaboration.
      :atomic-ambig (b* ((pstate (print-astring "_Atomic(" pstate))
                         (pstate (print-ident tyspec.ident pstate))
                         (pstate (print-astring ")" pstate)))
@@ -1757,6 +1760,9 @@
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
      :tydef (print-ident tyspec.name pstate)
+     ;; For now we allow an ambiguous typedef,
+     ;; even though it should disappear during static semantic elaboration,
+     ;; and printing is normally done after that elaboration.
      :tydef-ambig (print-ident tyspec.ident pstate))
     :measure (tyspec-count tyspec))
 
@@ -1799,6 +1805,9 @@
                   alignspec
                   :alignas-type (print-tyname alignspec.type pstate)
                   :alignas-expr (print-const-expr alignspec.arg pstate)
+                  ;; For now we allow an ambiguous _Alignas,
+                  ;; even though it should disappear during elaboration,
+                  ;; which is normally done before printing.
                   :alignas-ambig (print-ident alignspec.ident pstate)))
          (pstate (print-astring ")" pstate)))
       pstate)
