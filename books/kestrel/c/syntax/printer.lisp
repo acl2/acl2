@@ -1535,6 +1535,9 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous sizeof expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :sizeof-ambig
            (b* ((pstate (print-astring "sizeof(" pstate))
                 (pstate (print-ident expr.ident pstate))
@@ -1572,6 +1575,9 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/mul expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/mul-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1580,6 +1586,9 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/add expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/add-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1592,6 +1601,9 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/sub expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/sub-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1604,6 +1616,9 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/and expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/and-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
