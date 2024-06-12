@@ -39,4 +39,5 @@
 ;; the stobj) to the more standard function BYTE-LISTP:
 (defthm bytesp-becomes-byte-listp
   (equal (bytesp x)
-         (byte-listp x)))
+         (byte-listp x))
+  :hints (("Goal" :in-theory (enable byte-listp))))

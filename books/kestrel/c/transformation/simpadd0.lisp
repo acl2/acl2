@@ -12,6 +12,10 @@
 
 (include-book "../syntax/abstract-syntax")
 
+(include-book "std/lists/index-of" :dir :system)
+
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -877,15 +881,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-filepath ((path filepathp))
+  :returns (new-path filepathp)
+  :short "Transform a file path."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We only support file paths that consist of strings.
+     We transform the path by interposing @('.simpadd0')
+     just before the rightmost dot of the file extension, if any;
+     if there is no file extension, we just add @('.simpadd0') at the end.
+     So for instance a path @('path/to/file.c')
+     becomes @('path/to/file.simpadd0.c').")
+   (xdoc::p
+    "Note that this kind of file path transformations
+     supports chaining of transformations,
+     e.g. @('path/to/file.xform1.xform2.xform3.c')."))
+  (b* ((string (filepath->unwrap path))
+       ((unless (stringp string))
+        (raise "Misusage error: file path ~x0 is not a string." string)
+        (filepath "irrelevant"))
+       (chars (str::explode string))
+       (dot-pos-in-rev (index-of #\. (rev chars)))
+       ((when (not dot-pos-in-rev))
+        (filepath (str::implode (append chars
+                                        (str::explode ".simpadd0")))))
+       (last-dot-pos (- (len chars) dot-pos-in-rev))
+       (new-chars (append (take last-dot-pos chars)
+                          (str::explode "simpadd0.")
+                          (nthcdr last-dot-pos chars)))
+       (new-string (str::implode new-chars)))
+    (filepath new-string))
+  :guard-hints
+  (("Goal"
+    :use (:instance acl2::index-of-<-len
+                    (k #\.)
+                    (x (rev (str::explode (filepath->unwrap path)))))
+    :in-theory (e/d (nfix) (acl2::index-of-<-len))))
+  :hooks (:fix)
+  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp))
   :returns (new-map filepath-transunit-mapp
                     :hyp (filepath-transunit-mapp map))
   :short "Transform a map from file paths to translation units."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We transform both the file paths and the translation units."))
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map))
+       (new-path (simpadd0-filepath path))
        (new-tunit (simpadd0-transunit tunit))
        (new-map (simpadd0-filepath-transunit-map (omap::tail map))))
-    (omap::update path new-tunit new-map))
+    (omap::update new-path new-tunit new-map))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

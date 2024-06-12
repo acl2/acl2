@@ -1,6 +1,6 @@
-; Recognize a true list of bytes
+; Rules about byte-listp.
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ; The definition of byte-listp is in books/kestrel/fty/byte-list.lisp.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,22 +11,11 @@
 
 (in-package "ACL2")
 
-;; The purpose of this book is to provide byte-listp without bringing
+;; The purpose of this book is to provide rules about byte-listp without bringing
 ;; in lots of other machinery.
 
+(include-book "byte-listp-def")
 (include-book "kestrel/bv/bytep" :dir :system)
-
-;; Matches what's in books/kestrel/fty
-;; TODO: Disable
-(defun byte-listp (x)
-  (declare (xargs :guard t
-                  :measure (acl2-count x)))
-  (let ((__function__ 'byte-listp))
-    (declare (ignorable __function__))
-    (if (atom x)
-        (eq x nil)
-      (and (bytep (car x))
-           (byte-listp (cdr x))))))
 
 (defthm byte-listp-forward-to-true-listp
   (implies (byte-listp x)
@@ -53,3 +42,14 @@
          (and (byte-listp (true-list-fix x))
               (byte-listp y)))
   :hints (("Goal" :in-theory (enable byte-listp revappend))))
+
+(defthm byte-listp-of-cdr
+  (implies (byte-listp x)
+           (byte-listp (cdr x)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
+
+(defthm byte-listp-of-cons
+  (equal (byte-listp (cons a x))
+         (and (bytep a)
+              (byte-listp x)))
+  :hints (("Goal" :in-theory (enable byte-listp))))

@@ -2046,11 +2046,17 @@
      :function-params
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
           (pstate (print-astring "(" pstate))
-          ((unless dirdeclor.params)
-           (raise "Misusage error: ~
-                   empty parameters.")
-           pstate)
-          (pstate (print-paramdecl-list dirdeclor.params pstate))
+          ;; We relax this check for now, but we will re-introduce it
+          ;; after we add an elaboration of the abstract syntax
+          ;; that turns empty :function-params into empty :function-names,
+          ;; consistently with the grammar:
+          ;; ((unless dirdeclor.params)
+          ;;  (raise "Misusage error: ~
+          ;;          empty parameters.")
+          ;;  pstate)
+          (pstate (if dirdeclor.params
+                      (print-paramdecl-list dirdeclor.params pstate)
+                    pstate))
           (pstate (if dirdeclor.ellipsis
                       (print-astring ", ..." pstate)
                     pstate))
