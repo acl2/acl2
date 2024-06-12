@@ -970,11 +970,13 @@
     "We ensure that there is at least one character or escape sequence."))
   (b* (((cconst cconst) cconst)
        (pstate (print-cprefix-option cconst.prefix pstate))
+       (pstate (print-astring "'" pstate))
        ((unless cconst.cchars)
         (raise "Misusage error: ~
                 the character constant has no characters or escape sequences.")
         pstate)
-       (pstate (print-c-char-list cconst.cchars pstate)))
+       (pstate (print-c-char-list cconst.cchars pstate))
+       (pstate (print-astring "'" pstate)))
     pstate)
   :hooks (:fix))
 
