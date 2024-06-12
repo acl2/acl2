@@ -1066,10 +1066,12 @@
        (pstate (if stringlit.prefix
                    (print-eprefix stringlit.prefix pstate)
                  pstate))
+       (pstate (print-astring "\"" pstate))
        ((unless stringlit.schars)
         (raise "Misusage error: ~
                 the character constant has no characters or escape sequences.")
-        (pristate-fix pstate))
+        pstate)
+       (pstate (print-astring "\"" pstate))
        (pstate (print-s-char-list stringlit.schars pstate)))
     pstate)
   :hooks (:fix))
