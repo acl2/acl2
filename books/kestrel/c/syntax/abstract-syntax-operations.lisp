@@ -571,6 +571,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defines declor->ident
+  :short "Identifier of a declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declarator always contains an identifier at its core.
+     This function returns it,
+     together with a companion function that operates on direct declarators,
+     which is mutually recursive with the one for declarators."))
+
+  (define declor->ident ((declor declorp))
+    :returns (ident identp)
+    (dirdeclor->ident (declor->decl declor))
+    :measure (declor-count declor))
+
+  (define dirdeclor->ident ((dirdeclor dirdeclorp))
+    :returns (ident identp)
+    (dirdeclor-case
+     dirdeclor
+     :ident dirdeclor.unwrap
+     :paren (declor->ident dirdeclor.unwrap)
+     :array (dirdeclor->ident dirdeclor.decl)
+     :array-static1 (dirdeclor->ident dirdeclor.decl)
+     :array-static2 (dirdeclor->ident dirdeclor.decl)
+     :array-star (dirdeclor->ident dirdeclor.decl)
+     :function-params (dirdeclor->ident dirdeclor.decl)
+     :function-names (dirdeclor->ident dirdeclor.decl))
+    :measure (dirdeclor-count dirdeclor))
+
+  :hints (("Goal" :in-theory (enable o< o-finp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dirabsdeclor-decl?-nil-p ((dirabsdeclor dirabsdeclorp))
   :returns (yes/no booleanp)
   :short "Check if a direct abstract declarator has
