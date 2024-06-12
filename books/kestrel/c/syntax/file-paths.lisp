@@ -21,8 +21,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is used both for the concrete syntax notion of file sets
-     and for the abstract syntax notion of ensembles of translation units.
-     Both entities are finite maps from file paths to something,
+     and for the abstract syntax notion of translation unit ensembles.
+     Both entities are finite maps whose keys are file paths,
      so the notion of file path is common to the two."))
   :order-subtopics t
   :default-parent t)
