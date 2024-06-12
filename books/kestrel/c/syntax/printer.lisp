@@ -594,6 +594,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-sign-option ((sign? sign-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional sign."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no sign, we print nothing."))
+  (sign-option-case
+   sign?
+   :some (print-sign sign?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-dec-expo-prefix ((prefix dec-expo-prefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a decimal exponent prefix."
@@ -625,13 +640,11 @@
     "We ensure that there is at least one digit."))
   (b* (((dec-expo expo) expo)
        (pstate (print-dec-expo-prefix expo.prefix pstate))
-       (pstate (if expo.sign?
-                   (print-sign expo.sign? pstate)
-                 pstate))
+       (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~
                 the decimal exponent has no digits.")
-        (pristate-fix pstate))
+        pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
   :hooks (:fix))
@@ -647,13 +660,11 @@
     "We ensure that there is at least one digit."))
   (b* (((bin-expo expo) expo)
        (pstate (print-bin-expo-prefix expo.prefix pstate))
-       (pstate (if expo.sign?
-                   (print-sign expo.sign? pstate)
-                 pstate))
+       (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~
                 the binary exponent has no digits.")
-        (pristate-fix pstate))
+        pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
   :hooks (:fix))
