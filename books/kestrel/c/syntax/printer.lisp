@@ -514,14 +514,14 @@
      first we print the leading zeros.
      We convert the value, which is a non-negative integer,
      into octal digits, using an auxiliary function from the library
-     that turns 0 into @('nil'), which is what we wnat,
+     that turns 0 into @('nil'), which is what we want,
      because the octal constant @('0') is represented as
      one leading zero and value zero.")
    (xdoc::p
     "For a hexadecimal constant,
      first we print the prefix.
      We ensure that there is at least one digit
-     (otherwise it is not a valid hexadecimal constant),
+     (otherwise it is not a syntactically valid hexadecimal constant),
      and we print them."))
   (dec/oct/hex-const-case
    dohconst
@@ -557,13 +557,28 @@
 
 (define print-fsuffix ((fsuffix fsuffixp) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print a floaring suffix."
+  :short "Print a floating suffix."
   (fsuffix-case
    fsuffix
    :locase-f (print-astring "f" pstate)
    :upcase-f (print-astring "F" pstate)
    :locase-l (print-astring "l" pstate)
    :upcase-l (print-astring "L" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-fsuffix-option ((fsuffix? fsuffix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional floating prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (fsuffix-option-case
+   fsuffix?
+   :some (print-fsuffix fsuffix?.val pstate)
+   :none (pristate-fix pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -745,14 +760,10 @@
   (fconst-case
    fconst
    :dec (b* ((pstate (print-dec-core-fconst fconst.core pstate))
-             (pstate (if fconst.suffix
-                         (print-fsuffix fconst.suffix pstate)
-                       pstate)))
+             (pstate (print-fsuffix-option fconst.suffix pstate)))
           pstate)
    :hex (b* ((pstate (print-hex-core-fconst fconst.core pstate))
-             (pstate (if fconst.suffix
-                         (print-fsuffix fconst.suffix pstate)
-                       pstate)))
+             (pstate (print-fsuffix-option fconst.suffix pstate)))
           pstate))
   :hooks (:fix))
 
