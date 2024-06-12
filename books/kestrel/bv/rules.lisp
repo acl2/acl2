@@ -6500,3 +6500,7 @@
                 (natp pow))
            (equal (bvplus size x (bvmult smallsize pow y))
                   (bvplus smallsize x (bvmult smallsize pow y)))))
+
+(defthmd bvif-of-if-becomes-bvif-of-boolif-arg2
+  (equal (bvif size (if test tp ep) tp2 ep2)
+         (bvif size (boolif test tp ep) tp2 ep2)))
