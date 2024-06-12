@@ -1524,9 +1524,10 @@
                               (print-astring " " pstate)
                             pstate))
                   (arg-priority (if (or (unop-case expr.op :preinc)
-                                        (unop-case expr.op :predec))
-                                    (expr-priority-cast)
-                                  (expr-priority-unary)))
+                                        (unop-case expr.op :predec)
+                                        (unop-case expr.op :sizeof))
+                                    (expr-priority-unary)
+                                  (expr-priority-cast)))
                   (pstate (print-expr expr.arg arg-priority pstate)))
                pstate))
            :sizeof
