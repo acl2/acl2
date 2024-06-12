@@ -364,6 +364,246 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum expr-priority
+  :short "Fixtype of expression priorities."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar defines different kinds of expressions
+     in order to specify their relative priorities.
+     This fixtype corresponds to those kinds/priorities of expressions,
+     straighforwardly derived from the grammar.
+     The @(':expr') case is for top-level expressions,
+     i.e. the rule name @('expression') in the ABNF grammar."))
+  (:primary ())
+  (:postfix ())
+  (:unary ())
+  (:cast ())
+  (:mul ())
+  (:add ())
+  (:sh ())
+  (:rel ())
+  (:eq ())
+  (:and ())
+  (:xor ())
+  (:ior ())
+  (:logand ())
+  (:logor ())
+  (:cond ())
+  (:asg ())
+  (:expr ())
+  :pred expr-priorityp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr->priority ((expr exprp))
+  :returns (priority expr-priorityp)
+  :short "Priorities of expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each expression in the abstract syntax
+     has an associated priority (see @(tsee expr-priority)),
+     straightforwardly according to the grammar.")
+   (xdoc::p
+    "An ambiguous @('sizeof') has the same priority as an unambiguous one.
+     Ambiguous cast/binary expressions are given
+     the priority of the corresponding binary expression."))
+  (expr-case
+   expr
+   :ident (expr-priority-primary)
+   :const (expr-priority-primary)
+   :string (expr-priority-primary)
+   :paren (expr-priority-primary)
+   :gensel (expr-priority-primary)
+   :arrsub (expr-priority-postfix)
+   :funcall (expr-priority-postfix)
+   :member (expr-priority-postfix)
+   :memberp (expr-priority-postfix)
+   :complit (expr-priority-postfix)
+   :unary (expr-priority-unary)
+   :sizeof (expr-priority-unary)
+   :sizeof-ambig (expr-priority-unary)
+   :alignof (expr-priority-unary)
+   :cast (expr-priority-cast)
+   :binary (binop-case
+            expr.op
+            :mul (expr-priority-mul)
+            :div (expr-priority-mul)
+            :rem (expr-priority-mul)
+            :add (expr-priority-add)
+            :sub (expr-priority-add)
+            :shl (expr-priority-sh)
+            :shr (expr-priority-sh)
+            :lt (expr-priority-rel)
+            :gt (expr-priority-rel)
+            :le (expr-priority-rel)
+            :ge (expr-priority-rel)
+            :eq (expr-priority-eq)
+            :ne (expr-priority-eq)
+            :bitand (expr-priority-and)
+            :bitxor (expr-priority-xor)
+            :bitior (expr-priority-ior)
+            :logand (expr-priority-logand)
+            :logor (expr-priority-logor)
+            :asg (expr-priority-asg)
+            :asg-mul (expr-priority-asg)
+            :asg-div (expr-priority-asg)
+            :asg-rem (expr-priority-asg)
+            :asg-add (expr-priority-asg)
+            :asg-sub (expr-priority-asg)
+            :asg-shl (expr-priority-asg)
+            :asg-shr (expr-priority-asg)
+            :asg-and (expr-priority-asg)
+            :asg-xor (expr-priority-asg)
+            :asg-ior (expr-priority-asg))
+   :cond (expr-priority-cond)
+   :comma (expr-priority-expr)
+   :cast/mul-ambig (expr-priority-mul)
+   :cast/add-ambig (expr-priority-add)
+   :cast/sub-ambig (expr-priority-add)
+   :cast/and-ambig (expr-priority-and))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority-<= ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We assign a unique numeric index to each priority,
+     and we compare the numbers.
+     The higher the priority, the higher the number.
+     The exact numbers do not matter;
+     only their relative magnitude does.")
+   (xdoc::p
+    "This total order on expression priorities is
+     the reflexive and transitive closure of the binary relation
+     that consists of the pairs @('priority1 < priority2') such that
+     there is a grammar (sub)rule <i>nonterm1: nonterm2</i>
+     saying that the nonterminal <i>nonterm1</i>
+     corresponding to @('priority1')
+     may expand to the nonterminal <i>nonterm2</i>
+     corresponding to @('priority2').
+     For instance, @('priority2') is the priority of multiplicative expressions
+     and @('priority1') is the priority of additive expressions,
+     because there is a (sub)rule
+     <i>additive-expression: multiplicative-expression</i> in the grammar.
+     (Here by `subrule' we mean a rule not necessarily in the grammar
+     but obtainable by selecting just some of the alternatives in the definiens
+     that are on different lines in [C].)
+     The nonterminal <i>additive-expression</i> also has other alternatives,
+     but those are not single nonterminals;
+     here we are only concerned with single nonterminals as rule definientia."))
+  (<= (expr-priority-number prio1)
+      (expr-priority-number prio2))
+  :hooks (:fix)
+
+  :prepwork
+  ((define expr-priority-number ((prio expr-priorityp))
+     :returns (number natp)
+     :parents nil
+     (expr-priority-case
+      prio
+      :primary 16
+      :postfix 15
+      :unary 14
+      :cast 13
+      :mul 12
+      :add 11
+      :sh 10
+      :rel 9
+      :eq 8
+      :and 7
+      :xor 6
+      :ior 5
+      :logand 4
+      :logor 3
+      :cond 2
+      :asg 1
+      :expr 0)
+     :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define binop-expected-priorities ((op binopp))
+  :returns (mv (left-prio expr-priorityp)
+               (right-prio expr-priorityp))
+  :short "Expected expression priorities
+          of the operands of the binary operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are straightforwardly based on the grammar rules."))
+  (binop-case op
+              :mul (mv (expr-priority-mul) (expr-priority-cast))
+              :div (mv (expr-priority-mul) (expr-priority-cast))
+              :rem (mv (expr-priority-mul) (expr-priority-cast))
+              :add (mv (expr-priority-add) (expr-priority-mul))
+              :sub (mv (expr-priority-add) (expr-priority-mul))
+              :shl (mv (expr-priority-sh) (expr-priority-add))
+              :shr (mv (expr-priority-sh) (expr-priority-add))
+              :lt (mv (expr-priority-rel) (expr-priority-sh))
+              :gt (mv (expr-priority-rel) (expr-priority-sh))
+              :le (mv (expr-priority-rel) (expr-priority-sh))
+              :ge (mv (expr-priority-rel) (expr-priority-sh))
+              :eq (mv (expr-priority-eq) (expr-priority-rel))
+              :ne (mv (expr-priority-eq) (expr-priority-rel))
+              :bitand (mv (expr-priority-and) (expr-priority-eq))
+              :bitxor (mv (expr-priority-xor) (expr-priority-and))
+              :bitior (mv (expr-priority-ior) (expr-priority-xor))
+              :logand (mv (expr-priority-ior) (expr-priority-logand))
+              :logor (mv (expr-priority-logor) (expr-priority-logand))
+              :asg (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-mul (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-div (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-rem (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-add (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-sub (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-shl (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-shr (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-and (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-xor (mv (expr-priority-unary) (expr-priority-asg))
+              :asg-ior (mv (expr-priority-unary) (expr-priority-asg)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor->ident
+  :short "Identifier of a declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declarator always contains an identifier at its core.
+     This function returns it,
+     together with a companion function that operates on direct declarators,
+     which is mutually recursive with the one for declarators."))
+
+  (define declor->ident ((declor declorp))
+    :returns (ident identp)
+    (dirdeclor->ident (declor->decl declor))
+    :measure (declor-count declor))
+
+  (define dirdeclor->ident ((dirdeclor dirdeclorp))
+    :returns (ident identp)
+    (dirdeclor-case
+     dirdeclor
+     :ident dirdeclor.unwrap
+     :paren (declor->ident dirdeclor.unwrap)
+     :array (dirdeclor->ident dirdeclor.decl)
+     :array-static1 (dirdeclor->ident dirdeclor.decl)
+     :array-static2 (dirdeclor->ident dirdeclor.decl)
+     :array-star (dirdeclor->ident dirdeclor.decl)
+     :function-params (dirdeclor->ident dirdeclor.decl)
+     :function-names (dirdeclor->ident dirdeclor.decl))
+    :measure (dirdeclor-count dirdeclor))
+
+  :hints (("Goal" :in-theory (enable o< o-finp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dirabsdeclor-decl?-nil-p ((dirabsdeclor dirabsdeclorp))
   :returns (yes/no booleanp)
   :short "Check if a direct abstract declarator has
