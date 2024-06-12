@@ -76,7 +76,7 @@
     (xdoc::codeblock
      "(read-and-parse-files :const        ...  ; no default"
      "                      :files        ...  ; no default"
-     "                      :preprocessor ...  ; default \"cpp\""
+     "                      :preprocessor ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,14 +106,16 @@
       "This input to this macro is not evaluated."))
 
     (xdoc::desc
-     "@(':preprocessor') &mdash; default @('\"cpp\"')"
+     "@(':preprocessor') &mdash; default @('nil')"
      (xdoc::p
       "Flag indicating the preprocessor to use, if any.")
      (xdoc::p
-      "This must be @('nil') or a @(tsee stringp).")
+      "This must be @('nil'), @(':auto') or a @(tsee stringp).")
      (xdoc::p
       "If this is a @(tsee stringp), the @(tsee preprocess-file) tool is called
-       on the files read at the file paths using the indicated preprocesser.")))
+       on the files read at the file paths using the indicated preprocesser. If
+       it is @(':auto'), we use the \"cpp\" preprocessor. If it is @('nil'), we
+       do not preprocess the files.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,8 +164,8 @@
                (const symbolp)
                (paths filepath-setp)
                (preprocessor (or (not preprocessor)
-                                 (stringp preprocessor))
-                             :rule-classes (:rewrite :type-prescription)))
+                                 (equal :auto preprocessor)
+                                 (stringp preprocessor))))
   :short "Process the inputs."
   (b* (((reterr) nil nil nil)
        ;; Check and obtain options.
@@ -209,14 +211,20 @@
        (preprocessor-option (assoc-eq :preprocessor options))
        (preprocessor (if preprocessor-option
                          (cdr preprocessor-option)
-                       "cpp"))
+                       nil))
        ((unless (or (not preprocessor)
+                    (eq :auto preprocessor)
                     (stringp preprocessor)))
         (reterr (msg "The :PREPROCESSOR input must be a STRINGP or NIL, ~
                       but it is ~x0 instead."
                      preprocessor))))
     (retok const paths preprocessor))
-  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
+  ///
+  (defret stringp-of-read-and-parse-files-process-inputs.preprocessor
+    (equal (stringp preprocessor)
+           (and preprocessor
+                (not (equal :auto preprocessor))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -273,6 +281,7 @@
 (define read-and-parse-files-gen-defconst ((const symbolp)
                                            (paths filepath-setp)
                                            (preprocessor (or (not preprocessor)
+                                                             (equal :auto preprocessor)
                                                              (stringp preprocessor)))
                                            state)
   :returns (mv erp (event pseudo-event-formp) state)
@@ -288,9 +297,12 @@
      to define the named constant."))
   (b* (((reterr) '(_) state)
        ((erp fileset state)
-        (if preprocessor
-            (read-and-parse-files-read-and-preprocess paths preprocessor state)
-          (read-and-parse-files-read paths state)))
+        (cond ((not preprocessor)
+               (read-and-parse-files-read paths state))
+              ((eq :auto preprocessor)
+               (read-and-parse-files-read-and-preprocess paths "cpp" state))
+              (t
+                (read-and-parse-files-read-and-preprocess paths preprocessor state))))
        ((erp tunits) (parse-fileset fileset))
        (event `(defconst ,const ',tunits)))
     (retok event state)))
