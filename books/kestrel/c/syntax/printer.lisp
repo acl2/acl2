@@ -908,10 +908,10 @@
   (c-char-case
    cchar
    :char (b* (((unless (and (grammar-character-p cchar.unwrap)
-                            (not (= cchar.unwrap (char-code #\')))
-                            (not (= cchar.unwrap (char-code #\\)))
-                            (not (= cchar.unwrap 10))
-                            (not (= cchar.unwrap 13))))
+                            (not (= cchar.unwrap (char-code #\'))) ; '
+                            (not (= cchar.unwrap (char-code #\\))) ; \
+                            (not (= cchar.unwrap 10))              ; LF
+                            (not (= cchar.unwrap 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a character constant."
@@ -1016,10 +1016,10 @@
   (s-char-case
    schar
    :char (b* (((unless (and (grammar-character-p schar.unwrap)
-                            (not (= schar.unwrap (char-code #\")))
-                            (not (= schar.unwrap (char-code #\\)))
-                            (not (= schar.unwrap 10))
-                            (not (= schar.unwrap 13))))
+                            (not (= schar.unwrap (char-code #\"))) ; "
+                            (not (= schar.unwrap (char-code #\\))) ; \
+                            (not (= schar.unwrap 10))              ; LF
+                            (not (= schar.unwrap 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a string literal."
@@ -1055,6 +1055,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-eprefix-option ((eprefix? eprefix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional encoding prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (eprefix-option-case
+   eprefix?
+   :some (print-eprefix eprefix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-stringlit ((stringlit stringlitp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a string literal."
@@ -1063,9 +1078,7 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((stringlit stringlit) stringlit)
-       (pstate (if stringlit.prefix
-                   (print-eprefix stringlit.prefix pstate)
-                 pstate))
+       (pstate (print-eprefix-option stringlit.prefix pstate))
        (pstate (print-astring "\"" pstate))
        ((unless stringlit.schars)
         (raise "Misusage error: ~
