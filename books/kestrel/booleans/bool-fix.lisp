@@ -13,6 +13,8 @@
 
 (include-book "bool-fix-def")
 
+;; See also ../utilities/if.lisp.
+
 (defthm bool-fix-when-booleanp
   (implies (booleanp x)
            (equal (bool-fix x)
@@ -23,11 +25,6 @@
 (defthm not-of-bool-fix
   (equal (not (bool-fix x))
          (not x))
-  :hints (("Goal" :in-theory (enable bool-fix))))
-
-(defthm if-of-bool-fix-arg1
-  (equal (if (bool-fix x) y z)
-         (if x y z))
   :hints (("Goal" :in-theory (enable bool-fix))))
 
 (defthm bool-fix-of-bool-fix
@@ -42,8 +39,14 @@
 ;; This helps justify some things that Axe does:
 (defcong iff equal (bool-fix$inline x) 1 :hints (("Goal" :in-theory (enable bool-fix))))
 
-(defthmd if-t-nil-becomes-bool-fix
-  (equal (if x t nil)
-         (bool-fix x)))
+(defthm if-of-bool-fix-arg1
+  (equal (if (bool-fix test) then else)
+         (if test then else))
+  :hints (("Goal" :in-theory (enable bool-fix))))
 
-(theory-invariant (incompatible (:rewrite if-t-nil-becomes-bool-fix) (:definition bool-fix$inline)))
+(defthmd if-of-t-and-nil-becomes-bool-fix
+  (equal (if test t nil)
+         (bool-fix test))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
+
+(theory-invariant (incompatible (:rewrite if-of-t-and-nil-becomes-bool-fix) (:definition bool-fix$inline)))
