@@ -10,7 +10,7 @@
 
 (in-package "C2C")
 
-(include-book "simpadd0")
+(include-book "simpadd0-proofs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

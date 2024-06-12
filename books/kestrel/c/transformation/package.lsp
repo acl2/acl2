@@ -23,6 +23,7 @@
                (set-difference-eq *std-pkg-symbols*
                                   '())
                '(defxdoc+
+                 index-of
 
                  c$::dec/oct/hex-const-case
                  c$::dec/oct/hex-const-oct
@@ -335,6 +336,7 @@
 
                  c$::filepathp
                  c$::filepath
+                 c$::filepath->unwrap
 
                  c$::filedatap
                  c$::filedata
