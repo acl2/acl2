@@ -1201,17 +1201,19 @@
     "Our abstract syntax uses lists of lists of type qualifiers
      to model what the grammar calls `pointer',
      which is a sequence of one or more stars,
-     each start followed by zero or more type qualifiers;
+     each star followed by zero or more type qualifiers;
      see @(tsee declor) and @(tsee absdeclor).
-     So here we print such a `pointer',
+     Here we print such a `pointer',
      from its representation as a list of lists of type qualifiers.")
    (xdoc::p
     "The outer list must not be empty, as required in the guard.
-     We go through each inner list, printing a start for each;
+     We go through each inner list, printing a star for each;
      if the inner list under consideration is empty,
      the star is all we print;
      if the inner list is not empty,
-     we print a space, the type qualifiers (separated by spaces), and a space.
+     we also print a space,
+     the type qualifiers (separated by spaces),
+     and a space.
      That is, we provide separation when there are type qualifiers.
      But there are no extra separations for stars,
      e.g. we print @('**') for the list of lists @('(list nil nil)').
@@ -1292,21 +1294,21 @@
         In order to parse this as a <i>multiplicative-expression</i>,
         @('x + y') would have to be a <i>multiplicative-expression</i>),
         which is not.
-        Thus, the original expression can only be parsed
+        Thus, the expression can only be parsed
         as an <i>additive-expression</i>.")
       (xdoc::li
        "Consider an expression @('x * y + z').
         In order to parse this as a <i>multiplicative-expression</i>,
         @('y + z') would have to be a <i>cast-expression</i>,
         which is not.
-        Thus, the original expression can only be parsed
+        Thus, the expression can only be parsed
         as an <i>additive-expression</i>.")
       (xdoc::li
        "Consider an expression @('x + y + z').
         In order to right-associate it (i.e. @('x + (y + z)')),
         @('y + z') would have to be a <i>multiplicative-expression</i>,
         which is not.
-        Thus, the original expression can only be left-associated
+        Thus, the expression can only be left-associated
         (i.e. @('(x + y) + z'))."))
      (xdoc::p
       "Our printer adds parentheses
@@ -1315,8 +1317,8 @@
        following the grammar.")
      (xdoc::p
       "The function @(tsee expr-priority) classifies expressions
-       according to certain nonterminals of the C grammar,
-       the priority of additive expressions
+       according to certain nonterminals of the C grammar.
+       For instance, the priority of additive expressions
        corresponds to the nonterminal <i>additive-expression</i>.
        The function @(tsee expr->priority) defines a mapping
        from the expressions of our abstract syntax to their priorities,
@@ -1330,16 +1332,16 @@
        how that total order is defined in relation to the grammar.")
      (xdoc::p
       "Besides the abstract syntactic expression to print,
-       the printer function for expression has an argument
-       that is the priority of expression that must be printed
+       this printer function for expression has an argument
+       that is the priority of the expression that must be printed
        at that point.
        At the top level, this second argument is
        the priority of top-level expressions,
        i.e. the priority that corresponds to
        the nonterminal <i>expression</i> [C:6.5.17].
        As we descend into subexpressions,
-       the second argument is changed according to
-       the grammar rule corresponding to the super-expressions.
+       the second argument of this function is changed according to
+       the grammar rule corresponding to the super-expression.
        For instance, when printing the left and right subexpressions
        of a super-expression @('(expr-binary (binop-add) left right)'),
        we recursively call the printer twice,
@@ -1356,7 +1358,7 @@
        the printer compares the second argument
        (i.e. the expected priority of the expression)
        with the priority of the expression passed as first argument
-       (i.e. the actual priority of expression),
+       (i.e. the actual priority of the expression),
        according to the total order on expression priorities;
        if the actual priority is greater than or equal to the expected priority,
        the expression is printed without parentheses,
@@ -1367,6 +1369,8 @@
        into the nonterminal for the actual priority:
        or conversely, the actual expression can be parsed
        into an expression of the expected priority.
+       The expansion is based on the grammar (sub)rules
+       discussed in @(tsee expr-priority-<=).
        On the other hand,
        if the actual priority is less than the expected priority,
        there is no such possibility;
@@ -1411,8 +1415,8 @@
      (xdoc::p
       "The total order on expression priority only considers,
        as explained in @(tsee expr-priority-<=),
-       (sub)rules of the form <i>nonterm2: nonterm1</i>
-       where <i>nonterm1</i> is a single nonterminal.
+       (sub)rules of the form <i>nonterm1: nonterm2</i>
+       where <i>nonterm2</i> is a single nonterminal.
        Rule definientia that are not single terminals
        are captured as tree structures in our abstract syntax,
        and thus have their own explicit priority.
@@ -1497,7 +1501,7 @@
                   ;;   a parenthesized expression,
                   ;;   in which case we print sizeof(expr).
                   ;;   This is a bit more than needed
-                  ;;   just to avoid ambiguty in the printed code:
+                  ;;   just to avoid ambiguity in the printed code:
                   ;;   we could avoid the space in other cases,
                   ;;   besides parenthesized expressions as arguments;
                   ;;   but the resulting code may look confusing
