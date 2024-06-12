@@ -651,6 +651,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-dec-expo-option ((expo? dec-expo-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional decimal exponent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no decimal exponent, we print nothing."))
+  (dec-expo-option-case
+   expo?
+   :some (print-dec-expo expo?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-bin-expo ((expo bin-expop) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a binary exponent."
@@ -725,9 +740,7 @@
   (dec-core-fconst-case
    fconst
    :frac (b* ((pstate (print-dec-frac-const fconst.significand pstate))
-              (pstate (if fconst.expo?
-                          (print-dec-expo fconst.expo? pstate)
-                        pstate)))
+              (pstate (print-dec-expo-option fconst.expo? pstate)))
            pstate)
    :int (b* (((unless fconst.significand)
               (raise "Misusage error: ~
