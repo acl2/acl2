@@ -2175,7 +2175,7 @@
 
      ;;           not-of-booland ;trying without this? new4
 
-     sbvlt-false-from-bound-dag
+     not-sbvlt-from-bound-better
 ;     SBVLT-BECOMES-BVLT ;Sun Mar 28 16:56:24 2010
      not-sbvlt-of-0-when-sbvlt-free
 ;                        SBVLT-REWRITE ;trying without this..
