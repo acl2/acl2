@@ -671,6 +671,11 @@
     acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
     acl2::bitp-becomes-unsigned-byte-p
+
+    ;; Just for making terms in failures more readable:
+    mv-nth-1-of-rb-1-of-set-rip
+    mv-nth-1-of-rb-of-set-rip
+    mv-nth-1-of-rb-of-set-rax ; could add more like this
     ))
 
 (defun decoding-and-dispatch-rules ()
