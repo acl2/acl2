@@ -11,12 +11,12 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/booleans/bool-fix-def" :dir :system)
-
 ;; Some simple rewrite rules about IF.  These may be needed by Axe if not by
 ;; ACL2.  I suppose some might help during backchaining, but most of this
 ;; knowledge may be built into ACL2, and the ACL2 rewriter usually handles IF
 ;; by splitting a proof into cases.
+
+;; See also ../booleans/bool-fix.lisp.
 
 (defthmd if-same-branches
   (equal (if test x x)
@@ -46,22 +46,13 @@
   (equal (if (not test) x y)
          (if test y x)))
 
-(defthmd if-of-bool-fix
-  (equal (if (bool-fix test) x y)
-         (if test x y))
-  :hints (("Goal" :in-theory (enable bool-fix$inline))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;See also if-of-t-and-nil-becomes-bool-fix
 (defthmd if-of-t-and-nil-when-booleanp
   (implies (booleanp test)
            (equal (if test t nil)
                   test)))
-
-(defthmd if-of-t-and-nil-becomes-bool-fix
-  (equal (if test t nil)
-         (bool-fix test))
-  :hints (("Goal" :in-theory (enable bool-fix$inline))))
 
 ;rename
 (defthmd if-nil-t
