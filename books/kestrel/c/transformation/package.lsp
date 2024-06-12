@@ -25,6 +25,9 @@
                '(defxdoc+
                  index-of
 
+                 c$::identp
+                 c$::ident->unwrap
+
                  c$::dec/oct/hex-const-case
                  c$::dec/oct/hex-const-oct
 
@@ -159,6 +162,7 @@
                  c$::declor-count
                  c$::declor
                  c$::make-declor
+                 c$::declor->ident
 
                  c$::declor-optionp
                  c$::declor-option-fix
@@ -318,21 +322,25 @@
                  c$::fundefp
                  c$::fundef
                  c$::make-fundef
+                 c$::fundef->declor
 
                  c$::extdeclp
                  c$::extdecl-case
                  c$::extdecl-fundef
+                 c$::extdecl-fundef->unwrap
                  c$::extdecl-decl
 
                  c$::extdecl-listp
 
                  c$::transunitp
                  c$::transunit
+                 c$::transunit->decls
 
                  c$::filepath-transunit-mapp
 
                  c$::transunit-ensemblep
                  c$::transunit-ensemble
+                 c$::transunit-ensemble->unwrap
 
                  c$::filepathp
                  c$::filepath
