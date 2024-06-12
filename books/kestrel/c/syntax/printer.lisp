@@ -37,17 +37,17 @@
      but we will make it more feature-rich in the future.")
    (xdoc::p
     "Our abstract syntax is broader than the concrete syntax,
-     in the sense that it represents slightly more constructs
+     in the sense that it represents more constructs
      than allowed by the concrete syntax.
      For instance, identifiers in the abstract syntax can be anything
-     (for the reasons explained in the documentation there),
+     (for the reasons explained in @(tsee ident)),
      but they follow certain restrictions in the concrete syntax.
      We plan to define, and use in the printer as guards,
      predicates over the abstract syntax that check whether
      the abstract syntax conforms to the concrete syntax.
      For now, we use run-time checks, where needed,
      to ensure that the abstract syntax matches the concrete syntax;
-     in some cases we actually use slightly weaker checks.
+     in some cases we actually use weaker checks.
      If these run-time checks fail, we throw hard errors,
      which is not ideal in general,
      but we want to keep the printing functions's inputs and outputs
@@ -57,10 +57,14 @@
     (xdoc::seetopic "acl2::error-triple" "error triples")
     ") needed for non-hard errors.
      After all, a printer is not supposed to fail,
-     and once we have the aforementioned guard, it will never fail.
-     For now, we can consider calling the printer
+     and once we have the aforementioned guards, it will never fail.
+     For now, we can regard calls to the printer
      with non-compliant abstract syntax a form of internal error,
-     for which hard errors are generally appropriate."))
+     for which hard errors are generally appropriate.
+     But we use the term `misusage error' in the hard error messages,
+     to reflect the fact that the printer is being misused in some sense,
+     as opposed to an `internal error' which is generally used for
+     situations are due to some proper implementation error."))
   :order-subtopics t
   :default-parent t)
 
@@ -75,16 +79,18 @@
    (xdoc::p
     "The main content of a printer state is
      the bytes that form (the data of) the file being printed,
-     in reverse order, which  makes extending the data more efficent.")
+     in reverse order, which makes extending the data more efficent
+     (by @(tsee cons)ing).")
    (xdoc::p
     "We also keep track of the current indentation level,
-     as a natural number starting from 0 (which means left margin).
+     as a natural number starting from 0 (where 0 means left margin).
      This is used to print indented code, as typical.")
    (xdoc::p
     "We also keep track of the size of each identation level,
-     as a positive integer that indicates the number of spaces.
+     as a positive integer that indicates the number of spaces
+     for a single indentation level.
      This does not change in the course of the printing,
-     but it is convenient to have it in the printing state,
+     but it is convenient to keep it in the printing state,
      to avoid passing it around as an extra parameter.
      It is set when the printing state is initially created and never changes.")
    (xdoc::p
@@ -137,7 +143,7 @@
      throwing a hard error if that happens
      (which would make the level negative when decremented).
      This is an internal error: it should never happen,
-     and if it does there is a bug in our printer."))
+     but if it may happen if there is a bug in our printer."))
   (b* ((indent-level (pristate->indent-level pstate))
        ((when (= indent-level 0))
         (raise "Internal error: ~
@@ -156,8 +162,12 @@
   (xdoc::topstring
    (xdoc::p
     "Currently all the characters allowed by our grammar are ASCII,
-     so they fit into a byte, which we add to the printer state
-     (that is, no UTF-8 encoding is needed).")
+     so they fit into a byte, which we add to the printer state.
+     That is, no UTF-8 encoding is needed for now.")
+   (xdoc::p
+    "Recall that we represent characters as codes, i.e. natural numbers,
+     not as ACL2 characters.
+     This is so that we can easily generalize from ASCII to Unicode.")
    (xdoc::p
     "This is the most basic printing function in our printer.
      All other printing functions call this one, directly or indirectly."))
@@ -179,7 +189,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The characters are supplied in a list.
+    "The characters are supplied in a list (of their codes).
      They are printed from left to right."))
   (b* (((when (endp chars)) (pristate-fix pstate))
        (pstate (print-char (car chars) pstate)))
@@ -193,6 +203,16 @@
 (define print-new-line ((pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a new-line character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we print a single line feed character, which has code 10.
+     In the future, we could support a printer option
+     for the kind of new line character to use.
+     Our parser supports
+     (i) line feeds,
+     (ii) carriage returns, and
+     (iii) line feeds immediately followed by carriage returns."))
   (print-char 10 pstate)
   :hooks (:fix))
 
@@ -205,8 +225,13 @@
   (xdoc::topstring
    (xdoc::p
     "This should be called at the beginning of a line,
-     i.e. at the very beginning of printing,
-     or after printing a new-line character."))
+     i.e. at the very beginning of printing
+     (which will be a no-op, since the indentation level is initially 0),
+     or after printing a new-line character.")
+   (xdoc::p
+    "We multiply the indentation level by the number of spaces for each level,
+     and we print those many spaces (the code of the space character is 32).
+     This is zero spaces, at indent level 0."))
   (b* (((pristate pstate) pstate)
        (spaces-to-print (* pstate.indent-level
                            pstate.indent-size)))
@@ -223,7 +248,19 @@
   (xdoc::topstring
    (xdoc::p
     "This provides the convenience to use use ACL2 strings,
-     instead of using character codes."))
+     instead of using character codes.")
+   (xdoc::p
+    "Since for now our concrete syntax only supports ASCII,
+     this suffices to print anything.
+     Even if we extend our concrete syntax to support (some) Unicode,
+     most of the ACL2 syntax is still ASCII,
+     and therefore this printing function is, and will always be,
+     to print a lot of the code.")
+   (xdoc::p
+    "Note that an ACL2 string can contain characters that,
+     when converted to natural numbers, are larger than 127,
+     and therefore are not ASCII.
+     But we always call this printing function with ASCII strings."))
   (print-chars (acl2::string=>nats string) pstate)
   ///
   (fty::deffixequiv print-astring
@@ -234,6 +271,17 @@
 (define print-dec-digit-achar ((achar dec-digit-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an ACL2 decimal digit character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the character into its code and print it.
+     Note that we do not need the numeric value of the character;
+     we just need to print the character itself.")
+   (xdoc::p
+    "This is essentially the same code as
+     @(tsee print-oct-digit-achar) and @(tsee print-hex-digit-achar),
+     but it has a stronger guard than if we used
+     a more general function to print an ACL2 character."))
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            dec-digit-char-p)))
@@ -259,6 +307,17 @@
 (define print-oct-digit-achar ((achar oct-digit-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an ACL2 octal digit character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the character into its code and print it.
+     Note that we do not need the numeric value of the character;
+     we just need to print the character itself.")
+   (xdoc::p
+    "This is essentially the same code as
+     @(tsee print-dec-digit-achar) and @(tsee print-hex-digit-achar),
+     but it has a stronger guard than if we used
+     a more general function to print an ACL2 character."))
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            oct-digit-char-p)))
@@ -284,6 +343,17 @@
 (define print-hex-digit-achar ((achar hex-digit-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an ACL2 hexadecimal digit character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the character into its code and print it.
+     Note that we do not need the numeric value of the character;
+     we just need to print the character itself.")
+   (xdoc::p
+    "This is essentially the same code as
+     @(tsee print-dec-digit-achar) and @(tsee print-oct-digit-achar),
+     but it has a stronger guard than if we used
+     a more general function to print an ACL2 character."))
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            hex-digit-char-p)))
@@ -314,7 +384,11 @@
    (xdoc::p
     "We check that the identifier is a non-empty ACL2 string
      whose character codes are all valid in our C grammar.
-     This way we can call @(tsee print-chars)."))
+     This way we can call @(tsee print-chars).")
+   (xdoc::p
+    "This is a weaker check than ensuring that the string
+     is in fact a valid C identifier in our concrete syntax.
+     We plan to strengthen this in the future."))
   (b* ((string? (ident->unwrap ident))
        ((unless (stringp string?))
         (raise "Misusage error: ~
@@ -346,7 +420,7 @@
    (xdoc::p
     "In our abstract syntax, @(tsee ident-list) is used only
      in the @(':function-names') case of @(tsee dirdeclor),
-     where the identifiers represent function parameter name,
+     where the identifiers represent function parameter names,
      and so it is appropriate to print them separated by commas."))
   (b* (((unless (mbt (consp idents))) (pristate-fix pstate))
        (pstate (print-ident (car idents) pstate))
