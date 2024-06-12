@@ -474,11 +474,11 @@
 
 (define print-isuffix-option ((isuffix? isuffix-optionp) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print an optional prefix."
+  :short "Print an optional integer suffix."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If there is no prefix, we print nothing."))
+    "If there is no suffix, we print nothing."))
   (isuffix-option-case
    isuffix?
    :some (print-isuffix isuffix?.val pstate)
@@ -570,11 +570,11 @@
 
 (define print-fsuffix-option ((fsuffix? fsuffix-optionp) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print an optional floating prefix."
+  :short "Print an optional floating suffix."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If there is no prefix, we print nothing."))
+    "If there is no suffix, we print nothing."))
   (fsuffix-option-case
    fsuffix?
    :some (print-fsuffix fsuffix?.val pstate)
@@ -736,7 +736,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For an integer one, we ensure that there is at least one digit."))
+    "For an integer one, we ensure that there is at least one digit.
+     For a fractional one, the check is performed
+     in @(tsee print-dec-frac-const)."))
   (dec-core-fconst-case
    fconst
    :frac (b* ((pstate (print-dec-frac-const fconst.significand pstate))
@@ -760,7 +762,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For an integer one, we ensure that there is at least one digit."))
+    "For an integer one, we ensure that there is at least one digit.
+     For a fractional one, the check is performed
+     in @(tsee print-hex-frac-const)."))
   (hex-core-fconst-case
    fconst
    :frac (b* ((pstate (print-hex-frac-const fconst.significand pstate))
@@ -798,17 +802,17 @@
   :short "Print a simple escape."
   (simple-escape-case
    esc
-   :squote (print-astring "\\'" pstate) ; \'
+   :squote (print-astring "\\'" pstate)  ; \'
    :dquote (print-astring "\\\"" pstate) ; \"
-   :qmark (print-astring "\\?" pstate) ; \?
+   :qmark (print-astring "\\?" pstate)   ; \?
    :bslash (print-astring "\\\\" pstate) ; \\
-   :a (print-astring "\\a" pstate)
-   :b (print-astring "\\b" pstate)
-   :f (print-astring "\\f" pstate)
-   :n (print-astring "\\n" pstate)
-   :r (print-astring "\\r" pstate)
-   :t (print-astring "\\t" pstate)
-   :v (print-astring "\\v" pstate))
+   :a (print-astring "\\a" pstate)       ; \a
+   :b (print-astring "\\b" pstate)       ; \b
+   :f (print-astring "\\f" pstate)       ; \f
+   :n (print-astring "\\n" pstate)       ; \n
+   :r (print-astring "\\r" pstate)       ; \r
+   :t (print-astring "\\t" pstate)       ; \t
+   :v (print-astring "\\v" pstate))      ; \v
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -832,7 +836,7 @@
 
 (define print-hex-quad ((quad hex-quad-p) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print quadruple of hexadecimal digits."
+  :short "Print a quadruple of hexadecimal digits."
   (b* (((hex-quad quad) quad)
        (pstate (print-hex-digit-achar quad.1st pstate))
        (pstate (print-hex-digit-achar quad.2nd pstate))
@@ -848,10 +852,10 @@
   :short "Print a universal character name."
   (univ-char-name-case
    ucname
-   :locase-u (b* ((pstate (print-astring "\\u" pstate))
+   :locase-u (b* ((pstate (print-astring "\\u" pstate)) ; \u
                   (pstate (print-hex-quad ucname.quad pstate)))
                pstate)
-   :upcase-u (b* ((pstate (print-astring "\\U" pstate))
+   :upcase-u (b* ((pstate (print-astring "\\U" pstate)) ; \U
                   (pstate (print-hex-quad ucname.quad1 pstate))
                   (pstate (print-hex-quad ucname.quad2 pstate)))
                pstate))
@@ -862,11 +866,20 @@
 (define print-escape ((esc escapep) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an escape sequence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that there is at least one digit
+     in a hexadecimal escape sequence."))
   (escape-case
    esc
    :simple (print-simple-escape esc.unwrap pstate)
    :oct (print-oct-escape esc.unwrap pstate)
-   :hex (b* ((pstate (print-astring "\\x" pstate))
+   :hex (b* ((pstate (print-astring "\\x" pstate)) ; \x
+             ((unless esc.unwrap)
+              (raise "Misusage error: ~
+                      hexadecimal escape sequence has no digits.")
+              pstate)
              (pstate (print-hex-digit-achars esc.unwrap pstate)))
           pstate)
    :univ (print-univ-char-name esc.unwrap pstate))
@@ -886,7 +899,7 @@
      It must be a character in the grammar,
      and in addition it must not be
      a single quote, a backslash, or a new-line character.
-     The latter encompasses not only line feed, but also carriage return:
+     The latter check encompasses not only line feed, but also carriage return:
      recall that both are allowed in our grammar,
      and that we allow three kinds of new-line characters
      (line feed alone,
@@ -933,6 +946,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-cprefix-option ((cprefix? cprefix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional character constant prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (cprefix-option-case
+   cprefix?
+   :some (print-cprefix cprefix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-cconst ((cconst cconstp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a character constant."
@@ -941,13 +969,11 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((cconst cconst) cconst)
-       (pstate (if cconst.prefix
-                   (print-cprefix cconst.prefix pstate)
-                 pstate))
+       (pstate (print-cprefix-option cconst.prefix pstate))
        ((unless cconst.cchars)
         (raise "Misusage error: ~
                 the character constant has no characters or escape sequences.")
-        (pristate-fix pstate))
+        pstate)
        (pstate (print-c-char-list cconst.cchars pstate)))
     pstate)
   :hooks (:fix))
@@ -979,7 +1005,7 @@
      It must be a character in the grammar,
      and in addition it must not be
      a double quote, a backslash, or a new-line character.
-     The latter encompasses not only line feed, but also carriage return:
+     The latter check encompasses not only line feed, but also carriage return:
      recall that both are allowed in our grammar,
      and that we allow three kinds of new-line characters
      (line feed alone,
