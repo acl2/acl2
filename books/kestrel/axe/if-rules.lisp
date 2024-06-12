@@ -16,75 +16,16 @@
 
 ;; These rules are for Axe, not ACL2, since ACL2 will split on IFs automatically.
 
-;; TODO: Standardize param names in these.
-
-(defthmd booleanp-of-iff
-  (booleanp (iff x y)))
-
-;to be used as an inside-out rule; we need the hyp!
+;; to be used as an inside-out rule, we need this phrasing (with the hyp)!
 (defthm if-when-not-nil
   (implies test
-           (equal (if test x y)
-                  x))
+           (equal (if test then else)
+                  then))
   :rule-classes nil)
 
-;to be used as an inside-out rule; we need the hyp!
+;; to be used as an inside-out rule, we need this phrasing (with the hyp)!
 (defthm if-when-nil
   (implies (not test)
-           (equal (if test x y)
-                  y))
+           (equal (if test then else)
+                  else))
   :rule-classes nil)
-
-;; ;drop?
-;; (defthm if-of-non-nil
-;;   (implies (not (equal test nil))
-;;            (equal (if test b c)
-;;                   b))
-;;   :rule-classes nil)
-
-;rename?
-(defthmd if-thm
-  (equal (if (if x x t) y z)
-         y))
-
-(defthmd if-of-t-and-nil-becomes-bool-fix
-  (equal (if test t nil)
-         (bool-fix test))
-  :hints (("Goal" :in-theory (enable bool-fix$inline))))
-
-(defthmd if-of-bool-fix
-  (equal (if (bool-fix test) x y)
-         (if test x y))
-  :hints (("Goal" :in-theory (enable bool-fix$inline))))
-
-;or go via bool-fix, and prove if-of-bool-fix
-(defthmd if-of-if-t-nil
-  (equal (if (if test t nil) foo bar)
-         (if test foo bar)))
-
-(defthm if-x-x-t-when-booleanp
-  (implies (booleanp x)
-           (equal (if x x t)
-                  t)))
-
-(defthmd if-of-not-same-arg2
-  (equal (if test (not test) else)
-         (if test nil else)))
-
-(defthm if-of-not-same-arg3
-  (equal (if x y (not x))
-         (if x y t)))
-
-(defthm if-x-y-x
-  (equal (if x y x)
-         (if x y nil)))
-
-(defthm equal-of-constant-and-if
-  (implies (syntaxp (quotep k))
-           (equal (equal k (if x y z))
-                  (if x (equal k y) (equal k z)))))
-
-(defthm equal-of-if-and-constant
-  (implies (syntaxp (quotep k))
-           (equal (equal (if x y z) k)
-                  (if x (equal y k) (equal z k)))))
