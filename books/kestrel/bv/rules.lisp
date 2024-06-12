@@ -5573,65 +5573,6 @@
   :hints (("Goal" :use bvplus-of-1-tighten
            :in-theory (disable bvplus-of-1-tighten))))
 
-(defthm bvlt-when-bvlt-false2
-  (implies (and (syntaxp (quotep k))
-                (BVLT size free x)
-                (syntaxp (quotep free))
-                (syntaxp (quotep size))
-                (bvle size (+ -1 k) free) ;gets evaluated
-                (integerp k)
-                (natp size)
-                )
-           (not (BVLT size x k)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   bvchop-of-sum-cases
-                                   bvplus
-                                   )
-                                  (<-of-bvplus-becomes-bvlt-arg1
-                                   <-of-bvplus-becomes-bvlt-arg2)))))
-
-(defthm bvlt-when-not-bvlt-one-more
-  (implies (and (syntaxp (quotep const)) ;new
-                (not (bvlt size free x))
-                (syntaxp (quotep free)) ;new
-                (equal free (+ 1 const))
-                (unsigned-byte-p size free)
-                (unsigned-byte-p size const)
-                (integerp size))
-           (equal (bvlt size const x)
-                  (equal free (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-of-bvplus-becomes-bvlt-arg1
-                                          <-of-bvplus-becomes-bvlt-arg2
-
-                                          )))))
-
-(defthm bvlt-when-not-bvlt-one-less
-  (implies (and (syntaxp (quotep const))
-                (not (bvlt size x free))
-                (syntaxp (quotep free))
-                (equal free (+ -1 const))
-                (unsigned-byte-p size free)
-                (unsigned-byte-p size const)
-;                (posp const) ; ?
-                (integerp size))
-           (equal (bvlt size x const)
-                  (equal free (bvchop size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt) (<-of-bvplus-becomes-bvlt-arg1
-                                          <-of-bvplus-becomes-bvlt-arg2
-
-                                          )))))
-;use polarities?
-(defthm bvlt-unique
-  (implies (and (bvlt size x free)
-                (syntaxp (quotep free))
-                (equal free (+ 2 k))
-                (unsigned-byte-p size k)
-                (natp size)
-                )
-           (equal (bvlt size k x)
-                  (equal (+ 1 k) (bvchop size x))))
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
-
 ;simplify rhs?
 (defthm bvlt-of-bvplus-and-bvplus-cancel-1-1
   (implies (natp size)
