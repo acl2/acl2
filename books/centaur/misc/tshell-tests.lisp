@@ -51,14 +51,14 @@
 (defmacro test-tshell (&key cmd save print okp lines)
   (declare (ignorable cmd save print okp lines))
   `(make-event
-    (b* (((mv $status $lines)
+    (b* (((mv $status $lines state)
           (tshell-call ,cmd :save ,save :print ,print)))
       (and (or (equal (equal $status 0) ,okp)
                (er hard? 'test-tshell "Error: status was ~x0~%" $status))
            (or (equal ,lines :skip)
                (equal $lines ,lines)
                (er hard? 'test-tshell "Error: lines were ~x0~%" $lines)))
-      '(value-triple :success))))
+      (value '(value-triple :success)))))
 
 (test-tshell :cmd "echo hello"
              :save t

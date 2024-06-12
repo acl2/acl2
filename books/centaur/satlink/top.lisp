@@ -642,7 +642,7 @@ extra information to your hook, e.g., state globals or similar.</li>
 </ul>"
 
   (encapsulate
-    (((satlink-extra-hook * * * env$ state) => *
+    (((satlink-extra-hook * * * env$ state) => state
       :formals (cnf filename status env$ state)
       :guard (and (lit-list-listp cnf)
                   (stringp filename)
@@ -651,7 +651,11 @@ extra information to your hook, e.g., state globals or similar.</li>
     (local (defun satlink-extra-hook (cnf filename status env$ state)
              (declare (xargs :stobjs (env$ state))
                       (ignorable cnf filename status env$ state))
-             nil)))
+             state))
+
+    (defthm state-p1-of-satlink-extra-hook
+      (implies (state-p1 state)
+               (state-p1 (satlink-extra-hook cnf filename status env$ state)))))
 
   (define default-satlink-hook ((cnf      lit-list-listp)
                                 (filename stringp)
@@ -660,7 +664,8 @@ extra information to your hook, e.g., state globals or similar.</li>
                                 (env$)
                                 (state))
     (declare (ignorable cnf filename status env$ state))
-    nil)
+    :returns (state state-p1 :hyp (state-p1 state))
+    state)
 
   (defattach satlink-extra-hook default-satlink-hook))
 
@@ -675,7 +680,13 @@ extra information to your hook, e.g., state globals or similar.</li>
   :returns (mv (status ":sat, :unsat, or :failed")
                (env$ "Variable assignment, in the :sat case.")
                (lrat-proof "LRAT proof, in the :unsat case, if config.lrat-check is set.")
-               (state state-p1 :hyp (state-p1 state)))
+               (state state-p1 :hyp (state-p1 state)
+                      :hints (("Goal" :in-theory
+                                      '(satlink-run-impl
+                                        state-p1-of-dimacs-export.state
+                                        state-p1-of-satlink-extra-hook
+                                        oslib::state-p1-of-tempfile-fn
+                                        acl2::state-p1-of-tshell-call.state)))))
   :long "<p>This function actually runs the SAT solver: it exports the formula
 into a @(see dimacs) file, invokes the SAT solver on it, and interprets the
 answer.  This function is typically never used directly; instead see @(see
@@ -698,15 +709,15 @@ satlink-run).</p>"
         (cw "SATLINK: Error writing dimacs file ~s0~%" filename)
         (mv :failed env$ nil state))
 
-       ((acl2::fun (cleanup filename config))
+       ((acl2::fun (cleanup filename config state))
         (b* (((unless (config->remove-temps config))
-              nil)
-             ((mv & &)
+              state)
+             ((mv & & state)
               (acl2::tshell-call (str::cat "rm " filename))))
-          nil))
+          state))
 
        (cmd (str::cat config.cmdline " " filename))
-       ((mv & lines)
+       ((mv & lines state)
         (time$ (acl2::tshell-call cmd
                                   ;; Print only if :verbose t is on, and use a
                                   ;; custom printing function that skips variable
@@ -720,29 +731,30 @@ satlink-run).</p>"
 
        ((unless (string-listp lines))
         (cw "SATLINK: Tshell somehow didn't give us a string list.~%")
-        (cleanup filename config)
-        (mv :failed env$ nil state))
+        (b* ((state (cleanup filename config state)))
+          (mv :failed env$ nil state)))
        ((mv status env$)
         (time$ (b* ((env$ (resize-bits (1+ max-index) env$))
                     ((mv status env$) (satlink-parse-output lines env$)))
                  (mv status env$))
                :msg "; SATLINK: interpreting output: ~st sec, ~sa bytes~%"
                :mintime config.mintime))
-       (lrat-proof
+       ((mv lrat-proof state)
         (if (and (eq status :unsat) config.lrat-check)
             (b* ((lrat-proof (time$ (lrat::lrat-read-file (str::cat filename ".lrat") state)
                                     :msg "; SATLINK: read lrat file: ~st sec, ~sa bytes~%"
                                     :mintime config.mintime))
-                 ((unless (config->remove-temps config)) lrat-proof)
-                 ((mv & &) (acl2::tshell-call (str::cat "rm " (str::cat filename ".lrat")))))
-              lrat-proof)
-          nil))
-       (- (and (or (eq status :sat)
-                   (eq status :unsat))
-               ;; Successful round trips --> invoke the extra hook.  We do this
-               ;; BEFORE cleaning up so that the input file still exists.
-               (satlink-extra-hook cnf filename status env$ state))))
-    (cleanup filename config)
+                 ((unless (config->remove-temps config)) (mv lrat-proof state))
+                 ((mv & & state) (acl2::tshell-call (str::cat "rm " (str::cat filename ".lrat")))))
+              (mv lrat-proof state))
+          (mv nil state)))
+       (state (if (or (eq status :sat)
+                      (eq status :unsat))
+                  ;; Successful round trips --> invoke the extra hook.  We do this
+                  ;; BEFORE cleaning up so that the input file still exists.
+                  (satlink-extra-hook cnf filename status env$ state)
+                state))
+       (state (cleanup filename config state)))
     (mv status env$ lrat-proof state)))
 
 

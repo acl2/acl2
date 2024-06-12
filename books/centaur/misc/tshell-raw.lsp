@@ -62,7 +62,7 @@
   (write-line line stream)
   (force-output stream))
 
-(defun tshell-call-fn (cmd print save)
+(defun tshell-call-fn1 (cmd print save state)
   (let* ((rlines nil)
          (stream (get-output-stream-from-channel *standard-co*))
          (print  (if (eq print t)
@@ -74,7 +74,7 @@
                                                (push line rlines))
                                              (when print
                                                (funcall print line rlines stream))))))
-    (mv status (nreverse rlines))))
+    (mv status (nreverse rlines) state)))
 
 (defun tshell-run-background (cmd)
   (shellpool:run& cmd))

@@ -51,7 +51,7 @@
     ;; (mv-let (erp output state)
     ;;   (sys-call+ script-path script-args state)
     ;;   (declare (ignore output))
-    (mv-let (status output)
+    (mv-let (status output state)
       ;; tshell-call seems better than sys-call, because it doesn't fork the ACL2 process:
       (tshell-call (concatenate 'string script-path " " (concatenate-strings-with-spaces script-args)) :save nil)
       (declare (ignore output)) ; not captured, since :save is nil
@@ -76,4 +76,4 @@
 (defthm w-of-mv-nth-1-of-call-axe-script
   (equal (w (mv-nth 1 (call-axe-script script-name script-args state)))
          (w state))
-  :hints (("Goal" :in-theory (enable call-axe-script))))
+  :hints (("Goal" :in-theory (e/d (call-axe-script) (w)))))
