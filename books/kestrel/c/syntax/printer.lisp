@@ -472,6 +472,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-isuffix-option ((isuffix? isuffix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (isuffix-option-case
+   isuffix?
+   :some (print-isuffix isuffix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-hprefix ((hprefix hprefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a hexadecimal prefix."
@@ -534,9 +549,7 @@
   :short "Print an integer constant."
   (b* (((iconst iconst) iconst)
        (pstate (print-dec/oct/hex-const iconst.dec/oct/hex pstate))
-       (pstate (if iconst.suffix
-                   (print-isuffix iconst.suffix pstate)
-                 pstate)))
+       (pstate (print-isuffix-option iconst.suffix pstate)))
     pstate)
   :hooks (:fix))
 
