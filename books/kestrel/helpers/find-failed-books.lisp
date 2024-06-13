@@ -23,7 +23,7 @@
 ;;           (substrings-before-first (rest strings) char))))
 
 ;; Finds all the books in the current directory tree that have .cert.out files indicating that a certification failure occurred.
-;; Returns a list of book-paths (without .lisp extensions).
+;; Returns (mv book-paths state), where book-paths is a list of paths (without .lisp extensions).
 (defun find-failed-books (state)
   (declare (xargs :stobjs state))
   (prog2$
