@@ -1060,6 +1060,8 @@
      bvequal-tighten-axe-bind-and-bind
      bvequal-of-constant-and-bvuminus
      bvequal-of-bvuminus-and-constant
+
+     bvif-of-if-becomes-bvif-of-boolif-arg2
      )))
 
 ;todo combine this with core-rules-bv
