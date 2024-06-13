@@ -142,8 +142,7 @@ where the system books are."))
                             :print t
                             :save t)
                :msg "; test -f: `~s0`: ~st sec, ~sa bytes~%"
-               :args (list cmd))
-        ))
+               :args (list cmd))))
     (if (equal exit-status 0) (mv t state) (mv nil state))))
 
 (define find-smtlink-config ((smtconfig stringp) (state t))
