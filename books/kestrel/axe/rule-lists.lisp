@@ -2890,7 +2890,7 @@
 
              ;; logext can still appear (if arraycopy is called):
              logext-when-usb-cheap
-             logext-identity-when-usb-smaller-dag
+             logext-identity-when-usb-smaller-axe
 
              all-unsigned-byte-p-of-take-of-subrange ;Fri Dec 17 03:22:09 2010
              all-true-listp-of-map-unpackbv
@@ -3095,7 +3095,7 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             not-equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
+             not-equal-constant-when-unsigned-byte-p-bind-free-axe ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter
