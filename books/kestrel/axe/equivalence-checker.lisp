@@ -20164,7 +20164,9 @@
   (declare (xargs :guard (and (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
-                              (test-case-type-alistp types)
+                              (or (eq types :bits)
+                                  (eq types :bytes)
+                                  (test-case-type-alistp types))
                               (symbolp name)
                               ;; print
                               (booleanp debug)
@@ -20196,11 +20198,12 @@
        ((when erp) (mv erp nil state rand result-array-stobj))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       ;; Check vars:
-       (vars1 (and check-vars (merge-sort-symbol< (dag-vars dag1))))
-       (vars2 (and check-vars (merge-sort-symbol< (dag-vars dag2))))
+       ;; Compute and check var lists:
+       (vars1 (merge-sort-symbol< (dag-vars dag1)))
+       (vars2 (merge-sort-symbol< (dag-vars dag2)))
        ((when (and check-vars
-                   (not (perm vars1 vars2))))
+                   ;; can use equal here since the lists are sorted and duplicate-free:
+                   (not (equal vars1 vars2))))
         (and (not (subsetp-eq vars1 vars2))
              (er hard? 'prove-equivalence-fn "The first dag has vars, ~x0, not in the second dag.~%" (set-difference-eq vars1 vars2)))
         (and (not (subsetp-eq vars2 vars1))
@@ -20225,6 +20228,18 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
+       ;; Handle the special values :bits and :bytes for the types:
+       (types (if (eq :bits types)
+                  (let ((all-vars (merge-symbol< vars1 vars2 nil) ; usually the same as just the vars1.
+                                  ))
+                    (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len all-vars))
+                            (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 1)))))
+                (if (eq :bytes types)
+                    (let ((all-vars (merge-symbol< vars1 vars2 nil) ; usually the same as just the vars1.
+                                    ))
+                      (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len all-vars))
+                              (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 8)))))
+                  types)))
        ;; Try to prove the equality:
        ((mv erp provedp state rand result-array-stobj)
         (prove-miter-core equality-dag
@@ -20299,7 +20314,7 @@
          dag1                   ;; The first DAG or term to compare
          dag2                   ;; The second DAG or term to compare
          [:assumptions]         ;; Assumptions to use when proving equivalence
-         [:types]               ;; An alist from variables to their types, used to generate test cases
+         [:types]               ;; An alist from variables to their types, or one of the special values :bits or :bytes.  Used to generate test cases.
          [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
          [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
          [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
