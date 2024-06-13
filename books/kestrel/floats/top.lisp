@@ -15,5 +15,6 @@
 (include-book "round")
 (include-book "ieee-floats-as-bvs")
 (include-book "ieee-floats-validation")
+;; (include-book "ieee-floats-tests") ; omitting as these are just tests
 (include-book "rtl")
 (include-book "rtl-axe")
