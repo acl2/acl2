@@ -39,7 +39,7 @@
                    (equal output1 output2)))
         (er hard? 'prove-functions-equivalent-fn "The two functions and executables (and the outputs of interest) are the same."))
        (name1 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable1) "." (acl2::string-upcase-gen function1)))
-       (name2 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable1) "." (acl2::string-upcase-gen function2)))
+       (name2 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable2) "." (acl2::string-upcase-gen function2)))
        ((when (eq name1 name2))
         (er hard? 'prove-functions-equivalent-fn "Name clash on ~x0." name1))
        (params1 (strip-cars inputs1))

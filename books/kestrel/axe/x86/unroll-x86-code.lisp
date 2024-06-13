@@ -154,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: strengthen:
+;; todo: strengthen:   what are the allowed types?  todo: Allow float types?
 (defun names-and-typesp (names-and-types)
   (declare (xargs :guard t))
   (and (doublet-listp names-and-types)
