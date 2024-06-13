@@ -57,5 +57,4 @@
 ;; Prove equivalence of unrolled code and spec:
 (prove-equivalence *aes-128-encrypt-regular-dag*
                    *aes-128-encrypt-spec-dag*
-                   :types (bit-types-for-vars (append (make-bit-var-list-for-bytes *key-byte-count* 'key)
-                                                      (make-bit-var-list-for-bytes 16 'in))))
+                   :types :bits)
