@@ -161,3 +161,12 @@ struct bar
     x++;
   }
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int foo () {
+  int i = 0;
+  i--;
+}")
