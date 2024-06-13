@@ -112,12 +112,12 @@
      (xdoc::p
       "Flag indicating the preprocessor to use, if any.")
      (xdoc::p
-      "This must be @('nil'), @(':auto') or a @(tsee stringp).")
+      "This must be @('nil'), @(':auto'), or a @(tsee stringp).")
      (xdoc::p
       "If this is a @(tsee stringp), the @(tsee preprocess-file) tool is called
        on the files read at the file paths using the indicated preprocesser. If
-       it is @(':auto'), we use the \"cpp\" preprocessor. If it is @('nil'), we
-       do not preprocess the files.")))
+       it is @(':auto'), we use the @('\"cpp\"') preprocessor. If it is
+       @('nil'), we do not preprocess the files.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
