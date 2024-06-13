@@ -7145,7 +7145,7 @@
                                          :arg prev-expr))
              (curr-span (span-join prev-span span)))
           (parse-postfix-expression-rest curr-expr curr-span pstate)))
-       ((equal token (token-punctuator "++")) ; prev-expr --
+       ((equal token (token-punctuator "--")) ; prev-expr --
         (b* ((curr-expr (make-expr-unary :op (unop-postdec)
                                          :arg prev-expr))
              (curr-span (span-join prev-span span)))
