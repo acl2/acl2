@@ -2430,9 +2430,8 @@
          (pstate (print-astring "{" pstate))
          (pstate (print-enumer-list enumspec.list pstate))
          (pstate (if enumspec.final-comma
-                     (print-astring ", " pstate)
-                   pstate))
-         (pstate (print-astring "}" pstate)))
+                     (print-astring ", }" pstate)
+                   (print-astring "}" pstate))))
       pstate)
     :measure (enumspec-count enumspec))
 
@@ -2571,11 +2570,6 @@
 (define print-decl ((decl declp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a declaration, in its own indented line."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We ensure that there is at least one declaration specifier,
-     as required by the grammar."))
   (b* ((pstate (print-indent pstate))
        (pstate (print-decl-inline decl pstate))
        (pstate (print-new-line pstate)))
@@ -2630,8 +2624,8 @@
     (xdoc::topstring
      (xdoc::p
       "When printing sub-statements of statements,
-       we treat compound sub-statements slighly differently from
-       non-compound sub-statements,
+       we treat compound sub-statements slighly differently
+       from non-compound sub-statements,
        because for compound sub-statements we print
        the open curly brace at the end of the line,
        and additionally the closed curly brace may be followed
@@ -2760,7 +2754,8 @@
                       pstate)))
           (pstate (print-astring "while (" pstate))
           (pstate (print-expr stmt.test (expr-priority-expr) pstate))
-          (pstate (print-astring ");" pstate)))
+          (pstate (print-astring ");" pstate))
+          (pstate (print-new-line pstate)))
        pstate)
      :for
      (b* ((pstate (print-indent pstate))
