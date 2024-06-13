@@ -285,3 +285,33 @@
            (equal (bvchop size (logext size2 x))
                   (bvsx size size2 x)))
   :hints (("Goal" :in-theory (e/d (bvsx logtail-of-bvchop-becomes-slice) (logext)))))
+
+;add -becomes-bvsx to name
+(defthm slice-of-logext-middle
+  (implies (and (< low n)
+                (<= n high)
+                (posp n)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (logext n x))
+                  (bvsx (+ 1 high (- low))
+                        (- n low)
+                        (slice (+ -1 n) low x))))
+  :hints (("Goal" :in-theory (e/d (slice logext repeatbit bvsx LOGTAIL-OF-BVCHOP)
+                                  (BVCHOP-OF-LOGTAIL-BECOMES-SLICE BVCHOP-OF-LOGTAIL)))))
+
+;add -becomes-bvsx to name
+(defthm slice-of-logext-gen
+  (implies (and (posp n)
+                (natp low)
+                (integerp high))
+           (equal (slice high low (logext n x))
+                  (if (< high n)
+                      (slice high low x)
+                    (if (< low n)
+                        (bvsx (+ 1 high (- low))
+                              (- n low)
+                              (slice (+ -1 n) low x))
+                      (bvsx (+ 1 high (- low))
+                            1
+                            (getbit (+ -1 n) x)))))))

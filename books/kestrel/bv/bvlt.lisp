@@ -952,3 +952,12 @@
                 (bvle size k free))
            (not (bvlt size x k)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
+
+(defthm bvlt-when-bvlt-smaller
+  (implies (and (bvlt freesize x y)
+                (<= freesize size)
+                (unsigned-byte-p freesize x)
+                ;; (unsigned-byte-p freesize y)
+                (integerp size))
+           (bvlt size x y))
+  :hints (("Goal" :in-theory (enable bvlt))))

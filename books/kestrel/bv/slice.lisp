@@ -744,3 +744,24 @@
                   0))
   :hints (("Goal" :in-theory (e/d (slice)
                                   (bvchop-of-logtail-becomes-slice)))))
+
+(defthm slice-of-floor-of-expt
+  (implies (and (integerp x)
+                (natp low)
+                (natp high)
+                (natp n))
+           (equal (slice high low (floor x (expt 2 n)))
+                  (slice (+ high n) (+ low n) x)))
+  :hints (("Goal" :in-theory (e/d (slice) (bvchop-of-logtail-becomes-slice)))))
+
+(defthm slice-of-floor-of-expt-constant-version
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (integerp x)
+                (natp low)
+                (natp high)
+                (natp (lg k)))
+           (equal (slice high low (floor x k))
+                  (slice (+ high (lg k)) (+ low (lg k)) x)))
+  :hints (("Goal" :use (:instance slice-of-floor-of-expt (n (lg k)))
+           :in-theory (disable slice-of-floor-of-expt))))
