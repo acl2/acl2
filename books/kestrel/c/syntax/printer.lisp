@@ -1864,7 +1864,7 @@
                 ((unless initer.elems)
                  (raise "Misusage error: ~
                          empty list of initializers.")
-                 (pristate-fix pstate))
+                 pstate)
                 (pstate (print-desiniter-list initer.elems pstate))
                 (pstate (if initer.final-comma
                             (print-astring ", }" pstate)
@@ -2011,8 +2011,7 @@
                    empty list of type qualifiers.")
            pstate)
           (pstate (print-tyqual-list dirdeclor.tyquals pstate))
-          (pstate (print-astring " " pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring " static " pstate))
           (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
@@ -2041,9 +2040,8 @@
                       (print-paramdecl-list dirdeclor.params pstate)
                     pstate))
           (pstate (if dirdeclor.ellipsis
-                      (print-astring ", ..." pstate)
-                    pstate))
-          (pstate (print-astring ")" pstate)))
+                      (print-astring ", ...)" pstate)
+                    (print-astring ")" pstate))))
        pstate)
      :function-names
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
@@ -2149,8 +2147,7 @@
                    empty list of type qualifiers.")
            (pristate-fix pstate))
           (pstate (print-tyqual-list dirabsdeclor.tyquals pstate))
-          (pstate (print-astring " " pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
@@ -2190,7 +2187,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "we ensure that there are declaration specifiers."))
+      "We ensure that there are declaration specifiers."))
     (paramdecl-case
      paramdecl
      :nonabstract
@@ -2240,7 +2237,7 @@
      (xdoc::p
       "We ensure that the list of specifiers and qualifiers is not empty."))
     (b* (((tyname tyname) tyname)
-         ((unless (consp tyname.specqual))
+         ((unless tyname.specqual)
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
          (pstate (print-specqual-list tyname.specqual pstate))
@@ -2260,8 +2257,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called after printing the @('struct') or @('union') keyword,
-       so here we print what comes after that keyword.")
+      "This is called after printing
+       the @('struct') or @('union') keyword followed by a space.
+       Here we print what comes after that keyword.")
      (xdoc::p
       "We ensure that this is not empty, i.e. that there is at least
        the identifier or a non-empty member list.")
@@ -2272,11 +2270,11 @@
        Note that a structure or union specifier
        is not necessarily a top-level construct:
        it may occur in the middle of a sequence of declaration specifiers,
-       so it is not straightforward to always print it on multiple lines,
+       so it is not so straightforward to always print it on multiple lines,
        because we may need to consider what surrounds it.
        Nonetheless, under certain conditions,
        e.g. when it is a lone top-level construct,
-       we should print on multiple lines."))
+       we should print it on multiple lines."))
     (b* (((strunispec strunispec) strunispec)
          ((unless (or (ident-option-case strunispec.name :some)
                       strunispec.members))
