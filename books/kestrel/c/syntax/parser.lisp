@@ -11468,7 +11468,7 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the 'while' keyword, we have an iteration statement.
-       ((equal token (token-keyword "for")) ; while
+       ((equal token (token-keyword "while")) ; while
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; while (
              ((erp expr & pstate) (parse-expression pstate)) ; while ( expr
              ((erp & pstate) (read-punctuator ")" pstate)) ; while ( expr )
