@@ -740,14 +740,13 @@
 ;;      (NOT (SBVLT 32 GARG0 0))
 ;;      (NOT (SBVLT 32 16 GARG0))
 
-(defthm sbvlt-false-from-bound
+(defthm not-sbvlt-from-bound
   (implies (and (syntaxp (quotep k))
                 (sbvlt 32 x free)
                 (syntaxp (quotep free))
                 (< (logext 32 free) (logext 32 k)) ;this will get computed
                 )
-           (equal (sbvlt 32 k x)
-                  nil))
+           (not (sbvlt 32 k x)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 (defthm sbvlt-when-bvlt-constants
@@ -6061,23 +6060,14 @@
   :hints (("Goal" :in-theory (enable sbvlt LOGEXT-BECOMES-BVCHOP-WHEN-POSITIVE))))
 
 ;replace
-(defthm sbvlt-false-from-bound-better
+(defthm not-sbvlt-from-bound-better
   (implies (and (syntaxp (quotep k))
                 (sbvlt 32 x free)
                 (syntaxp (quotep free))
                 (<= (logext 32 free) (logext 32 k)) ;this will get computed
                 )
-           (equal (sbvlt 32 k x)
-                  nil))
+           (not (sbvlt 32 k x)))
   :hints (("Goal" :in-theory (e/d (sbvlt) ()))))
-
-(defthmd sbvlt-false-from-bound-dag
-  (implies (and (syntaxp (quotep k))
-                (sbvlt 32 x free)
-                (syntaxp (quotep free))
-                (<= (logext 32 free) (logext 32 k)))
-           (equal (sbvlt 32 k x) nil))
-  :hints (("Goal" :use (:instance sbvlt-false-from-bound-better))))
 
 ;; or just go to bvlt?
 ;; (thm
