@@ -1084,8 +1084,8 @@
         (raise "Misusage error: ~
                 the character constant has no characters or escape sequences.")
         pstate)
-       (pstate (print-astring "\"" pstate))
-       (pstate (print-s-char-list stringlit.schars pstate)))
+       (pstate (print-s-char-list stringlit.schars pstate))
+       (pstate (print-astring "\"" pstate)))
     pstate)
   :hooks (:fix))
 
