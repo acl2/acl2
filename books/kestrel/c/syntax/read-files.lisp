@@ -216,7 +216,7 @@
        ((unless (or (not preprocessor)
                     (eq :auto preprocessor)
                     (stringp preprocessor)))
-        (reterr (msg "The :PREPROCESSOR input must be NIL, :AUTO, or a STRINGP, ~
+        (reterr (msg "The :PREPROCESSOR input must be NIL, :AUTO, or a string, ~
                       but it is ~x0 instead."
                      preprocessor))))
     (retok const paths preprocessor))
