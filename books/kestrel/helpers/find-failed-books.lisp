@@ -29,14 +29,14 @@
   (prog2$
    (tshell-start)
    (mv-let (status failed-lines state)
-     (tshell-call "find . -name \"*.cert.out\" -exec grep -Hl 'ACL2 Error \\[.*] in (CERTIFY-BOOK' {} \\;" :print nil)
+     (tshell-call-fn "find . -name \"*.cert.out\" -exec grep -Hl 'ACL2 Error \\[.*] in (CERTIFY-BOOK' {} \\;" nil t state)
      (if (not (= 0 status))
          (mv (er hard? 'find-failed-books "Error (~x0) finding failed books.")
              state)
        ;; Attempt to identify interrupted books (we will avoid looking for repairs for them):
        (mv-let (status interrupted-lines state)
          ;; TODO: This may not find interrupts of the proof checker (try interrupting books/projects/apply-model-2/apply-prim)?:
-         (tshell-call "find . -name \"*.cert.out\" -exec grep -Hl 'cause an explicit interrupt' {} \\;" :print nil)
+         (tshell-call-fn "find . -name \"*.cert.out\" -exec grep -Hl 'cause an explicit interrupt' {} \\;" nil t state)
          (if (not (= 0 status))
              (mv (er hard? 'find-failed-books "Error (~x0) finding interrupted books.")
                  state)

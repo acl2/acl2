@@ -53,7 +53,7 @@
     ;;   (declare (ignore output))
     (mv-let (status output state)
       ;; tshell-call seems better than sys-call, because it doesn't fork the ACL2 process:
-      (tshell-call (concatenate 'string script-path " " (concatenate-strings-with-spaces script-args)) :save nil)
+      (tshell-call-fn (concatenate 'string script-path " " (concatenate-strings-with-spaces script-args)) t nil state)
       (declare (ignore output)) ; not captured, since :save is nil
       ;; todo: check the output directly instead of re-directing to a file?
       (progn$
