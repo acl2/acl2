@@ -2280,7 +2280,6 @@
                       strunispec.members))
           (raise "Misusage error: empty structure or union specifier.")
           (pristate-fix pstate))
-         (pstate (print-astring " " pstate))
          (pstate (ident-option-case
                   strunispec.name
                   :some (b* ((pstate (print-ident strunispec.name.val pstate))
