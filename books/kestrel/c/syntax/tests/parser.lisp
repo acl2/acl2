@@ -110,3 +110,54 @@ struct bar
 (test-parser
  parse-external-declaration-list
  "int A [] = {0,1,2,3};")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int spec_int(unsigned int v)
+{
+  unsigned int c;
+  for (c = 0; v; v >>= 1)
+    c += v & 1;
+  return c;
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int sum(int a[], int n) {
+  int s = 0;
+  for (int i = 1; i <= n; ++i)
+    s += a[i];
+  return s;
+}")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int foo (char x, char y) { return x < y && y < x; }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int foo (int x, int y) { return x < y || y < x; }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int foo (int x) { int z = 0 ; z &= x; }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "void foo () {
+  while (x > y) {
+    x++;
+  }
+}")
