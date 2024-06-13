@@ -5889,7 +5889,7 @@
            (sbvlt size x 0))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
 
-(defthm bvlt-when-sbvlt-false
+(defthm not-bvlt-when-sbvlt
   (implies (and (syntaxp (and (quotep size)
                               (quotep k)))
                 (sbvlt size2 x free)
