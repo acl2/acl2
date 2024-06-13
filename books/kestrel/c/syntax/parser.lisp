@@ -6953,7 +6953,6 @@
                       (parse-postfix-expression-rest expr
                                                      (span-join span span3)
                                                      pstate)))
-
                    (t ; ( ident ) other
                     (reterr-msg :where (position-to-msg (span->start span4))
                                 :expected "an open parenthesis ~
