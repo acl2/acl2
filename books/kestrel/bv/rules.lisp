@@ -5993,7 +5993,7 @@
            (sbvlt size x 0))
   :hints (("Goal" :in-theory (enable sbvlt-rewrite))))
 
-(defthm bvlt-when-sbvlt-false
+(defthm not-bvlt-when-sbvlt
   (implies (and (syntaxp (and (quotep size)
                               (quotep k)))
                 (sbvlt size2 x free)
@@ -6500,3 +6500,7 @@
                 (natp pow))
            (equal (bvplus size x (bvmult smallsize pow y))
                   (bvplus smallsize x (bvmult smallsize pow y)))))
+
+(defthmd bvif-of-if-becomes-bvif-of-boolif-arg2
+  (equal (bvif size (if test tp ep) tp2 ep2)
+         (bvif size (boolif test tp ep) tp2 ep2)))

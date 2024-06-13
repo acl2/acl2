@@ -671,6 +671,11 @@
     acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
     acl2::bitp-becomes-unsigned-byte-p
+
+    ;; Just for making terms in failures more readable:
+    mv-nth-1-of-rb-1-of-set-rip
+    mv-nth-1-of-rb-of-set-rip
+    mv-nth-1-of-rb-of-set-rax ; could add more like this
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -1669,8 +1674,9 @@
 
             x86isa::create-canonical-address-list-1
 
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
+            x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
             x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
             x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons

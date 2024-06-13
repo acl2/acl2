@@ -660,7 +660,7 @@
                 (posp size))
            (equal (logext size x)
                   (logext size (trim size x))))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -925,19 +925,18 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-bind-free-dag
+(defthm not-equal-constant-when-unsigned-byte-p-bind-free-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (syntaxp (quotep xsize))
                 (not (unsigned-byte-p xsize k))
                 (unsigned-byte-p-forced xsize x))
-           (equal (equal k x)
-                  nil))
+           (not (equal k x)))
   :rule-classes nil ; because of xsize
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;a cheap case of logext-identity
-(defthmd logext-identity-when-usb-smaller-dag
+(defthmd logext-identity-when-usb-smaller-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'size2 dag-array) '(size2))
                 (< size2 n)
                 (unsigned-byte-p-forced size2 x)
@@ -953,16 +952,14 @@
 (defthmd rationalp-when-bv-operator
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
-           (equal (rationalp x)
-                  t))
+           (rationalp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;rename axe-
 (defthmd acl2-numberp-when-bv-operator
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
-           (equal (acl2-numberp x)
-                  t))
+           (acl2-numberp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthmd acl2-numberp-of-logext
@@ -1109,7 +1106,6 @@
            (not (< x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-
 (defthmd bvlt-of-constant-when-too-narrow
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1118,10 +1114,8 @@
                 (natp size)
                 (unsigned-byte-p-forced xsize x)
                 )
-           (equal (bvlt size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
-
 
 (defthmd bvlt-when-bound-dag
   (implies (and (syntaxp (quotep k))
@@ -1130,8 +1124,7 @@
                 (natp size)
                 (bvle size (expt 2 xsize) k)
                 (unsigned-byte-p-forced xsize x))
-           (equal (bvlt size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :use (:instance bvlt-when-bound)
            :in-theory (disable bvlt-when-bound))))
 
@@ -1959,14 +1952,14 @@
                   x))
   :hints (("Goal" :in-theory (enable bvsx getbit-too-high))))
 
-;gen
+;gen, rename
 (defthmd sbvlt-of-0-when-shorter2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize 32)
                 (natp xsize)
                 (unsigned-byte-p-forced xsize x))
-           (equal (sbvlt 32 x 0) ;gen the 0
-                  nil))
+           (not (sbvlt 32 x 0) ;gen the 0
+                ))
   :hints (("Goal" :use (:instance sbvlt-of-0-when-shorter2)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-of-0-when-shorter2)))))
 
@@ -2257,5 +2250,4 @@
                 (< free x)
                 (syntaxp (quotep free))
                 (<= y free))
-           (equal (equal y x)
-                  nil)))
+           (not (equal y x))))

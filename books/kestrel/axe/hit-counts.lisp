@@ -1,7 +1,7 @@
 ; Counting how many times rewrite rules apply
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,9 +12,14 @@
 
 (in-package "ACL2")
 
+;; This book contains utilities for counting successful rule applications
+;; ("hits") using a custom property list world.
+
 ;; TODO: See also count-worlds.lisp.  Can we just use that machinery?
 ;; TODO: Or generalize this machinery to count things other than counts, eg.,
 ;; useful and useles tries.
+
+;; TODO: Consider just using a fast alist.
 
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
@@ -27,62 +32,68 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
-(defthm symbol-alistp-of-evens
-  (implies (symbol-alistp alist)
-           (symbol-alistp (evens alist)))
-  :hints (("Goal" :induct t
-           :in-theory (enable symbol-alistp evens))))
+(local
+  (defthm symbol-alistp-of-evens
+    (implies (symbol-alistp alist)
+             (symbol-alistp (evens alist)))
+    :hints (("Goal" :induct t
+             :in-theory (enable symbol-alistp evens)))))
 
-(defthm symbol-alistp-of-odds
-  (implies (symbol-alistp alist)
-           (symbol-alistp (odds alist)))
-  :hints (("Goal" :induct t
-           :in-theory (enable symbol-alistp odds))))
+(local
+  (defthm symbol-alistp-of-odds
+    (implies (symbol-alistp alist)
+             (symbol-alistp (odds alist)))
+    :hints (("Goal" :induct t
+             :in-theory (enable symbol-alistp odds)))))
 
-(defthm symbol-alistp-of-merge-by-cdr->
-  (implies (and (symbol-alistp l1)
-                (symbol-alistp l2)
-                (symbol-alistp acc))
-           (symbol-alistp (merge-by-cdr-> l1 l2 acc)))
-  :hints (("Goal" :in-theory (enable merge-by-cdr->))))
+(local
+  (defthm symbol-alistp-of-merge-by-cdr->
+    (implies (and (symbol-alistp l1)
+                  (symbol-alistp l2)
+                  (symbol-alistp acc))
+             (symbol-alistp (merge-by-cdr-> l1 l2 acc)))
+    :hints (("Goal" :in-theory (enable merge-by-cdr->)))))
 
-(defthm symbol-alistp-of-merge-sort-by-cdr->
-  (implies (symbol-alistp alist)
-           (symbol-alistp (merge-sort-by-cdr-> alist)))
-  :hints (("Goal" :in-theory (enable merge-sort-by-cdr->))))
+(local
+  (defthm symbol-alistp-of-merge-sort-by-cdr->
+    (implies (symbol-alistp alist)
+             (symbol-alistp (merge-sort-by-cdr-> alist)))
+    :hints (("Goal" :in-theory (enable merge-sort-by-cdr->)))))
 
-(defthm nat-listp-of-strip-cdrs-of-evens
-  (implies (nat-listp (strip-cdrs alist))
-           (nat-listp (strip-cdrs (evens alist))))
-  :hints (("Goal" :induct t
-           :in-theory (enable nat-listp evens))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm nat-listp-of-strip-cdrs-of-odds
-  (implies (nat-listp (strip-cdrs alist))
-           (nat-listp (strip-cdrs (odds alist))))
-  :hints (("Goal" :induct t
-           :in-theory (enable nat-listp odds))))
+(local
+  (defthm nat-listp-of-strip-cdrs-of-evens
+    (implies (nat-listp (strip-cdrs alist))
+             (nat-listp (strip-cdrs (evens alist))))
+    :hints (("Goal" :induct t
+             :in-theory (enable nat-listp evens)))))
 
-(defthm nat-listp-of-strip-cdrs-of-merge-by-cdr->
-  (implies (and (nat-listp (strip-cdrs l1))
-                (nat-listp (strip-cdrs l2))
-                (nat-listp (strip-cdrs acc)))
-           (nat-listp (strip-cdrs (merge-by-cdr-> l1 l2 acc))))
-  :hints (("Goal" :in-theory (enable merge-by-cdr->))))
+(local
+  (defthm nat-listp-of-strip-cdrs-of-odds
+    (implies (nat-listp (strip-cdrs alist))
+             (nat-listp (strip-cdrs (odds alist))))
+    :hints (("Goal" :induct t
+             :in-theory (enable nat-listp odds)))))
 
-(defthm nat-listp-of-strip-cdrs-of-merge-sort-by-cdr->
-  (implies (nat-listp (strip-cdrs alist))
-           (nat-listp (strip-cdrs (merge-sort-by-cdr-> alist))))
-  :hints (("Goal" :in-theory (enable merge-sort-by-cdr->))))
+(local
+  (defthm nat-listp-of-strip-cdrs-of-merge-by-cdr->
+    (implies (and (nat-listp (strip-cdrs l1))
+                  (nat-listp (strip-cdrs l2))
+                  (nat-listp (strip-cdrs acc)))
+             (nat-listp (strip-cdrs (merge-by-cdr-> l1 l2 acc))))
+    :hints (("Goal" :in-theory (enable merge-by-cdr->)))))
 
+(local
+  (defthm nat-listp-of-strip-cdrs-of-merge-sort-by-cdr->
+    (implies (nat-listp (strip-cdrs alist))
+             (nat-listp (strip-cdrs (merge-sort-by-cdr-> alist))))
+    :hints (("Goal" :in-theory (enable merge-sort-by-cdr->)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;
-;; counting rule uses (using a custom world)
-;;
-
-;; A true-list of triples of the form (sym prop . val).  See :doc world.  A
-;; specialization of plist-worldp that requires the values to be rationals.
+;; A true-list of triples of the form (sym prop . nat).  See :doc world.  A
+;; specialization of plist-worldp that requires the values to be nats.
 ;; Note that nil satisfies info-worldp but means that we are not counting hits
 ;; at all (see empty-info-world).  Every valid info-world will have an entry
 ;; for the special key :fake.  So we could perhaps call this maybe-info-worldp.
@@ -102,24 +113,31 @@
            (plist-worldp alist))
   :hints (("Goal" :in-theory (enable info-worldp plist-worldp))))
 
-(defthm acl2-numberp-of-getprop-when-info-worldp
+(defthm natp-of-getprop-when-info-worldp
   (implies (and (info-worldp info)
-                (acl2-numberp val))
-           (acl2-numberp (sgetprop rule-symbol key val world-name info)))
+                (natp val))
+           (natp (sgetprop rule-symbol key val world-name info)))
   :hints (("Goal" :in-theory (enable info-worldp))))
 
-(defthm rationalp-of-getprop-when-info-worldp
+(defthm info-worldp-of-uniquify-alist-eq-aux
   (implies (and (info-worldp info)
-                (rationalp val))
-           (rationalp (sgetprop rule-symbol key val world-name info)))
+                (info-worldp acc))
+           (info-worldp (uniquify-alist-eq-aux info acc)))
+  :hints (("Goal" :in-theory (enable info-worldp acons))))
+
+(defthmd symbol-alistp-when-info-worldp
+  (implies (info-worldp info)
+           (symbol-alistp info))
   :hints (("Goal" :in-theory (enable info-worldp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Consider not calling extend-world each time (instead, maybe try every 20 times).
 (defund increment-hit-count-in-info-world (rule-symbol info)
   (declare (xargs :guard (and (symbolp rule-symbol)
                               (info-worldp info))))
-    (let* ((count (getprop rule-symbol 'hit-count 0 'info-world info))
-           (count (+ 1 count))
+    (let* ((count (the (integer 0 *) (getprop rule-symbol 'hit-count 0 'info-world info)))
+           (count (the (integer 0 *) (+ 1 count)))
            (info (extend-world 'info-world (putprop rule-symbol 'hit-count count info))))
       info))
 
@@ -128,6 +146,8 @@
                 (symbolp rule-symbol))
            (info-worldp (increment-hit-count-in-info-world rule-symbol info)))
   :hints (("Goal" :in-theory (enable increment-hit-count-in-info-world info-worldp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund empty-info-world ()
   (declare (xargs :guard t))
@@ -138,6 +158,8 @@
 ;; Disabled since this is a ground term
 (defthmd info-worldp-of-empty-info-world
   (info-worldp (empty-info-world)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund hit-count-alistp (alist)
   (declare (xargs :guard t))
@@ -188,6 +210,8 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The info should be uniquify-ed before calling this.
 ;; This gets rid of the mention of :fake.
 (defund make-hit-count-alist (info acc)
@@ -206,7 +230,7 @@
   (implies (and (info-worldp info)
                 (hit-count-alistp acc))
            (hit-count-alistp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable hit-count-alistp SYMBOL-ALISTP strip-cdrs INFO-WORLDP
+  :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs info-worldp
                                      make-hit-count-alist))))
 
 (defthm all-consp-of-make-hit-count-alist
@@ -230,16 +254,7 @@
            (all-cdrs-rationalp (make-hit-count-alist info acc)))
   :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist))))
 
-(defthm info-worldp-of-uniquify-alist-eq-aux
-  (implies (and (info-worldp info)
-                (info-worldp acc))
-           (info-worldp (uniquify-alist-eq-aux info acc)))
-  :hints (("Goal" :in-theory (enable info-worldp acons))))
-
-(defthm symbol-alistp-when-info-worldp
-  (implies (info-worldp info)
-           (symbol-alistp info))
-  :hints (("Goal" :in-theory (enable info-worldp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund sort-hit-count-alist (alist)
   (declare (xargs :guard (hit-count-alistp alist)))
@@ -250,6 +265,7 @@
            (hit-count-alistp (sort-hit-count-alist alist)))
   :hints (("Goal" :in-theory (enable hit-count-alistp sort-hit-count-alist))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Consider optimizing this by looping through all the rule names and
 ;; just looking up their counts, instead of calling uniquify-alist-eq.
@@ -267,6 +283,9 @@
   :hints (("Goal" :in-theory (enable summarize-info-world
                                      info-worldp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: handle or disallow print=nil
 (defund maybe-print-hit-counts (print info)
   (declare (xargs :guard (and ;; something about print
                           (info-worldp info))))
@@ -293,6 +312,8 @@
                 ;;   (cw "(~x0 Useless rules: ~x1.)~%" (len useless-rules) useless-rules)
                 ;;   )
                 )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Make a hit count alist where each rule's count is its count in alist1 minus
 ;; its count in alist2.  We expect alist1 to be an "superset" (in the sense of

@@ -29,7 +29,11 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable triesp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro zero-tries () 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund-inline increment-tries (tries)
   (declare (xargs :guard (triesp tries)))
@@ -40,6 +44,9 @@
            (triesp (increment-tries x)))
   :hints (("Goal" :in-theory (enable triesp increment-tries))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
 (defund-inline sub-tries (tries1 tries2)
   (declare (xargs :guard (and (triesp tries1)
                               (triesp tries2))))
