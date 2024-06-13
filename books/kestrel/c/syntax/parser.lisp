@@ -3681,7 +3681,7 @@
           (retok (lexeme-token (token-punctuator "&"))
                  (make-span :start first-pos :end first-pos)
                  pstate))
-         ((= char2 (char-code #\=)) ; & &
+         ((= char2 (char-code #\&)) ; & &
           (retok (lexeme-token (token-punctuator "&&"))
                  (make-span :start first-pos :end pos2)
                  pstate))
@@ -3702,7 +3702,7 @@
           (retok (lexeme-token (token-punctuator "|"))
                  (make-span :start first-pos :end first-pos)
                  pstate))
-         ((= char2 (char-code #\=)) ; | |
+         ((= char2 (char-code #\|)) ; | |
           (retok (lexeme-token (token-punctuator "||"))
                  (make-span :start first-pos :end pos2)
                  pstate))
@@ -6953,7 +6953,6 @@
                       (parse-postfix-expression-rest expr
                                                      (span-join span span3)
                                                      pstate)))
-
                    (t ; ( ident ) other
                     (reterr-msg :where (position-to-msg (span->start span4))
                                 :expected "an open parenthesis ~
@@ -11468,7 +11467,7 @@
                  (span-join span last-span)
                  pstate)))
        ;; If token is the 'while' keyword, we have an iteration statement.
-       ((equal token (token-keyword "for")) ; while
+       ((equal token (token-keyword "while")) ; while
         (b* (((erp & pstate) (read-punctuator "(" pstate)) ; while (
              ((erp expr & pstate) (parse-expression pstate)) ; while ( expr
              ((erp & pstate) (read-punctuator ")" pstate)) ; while ( expr )

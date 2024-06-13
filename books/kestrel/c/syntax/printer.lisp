@@ -37,17 +37,17 @@
      but we will make it more feature-rich in the future.")
    (xdoc::p
     "Our abstract syntax is broader than the concrete syntax,
-     in the sense that it represents slightly more constructs
+     in the sense that it represents more constructs
      than allowed by the concrete syntax.
      For instance, identifiers in the abstract syntax can be anything
-     (for the reasons explained in the documentation there),
+     (for the reasons explained in @(tsee ident)),
      but they follow certain restrictions in the concrete syntax.
      We plan to define, and use in the printer as guards,
      predicates over the abstract syntax that check whether
      the abstract syntax conforms to the concrete syntax.
      For now, we use run-time checks, where needed,
      to ensure that the abstract syntax matches the concrete syntax;
-     in some cases we actually use slightly weaker checks.
+     in some cases we actually use weaker checks.
      If these run-time checks fail, we throw hard errors,
      which is not ideal in general,
      but we want to keep the printing functions's inputs and outputs
@@ -57,10 +57,14 @@
     (xdoc::seetopic "acl2::error-triple" "error triples")
     ") needed for non-hard errors.
      After all, a printer is not supposed to fail,
-     and once we have the aforementioned guard, it will never fail.
-     For now, we can consider calling the printer
+     and once we have the aforementioned guards, it will never fail.
+     For now, we can regard calls to the printer
      with non-compliant abstract syntax a form of internal error,
-     for which hard errors are generally appropriate."))
+     for which hard errors are generally appropriate.
+     But we use the term `misusage error' in the hard error messages,
+     to reflect the fact that the printer is being misused in some sense,
+     as opposed to an `internal error' which is generally used for
+     situations are due to some proper implementation error."))
   :order-subtopics t
   :default-parent t)
 
@@ -75,16 +79,18 @@
    (xdoc::p
     "The main content of a printer state is
      the bytes that form (the data of) the file being printed,
-     in reverse order, which  makes extending the data more efficent.")
+     in reverse order, which makes extending the data more efficent
+     (by @(tsee cons)ing).")
    (xdoc::p
     "We also keep track of the current indentation level,
-     as a natural number starting from 0 (which means left margin).
+     as a natural number starting from 0 (where 0 means left margin).
      This is used to print indented code, as typical.")
    (xdoc::p
     "We also keep track of the size of each identation level,
-     as a positive integer that indicates the number of spaces.
+     as a positive integer that indicates the number of spaces
+     for a single indentation level.
      This does not change in the course of the printing,
-     but it is convenient to have it in the printing state,
+     but it is convenient to keep it in the printing state,
      to avoid passing it around as an extra parameter.
      It is set when the printing state is initially created and never changes.")
    (xdoc::p
@@ -137,7 +143,7 @@
      throwing a hard error if that happens
      (which would make the level negative when decremented).
      This is an internal error: it should never happen,
-     and if it does there is a bug in our printer."))
+     but if it may happen if there is a bug in our printer."))
   (b* ((indent-level (pristate->indent-level pstate))
        ((when (= indent-level 0))
         (raise "Internal error: ~
@@ -156,8 +162,12 @@
   (xdoc::topstring
    (xdoc::p
     "Currently all the characters allowed by our grammar are ASCII,
-     so they fit into a byte, which we add to the printer state
-     (that is, no UTF-8 encoding is needed).")
+     so they fit into a byte, which we add to the printer state.
+     That is, no UTF-8 encoding is needed for now.")
+   (xdoc::p
+    "Recall that we represent characters as codes, i.e. natural numbers,
+     not as ACL2 characters.
+     This is so that we can easily generalize from ASCII to Unicode.")
    (xdoc::p
     "This is the most basic printing function in our printer.
      All other printing functions call this one, directly or indirectly."))
@@ -179,7 +189,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The characters are supplied in a list.
+    "The characters are supplied in a list (of their codes).
      They are printed from left to right."))
   (b* (((when (endp chars)) (pristate-fix pstate))
        (pstate (print-char (car chars) pstate)))
@@ -193,6 +203,16 @@
 (define print-new-line ((pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a new-line character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we print a single line feed character, which has code 10.
+     In the future, we could support a printer option
+     for the kind of new line character to use.
+     Our parser supports
+     (i) line feeds,
+     (ii) carriage returns, and
+     (iii) line feeds immediately followed by carriage returns."))
   (print-char 10 pstate)
   :hooks (:fix))
 
@@ -205,8 +225,13 @@
   (xdoc::topstring
    (xdoc::p
     "This should be called at the beginning of a line,
-     i.e. at the very beginning of printing,
-     or after printing a new-line character."))
+     i.e. at the very beginning of printing
+     (which will be a no-op, since the indentation level is initially 0),
+     or after printing a new-line character.")
+   (xdoc::p
+    "We multiply the indentation level by the number of spaces for each level,
+     and we print those many spaces (the code of the space character is 32).
+     This is zero spaces, at indent level 0."))
   (b* (((pristate pstate) pstate)
        (spaces-to-print (* pstate.indent-level
                            pstate.indent-size)))
@@ -223,7 +248,19 @@
   (xdoc::topstring
    (xdoc::p
     "This provides the convenience to use use ACL2 strings,
-     instead of using character codes."))
+     instead of using character codes.")
+   (xdoc::p
+    "Since for now our concrete syntax only supports ASCII,
+     this suffices to print anything.
+     Even if we extend our concrete syntax to support (some) Unicode,
+     most of the ACL2 syntax is still ASCII,
+     and therefore this printing function is, and will always be,
+     to print a lot of the code.")
+   (xdoc::p
+    "Note that an ACL2 string can contain characters that,
+     when converted to natural numbers, are larger than 127,
+     and therefore are not ASCII.
+     But we always call this printing function with ASCII strings."))
   (print-chars (acl2::string=>nats string) pstate)
   ///
   (fty::deffixequiv print-astring
@@ -234,6 +271,17 @@
 (define print-dec-digit-achar ((achar dec-digit-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an ACL2 decimal digit character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the character into its code and print it.
+     Note that we do not need the numeric value of the character;
+     we just need to print the character itself.")
+   (xdoc::p
+    "This is essentially the same code as
+     @(tsee print-oct-digit-achar) and @(tsee print-hex-digit-achar),
+     but it has a stronger guard than if we used
+     a more general function to print an ACL2 character."))
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            dec-digit-char-p)))
@@ -259,6 +307,17 @@
 (define print-oct-digit-achar ((achar oct-digit-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an ACL2 octal digit character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the character into its code and print it.
+     Note that we do not need the numeric value of the character;
+     we just need to print the character itself.")
+   (xdoc::p
+    "This is essentially the same code as
+     @(tsee print-dec-digit-achar) and @(tsee print-hex-digit-achar),
+     but it has a stronger guard than if we used
+     a more general function to print an ACL2 character."))
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            oct-digit-char-p)))
@@ -284,6 +343,17 @@
 (define print-hex-digit-achar ((achar hex-digit-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an ACL2 hexadecimal digit character."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We turn the character into its code and print it.
+     Note that we do not need the numeric value of the character;
+     we just need to print the character itself.")
+   (xdoc::p
+    "This is essentially the same code as
+     @(tsee print-dec-digit-achar) and @(tsee print-oct-digit-achar),
+     but it has a stronger guard than if we used
+     a more general function to print an ACL2 character."))
   (print-char (char-code achar) pstate)
   :guard-hints (("Goal" :in-theory (enable grammar-character-p
                                            hex-digit-char-p)))
@@ -314,7 +384,11 @@
    (xdoc::p
     "We check that the identifier is a non-empty ACL2 string
      whose character codes are all valid in our C grammar.
-     This way we can call @(tsee print-chars)."))
+     This way we can call @(tsee print-chars).")
+   (xdoc::p
+    "This is a weaker check than ensuring that the string
+     is in fact a valid C identifier in our concrete syntax.
+     We plan to strengthen this in the future."))
   (b* ((string? (ident->unwrap ident))
        ((unless (stringp string?))
         (raise "Misusage error: ~
@@ -346,7 +420,7 @@
    (xdoc::p
     "In our abstract syntax, @(tsee ident-list) is used only
      in the @(':function-names') case of @(tsee dirdeclor),
-     where the identifiers represent function parameter name,
+     where the identifiers represent function parameter names,
      and so it is appropriate to print them separated by commas."))
   (b* (((unless (mbt (consp idents))) (pristate-fix pstate))
        (pstate (print-ident (car idents) pstate))
@@ -398,6 +472,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-isuffix-option ((isuffix? isuffix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional integer suffix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no suffix, we print nothing."))
+  (isuffix-option-case
+   isuffix?
+   :some (print-isuffix isuffix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-hprefix ((hprefix hprefixp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a hexadecimal prefix."
@@ -425,14 +514,14 @@
      first we print the leading zeros.
      We convert the value, which is a non-negative integer,
      into octal digits, using an auxiliary function from the library
-     that turns 0 into @('nil'), which is what we wnat,
+     that turns 0 into @('nil'), which is what we want,
      because the octal constant @('0') is represented as
      one leading zero and value zero.")
    (xdoc::p
     "For a hexadecimal constant,
      first we print the prefix.
      We ensure that there is at least one digit
-     (otherwise it is not a valid hexadecimal constant),
+     (otherwise it is not a syntactically valid hexadecimal constant),
      and we print them."))
   (dec/oct/hex-const-case
    dohconst
@@ -460,9 +549,7 @@
   :short "Print an integer constant."
   (b* (((iconst iconst) iconst)
        (pstate (print-dec/oct/hex-const iconst.dec/oct/hex pstate))
-       (pstate (if iconst.suffix
-                   (print-isuffix iconst.suffix pstate)
-                 pstate)))
+       (pstate (print-isuffix-option iconst.suffix pstate)))
     pstate)
   :hooks (:fix))
 
@@ -470,13 +557,28 @@
 
 (define print-fsuffix ((fsuffix fsuffixp) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print a floaring suffix."
+  :short "Print a floating suffix."
   (fsuffix-case
    fsuffix
    :locase-f (print-astring "f" pstate)
    :upcase-f (print-astring "F" pstate)
    :locase-l (print-astring "l" pstate)
    :upcase-l (print-astring "L" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-fsuffix-option ((fsuffix? fsuffix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional floating suffix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no suffix, we print nothing."))
+  (fsuffix-option-case
+   fsuffix?
+   :some (print-fsuffix fsuffix?.val pstate)
+   :none (pristate-fix pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -488,6 +590,21 @@
    sign
    :plus (print-astring "+" pstate)
    :minus (print-astring "-" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-sign-option ((sign? sign-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional sign."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no sign, we print nothing."))
+  (sign-option-case
+   sign?
+   :some (print-sign sign?.val pstate)
+   :none (pristate-fix pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -523,15 +640,28 @@
     "We ensure that there is at least one digit."))
   (b* (((dec-expo expo) expo)
        (pstate (print-dec-expo-prefix expo.prefix pstate))
-       (pstate (if expo.sign?
-                   (print-sign expo.sign? pstate)
-                 pstate))
+       (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~
                 the decimal exponent has no digits.")
-        (pristate-fix pstate))
+        pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-dec-expo-option ((expo? dec-expo-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional decimal exponent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no decimal exponent, we print nothing."))
+  (dec-expo-option-case
+   expo?
+   :some (print-dec-expo expo?.val pstate)
+   :none (pristate-fix pstate))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -545,13 +675,11 @@
     "We ensure that there is at least one digit."))
   (b* (((bin-expo expo) expo)
        (pstate (print-bin-expo-prefix expo.prefix pstate))
-       (pstate (if expo.sign?
-                   (print-sign expo.sign? pstate)
-                 pstate))
+       (pstate (print-sign-option expo.sign? pstate))
        ((unless expo.digits)
         (raise "Misusage error: ~
                 the binary exponent has no digits.")
-        (pristate-fix pstate))
+        pstate)
        (pstate (print-dec-digit-achars expo.digits pstate)))
     pstate)
   :hooks (:fix))
@@ -608,13 +736,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For an integer one, we ensure that there is at least one digit."))
+    "For an integer one, we ensure that there is at least one digit.
+     For a fractional one, the check is performed
+     in @(tsee print-dec-frac-const)."))
   (dec-core-fconst-case
    fconst
    :frac (b* ((pstate (print-dec-frac-const fconst.significand pstate))
-              (pstate (if fconst.expo?
-                          (print-dec-expo fconst.expo? pstate)
-                        pstate)))
+              (pstate (print-dec-expo-option fconst.expo? pstate)))
            pstate)
    :int (b* (((unless fconst.significand)
               (raise "Misusage error: ~
@@ -634,7 +762,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For an integer one, we ensure that there is at least one digit."))
+    "For an integer one, we ensure that there is at least one digit.
+     For a fractional one, the check is performed
+     in @(tsee print-hex-frac-const)."))
   (hex-core-fconst-case
    fconst
    :frac (b* ((pstate (print-hex-frac-const fconst.significand pstate))
@@ -658,14 +788,10 @@
   (fconst-case
    fconst
    :dec (b* ((pstate (print-dec-core-fconst fconst.core pstate))
-             (pstate (if fconst.suffix
-                         (print-fsuffix fconst.suffix pstate)
-                       pstate)))
+             (pstate (print-fsuffix-option fconst.suffix pstate)))
           pstate)
    :hex (b* ((pstate (print-hex-core-fconst fconst.core pstate))
-             (pstate (if fconst.suffix
-                         (print-fsuffix fconst.suffix pstate)
-                       pstate)))
+             (pstate (print-fsuffix-option fconst.suffix pstate)))
           pstate))
   :hooks (:fix))
 
@@ -676,17 +802,17 @@
   :short "Print a simple escape."
   (simple-escape-case
    esc
-   :squote (print-astring "\\'" pstate) ; \'
+   :squote (print-astring "\\'" pstate)  ; \'
    :dquote (print-astring "\\\"" pstate) ; \"
-   :qmark (print-astring "\\?" pstate) ; \?
+   :qmark (print-astring "\\?" pstate)   ; \?
    :bslash (print-astring "\\\\" pstate) ; \\
-   :a (print-astring "\\a" pstate)
-   :b (print-astring "\\b" pstate)
-   :f (print-astring "\\f" pstate)
-   :n (print-astring "\\n" pstate)
-   :r (print-astring "\\r" pstate)
-   :t (print-astring "\\t" pstate)
-   :v (print-astring "\\v" pstate))
+   :a (print-astring "\\a" pstate)       ; \a
+   :b (print-astring "\\b" pstate)       ; \b
+   :f (print-astring "\\f" pstate)       ; \f
+   :n (print-astring "\\n" pstate)       ; \n
+   :r (print-astring "\\r" pstate)       ; \r
+   :t (print-astring "\\t" pstate)       ; \t
+   :v (print-astring "\\v" pstate))      ; \v
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -710,7 +836,7 @@
 
 (define print-hex-quad ((quad hex-quad-p) (pstate pristatep))
   :returns (new-pstate pristatep)
-  :short "Print quadruple of hexadecimal digits."
+  :short "Print a quadruple of hexadecimal digits."
   (b* (((hex-quad quad) quad)
        (pstate (print-hex-digit-achar quad.1st pstate))
        (pstate (print-hex-digit-achar quad.2nd pstate))
@@ -726,10 +852,10 @@
   :short "Print a universal character name."
   (univ-char-name-case
    ucname
-   :locase-u (b* ((pstate (print-astring "\\u" pstate))
+   :locase-u (b* ((pstate (print-astring "\\u" pstate)) ; \u
                   (pstate (print-hex-quad ucname.quad pstate)))
                pstate)
-   :upcase-u (b* ((pstate (print-astring "\\U" pstate))
+   :upcase-u (b* ((pstate (print-astring "\\U" pstate)) ; \U
                   (pstate (print-hex-quad ucname.quad1 pstate))
                   (pstate (print-hex-quad ucname.quad2 pstate)))
                pstate))
@@ -740,11 +866,20 @@
 (define print-escape ((esc escapep) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an escape sequence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We ensure that there is at least one digit
+     in a hexadecimal escape sequence."))
   (escape-case
    esc
    :simple (print-simple-escape esc.unwrap pstate)
    :oct (print-oct-escape esc.unwrap pstate)
-   :hex (b* ((pstate (print-astring "\\x" pstate))
+   :hex (b* ((pstate (print-astring "\\x" pstate)) ; \x
+             ((unless esc.unwrap)
+              (raise "Misusage error: ~
+                      hexadecimal escape sequence has no digits.")
+              pstate)
              (pstate (print-hex-digit-achars esc.unwrap pstate)))
           pstate)
    :univ (print-univ-char-name esc.unwrap pstate))
@@ -764,7 +899,7 @@
      It must be a character in the grammar,
      and in addition it must not be
      a single quote, a backslash, or a new-line character.
-     The latter encompasses not only line feed, but also carriage return:
+     The latter check encompasses not only line feed, but also carriage return:
      recall that both are allowed in our grammar,
      and that we allow three kinds of new-line characters
      (line feed alone,
@@ -773,10 +908,10 @@
   (c-char-case
    cchar
    :char (b* (((unless (and (grammar-character-p cchar.unwrap)
-                            (not (= cchar.unwrap (char-code #\')))
-                            (not (= cchar.unwrap (char-code #\\)))
-                            (not (= cchar.unwrap 10))
-                            (not (= cchar.unwrap 13))))
+                            (not (= cchar.unwrap (char-code #\'))) ; '
+                            (not (= cchar.unwrap (char-code #\\))) ; \
+                            (not (= cchar.unwrap 10))              ; LF
+                            (not (= cchar.unwrap 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a character constant."
@@ -811,6 +946,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-cprefix-option ((cprefix? cprefix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional character constant prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (cprefix-option-case
+   cprefix?
+   :some (print-cprefix cprefix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-cconst ((cconst cconstp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a character constant."
@@ -819,14 +969,14 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((cconst cconst) cconst)
-       (pstate (if cconst.prefix
-                   (print-cprefix cconst.prefix pstate)
-                 pstate))
+       (pstate (print-cprefix-option cconst.prefix pstate))
+       (pstate (print-astring "'" pstate))
        ((unless cconst.cchars)
         (raise "Misusage error: ~
                 the character constant has no characters or escape sequences.")
-        (pristate-fix pstate))
-       (pstate (print-c-char-list cconst.cchars pstate)))
+        pstate)
+       (pstate (print-c-char-list cconst.cchars pstate))
+       (pstate (print-astring "'" pstate)))
     pstate)
   :hooks (:fix))
 
@@ -857,7 +1007,7 @@
      It must be a character in the grammar,
      and in addition it must not be
      a double quote, a backslash, or a new-line character.
-     The latter encompasses not only line feed, but also carriage return:
+     The latter check encompasses not only line feed, but also carriage return:
      recall that both are allowed in our grammar,
      and that we allow three kinds of new-line characters
      (line feed alone,
@@ -866,10 +1016,10 @@
   (s-char-case
    schar
    :char (b* (((unless (and (grammar-character-p schar.unwrap)
-                            (not (= schar.unwrap (char-code #\")))
-                            (not (= schar.unwrap (char-code #\\)))
-                            (not (= schar.unwrap 10))
-                            (not (= schar.unwrap 13))))
+                            (not (= schar.unwrap (char-code #\"))) ; "
+                            (not (= schar.unwrap (char-code #\\))) ; \
+                            (not (= schar.unwrap 10))              ; LF
+                            (not (= schar.unwrap 13))))            ; CR
                (raise "Misusage error: ~
                        the character code ~x0 is disallowed ~
                        in a string literal."
@@ -905,6 +1055,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-eprefix-option ((eprefix? eprefix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional encoding prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (eprefix-option-case
+   eprefix?
+   :some (print-eprefix eprefix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-stringlit ((stringlit stringlitp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a string literal."
@@ -913,13 +1078,13 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((stringlit stringlit) stringlit)
-       (pstate (if stringlit.prefix
-                   (print-eprefix stringlit.prefix pstate)
-                 pstate))
+       (pstate (print-eprefix-option stringlit.prefix pstate))
+       (pstate (print-astring "\"" pstate))
        ((unless stringlit.schars)
         (raise "Misusage error: ~
                 the character constant has no characters or escape sequences.")
-        (pristate-fix pstate))
+        pstate)
+       (pstate (print-astring "\"" pstate))
        (pstate (print-s-char-list stringlit.schars pstate)))
     pstate)
   :hooks (:fix))
@@ -1036,17 +1201,19 @@
     "Our abstract syntax uses lists of lists of type qualifiers
      to model what the grammar calls `pointer',
      which is a sequence of one or more stars,
-     each start followed by zero or more type qualifiers;
+     each star followed by zero or more type qualifiers;
      see @(tsee declor) and @(tsee absdeclor).
-     So here we print such a `pointer',
+     Here we print such a `pointer',
      from its representation as a list of lists of type qualifiers.")
    (xdoc::p
     "The outer list must not be empty, as required in the guard.
-     We go through each inner list, printing a start for each;
+     We go through each inner list, printing a star for each;
      if the inner list under consideration is empty,
      the star is all we print;
      if the inner list is not empty,
-     we print a space, the type qualifiers (separated by spaces), and a space.
+     we also print a space,
+     the type qualifiers (separated by spaces),
+     and a space.
      That is, we provide separation when there are type qualifiers.
      But there are no extra separations for stars,
      e.g. we print @('**') for the list of lists @('(list nil nil)').
@@ -1127,21 +1294,21 @@
         In order to parse this as a <i>multiplicative-expression</i>,
         @('x + y') would have to be a <i>multiplicative-expression</i>),
         which is not.
-        Thus, the original expression can only be parsed
+        Thus, the expression can only be parsed
         as an <i>additive-expression</i>.")
       (xdoc::li
        "Consider an expression @('x * y + z').
         In order to parse this as a <i>multiplicative-expression</i>,
         @('y + z') would have to be a <i>cast-expression</i>,
         which is not.
-        Thus, the original expression can only be parsed
+        Thus, the expression can only be parsed
         as an <i>additive-expression</i>.")
       (xdoc::li
        "Consider an expression @('x + y + z').
         In order to right-associate it (i.e. @('x + (y + z)')),
         @('y + z') would have to be a <i>multiplicative-expression</i>,
         which is not.
-        Thus, the original expression can only be left-associated
+        Thus, the expression can only be left-associated
         (i.e. @('(x + y) + z'))."))
      (xdoc::p
       "Our printer adds parentheses
@@ -1150,8 +1317,8 @@
        following the grammar.")
      (xdoc::p
       "The function @(tsee expr-priority) classifies expressions
-       according to certain nonterminals of the C grammar,
-       the priority of additive expressions
+       according to certain nonterminals of the C grammar.
+       For instance, the priority of additive expressions
        corresponds to the nonterminal <i>additive-expression</i>.
        The function @(tsee expr->priority) defines a mapping
        from the expressions of our abstract syntax to their priorities,
@@ -1165,16 +1332,16 @@
        how that total order is defined in relation to the grammar.")
      (xdoc::p
       "Besides the abstract syntactic expression to print,
-       the printer function for expression has an argument
-       that is the priority of expression that must be printed
+       this printer function for expression has an argument
+       that is the priority of the expression that must be printed
        at that point.
        At the top level, this second argument is
        the priority of top-level expressions,
        i.e. the priority that corresponds to
        the nonterminal <i>expression</i> [C:6.5.17].
        As we descend into subexpressions,
-       the second argument is changed according to
-       the grammar rule corresponding to the super-expressions.
+       the second argument of this function is changed according to
+       the grammar rule corresponding to the super-expression.
        For instance, when printing the left and right subexpressions
        of a super-expression @('(expr-binary (binop-add) left right)'),
        we recursively call the printer twice,
@@ -1191,7 +1358,7 @@
        the printer compares the second argument
        (i.e. the expected priority of the expression)
        with the priority of the expression passed as first argument
-       (i.e. the actual priority of expression),
+       (i.e. the actual priority of the expression),
        according to the total order on expression priorities;
        if the actual priority is greater than or equal to the expected priority,
        the expression is printed without parentheses,
@@ -1202,6 +1369,8 @@
        into the nonterminal for the actual priority:
        or conversely, the actual expression can be parsed
        into an expression of the expected priority.
+       The expansion is based on the grammar (sub)rules
+       discussed in @(tsee expr-priority-<=).
        On the other hand,
        if the actual priority is less than the expected priority,
        there is no such possibility;
@@ -1246,8 +1415,8 @@
      (xdoc::p
       "The total order on expression priority only considers,
        as explained in @(tsee expr-priority-<=),
-       (sub)rules of the form <i>nonterm2: nonterm1</i>
-       where <i>nonterm1</i> is a single nonterminal.
+       (sub)rules of the form <i>nonterm1: nonterm2</i>
+       where <i>nonterm2</i> is a single nonterminal.
        Rule definientia that are not single terminals
        are captured as tree structures in our abstract syntax,
        and thus have their own explicit priority.
@@ -1332,7 +1501,7 @@
                   ;;   a parenthesized expression,
                   ;;   in which case we print sizeof(expr).
                   ;;   This is a bit more than needed
-                  ;;   just to avoid ambiguty in the printed code:
+                  ;;   just to avoid ambiguity in the printed code:
                   ;;   we could avoid the space in other cases,
                   ;;   besides parenthesized expressions as arguments;
                   ;;   but the resulting code may look confusing
@@ -1355,9 +1524,10 @@
                               (print-astring " " pstate)
                             pstate))
                   (arg-priority (if (or (unop-case expr.op :preinc)
-                                        (unop-case expr.op :predec))
-                                    (expr-priority-cast)
-                                  (expr-priority-unary)))
+                                        (unop-case expr.op :predec)
+                                        (unop-case expr.op :sizeof))
+                                    (expr-priority-unary)
+                                  (expr-priority-cast)))
                   (pstate (print-expr expr.arg arg-priority pstate)))
                pstate))
            :sizeof
@@ -1365,6 +1535,9 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous sizeof expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :sizeof-ambig
            (b* ((pstate (print-astring "sizeof(" pstate))
                 (pstate (print-ident expr.ident pstate))
@@ -1402,6 +1575,9 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/mul expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/mul-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1410,6 +1586,9 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/add expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/add-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1422,6 +1601,9 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/sub expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/sub-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1434,6 +1616,9 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
+           ;; We temporarily allow an ambiguous cast/and expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
            :cast/and-ambig
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-ident expr.type/arg1 pstate))
@@ -1490,10 +1675,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "A constant expression is a synonym of an expression in the grammar,
-       so it is always printed with the minimum priority
-       (that of a top-level expression)."))
-    (print-expr (const-expr->unwrap cexpr) (expr-priority-expr) pstate)
+      "A constant expression is
+       a synonym of a conditional expression in the grammar,
+       so we use that as priority."))
+    (print-expr (const-expr->unwrap cexpr) (expr-priority-cond) pstate)
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1558,6 +1743,9 @@
                   (pstate (print-tyname tyspec.type pstate))
                   (pstate (print-astring ")" pstate)))
                pstate)
+     ;; For now we allow an ambiguous _Atomic,
+     ;; even though it should disappear during static semantic elaboration,
+     ;; and printing is normally done after that elaboration.
      :atomic-ambig (b* ((pstate (print-astring "_Atomic(" pstate))
                         (pstate (print-ident tyspec.ident pstate))
                         (pstate (print-astring ")" pstate)))
@@ -1572,6 +1760,9 @@
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
      :tydef (print-ident tyspec.name pstate)
+     ;; For now we allow an ambiguous typedef,
+     ;; even though it should disappear during static semantic elaboration,
+     ;; and printing is normally done after that elaboration.
      :tydef-ambig (print-ident tyspec.ident pstate))
     :measure (tyspec-count tyspec))
 
@@ -1614,6 +1805,9 @@
                   alignspec
                   :alignas-type (print-tyname alignspec.type pstate)
                   :alignas-expr (print-const-expr alignspec.arg pstate)
+                  ;; For now we allow an ambiguous _Alignas,
+                  ;; even though it should disappear during elaboration,
+                  ;; which is normally done before printing.
                   :alignas-ambig (print-ident alignspec.ident pstate)))
          (pstate (print-astring ")" pstate)))
       pstate)
@@ -1670,7 +1864,7 @@
                 ((unless initer.elems)
                  (raise "Misusage error: ~
                          empty list of initializers.")
-                 (pristate-fix pstate))
+                 pstate)
                 (pstate (print-desiniter-list initer.elems pstate))
                 (pstate (if initer.final-comma
                             (print-astring ", }" pstate)
@@ -1817,8 +2011,7 @@
                    empty list of type qualifiers.")
            pstate)
           (pstate (print-tyqual-list dirdeclor.tyquals pstate))
-          (pstate (print-astring " " pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring " static " pstate))
           (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
@@ -1847,9 +2040,8 @@
                       (print-paramdecl-list dirdeclor.params pstate)
                     pstate))
           (pstate (if dirdeclor.ellipsis
-                      (print-astring ", ..." pstate)
-                    pstate))
-          (pstate (print-astring ")" pstate)))
+                      (print-astring ", ...)" pstate)
+                    (print-astring ")" pstate))))
        pstate)
      :function-names
      (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
@@ -1955,8 +2147,7 @@
                    empty list of type qualifiers.")
            (pristate-fix pstate))
           (pstate (print-tyqual-list dirabsdeclor.tyquals pstate))
-          (pstate (print-astring " " pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
@@ -1996,7 +2187,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "we ensure that there are declaration specifiers."))
+      "We ensure that there are declaration specifiers."))
     (paramdecl-case
      paramdecl
      :nonabstract
@@ -2046,7 +2237,7 @@
      (xdoc::p
       "We ensure that the list of specifiers and qualifiers is not empty."))
     (b* (((tyname tyname) tyname)
-         ((unless (consp tyname.specqual))
+         ((unless tyname.specqual)
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
          (pstate (print-specqual-list tyname.specqual pstate))
@@ -2066,8 +2257,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called after printing the @('struct') or @('union') keyword,
-       so here we print what comes after that keyword.")
+      "This is called after printing
+       the @('struct') or @('union') keyword followed by a space.
+       Here we print what comes after that keyword.")
      (xdoc::p
       "We ensure that this is not empty, i.e. that there is at least
        the identifier or a non-empty member list.")
@@ -2078,23 +2270,24 @@
        Note that a structure or union specifier
        is not necessarily a top-level construct:
        it may occur in the middle of a sequence of declaration specifiers,
-       so it is not straightforward to always print it on multiple lines,
+       so it is not so straightforward to always print it on multiple lines,
        because we may need to consider what surrounds it.
        Nonetheless, under certain conditions,
        e.g. when it is a lone top-level construct,
-       we should print on multiple lines."))
+       we should print it on multiple lines."))
     (b* (((strunispec strunispec) strunispec)
          ((unless (or (ident-option-case strunispec.name :some)
                       strunispec.members))
           (raise "Misusage error: empty structure or union specifier.")
           (pristate-fix pstate))
-         (pstate (print-astring " " pstate))
          (pstate (ident-option-case
                   strunispec.name
-                  :some (b* ((pstate (print-ident strunispec.name.val pstate))
-                             (pstate (print-astring " " pstate)))
-                          pstate)
+                  :some (print-ident strunispec.name.val pstate)
                   :none pstate))
+         (pstate (if (and strunispec.name
+                          strunispec.members)
+                     (print-astring " " pstate)
+                   pstate))
          ((when (not strunispec.members)) pstate)
          (pstate (print-astring "{ " pstate))
          (pstate (print-structdecl-list strunispec.members pstate))
@@ -2237,9 +2430,8 @@
          (pstate (print-astring "{" pstate))
          (pstate (print-enumer-list enumspec.list pstate))
          (pstate (if enumspec.final-comma
-                     (print-astring ", " pstate)
-                   pstate))
-         (pstate (print-astring "}" pstate)))
+                     (print-astring ", }" pstate)
+                   (print-astring "}" pstate))))
       pstate)
     :measure (enumspec-count enumspec))
 
@@ -2378,11 +2570,6 @@
 (define print-decl ((decl declp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a declaration, in its own indented line."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We ensure that there is at least one declaration specifier,
-     as required by the grammar."))
   (b* ((pstate (print-indent pstate))
        (pstate (print-decl-inline decl pstate))
        (pstate (print-new-line pstate)))
@@ -2437,8 +2624,8 @@
     (xdoc::topstring
      (xdoc::p
       "When printing sub-statements of statements,
-       we treat compound sub-statements slighly differently from
-       non-compound sub-statements,
+       we treat compound sub-statements slighly differently
+       from non-compound sub-statements,
        because for compound sub-statements we print
        the open curly brace at the end of the line,
        and additionally the closed curly brace may be followed
@@ -2517,7 +2704,7 @@
                         pstate)
                     (b* ((pstate (print-new-line pstate))
                          (pstate (inc-pristate-indent pstate))
-                         (pstate (print-stmt stmt.then pstate))
+                         (pstate (print-stmt stmt.else pstate))
                          (pstate (dec-pristate-indent pstate)))
                       pstate))))
        pstate)
@@ -2567,7 +2754,8 @@
                       pstate)))
           (pstate (print-astring "while (" pstate))
           (pstate (print-expr stmt.test (expr-priority-expr) pstate))
-          (pstate (print-astring ");" pstate)))
+          (pstate (print-astring ");" pstate))
+          (pstate (print-new-line pstate)))
        pstate)
      :for
      (b* ((pstate (print-indent pstate))
@@ -2690,7 +2878,8 @@
      (xdoc::p
       "This prints the open curly brace in the current position on the line,
        i.e. without printing any new line or indentation.
-       Then it prints the block items after incrementing the indentation level,
+       Then it prints the block items after a new line
+       and after incrementing the indentation level,
        and finally it restores the indentation level
        and prints the closed curly brace,
        without any new line after that.")
@@ -2700,7 +2889,7 @@
        are printed on multiple lines, with appropriate indentation.
        This facilitates the compositional printing
        of compound sub-statements of statements;
-       see @(tsee print-stmt)."))
+       see how it is used in @(tsee print-stmt)."))
     (b* ((pstate (print-astring "{" pstate))
          (pstate (print-new-line pstate))
          (pstate (inc-pristate-indent pstate))
@@ -2793,10 +2982,7 @@
    (xdoc::p
     "We separate them with blank lines."))
   (b* (((when (endp extdecls)) (pristate-fix pstate))
-       (pstate (print-extdecl (car extdecls) pstate))
-       (pstate (if (endp (cdr extdecls))
-                   pstate
-                 (print-new-line pstate))))
+       (pstate (print-extdecl (car extdecls) pstate)))
     (print-extdecl-list (cdr extdecls) pstate))
   :hooks (:fix))
 
@@ -2835,7 +3021,8 @@
      In the future, we will make this a top-level parameter.
      We envision additional top-level parameters
      to customize various aspects of the printing (e.g. right margin)."))
-  (b* ((pstate (init-pristate 2))
+  (b* ((indent-size 2)
+       (pstate (init-pristate indent-size))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))

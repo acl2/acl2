@@ -554,7 +554,7 @@
               :bitand (mv (expr-priority-and) (expr-priority-eq))
               :bitxor (mv (expr-priority-xor) (expr-priority-and))
               :bitior (mv (expr-priority-ior) (expr-priority-xor))
-              :logand (mv (expr-priority-ior) (expr-priority-logand))
+              :logand (mv (expr-priority-logand) (expr-priority-ior))
               :logor (mv (expr-priority-logor) (expr-priority-logand))
               :asg (mv (expr-priority-unary) (expr-priority-asg))
               :asg-mul (mv (expr-priority-unary) (expr-priority-asg))
