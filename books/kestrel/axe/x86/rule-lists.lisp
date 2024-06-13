@@ -1674,8 +1674,9 @@
 
             x86isa::create-canonical-address-list-1
 
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
+            x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
             x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
             x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
