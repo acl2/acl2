@@ -2704,7 +2704,7 @@
                         pstate)
                     (b* ((pstate (print-new-line pstate))
                          (pstate (inc-pristate-indent pstate))
-                         (pstate (print-stmt stmt.then pstate))
+                         (pstate (print-stmt stmt.else pstate))
                          (pstate (dec-pristate-indent pstate)))
                       pstate))))
        pstate)
