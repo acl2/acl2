@@ -3874,9 +3874,10 @@
                  (make-span :start first-pos :end pos2)
                  pstate))
          (t ; < other
-          (retok (lexeme-token (token-punctuator "<"))
-                 (make-span :start first-pos :end first-pos)
-                 pstate)))))
+          (b* ((pstate (unread-char pstate))) ; <
+            (retok (lexeme-token (token-punctuator "<"))
+                   (make-span :start first-pos :end first-pos)
+                   pstate))))))
 
      (t (reterr-msg :where (position-to-msg first-pos)
                     :expected "a white-space character ~
