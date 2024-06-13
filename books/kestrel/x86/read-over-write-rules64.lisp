@@ -1178,3 +1178,29 @@
   :hints (("Goal" :do-not-induct t
            :in-theory (e/d (program-at)
                            (rb wb app-view)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These can lead to nicer terms when rb-1 does not get fully converted to READ
+
+(defthm mv-nth-1-of-rb-1-of-set-rip
+  (equal (mv-nth 1 (rb-1 n addr r-x (set-rip rip x86)))
+         (mv-nth 1 (rb-1 n addr r-x x86)))
+  :hints (("Goal" :in-theory (enable rb-1 set-rip))))
+
+(defthm mv-nth-1-of-rb-of-set-rip
+  (equal (mv-nth 1 (rb n addr r-x (set-rip rip x86)))
+         (mv-nth 1 (rb n addr r-x x86)))
+  :hints (("Goal" :in-theory (enable rb set-rip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These can lead to nicer terms when rb does not get fully converted to READ
+
+;; todo: more like this
+(defthm mv-nth-1-of-rb-of-set-rax
+  (equal (mv-nth 1 (rb n addr r-x (set-rax rax x86)))
+         (mv-nth 1 (rb n addr r-x x86)))
+  :hints (("Goal" :in-theory (enable rb set-rax))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

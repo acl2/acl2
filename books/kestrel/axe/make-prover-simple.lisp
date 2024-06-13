@@ -3949,7 +3949,7 @@
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options)
                                      (booleanp top-node-onlyp))
-                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp)
+                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp symbol-alistp-when-info-worldp)
                                                                (natp))
                                         :do-not-induct t))))
          (b* ( ;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?

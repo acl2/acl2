@@ -33,7 +33,7 @@
   (implies (not (equal :mem fld))
            (equal (mv-nth 0 (rb-1 n addr r-x (xw fld index val x86)))
                   (mv-nth 0 (rb-1 n addr r-x x86))))
-  :hints (("Goal" :in-theory (e/d (rb-1) (x86p-xw)))))
+  :hints (("Goal" :in-theory (e/d (rb-1) ()))))
 
 (defthm mv-nth-1-of-rb-1-of-xw
   (implies (not (equal :mem fld))
@@ -257,3 +257,13 @@
            (equal (mv-nth 2 (rme-size p n e s r c x86))
                   x86))
   :hints (("Goal" :in-theory (enable rme-size))))
+
+;; generalize to multi-byte read
+;; See also x86isa::rb-returns-no-error-app-view
+(defthmd mv-nth-0-of-rb-of-1
+  (implies (app-view x86)
+           (equal (mv-nth 0 (rb 1 x86isa::addr x86isa::r-x x86))
+                  (if (canonical-address-p x86isa::addr)
+                      nil
+                    'rb-1)))
+  :hints (("Goal" :in-theory (enable rb rb-1))))
