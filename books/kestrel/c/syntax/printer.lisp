@@ -2878,7 +2878,8 @@
      (xdoc::p
       "This prints the open curly brace in the current position on the line,
        i.e. without printing any new line or indentation.
-       Then it prints the block items after incrementing the indentation level,
+       Then it prints the block items after a new line
+       and after incrementing the indentation level,
        and finally it restores the indentation level
        and prints the closed curly brace,
        without any new line after that.")
@@ -2888,7 +2889,7 @@
        are printed on multiple lines, with appropriate indentation.
        This facilitates the compositional printing
        of compound sub-statements of statements;
-       see @(tsee print-stmt)."))
+       see how it is used in @(tsee print-stmt)."))
     (b* ((pstate (print-astring "{" pstate))
          (pstate (print-new-line pstate))
          (pstate (inc-pristate-indent pstate))
@@ -2981,10 +2982,7 @@
    (xdoc::p
     "We separate them with blank lines."))
   (b* (((when (endp extdecls)) (pristate-fix pstate))
-       (pstate (print-extdecl (car extdecls) pstate))
-       (pstate (if (endp (cdr extdecls))
-                   pstate
-                 (print-new-line pstate))))
+       (pstate (print-extdecl (car extdecls) pstate)))
     (print-extdecl-list (cdr extdecls) pstate))
   :hooks (:fix))
 
@@ -3023,7 +3021,8 @@
      In the future, we will make this a top-level parameter.
      We envision additional top-level parameters
      to customize various aspects of the printing (e.g. right margin)."))
-  (b* ((pstate (init-pristate 2))
+  (b* ((indent-size 2)
+       (pstate (init-pristate indent-size))
        (pstate (print-transunit tunit pstate))
        (bytes-rev (pristate->bytes-rev pstate)))
     (rev bytes-rev))
