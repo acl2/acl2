@@ -820,16 +820,19 @@
 (define print-oct-escape ((esc oct-escapep) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print an octal escape."
-  (oct-escape-case
-   esc
-   :one (print-oct-digit-achar esc.digit pstate)
-   :two (b* ((pstate (print-oct-digit-achar esc.digit1 pstate))
-             (pstate (print-oct-digit-achar esc.digit2 pstate)))
-          pstate)
-   :three (b* ((pstate (print-oct-digit-achar esc.digit1 pstate))
-               (pstate (print-oct-digit-achar esc.digit2 pstate))
-               (pstate (print-oct-digit-achar esc.digit3 pstate)))
-            pstate))
+  (b* ((pstate (print-astring "\\" pstate))
+       (pstate
+        (oct-escape-case
+         esc
+         :one (print-oct-digit-achar esc.digit pstate)
+         :two (b* ((pstate (print-oct-digit-achar esc.digit1 pstate))
+                   (pstate (print-oct-digit-achar esc.digit2 pstate)))
+                pstate)
+         :three (b* ((pstate (print-oct-digit-achar esc.digit1 pstate))
+                     (pstate (print-oct-digit-achar esc.digit2 pstate))
+                     (pstate (print-oct-digit-achar esc.digit3 pstate)))
+                  pstate))))
+    pstate)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
