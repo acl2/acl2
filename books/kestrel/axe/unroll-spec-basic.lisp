@@ -137,10 +137,14 @@
        (- (cw "~%(Unrolling spec:~%"))
        (term (translate-term term 'unroll-spec-basic-fn (w state)))
        (term-vars (all-vars term))
-       (assumptions (if (eq :bytes assumptions)
-                        (byte-hyps term-vars) ; actually calls to unsigned-byte-p
-                      (if (eq :bits assumptions)
-                          (bit-hyps term-vars) ; actually calls to unsigned-byte-p
+       (assumptions (if (eq :bits assumptions)
+                        (progn$ (cw "NOTE: Assuming all ~x0 vars in the term are bits.~%" (len term-vars))
+                                (bit-hyps term-vars) ; actually calls to unsigned-byte-p
+                                )
+                      (if (eq :bytes assumptions)
+                          (progn$ (cw "NOTE: Assuming all ~x0 vars in the term are bytes.~%" (len term-vars))
+                                  (byte-hyps term-vars) ; actually calls to unsigned-byte-p
+                                  )
                         (translate-terms assumptions 'unroll-spec-basic-fn (w state)))))
        ;; Compute the base set of rules (from which we remove the remove-rules and to which we add the extra-rules) and also
        ;; any opener events:
