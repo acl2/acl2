@@ -264,12 +264,12 @@
 (defthm bvuminus-of-bvif-constants
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)))
-           (equal (bvuminus '32 (bvif '1 test k1 k2))
+           (equal (bvuminus 32 (bvif 1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm of-spec-of-logext-32
-  (equal (of-spec32$inline (logext '32 x))
+  (equal (of-spec32$inline (logext 32 x))
          0)
   :hints (("Goal" :in-theory (enable of-spec32))))
 
@@ -288,7 +288,7 @@
   (integerp (ZF-SPEC$INLINE result)))
 
 (defthm SF-SPEC64-of-bvchop-64
-  (equal (SF-SPEC64$INLINE (BVCHOP '64 x))
+  (equal (SF-SPEC64$INLINE (BVCHOP 64 x))
          (SF-SPEC64$INLINE x))
   :hints (("Goal" :in-theory (enable SF-SPEC64))))
 
@@ -319,38 +319,38 @@
 ;; ;or use a defun-sk to state that all states have the same cpuid
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-xw
-;;   (equal (x86isa::feature-flag ':sse (xw fld index val x86))
-;;          (x86isa::feature-flag ':sse x86))
+;;   (equal (x86isa::feature-flag :sse (xw fld index val x86))
+;;          (x86isa::feature-flag :sse x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-write
-;;   (equal (x86isa::feature-flag ':sse (write n base-addr val x86))
-;;          (x86isa::feature-flag ':sse x86))
+;;   (equal (x86isa::feature-flag :sse (write n base-addr val x86))
+;;          (x86isa::feature-flag :sse x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-set-flag
-;;   (equal (x86isa::feature-flag ':sse (set-flag flag val x86))
-;;          (x86isa::feature-flag ':sse x86))
+;;   (equal (x86isa::feature-flag :sse (set-flag flag val x86))
+;;          (x86isa::feature-flag :sse x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-xw
-;;   (equal (x86isa::feature-flag ':sse2 (xw fld index val x86))
-;;          (x86isa::feature-flag ':sse2 x86))
+;;   (equal (x86isa::feature-flag :sse2 (xw fld index val x86))
+;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-write
-;;   (equal (x86isa::feature-flag ':sse2 (write n base-addr val x86))
-;;          (x86isa::feature-flag ':sse2 x86))
+;;   (equal (x86isa::feature-flag :sse2 (write n base-addr val x86))
+;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-set-flag
-;;   (equal (x86isa::feature-flag ':sse2 (set-flag flag val x86))
-;;          (x86isa::feature-flag ':sse2 x86))
+;;   (equal (x86isa::feature-flag :sse2 (set-flag flag val x86))
+;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 (in-theory (disable x86isa::sub-zf-spec32))
@@ -717,8 +717,8 @@
   (implies (and (integerp k)
                 (integerp text-offset)
                 (integerp index))
-           (equal (logext '64 (binary-+ k (bvplus '64 text-offset index)))
-                  (logext '64 (binary-+ k (+ text-offset index)))))
+           (equal (logext 64 (binary-+ k (bvplus 64 text-offset index)))
+                  (logext 64 (binary-+ k (+ text-offset index)))))
   :hints (("Goal" :in-theory (enable acl2::equal-of-logext-and-logext))))
 
 ;slow!
@@ -728,8 +728,8 @@
                 (integerp text-offset)
                 (integerp index)
                 (integerp val))
-           (equal (logext '64 (+ k (+ (bvmult 64 val index) text-offset)))
-                  (logext '64 (+ k (+ (* val index) text-offset)))))
+           (equal (logext 64 (+ k (+ (bvmult 64 val index) text-offset)))
+                  (logext 64 (+ k (+ (* val index) text-offset)))))
   :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
                                   (;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
                                    ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
@@ -799,7 +799,7 @@
 
 ;gen the (rxp x86)?
 (defthm not-equal-of-+-and-+-when-separate
-  (implies (and (separate :r text-offset-k text-offset :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (separate ':r '150 text-offset ':r '80 (binary-+ '-80 (rsp x86)))
+  (implies (and (separate :r text-offset-k text-offset :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (separate :r 150 text-offset :r 80 (binary-+ -80 (rsp x86)))
                 (<= k1 text-offset-k)
                 (natp text-offset-k)
                 (natp rsp-k)
@@ -813,7 +813,7 @@
   :hints (("Goal" :in-theory (enable separate))))
 
 (defthm not-equal-of-+-of-+-and-+-when-separate
-  (implies (and (separate :r text-offset-k (+ k1 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE ':R '512 (BINARY-+ '224 TEXT-OFFSET) ':R '80 (BINARY-+ '-80 (RSP X86)))
+  (implies (and (separate :r text-offset-k (+ k1 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE :R 512 (BINARY-+ 224 TEXT-OFFSET) :R 80 (BINARY-+ -80 (RSP X86)))
                 (<= index text-offset-k)
                 (natp index)
                 (natp text-offset-k)
@@ -828,7 +828,7 @@
   :hints (("Goal" :in-theory (enable separate))))
 
 (defthm not-equal-of-+-of-+-and-+-when-separate-gen
-  (implies (and (separate :r text-offset-k (+ k3 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE ':R '512 (BINARY-+ '224 TEXT-OFFSET) ':R '80 (BINARY-+ '-80 (RSP X86)))
+  (implies (and (separate :r text-offset-k (+ k3 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE :R 512 (BINARY-+ 224 TEXT-OFFSET) :R 80 (BINARY-+ -80 (RSP X86)))
                 (<= k3 (+ k1 index))
                 (<= (+ k1 index) (+ k3 text-offset-k))
                 (natp index)
@@ -975,7 +975,7 @@
 
 ;; usually negoffset, n1, n2, and minusn2 are constants
 (defthm not-equal-of-+-when-separate
-  (implies (and (separate :r n1 text-offset ':r n2 (binary-+ minusn2 (rsp x86)))
+  (implies (and (separate :r n1 text-offset :r n2 (binary-+ minusn2 (rsp x86)))
                 (posp n2)
                 (integerp negoffset)
                 (< negoffset 0)
@@ -986,7 +986,7 @@
   :hints (("Goal" :in-theory (enable separate))))
 
 (defthm not-equal-of-+-when-separate-alt
-  (implies (and (separate :r n1 text-offset ':r n2 (binary-+ minusn2 (rsp x86)))
+  (implies (and (separate :r n1 text-offset :r n2 (binary-+ minusn2 (rsp x86)))
                 (posp n2)
                 (integerp negoffset)
                 (< negoffset 0)
