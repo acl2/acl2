@@ -2282,10 +2282,12 @@
           (pristate-fix pstate))
          (pstate (ident-option-case
                   strunispec.name
-                  :some (b* ((pstate (print-ident strunispec.name.val pstate))
-                             (pstate (print-astring " " pstate)))
-                          pstate)
+                  :some (print-ident strunispec.name.val pstate)
                   :none pstate))
+         (pstate (if (and strunispec.name
+                          strunispec.members)
+                     (print-astring " " pstate)
+                   pstate))
          ((when (not strunispec.members)) pstate)
          (pstate (print-astring "{ " pstate))
          (pstate (print-structdecl-list strunispec.members pstate))
