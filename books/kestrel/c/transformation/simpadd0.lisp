@@ -10,7 +10,7 @@
 
 (in-package "C2C")
 
-(include-book "../syntax/abstract-syntax")
+(include-book "../syntax/abstract-syntax-operations")
 
 (include-book "std/lists/index-of" :dir :system)
 
@@ -48,35 +48,6 @@
      via things like generalized `folds' over the abstract syntax."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expr-zerop ((expr exprp))
-  :returns (yes/no booleanp)
-  :short "Check if an expression is zero."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There are syntactically different expressions in C
-     that evaluate to ``zero'' in a broad sense.
-     We encapsulate the exact notion of `zero expression',
-     for the purposes of our transformation,
-     in this predicate.")
-   (xdoc::p
-    "For now we only include
-     the octal integer constant @('0') without suffixes
-     and with just one digit."))
-  (b* (((unless (expr-case expr :const)) nil)
-       (const (expr-const->unwrap expr))
-       ((unless (const-case const :int)) nil)
-       ((iconst iconst) (const-int->unwrap const))
-       ((when iconst.suffix) nil)
-       ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
-       ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
-       ((unless (= doh.leading-zeros 1)) nil)
-       ((unless (= doh.value 0)) nil))
-    t)
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,7 +98,7 @@
             :arg (simpadd0-expr expr.arg))
      :binary (b* ((arg1 (simpadd0-expr expr.arg1))
                   (arg2 (simpadd0-expr expr.arg2)))
-               (if (expr-zerop arg2)
+               (if (c$::expr-zerop arg2)
                    arg1
                  (make-expr-binary
                   :op expr.op
