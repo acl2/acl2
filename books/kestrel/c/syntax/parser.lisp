@@ -1686,19 +1686,14 @@
      after the opening double quote,
      and the prefix before that if present,
      have already been read.
-     So we read zero or more characters and escape sequences,
-     and ensure that there is at least one (according to the grammar).
+     We read zero or more characters and escape sequences.
      In the process of reading those characters and escape sequences,
      we read up to the closing double quote (see @(tsee lex-s-chars)),
      whose position we use as the ending one of the span we return.
      The starting position of the span is passed to this function as input."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
        ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate))
-       (span (make-span :start first-pos :end closing-dquote-pos))
-       ((unless schars)
-        (reterr-msg :where (position-to-msg closing-dquote-pos)
-                    :expected "one or more characters and escape sequences"
-                    :found "none")))
+       (span (make-span :start first-pos :end closing-dquote-pos)))
     (retok (lexeme-token (token-stringlit (stringlit eprefix? schars)))
            span
            pstate))
