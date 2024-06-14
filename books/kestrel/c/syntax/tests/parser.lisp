@@ -170,3 +170,12 @@ struct bar
   int i = 0;
   i--;
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "int main() {
+ int a = 10, b = 5;
+ a %= b;
+}")
