@@ -114,10 +114,13 @@
     boolif-same-branches
     boolif-same-arg1-arg2
     boolif-of-t-and-nil
+    boolif-of-nil-and-t
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
+    boolif-when-quotep-and-not-booleanp-arg2
+    boolif-when-quotep-and-not-booleanp-arg3
     ;; Rules about equal:
     equal-of-t-when-booleanp-arg1
     equal-of-t-when-booleanp-arg2
