@@ -2601,7 +2601,9 @@
   (label-case
    label
    :name (print-ident label.unwrap pstate)
-   :const (print-const-expr label.unwrap pstate)
+   :const (b* ((pstate (print-astring "case " pstate))
+               (pstate (print-const-expr label.unwrap pstate)))
+            pstate)
    :default (print-astring "default" pstate))
   :hooks (:fix))
 
