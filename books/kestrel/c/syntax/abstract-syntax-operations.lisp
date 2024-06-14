@@ -571,6 +571,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-zerop ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is zero."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are syntactically different expressions in C
+     that evaluate to ``zero'' in a broad sense.
+     We encapsulate the exact notion of `zero expression',
+     for the purposes of our transformation,
+     in this predicate.")
+   (xdoc::p
+    "For now we only include
+     the octal integer constant @('0') without suffixes
+     and with just one digit."))
+  (b* (((unless (expr-case expr :const)) nil)
+       (const (expr-const->unwrap expr))
+       ((unless (const-case const :int)) nil)
+       ((iconst iconst) (const-int->unwrap const))
+       ((when iconst.suffix) nil)
+       ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
+       ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
+       ((unless (= doh.leading-zeros 1)) nil)
+       ((unless (= doh.value 0)) nil))
+    t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines declor->ident
   :short "Identifier of a declarator."
   :long
