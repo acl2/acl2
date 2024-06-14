@@ -58,6 +58,7 @@
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/lists-light/take" :dir :system)
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
@@ -964,39 +965,38 @@
 
 ;TODO: Add show- variant
 ;bad name?
-;try defmacroq?
 ;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
-(defmacro def-unrolled (&whole whole-form
-                               lifted-name ;name to use for the generated function and constant (the latter surrounded by stars)
-                               executable ; a string (filename), or (for example) a defconst created by defconst-x86
-                               &key
-                               (target ':entry-point) ;; where to start lifting (see lifter-targetp)
-                               (assumptions 'nil) ;extra assumptions in addition to the standard-assumptions (todo: rename to :extra-assumptions)
-                               (suppress-assumptions 'nil) ;suppress the standard assumptions
-                               (stack-slots '100) ;; tells us what to assume about available stack space
-                               (position-independent ':auto)
-                               (inputs ':skip) ; :skip means no input-assumptions
-                               (output ':all)
-                               (use-internal-contextsp 't)
-                               (prune '1000)
-                               (extra-rules 'nil) ;Rules to use in addition to (lifter-rules32) or (lifter-rules64).
-                               (remove-rules 'nil) ;Rules to turn off
-                               (extra-assumption-rules 'nil) ; Extra rules to use when simplifying assumptions
-                               (step-limit '1000000)
-                               (step-increment '100)
-                               (memoizep 't)
-                               (monitor 'nil)
-                               (print ':brief)             ;how much to print
-                               (print-base '10)       ; 10 or 16
-                               (untranslatep 't)
-                               (rewriter ':x86)
-                               (produce-function 't) ;whether to produce a function, not just a dag constant, representing the result of the lifting
-                               (non-executable ':auto)  ;since stobj updates will not be let-bound
-                               (produce-theorem 'nil) ;whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting
-                               (prove-theorem 'nil) ;whether to try to prove the theorem with ACL2 (rarely works)
-                               (restrict-theory 't)       ;todo: deprecate
-                               )
+(acl2::defmacrodoc def-unrolled (&whole whole-form
+                                  lifted-name
+                                  executable
+                                  &key
+                                  (target ':entry-point)
+                                  (assumptions 'nil) ; (todo: rename to :extra-assumptions)
+                                  (suppress-assumptions 'nil)
+                                  (stack-slots '100)
+                                  (position-independent ':auto)
+                                  (inputs ':skip)
+                                  (output ':all)
+                                  (use-internal-contextsp 't)
+                                  (prune '1000)
+                                  (extra-rules 'nil)
+                                  (remove-rules 'nil)
+                                  (extra-assumption-rules 'nil)
+                                  (step-limit '1000000)
+                                  (step-increment '100)
+                                  (memoizep 't)
+                                  (monitor 'nil)
+                                  (print ':brief)             ;how much to print
+                                  (print-base '10)
+                                  (untranslatep 't)
+                                  (rewriter ':x86)
+                                  (produce-function 't)
+                                  (non-executable ':auto)
+                                  (produce-theorem 'nil)
+                                  (prove-theorem 'nil)
+                                  (restrict-theory 't)       ;todo: deprecate
+                                  )
   `(,(if print 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
       ',lifted-name
@@ -1027,4 +1027,38 @@
       ',prove-theorem
       ',restrict-theory
       ',whole-form
-      state)))
+      state))
+  :parents (lifters)
+  :short "Lift an x86 binary function to create a DAG, unrolling loops as needed."
+  :args ((lifted-name "The name to use for the generated function and constant (the latter surrounded by stars).")
+         (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
+         (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
+         (assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
+         (suppress-assumptions "Whether to suppress the standard assumptions.")
+         (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
+         (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
+         (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
+         (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
+         (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
+         ;; todo: better name?  only for precise pruning:
+         (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
+         ;; todo: how do these affect assumption simp:
+         (extra-rules "Rules to use in addition to (lifter-rules32) or (lifter-rules64).")
+         (remove-rules "Rules to turn off.")
+         (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
+         (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
+         (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
+         (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+         (print "Verbosity level.") ; todo: values
+         (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
+         (untranslatep "Whether to untranslate term when printing.")
+         (rewriter "Which rewriter to use, either :x86 (preferred) or :legacy.")
+         (produce-function "Whether to produce a function, not just a constant DAG, representing the result of the lifting.")
+         (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
+         (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
+         (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
+         (restrict-theory "To be deprecated..."))
+  :description ("Given an ax86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
+                "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
+                "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

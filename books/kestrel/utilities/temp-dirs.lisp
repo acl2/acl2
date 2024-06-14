@@ -132,6 +132,7 @@
   :hints (("Goal" :in-theory (enable maybe-make-temp-dir))))
 
 ;; Disallow anything that could confuse the rm -rf command (whitespace, dots, etc.)
+;; TODO: Consider calling canonical-pathname first.
 (defun temp-dir-chars-okp (chars)
   (declare (xargs :guard (character-listp chars)))
   (if (endp chars)
