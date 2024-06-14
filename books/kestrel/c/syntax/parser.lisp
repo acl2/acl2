@@ -6446,13 +6446,15 @@
                   (retok (expr-paren expr)
                          (span-join span last-span)
                          pstate))))))
+           ;; If token2 may start an expression,
+           ;; it means that the cast expression is in fact a unary expression,
+           ;; and so we go back to the beginning,
+           ;; unreading the start of the expression and the open parenthesis,
+           ;; and we attempt to parse a unary expression.
            ((token-expression-start-p token2) ; ( expr...
             (b* ((pstate (unread-token pstate)) ; (
-                 ((erp expr & pstate) (parse-expression pstate))
-                 ((erp last-span pstate) (read-punctuator ")" pstate)))
-              (retok (expr-paren expr)
-                     (span-join span last-span)
-                     pstate)))
+                 (pstate (unread-token pstate))) ;
+              (parse-unary-expression pstate)))
            ((token-type-name-start-p token2) ; ( typename...
             (b* ((pstate (unread-token pstate)) ; (
                  (psize (parsize pstate))
