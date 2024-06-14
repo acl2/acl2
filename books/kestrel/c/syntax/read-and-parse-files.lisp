@@ -74,9 +74,9 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(read-and-parse-files :const      ...  ; no default"
-     "                      :files      ...  ; no default"
-     "                      :preprocess ...  ; default nil"
+     "(read-and-parse-files :const        ...  ; no default"
+     "                      :files        ...  ; no default"
+     "                      :preprocessor ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,15 +106,16 @@
       "This input to this macro is not evaluated."))
 
     (xdoc::desc
-     "@(':preprocess') &mdash; default @('nil')"
+     "@(':preprocessor') &mdash; default @('nil')"
      (xdoc::p
-      "Flag saying whether the files must be preprocessed or not.")
+      "Flag indicating the preprocessor to use, if any.")
      (xdoc::p
-      "This must be @('t') or @('nil').")
+      "This must be @('nil'), @(':auto'), or a @(tsee stringp).")
      (xdoc::p
-      "If this is @('t'), the @(tsee preprocess-file) tool
-       is called on the files read at the file paths,
-       obtaining a file set that is stored in the generated named constant.")))
+      "If this is a @(tsee stringp), the @(tsee preprocess-file) tool is called
+       on the files read at the file paths using the indicated preprocesser. If
+       it is @(':auto'), we use the @('\"cpp\"') preprocessor. If it is
+       @('nil'), we do not preprocess the files.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,7 +142,7 @@
   :short "Keyword options accepted by @(tsee read-and-parse-files)."
   (list :const
         :files
-        :preprocess)
+        :preprocessor)
   ///
   (assert-event (keyword-listp *read-and-parse-files-allowed-options*))
   (assert-event (no-duplicatesp-eq *read-and-parse-files-allowed-options*)))
@@ -159,7 +160,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-and-parse-files-process-inputs ((args true-listp))
-  :returns (mv erp (const symbolp) (paths filepath-setp) (preprocess booleanp))
+  :returns (mv erp
+               (const symbolp)
+               (paths filepath-setp)
+               (preprocessor (or (not preprocessor)
+                                 (equal :auto preprocessor)
+                                 (stringp preprocessor))))
   :short "Process the inputs."
   (b* (((reterr) nil nil nil)
        ;; Check and obtain options.
@@ -202,16 +208,23 @@
                      files)))
        (paths (read-and-parse-files-strings-to-paths files))
        ;; Process :PREPROCESS input.
-       (preprocess-option (assoc-eq :preprocess options))
-       (preprocess (if preprocess-option
-                       (cdr preprocess-option)
-                     nil))
-       ((unless (booleanp preprocess))
-        (reterr (msg "The :PREPROCESS input must be T or NIL, ~
+       (preprocessor-option (assoc-eq :preprocessor options))
+       (preprocessor (if preprocessor-option
+                         (cdr preprocessor-option)
+                       nil))
+       ((unless (or (not preprocessor)
+                    (eq :auto preprocessor)
+                    (stringp preprocessor)))
+        (reterr (msg "The :PREPROCESSOR input must be NIL, :AUTO, or a string, ~
                       but it is ~x0 instead."
-                     preprocess))))
-    (retok const paths preprocess))
-  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
+                     preprocessor))))
+    (retok const paths preprocessor))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
+  ///
+  (defret stringp-of-read-and-parse-files-process-inputs.preprocessor
+    (equal (stringp preprocessor)
+           (and preprocessor
+                (not (equal :auto preprocessor))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -244,7 +257,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read-and-parse-files-read-and-preprocess ((paths filepath-setp) state)
+(define read-and-parse-files-read-and-preprocess ((paths filepath-setp)
+                                                  (preprocessor stringp)
+                                                  state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read and preprocess a file set from a given set of paths."
   :long
@@ -256,7 +271,7 @@
    (xdoc::p
     "We tell the preprocessing tool not to save any files."))
   (b* (((reterr) (fileset nil) state)
-       ((mv erp fileset state) (preprocess-files paths))
+       ((mv erp fileset state) (preprocess-files paths :preprocessor preprocessor))
        ((when erp)
         (reterr (msg "Preprocessing of ~x0 failed." paths))))
     (retok fileset state)))
@@ -265,14 +280,16 @@
 
 (define read-and-parse-files-gen-defconst ((const symbolp)
                                            (paths filepath-setp)
-                                           (preprocess booleanp)
+                                           (preprocessor (or (not preprocessor)
+                                                             (equal :auto preprocessor)
+                                                             (stringp preprocessor)))
                                            state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Generate the named constant event."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the @(':proprocess') flag,
+    "Based on the @(':proprocessor') flag,
      either we read the files directly,
      or we read and preprocess them.
      We parse the file set
@@ -280,9 +297,12 @@
      to define the named constant."))
   (b* (((reterr) '(_) state)
        ((erp fileset state)
-        (if preprocess
-            (read-and-parse-files-read-and-preprocess paths state)
-          (read-and-parse-files-read paths state)))
+        (cond ((not preprocessor)
+               (read-and-parse-files-read paths state))
+              ((eq :auto preprocessor)
+               (read-and-parse-files-read-and-preprocess paths "cpp" state))
+              (t
+                (read-and-parse-files-read-and-preprocess paths preprocessor state))))
        ((erp tunits) (parse-fileset fileset))
        (event `(defconst ,const ',tunits)))
     (retok event state)))
@@ -298,10 +318,10 @@
                state)
   :short "Process the inputs and generate the constant event."
   (b* (((reterr) '(_) state)
-       ((erp const paths preprocess)
+       ((erp const paths preprocessor)
         (read-and-parse-files-process-inputs args))
        ((erp event state)
-        (read-and-parse-files-gen-defconst const paths preprocess state)))
+        (read-and-parse-files-gen-defconst const paths preprocessor state)))
     (retok event state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
