@@ -179,3 +179,9 @@ struct bar
  int a = 10, b = 5;
  a %= b;
 }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-external-declaration-list
+ "char string[] = \"\";")
