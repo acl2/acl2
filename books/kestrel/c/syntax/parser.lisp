@@ -8011,7 +8011,7 @@
             (if tyspec-seenp
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
-                (b* ((pstate (unread-token pstate)))
+                (b* ((pstate (unread-token pstate))) ; _Atomic
                   (retok (specqual-tyqual (tyqual-atomic))
                          span
                          pstate))
@@ -8187,7 +8187,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-declaration-specifier ((pstate parstatep))
+  (define parse-declaration-specifier ((tyspec-seenp booleanp)
+                                       (pstate parstatep))
     :returns (mv erp (declspec declspecp) (span spanp) (new-pstate parstatep))
     :parents (parser parse-exprs/decls)
     :short "Parse a declaration specifier."
@@ -8222,8 +8223,11 @@
      (xdoc::p
       "This is similar to @(tsee parse-specifier/qualifier),
        but more complex because there are more alternatives.
-       So it has to deal with the same overlap
-       between atomic type specifiers and atomic type qualifiers."))
+       The syntactic overlap between
+       the @('_Atomic') type qualifier and the @('_Atomic') type specifier
+       is resolved in the same way as in @(tsee parse-specifier/qualifier),
+       which motivates the @('tyspec-seenp') flag passed to this function;
+       see that function's documentation."))
     (b* (((reterr) (irr-declspec) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
@@ -8247,274 +8251,27 @@
         (b* (((erp token2 & pstate) (read-token pstate)))
           (cond
            ;; If token2 is an open parenthesis,
-           ;; we do not necessarily have a type specifier:
-           ;; the open parenthesis could start
-           ;; a (direct) declarator
-           ;; or a (direct) abstract declarator,
-           ;; so we examine more tokens.
+           ;; we check the TYSPEC-SEENP flag,
+           ;; as explained in the documentation.
            ((equal token2 (token-punctuator "(")) ; _Atomic (
-            (b* (((erp token3 & pstate) (read-token pstate)))
-              (cond
-               ;; If token3 is an identifier,
-               ;; the open parenthesis and identifier
-               ;; may be part of a declarator,
-               ;; so we examine more tokens.
-               ((and token3 (token-case token3 :ident)) ; _Atomic ( ident
-                (b* ((ident (token-ident->unwrap token3))
-                     ((erp token4 span4 pstate) (read-token pstate)))
-                  (cond
-                   ;; If token4 is a closed parenthesis,
-                   ;; we could have a type specifier,
-                   ;; but the parenthesized identifier could be
-                   ;; (part of) a direct declarator,
-                   ;; so we examine more tokens.
-                   ((equal token4 (token-punctuator ")"))
-                    ;; _Atomic ( ident )
-                    (b* (((erp token5 span5 pstate) (read-token pstate)))
-                      (cond
-                       ;; If token5 is an open parenthesis,
-                       ;; we are in the potentially ambiguous situation
-                       ;; discussed in :DOC TYSPEC,
-                       ;; so we try to classify what follows.
-                       ((equal token5 (token-punctuator "("))
-                        ;; _Atomic ( ident ) (
-                        (b* (((erp classification num-tokens pstate)
-                              (classify-partys/declor/ambig pstate)))
-                          (partys/declor/ambig-case
-                           classification
-                           ;; If what follows is a parameter type list,
-                           ;; we must have a type qualifier.
-                           ;; We unread the parenthesized identifier,
-                           ;; so it can be parsed as
-                           ;; (part of) a declarator.
-                           :partys ; _Atomic ( ident ) ( partys...
-                           (b* ((pstate ; _Atomic ( ident ) (
-                                 (unread-tokens num-tokens pstate))
-                                (pstate ; _Atomic
-                                 (unread-tokens 4 pstate)))
-                             (retok (declspec-tyqual (tyqual-atomic))
-                                    span
-                                    pstate))
-                           ;; If what follows is a declarator
-                           ;; we must have a type specifier.
-                           ;; We unread the open parenthesis after that,
-                           ;; so it can be parsed as part of a declarator.
-                           :declor ; _Atomic ( ident ) ( declor...
-                           (b* ((pstate ; _Atomic ( ident ) (
-                                 (unread-tokens num-tokens pstate))
-                                (pstate ; _Atomic ( ident )
-                                 (unread-token pstate)))
-                             (retok (declspec-tyspec
-                                     (tyspec-atomic
-                                      (make-tyname
-                                       :specqual (list (specqual-tyspec
-                                                        (tyspec-tydef
-                                                         ident)))
-                                       :decl? nil)))
-                                    (span-join span span4)
-                                    pstate))
-                           ;; If what follows is ambiguous,
-                           ;; we generate an ambiguous type specifier.
-                           ;; We unread the open parenthesis,
-                           ;; so it can be parsed as a declarator.
-                           :ambig ; _Atomic ( ident ) ( ident1 ( ...
-                           (b* ((pstate ; _Atomic ( ident ) (
-                                 (unread-tokens num-tokens pstate))
-                                (pstate ; _Atomic ( ident )
-                                 (unread-token pstate)))
-                             (retok (declspec-tyspec
-                                     (tyspec-atomic-ambig ident))
-                                    (span-join span span4)
-                                    pstate)))))
-                       ;; If token5 could start a declaration specifier,
-                       ;; we must have an atomic type specifier.
-                       ;; This includes the case in which
-                       ;; token5 is an identifier,
-                       ;; but since ( ident ) ident is not a declarator,
-                       ;; we must have an atomic type specifier,
-                       ;; with the second identifier being
-                       ;; either a declarator or a type specifier,
-                       ;; but it is the task of the caller
-                       ;; to establish the nature of
-                       ;; the second identifier:
-                       ;; here we are only concerned with choosing
-                       ;; the atomic type specifier or qualifier.
-                       ((token-declaration-specifier-start-p token5)
-                        ;; _Atomic ( ident ) declspec...
-                        (b* ((pstate ; _Atomic ( ident )
-                              (unread-token pstate)))
-                          (retok (declspec-tyspec
-                                  (tyspec-atomic
-                                   (make-tyname
-                                    :specqual (list (specqual-tyspec
-                                                     (tyspec-tydef
-                                                      ident)))
-                                    :decl? nil)))
-                                 (span-join span span4)
-                                 pstate)))
-                       ;; If token5 is a star,
-                       ;; it must start a declarator or an abstract declarator,
-                       ;; and ( ident ) * cannot be
-                       ;; a declarator or abstract declarator,
-                       ;; so we must have at atomic type specifier.
-                       ((equal token5 (token-punctuator "*"))
-                        ;; _Atomic ( ident ) *
-                        (b* ((pstate ; _Atomic ( ident )
-                              (unread-token pstate)))
-                          (retok (declspec-tyspec
-                                  (tyspec-atomic
-                                   (make-tyname
-                                    :specqual (list (specqual-tyspec
-                                                     (tyspec-tydef
-                                                      ident)))
-                                    :decl? nil)))
-                                 (span-join span span4)
-                                 pstate)))
-                       ;; If token5 is an open square bracket,
-                       ;; it must start an abstract declarator,
-                       ;; and ( ident ) [ cannot be
-                       ;; a declarator or an abstract declarator,
-                       ;; so we must have a type specifier.
-                       ;; Since we have considered a star (here),
-                       ;; as well as identifiers (above)
-                       ;; and open parentheses (above),
-                       ;; note that at this point we have considered
-                       ;; all the cases in which token5
-                       ;; may start a declarator or abstract declarator
-                       ;; (see TOKEN-DECLARATOR-START-P
-                       ;; and TOKEN-ABSTRACT-DECLARATOR-START-P).
-                       ((equal token5 (token-punctuator "["))
-                        ;; _Atomic ( ident ) [
-                        (b* ((pstate ; _Atomic ( ident )
-                              (unread-token pstate)))
-                          (retok (declspec-tyspec
-                                  (tyspec-atomic
-                                   (make-tyname
-                                    :specqual (list (specqual-tyspec
-                                                     (tyspec-tydef
-                                                      ident)))
-                                    :decl? nil)))
-                                 (span-join span span4)
-                                 pstate)))
-                       ;; If token5 is a semicolon,
-                       ;; we have an ambiguity,
-                       ;; because the parenthesized identifier
-                       ;; could be a declarator,
-                       ;; or we could have a declaration
-                       ;; or we could have a structure declaration
-                       ;; without declarator(s).
-                       ;; We classify this as an ambiguous
-                       ;; atomic type specifier.
-                       ((equal token5 (token-punctuator ";"))
-                        ;; _Atomic ( ident ) ;
-                        (b* ((pstate ; _Atomic ( ident )
-                              (unread-token pstate)))
-                          (retok (declspec-tyspec
-                                  (tyspec-atomic-ambig ident))
-                                 (span-join span span4)
-                                 pstate)))
-                       ;; If token5 is a comma,
-                       ;; we have an ambiguity,
-                       ;; because the parenthesized identifier
-                       ;; could be a declarator in a parameter declaration,
-                       ;; or we could have a parameter declaration
-                       ;; without declarator or abstract declarator.
-                       ;; We classify this as an ambiguous
-                       ;; atomic type specifier.
-                       ((equal token5 (token-punctuator ","))
-                        ;; _Atomic ( ident ) ,
-                        (b* ((pstate ; _Atomic ( ident )
-                              (unread-token pstate)))
-                          (retok (declspec-tyspec
-                                  (tyspec-atomic-ambig ident))
-                                 (span-join span span4)
-                                 pstate)))
-                       ;; If token5 is an open square bracket,
-                       ;; it must be a continuation of a declarator
-                       ;; that starts with the parenthesized identifier.
-                       ;; So we must have an atomic type qualifier.
-                       ((equal token5 (token-punctuator "["))
-                        ;; _Atomic ( ident ) [
-                        (b* ((pstate (unread-tokens 4 pstate))) ; _Atomic
-                          (retok (declspec-tyqual (tyqual-atomic))
-                                 span
-                                 pstate)))
-                       ;; If token5 is anything else,
-                       ;; it must be an error.
-                       ;; We have already considered
-                       ;; all the possible cases
-                       ;; according to the grammar.
-                       (t ; _Atomic ( ident ) other
-                        (reterr-msg :where (position-to-msg
-                                            (span->start span5))
-                                    :expected "an open parenthesis ~
-                                               or an open square bracket ~
-                                               or a star ~
-                                               or a semicolon ~
-                                               or a comma ~
-                                               or a keyword in {~
-                                               _Alignas, ~
-                                               _Atomic, ~
-                                               _Bool, ~
-                                               _Complex, ~
-                                               _Noreturn, ~
-                                               _Thread_local, ~
-                                               auto, ~
-                                               char, ~
-                                               const, ~
-                                               double, ~
-                                               enum, ~
-                                               extern, ~
-                                               float, ~
-                                               inline, ~
-                                               int, ~
-                                               long, ~
-                                               register, ~
-                                               restrict, ~
-                                               short, ~
-                                               signed, ~
-                                               static, ~
-                                               struct, ~
-                                               union, ~
-                                               unsigned, ~
-                                               void, ~
-                                               volatile~
-                                               }"
-                                    :found (token-to-msg token5))))))
-                   ;; If token4 is not a closed parenthesis,
-                   ;; we cannot have a type specifier,
-                   ;; and we must have a type qualifier.
-                   (t ; _Atomic ( ident other
-                    (b* ((pstate ; _Atomic ( ident
-                          (if token4 (unread-token pstate) pstate))
-                         (pstate (unread-tokens 2 pstate))) ; _Atomic
-                      (retok (declspec-tyqual (tyqual-atomic))
-                             span
-                             pstate))))))
-               ;; If token3 may start a type name,
-               ;; we must have a type specifier.
-               ;; We parse the type name and the closed parenthesis.
-               ;; Note that the case of token3 being an identifier
-               ;; has already been handled earlier.
-               ((token-type-name-start-p token3) ; _Atomic ( typename...
-                (b* ((pstate (unread-token pstate)) ; _Atomic (
-                     ((erp tyname & pstate) ; _Atomic ( typename
-                      (parse-type-name pstate))
-                     ((erp last-span pstate) ; _Atomic ( typename )
-                      (read-punctuator ")" pstate)))
-                  (retok (declspec-tyspec (tyspec-atomic tyname))
-                         (span-join span last-span)
-                         pstate)))
-               ;; If token3 is anything else,
-               ;; we cannot have an atomic type specifier,
-               ;; so we must have an atomic type qualifier.
-               (t ; _Atomic ( other
-                (b* ((pstate ; _Atomic (
-                      (if token3 (unread-token pstate) pstate))
-                     (pstate (unread-token pstate))) ; _Atomic
+            (if tyspec-seenp
+                ;; If we have already seen a type specifier,
+                ;; this must be a type qualifier.
+                (b* ((pstate (unread-token pstate))) ; _Atomic
                   (retok (declspec-tyqual (tyqual-atomic))
                          span
-                         pstate))))))
+                         pstate))
+              ;; If we have not already seen a type specifier,
+              ;; this must be a type specifier,
+              ;; because the open parenthesis cannot be
+              ;; another declaration specifier.
+              (b* (((erp tyname & pstate) ; _Atomic ( typename
+                    (parse-type-name pstate))
+                   ((erp last-span pstate) ; _Atomic ( typename )
+                    (read-punctuator ")" pstate)))
+                (retok (declspec-tyspec (tyspec-atomic tyname))
+                       (span-join span last-span)
+                       pstate))))
            ;; If token2 is not an open parenthesis,
            ;; we must have an atomic type qualifier.
            (t ; _Atomic other
@@ -8660,7 +8417,7 @@
     (b* (((reterr) nil (irr-span) (irr-parstate))
          (psize (parsize pstate))
          ((erp declspec first-span pstate) ; declspec
-          (parse-declaration-specifier pstate))
+          (parse-declaration-specifier tyspec-seenp pstate))
          ((unless (mbt (<= (parsize pstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
@@ -10326,7 +10083,10 @@
        '(:expand (parse-direct-declarator pstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
-       '(:expand (parse-specifier-qualifier-list tyspec-seenp pstate))))))
+       '(:expand (parse-specifier-qualifier-list tyspec-seenp pstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
+                        clause)
+       '(:expand (parse-declaration-specifiers tyspec-seenp pstate))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -10737,7 +10497,10 @@
        '(:expand (parse-direct-declarator pstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
                         clause)
-       '(:expand (parse-specifier-qualifier-list tyspec-seenp pstate))))))
+       '(:expand (parse-specifier-qualifier-list tyspec-seenp pstate)))
+      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
+                        clause)
+       '(:expand (parse-declaration-specifiers tyspec-seenp pstate))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
