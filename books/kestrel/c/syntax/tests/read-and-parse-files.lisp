@@ -18,4 +18,4 @@
 
 (read-and-parse-files :const *stdbool-ast*
                       :files ("stdbool.c")
-                      :preprocess t)
+                      :preprocessor :auto)
