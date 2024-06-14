@@ -790,7 +790,8 @@
    :dec (b* ((pstate (print-dec-core-fconst fconst.core pstate))
              (pstate (print-fsuffix-option fconst.suffix pstate)))
           pstate)
-   :hex (b* ((pstate (print-hex-core-fconst fconst.core pstate))
+   :hex (b* ((pstate (print-hprefix fconst.prefix pstate))
+             (pstate (print-hex-core-fconst fconst.core pstate))
              (pstate (print-fsuffix-option fconst.suffix pstate)))
           pstate))
   :hooks (:fix))
@@ -2600,7 +2601,9 @@
   (label-case
    label
    :name (print-ident label.unwrap pstate)
-   :const (print-const-expr label.unwrap pstate)
+   :const (b* ((pstate (print-astring "case " pstate))
+               (pstate (print-const-expr label.unwrap pstate)))
+            pstate)
    :default (print-astring "default" pstate))
   :hooks (:fix))
 

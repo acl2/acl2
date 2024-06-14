@@ -571,6 +571,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-zerop ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression is zero."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are syntactically different expressions in C
+     that evaluate to ``zero'' in a broad sense.
+     We encapsulate the exact notion of `zero expression',
+     for the purposes of our transformation,
+     in this predicate.")
+   (xdoc::p
+    "For now we only include
+     the octal integer constant @('0') without suffixes
+     and with just one digit."))
+  (b* (((unless (expr-case expr :const)) nil)
+       (const (expr-const->unwrap expr))
+       ((unless (const-case const :int)) nil)
+       ((iconst iconst) (const-int->unwrap const))
+       ((when iconst.suffix) nil)
+       ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
+       ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
+       ((unless (= doh.leading-zeros 1)) nil)
+       ((unless (= doh.value 0)) nil))
+    t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines declor->ident
   :short "Identifier of a declarator."
   :long
@@ -661,4 +690,185 @@
      :function (change-dirabsdeclor-function dirabsdeclor2
                                              :decl? dirabsdeclor1)))
   :guard-hints (("Goal" :in-theory (enable dirabsdeclor-decl?-nil-p)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-ident ((expr exprp))
+  :returns (ident? ident-optionp)
+  :short "Check if an expression is an identifier,
+          returning the identifier if the check passes."
+  (and (expr-case expr :ident)
+       (expr-ident->unwrap expr))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-expr-iconst ((expr exprp))
+  :returns (iconst? iconst-optionp)
+  :short "Check if an expression is an integer constant,
+          returning the integer constant if the check passes."
+  (b* (((unless (expr-case expr :const)) nil)
+       (const (expr-const->unwrap expr))
+       ((unless (const-case const :int)))
+       (iconst (const-int->unwrap const)))
+    iconst)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-strunispec-no-members ((strunispec strunispecp))
+  :returns (ident? ident-optionp)
+  :short "Check if a structure or union specifier has no members,
+          returning the name if the check passes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the specifier is empty (i.e. has no members or name),
+     we throw a hard error,
+     because the specifier does not conform to the concrete syntax."))
+  (b* (((strunispec strunispec) strunispec)
+       ((when strunispec.members) nil)
+       ((unless strunispec.name)
+        (raise "Misusage error: empty structure or union specifier.")))
+    strunispec.name)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-enumspec-no-list ((enumspec enumspecp))
+  :returns (ident? ident-optionp)
+  :short "Check if an enumeration union specifier has no enumerators,
+          returning the name if the check passes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the specifier is empty (i.e. has no enumerators or name),
+     we throw a hard error,
+     because the specifier does not conform to the concrete syntax."))
+  (b* (((enumspec enumspec) enumspec)
+       ((when enumspec.list) nil)
+       ((unless enumspec.name)
+        (raise "Misusage error: empty enumeration specifier.")))
+    enumspec.name)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-declspec-list-all-tyspec ((declspecs declspec-listp))
+  :returns (mv (yes/no booleanp) (tyspecs tyspec-listp))
+  :short "Check if all the declaration specifiers in a list
+          are type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the check succeeds,
+     also return the list of type specifiers, in the same order."))
+  (b* (((when (endp declspecs)) (mv t nil))
+       (declspec (car declspecs))
+       ((unless (declspec-case declspec :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-declspec-list-all-tyspec (cdr declspecs))))
+    (if yes/no
+        (mv t (cons (declspec-tyspec->unwrap declspec) tyspecs))
+      (mv nil nil)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-declspec-list-all-tyspec/stoclaspec ((declspecs declspec-listp))
+  :returns (mv (yes/no booleanp)
+               (tyspecs tyspec-listp)
+               (stoclaspecs stoclaspec-listp))
+  :short "Check if all the declaration specifiers in a list
+          are type specifiers or storage class specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the check succeeds,
+     also return the lists of type specifiers and storage class specifiers,
+     in the same order."))
+  (b* (((when (endp declspecs)) (mv t nil nil))
+       (declspec (car declspecs))
+       ((when (declspec-case declspec :tyspec))
+        (b* (((mv yes/no tyspecs stoclaspecs)
+              (check-declspec-list-all-tyspec/stoclaspec (cdr declspecs))))
+          (if yes/no
+              (mv t
+                  (cons (declspec-tyspec->unwrap declspec) tyspecs)
+                  stoclaspecs)
+            (mv nil nil nil))))
+       ((when (declspec-case declspec :stocla))
+        (b* (((mv yes/no tyspecs stoclaspecs)
+              (check-declspec-list-all-tyspec/stoclaspec (cdr declspecs))))
+          (if yes/no
+              (mv t
+                  tyspecs
+                  (cons (declspec-stocla->unwrap declspec) stoclaspecs))
+            (mv nil nil nil)))))
+    (mv nil nil nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-specqual-list-all-tyspec ((specquals specqual-listp))
+  :returns (mv (yes/no booleanp) (tyspecs tyspec-listp))
+  :short "Check if all the specifiers and qualifiers in a list
+          are type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the check succeeds,
+     also return the list of type specifiers, in the same order."))
+  (b* (((when (endp specquals)) (mv t nil))
+       (specqual (car specquals))
+       ((unless (specqual-case specqual :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-specqual-list-all-tyspec (cdr specquals))))
+    (if yes/no
+        (mv t (cons (specqual-tyspec->unwrap specqual) tyspecs))
+      (mv nil nil)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declspec-list-to-tyspec-list ((declspecs declspec-listp))
+  :returns (tyspecs tyspec-listp)
+  :short "Extract the list of type specifiers
+          from a list of declaration specifiers,
+          preserving the order."
+  (b* (((when (endp declspecs)) nil)
+       (declspec (car declspecs)))
+    (if (declspec-case declspec :tyspec)
+        (cons (declspec-tyspec->unwrap declspec)
+              (declspec-list-to-tyspec-list (cdr declspecs)))
+      (declspec-list-to-tyspec-list (cdr declspecs))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define declspec-list-to-stoclaspec-list ((declspecs declspec-listp))
+  :returns (stoclaspecs stoclaspec-listp)
+  :short "Extract the list of storage class specifiers
+          from a list of declaration specifiers,
+          preserving the order."
+  (b* (((when (endp declspecs)) nil)
+       (declspec (car declspecs)))
+    (if (declspec-case declspec :stocla)
+        (cons (declspec-stocla->unwrap declspec)
+              (declspec-list-to-stoclaspec-list (cdr declspecs)))
+      (declspec-list-to-stoclaspec-list (cdr declspecs))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define specqual-list-to-tyspec-list ((specquals specqual-listp))
+  :returns (tyspecs tyspec-listp)
+  :short "Extract the list of type specifiers
+          from a list of type specifiers and qualifiers,
+          preserving the order."
+  (b* (((when (endp specquals)) nil)
+       (specqual (car specquals)))
+    (if (specqual-case specqual :tyspec)
+        (cons (specqual-tyspec->unwrap specqual)
+              (specqual-list-to-tyspec-list (cdr specquals)))
+      (specqual-list-to-tyspec-list (cdr specquals))))
   :hooks (:fix))
