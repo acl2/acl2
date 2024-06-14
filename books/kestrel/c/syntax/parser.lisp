@@ -798,6 +798,14 @@
      again for normalizing the new-line character.
      In both cases, we increment the position by one line.")
    (xdoc::p
+    "Note that horizontal tab, vertical tab, and form feed
+     just increment the column number by 1 and leave the line number unchanged.
+     This may not match the visual appearance,
+     but the parser has no easy way to know
+     how many columns a horizontal tab takes,
+     or how many lines a vertical tab or form feed takes.
+     So, at least for now, we just treat these as ``typical'' characters.")
+   (xdoc::p
     "If the byte has any other value, we deem it illegal,
      and return an error message with the current file position."))
   (b* (((reterr) nil (irr-position) (irr-parstate))
@@ -3801,6 +3809,10 @@
          ((not char2) ; % EOF
           (retok (lexeme-token (token-punctuator "%"))
                  (make-span :start first-pos :end first-pos)
+                 pstate))
+         ((= char2 (char-code #\=)) ; % =
+          (retok (lexeme-token (token-punctuator "%="))
+                 (make-span :start first-pos :end pos2)
                  pstate))
          ((= char2 (char-code #\:)) ; % :
           (b* (((erp char3 & pstate) (read-char pstate)))

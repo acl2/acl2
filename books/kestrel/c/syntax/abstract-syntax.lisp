@@ -312,6 +312,17 @@
    (suffix isuffix-option))
   :pred iconstp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption iconst-option
+  iconst
+  :short "Fixtype of optional integer constants."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Integer constants are defined in @(tsee iconst)."))
+  :pred iconst-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fsuffix
@@ -2087,6 +2098,20 @@
      (message stringlit))
     :pred statassertp
     :measure (two-nats-measure (acl2-count x) 2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist tyspec-list
+  :parents (abstract-syntax)
+  :short "Fixtype of lists of type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type specifiers are defined in @(tsee tyspec)."))
+  :elt-type tyspec
+  :true-listp t
+  :elementp-of-nil nil
+  :pred tyspec-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
