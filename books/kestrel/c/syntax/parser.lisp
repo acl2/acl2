@@ -3802,6 +3802,10 @@
           (retok (lexeme-token (token-punctuator "%"))
                  (make-span :start first-pos :end first-pos)
                  pstate))
+         ((= char2 (char-code #\=)) ; % =
+          (retok (lexeme-token (token-punctuator "%="))
+                 (make-span :start first-pos :end pos2)
+                 pstate))
          ((= char2 (char-code #\:)) ; % :
           (b* (((erp char3 & pstate) (read-char pstate)))
             (cond
