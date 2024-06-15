@@ -185,3 +185,9 @@ struct bar
 (test-parser
  parse-external-declaration-list
  "char string[] = \"\";")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-parser
+ parse-block-item
+ "idx = &((char*)session_peak())[i*BUFSIZE];")
