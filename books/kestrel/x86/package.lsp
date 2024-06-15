@@ -100,6 +100,8 @@
     x86isa::*r14*
     x86isa::*r15*
 
+    x86isa::2bits-fix
+
     ;; flags:
     x86isa::*flg-names*
     x86isa::*cf*
@@ -241,6 +243,7 @@
 
     ;; new stuff after change to x86 model state representation:
 
+    x86isa::rflagsbits-fix
     x86isa::rflags
     x86isa::rflagsbits
     x86isa::!rflags
