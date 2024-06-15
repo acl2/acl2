@@ -68,13 +68,13 @@ int main(void) {
 
 (read-files :const *stdbool-pp*
             :files ("stdbool.c")
-            :preprocess t)
+            :preprocessor :auto)
 
 (read-files :const *stdint-pp*
             :files ("stdint.c")
-            :preprocess t)
+            :preprocessor :auto)
 
 (read-files :const *stdbool-stdint-pp*
             :files ("stdbool.c"
                     "stdint.c")
-            :preprocess t)
+            :preprocessor :auto)
