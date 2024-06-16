@@ -3949,7 +3949,8 @@
                                      (symbol-listp known-booleans)
                                      (simple-prover-optionsp options)
                                      (booleanp top-node-onlyp))
-                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp symbol-alistp-when-info-worldp)
+                         :guard-hints (("Goal" :in-theory (e/d (<-of-+-of-1-strengthen-2 natp-of-+-of-1 rationalp-when-natp ;symbol-alistp-when-info-worldp
+                                                                                         )
                                                                (natp))
                                         :do-not-induct t))))
          (b* ( ;; TODO: Do this in the callers?  Maintain an invariant about disjuncts having been extracted from literal-nodenums?  May not be true after we substitute, so do this there instead?
@@ -3971,7 +3972,7 @@
                (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, ~x2 DAG nodes):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
               (print-hit-countsp (member-eq print '(t :verbose :verbose!)))
-              (hit-count-alist-before (and print-hit-countsp (make-hit-count-alist (uniquify-alist-eq info) nil)))
+              (hit-count-alist-before (and print-hit-countsp (make-hit-count-alist info)))
               ;; (result-array-name (pack$ 'result-array- prover-depth))
               ;; Ensure there is a maximal size raw Lisp array under the hood, for use when rewriting each literal.  I hope the compiler
               ;; doesn't optimize this away:
@@ -3987,7 +3988,7 @@
                                        interpreted-function-alist monitored-symbols print case-designator
                                        info tries prover-depth known-booleans options top-node-onlyp))
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              (hit-count-alist-after (and print-hit-countsp (make-hit-count-alist (uniquify-alist-eq info) nil)))
+              (hit-count-alist-after (and print-hit-countsp (make-hit-count-alist info)))
               (hit-count-alist (and print-hit-countsp (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before))))
               (- (and print-hit-countsp (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
               ((when provedp)

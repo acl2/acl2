@@ -119,16 +119,18 @@
            (natp (sgetprop rule-symbol key val world-name info)))
   :hints (("Goal" :in-theory (enable info-worldp))))
 
-(defthm info-worldp-of-uniquify-alist-eq-aux
-  (implies (and (info-worldp info)
-                (info-worldp acc))
-           (info-worldp (uniquify-alist-eq-aux info acc)))
-  :hints (("Goal" :in-theory (enable info-worldp acons))))
+(local
+  (defthm info-worldp-of-uniquify-alist-eq-aux
+    (implies (and (info-worldp info)
+                  (info-worldp acc))
+             (info-worldp (uniquify-alist-eq-aux info acc)))
+    :hints (("Goal" :in-theory (enable info-worldp acons)))))
 
-(defthmd symbol-alistp-when-info-worldp
-  (implies (info-worldp info)
-           (symbol-alistp info))
-  :hints (("Goal" :in-theory (enable info-worldp))))
+(local
+  (defthmd symbol-alistp-when-info-worldp
+    (implies (info-worldp info)
+             (symbol-alistp info))
+    :hints (("Goal" :in-theory (enable info-worldp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -166,55 +168,62 @@
   (and (symbol-alistp alist)
        (nat-listp (strip-cdrs alist))))
 
-(defthm hit-count-alistp-forward-to-symbol-alistp
-  (implies (hit-count-alistp alist)
-           (symbol-alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable hit-count-alistp))))
+(local
+  (defthm hit-count-alistp-forward-to-symbol-alistp
+    (implies (hit-count-alistp alist)
+             (symbol-alistp alist))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable hit-count-alistp)))))
 
-(defthm hit-count-alistp-of-cdr
-  (implies (hit-count-alistp alist)
-           (hit-count-alistp (cdr alist)))
-  :hints (("Goal" :in-theory (enable hit-count-alistp))))
+(local
+  (defthm hit-count-alistp-of-cdr
+    (implies (hit-count-alistp alist)
+             (hit-count-alistp (cdr alist)))
+    :hints (("Goal" :in-theory (enable hit-count-alistp)))))
 
-(defthm hit-count-alistp-forward-to-all-consp
-  (implies (hit-count-alistp alist)
-           (all-consp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable hit-count-alistp))))
+(local
+  (defthm hit-count-alistp-forward-to-all-consp
+    (implies (hit-count-alistp alist)
+             (all-consp alist))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable hit-count-alistp)))))
 
-(defthm all-cdrs-rationalp-when-hit-count-alistp
-  (implies (hit-count-alistp alist)
-           (all-cdrs-rationalp alist))
-  :hints (("Goal" :in-theory (enable hit-count-alistp))))
+(local
+  (defthm all-cdrs-rationalp-when-hit-count-alistp
+    (implies (hit-count-alistp alist)
+             (all-cdrs-rationalp alist))
+    :hints (("Goal" :in-theory (enable hit-count-alistp)))))
 
-(defthmd natp-of-lookup-equal-when-hit-count-alistp
-  (implies (hit-count-alistp alist)
-           (or (natp (lookup-equal sym alist))
-               (not (lookup-equal sym alist))))
-  :rule-classes :type-prescription
-  :otf-flg t
-  :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF)))))
+(local
+  (defthmd natp-of-lookup-equal-when-hit-count-alistp
+    (implies (hit-count-alistp alist)
+             (or (natp (lookup-equal sym alist))
+                 (not (lookup-equal sym alist))))
+    :rule-classes :type-prescription
+    :otf-flg t
+    :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
 
-(defthmd nat-of-cdr-of-car-when-hit-count-alistp
-  (implies (and (hit-count-alistp alist)
-                (consp alist))
-           (natp (cdr (car alist))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF)))))
+(local
+  (defthmd nat-of-cdr-of-car-when-hit-count-alistp
+    (implies (and (hit-count-alistp alist)
+                  (consp alist))
+             (natp (cdr (car alist))))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
 
-(defthmd consp-car-when-hit-count-alistp
-  (implies (and (hit-count-alistp alist)
-                (consp alist))
-           (consp (car alist)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF)))))
+(local
+  (defthmd consp-car-when-hit-count-alistp
+    (implies (and (hit-count-alistp alist)
+                  (consp alist))
+             (consp (car alist)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The info should be uniquify-ed before calling this.
 ;; This gets rid of the mention of :fake.
-(defund make-hit-count-alist (info acc)
+(defund make-hit-count-alist-aux (info acc)
   (declare (xargs :guard (and (info-worldp info)
                               (alistp acc))
                   :guard-hints (("Goal" :in-theory (enable info-worldp)))))
@@ -224,35 +233,71 @@
            (symbol (car entry))
            ;;(key (cadr entry)) ;should be 'hit-count
            (hit-count (cddr entry)))
-      (make-hit-count-alist (cdr info) (if (eq :fake symbol) acc (acons-fast symbol hit-count acc))))))
+      (make-hit-count-alist-aux (cdr info) (if (eq :fake symbol) acc (acons-fast symbol hit-count acc))))))
+
+(local
+  (defthm hit-count-alistp-of-make-hit-count-alist-aux
+    (implies (and (info-worldp info)
+                  (hit-count-alistp acc))
+             (hit-count-alistp (make-hit-count-alist-aux info acc)))
+    :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs info-worldp
+                                       make-hit-count-alist-aux)))))
+
+;; (local
+;;   (defthm all-consp-of-make-hit-count-alist-aux
+;;     (implies (all-consp acc)
+;;              (all-consp (make-hit-count-alist-aux info acc)))
+;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
+
+;; (local
+;;   (defthm true-listp-of-make-hit-count-alist-aux
+;;     (implies (true-listp acc)
+;;              (true-listp (make-hit-count-alist-aux info acc)))
+;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
+
+;; (local
+;;   (defthm alistp-of-make-hit-count-alist-aux
+;;     (implies (alistp acc)
+;;              (alistp (make-hit-count-alist-aux info acc)))
+;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
+
+;; (local
+;;   (defthm all-cdrs-rationalp-of-make-hit-count-alist-aux
+;;     (implies (and (info-worldp info)
+;;                   (all-cdrs-rationalp acc))
+;;              (all-cdrs-rationalp (make-hit-count-alist-aux info acc)))
+;;     :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist-aux)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This gets rid of the mention of :fake.
+(defund make-hit-count-alist (info)
+  (declare (xargs :guard (info-worldp info)))
+  (make-hit-count-alist-aux (uniquify-alist-eq info) nil))
 
 (defthm hit-count-alistp-of-make-hit-count-alist
-  (implies (and (info-worldp info)
-                (hit-count-alistp acc))
-           (hit-count-alistp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs info-worldp
-                                     make-hit-count-alist))))
-
-(defthm all-consp-of-make-hit-count-alist
-  (implies (all-consp acc)
-           (all-consp (make-hit-count-alist info acc)))
+  (implies (info-worldp info)
+           (hit-count-alistp (make-hit-count-alist info)))
   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
-(defthm true-listp-of-make-hit-count-alist
-  (implies (true-listp acc)
-           (true-listp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+;; todo: do we need all these type rules?
 
-(defthm alistp-of-make-hit-count-alist
-  (implies (alistp acc)
-           (alistp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+;; (defthm all-consp-of-make-hit-count-alist
+;;   (all-consp (make-hit-count-alist info))
+;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
-(defthm all-cdrs-rationalp-of-make-hit-count-alist
-  (implies (and (info-worldp info)
-                (all-cdrs-rationalp acc))
-           (all-cdrs-rationalp (make-hit-count-alist info acc)))
-  :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist))))
+;; (defthm true-listp-of-make-hit-count-alist
+;;   (true-listp (make-hit-count-alist info))
+;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+
+;; (defthm alistp-of-make-hit-count-alist
+;;   (alistp (make-hit-count-alist info))
+;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+
+;; (defthm all-cdrs-rationalp-of-make-hit-count-alist
+;;   (implies (info-worldp info)
+;;            (all-cdrs-rationalp (make-hit-count-alist info)))
+;;   :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,16 +317,17 @@
 ;; Returns a hit-count-alist mapping rule names to hit counts.
 (defund summarize-info-world (info)
   (declare (xargs :guard (info-worldp info)))
-  (let* ((info (uniquify-alist-eq info)) ;does this not use the fast lookup into the info?
-         (hit-count-alist (make-hit-count-alist info nil))
+  (let* (; (info (uniquify-alist-eq info)) ;does this not use the fast lookup into the info?
+         (hit-count-alist (make-hit-count-alist info))
          ) ;removes shadowed bindings
     (sort-hit-count-alist hit-count-alist)))
 
-(defthm alistp-of-summarize-info-world
-  (implies (info-worldp info)
-           (alistp (summarize-info-world info)))
-  :hints (("Goal" :in-theory (enable summarize-info-world
-                                     info-worldp))))
+(local
+  (defthm alistp-of-summarize-info-world
+    (implies (info-worldp info)
+             (alistp (summarize-info-world info)))
+    :hints (("Goal" :in-theory (enable summarize-info-world
+                                       info-worldp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,15 +391,17 @@
            (hit-count-alistp (subtract-hit-count-alists alist1 alist2)))
   :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
 
-(defthm alistp-of-subtract-hit-count-alists
-  (alistp (subtract-hit-count-alists alist1 alist2))
-  :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
+(local
+  (defthm alistp-of-subtract-hit-count-alists
+    (alistp (subtract-hit-count-alists alist1 alist2))
+    :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists)))))
 
 (verify-guards subtract-hit-count-alists
   :hints (("Goal" :in-theory (enable nat-of-cdr-of-car-when-hit-count-alistp
                                      natp-of-lookup-equal-when-hit-count-alistp))))
 
-(defthm all-cdrs-rationalp-of-subtract-hit-count-alists
-  (implies (and (hit-count-alistp alist1)
-                (hit-count-alistp alist2))
-           (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2))))
+(local
+  (defthm all-cdrs-rationalp-of-subtract-hit-count-alists
+    (implies (and (hit-count-alistp alist1)
+                  (hit-count-alistp alist2))
+             (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))
