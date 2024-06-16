@@ -527,12 +527,12 @@
     x86isa::rflagsbits->sf$inline-of-if
     x86isa::rflagsbits->zf$inline-of-if
 
-    x86isa::rflagsbits->af-of-bvif
-    x86isa::rflagsbits->cf-of-bvif
-    x86isa::rflagsbits->of-of-bvif
-    x86isa::rflagsbits->pf-of-bvif
-    x86isa::rflagsbits->sf-of-bvif
-    x86isa::rflagsbits->zf-of-bvif
+    rflagsbits->af-of-bvif
+    rflagsbits->cf-of-bvif
+    rflagsbits->of-of-bvif
+    rflagsbits->pf-of-bvif
+    rflagsbits->sf-of-bvif
+    rflagsbits->zf-of-bvif
 
     ;; These introduce set-flag:
     !rflags-of-!rflagsbits->af
@@ -542,12 +542,12 @@
     !rflags-of-!rflagsbits->sf
     !rflags-of-!rflagsbits->zf
 
-    X86ISA::RFLAGSBITS->aF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->cF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->OF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->pF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->sF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->zF-OF-RFLAGSBITS
+    x86isa::rflagsbits->af-of-rflagsbits
+    x86isa::rflagsbits->cf-of-rflagsbits
+    x86isa::rflagsbits->of-of-rflagsbits
+    x86isa::rflagsbits->pf-of-rflagsbits
+    x86isa::rflagsbits->sf-of-rflagsbits
+    x86isa::rflagsbits->zf-of-rflagsbits
 
     rflagsbits->af$inline-of-bvchop-32
     rflagsbits->cf$inline-of-bvchop-32
