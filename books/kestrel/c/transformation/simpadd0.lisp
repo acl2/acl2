@@ -214,16 +214,10 @@
      :bool (tyspec-fix tyspec)
      :complex (tyspec-fix tyspec)
      :atomic (tyspec-atomic (simpadd0-tyname tyspec.type))
-     :atomic-ambig (prog2$
-                    (raise "Misusage error: ~x0." (tyspec-fix tyspec))
-                    (tyspec-fix tyspec))
      :struct (tyspec-struct (simpadd0-strunispec tyspec.unwrap))
      :union (tyspec-union (simpadd0-strunispec tyspec.unwrap))
      :enum (tyspec-enum (simpadd0-enumspec tyspec.unwrap))
-     :tydef (tyspec-fix tyspec)
-     :tydef-ambig (prog2$
-                   (raise "Misusage error: ~x0." (tyspec-fix tyspec))
-                   (tyspec-fix tyspec)))
+     :tydef (tyspec-fix tyspec))
     :measure (tyspec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
