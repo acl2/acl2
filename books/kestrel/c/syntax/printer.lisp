@@ -1747,13 +1747,6 @@
                   (pstate (print-tyname tyspec.type pstate))
                   (pstate (print-astring ")" pstate)))
                pstate)
-     ;; For now we allow an ambiguous _Atomic,
-     ;; even though it should disappear during static semantic elaboration,
-     ;; and printing is normally done after that elaboration.
-     :atomic-ambig (b* ((pstate (print-astring "_Atomic(" pstate))
-                        (pstate (print-ident tyspec.ident pstate))
-                        (pstate (print-astring ")" pstate)))
-                     pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
                   (pstate (print-strunispec tyspec.unwrap pstate)))
                pstate)
@@ -1763,11 +1756,7 @@
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.unwrap pstate)))
              pstate)
-     :tydef (print-ident tyspec.name pstate)
-     ;; For now we allow an ambiguous typedef,
-     ;; even though it should disappear during static semantic elaboration,
-     ;; and printing is normally done after that elaboration.
-     :tydef-ambig (print-ident tyspec.ident pstate))
+     :tydef (print-ident tyspec.name pstate))
     :measure (tyspec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
