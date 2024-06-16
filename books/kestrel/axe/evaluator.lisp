@@ -29,7 +29,8 @@
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
+(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us sbvdiv
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)

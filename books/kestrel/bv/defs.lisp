@@ -218,7 +218,3 @@
 (defun bit-to-bool (x)
   (declare (xargs :guard (unsigned-byte-p 1 x)))
   (if (eql x 0) nil t))
-
-(defund bool-to-bit (test)
-  (declare (xargs :guard (booleanp test))) ;trying this
-  (if test 1 0))

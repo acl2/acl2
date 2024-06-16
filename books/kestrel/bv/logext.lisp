@@ -822,3 +822,9 @@
 (defthm logext-of-fix
   (equal (logext size (fix x))
          (logext size x)))
+
+;bozo gen!
+(defthm logext-equal-0-rewrite-32
+  (equal (equal 0 (logext 32 x))
+         (equal 0 (bvchop 32 x)))
+  :hints (("Goal" :in-theory (enable))))

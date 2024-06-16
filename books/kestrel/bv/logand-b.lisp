@@ -84,3 +84,9 @@
            (equal (logbitp i (logand j1 j2))
                   (and (logbitp i j1) (logbitp i j2))))
   :hints (("Goal" :in-theory (enable logbitp-iff-getbit))))
+
+(defthm logand-of-1-arg1
+  (equal (logand 1 x)
+         (getbit 0 x))
+  :hints (("Goal" :in-theory (e/d (logand getbit bvchop)
+                                  (bvchop-1-becomes-getbit)))))
