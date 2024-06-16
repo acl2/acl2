@@ -371,3 +371,11 @@
            (equal (ash x amt)
                   (logtail (- amt) x)))
   :hints (("Goal" :in-theory (enable logtail ash))))
+
+(defthm logtail-of-floor-of-expt
+  (implies (and (integerp x)
+                (natp pos)
+                (natp n))
+           (equal (logtail pos (floor x (expt 2 n)))
+                  (logtail (+ pos n) x)))
+  :hints (("Goal" :in-theory (enable logtail expt-of-+))))

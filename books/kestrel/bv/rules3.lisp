@@ -1276,21 +1276,6 @@
   :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
                                             SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
 
-(defthm bvplus-bvminus-same
-  (implies (natp size)
-           (equal (bvplus size (bvminus size y x) x)
-                  (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvminus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;anti-bvplus
-                                                                                     )))))
-
-(defthm bvplus-bvminus-same-arg2
-  (implies (natp size)
-           (equal (bvplus size x (bvminus size y x))
-                  (bvchop size y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvminus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (;anti-bvplus
-                                                                                     )))))
-
-
 ;more like this
 (defthmd slice-of-bvplus-low
   (implies (and (< high (+ -1 size)) ;bozo more cases

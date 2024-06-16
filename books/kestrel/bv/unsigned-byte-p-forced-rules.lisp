@@ -13,6 +13,7 @@
 (include-book "unsigned-byte-p-forced")
 (include-book "bvshr-def")
 (include-book "bvshl-def")
+(include-book "bool-to-bit-def")
 (include-book "defs")
 (local (include-book "bvshr"))
 (local (include-book "bvshl"))

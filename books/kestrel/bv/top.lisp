@@ -147,6 +147,7 @@
 (include-book "defs")
 
 ;; Conversions between booleans and bits
+(include-book "bool-to-bit-def")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
 
