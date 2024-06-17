@@ -480,7 +480,7 @@
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                            memoization
                            ;;no need to assemble the info if we are not going to print it
-                           (and info (increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info))
+                           (maybe-increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info)
                            tries
                            (and limits (decrement-rule-limit stored-rule limits))
                            state))

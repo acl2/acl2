@@ -531,7 +531,7 @@
                          (mv (erp-nil)
                              rhs
                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                             (and info (increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info))
+                             (maybe-increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info)
                              tries
                              state)))
              ;;failed to relieve the hyps, so try the next rule

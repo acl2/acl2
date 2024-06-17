@@ -533,7 +533,7 @@
                        (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                      (if hyps-relievedp
                          ;;the hyps were relieved:
-                         (let* ((info (and info (increment-hit-count-in-info-world rule-symbol info))))
+                         (let* ((info (maybe-increment-hit-count-in-info-world rule-symbol info)))
                            (prog2$ (and (eq print :verbose!)
                                         (cw "Rewriting with ~x0.)~%" rule-symbol))
                                    (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

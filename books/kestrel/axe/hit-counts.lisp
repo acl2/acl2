@@ -143,11 +143,30 @@
            (info (extend-world 'info-world (putprop rule-symbol 'hit-count count info))))
       info))
 
-(defthm info-worldp-of-increment-hit-count-in-info-world
+(local
+  (defthm info-worldp-of-increment-hit-count-in-info-world
+    (implies (and (info-worldp info)
+                  (symbolp rule-symbol))
+             (info-worldp (increment-hit-count-in-info-world rule-symbol info)))
+    :hints (("Goal" :in-theory (enable increment-hit-count-in-info-world info-worldp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;rename
+;; We inline this to optimize the case when hit-counts is nil.
+;; We keep this disabled to avoid case splits in proofs about code that calls it.
+(defund-inline maybe-increment-hit-count-in-info-world (rule-symbol info)
+  (declare (xargs :guard (and (symbolp rule-symbol)
+                              (info-worldp info) ; allows nil, meaning no info-world
+                              )))
+  ;; if info is nil, it remains so:
+  (and info (increment-hit-count-in-info-world rule-symbol info)))
+
+(defthm info-worldp-of-maybe-increment-hit-count-in-info-world
   (implies (and (info-worldp info)
                 (symbolp rule-symbol))
-           (info-worldp (increment-hit-count-in-info-world rule-symbol info)))
-  :hints (("Goal" :in-theory (enable increment-hit-count-in-info-world info-worldp))))
+           (info-worldp (maybe-increment-hit-count-in-info-world rule-symbol info)))
+  :hints (("Goal" :in-theory (enable maybe-increment-hit-count-in-info-world))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

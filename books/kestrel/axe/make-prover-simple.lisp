@@ -379,7 +379,7 @@
     (:rewrite DARGP-LESS-THAN-OF-MAYBE-REPLACE-NODENUM-USING-ASSUMPTION-ARRAY)
     (:REWRITE EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT)
     (:REWRITE EQUAL-OF-LEN-AND-0)
-    (:REWRITE INFO-WORLDP-OF-INCREMENT-HIT-COUNT-IN-INFO-WORLD)
+    (:REWRITE INFO-WORLDP-OF-maybe-INCREMENT-HIT-COUNT-IN-INFO-WORLD)
     (:REWRITE INTEGER-LISTP-WHEN-ALL-NATP)
     (:REWRITE INTEGER-LISTP-WHEN-nat-listp)
     (:REWRITE INTEGERP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
@@ -1370,7 +1370,7 @@
                                 (mv (erp-nil)
                                     rhs
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    (and info (increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info))
+                                    (maybe-increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info)
                                     tries
                                     )))
                     ;;failed to relieve the hyps, so try the next rule
