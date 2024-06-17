@@ -29,27 +29,27 @@
 
 ; Library extensions.
 
-(defruled natp-when-bytep
+(defruledl natp-when-bytep
   (implies (bytep x)
            (natp x)))
 
-(defruled rationalp-when-bytep
+(defruledl rationalp-when-bytep
   (implies (bytep x)
            (rationalp x)))
 
-(defruled acl2-numberp-when-bytep
+(defruledl acl2-numberp-when-bytep
   (implies (bytep x)
            (acl2-numberp x)))
 
-(defruled integerp-when-natp
+(defruledl integerp-when-natp
   (implies (natp x)
            (integerp x)))
 
-(defruled rationalp-when-natp
+(defruledl rationalp-when-natp
   (implies (natp x)
            (rationalp x)))
 
-(defruled acl2-numberp-when-natp
+(defruledl acl2-numberp-when-natp
   (implies (natp x)
            (acl2-numberp x)))
 
