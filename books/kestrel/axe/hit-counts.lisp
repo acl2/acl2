@@ -232,13 +232,13 @@
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
 
-(local
-  (defthmd consp-car-when-hit-count-alistp
-    (implies (and (hit-count-alistp alist)
-                  (consp alist))
-             (consp (car alist)))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
+;; (local
+;;   (defthmd consp-car-when-hit-count-alistp
+;;     (implies (and (hit-count-alistp alist)
+;;                   (consp alist))
+;;              (consp (car alist)))
+;;     :rule-classes :type-prescription
+;;     :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -343,12 +343,12 @@
          ) ;removes shadowed bindings
     (sort-hit-count-alist hit-count-alist)))
 
-(local
-  (defthm alistp-of-summarize-info-world
-    (implies (info-worldp info)
-             (alistp (summarize-info-world info)))
-    :hints (("Goal" :in-theory (enable summarize-info-world
-                                       info-worldp)))))
+;; (local
+;;   (defthm alistp-of-summarize-info-world
+;;     (implies (info-worldp info)
+;;              (alistp (summarize-info-world info)))
+;;     :hints (("Goal" :in-theory (enable summarize-info-world
+;;                                        info-worldp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -412,17 +412,17 @@
            (hit-count-alistp (subtract-hit-count-alists alist1 alist2)))
   :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
 
-(local
-  (defthm alistp-of-subtract-hit-count-alists
-    (alistp (subtract-hit-count-alists alist1 alist2))
-    :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists)))))
+;; (local
+;;   (defthm alistp-of-subtract-hit-count-alists
+;;     (alistp (subtract-hit-count-alists alist1 alist2))
+;;     :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists)))))
 
 (verify-guards subtract-hit-count-alists
   :hints (("Goal" :in-theory (enable nat-of-cdr-of-car-when-hit-count-alistp
                                      natp-of-lookup-equal-when-hit-count-alistp))))
 
-(local
-  (defthm all-cdrs-rationalp-of-subtract-hit-count-alists
-    (implies (and (hit-count-alistp alist1)
-                  (hit-count-alistp alist2))
-             (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))
+;; (local
+;;   (defthm all-cdrs-rationalp-of-subtract-hit-count-alists
+;;     (implies (and (hit-count-alistp alist1)
+;;                   (hit-count-alistp alist2))
+;;              (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))
