@@ -108,16 +108,18 @@
                 (info-worldp (cdr alist))))))
 
 ;limit?
-(defthm worldp-when-info-plist-worldp
-  (implies (info-worldp alist)
-           (plist-worldp alist))
-  :hints (("Goal" :in-theory (enable info-worldp plist-worldp))))
+(local
+  (defthm worldp-when-info-plist-worldp
+    (implies (info-worldp alist)
+             (plist-worldp alist))
+    :hints (("Goal" :in-theory (enable info-worldp plist-worldp)))))
 
-(defthm natp-of-getprop-when-info-worldp
-  (implies (and (info-worldp info)
-                (natp val))
-           (natp (sgetprop rule-symbol key val world-name info)))
-  :hints (("Goal" :in-theory (enable info-worldp))))
+(local
+  (defthm natp-of-getprop-when-info-worldp
+    (implies (and (info-worldp info)
+                  (natp val))
+             (natp (sgetprop rule-symbol key val world-name info)))
+    :hints (("Goal" :in-theory (enable info-worldp)))))
 
 (local
   (defthm info-worldp-of-uniquify-alist-eq-aux
