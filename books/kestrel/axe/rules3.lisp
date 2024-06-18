@@ -11158,7 +11158,9 @@
            :do-not '(preprocess)
            :in-theory (e/d (BVAND-1-BECOMES-BITAND BVOR-1-BECOMES-BITOR bitxor-of-bvand)
                            (;GETBIT-OF-BVOR-ERIC
-                            GETBIT-OF-BVand-ERIC))
+                            GETBIT-OF-BVand-ERIC
+                            bvor-of-bvor-tighten-2 ; looped (but shouldn't have)
+                            ))
            :cases ((and (equal 0 (getbit (DIFFERING-BIT (+ -1 size)
                                                         (BVXOR size (BVAND size X Y)
                                                                (BVXOR size (BVAND size X Z)
