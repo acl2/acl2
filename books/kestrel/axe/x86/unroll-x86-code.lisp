@@ -285,8 +285,7 @@
                      (stringp (farg1 type)) ; for guards
                      (natp (farg2 type)) ; for guards
                      )
-
-                ;; must be an :array type:
+                ;; must be an :array type:  ; TODO: What if the whole array fits in a register?
                 (b* ((base-type (farg1 type))
                      (element-count (farg2 type))
                      (element-size (bytes-in-scalar-type base-type))
