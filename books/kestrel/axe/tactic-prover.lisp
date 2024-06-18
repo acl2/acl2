@@ -569,7 +569,7 @@
                             nil ; limits
                             rule-alist
                             nil ; count-hits
-                            nil ; print
+                            print
                             (known-booleans (w state))
                             monitor ; monitored-symbols
                             nil ; fns-to-elide
