@@ -192,6 +192,13 @@
                 )
            (not (< k (read-byte addr x86)))))
 
+(defthm read-byte-when-not-integerp-arg1-cheap
+  (implies (not (integerp addr))
+           (equal (read-byte addr x86)
+                  (read-byte 0 x86)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 (defthm read-byte-of-xw-irrel
   (implies (not (equal fld :mem))
            (equal (read-byte base-addr (xw fld index val x86))
@@ -354,7 +361,29 @@
              8
              byte))))
 
-;; todo: read-of-0
+;; includes the n=0 case
+(defthm read-when-not-posp-cheap
+  (implies (not (posp n))
+           (equal (read n addr x86)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable read))))
+
+;; (defthm read-when-not-integerp-arg2-cheap
+;;   (implies (equal nil addr) ;(not (integerp addr))
+;;            (equal (read n addr x86)
+;;                   (read n 0 x86)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+;;   :hints (("Subgoal *1/3" :cases ((integerp (+ 1 addr))))
+;;           ("Goal" :in-theory (enable read))))
+
+;todo: gen!
+(defthm read-when-not-acl2-numberp-cheap
+  (implies (not (acl2-numberp addr))
+           (equal (read n addr x86)
+                  (read n 0 x86)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable read))))
 
 (defthm unsigned-byte-p-of-read
   (implies (<= (* n 8) size)
