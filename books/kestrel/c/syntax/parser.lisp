@@ -29,27 +29,27 @@
 
 ; Library extensions.
 
-(defruled natp-when-bytep
+(defruledl natp-when-bytep
   (implies (bytep x)
            (natp x)))
 
-(defruled rationalp-when-bytep
+(defruledl rationalp-when-bytep
   (implies (bytep x)
            (rationalp x)))
 
-(defruled acl2-numberp-when-bytep
+(defruledl acl2-numberp-when-bytep
   (implies (bytep x)
            (acl2-numberp x)))
 
-(defruled integerp-when-natp
+(defruledl integerp-when-natp
   (implies (natp x)
            (integerp x)))
 
-(defruled rationalp-when-natp
+(defruledl rationalp-when-natp
   (implies (natp x)
            (rationalp x)))
 
-(defruled acl2-numberp-when-natp
+(defruledl acl2-numberp-when-natp
   (implies (natp x)
            (acl2-numberp x)))
 
@@ -217,13 +217,14 @@
     "This is used in parser error messages,
      so it does not have to provide a complete description of the token
      for all possible tokens.
-     We only give a complete a description of keyword and punctuator tokens,
+     We only give a complete description of keyword and punctuator tokens,
      because those are the kinds that may be a mismatch
      (e.g. expecing a @(':'), found a @(';') instead).
-     For the other kinds, we give a generic description.")
+     For the other kinds, we give a more generic description.")
    (xdoc::p
     "It is convenient to treat uniformly tokens and @('nil'),
-     which happens when the end of the file is reached."))
+     which happens when the end of the file is reached.
+     This is why this function takes an optional token as input."))
   (if token
       (token-case
        token
@@ -284,7 +285,7 @@
      which is consistent with [C:6.10.4/2]:
      since the characters in the first line
      have 0 preceding new-line characters,
-     its line number is 1 plus 0, i.e. 1.
+     the number of the first line is 1 plus 0, i.e. 1.
      We number columns from 0,
      but we could change that to 1.
      Numbering lines from 1 and columns from 0
@@ -454,8 +455,8 @@
      i.e. putting them back into the parser state.
      But since we have already turned bytes into characters,
      we do not want to put back the bytes:
-     thus, the @('chars-unread') component contains a list of characters
-     that have been put back, but in character form;
+     thus, the @('chars-unread') component of the parser state
+     contains a list of characters that have been put back, in character form;
      the form is natural numbers, i.e. Unicode code points.
      The list is initially empty.
      When non-empty, it must be thought of
@@ -466,8 +467,8 @@
    (xdoc::p
     "To avoid putting back the wrong character by mistake,
      i.e. a character that was not actually read,
-     we use the @('chars-read') component to keep track of
-     which characters have been read and could be unread.
+     we use the @('chars-read') component of the parser state
+     to keep track of which characters have been read and could be unread.
      Thus, every time we read a character,
      we add it to the @('chars-read') list,
      which can be visualized, reversed, to the left of
@@ -492,7 +493,8 @@
      If @('chars-read') is empty, it is an internal error:
      if the parser code is correct, this must never happen.")
    (xdoc::p
-    "A similar look-ahead happens at the proper parsing level,
+    "The reading and unreading of characters happens at the lexing level.
+     A similar look-ahead happens at the proper parsing level,
      where the elements of the read and unread lists
      are not characters but tokens.
      The parser state has lists @('tokens-read') and @('tokens-unread')
@@ -524,7 +526,7 @@
      the characters that are read in order to read the next token.
      So in general the reversed @('tokens-read') list
      is at the left of the reversed @('chars-read') list,
-     and the latter is cleared when another token
+     and the latter is cleared again when another token
      is added to @('tokens-read').
      This is the first situation depicted in the diagram above.")
    (xdoc::p
@@ -561,14 +563,38 @@
      but @(tsee char+position) pairs.
      Similarly, for tokens, we also store their spans.")
    (xdoc::p
-    "We could look into turning this into a stobj in the future,
-     if efficiency is an issue."))
+    "To support backtracking,
+     we also keep track of zero or more checkpoints,
+     which indicate positions in the @('tokens-read') list.
+     When a checkpoint is recorded,
+     the current length of @('tokens-read') is stored as a checkpoint,
+     by @(tsee cons)ing it to the @('checkpoints') list.
+     Later, the checkpoint can be simply cleared,
+     in which case it is simply removed from the check,
+     by replacing @('checkpoints') with its @(tsee cdr).
+     Alternatively, we can backtrack to the checkpoint,
+     which involves moving tokens from @('tokens-read') to @('tokens-unread')
+     until @('tokens-read') has the length of the checkpoint in question;
+     then the checkpoint is removed from @('checkpoints') as well.
+     That is, we have the ability to backtrack to earlier tokens,
+     without having to keep track of how many tokens we have read
+     since the potential point of backtrack.
+     The reason why @('checkpoints') is a list of natural numbers
+     and not just an optional natural number
+     is that we may need to support ``nested'' backtracking
+     while parsing something that may also backtrack.")
+   (xdoc::p
+    "We could look into turning the parser state into a stobj in the future,
+     if efficiency is an issue.
+     The code of the parser already treats the parser state
+     in a single-threaded way."))
   ((bytes byte-list)
    (position position)
    (chars-read char+position-list)
    (chars-unread char+position-list)
    (tokens-read token+span-list)
-   (tokens-unread token+span-list))
+   (tokens-unread token+span-list)
+   (checkpoints nat-list))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -583,7 +609,9 @@
      so a natural choice for an irrelevant parser state to return
      is the result of fixing the input parser state.")
    (xdoc::p
-    "This macro assumes that the variable @('pstate') is in scope."))
+    "This macro assumes that the variable @('pstate') is in scope
+     and has the type of parser states.
+     This is normally a function formal."))
   '(parstate-fix pstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,13 +626,16 @@
      the initial parsing state consists of
      the data to parse,
      no unread characters or tokens,
-     and the initial file position."))
+     no read characters or tokens,
+     the initial file position,
+     and no checkpoints."))
   (make-parstate :bytes data
                  :position (position-init)
                  :chars-read nil
                  :chars-unread nil
                  :tokens-read nil
-                 :tokens-unread nil))
+                 :tokens-unread nil
+                 :checkpoints nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -646,7 +677,7 @@
      that include a description of the unexpected character.
      This ACL2 function constructs that description.")
    (xdoc::p
-    "We use @(tsee read-char) to read characters.
+    "We use @(tsee read-char) (defined later) to read characters.
      That function recognizes three new-line delimiters:
      line feed, carriage return, and carriage return followed by line feed.
      That function turns all these three into just a line feed.
@@ -658,7 +689,8 @@
      but it could be a carriage return possibly followed by line feed.
      For this reason, we treat the case of code 10 a bit differently,
      and our @('*ascii-control-char-names*') table
-     has an internal-error-signaling entry for codes 10 and 13.")
+     has an internal-error-signaling entry for codes 10 and 13,
+     because we do not access that table for those two codes.")
    (xdoc::p
     "We also allow the character to be absent, i.e. to be @('nil').
      This happens when we reach the end of the file:
@@ -729,13 +761,18 @@
     "This macro assumes that a suitable local macro @('reterr') is in scope
      (see "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
-    "), which is the case for our lexing functions.
+    "), which is the case for our lexing and parsing functions.
      This macro takes as inputs four terms,
      which must evaluate to messages (i.e. values satisfying @(tsee msgp)).
      Those are used to form a larger message,
      in the manner that should be obvious from the body of this macro.
      Note that the fourth term is optional,
-     in case we want to provide additional information."))
+     in case we want to provide additional information.")
+   (xdoc::p
+    "For now we also include, at the end of the message,
+     an indication of the ACL2 function that caused the error.
+     This is useful as we are debugging the parser,
+     but we may remove it once the parser is more tested or even verified."))
   `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
                  [from function ~x4]~%"
                 ,expected
@@ -754,15 +791,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the characters, we also return its position.
+    "Besides the character, we also return its position.
      No character is returned if we are at the end of the file;
-     in this case, the returned file position is of
-     the (non-existent) character just past the end of the file.")
+     in this case, the returned file position is the one of
+     the non-existent character just past the end of the file
+     (i.e. the position of a character if we added it to the end of the file).")
    (xdoc::p
     "If a character is read, it is added to the list of read characters.
      See @(tsee parstate).")
    (xdoc::p
-    "If some character was put back,
+    "If some character was put back earlier,
      we get the character directly from there,
      removing it from the list;
      see @(tsee parstate).
@@ -781,8 +819,9 @@
    (xdoc::p
     "Looking at the rules in the ABNF grammar for basic and extended characters,
      we see that the ASCII codes of the three non-new-line extended characters
+     (namely dollar, at sign, and backquote)
      fill gaps in the ASCII codes of the basic characters,
-     so that the codes 9, 11, 12, and 32 to 126 are all valid characters,
+     so that the codes 9, 11, 12, and 32-126 are all valid characters,
      which are thus returned, incrementing the position by one column.
      If instead the byte is the ASCII code 10 for line feed,
      we increment the position by one line.
@@ -792,22 +831,36 @@
      if it does, we consume two bytes instead of one,
      but we return just a line feed,
      since we only really need one new-line character
-     (also in line with [C:5.2.1/3];
+     (also in line with [C:5.2.1/3]);
      if it does not, we just consume the carriage return,
      but return a line feed,
      again for normalizing the new-line character.
-     In both cases, we increment the position by one line.")
+     In both cases, we increment the position by one line,
+     which also resets the column to 0 (see @(tsee position-inc-line)).")
    (xdoc::p
     "Note that horizontal tab, vertical tab, and form feed
-     just increment the column number by 1 and leave the line number unchanged.
+     just increment the column number by 1 and leave the line number unchanged,
+     like most other characters.
      This may not match the visual appearance,
-     but the parser has no easy way to know
+     but the parser has no way to know
      how many columns a horizontal tab takes,
      or how many lines a vertical tab or form feed takes.
-     So, at least for now, we just treat these as ``typical'' characters.")
+     So, at least for now, we just treat these as most other characters.")
    (xdoc::p
-    "If the byte has any other value, we deem it illegal,
-     and return an error message with the current file position."))
+    "If the next byte read has any other value, we deem it illegal,
+     and return an error message with the current file position.
+     We intentionally exclude most ASCII control characters,
+     except for the basic ones and for the new-line ones,
+     since there should be little need to use those in C code.
+     Furthermore, some are dangerous, particularly backspace,
+     since it may make the code look different from what it is,
+     similarly to "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/Trojan_Source" "Trojan Source")
+    " in Unicode.
+     However, if we encounter practical code
+     that uses some of these ASCII control characters,
+     we can easily add support for them,
+     in the ABNF grammar and in the parser."))
   (b* (((reterr) nil (irr-position) (irr-parstate))
        ((parstate pstate) pstate)
        ((when (consp pstate.chars-unread))
@@ -843,7 +896,7 @@
                    :bytes (cdr pstate.bytes)
                    :position (position-inc-line 1 pstate.position)
                    :chars-read (cons (make-char+position
-                                      :char byte
+                                      :char 10
                                       :position pstate.position)
                                      pstate.chars-read))))
           ((= byte 13)
@@ -856,7 +909,7 @@
                        :bytes (cddr pstate.bytes)
                        :position (position-inc-line 1 pstate.position)
                        :chars-read (cons (make-char+position
-                                          :char byte
+                                          :char 10
                                           :position pstate.position)
                                          pstate.chars-read)))
              (retok 10
@@ -866,7 +919,7 @@
                      :bytes (cdr pstate.bytes)
                      :position (position-inc-line 1 pstate.position)
                      :chars-read (cons (make-char+position
-                                        :char byte
+                                        :char 10
                                         :position pstate.position)
                                        pstate.chars-read)))))
           (t (reterr-msg :where (position-to-msg pstate.position)
@@ -4247,6 +4300,89 @@
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define record-checkpoint ((pstate parstatep))
+  :returns (new-pstate parstatep)
+  :short "Record a checkpoint for possible backtracking."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee parstate),
+     we add (by @(tsee cons)ing) to the list of checkpoints
+     the current length of the list of tokens read so far."))
+  (b* ((tokens-read (parstate->tokens-read pstate))
+       (checkpoints (parstate->checkpoints pstate))
+       (new-checkpoints (cons (len tokens-read) checkpoints))
+       (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
+    new-pstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define clear-checkpoint ((pstate parstatep))
+  :returns (new-pstate parstatep)
+  :short "Clear the latest checkpoint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when the parser resolves that
+     there is no longer a need to backtrack
+     to the latest checkpoint.
+     This simply removes the latest checkpoint.")
+   (xdoc::p
+    "It is an internal error if this is called
+     when the list of checkpoints is empty.
+     If this happens, there is a bug in the parser."))
+  (b* ((checkpoints (parstate->checkpoints pstate))
+       ((unless checkpoints)
+        (raise "Internal error: no checkpoint to clear.")
+        (parstate-fix pstate))
+       (new-checkpoints (cdr checkpoints))
+       (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
+    new-pstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define backtrack-checkpoint ((pstate parstatep))
+  :returns (new-pstate parstatep)
+  :short "Backtrack to the latest checkpoint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when the parser needs to backtrack.
+     We calculate the number of tokens to unread and we unread them.
+     We also remove the checkpoint from the list of checkpoints,
+     since it no longer serves a purpose (we have backtracked to it).")
+   (xdoc::p
+    "It is an internal error if this is called
+     when the list of checkpoints is empty.
+     If this happens, there is a bug in the parser."))
+  (b* ((checkpoints (parstate->checkpoints pstate))
+       ((unless (consp checkpoints))
+        (raise "Internal error: no checkpoints to backtrack.")
+        (parstate-fix pstate))
+       (checkpoint (car checkpoints))
+       (new-chechpoints (cdr checkpoints))
+       (number-tokens-read (len (parstate->tokens-read pstate)))
+       (number-tokens-to-unread (- number-tokens-read checkpoint))
+       ((unless (> number-tokens-to-unread 0))
+        (raise "Internal error: ~
+                the checkpoint ~x0 is not less than ~
+                the number ~x1 of tokens read so far."
+               checkpoint
+               number-tokens-read)
+        (parstate-fix pstate))
+       (pstate (unread-tokens number-tokens-to-unread pstate))
+       (new-pstate (change-parstate pstate :checkpoints new-chechpoints)))
+    new-pstate)
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (and (natp x)
+                   (natp y)
+                   (>= y x))
+              (natp (+ (- x) y)))
+     :enable natp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
