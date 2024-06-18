@@ -84,11 +84,10 @@
     "The syntax of C has some known ambiguities,
      which cannot be disambiguated purely syntactically,
      but need some (static) semantic analysis.
-     Our abstract syntax fixtypes include cases
-     that capture these ambiguous constructions,
-     which are described when those fixtypes are introduced.
-     Here are some resources on the topic
-     (and more resources are easy to find):")
+     Some of the fixtypes of our abstract syntax
+     capture these ambiguous constructions,
+     as described when those fixtypes are introduced.
+     Here are some resources on the topic:")
    (xdoc::ul
     (xdoc::li
      (xdoc::ahref "https://en.wikipedia.org/wiki/Lexer_hack"
@@ -113,7 +112,7 @@
      The exact characterization of these ambiguous constructs
      is still work in progress; it is currently partial.")
    (xdoc::p
-    "A kind of ambiguity has the form")
+    "For instance, a kind of ambiguity has the form")
    (xdoc::codeblock
     "I ( I1 ( I2 ( ... ( In ) ... ) ) ) ;")
    (xdoc::p
