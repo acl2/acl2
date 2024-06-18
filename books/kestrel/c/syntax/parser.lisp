@@ -217,13 +217,14 @@
     "This is used in parser error messages,
      so it does not have to provide a complete description of the token
      for all possible tokens.
-     We only give a complete a description of keyword and punctuator tokens,
+     We only give a complete description of keyword and punctuator tokens,
      because those are the kinds that may be a mismatch
      (e.g. expecing a @(':'), found a @(';') instead).
-     For the other kinds, we give a generic description.")
+     For the other kinds, we give a more generic description.")
    (xdoc::p
     "It is convenient to treat uniformly tokens and @('nil'),
-     which happens when the end of the file is reached."))
+     which happens when the end of the file is reached.
+     This is why this function takes an optional token as input."))
   (if token
       (token-case
        token
@@ -284,7 +285,7 @@
      which is consistent with [C:6.10.4/2]:
      since the characters in the first line
      have 0 preceding new-line characters,
-     its line number is 1 plus 0, i.e. 1.
+     the number of the first line is 1 plus 0, i.e. 1.
      We number columns from 0,
      but we could change that to 1.
      Numbering lines from 1 and columns from 0
@@ -454,8 +455,8 @@
      i.e. putting them back into the parser state.
      But since we have already turned bytes into characters,
      we do not want to put back the bytes:
-     thus, the @('chars-unread') component contains a list of characters
-     that have been put back, but in character form;
+     thus, the @('chars-unread') component of the parser state
+     contains a list of characters that have been put back, in character form;
      the form is natural numbers, i.e. Unicode code points.
      The list is initially empty.
      When non-empty, it must be thought of
@@ -466,8 +467,8 @@
    (xdoc::p
     "To avoid putting back the wrong character by mistake,
      i.e. a character that was not actually read,
-     we use the @('chars-read') component to keep track of
-     which characters have been read and could be unread.
+     we use the @('chars-read') component of the parser state
+     to keep track of which characters have been read and could be unread.
      Thus, every time we read a character,
      we add it to the @('chars-read') list,
      which can be visualized, reversed, to the left of
@@ -492,7 +493,8 @@
      If @('chars-read') is empty, it is an internal error:
      if the parser code is correct, this must never happen.")
    (xdoc::p
-    "A similar look-ahead happens at the proper parsing level,
+    "The reading and unreading of characters happens at the lexing level.
+     A similar look-ahead happens at the proper parsing level,
      where the elements of the read and unread lists
      are not characters but tokens.
      The parser state has lists @('tokens-read') and @('tokens-unread')
@@ -524,7 +526,7 @@
      the characters that are read in order to read the next token.
      So in general the reversed @('tokens-read') list
      is at the left of the reversed @('chars-read') list,
-     and the latter is cleared when another token
+     and the latter is cleared again when another token
      is added to @('tokens-read').
      This is the first situation depicted in the diagram above.")
    (xdoc::p
@@ -561,8 +563,10 @@
      but @(tsee char+position) pairs.
      Similarly, for tokens, we also store their spans.")
    (xdoc::p
-    "We could look into turning this into a stobj in the future,
-     if efficiency is an issue."))
+    "We could look into turning the parser state into a stobj in the future,
+     if efficiency is an issue.
+     The code of the parser already treats the parser state
+     in a single-threaded way."))
   ((bytes byte-list)
    (position position)
    (chars-read char+position-list)
@@ -583,7 +587,9 @@
      so a natural choice for an irrelevant parser state to return
      is the result of fixing the input parser state.")
    (xdoc::p
-    "This macro assumes that the variable @('pstate') is in scope."))
+    "This macro assumes that the variable @('pstate') is in scope
+     and has the type of parser states.
+     This is normally a function formal."))
   '(parstate-fix pstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,6 +604,7 @@
      the initial parsing state consists of
      the data to parse,
      no unread characters or tokens,
+     no read characters or tokens,
      and the initial file position."))
   (make-parstate :bytes data
                  :position (position-init)
@@ -646,7 +653,7 @@
      that include a description of the unexpected character.
      This ACL2 function constructs that description.")
    (xdoc::p
-    "We use @(tsee read-char) to read characters.
+    "We use @(tsee read-char) (defined later) to read characters.
      That function recognizes three new-line delimiters:
      line feed, carriage return, and carriage return followed by line feed.
      That function turns all these three into just a line feed.
@@ -658,7 +665,8 @@
      but it could be a carriage return possibly followed by line feed.
      For this reason, we treat the case of code 10 a bit differently,
      and our @('*ascii-control-char-names*') table
-     has an internal-error-signaling entry for codes 10 and 13.")
+     has an internal-error-signaling entry for codes 10 and 13,
+     because we do not access that table for those two codes.")
    (xdoc::p
     "We also allow the character to be absent, i.e. to be @('nil').
      This happens when we reach the end of the file:
@@ -729,13 +737,18 @@
     "This macro assumes that a suitable local macro @('reterr') is in scope
      (see "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
-    "), which is the case for our lexing functions.
+    "), which is the case for our lexing and parsing functions.
      This macro takes as inputs four terms,
      which must evaluate to messages (i.e. values satisfying @(tsee msgp)).
      Those are used to form a larger message,
      in the manner that should be obvious from the body of this macro.
      Note that the fourth term is optional,
-     in case we want to provide additional information."))
+     in case we want to provide additional information.")
+   (xdoc::p
+    "For now we also include, at the end of the message,
+     an indication of the ACL2 function that caused the error.
+     This is useful as we are debugging the parser,
+     but we may remove it once the parser is more tested or even verified."))
   `(reterr (msg "Expected ~@0 at ~@1; found ~@2 instead.~@3~%~
                  [from function ~x4]~%"
                 ,expected
