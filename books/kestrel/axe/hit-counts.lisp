@@ -94,10 +94,10 @@
 
 ;; A true-list of triples of the form (sym prop . nat).  See :doc world.  A
 ;; specialization of plist-worldp that requires the values to be nats.
-;; Note that nil satisfies info-worldp but means that we are not counting hits
-;; at all (see empty-info-world).  Every valid info-world will have an entry
-;; for the special key :fake.  So we could perhaps call this maybe-info-worldp.
-(defund info-worldp (alist)
+;; Note that nil satisfies hit-countsp but means that we are not counting hits
+;; at all (see empty-hit-counts).  Every valid hit-counts will have an entry
+;; for the special key :fake.  So we could perhaps call this maybe-hit-countsp.
+(defund hit-countsp (alist)
   (declare (xargs :guard t))
   (cond ((atom alist) (eq alist nil))
         (t (and (consp (car alist))
@@ -105,82 +105,82 @@
                 (consp (cdr (car alist)))
                 (symbolp (cadr (car alist)))
                 (natp (cddr (car alist)))
-                (info-worldp (cdr alist))))))
+                (hit-countsp (cdr alist))))))
 
 ;limit?
 (local
-  (defthm worldp-when-info-plist-worldp
-    (implies (info-worldp alist)
+  (defthm plist-worldp-when-hit-countsp
+    (implies (hit-countsp alist)
              (plist-worldp alist))
-    :hints (("Goal" :in-theory (enable info-worldp plist-worldp)))))
+    :hints (("Goal" :in-theory (enable hit-countsp plist-worldp)))))
 
 (local
-  (defthm natp-of-getprop-when-info-worldp
-    (implies (and (info-worldp info)
+  (defthm natp-of-getprop-when-hit-countsp
+    (implies (and (hit-countsp hit-counts)
                   (natp val))
-             (natp (sgetprop rule-symbol key val world-name info)))
-    :hints (("Goal" :in-theory (enable info-worldp)))))
+             (natp (sgetprop rule-symbol key val world-name hit-counts)))
+    :hints (("Goal" :in-theory (enable hit-countsp)))))
 
 (local
-  (defthm info-worldp-of-uniquify-alist-eq-aux
-    (implies (and (info-worldp info)
-                  (info-worldp acc))
-             (info-worldp (uniquify-alist-eq-aux info acc)))
-    :hints (("Goal" :in-theory (enable info-worldp acons)))))
+  (defthm hit-countsp-of-uniquify-alist-eq-aux
+    (implies (and (hit-countsp hit-counts)
+                  (hit-countsp acc))
+             (hit-countsp (uniquify-alist-eq-aux hit-counts acc)))
+    :hints (("Goal" :in-theory (enable hit-countsp acons)))))
 
 (local
-  (defthmd symbol-alistp-when-info-worldp
-    (implies (info-worldp info)
-             (symbol-alistp info))
-    :hints (("Goal" :in-theory (enable info-worldp)))))
+  (defthmd symbol-alistp-when-hit-countsp
+    (implies (hit-countsp hit-counts)
+             (symbol-alistp hit-counts))
+    :hints (("Goal" :in-theory (enable hit-countsp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Consider not calling extend-world each time (instead, maybe try every 20 times).
-(defund increment-hit-count-in-info-world (rule-symbol info)
+(defund increment-hit-count (rule-symbol hit-counts)
   (declare (xargs :guard (and (symbolp rule-symbol)
-                              (info-worldp info))))
-    (let* ((count (the (integer 0 *) (getprop rule-symbol 'hit-count 0 'info-world info)))
+                              (hit-countsp hit-counts))))
+    (let* ((count (the (integer 0 *) (getprop rule-symbol 'hit-count 0 'hit-counts hit-counts)))
            (count (the (integer 0 *) (+ 1 count)))
-           (info (extend-world 'info-world (putprop rule-symbol 'hit-count count info))))
-      info))
+           (hit-counts (extend-world 'hit-counts (putprop rule-symbol 'hit-count count hit-counts))))
+      hit-counts))
 
 (local
-  (defthm info-worldp-of-increment-hit-count-in-info-world
-    (implies (and (info-worldp info)
+  (defthm hit-countsp-of-increment-hit-count
+    (implies (and (hit-countsp hit-counts)
                   (symbolp rule-symbol))
-             (info-worldp (increment-hit-count-in-info-world rule-symbol info)))
-    :hints (("Goal" :in-theory (enable increment-hit-count-in-info-world info-worldp)))))
+             (hit-countsp (increment-hit-count rule-symbol hit-counts)))
+    :hints (("Goal" :in-theory (enable increment-hit-count hit-countsp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename
 ;; We inline this to optimize the case when hit-counts is nil.
 ;; We keep this disabled to avoid case splits in proofs about code that calls it.
-(defund-inline maybe-increment-hit-count-in-info-world (rule-symbol info)
+(defund-inline maybe-increment-hit-count (rule-symbol hit-counts)
   (declare (xargs :guard (and (symbolp rule-symbol)
-                              (info-worldp info) ; allows nil, meaning no info-world
+                              (hit-countsp hit-counts) ; allows nil, meaning no hit-counts
                               )))
-  ;; if info is nil, it remains so:
-  (and info (increment-hit-count-in-info-world rule-symbol info)))
+  ;; if hit-counts is nil, it remains so:
+  (and hit-counts (increment-hit-count rule-symbol hit-counts)))
 
-(defthm info-worldp-of-maybe-increment-hit-count-in-info-world
-  (implies (and (info-worldp info)
+(defthm hit-countsp-of-maybe-increment-hit-count
+  (implies (and (hit-countsp hit-counts)
                 (symbolp rule-symbol))
-           (info-worldp (maybe-increment-hit-count-in-info-world rule-symbol info)))
-  :hints (("Goal" :in-theory (enable maybe-increment-hit-count-in-info-world))))
+           (hit-countsp (maybe-increment-hit-count rule-symbol hit-counts)))
+  :hints (("Goal" :in-theory (enable maybe-increment-hit-count))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund empty-info-world ()
+(defund empty-hit-counts ()
   (declare (xargs :guard t))
-  (prog2$ (retract-world 'info-world nil)
-          ;setting :fake means that info is nil iff we are not tracking the info
-          (increment-hit-count-in-info-world :fake nil)))
+  (prog2$ (retract-world 'hit-counts nil)
+          ;setting :fake means that hit-counts is nil iff we are not tracking the hit-counts
+          (increment-hit-count :fake nil)))
 
 ;; Disabled since this is a ground term
-(defthmd info-worldp-of-empty-info-world
-  (info-worldp (empty-info-world)))
+(defthmd hit-countsp-of-empty-hit-counts
+  (hit-countsp (empty-hit-counts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,83 +242,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The info should be uniquify-ed before calling this.
+;; The hit-counts should be uniquify-ed before calling this.
 ;; This gets rid of the mention of :fake.
-(defund make-hit-count-alist-aux (info acc)
-  (declare (xargs :guard (and (info-worldp info)
+(defund make-hit-count-alist-aux (hit-counts acc)
+  (declare (xargs :guard (and (hit-countsp hit-counts)
                               (alistp acc))
-                  :guard-hints (("Goal" :in-theory (enable info-worldp)))))
-  (if (endp info)
+                  :guard-hints (("Goal" :in-theory (enable hit-countsp)))))
+  (if (endp hit-counts)
       acc
-    (let* ((entry (car info))
+    (let* ((entry (car hit-counts))
            (symbol (car entry))
            ;;(key (cadr entry)) ;should be 'hit-count
            (hit-count (cddr entry)))
-      (make-hit-count-alist-aux (cdr info) (if (eq :fake symbol) acc (acons-fast symbol hit-count acc))))))
+      (make-hit-count-alist-aux (cdr hit-counts) (if (eq :fake symbol) acc (acons-fast symbol hit-count acc))))))
 
 (local
   (defthm hit-count-alistp-of-make-hit-count-alist-aux
-    (implies (and (info-worldp info)
+    (implies (and (hit-countsp hit-counts)
                   (hit-count-alistp acc))
-             (hit-count-alistp (make-hit-count-alist-aux info acc)))
-    :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs info-worldp
+             (hit-count-alistp (make-hit-count-alist-aux hit-counts acc)))
+    :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs hit-countsp
                                        make-hit-count-alist-aux)))))
 
 ;; (local
 ;;   (defthm all-consp-of-make-hit-count-alist-aux
 ;;     (implies (all-consp acc)
-;;              (all-consp (make-hit-count-alist-aux info acc)))
+;;              (all-consp (make-hit-count-alist-aux hit-counts acc)))
 ;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
 
 ;; (local
 ;;   (defthm true-listp-of-make-hit-count-alist-aux
 ;;     (implies (true-listp acc)
-;;              (true-listp (make-hit-count-alist-aux info acc)))
+;;              (true-listp (make-hit-count-alist-aux hit-counts acc)))
 ;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
 
 ;; (local
 ;;   (defthm alistp-of-make-hit-count-alist-aux
 ;;     (implies (alistp acc)
-;;              (alistp (make-hit-count-alist-aux info acc)))
+;;              (alistp (make-hit-count-alist-aux hit-counts acc)))
 ;;     :hints (("Goal" :in-theory (enable make-hit-count-alist-aux)))))
 
 ;; (local
 ;;   (defthm all-cdrs-rationalp-of-make-hit-count-alist-aux
-;;     (implies (and (info-worldp info)
+;;     (implies (and (hit-countsp hit-counts)
 ;;                   (all-cdrs-rationalp acc))
-;;              (all-cdrs-rationalp (make-hit-count-alist-aux info acc)))
-;;     :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist-aux)))))
+;;              (all-cdrs-rationalp (make-hit-count-alist-aux hit-counts acc)))
+;;     :hints (("Goal" :in-theory (enable hit-countsp make-hit-count-alist-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This gets rid of the mention of :fake.
-(defund make-hit-count-alist (info)
-  (declare (xargs :guard (info-worldp info)))
-  (make-hit-count-alist-aux (uniquify-alist-eq info) nil))
+(defund make-hit-count-alist (hit-counts)
+  (declare (xargs :guard (hit-countsp hit-counts)))
+  (make-hit-count-alist-aux (uniquify-alist-eq hit-counts) nil))
 
 (defthm hit-count-alistp-of-make-hit-count-alist
-  (implies (info-worldp info)
-           (hit-count-alistp (make-hit-count-alist info)))
+  (implies (hit-countsp hit-counts)
+           (hit-count-alistp (make-hit-count-alist hit-counts)))
   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 ;; todo: do we need all these type rules?
 
 ;; (defthm all-consp-of-make-hit-count-alist
-;;   (all-consp (make-hit-count-alist info))
+;;   (all-consp (make-hit-count-alist hit-counts))
 ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 ;; (defthm true-listp-of-make-hit-count-alist
-;;   (true-listp (make-hit-count-alist info))
+;;   (true-listp (make-hit-count-alist hit-counts))
 ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 ;; (defthm alistp-of-make-hit-count-alist
-;;   (alistp (make-hit-count-alist info))
+;;   (alistp (make-hit-count-alist hit-counts))
 ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
 ;; (defthm all-cdrs-rationalp-of-make-hit-count-alist
-;;   (implies (info-worldp info)
-;;            (all-cdrs-rationalp (make-hit-count-alist info)))
-;;   :hints (("Goal" :in-theory (enable info-worldp make-hit-count-alist))))
+;;   (implies (hit-countsp hit-counts)
+;;            (all-cdrs-rationalp (make-hit-count-alist hit-counts)))
+;;   :hints (("Goal" :in-theory (enable hit-countsp make-hit-count-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,29 +336,29 @@
 ;; TODO: Consider optimizing this by looping through all the rule names and
 ;; just looking up their counts, instead of calling uniquify-alist-eq.
 ;; Returns a hit-count-alist mapping rule names to hit counts.
-(defund summarize-info-world (info)
-  (declare (xargs :guard (info-worldp info)))
-  (let* (; (info (uniquify-alist-eq info)) ;does this not use the fast lookup into the info?
-         (hit-count-alist (make-hit-count-alist info))
+(defund summarize-hit-counts (hit-counts)
+  (declare (xargs :guard (hit-countsp hit-counts)))
+  (let* (; (hit-counts (uniquify-alist-eq hit-counts)) ;does this not use the fast lookup into the hit-counts?
+         (hit-count-alist (make-hit-count-alist hit-counts))
          ) ;removes shadowed bindings
     (sort-hit-count-alist hit-count-alist)))
 
 ;; (local
-;;   (defthm alistp-of-summarize-info-world
-;;     (implies (info-worldp info)
-;;              (alistp (summarize-info-world info)))
-;;     :hints (("Goal" :in-theory (enable summarize-info-world
-;;                                        info-worldp)))))
+;;   (defthm alistp-of-summarize-hit-counts
+;;     (implies (hit-countsp hit-counts)
+;;              (alistp (summarize-hit-counts hit-counts)))
+;;     :hints (("Goal" :in-theory (enable summarize-hit-counts
+;;                                        hit-countsp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: handle or disallow print=nil
-(defund maybe-print-hit-counts (print info)
+(defund maybe-print-hit-counts (print hit-counts)
   (declare (xargs :guard (and ;; something about print
-                          (info-worldp info))))
-  (if (not info)
+                          (hit-countsp hit-counts))))
+  (if (not hit-counts)
       nil ;; We are not counting hits, so do nothing
-    (let ((num-hits (+ -1 (len info)))) ; each item in the INFO represents one hit, but remove the entry for :fake
+    (let ((num-hits (+ -1 (len hit-counts)))) ; each item in the HIT-COUNTS represents one hit, but remove the entry for :fake
       ;; TODO: We are transitioning to not counting hits for :brief printing
       (if (eq :brief print)
           ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
@@ -371,8 +371,8 @@
         (progn$ (if (= 0 num-hits)
                     (cw "(No hits.)")
                   (if (eql 1 num-hits)
-                      (cw "(1 hit:~%~y0)" (summarize-info-world info))
-                    (cw "(~x0 hits:~%~y1)" num-hits (summarize-info-world info))))
+                      (cw "(1 hit:~%~y0)" (summarize-hit-counts hit-counts))
+                    (cw "(~x0 hits:~%~y1)" num-hits (summarize-hit-counts hit-counts))))
                 ;;todo: put this back but make it a separate option, off by default:
                 ;; (let* ((useful-rules (strip-cars rule-count-alist))
                 ;;        (useless-rules (set-difference-eq all-rule-names useful-rules)))

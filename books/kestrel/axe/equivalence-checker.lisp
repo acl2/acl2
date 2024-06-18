@@ -10389,7 +10389,7 @@
                                       nil    ;print-interval
                                       :brief ;;nil ;; print
                                       nil    ;memoization
-                                      (and print (empty-info-world))
+                                      (and print (empty-hit-counts))
                                       (and print (zero-tries))
                                       interpreted-function-alist
                                       monitored-symbols ;;just monitor the newest rules??

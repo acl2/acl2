@@ -533,7 +533,7 @@
                        (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                      (if hyps-relievedp
                          ;;the hyps were relieved:
-                         (let* ((info (maybe-increment-hit-count-in-info-world rule-symbol info)))
+                         (let* ((info (maybe-increment-hit-count rule-symbol info)))
                            (prog2$ (and (eq print :verbose!)
                                         (cw "Rewriting with ~x0.)~%" rule-symbol))
                                    (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -846,7 +846,7 @@
                         refined-assumption-alist
                         equality-array
                         print monitored-symbols
-                        (and print (not (eq :brief print)) (empty-info-world)) ;fixme if print is brief, keep a simple total number of hits and just print the total below??:
+                        (and print (not (eq :brief print)) (empty-hit-counts)) ;fixme if print is brief, keep a simple total number of hits and just print the total below??:
                         (and print (zero-tries))
                         normalize-xors state result-array-stobj)
       (progn$ (and print (not (eq :brief print)) (maybe-print-hit-counts print info ;; (append (rules-from-rule-alist rule-alist)

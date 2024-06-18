@@ -480,7 +480,7 @@
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                            memoization
                            ;;no need to assemble the info if we are not going to print it
-                           (maybe-increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info)
+                           (maybe-increment-hit-count (stored-rule-symbol stored-rule) info)
                            tries
                            (and limits (decrement-rule-limit stored-rule limits))
                            state))
@@ -1267,7 +1267,7 @@
                                          print-interval print
                                          (and memoizep ;hope this is okay and not too slow:
                                               (empty-memoization)) ;fixme add some option to make this bigger?
-                                         (and print (empty-info-world)) ;used to track the number of rule hits
+                                         (and print (empty-hit-counts)) ;used to track the number of rule hits
                                          (and print (zero-tries)) ;(if rewriter-rule-alist (zero-tries) nil) ;fixme think about this
                                          interpreted-function-alist
                                          monitored-symbols ;; (if use-internal-contextsp nil monitored-symbols) ;; (don't monitor if this is the first of two passes) -- TODO: Note that this can cause problems if we get an unexpected error (e.g., in an axe-syntaxp function) on the first pass)
@@ -1343,7 +1343,7 @@
                                                equality-assumption-alist ; pairs of terms, so no nodenums to fix up (todo: optimize the representation?)
                                                print-interval print
                                                nil ;memoization (not sound to memoize between nodes when using internal contexts)  :TODO: Print a warning if this turns off memoization.
-                                               (and print (empty-info-world)) ;used to track the number of rule hits
+                                               (and print (empty-hit-counts)) ;used to track the number of rule hits
                                                (and print (zero-tries)) ;fixme think about this (if rewriter-rule-alist (zero-tries) nil)
                                                interpreted-function-alist monitored-symbols
                                                ;;fixme refine the internal contexts? handle equalities?:

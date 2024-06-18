@@ -181,7 +181,7 @@
                          (nat-listp nodenums-to-assume-false)
                          (all-< nodenums-to-assume-false dag-len)
                          ;; print
-                         (info-worldp info)
+                         (hit-countsp info)
                          (triesp tries)
                          (interpreted-function-alistp interpreted-function-alist)
                          (symbol-listp monitored-symbols)
@@ -272,7 +272,7 @@
                                (nat-listp nodenums-to-assume-false)
                                (all-< nodenums-to-assume-false dag-len)
                                ;; print
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-symbols)
@@ -475,7 +475,7 @@
                                (all-< nodenums-to-assume-false dag-len)
                                (symbol-alistp equiv-alist) ;strengthen?
                                ;; print
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-symbols)
@@ -531,7 +531,7 @@
                          (mv (erp-nil)
                              rhs
                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                             (maybe-increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info)
+                             (maybe-increment-hit-count (stored-rule-symbol stored-rule) info)
                              tries
                              state)))
              ;;failed to relieve the hyps, so try the next rule
@@ -573,7 +573,7 @@
                                (all-< nodenums-to-assume-false dag-len)
                                (symbol-alistp equiv-alist) ;strengthen?
                                ;; print
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-symbols)
@@ -665,7 +665,7 @@
                                (all-< nodenums-to-assume-false dag-len)
                                (symbol-alistp equiv-alist) ;strengthen?
                                ;; print
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-symbols)
@@ -1031,7 +1031,7 @@
                                (all-< nodenums-to-assume-false dag-len)
                                (symbol-alistp equiv-alist) ;strengthen?
                                ;; print
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-symbols)
@@ -1162,7 +1162,7 @@
                                (rule-alistp rule-alist)
                                (symbol-alistp equiv-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (symbol-listp monitored-symbols)
                                (stringp case-designator)
@@ -1261,7 +1261,7 @@
                                (all-< nodenums-to-assume-false dag-len)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (symbol-listp monitored-symbols)
                                (stringp case-designator)
@@ -1318,7 +1318,7 @@
                                ;;(all-< nodenums-to-assume-false dag-len)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (symbol-listp monitored-symbols)
                                (stringp case-designator)
@@ -1395,7 +1395,7 @@
                                 (all-< literal-nodenums dag-len)
                                 (rule-alistp rule-alist)
                                 (interpreted-function-alistp interpreted-function-alist)
-                                (info-worldp info)
+                                (hit-countsp info)
                                 (triesp tries)
                                 (symbol-listp monitored-symbols)
                                 (stringp case-designator)
@@ -1522,7 +1522,7 @@
                                (all-< literal-nodenums dag-len)
                                (all-rule-alistp rule-alists)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (symbol-listp monitored-symbols)
                                (stringp case-designator)
@@ -1651,7 +1651,7 @@
                                (all-< literal-nodenums dag-len)
                                (all-rule-alistp rule-alists)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (symbol-listp monitored-symbols)
                                (stringp case-designator)
@@ -1704,7 +1704,7 @@
                                (bounded-darg-listp literal-nodenums-or-quoteps dag-len)
                                (all-rule-alistp rule-alists)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (info-worldp info)
+                               (hit-countsp info)
                                (triesp tries)
                                (symbol-listp monitored-symbols)
                                (stringp case-designator)
@@ -1980,7 +1980,7 @@
                                              max-conflicts
                                              print-max-conflicts-goalp
                                              t ;fixme work-hard
-                                             (and print (empty-info-world))
+                                             (and print (empty-hit-counts))
                                              (and print (zero-tries))
                                              0 ;prover-depth
                                              options
@@ -2032,7 +2032,7 @@
                                       max-conflicts
                                       t ;print-max-conflicts-goalp
                                       t ; work-hard-when-instructedp
-                                      (and print (empty-info-world))
+                                      (and print (empty-hit-counts))
                                       (and print (zero-tries))
                                       0 ;prover-depth
                                       options
@@ -2148,7 +2148,7 @@
                                           max-conflicts
                                           t ;print-max-conflicts-goalp
                                           t ; work-hard-when-instructedp
-                                          (and print (empty-info-world))
+                                          (and print (empty-hit-counts))
                                           (and print (zero-tries))
                                           0 ;prover-depth
                                           options
