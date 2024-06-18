@@ -5118,9 +5118,7 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          maybe-internal-context-array
                                          (and memoize (empty-memoization)) ; todo: add an option to make this bigger?
-                                         ;; TODO: If print is :brief, maybe-print-hit-counts below will only print the total number of hits, so
-                                         ;; tracking hit counts for each rule is overkill:
-                                         (and count-hits print (empty-hit-counts)) ;used to track the number of rule hits
+                                         (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits)))
                                          (and print (zero-tries)) ;todo: think about this
                                          limits
                                          node-replacement-array node-replacement-count refined-assumption-alist
@@ -5134,7 +5132,7 @@
            (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist node-replacement-array)) ; print some stats from these?
            (b* (((when erp) (mv erp nil limits))
                 ;; todo: do we support both brief hit counting (just the total) and totals per-rule?:
-                (- (and count-hits print (maybe-print-hit-counts print info)))
+                (- (maybe-print-hit-counts info))
                 (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
                 (- (and (print-level-at-least-tp print) memoization (print-memo-stats memoization)))
                 ;; todo: print the new len?
@@ -5499,10 +5497,7 @@
                                                             (empty-memoization)
                                                           ;; not memoizing:
                                                           nil)
-                                                        (if count-hits
-                                                            (empty-hit-counts)
-                                                          nil ;means no hit counting
-                                                          )
+                                                        (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits)))
                                                         0   ; tries
                                                         nil ; limits ; todo: pass in
                                                         node-replacement-array node-replacement-count refined-assumption-alist
@@ -5513,8 +5508,7 @@
                 (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits node-replacement-array) ; no stobj
                 )))
            ((when erp) (mv erp nil))
-           (- (and count-hits
-                   (maybe-print-hit-counts t info)))
+           (- (maybe-print-hit-counts info))
            (- (and nil ;; change to t to print info on the memoization
                    memoization
                    (print-memo-stats memoization))))

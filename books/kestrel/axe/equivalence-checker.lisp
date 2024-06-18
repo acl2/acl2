@@ -10389,7 +10389,7 @@
                                       nil    ;print-interval
                                       :brief ;;nil ;; print
                                       nil    ;memoization
-                                      (and print (empty-hit-counts))
+                                      (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                       (and print (zero-tries))
                                       interpreted-function-alist
                                       monitored-symbols ;;just monitor the newest rules??
@@ -10399,7 +10399,7 @@
                                       nil ;limits todo:support this?
                                       state))
        ((when erp) (mv erp nil dag-array dag-len state result-array-stobj))
-       (- (and print (maybe-print-hit-counts print info)))
+       (- (maybe-print-hit-counts info))
        (- (and tries (cw "(~x0 tries.)" tries)))
        )
     (mv (erp-nil) miter-nodenum-or-quotep dag-array dag-len state result-array-stobj)))

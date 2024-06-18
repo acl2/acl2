@@ -462,7 +462,7 @@
                                                  (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
                                                (if (eq :proved result)
                                                    ;;the hyp counts as relieved:
-                                                   (progn$ ;(maybe-print-hit-counts t info) ;ffffixme these are cumulative counts
+                                                   (progn$ ;(maybe-print-hit-counts info) ;ffffixme these are cumulative counts
                                                     (cw "Proved the work-hard hyp)~%")
                                                     (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist
                                                                                rule-symbol dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -846,13 +846,13 @@
                         refined-assumption-alist
                         equality-array
                         print monitored-symbols
-                        (and print (not (eq :brief print)) (empty-hit-counts)) ;fixme if print is brief, keep a simple total number of hits and just print the total below??:
+                        (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                         (and print (zero-tries))
                         normalize-xors state result-array-stobj)
-      (progn$ (and print (not (eq :brief print)) (maybe-print-hit-counts print info ;; (append (rules-from-rule-alist rule-alist)
-                                                                                    ;;   ;; do these get counted?
-                                                                                    ;;   (rules-from-rule-alist oi-rule-alist))
-                                                                         ))
+      (progn$ (maybe-print-hit-counts info ;; (append (rules-from-rule-alist rule-alist)
+                                      ;;   ;; do these get counted?
+                                      ;;   (rules-from-rule-alist oi-rule-alist))
+                                      )
               (and print (cw "Total tries: ~x0.~%" tries))
               (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state result-array-stobj)))))
 

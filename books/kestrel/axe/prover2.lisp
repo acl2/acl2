@@ -115,7 +115,7 @@
                                         max-conflicts
                                         t ;print-max-conflicts-goalp
                                         t ;work-hard..
-                                        (and print (empty-hit-counts))
+                                        (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                         (and print (zero-tries))
                                         0                  ;prover-depth
                                         nil                ;options
@@ -123,7 +123,7 @@
                                         state))
          ((when erp) (mv erp (list clause) state))
          (- (and print (cw "(~x0 tries.)~%" tries)))
-         (- (and print (maybe-print-hit-counts print hit-counts))))
+         (- (maybe-print-hit-counts hit-counts)))
       (if (eq :proved result)
           (prog2$ (cw "!! The DAG prover proved the clause)~%")
                   ;;fixme very cryptic error message when we only returned the one value

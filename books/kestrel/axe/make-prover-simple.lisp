@@ -3971,8 +3971,8 @@
                (and print (cw "NOTE: Proved due to contradiction in assumptions.~%"))
                (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
               (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, ~x2 DAG nodes):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
-              (print-hit-countsp (member-eq print '(t :verbose :verbose!)))
-              (hit-count-alist-before (and print-hit-countsp (make-hit-count-alist info)))
+              ;; (print-hit-countsp (member-eq print '(t :verbose :verbose!)))
+              ;; (hit-count-alist-before (and print-hit-countsp (make-hit-count-alist info)))
               ;; (result-array-name (pack$ 'result-array- prover-depth))
               ;; Ensure there is a maximal size raw Lisp array under the hood, for use when rewriting each literal.  I hope the compiler
               ;; doesn't optimize this away:
@@ -3988,9 +3988,9 @@
                                        interpreted-function-alist monitored-symbols print case-designator
                                        info tries prover-depth known-booleans options top-node-onlyp))
               ((when erp) (mv erp nil t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries))
-              (hit-count-alist-after (and print-hit-countsp (make-hit-count-alist info)))
-              (hit-count-alist (and print-hit-countsp (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before))))
-              (- (and print-hit-countsp (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
+              ;; (hit-count-alist-after (and print-hit-countsp (make-hit-count-alist info)))
+              ;; (hit-count-alist (and print-hit-countsp (sort-hit-count-alist (subtract-hit-count-alists hit-count-alist-after hit-count-alist-before))))
+              ;; (- (and print-hit-countsp (cw "(Hits: ~x0)~%" hit-count-alist))) ; or check whether we are counting hits
               ((when provedp)
                (and print (cw "  Rewriting proved case ~s0.)~%" case-designator))
                (mv (erp-nil)
@@ -5609,9 +5609,7 @@
               (- (and (member-eq print '(t :verbose :verbose!))
                       (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
               (count-hits (lookup-eq :count-hits options)) ; t, nil, or :brief
-              (info (if count-hits
-                        nil ; do not count hits
-                      (empty-hit-counts)))
+              (info (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits))))
               (tries (if (member-eq print '(nil :brief))
                          nil ; do not count tries
                        (zero-tries)))
@@ -5625,8 +5623,7 @@
                                           state))
               ((when erp) (mv erp :failed state))
               (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
-              (- (maybe-print-hit-counts print info)) ; cases for t, nil, and :brief
-              )
+              (- (maybe-print-hit-counts info)))
            (mv nil result state)))
 
        (defthm ,(pack$ prove-disjunction-name '-return-type)
@@ -5734,14 +5731,14 @@
 ;;                                               interpreted-function-alist monitored-symbols
 ;;                                               print
 ;;                                               case-name
-;;                                               (and print (empty-hit-counts))
+;;                                               (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits)))
 ;;                                               (and print (zero-tries))
 ;;                                               0 ;prover-depth
 ;;                                               options))
 ;;                     ((when erp) (mv erp :failed))
 ;;                     ;;just print the message in the subroutine and don't case split here?
 ;;                     (- (and print (cw "(~x0 tries.)~%" tries)))
-;;                     (- (and print (maybe-print-hit-counts print info))))
+;;                     (- (maybe-print-hit-counts info)))
 ;;                  (if (eq :proved result)
 ;;                      (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
 ;;                              (mv (erp-nil) :proved))

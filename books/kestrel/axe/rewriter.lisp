@@ -399,7 +399,7 @@
                                                                      state))
                                  ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))
                               (if (eq :proved result)
-                                  (progn$ ;(maybe-print-hit-counts t info) ;ffffixme these are cumulative counts
+                                  (progn$ ;(maybe-print-hit-counts info) ;ffffixme these are cumulative counts
                                    (cw "Proved the work-hard hyp)~%")
                                    ;;the hyp counts as relieved:
                                    (relieve-rule-hyps (rest hyps)
@@ -1267,7 +1267,7 @@
                                          print-interval print
                                          (and memoizep ;hope this is okay and not too slow:
                                               (empty-memoization)) ;fixme add some option to make this bigger?
-                                         (and print (empty-hit-counts)) ;used to track the number of rule hits
+                                         (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                          (and print (zero-tries)) ;(if rewriter-rule-alist (zero-tries) nil) ;fixme think about this
                                          interpreted-function-alist
                                          monitored-symbols ;; (if use-internal-contextsp nil monitored-symbols) ;; (don't monitor if this is the first of two passes) -- TODO: Note that this can cause problems if we get an unexpected error (e.g., in an axe-syntaxp function) on the first pass)
@@ -1279,7 +1279,7 @@
                                          limits
                                          state))
        ((when erp) (mv erp nil limits state))
-       (- (and print (maybe-print-hit-counts print info)))
+       (- (maybe-print-hit-counts info))
        (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
        (- (and print (cw ")~%"))) ; balances "(Simplifying with no internal contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
@@ -1343,7 +1343,7 @@
                                                equality-assumption-alist ; pairs of terms, so no nodenums to fix up (todo: optimize the representation?)
                                                print-interval print
                                                nil ;memoization (not sound to memoize between nodes when using internal contexts)  :TODO: Print a warning if this turns off memoization.
-                                               (and print (empty-hit-counts)) ;used to track the number of rule hits
+                                               (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                                (and print (zero-tries)) ;fixme think about this (if rewriter-rule-alist (zero-tries) nil)
                                                interpreted-function-alist monitored-symbols
                                                ;;fixme refine the internal contexts? handle equalities?:
@@ -1352,7 +1352,7 @@
              ((when erp) (mv erp nil nil state))
              (- (and print
                      (progn$ (cw "(~x0 tries.)~%" tries)
-                             (maybe-print-hit-counts print info)
+                             (maybe-print-hit-counts info)
                              (cw ")"))))
              (top-nodenum (top-nodenum dag))
              (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))

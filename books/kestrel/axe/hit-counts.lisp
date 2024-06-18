@@ -94,10 +94,10 @@
 
 ;; A true-list of triples of the form (sym prop . nat).  See :doc world.  A
 ;; specialization of plist-worldp that requires the values to be nats.
-;; Note that nil satisfies hit-countsp but means that we are not counting hits
+;; Note that nil satisfies hit-count-info-worldp but means that we are not counting hits
 ;; at all (see empty-hit-counts).  Every valid hit-counts will have an entry
-;; for the special key :fake.  So we could perhaps call this maybe-hit-countsp.
-(defund hit-countsp (alist)
+;; for the special key :fake.  So we could perhaps call this maybe-hit-count-info-worldp.
+(defund hit-count-info-worldp (alist)
   (declare (xargs :guard t))
   (cond ((atom alist) (eq alist nil))
         (t (and (consp (car alist))
@@ -105,52 +105,63 @@
                 (consp (cdr (car alist)))
                 (symbolp (cadr (car alist)))
                 (natp (cddr (car alist)))
-                (hit-countsp (cdr alist))))))
+                (hit-count-info-worldp (cdr alist))))))
 
 ;limit?
 (local
-  (defthm plist-worldp-when-hit-countsp
-    (implies (hit-countsp alist)
+  (defthm plist-worldp-when-hit-count-info-worldp
+    (implies (hit-count-info-worldp alist)
              (plist-worldp alist))
-    :hints (("Goal" :in-theory (enable hit-countsp plist-worldp)))))
+    :hints (("Goal" :in-theory (enable hit-count-info-worldp plist-worldp)))))
 
 (local
-  (defthm natp-of-getprop-when-hit-countsp
-    (implies (and (hit-countsp hit-counts)
+  (defthm natp-of-getprop-when-hit-count-info-worldp
+    (implies (and (hit-count-info-worldp hit-counts)
                   (natp val))
              (natp (sgetprop rule-symbol key val world-name hit-counts)))
-    :hints (("Goal" :in-theory (enable hit-countsp)))))
+    :hints (("Goal" :in-theory (enable hit-count-info-worldp)))))
 
 (local
-  (defthm hit-countsp-of-uniquify-alist-eq-aux
-    (implies (and (hit-countsp hit-counts)
-                  (hit-countsp acc))
-             (hit-countsp (uniquify-alist-eq-aux hit-counts acc)))
-    :hints (("Goal" :in-theory (enable hit-countsp acons)))))
+  (defthm hit-count-info-worldp-of-uniquify-alist-eq-aux
+    (implies (and (hit-count-info-worldp hit-counts)
+                  (hit-count-info-worldp acc))
+             (hit-count-info-worldp (uniquify-alist-eq-aux hit-counts acc)))
+    :hints (("Goal" :in-theory (enable hit-count-info-worldp acons)))))
 
 (local
-  (defthmd symbol-alistp-when-hit-countsp
-    (implies (hit-countsp hit-counts)
+  (defthmd symbol-alistp-when-hit-count-info-worldp
+    (implies (hit-count-info-worldp hit-counts)
              (symbol-alistp hit-counts))
-    :hints (("Goal" :in-theory (enable hit-countsp)))))
+    :hints (("Goal" :in-theory (enable hit-count-info-worldp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Either nil (not counting hits), or a natp (total numnber of rule hits, not
+;; split out by rule), or a hit-count-info-worldp that assigns hit counts to
+;; individual rules.
+(defund hit-countsp (hit-counts)
+  (declare (xargs :guard t))
+  (or (null hit-counts)
+      (natp hit-counts)
+      (hit-count-info-worldp hit-counts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Consider not calling extend-world each time (instead, maybe try every 20 times).
 (defund increment-hit-count (rule-symbol hit-counts)
   (declare (xargs :guard (and (symbolp rule-symbol)
-                              (hit-countsp hit-counts))))
+                              (hit-count-info-worldp hit-counts))))
     (let* ((count (the (integer 0 *) (getprop rule-symbol 'hit-count 0 'hit-counts hit-counts)))
            (count (the (integer 0 *) (+ 1 count)))
            (hit-counts (extend-world 'hit-counts (putprop rule-symbol 'hit-count count hit-counts))))
       hit-counts))
 
 (local
-  (defthm hit-countsp-of-increment-hit-count
-    (implies (and (hit-countsp hit-counts)
+  (defthm hit-count-info-worldp-of-increment-hit-count
+    (implies (and (hit-count-info-worldp hit-counts)
                   (symbolp rule-symbol))
-             (hit-countsp (increment-hit-count rule-symbol hit-counts)))
-    :hints (("Goal" :in-theory (enable increment-hit-count hit-countsp)))))
+             (hit-count-info-worldp (increment-hit-count rule-symbol hit-counts)))
+    :hints (("Goal" :in-theory (enable increment-hit-count hit-count-info-worldp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,18 +171,46 @@
 (defund-inline maybe-increment-hit-count (rule-symbol hit-counts)
   (declare (xargs :guard (and (symbolp rule-symbol)
                               (hit-countsp hit-counts) ; allows nil, meaning no hit-counts
-                              )))
+                              )
+                  :guard-hints (("Goal" :in-theory (enable hit-countsp)))))
   ;; if hit-counts is nil, it remains so:
-  (and hit-counts (increment-hit-count rule-symbol hit-counts)))
+  (and hit-counts
+       (if (natp hit-counts)
+           (+ 1 hit-counts)
+         (increment-hit-count rule-symbol hit-counts))))
 
 (defthm hit-countsp-of-maybe-increment-hit-count
   (implies (and (hit-countsp hit-counts)
                 (symbolp rule-symbol))
            (hit-countsp (maybe-increment-hit-count rule-symbol hit-counts)))
-  :hints (("Goal" :in-theory (enable maybe-increment-hit-count))))
+  :hints (("Goal" :in-theory (enable maybe-increment-hit-count hit-countsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; not counting hits at all
+(defund no-hit-counting ()
+  (declare (xargs :guard t))
+  nil)
+
+;; Disabled since this is a ground term
+(defthmd hit-countsp-of-no-hit-counting
+  (hit-countsp (no-hit-counting)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Initially 0, ready to increment.
+(defund zero-hits ()
+  (declare (xargs :guard t))
+  0)
+
+;; Disabled since this is a ground term
+(defthmd hit-countsp-of-zero-hits
+  (hit-countsp (zero-hits)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Empty so far, but being extended.
 (defund empty-hit-counts ()
   (declare (xargs :guard t))
   (prog2$ (retract-world 'hit-counts nil)
@@ -184,6 +223,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Simpler structures used for printing or comparing hit-counts.
 (defund hit-count-alistp (alist)
   (declare (xargs :guard t))
   (and (symbol-alistp alist)
@@ -245,9 +285,9 @@
 ;; The hit-counts should be uniquify-ed before calling this.
 ;; This gets rid of the mention of :fake.
 (defund make-hit-count-alist-aux (hit-counts acc)
-  (declare (xargs :guard (and (hit-countsp hit-counts)
+  (declare (xargs :guard (and (hit-count-info-worldp hit-counts)
                               (alistp acc))
-                  :guard-hints (("Goal" :in-theory (enable hit-countsp)))))
+                  :guard-hints (("Goal" :in-theory (enable hit-count-info-worldp)))))
   (if (endp hit-counts)
       acc
     (let* ((entry (car hit-counts))
@@ -258,10 +298,10 @@
 
 (local
   (defthm hit-count-alistp-of-make-hit-count-alist-aux
-    (implies (and (hit-countsp hit-counts)
+    (implies (and (hit-count-info-worldp hit-counts)
                   (hit-count-alistp acc))
              (hit-count-alistp (make-hit-count-alist-aux hit-counts acc)))
-    :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs hit-countsp
+    :hints (("Goal" :in-theory (enable hit-count-alistp symbol-alistp strip-cdrs hit-count-info-worldp
                                        make-hit-count-alist-aux)))))
 
 ;; (local
@@ -284,43 +324,43 @@
 
 ;; (local
 ;;   (defthm all-cdrs-rationalp-of-make-hit-count-alist-aux
-;;     (implies (and (hit-countsp hit-counts)
+;;     (implies (and (hit-count-info-worldp hit-counts)
 ;;                   (all-cdrs-rationalp acc))
 ;;              (all-cdrs-rationalp (make-hit-count-alist-aux hit-counts acc)))
-;;     :hints (("Goal" :in-theory (enable hit-countsp make-hit-count-alist-aux)))))
+;;     :hints (("Goal" :in-theory (enable hit-count-info-worldp make-hit-count-alist-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This gets rid of the mention of :fake.
 (defund make-hit-count-alist (hit-counts)
-  (declare (xargs :guard (hit-countsp hit-counts)))
+  (declare (xargs :guard (hit-count-info-worldp hit-counts)))
   (make-hit-count-alist-aux (uniquify-alist-eq hit-counts) nil))
 
 (defthm hit-count-alistp-of-make-hit-count-alist
-  (implies (hit-countsp hit-counts)
+  (implies (hit-count-info-worldp hit-counts)
            (hit-count-alistp (make-hit-count-alist hit-counts)))
   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
-;; todo: do we need all these type rules?
+;; ;; todo: do we need all these type rules?
 
-;; (defthm all-consp-of-make-hit-count-alist
-;;   (all-consp (make-hit-count-alist hit-counts))
-;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+;; ;; (defthm all-consp-of-make-hit-count-alist
+;; ;;   (all-consp (make-hit-count-alist hit-counts))
+;; ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
-;; (defthm true-listp-of-make-hit-count-alist
-;;   (true-listp (make-hit-count-alist hit-counts))
-;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+;; ;; (defthm true-listp-of-make-hit-count-alist
+;; ;;   (true-listp (make-hit-count-alist hit-counts))
+;; ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
-;; (defthm alistp-of-make-hit-count-alist
-;;   (alistp (make-hit-count-alist hit-counts))
-;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+;; ;; (defthm alistp-of-make-hit-count-alist
+;; ;;   (alistp (make-hit-count-alist hit-counts))
+;; ;;   :hints (("Goal" :in-theory (enable make-hit-count-alist))))
 
-;; (defthm all-cdrs-rationalp-of-make-hit-count-alist
-;;   (implies (hit-countsp hit-counts)
-;;            (all-cdrs-rationalp (make-hit-count-alist hit-counts)))
-;;   :hints (("Goal" :in-theory (enable hit-countsp make-hit-count-alist))))
+;; ;; (defthm all-cdrs-rationalp-of-make-hit-count-alist
+;; ;;   (implies (hit-countsp hit-counts)
+;; ;;            (all-cdrs-rationalp (make-hit-count-alist hit-counts)))
+;; ;;   :hints (("Goal" :in-theory (enable hit-countsp make-hit-count-alist))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund sort-hit-count-alist (alist)
   (declare (xargs :guard (hit-count-alistp alist)))
@@ -333,46 +373,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; the alist should have shadowed paris already removed
+(defund add-counts-in-hit-count-alist (alist acc)
+  (declare (xargs :guard (and (hit-count-alistp alist)
+                              (natp acc))
+                  :guard-hints (("Goal" :in-theory (enable hit-count-alistp)))))
+  (if (endp alist)
+      acc
+    (let* ((pair (first alist))
+           (count (cdr pair)))
+      (add-counts-in-hit-count-alist (rest alist) (+ count acc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: Consider optimizing this by looping through all the rule names and
 ;; just looking up their counts, instead of calling uniquify-alist-eq.
 ;; Returns a hit-count-alist mapping rule names to hit counts.
 (defund summarize-hit-counts (hit-counts)
-  (declare (xargs :guard (hit-countsp hit-counts)))
+  (declare (xargs :guard (hit-count-info-worldp hit-counts)))
   (let* (; (hit-counts (uniquify-alist-eq hit-counts)) ;does this not use the fast lookup into the hit-counts?
          (hit-count-alist (make-hit-count-alist hit-counts))
          ) ;removes shadowed bindings
     (sort-hit-count-alist hit-count-alist)))
 
-;; (local
-;;   (defthm alistp-of-summarize-hit-counts
-;;     (implies (hit-countsp hit-counts)
-;;              (alistp (summarize-hit-counts hit-counts)))
-;;     :hints (("Goal" :in-theory (enable summarize-hit-counts
-;;                                        hit-countsp)))))
+(local
+  (defthm hit-count-alistp-of-summarize-hit-counts
+    (implies (hit-count-info-worldp hit-counts)
+             (hit-count-alistp (summarize-hit-counts hit-counts)))
+    :hints (("Goal" :in-theory (enable summarize-hit-counts
+                                       hit-count-info-worldp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: handle or disallow print=nil
-(defund maybe-print-hit-counts (print hit-counts)
-  (declare (xargs :guard (and ;; something about print
-                          (hit-countsp hit-counts))))
-  (if (not hit-counts)
+;; We print the hit-counts, to whatever level of detail they contain
+(defund maybe-print-hit-counts (hit-counts)
+  (declare (xargs :guard (hit-countsp hit-counts)
+                  :guard-hints (("Goal" :in-theory (enable hit-countsp)))))
+  (if (equal hit-counts (no-hit-counting))
       nil ;; We are not counting hits, so do nothing
-    (let ((num-hits (+ -1 (len hit-counts)))) ; each item in the HIT-COUNTS represents one hit, but remove the entry for :fake
-      ;; TODO: We are transitioning to not counting hits for :brief printing
-      (if (eq :brief print)
-          ;; Just print the number of hits (TODO: In this case, we could keep a simple count of hits, rather than counting the hits of each rule):
-          (if (= 0 num-hits)
-              (cw "(No hits.)")
-            (if (eql 1 num-hits)
-                (cw "(1 hit.)")
-              (cw "(~x0 hits.)" num-hits)))
-        ;; Print the rules and their hit counts:
+    (if (natp hit-counts)
+        ;; just counting the total number of hits:
+        (if (= (zero-hits) hit-counts)
+            (cw "(No hits.)")
+          (if (eql 1 hit-counts)
+              (cw "(1 hit.)")
+            (cw "(~x0 hits.)" hit-counts)))
+      ;; Print the rules and their hit counts:
+      (let* ((sorted-hit-count-alist (summarize-hit-counts hit-counts))
+             (num-hits (add-counts-in-hit-count-alist sorted-hit-count-alist 0)))
         (progn$ (if (= 0 num-hits)
                     (cw "(No hits.)")
                   (if (eql 1 num-hits)
-                      (cw "(1 hit:~%~y0)" (summarize-hit-counts hit-counts))
-                    (cw "(~x0 hits:~%~y1)" num-hits (summarize-hit-counts hit-counts))))
+                      (cw "(1 hit:~%~y0)" sorted-hit-count-alist)
+                    (cw "(~x0 hits:~%~y1)" num-hits sorted-hit-count-alist)))
                 ;;todo: put this back but make it a separate option, off by default:
                 ;; (let* ((useful-rules (strip-cars rule-count-alist))
                 ;;        (useless-rules (set-difference-eq all-rule-names useful-rules)))
@@ -382,47 +435,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Make a hit count alist where each rule's count is its count in alist1 minus
-;; its count in alist2.  We expect alist1 to be an "superset" (in the sense of
-;; each rule having at least as many hits) of alist2, so the subtractions will
-;; never give negative numbers, but we just call nfix to enforce that.
-(defund subtract-hit-count-alists (alist1 alist2)
-  (declare (xargs :guard (and (hit-count-alistp alist1)
-                              (hit-count-alistp alist2))
-                  :guard-hints (("Goal" :in-theory (enable HIT-COUNT-ALISTP)))
-                  :verify-guards nil ;; done below
-                  ))
-  (if (endp alist1)
-      nil
-    (let* ((entry (car alist1))
-           (sym (car entry))
-           (count (cdr entry))
-           (maybe-other-count (lookup-eq sym alist2))
-           (other-count (if maybe-other-count maybe-other-count 0))
-           (count-diff (nfix (- count other-count))) ;we don't let it go negative
-           )
-      (if (posp count-diff)
-          (acons sym count-diff (subtract-hit-count-alists (rest alist1) alist2))
-        ;; skip things with 0 count:
-        (subtract-hit-count-alists (rest alist1) alist2)))))
+;; ;; Make a hit count alist where each rule's count is its count in alist1 minus
+;; ;; its count in alist2.  We expect alist1 to be an "superset" (in the sense of
+;; ;; each rule having at least as many hits) of alist2, so the subtractions will
+;; ;; never give negative numbers, but we just call nfix to enforce that.
+;; (defund subtract-hit-count-alists (alist1 alist2)
+;;   (declare (xargs :guard (and (hit-count-alistp alist1)
+;;                               (hit-count-alistp alist2))
+;;                   :guard-hints (("Goal" :in-theory (enable HIT-COUNT-ALISTP)))
+;;                   :verify-guards nil ;; done below
+;;                   ))
+;;   (if (endp alist1)
+;;       nil
+;;     (let* ((entry (car alist1))
+;;            (sym (car entry))
+;;            (count (cdr entry))
+;;            (maybe-other-count (lookup-eq sym alist2))
+;;            (other-count (if maybe-other-count maybe-other-count 0))
+;;            (count-diff (nfix (- count other-count))) ;we don't let it go negative
+;;            )
+;;       (if (posp count-diff)
+;;           (acons sym count-diff (subtract-hit-count-alists (rest alist1) alist2))
+;;         ;; skip things with 0 count:
+;;         (subtract-hit-count-alists (rest alist1) alist2)))))
 
-(defthm hit-count-alistp-of-subtract-hit-count-alists
-  (implies (and (hit-count-alistp alist1)
-                (hit-count-alistp alist2))
-           (hit-count-alistp (subtract-hit-count-alists alist1 alist2)))
-  :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
+;; (defthm hit-count-alistp-of-subtract-hit-count-alists
+;;   (implies (and (hit-count-alistp alist1)
+;;                 (hit-count-alistp alist2))
+;;            (hit-count-alistp (subtract-hit-count-alists alist1 alist2)))
+;;   :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists))))
 
-;; (local
-;;   (defthm alistp-of-subtract-hit-count-alists
-;;     (alistp (subtract-hit-count-alists alist1 alist2))
-;;     :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists)))))
+;; ;; (local
+;; ;;   (defthm alistp-of-subtract-hit-count-alists
+;; ;;     (alistp (subtract-hit-count-alists alist1 alist2))
+;; ;;     :hints (("Goal" :in-theory (enable hit-count-alistp subtract-hit-count-alists)))))
 
-(verify-guards subtract-hit-count-alists
-  :hints (("Goal" :in-theory (enable nat-of-cdr-of-car-when-hit-count-alistp
-                                     natp-of-lookup-equal-when-hit-count-alistp))))
+;; (verify-guards subtract-hit-count-alists
+;;   :hints (("Goal" :in-theory (enable nat-of-cdr-of-car-when-hit-count-alistp
+;;                                      natp-of-lookup-equal-when-hit-count-alistp))))
 
-;; (local
-;;   (defthm all-cdrs-rationalp-of-subtract-hit-count-alists
-;;     (implies (and (hit-count-alistp alist1)
-;;                   (hit-count-alistp alist2))
-;;              (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))
+;; ;; (local
+;; ;;   (defthm all-cdrs-rationalp-of-subtract-hit-count-alists
+;; ;;     (implies (and (hit-count-alistp alist1)
+;; ;;                   (hit-count-alistp alist2))
+;; ;;              (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))

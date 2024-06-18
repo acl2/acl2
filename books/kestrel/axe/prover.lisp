@@ -1980,7 +1980,7 @@
                                              max-conflicts
                                              print-max-conflicts-goalp
                                              t ;fixme work-hard
-                                             (and print (empty-hit-counts))
+                                             (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                              (and print (zero-tries))
                                              0 ;prover-depth
                                              options
@@ -1989,7 +1989,7 @@
          ((when erp) (mv erp :failed state))
          ;;just print the message in the subroutine and don't case split here?
          (- (and print (cw "(~x0 tries.)~%" tries)))
-         (- (and print (maybe-print-hit-counts print info)))
+         (- (maybe-print-hit-counts info))
          )
       (if (eq :proved result)
           (prog2$ (cw "proved ~s0 with dag prover~%" case-name)
@@ -2032,14 +2032,14 @@
                                       max-conflicts
                                       t ;print-max-conflicts-goalp
                                       t ; work-hard-when-instructedp
-                                      (and print (empty-hit-counts))
+                                      (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                       (and print (zero-tries))
                                       0 ;prover-depth
                                       options
                                       (+ -1 (expt 2 59)) ;max fixnum?
                                       state))
        ((when erp) (mv erp nil state))
-       (- (and print (maybe-print-hit-counts print info)))
+       (- (maybe-print-hit-counts info))
        (- (and print (cw "Total tries: ~x0.~%" tries))))
     (if (eq :proved result)
         (prog2$ (cw "Proved the theorem.)~%")
@@ -2148,14 +2148,14 @@
                                           max-conflicts
                                           t ;print-max-conflicts-goalp
                                           t ; work-hard-when-instructedp
-                                          (and print (empty-hit-counts))
+                                          (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                           (and print (zero-tries))
                                           0 ;prover-depth
                                           options
                                           (+ -1 (expt 2 59)) ;max fixnum?
                                           state))
        ((when erp) (mv erp nil state))
-       (- (and print (maybe-print-hit-counts print info)))
+       (- (maybe-print-hit-counts info))
        (- (and print (cw "Total tries: ~x0.~%" tries))))
     (if (eq :proved result)
         (prog2$ (cw "Proved the theorem.)~%")
