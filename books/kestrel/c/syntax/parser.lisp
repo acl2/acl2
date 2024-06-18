@@ -791,15 +791,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the characters, we also return its position.
+    "Besides the character, we also return its position.
      No character is returned if we are at the end of the file;
-     in this case, the returned file position is of
-     the (non-existent) character just past the end of the file.")
+     in this case, the returned file position is the one of
+     the non-existent character just past the end of the file
+     (i.e. the position of a character if we added it to the end of the file).")
    (xdoc::p
     "If a character is read, it is added to the list of read characters.
      See @(tsee parstate).")
    (xdoc::p
-    "If some character was put back,
+    "If some character was put back earlier,
      we get the character directly from there,
      removing it from the list;
      see @(tsee parstate).
@@ -818,8 +819,9 @@
    (xdoc::p
     "Looking at the rules in the ABNF grammar for basic and extended characters,
      we see that the ASCII codes of the three non-new-line extended characters
+     (namely dollar, at sign, and backquote)
      fill gaps in the ASCII codes of the basic characters,
-     so that the codes 9, 11, 12, and 32 to 126 are all valid characters,
+     so that the codes 9, 11, 12, and 32-126 are all valid characters,
      which are thus returned, incrementing the position by one column.
      If instead the byte is the ASCII code 10 for line feed,
      we increment the position by one line.
@@ -829,22 +831,36 @@
      if it does, we consume two bytes instead of one,
      but we return just a line feed,
      since we only really need one new-line character
-     (also in line with [C:5.2.1/3];
+     (also in line with [C:5.2.1/3]);
      if it does not, we just consume the carriage return,
      but return a line feed,
      again for normalizing the new-line character.
-     In both cases, we increment the position by one line.")
+     In both cases, we increment the position by one line,
+     which also resets the column to 0 (see @(tsee position-inc-line)).")
    (xdoc::p
     "Note that horizontal tab, vertical tab, and form feed
-     just increment the column number by 1 and leave the line number unchanged.
+     just increment the column number by 1 and leave the line number unchanged,
+     like most other characters.
      This may not match the visual appearance,
-     but the parser has no easy way to know
+     but the parser has no way to know
      how many columns a horizontal tab takes,
      or how many lines a vertical tab or form feed takes.
-     So, at least for now, we just treat these as ``typical'' characters.")
+     So, at least for now, we just treat these as most other characters.")
    (xdoc::p
-    "If the byte has any other value, we deem it illegal,
-     and return an error message with the current file position."))
+    "If the next byte read has any other value, we deem it illegal,
+     and return an error message with the current file position.
+     We intentionally exclude most ASCII control characters,
+     except for the basic ones and for the new-line ones,
+     since there should be little need to use those in C code.
+     Furthermore, some are dangerous, particularly backspace,
+     since it may make the code look different from what it is,
+     similarly to "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/Trojan_Source" "Trojan Source")
+    " in Unicode.
+     However, if we encounter practical code
+     that uses some of these ASCII control characters,
+     we can easily add support for them,
+     in the ABNF grammar and in the parser."))
   (b* (((reterr) nil (irr-position) (irr-parstate))
        ((parstate pstate) pstate)
        ((when (consp pstate.chars-unread))
@@ -880,7 +896,7 @@
                    :bytes (cdr pstate.bytes)
                    :position (position-inc-line 1 pstate.position)
                    :chars-read (cons (make-char+position
-                                      :char byte
+                                      :char 10
                                       :position pstate.position)
                                      pstate.chars-read))))
           ((= byte 13)
@@ -893,7 +909,7 @@
                        :bytes (cddr pstate.bytes)
                        :position (position-inc-line 1 pstate.position)
                        :chars-read (cons (make-char+position
-                                          :char byte
+                                          :char 10
                                           :position pstate.position)
                                          pstate.chars-read)))
              (retok 10
@@ -903,7 +919,7 @@
                      :bytes (cdr pstate.bytes)
                      :position (position-inc-line 1 pstate.position)
                      :chars-read (cons (make-char+position
-                                        :char byte
+                                        :char 10
                                         :position pstate.position)
                                        pstate.chars-read)))))
           (t (reterr-msg :where (position-to-msg pstate.position)
