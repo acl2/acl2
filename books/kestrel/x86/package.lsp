@@ -247,6 +247,7 @@
     x86isa::rflags
     x86isa::rflagsbits
     x86isa::!rflags
+    x86isa::change-rflagsbits
 
     x86isa::rflagsbits->cf
     x86isa::rflagsbits->res1
