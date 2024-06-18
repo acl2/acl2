@@ -6851,7 +6851,13 @@
                              pstate)))
                    ((equal token4 (token-punctuator ")")) ; sizeof ( ident )
                     (b* ((ident (token-ident->unwrap token3)))
-                      (retok (expr-sizeof-ambig ident)
+                      (retok (expr-sizeof-ambig
+                              (make-amb-expr/tyname
+                               :expr (expr-ident ident)
+                               :tyname (make-tyname
+                                        :specqual (list (specqual-tyspec
+                                                         (tyspec-tydef ident)))
+                                        :decl? nil)))
                              (span-join span span4)
                              pstate)))
                    (t

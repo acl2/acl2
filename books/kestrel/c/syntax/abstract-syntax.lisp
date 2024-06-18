@@ -1164,17 +1164,16 @@
        The @('sizeof') applied to an expression is instead captured
        in the @(':unary') case,
        since @(tsee unop) includes @('sizeof') for expressions.
-       During parsing, an expression of the form")
-     (xdoc::codeblock
-      "sizeof ( I )")
-     (xdoc::p
-      "where @('I') is an identifier,
-       cannot be disambiguated on a purely syntactic basis,
-       because @('I') may be either an expression or a type name:
-       we defer the resolution of this ambiguity
-       to static semantic analysis after parsing;
-       during parsing, we classify that as an ambiguous @('sizeof'),
-       for which we have the @(':sizeof-ambig') of this fixtype.")
+       As explained in @(tsee amb-expr/tyname),
+       there is a complex syntactic overlap between expressions and type names;
+       thus, an expression of the form @('sizeof(X)'),
+       where @('X') is in that syntactic overlap,
+       is inherently ambiguous.
+       (The simplest case is when @('X') is an identifier,
+       but as explained in @(tsee amb-expr/tyname)
+       there are infinitely many cases.)
+       This is captured by the @(':sizeof-ambig') case,
+       which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1248,7 +1247,7 @@
     (:unary ((op unop)
              (arg expr)))
     (:sizeof ((type tyname)))
-    (:sizeof-ambig ((ident ident)))
+    (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)))
     (:cast ((type tyname)
             (arg expr)))
