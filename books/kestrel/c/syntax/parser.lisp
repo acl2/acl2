@@ -563,6 +563,27 @@
      but @(tsee char+position) pairs.
      Similarly, for tokens, we also store their spans.")
    (xdoc::p
+    "To support backtracking,
+     we also keep track of zero or more checkpoints,
+     which indicate positions in the @('tokens-read') list.
+     When a checkpoint is recorded,
+     the current length of @('tokens-read') is stored as a checkpoint,
+     by @(tsee cons)ing it to the @('checkpoints') list.
+     Later, the checkpoint can be simply cleared,
+     in which case it is simply removed from the check,
+     by replacing @('checkpoints') with its @(tsee cdr).
+     Alternatively, we can backtrack to the checkpoint,
+     which involves moving tokens from @('tokens-read') to @('tokens-unread')
+     until @('tokens-read') has the length of the checkpoint in question;
+     then the checkpoint is removed from @('checkpoints') as well.
+     That is, we have the ability to backtrack to earlier tokens,
+     without having to keep track of how many tokens we have read
+     since the potential point of backtrack.
+     The reason why @('checkpoints') is a list of natural numbers
+     and not just an optional natural number
+     is that we may need to support ``nested'' backtracking
+     while parsing something that may also backtrack.")
+   (xdoc::p
     "We could look into turning the parser state into a stobj in the future,
      if efficiency is an issue.
      The code of the parser already treats the parser state
@@ -572,7 +593,8 @@
    (chars-read char+position-list)
    (chars-unread char+position-list)
    (tokens-read token+span-list)
-   (tokens-unread token+span-list))
+   (tokens-unread token+span-list)
+   (checkpoints nat-list))
   :pred parstatep
   :prepwork ((local (in-theory (enable nfix)))))
 
@@ -605,13 +627,15 @@
      the data to parse,
      no unread characters or tokens,
      no read characters or tokens,
-     and the initial file position."))
+     the initial file position,
+     and no checkpoints."))
   (make-parstate :bytes data
                  :position (position-init)
                  :chars-read nil
                  :chars-unread nil
                  :tokens-read nil
-                 :tokens-unread nil))
+                 :tokens-unread nil
+                 :checkpoints nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4260,6 +4284,89 @@
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define record-checkpoint ((pstate parstatep))
+  :returns (new-pstate parstatep)
+  :short "Record a checkpoint for possible backtracking."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(tsee parstate),
+     we add (by @(tsee cons)ing) to the list of checkpoints
+     the current length of the list of tokens read so far."))
+  (b* ((tokens-read (parstate->tokens-read pstate))
+       (checkpoints (parstate->checkpoints pstate))
+       (new-checkpoints (cons (len tokens-read) checkpoints))
+       (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
+    new-pstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define clear-checkpoint ((pstate parstatep))
+  :returns (new-pstate parstatep)
+  :short "Clear the latest checkpoint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when the parser resolves that
+     there is no longer a need to backtrack
+     to the latest checkpoint.
+     This simply removes the latest checkpoint.")
+   (xdoc::p
+    "It is an internal error if this is called
+     when the list of checkpoints is empty.
+     If this happens, there is a bug in the parser."))
+  (b* ((checkpoints (parstate->checkpoints pstate))
+       ((unless checkpoints)
+        (raise "Internal error: no checkpoint to clear.")
+        (parstate-fix pstate))
+       (new-checkpoints (cdr checkpoints))
+       (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
+    new-pstate))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define backtrack-checkpoint ((pstate parstatep))
+  :returns (new-pstate parstatep)
+  :short "Backtrack to the latest checkpoint."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when the parser needs to backtrack.
+     We calculate the number of tokens to unread and we unread them.
+     We also remove the checkpoint from the list of checkpoints,
+     since it no longer serves a purpose (we have backtracked to it).")
+   (xdoc::p
+    "It is an internal error if this is called
+     when the list of checkpoints is empty.
+     If this happens, there is a bug in the parser."))
+  (b* ((checkpoints (parstate->checkpoints pstate))
+       ((unless (consp checkpoints))
+        (raise "Internal error: no checkpoints to backtrack.")
+        (parstate-fix pstate))
+       (checkpoint (car checkpoints))
+       (new-chechpoints (cdr checkpoints))
+       (number-tokens-read (len (parstate->tokens-read pstate)))
+       (number-tokens-to-unread (- number-tokens-read checkpoint))
+       ((unless (> number-tokens-to-unread 0))
+        (raise "Internal error: ~
+                the checkpoint ~x0 is not less than ~
+                the number ~x1 of tokens read so far."
+               checkpoint
+               number-tokens-read)
+        (parstate-fix pstate))
+       (pstate (unread-tokens number-tokens-to-unread pstate))
+       (new-pstate (change-parstate pstate :checkpoints new-chechpoints)))
+    new-pstate)
+  :prepwork
+  ((defrulel verify-guards-lemma
+     (implies (and (natp x)
+                   (natp y)
+                   (>= y x))
+              (natp (+ (- x) y)))
+     :enable natp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
