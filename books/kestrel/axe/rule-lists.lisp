@@ -1065,7 +1065,10 @@
      bvequal-of-bvuminus-and-constant
 
      bvif-of-if-becomes-bvif-of-boolif-arg2
-     )))
+
+     ;; for now, we open these to expose bvcat:
+     putbyte
+     putbits)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
