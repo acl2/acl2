@@ -266,6 +266,14 @@
                   (bvor size1 x y)))
   :hints (("Goal" :in-theory (enable bvor))))
 
+(defthm bvchop-of-bvor-gen
+  (implies (and (natp size1)
+                (natp size2))
+           (equal (bvchop size1 (bvor size2 x y))
+                  (if (<= size1 size2)
+                      (bvor size1 x y)
+                     (bvor size2 x y)))))
+
 (defthm slice-of-bvor-tighten
   (implies (and (< (+ 1 highbit) size)
 ;                (<= lowbit highbit)

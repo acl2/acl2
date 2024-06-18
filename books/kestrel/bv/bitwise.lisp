@@ -686,3 +686,36 @@
            (equal (bvand low x (bvnot size y))
                   (bvand low x (bvnot low y))))
   :hints (("Goal" :in-theory (enable bvand))))
+
+(defthm slice-of-bvand
+  (implies (and (< highbit size)
+                (integerp size)
+                (<= 0 size)
+                (natp lowbit)
+                (natp highbit)
+                )
+           (equal (slice highbit lowbit (bvand size x y))
+                  (bvand (+ 1 highbit (- lowbit))
+                           (slice highbit lowbit x)
+                           (slice highbit lowbit y))))
+  :hints (("Goal" :cases ((natp (+ 1 highbit (- lowbit))))
+           :in-theory (e/d (slice bvand natp logtail-of-bvchop)
+                           (slice-becomes-bvchop
+                            bvchop-of-logtail-becomes-slice)))))
+
+;; helps simplify bvand with a mask like FF000000
+;; looks for a mask whose low byte is 0
+;; todo: handle bvand of a mask with any single run of consective ones (difference of powers of 2?)
+(defthm bvand-of-constant-when-low-byte-0
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (equal (bvchop 8 k) 0)
+                (<= 8 size)
+                (natp size))
+           (equal (bvand size k x)
+                  (bvcat (+ -8 size)
+                         (bvand (+ -8 size)
+                                (slice (+ -1 size) 8 k) ; gets computed
+                                (slice (+ -1 size) 8 x))
+                         8 0)))
+  :hints (("Goal" :in-theory (enable bvcat-equal-rewrite))))

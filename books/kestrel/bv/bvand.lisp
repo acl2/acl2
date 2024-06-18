@@ -429,3 +429,24 @@
   (equal (bvand width -1 x)
          (bvchop width x))
   :hints (("Goal" :in-theory (enable bvand))))
+
+;make versions of these for other ops..
+(defthm bvand-subst-arg2
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop free x) k)
+                (syntaxp (quotep k))
+                (<= n free)
+                (integerp free))
+           (equal (bvand n x y)
+                  (bvand n k y)))
+  :hints (("Goal" :in-theory (e/d (bvand) nil))))
+
+(defthm bvand-subst-arg3
+  (implies (and (syntaxp (not (quotep y)))
+                (equal (bvchop free y) k)
+                (syntaxp (quotep k))
+                (<= n free)
+                (integerp free))
+           (equal (bvand n x y)
+                  (bvand n x k)))
+  :hints (("Goal" :in-theory (e/d (bvand) nil))))

@@ -1552,22 +1552,6 @@
   :hints (("Goal" :cases ((<= lowbit highbit))
            :in-theory (e/d (slice bvor natp bvmult) ( slice-becomes-bvchop BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-(defthm slice-of-bvand
-  (implies (and (< highbit size)
-                (integerp size)
-                (<= 0 size)
-                (natp lowbit)
-                (natp highbit)
-                )
-           (equal (slice highbit lowbit (bvand size x y))
-                  (bvand (+ 1 highbit (- lowbit))
-                           (slice highbit lowbit x)
-                           (slice highbit lowbit y))))
-  :hints (("Goal" :cases ((natp (+ 1 highbit (- lowbit))))
-           :in-theory (e/d (slice bvand natp) (slice-becomes-bvchop
-                                               bvchop-of-logtail-becomes-slice)))))
-
-
 ;use trim
 (defthm bvor-of-bvmult-tighten-2
   (implies (and (< size1 size2)
@@ -2415,31 +2399,32 @@
 ;;                  (:forward-chaining :match-free :all)))
 
 (defthm bvor-of-bvcat-appending-idiom
-  (implies (and (equal k (+ m n)) ;gen?
+  (implies (and (>= size (+ m n)) ;gen?
                 (unsigned-byte-p n y)
                 (<= 0 n)
                 (integerp n)
                 (natp m)
                 (< 0 m)
+                (natp size)
                 ;(integerp x)
                 ;(integerp y)
                 )
-           (equal (bvor k (bvcat m x n 0) y)
+           (equal (bvor size (bvcat m x n 0) y)
                   (bvcat m x n y)))
-  :hints (("Goal" :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
+  :hints (("Goal" :in-theory (e/d (slice-too-high-is-0) (size-non-negative-when-unsigned-byte-p-free)))))
 
 (defthm bvor-of-bvcat-appending-idiom-alt
-  (implies (and (equal k (+ m n))
+  (implies (and (>= size (+ m n))
                 (unsigned-byte-p n y)
                 (<= 0 n)
                 (integerp n)
                 (natp m)
-                (< 0 m))
-           (equal (bvor k y (bvcat m x n 0))
+                (< 0 m)
+                (natp size))
+           (equal (bvor size y (bvcat m x n 0))
                   (bvcat m x n y)))
   :hints (("Goal" :use bvor-of-bvcat-appending-idiom
-           :in-theory (e/d (;natp
-                            ) ( bvor-of-bvcat-appending-idiom)))))
+           :in-theory (disable bvor-of-bvcat-appending-idiom))))
 
 ;BOZO gen this series...
 (defthm bvand-64-hack
