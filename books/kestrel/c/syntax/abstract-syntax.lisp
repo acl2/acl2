@@ -1998,7 +1998,55 @@
     ((test const-expr)
      (message stringlit))
     :pred statassertp
-    :measure (two-nats-measure (acl2-count x) 2)))
+    :measure (two-nats-measure (acl2-count x) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod amb-expr/tyname
+    :parents (abstract-syntax expr/decls)
+    :short "Fixtype of ambiguous expressions or type names."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Certain parts of the syntax may be either expressions or type names.
+       An example is the argument of @('sizeof'), which is followed by
+       either a parenthesized type name or a parenthesized expression
+       (it can be also followed by a non-parenthesized expression,
+       but in that case there is no ambiguity).")
+     (xdoc::p
+      "The syntactic overlap between expressions and type names is complex.
+       The simplest case is a single identifier @('I'),
+       which can be either a variable (which is an expression)
+       or a @('typedef') name
+       (which is a type specifier,
+       and thus a type name without abstract declarator).
+       But also @('I(I1)') is ambiguous, if @('I1') is also an identifier:
+       it could be either a function call (which is an expression),
+       or a @('typedef') name followed by a function abstract declarator,
+       in which case @('I1') is a parameter declaration
+       consisting of a @('typedef') name @('I1').
+       Things can be nested: @('I(I1(I2(...(In)...)))').
+       It is also possible to have multiple arguments or parameters,
+       e.g. @('I(I1,I2)'), or things can be nested more deeply.
+       There are also cases involving square brackets, such as
+       @('I[E]'), where @('I') is an identifier and @('E') is an expression:
+       this can be an array subscripting expression,
+       or a @('typedef') name @('I') followed by an array abstract declarator.")
+     (xdoc::p
+      "It may take a bit of work to accurately characterize
+       the syntactic ``intersection'' of expressions and type names.
+       Therefore, at least for now, we introduce a fixtype to capture
+       the notiion of an ambiguous expression or type name.
+       A value of this fixtype consists of both an expression and a type name:
+       the idea is that they are the same in concrete syntax,
+       although there is no explicit requirement in this fixtype.
+       Assuming that this requirement is met,
+       a value of this fixtype provides the two possible interpretations,
+       the expression and the type name (both in abstract syntax, of course)."))
+    ((expr expr)
+     (tyname tyname))
+    :pred amb-expr/tyname-p
+    :measure (two-nats-measure (acl2-count x) 5)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
