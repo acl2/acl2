@@ -89,17 +89,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;optimize?
+;no true-listp guard
+(defund nth-unguarded-aux (n l)
+  (declare (xargs :guard (natp n)
+                  :split-types t)
+           (type (integer 0 *) n) ; could even restrict to a fixtype
+           )
+  (if (atom l)
+      nil
+    (if (mbe :logic (zp n) :exec (= 0 n))
+        (car l)
+      (nth-unguarded-aux (- n 1) (cdr l)))))
+
 (defund nth-unguarded (n l)
   (declare (xargs :guard t))
-  (if (true-listp l)
-      (nth (nfix n) l)
-    (nth (nfix n) (true-list-fix l))))
+  (nth-unguarded-aux (nfix n) l))
 
 (defthm nth-unguarded-correct
   (equal (nth-unguarded n l)
          (nth n l))
-  :hints (("Goal" :in-theory (enable nth nth-unguarded))))
+  :hints (("Goal" :in-theory (enable nth nth-unguarded nth-unguarded-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
