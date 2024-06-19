@@ -747,6 +747,66 @@
                                   (low (/ low 8)))
            :in-theory (disable slice-of-read-one-byte))))
 
+(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
+
+(local
+  (defun bvchop-of-read-induct (numbits numbytes addr)
+    (if (zp numbytes)
+        (list numbits numbytes addr)
+      (bvchop-of-read-induct (+ -8 numbits) (+ -1 numbytes) (+ 1 addr)))))
+
+(defthm bvchop-of-read
+  (implies (and (equal 0 (mod numbits 8))
+                (natp numbits)
+                (natp numbytes))
+           (equal (bvchop numbits (read numbytes addr x86))
+                  (if (< numbits (* 8 numbytes))
+                      (read (/ numbits 8) addr x86)
+                    (read numbytes addr x86))))
+  :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
+           :in-theory (enable READ acl2::trim))))
+
+(local
+  (defun read-high-low-induct (n addr x86 high low)
+    (declare (xargs :stobjs x86
+                    :verify-guards nil
+                    ))
+    (if (zp n)
+        (mv n addr x86 high low)
+      (read-high-low-induct (- n 1) (+ 1 addr) x86 (+ -8 high) (+ -8 low)))))
+
+;for whole bytes
+;move up
+(defthm slice-of-read
+  (implies (and ;; (syntaxp (and (quotep low)
+                ;;               (quotep high)))
+                (equal 0 (mod low 8)) ; low bit of some byte
+                ;;(equal 7 (mod high 8)) ; high bit of some byte
+                (integerp (/ (+ high 1) 8))
+                (< high (* 8 n))
+                (< low high)
+                (natp low)
+                (natp high)
+                (natp n)
+                (integerp addr))
+           (equal (slice high low (read n addr x86))
+                  (read (/ (+ 1 high (- low)) 8) ; number if bytes to read
+                        (+ (/ low 8) ; number of bytes we skip
+                           addr)
+                        x86)))
+  :hints (("subgoal *1/2" :cases ((< high 7)))
+          ("Goal" :induct (read-high-low-induct n addr x86 high low)
+           :do-not '(generalize eliminate-destructors)
+           :expand (read (+ 1/8 (* 1/8 high)) addr x86)
+           :in-theory (e/d (read acl2::integerp-squeeze)
+                           (acl2::<=-of-*-and-*-same-linear
+                            acl2::<=-of-*-and-*-same-alt-linear
+                            ;; these seemed to add stuff to the goal itself?!  why?
+                            acl2::<-of-*-and-*-same-forward-1
+                            acl2::<-of-*-and-*-same-forward-2
+                            acl2::<-of-*-and-*-same-forward-3
+                            acl2::<-of-*-and-*-same-forward-4)))))
+
 (defthm read-when-equal-of-read
   (implies (and (equal (read n2 addr2 x86) freeval)
                 (syntaxp (quotep freeval))
@@ -969,22 +1029,7 @@
                                        (read 1 addr x86))))))
   :hints (("Goal" :use (:instance read-4-blast))))
 
-(local
-  (defun bvchop-of-read-induct (numbits numbytes addr)
-    (if (zp numbytes)
-        (list numbits numbytes addr)
-      (bvchop-of-read-induct (+ -8 numbits) (+ -1 numbytes) (+ 1 addr)))))
 
-(defthm bvchop-of-read
-  (implies (and (equal 0 (mod numbits 8))
-                (natp numbits)
-                (natp numbytes))
-           (equal (bvchop numbits (read numbytes addr x86))
-                  (if (< numbits (* 8 numbytes))
-                      (read (/ numbits 8) addr x86)
-                    (read numbytes addr x86))))
-  :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
-           :in-theory (enable READ acl2::trim))))
 
 (defthm trim-of-read
   (implies (and (equal 0 (mod numbits 8))
@@ -3375,51 +3420,6 @@
                                   (acl2::width width)
                                   (acl2::val val))
            :in-theory (disable acl2::part-install-width-low-becomes-bvcat))))
-
-(local
-  (defun read-high-low-induct (n addr x86 high low)
-    (declare (xargs :stobjs x86
-                    :verify-guards nil
-                    ))
-    (if (zp n)
-        (mv n addr x86 high low)
-      (read-high-low-induct (- n 1) (+ 1 addr) x86 (+ -8 high) (+ -8 low)))))
-
-
-(local (include-book "kestrel/arithmetic-light/integerp" :dir :system))
-;for whole bytes
-;move up
-(defthm slice-of-read-one-byte-gen-gen
-  (implies (and ;; (syntaxp (and (quotep low)
-                ;;               (quotep high)))
-                (< low high)
-                (equal 0 (mod low 8)) ; low bit of some byte
-                ;;(equal 7 (mod high 8)) ; high bit of some byte
-                (integerp (/ (+ high 1) 8))
-                (< high (* 8 n))
-                (natp low)
-                (natp high)
-                (natp n)
-                (integerp addr)
-                )
-           (equal (slice high low (read n addr x86))
-                  (read (/ (+ 1 high (- low)) 8)
-                        (+ (/ low 8) ; number of bytes we skip
-                           addr)
-                        x86)))
-  :hints (("subgoal *1/2" :cases ((< high 7)))
-          ("Goal" :induct (read-high-low-induct n addr x86 high low)
-           :do-not '(generalize eliminate-destructors)
-           :expand (read (+ 1/8 (* 1/8 high)) addr x86)
-           :in-theory (e/d (read acl2::integerp-squeeze)
-                           (acl2::<=-of-*-and-*-same-linear
-                            acl2::<=-of-*-and-*-same-alt-linear
-                            ;; these seemed to add stuff to the goal itself?!  why?
-                            acl2::<-of-*-and-*-same-forward-1
-                            acl2::<-of-*-and-*-same-forward-2
-                            acl2::<-of-*-and-*-same-forward-3
-                            acl2::<-of-*-and-*-same-forward-4)))))
-
 
 ;move up
 (defthm bvcat-of-read-and-read-combine
