@@ -207,7 +207,7 @@
 
 (mutual-recursion
 
- ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj),
+ ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj),
  ;; where extended-alist is irrelevant if hyps-relievedp is nil
  ;; keeps trying ASSUMPTION-ARG-LISTS until it finds a match for HYP (thus binding some free vars) for which it can relieve all the OTHER-HYPS (using those variable bindings)
  (defun relieve-free-var-hyp-and-all-others-for-rewrite-rule (assumption-arg-lists ;these are lists of nodenums/quoteps for calls of fn that we can assume (where fn is the top function symbol of hyp)
@@ -224,14 +224,14 @@
                                                               oi-rule-alist
                                                               refined-assumption-alist ;we need to keep the whole alist in addition to walking down the entry for the current fn
                                                               equality-array
-                                                              print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                                              print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
    (declare (xargs :mode :program :stobjs (state result-array-stobj)))
    (if (endp assumption-arg-lists)
        ;;failed to relieve the hyp
        ;;fixme think about how to print failure messages for monitored rules when backtracking..
        (progn$ (and (member-eq rule-symbol monitored-symbols)
                     (cw "(Failed to bind free vars in hyp ~x0 of ~x1.)~%" hyp-num rule-symbol))
-               (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))
+               (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))
      (let* ((arg-list (first assumption-arg-lists))
             (fail-or-extended-alist (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
        (if (eq :fail fail-or-extended-alist)
@@ -241,8 +241,8 @@
                                                                  alist rule-symbol
                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                  ;;print-interval embedded-dag-depth work-hard-when-instructedp
-                                                                 interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
-         (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                                                 interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
+         (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
            (relieve-rewrite-rule-hyps other-hyps (+ 1 hyp-num)
                                       rewrite-objective
                                       fail-or-extended-alist ;ASSUMPTION bound some free vars
@@ -250,13 +250,13 @@
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       interpreted-function-alist
                                       rule-alist oi-rule-alist refined-assumption-alist equality-array
-                                      print monitored-symbols info tries normalize-xors state result-array-stobj
+                                      print monitored-symbols hit-counts tries normalize-xors state result-array-stobj
 ;                                           print-interval embedded-dag-depth work-hard-when-instructedp
                                       )
            (if erp
-               (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+               (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
              (if other-hyps-relievedp
-                 (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                 (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                ;;this assumption matched but we couldn't relieve the rest of the hyps:
                (relieve-free-var-hyp-and-all-others-for-rewrite-rule (rest assumption-arg-lists)
                                                                      hyp-args rewrite-objective hyp-num other-hyps
@@ -265,9 +265,9 @@
                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                      ;;  embedded-dag-depth work-hard-when-instructedp
                                                                      interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols
-                                                                     info tries normalize-xors state result-array-stobj))))))))
+                                                                     hit-counts tries normalize-xors state result-array-stobj))))))))
 
- ;; Returns (mv erp hyps-relievedp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+ ;; Returns (mv erp hyps-relievedp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
  ;; where ALIST may get extended by the binding of free vars to nodenums/quoteps.
  (defun relieve-rewrite-rule-hyps (hyps ;terms (all non-lambda function calls)
                                    hyp-num
@@ -278,11 +278,11 @@
 ;print-interval embedded-dag-depth work-hard-when-instructedp
                                    interpreted-function-alist
                                    rule-alist oi-rule-alist refined-assumption-alist equality-array
-                                   print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                   print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
    (declare (xargs :mode :program :stobjs (state result-array-stobj)))
    (if (endp hyps)
        ;; all hyps relieved:
-       (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+       (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
      (b* ((hyp (first hyps)) ;known to be a non-lambda function call
           (fn (ffn-symb hyp))
           (- (and (eq :verbose! print) (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
@@ -293,12 +293,12 @@
                  ;;this hyp counts as relieved:
                  (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist rule-symbol
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                            interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                            interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
 ;failed:
                (progn$ (and (member-eq rule-symbol monitored-symbols)
                             ;;is it worth printing in this case?
                             (cw "(Failed (rewrite-objective is ~x0) for hyp ~x1 of ~x2.)~%" rewrite-objective hyp rule-symbol))
-                       (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))
+                       (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))
          (if (eq :axe-syntaxp fn)
              (let* ((syntax-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
                     (result (eval-axe-syntaxp-expr-jvm syntax-expr alist dag-array)))
@@ -306,7 +306,7 @@
                    ;;this hyp counts as relieved:
                    (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist rule-symbol
                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                              interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                              interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                  ;;failed to relieve the axe-syntaxp hyp:
                  (progn$ (and (member-eq rule-symbol monitored-symbols)
                               ;;is it worth printing in this case?
@@ -315,7 +315,7 @@
                                       ;; (print-array2 'dag-array dag-array dag-len)
                                       ;; (cw ")~%")
                                       ))
-                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))
+                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))
            (if (eq :axe-bind-free fn)
                ;; To evaluate the axe-bind-free hyp, we use alist, but we also bind the special variable dag-array to the dag-array.
                ;; The soundness of Axe should not depend on what a axe-bind-free function does; thus we cannot pass alist to a bind-free function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes (fixme might be nice to allow it to build new nodes though? could return them as terms, unless they get huge?).
@@ -328,17 +328,17 @@
                        (if (not (axe-bind-free-result-okayp result vars-to-bind dag-len))
                            (mv (erp-t)
                                (er hard? 'relieve-rewrite-rule-hyps "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
-                               alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                               alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                          ;;this hyp counts as relieved:
                          (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective
                                                     (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
                                                     rule-symbol
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                    interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)))
+                                                    interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)))
                    ;; failed to relieve the axe-bind-free hyp:
                    (prog2$ (and (member-eq rule-symbol monitored-symbols)
                                 (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
-                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))
+                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))
              (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
                  ;; First, we substitute in for all the vars in HYP that are bound in ALIST (inefficient?)
                  (let ((instantiated-hyp (sublis-var-simple ;fixme allow eval too?  call instantiate-hyp! but then handle the case where a quote is returned.
@@ -357,7 +357,7 @@
                     alist rule-symbol
                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
 ;print-interval embedded-dag-depth work-hard-when-instructedp
-                    interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                    interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :axe-rewrite-objective or :free-vars:
                ;; Set the work-hard flag and strip-off the call to work-hard, if present:
                (mv-let
@@ -374,7 +374,7 @@
                                               'dag-array 'dag-parent-array
                                               interpreted-function-alist)
                    (if erp
-                       (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                       (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                      (if (consp nodenum-or-quotep) ;checks for quotep
                          (if (unquote nodenum-or-quotep)
                              ;;this hyp counts as relieved
@@ -382,21 +382,21 @@
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         ;;print-interval embedded-dag-depth work-hard-when-instructedp
                                                         interpreted-function-alist rule-alist oi-rule-alist
-                                                        refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                                        refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                            ;;failed to relieve this hyp:
                            (progn$ (and (member-eq rule-symbol monitored-symbols)
                                         (cw "(Failed to relieve hyp: ~x0 for ~x1 (instantiated to nil).)~%" hyp rule-symbol))
-                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
+                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)))
                        ;;we need to rewrite the hyp:
                        (let ((old-try-count tries))
                          (mv-let
-                           (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                           (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                            (rewrite-dag-core (push-new-stack nodenum-or-quotep t nil)
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              nil nil
-                                             interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                             interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                            (if erp
-                               (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                               (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                              (let ((try-diff (and old-try-count (- tries old-try-count))))
                                (if (consp new-nodenum-or-quotep) ;checks for quotep
                                    (if (unquote new-nodenum-or-quotep)
@@ -405,12 +405,12 @@
                                                                   rule-symbol
                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                   ;;print-interval embedded-dag-depth work-hard-when-instructedp
-                                                                  interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                                                  interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                                      ;;hyp rewrote to nil, so we failed to relieve it:
                                      ;;fffixme add support for printing if try-diff is large
                                      (progn$ (and (member-eq rule-symbol monitored-symbols)
                                                   (cw "(Failed to relieve hyp: ~x0 for ~x1 (rewrote to nil).)~%" hyp rule-symbol))
-                                             (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
+                                             (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)))
                                  ;;hyp didn't rewrite to a constant:
                                  (prog2$
                                   (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
@@ -436,10 +436,10 @@
                                           nil ;fixme ifns
                                           )
                                          (if erp
-                                             (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                             (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                            ;;call the full prover:
                                            (mv-let
-                                             (erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+                                             (erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                                              ;;fixme should this do mitering and merging (which would then call the prover on individual node pairs)?
                                              (prove-disjunction-with-axe-prover (cons new-nodenum-or-quotep negated-assumptions) ;these are the literals
                                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -452,22 +452,22 @@
                                                                                 *default-stp-max-conflicts* ;max-conflicts ;fixme pass this around
                                                                                 t ;nil ;print-max-conflicts-goalp
                                                                                 nil ;don't work hard on another work-hard hyp fffixme think about this
-                                                                                info tries
+                                                                                hit-counts tries
                                                                                 1 ;; prover-depth > 1 disallows changing existing nodes
                                                                                 ;;normalize-xors ;pass in to prover?
                                                                                 nil ;options
                                                                                 (+ -1 (expt 2 59)) ;max fixnum?
                                                                                 state)
                                              (if erp
-                                                 (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                                 (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                                (if (eq :proved result)
                                                    ;;the hyp counts as relieved:
-                                                   (progn$ ;(maybe-print-hit-counts info) ;ffffixme these are cumulative counts
+                                                   (progn$ ;(maybe-print-hit-counts hit-counts) ;ffffixme these are cumulative counts
                                                     (cw "Proved the work-hard hyp)~%")
                                                     (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist
                                                                                rule-symbol dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                                interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols
-                                                                               info tries normalize-xors state result-array-stobj))
+                                                                               hit-counts tries normalize-xors state result-array-stobj))
                                                  (progn$ (cw "Failed to prove the work-hard hyp for ~x0)~%" rule-symbol)
                                                          (and (member-eq rule-symbol monitored-symbols)
                                                               (progn$
@@ -476,7 +476,7 @@
                                                                (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep)
                                                                ;;fixme print the equality array?
                                                                (cw "Alist: ~x0.~%Refined assumption alist: ~x1)~%" alist refined-assumption-alist)))
-                                                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))))))
+                                                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))))))
                                     ;;failed to relieve this hyp:
                                     (progn$ (and (member-eq rule-symbol monitored-symbols)
                                                  (progn$
@@ -485,20 +485,20 @@
                                                   (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep)
                                                   ;;fixme print the equality array?
                                                   (cw "Alist: ~x0.~%Refined assumption alist: ~x1)~%" alist refined-assumption-alist)))
-                                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj))))))))))))))))))))
+                                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))))))))))))))))))
 
- ;; Returns (mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj),
+ ;; Returns (mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj),
  ;; where RHS-OR-NIL is either nil (no rule fired) or a quotep/nodenum from instantiating the rhs of a rule that fired
  (defun try-to-apply-rewrite-rules (stored-rules ;;the rules for the current fn, in stored-rule format
                                     args-to-match ;;nodenums or quoteps of the arguments to fn
                                     rewrite-objective
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     interpreted-function-alist
-                                    rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                    rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
    (declare (xargs :mode :program :stobjs (state result-array-stobj)))
    (if (endp stored-rules)
        ;;no rule fired:
-       (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+       (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
      (let* ((stored-rule (first stored-rules))
             (rule-lhs-args (stored-rule-lhs-args stored-rule))
             (tries (and tries (+ 1 tries))) ;so tries includes rules that have the right function symbol but don't even match
@@ -511,29 +511,29 @@
            (try-to-apply-rewrite-rules (rest stored-rules) args-to-match rewrite-objective
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                        interpreted-function-alist rule-alist oi-rule-alist
-                                       refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                       refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
          ;;the rule matched, so try to relieve its hyps:
          (b* ((rule-symbol (stored-rule-symbol stored-rule))
               (- (and (eq print :verbose!)
                           (cw "(Trying to apply ~x0.~%" rule-symbol)))
               (hyps (stored-rule-hyps stored-rule)))
            (mv-let (erp hyps-relievedp alist ;may get extended by the binding of free vars
-                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                    (if (not hyps)
                        ;;if there are no hyps, don't even bother: fixme is this special case worth it?
-                       (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                       (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                      (relieve-rewrite-rule-hyps hyps
                                                 1 ;;initial hyp number
                                                 rewrite-objective
                                                 alist-or-fail
                                                 rule-symbol
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                    (if erp
-                       (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                       (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                      (if hyps-relievedp
                          ;;the hyps were relieved:
-                         (let* ((info (maybe-increment-hit-count rule-symbol info)))
+                         (let* ((hit-counts (maybe-increment-hit-count rule-symbol hit-counts)))
                            (prog2$ (and (eq print :verbose!)
                                         (cw "Rewriting with ~x0.)~%" rule-symbol))
                                    (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -541,19 +541,19 @@
                                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
                                                                 interpreted-function-alist)
                                      (if erp
-                                         (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
-                                       (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))))
+                                         (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
+                                       (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)))))
                        ;;failed to relieve the hyps, so try the next rule:
                        (prog2$ (and (eq print :verbose!)
                                     (cw "Failed to apply rule ~x0.)~%" rule-symbol))
                                (try-to-apply-rewrite-rules (rest stored-rules) args-to-match rewrite-objective
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))))))))))
+                                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))))))))))
 
  ;;each stack represents the pending rewrites.  the bottom node of each stack represents the rewrite of the top node of the stack beneath.
  ;;the bottom node of the bottom stack represents the whole thing being rewritten
  ;;instead of using aref1-expandable, we could expand the result-array in sync with the dag-array - old comment?
- ;; Returns (mv erp final-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+ ;; Returns (mv erp final-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
  ;; the dag coming in should not include lambdas (they should be beta-reduced whenever we make a dag?)
  ;; Extends the DAG but doesn't change any existing nodes?
  (defun rewrite-dag-core (stacks
@@ -564,13 +564,13 @@
                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist
                           equality-array ;nil or an array mapping nodenums to nodenums-or-quoteps? maybe use an alist with sorted keys?
                           print monitored-symbols
-                          info  ;a non-empty info-world or nil
+                          hit-counts
                           tries ;a natural or nil
                           normalize-xors state result-array-stobj ;; (includes polarity info)
                           )
    (declare (xargs :mode :program :stobjs (state result-array-stobj)))
    (if (endp stacks)
-       (mv (erp-nil) previous-stack-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+       (mv (erp-nil) previous-stack-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
      ;;there is at least one stack left:
      (let* ((stack (first stacks)))
        (if (endp stack)
@@ -579,7 +579,7 @@
                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                              nil
                              previous-node-result
-                             interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                             interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
          (let* ((stack-entry (first stack)) ;use "top"?
                 (nodenum (if (atom stack-entry) stack-entry (car stack-entry)))
                 (rewrite-objective (if (atom stack-entry) '? (cdr stack-entry))))
@@ -589,7 +589,7 @@
                  (rewrite-dag-core (cons (rest stack) (rest stacks))
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                    previous-stack-result nil interpreted-function-alist rule-alist oi-rule-alist
-                                   refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                   refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
              ;;normal case:
              (let* ((possible-result (get-result nodenum rewrite-objective result-array-stobj)))
                (if possible-result
@@ -598,7 +598,7 @@
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                      possible-result
                                      nil
-                                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                  ;;we don't yet know what the top node on the current stack rewrites to (with the current objective):
                  (b* ((- (and print
                               (equal 0 (mod nodenum 1000)) ;fixme how expensive are these mods?  just keep a counter from 0 to 1000 and reset it to 0 once it hits 1000 (of course the nodes are not processed in order)?
@@ -616,20 +616,20 @@
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      equality-match
                                                      nil
-                                                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                ;;rewrite the thing this node is equal to (equality-match is a nodenum):
                                (rewrite-dag-core (push-new-stack equality-match rewrite-objective stacks) ;pushes a new stack for the thing
                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                  nil
                                                  nil
-                                                 interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                 interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                            ;;no equality match for the variable, so it just rewrites to itself :
                            (let ((result-array-stobj (set-result nodenum rewrite-objective nodenum result-array-stobj)))
                              (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop the nodenum
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                nodenum
                                                nil
-                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))))
+                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))))
                      (let ((fn (ffn-symb expr)))
                        (if (eq 'quote fn)
                            ;;expr is a constant and so rewrites to itself:
@@ -638,7 +638,7 @@
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                expr
                                                nil
-                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                          ;;expr is a function call (should never be a lambda, since those should never be stored in dag nodes):
                          (let* ((args (dargs expr)))
                            ;;check whether it is a ground term: ffixme don't even add an evaluatable ground term to the dag and then improve this?
@@ -656,18 +656,18 @@
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                    result
                                                    nil
-                                                   interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                   interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                              ;; it's not a ground term:
                              ;;Before simpifying the args, we try to apply outside-in rewrite rules:
-                             (mv-let (erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                             (mv-let (erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                (try-to-apply-rewrite-rules (get-rules-for-fn fn oi-rule-alist)
                                                            args
                                                            rewrite-objective
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            interpreted-function-alist
-                                                           rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                                           rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                                (if erp
-                                   (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                   (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                  (if rhs-or-nil
                                      ;;some rule fired:
                                      (if (consp rhs-or-nil) ;it's a quotep
@@ -676,13 +676,13 @@
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rhs-or-nil
                                                              nil
-                                                             interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                             interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                        ;;rewrite the rhs:
                                        (rewrite-dag-core (push-new-stack rhs-or-nil rewrite-objective stacks) ;;pushes a new stack for the rhs
                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                          nil
                                                          nil
-                                                         interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                         interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                    ;;no outside-in rule fired, so simplify the args and then try regular rules:
                                    ;;fixme check this..
                                    ;;fixme add support for boolor and booland..
@@ -696,7 +696,7 @@
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            nil
                                                            nil
-                                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                                        ;;there are no args to simplify:
                                        (let* ((simplified-args (lookup-args-in-result-array2 args arg-objectives result-array-stobj))) ;check for all quoteps here?
                                          ;;check whether it is a ground term now:
@@ -713,18 +713,18 @@
                                                (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop this nodenum
                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                  result
-                                                                 nil interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                                 nil interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                            ;;it is not a ground term:
                                            ;;Now try to apply rewrite rules:
-                                           (mv-let (erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                           (mv-let (erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                              (try-to-apply-rewrite-rules (get-rules-for-fn fn rule-alist)
                                                                          simplified-args
                                                                          rewrite-objective
                                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                          interpreted-function-alist
-                                                                         rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj)
+                                                                         rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
                                              (if erp
-                                                 (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                                 (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                                (if rhs-or-nil
                                                    ;;some rule fired, so simplify the rhs if necessary:
                                                    (if (consp rhs-or-nil)
@@ -734,18 +734,18 @@
                                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                            rhs-or-nil
                                                                            nil
-                                                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                                           interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                                      ;;rewrite the rhs:
                                                      (rewrite-dag-core (push-new-stack rhs-or-nil rewrite-objective stacks) ;pushes a new stack for the rhs
                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                        nil nil
-                                                                       interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                                       interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                                  ;;no rule fired, so add this expr to the dag, then check whether it is equated to anything:
                                                  (mv-let (erp new-nodenum dag-array dag-len dag-parent-array dag-constant-alist) ;version for non-ground terms? or maybe we can't eval the fn
                                                    ;; TODO: Handle xors before we do this?
                                                    (add-function-call-expr-to-dag-array fn simplified-args dag-array dag-len dag-parent-array dag-constant-alist)
                                                    (if erp
-                                                       (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+                                                       (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
                                                      ;;see if the node is equated to anything (is this the right place to check this?)
                                                      (let ((equality-match (and equality-array
                                                                                 (aref1-expandable 'equality-array equality-array new-nodenum))))
@@ -756,14 +756,14 @@
                                                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                                    equality-match nil
                                                                                    interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print
-                                                                                   monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                                                   monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                                              ;;rewrite the thing this node is equal to (equality-match is a nodenum):
                                                              (rewrite-dag-core
                                                               (push-new-stack equality-match rewrite-objective stacks)
                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                               nil nil
                                                               interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array
-                                                              print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                              print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                                          ;;no equality match:
                                                          (if (and (eq fn 'bvxor) ;; TODO: Add similar handling for bitxor!
                                                                   normalize-xors
@@ -790,14 +790,14 @@
                                                                     bvxor-width
                                                                     (enquote bvxor-width)
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-                                                                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)))
+                                                                  ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)))
                                                                (if (consp new-nodenum-or-quotep) ;the bvxor nest became a constant (perhaps duplicate leaves cancelled each other)
                                                                    (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))
                                                                      (rewrite-dag-core (cons (rest stack) (rest stacks)) ;pop the nodenum
                                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                                        new-nodenum-or-quotep nil
                                                                                        interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print
-                                                                                       monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                                                       monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                                                  (if (eql new-nodenum new-nodenum-or-quotep)
                                                                      ;;the bvxor nest is already normalized: (fixme more efficient handling of this case?
                                                                      (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum-or-quotep result-array-stobj)))
@@ -805,7 +805,7 @@
                                                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                                          new-nodenum-or-quotep nil
                                                                                          interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array
-                                                                                         print monitored-symbols info tries normalize-xors state result-array-stobj))
+                                                                                         print monitored-symbols hit-counts tries normalize-xors state result-array-stobj))
                                                                    ;;rewrite the node the bvxor nest became:
                                                                    ;;fffixme think about this?!
                                                                    (rewrite-dag-core
@@ -813,7 +813,7 @@
                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                     nil nil
                                                                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols
-                                                                    info tries normalize-xors state result-array-stobj))))
+                                                                    hit-counts tries normalize-xors state result-array-stobj))))
                                                            ;; it's not a bvxor we can handle (or we are not handling bvxor specially):
                                                            ;; we are done rewriting nodenum:
                                                            (let ((result-array-stobj (set-result nodenum rewrite-objective new-nodenum result-array-stobj)))
@@ -821,7 +821,7 @@
                                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                                new-nodenum nil
                                                                                interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print
-                                                                               monitored-symbols info tries normalize-xors state result-array-stobj)))))))))))))))))))))))))))))))
+                                                                               monitored-symbols hit-counts tries normalize-xors state result-array-stobj)))))))))))))))))))))))))))))))
  ) ;end mutual-recursion
 
 ;; rewrites nodenum and all supporting nodes
@@ -836,7 +836,7 @@
                                 normalize-xors state result-array-stobj)
   (declare (xargs :mode :program :stobjs (state result-array-stobj)))
   (let* ((result-array-stobj (clear-result-array-stobj result-array-stobj)))
-    (mv-let (erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state result-array-stobj)
+    (mv-let (erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
       (rewrite-dag-core (push-new-stack nodenum rewrite-objective
                                         nil ;empty stack
                                         )
@@ -849,7 +849,7 @@
                         (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                         (and print (zero-tries))
                         normalize-xors state result-array-stobj)
-      (progn$ (maybe-print-hit-counts info ;; (append (rules-from-rule-alist rule-alist)
+      (progn$ (maybe-print-hit-counts hit-counts ;; (append (rules-from-rule-alist rule-alist)
                                       ;;   ;; do these get counted?
                                       ;;   (rules-from-rule-alist oi-rule-alist))
                                       )
