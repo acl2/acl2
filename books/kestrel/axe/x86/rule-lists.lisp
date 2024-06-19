@@ -252,6 +252,7 @@
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     bvchop-of-read
     trim-of-read
+    slice-of-read
     svblt-of-read-trim-arg2
     svblt-of-read-trim-arg3))
 

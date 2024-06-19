@@ -953,6 +953,7 @@
      bvor-1-becomes-bitor
 
      bvand-with-constant-mask-arg2
+     bvand-of-constant-when-low-byte-0 ; for masks that pick out bytes
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt

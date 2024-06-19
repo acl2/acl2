@@ -84,11 +84,10 @@
     "The syntax of C has some known ambiguities,
      which cannot be disambiguated purely syntactically,
      but need some (static) semantic analysis.
-     Our abstract syntax fixtypes include cases
-     that capture these ambiguous constructions,
-     which are described when those fixtypes are introduced.
-     Here are some resources on the topic
-     (and more resources are easy to find):")
+     Some of the fixtypes of our abstract syntax
+     capture these ambiguous constructions,
+     as described when those fixtypes are introduced.
+     Here are some resources on the topic:")
    (xdoc::ul
     (xdoc::li
      (xdoc::ahref "https://en.wikipedia.org/wiki/Lexer_hack"
@@ -113,7 +112,7 @@
      The exact characterization of these ambiguous constructs
      is still work in progress; it is currently partial.")
    (xdoc::p
-    "A kind of ambiguity has the form")
+    "For instance, a kind of ambiguity has the form")
    (xdoc::codeblock
     "I ( I1 ( I2 ( ... ( In ) ... ) ) ) ;")
    (xdoc::p
@@ -1165,17 +1164,16 @@
        The @('sizeof') applied to an expression is instead captured
        in the @(':unary') case,
        since @(tsee unop) includes @('sizeof') for expressions.
-       During parsing, an expression of the form")
-     (xdoc::codeblock
-      "sizeof ( I )")
-     (xdoc::p
-      "where @('I') is an identifier,
-       cannot be disambiguated on a purely syntactic basis,
-       because @('I') may be either an expression or a type name:
-       we defer the resolution of this ambiguity
-       to static semantic analysis after parsing;
-       during parsing, we classify that as an ambiguous @('sizeof'),
-       for which we have the @(':sizeof-ambig') of this fixtype.")
+       As explained in @(tsee amb-expr/tyname),
+       there is a complex syntactic overlap between expressions and type names;
+       thus, an expression of the form @('sizeof(X)'),
+       where @('X') is in that syntactic overlap,
+       is inherently ambiguous.
+       (The simplest case is when @('X') is an identifier,
+       but as explained in @(tsee amb-expr/tyname)
+       there are infinitely many cases.)
+       This is captured by the @(':sizeof-ambig') case,
+       which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
@@ -1249,7 +1247,7 @@
     (:unary ((op unop)
              (arg expr)))
     (:sizeof ((type tyname)))
-    (:sizeof-ambig ((ident ident)))
+    (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)))
     (:cast ((type tyname)
             (arg expr)))
@@ -1999,7 +1997,55 @@
     ((test const-expr)
      (message stringlit))
     :pred statassertp
-    :measure (two-nats-measure (acl2-count x) 2)))
+    :measure (two-nats-measure (acl2-count x) 2))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod amb-expr/tyname
+    :parents (abstract-syntax expr/decls)
+    :short "Fixtype of ambiguous expressions or type names."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Certain parts of the syntax may be either expressions or type names.
+       An example is the argument of @('sizeof'), which is followed by
+       either a parenthesized type name or a parenthesized expression
+       (it can be also followed by a non-parenthesized expression,
+       but in that case there is no ambiguity).")
+     (xdoc::p
+      "The syntactic overlap between expressions and type names is complex.
+       The simplest case is a single identifier @('I'),
+       which can be either a variable (which is an expression)
+       or a @('typedef') name
+       (which is a type specifier,
+       and thus a type name without abstract declarator).
+       But also @('I(I1)') is ambiguous, if @('I1') is also an identifier:
+       it could be either a function call (which is an expression),
+       or a @('typedef') name followed by a function abstract declarator,
+       in which case @('I1') is a parameter declaration
+       consisting of a @('typedef') name @('I1').
+       Things can be nested: @('I(I1(I2(...(In)...)))').
+       It is also possible to have multiple arguments or parameters,
+       e.g. @('I(I1,I2)'), or things can be nested more deeply.
+       There are also cases involving square brackets, such as
+       @('I[E]'), where @('I') is an identifier and @('E') is an expression:
+       this can be an array subscripting expression,
+       or a @('typedef') name @('I') followed by an array abstract declarator.")
+     (xdoc::p
+      "It may take a bit of work to accurately characterize
+       the syntactic ``intersection'' of expressions and type names.
+       Therefore, at least for now, we introduce a fixtype to capture
+       the notiion of an ambiguous expression or type name.
+       A value of this fixtype consists of both an expression and a type name:
+       the idea is that they are the same in concrete syntax,
+       although there is no explicit requirement in this fixtype.
+       Assuming that this requirement is met,
+       a value of this fixtype provides the two possible interpretations,
+       the expression and the type name (both in abstract syntax, of course)."))
+    ((expr expr)
+     (tyname tyname))
+    :pred amb-expr/tyname-p
+    :measure (two-nats-measure (acl2-count x) 5)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
