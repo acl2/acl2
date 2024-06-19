@@ -3908,6 +3908,62 @@
     boolif-when-nil
     boolif-when-not-nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
+;; TODO: Use these whenever we translate to STP, not just in the tactic prover.
+(defund pre-stp-rules ()
+  (declare (xargs :guard t))
+  (append
+   '(;; since we don't translate these shift operations to STP:
+     bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+     bvshr-rewrite-for-constant-shift-amount             ; introduces slice
+     bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
+     ;; todo: handle more cases.  a general solution? ; see the leftrotate-unroller
+     bvshl-16-cases
+     bvshl-32-cases
+     bvshl-64-cases
+     bvshr-16-cases
+     bvshr-32-cases
+     bvshr-64-cases
+     bvashr-16-cases
+     bvashr-32-cases
+     bvashr-64-cases
+     ;; these are needed to resolve claims about the indices being in bounds (todo: generalize the rules above):
+     <-lemma-for-known-operators-axe
+     <-lemma-for-known-operators-axe-alt
+     eql ; introduced by case
+     not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
+     not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
+     bvcat-of-0-arg1
+     bvcat-of-0-arg3 ; can arise from unrolling a rotate
+     equal-of-bvuminus-and-constant
+     bvcat-of-bvchop-high
+     bvcat-of-bvchop-low
+     ;; Rules about rotates (since we don't translate most rotates to STP):
+     leftrotate-open-when-constant-shift-amount
+     rightrotate-open-when-constant-shift-amount
+     rightrotate-becomes-rightrotate-unroller-strong2
+     rightrotate-unroller-opener
+     leftrotate-becomes-leftrotate-unroller-strong2
+     leftrotate-unroller-opener
+     ;; Introduce bvif when we can:
+     if-becomes-bvif-1-axe
+     if-becomes-bvif-2-axe
+     if-becomes-bvif-3-axe
+     if-becomes-bvif-4-axe)
+   (bv-function-of-bvchop-rules)
+   (type-rules)
+   (unsigned-byte-p-forced-rules)))
+
+(in-theory (disable (:e pre-stp-rules))) ; avoid big goals
+
+(defthmd symbol-listp-of-pre-stp-rules
+  (symbol-listp (pre-stp-rules))
+  :hints (("Goal" :in-theory (enable (:e pre-stp-rules)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;
 ;; priorities
 ;;
