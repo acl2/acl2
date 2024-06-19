@@ -1419,8 +1419,8 @@
     jb-condition-of-bvif-1-1-0
     jnb-condition-of-bvif-1-0-1
     jnb-condition-of-bvif-1-1-0
-    acl2::bool-fix-of-myif
-    boolif-of-myif-arg1-true ; drop
+    ;;acl2::bool-fix-of-myif
+    ;;boolif-of-myif-arg1-true ; drop
     equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe ;equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
     equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
@@ -4380,8 +4380,8 @@
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
-            acl2::equal-of-myif-arg1-safe
-            acl2::equal-of-myif-arg2-safe
+            ;; acl2::equal-of-myif-arg1-safe
+            ;; acl2::equal-of-myif-arg2-safe
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
             acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus
@@ -4389,7 +4389,7 @@
             acl2::if-becomes-bvif-1-axe
             ;; acl2::boolif-of-t-and-nil-when-booleanp
             slice-of-bvand-of-constant
-            acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
+            ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
             acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
@@ -4470,7 +4470,7 @@
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
-            acl2::bvchop-of-myif
+            ;; acl2::bvchop-of-myif
             xr-of-if ;restrict?
             ;acl2::slice-out-of-order
 
@@ -4582,14 +4582,14 @@
 
 (defun tester-proof-rules ()
   (declare (xargs :guard t))
-  (append '(myif-of-sub-zf-spec32-arg2
-            myif-of-sub-zf-spec32-arg3
+  (append '(;;myif-of-sub-zf-spec32-arg2
+            ;;myif-of-sub-zf-spec32-arg3
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
             acl2::equal-of-if-constants
-            acl2::if-becomes-myif ; todo: do we want this when lifting?
-            acl2::myif-becomes-bvif-1-axe
-            acl2::bvchop-of-myif
+            ;; acl2::if-becomes-myif ; todo: do we want this when lifting?
+            ;; acl2::myif-becomes-bvif-1-axe
+            ;; acl2::bvchop-of-myif
             acl2::integerp-of---when-integerp
             acl2::equal-of-bvplus-move-bvminus-better
             acl2::equal-of-bvplus-move-bvminus-alt-better
