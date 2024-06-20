@@ -2337,7 +2337,7 @@
 ;sbvlt-becomes-bvlt
 ;     sbvlt-becomes-bvlt-better
      bv-array-write-of-0
-     ;bvplus-of-plus
+     ;bvplus-of-+
 
      bvlt-when-unsigned-byte-p-better-helper
 ;;     recollapse-hack ;sun mar 28 15:19:01 2010
@@ -3409,8 +3409,8 @@
              equal-of-myif-same-2
              bvif-of-myif-arg3
              bvif-of-myif-arg4
-             bvplus-of-plus-arg3
-             bvplus-of-plus-arg2
+             bvplus-of-+-arg3
+             bvplus-of-+-arg2
              slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
              <-of-+-of-minus-and-bv

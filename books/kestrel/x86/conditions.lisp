@@ -519,7 +519,7 @@
                             signed-byte-p
                             acl2::bvuminus
                             acl2::bvminus
-                            acl2::getbit-of-plus
+                            acl2::getbit-of-+
                             ;; acl2::equal-of-bitxor-and-1
                             ;; acl2::bvcat
                             ;; logapp
@@ -566,7 +566,7 @@
                             signed-byte-p
                             acl2::bvuminus
                             acl2::bvminus
-                            acl2::getbit-of-plus
+                            acl2::getbit-of-+
                             ;; acl2::equal-of-bitxor-and-1
                             ;; acl2::bvcat
                             ;; logapp
@@ -596,7 +596,7 @@
            (equal (sbvlt 32 x (+ -4294967296 k2))
                   (sbvlt 32 x k2)))
   :hints (("Goal" :in-theory (enable sbvlt acl2::logext-cases
-                                     acl2::getbit-of-plus))))
+                                     acl2::getbit-of-+))))
 
 (defthm bvuminus-of--
  (equal (bvuminus 32 (- k2))
@@ -617,7 +617,7 @@
                   (acl2::sbvle 32 (- k2) x)))
   :otf-flg t
   :hints (("Goal" :in-theory (e/d ( ;bvuminus
-                                   ACL2::BVPLUS-OF-PLUS-ARG3
+                                   ACL2::BVPLUS-OF-+-ARG3
                                    ) (jnl-condition-rewrite-1-32
                                       ;;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                       acl2::sbvlt-rewrite
@@ -675,7 +675,7 @@
                                                    acl2::bvuminus
                                                    acl2::bvminus
                                                    acl2::sbvlt
-                                                   acl2::getbit-of-plus
+                                                   acl2::getbit-of-+
                                                    acl2::equal-of-bitxor-and-1
                                                    acl2::bvcat
                                                    logapp
@@ -717,7 +717,7 @@
                                                    acl2::bvuminus
                                                    acl2::bvminus
                                                    acl2::sbvlt
-                                                   acl2::getbit-of-plus
+                                                   acl2::getbit-of-+
                                                    acl2::equal-of-bitxor-and-1
                                                    acl2::bvcat
                                                    logapp
@@ -750,7 +750,7 @@
       X86ISA::SF-SPEC64
       BVPLUS ACL2::BVCHOP-OF-SUM-CASES
       SIGNED-BYTE-P BVUMINUS
-      BVMINUS SBVLT ACL2::GETBIT-OF-PLUS
+      BVMINUS SBVLT ACL2::GETBIT-OF-+
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT
       acl2::*-of---arg1-gen)
@@ -781,7 +781,7 @@
       X86ISA::ZF-SPEC
       BVPLUS ACL2::BVCHOP-OF-SUM-CASES
       SIGNED-BYTE-P BVUMINUS
-      BVMINUS SBVLT ACL2::GETBIT-OF-PLUS
+      BVMINUS SBVLT ACL2::GETBIT-OF-+
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT)
      (
@@ -834,7 +834,7 @@
                                      x86isa::sub-zf-spec8
                                      x86isa::sub-sf-spec8
                                      x86isa::sub-of-spec8
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      acl2::bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -858,7 +858,7 @@
                                      x86isa::sub-zf-spec16
                                      x86isa::sub-sf-spec16
                                      x86isa::sub-of-spec16
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      acl2::bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -882,7 +882,7 @@
                                      x86isa::sub-zf-spec32
                                      x86isa::sub-sf-spec32
                                      x86isa::sub-of-spec32
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      acl2::bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -906,7 +906,7 @@
                                      x86isa::sub-zf-spec64
                                      x86isa::sub-sf-spec64
                                      x86isa::sub-of-spec64
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      acl2::bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -1046,7 +1046,7 @@
                                      x86isa::sub-sf-spec8
                                      x86isa::sub-of-spec8
                                      SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
                                      acl2::sbvlt-rewrite))))
@@ -1064,7 +1064,7 @@
                                      x86isa::sub-sf-spec16
                                      x86isa::sub-of-spec16
                                      SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
                                      acl2::sbvlt-rewrite))))
@@ -1082,7 +1082,7 @@
                                      x86isa::sub-sf-spec32
                                      x86isa::sub-of-spec32
                                      SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
                                      acl2::sbvlt-rewrite))))
@@ -1100,7 +1100,7 @@
                                      x86isa::sub-sf-spec64
                                      x86isa::sub-of-spec64
                                      SIGNED-BYTE-P
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      BVPLUS ;why?
                                      ACL2::LOGEXT-CASES
                                      acl2::sbvlt-rewrite))))
@@ -1120,7 +1120,7 @@
                                      x86isa::of-spec8
                                      JNL-CONDITION
                                      signed-byte-p
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      acl2::logext-cases
                                      bvplus
                                      bvlt
@@ -1139,7 +1139,7 @@
                                      x86isa::of-spec16
                                      JNL-CONDITION
                                      signed-byte-p
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      acl2::logext-cases
                                      bvplus
                                      bvlt
@@ -1156,7 +1156,7 @@
                                      OF-SPEC32
                                      JNL-CONDITION
                                      signed-byte-p
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      acl2::logext-cases
                                      bvplus
                                      bvlt
@@ -1174,7 +1174,7 @@
                                      SF-SPEC64 OF-SPEC64
                                      JNL-CONDITION
                                      signed-byte-p
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      acl2::logext-cases
                                      bvplus
                                      bvlt
@@ -1287,7 +1287,7 @@
                                      x86isa::sub-zf-spec32
                                      x86isa::sub-sf-spec32
                                      x86isa::sub-of-spec32
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases))))
@@ -1306,7 +1306,7 @@
                                      x86isa::sub-zf-spec64
                                      x86isa::sub-sf-spec64
                                      x86isa::sub-of-spec64
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases))))
@@ -1370,7 +1370,7 @@
                                      x86isa::sub-zf-spec8
                                      x86isa::sub-sf-spec8
                                      x86isa::sub-of-spec8
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -1394,7 +1394,7 @@
                                      x86isa::sub-zf-spec16
                                      x86isa::sub-sf-spec16
                                      x86isa::sub-of-spec16
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -1416,7 +1416,7 @@
                                      x86isa::sub-zf-spec32
                                      x86isa::sub-sf-spec32
                                      x86isa::sub-of-spec32
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -1439,7 +1439,7 @@
                                      x86isa::sub-zf-spec64
                                      x86isa::sub-sf-spec64
                                      x86isa::sub-of-spec64
-                                     ACL2::GETBIT-OF-PLUS
+                                     ACL2::GETBIT-OF-+
                                      bvplus
                                      SIGNED-BYTE-P
                                      acl2::logext-cases
@@ -1525,7 +1525,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec8
                                      js-condition
                                      x86isa::sf-spec8
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1541,7 +1541,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec16
                                      js-condition
                                      x86isa::sf-spec16
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1557,7 +1557,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec32
                                      js-condition
                                      sf-spec32
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1573,7 +1573,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec64
                                      js-condition
                                      sf-spec64
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1591,7 +1591,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec8
                                      jns-condition
                                      x86isa::sf-spec8
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1607,7 +1607,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec16
                                      jns-condition
                                      x86isa::sf-spec16
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1623,7 +1623,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec32
                                      jns-condition
                                      sf-spec32
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1639,7 +1639,7 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec64
                                      jns-condition
                                      sf-spec64
-                                     acl2::getbit-of-plus
+                                     acl2::getbit-of-+
                                      bvplus
                                      bvminus
                                      bvlt))))
@@ -1760,7 +1760,7 @@
 ;;                                      x86isa::sub-sf-spec32
 ;;                                      x86isa::sub-of-spec32
 ;;                                      SIGNED-BYTE-P
-;;                                      acl2::getbit-of-plus
+;;                                      acl2::getbit-of-+
 ;;                                      BVPLUS ;why?
 ;;                                      ACL2::LOGEXT-CASES
 ;;                                      ))))

@@ -444,7 +444,7 @@
                              (bvchop 31 x))
                       nil
                     (sbvlt 32 0 x))))
-  :hints (("Goal" :in-theory (e/d (sbvlt logext bvplus BVCHOP-OF-SUM-CASES bvlt getbit-of-plus)
+  :hints (("Goal" :in-theory (e/d (sbvlt logext bvplus BVCHOP-OF-SUM-CASES bvlt getbit-of-+)
                                   (anti-bvplus TIMES-4-BECOMES-LOGAPP)))))
 
 (in-theory (disable PLUS-BVCAT-WITH-0-ALT))
@@ -1759,7 +1759,7 @@
                 (integerp x))
            (equal (sbvle '32 '0 (+ -4 x))
                   (sbvle '32 4 x)))
-  :hints (("Goal" :in-theory (enable sbvle getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable sbvle getbit-of-+))))
 
 ;gen the 1
 (defthm equal-if-0-0-1
@@ -2087,10 +2087,10 @@
                       (bitxor (getbit size x) (getbit size y))
                     (bitnot (bitxor (getbit size x) (getbit size y))))))
   :hints (("Goal"
-           :use (:instance getbit-of-plus (x (ifix x)) (y (ifix y)))
+           :use (:instance getbit-of-+ (x (ifix x)) (y (ifix y)))
            :in-theory (e/d (bvplus GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    slice-of-bvplus-cases-helper
-                                   ) (getbit-of-plus
+                                   ) (getbit-of-+
                                    anti-bvplus
 
                                    )))))
@@ -4127,7 +4127,7 @@
              (bvlt 32 x 4)))
   :hints (("Goal" :in-theory (e/d (getbit-of-bvplus-split bvcat logapp bvlt ;BVCHOP-32-SPLIT-HACK
                                                           BVCHOP-WHEN-TOP-BIT-NOT-1
-                                                          getbit-of-plus
+                                                          getbit-of-+
                                                           )
                                   (
                                                   BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -4239,7 +4239,7 @@
                             BVCHOP-WHEN-TOP-BIT-1-cheap
                             bvchop-of-sum-cases
                             bvplus
-                            getbit-of-plus
+                            getbit-of-+
                             )
                            (GETBIT-WHEN-BVLT-OF-SMALL-HELPER
                             anti-bvplus
@@ -4300,7 +4300,7 @@
            :use ((:instance split-with-bvcat (x k) (hs 1) (ls size))
                  (:instance split-with-bvcat (x x) (hs 1) (ls size)))
            :in-theory (e/d (getbit-must-be-1
-                            getbit-of-plus
+                            getbit-of-+
                             getbit-of-bvplus-split
                             bvcat logapp bvlt ;BVCHOP-32-SPLIT-HACK
                             BVCHOP-WHEN-TOP-BIT-NOT-1
@@ -5254,7 +5254,7 @@
            (equal (getbit n (bvplus n+1 k x))
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (e/d ( ;bvlt
-                                   bvplus getbit-of-plus
+                                   bvplus getbit-of-+
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
 
                                    bvchop-of-sum-cases sbvlt
@@ -7534,7 +7534,7 @@
            (equal (GETBIT 31 (BVPLUS 32 2147483648 x))
                   (bitnot (getbit 31 x))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases
-                                          getbit-of-plus
+                                          getbit-of-+
                                           bvuminus
                                           bvchop-of-minus
                                           bvminus
@@ -7559,7 +7559,7 @@
                   (bvlt 31 x y)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases
                                           bvuminus
-                                          getbit-of-plus
+                                          getbit-of-+
                                           bvchop-of-minus
                                           bvminus
                                           bvlt
@@ -7590,7 +7590,7 @@
            (bvcat 1 (bitnot (getbit 31 x)) 31 0)))
   :hints (("Goal" :in-theory (e/d (bvplus ;bvchop-of-sum-cases
                                           bvuminus
-                                          getbit-of-plus
+                                          getbit-of-+
                                           bvchop-of-minus
                                           bvminus
                                           bvlt
@@ -8216,7 +8216,7 @@
            (equal (getbit n (bvplus n+1 x (bvcat 1 1 n y)))
                   (bitnot (getbit n (bvplus n+1 x (bvchop n y))))))
   :hints (("Goal" :use (:instance getbit-of-bvplus-flip (x (+ x (bvchop n y))))
-           :in-theory (e/d (bvcat logapp bvplus getbit-of-plus)
+           :in-theory (e/d (bvcat logapp bvplus getbit-of-+)
                            ( getbit-of-bvplus-flip
                                             anti-bvplus
 
@@ -8731,7 +8731,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
+                           (getbit-of-+
                             ;<-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -8769,7 +8769,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
+                           (getbit-of-+
 ;                            <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -8804,7 +8804,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
+                           (getbit-of-+
 ;                            <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -8971,7 +8971,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
+                           (getbit-of-+
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -9028,7 +9028,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
+                           (getbit-of-+
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -9066,7 +9066,7 @@
                              BVLT-OF-*-ARG3
                                          ;*-OF-2-BECOMES-BVMULT
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9100,7 +9100,7 @@
                             bvchop-when-top-bit-1)
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9141,7 +9141,7 @@
                             PLUS-OF-MINUS-3-BV-5
                                                       BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                                       BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                                     getbit-of-plus
+                                                     getbit-of-+
                                                      <-of-bvchop-arg1
                                                      <-when-unsigned-byte-p
                                                      <-when-unsigned-byte-p-alt
@@ -9179,7 +9179,7 @@
                             PLUS-OF-MINUS-3-BV-5 MINUS-BECOMES-BV-2
                                                       BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                                       BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                                     getbit-of-plus
+                                                     getbit-of-+
                                                      <-of-bvchop-arg1
                                                      <-when-unsigned-byte-p
                                                      <-when-unsigned-byte-p-alt
@@ -9218,7 +9218,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9256,7 +9256,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9299,7 +9299,7 @@
                              bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                              bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                            getbit-of-plus
+                            getbit-of-+
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -9337,7 +9337,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9371,7 +9371,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9411,7 +9411,7 @@
                            (  BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                           PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9450,7 +9450,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9492,7 +9492,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9527,7 +9527,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9560,7 +9560,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9612,7 +9612,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9752,7 +9752,7 @@
                              BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                             PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                              BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                            getbit-of-plus
+                            getbit-of-+
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -9815,7 +9815,7 @@
                            ( BVLT-OF-*-ARG3 ;*-OF-2-BECOMES-BVMULT
                                          PLUS-BECOMES-BVPLUS-FREE PLUS-OF-MINUS-3-BV-5
                                           BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9901,7 +9901,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9931,7 +9931,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -9965,7 +9965,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -10001,7 +10001,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -10056,7 +10056,7 @@
                              bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                             plus-becomes-bvplus-free plus-of-minus-3-bv-5
                              bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                            getbit-of-plus
+                            getbit-of-+
                             <-of-bvchop-arg1
                             <-when-unsigned-byte-p
                             <-when-unsigned-byte-p-alt
@@ -10127,7 +10127,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -10165,7 +10165,7 @@
                            ( bvlt-of-*-arg3 ;*-of-2-becomes-bvmult
                                          plus-becomes-bvplus-free plus-of-minus-3-bv-5
                                           bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
-                                         getbit-of-plus
+                                         getbit-of-+
                                          <-of-bvchop-arg1
                                          <-when-unsigned-byte-p
                                          <-when-unsigned-byte-p-alt
@@ -12059,7 +12059,7 @@
            :use (:instance split-bv (x (bvchop 32 k)) (n 32) (m 31))
            :cases ((equal 0 (getbit 31 k)))
            :in-theory (e/d (sbvlt bvlt getbit-of-bvplus-split bvplus bvchop-of-sum-cases boolor
-                                  bvcat getbit-of-plus
+                                  bvcat getbit-of-+
                                   logapp
                                   sbvlt-rewrite)
                            (bvcat-of-getbit-and-x-adjacent
@@ -12202,7 +12202,7 @@
            :use (:instance split-bv (x (bvchop 32 k)) (n 32) (m 31))
            :cases ((equal 0 (getbit 31 k)))
            :in-theory (e/d (sbvlt bvlt getbit-of-bvplus-split bvplus bvchop-of-sum-cases boolor
-                                  bvcat getbit-of-plus
+                                  bvcat getbit-of-+
                                   logapp
                                   sbvlt-rewrite)
                            (bvcat-of-getbit-and-x-adjacent
@@ -13039,7 +13039,7 @@
            :cases ((equal 0 (getbit 31 x)))
            :use (:instance split-bv (x k) (n 32) (m 31))
            :in-theory (e/d (;UNSIGNED-BYTE-P-when-top-bit-1
-                            bvplus bvlt bvchop-of-sum-cases lowbits-not-0-helper getbit-of-plus
+                            bvplus bvlt bvchop-of-sum-cases lowbits-not-0-helper getbit-of-+
                                    bvcat
                             logapp sbvlt-rewrite)
                            (
@@ -13830,7 +13830,7 @@
                 )
            (equal (sbvlt 32 k (bvplus 32 k2 x))
                   (sbvlt 32 (- k k2) x)))
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus getbit-of-plus sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases bvplus getbit-of-+ sbvlt-rewrite))))
 
 ;gen
 (defthmd <-of-256
@@ -14009,7 +14009,7 @@
            (equal (sbvlt 32 (bvplus 32 k x) 0)
                   (sbvlt 32 x (- k))))
   :hints (("Goal" :cases ((equal x -1))
-           :in-theory (e/d (bvplus bvlt getbit-of-plus sbvlt-rewrite)
+           :in-theory (e/d (bvplus bvlt getbit-of-+ sbvlt-rewrite)
                            (EQUAL-OF-BVCHOP-EXTEND ;looped
                             )))))
 
@@ -14023,7 +14023,7 @@
            (equal (sbvlt 32 4294967295 (bvplus 32 k x))
                   (not (sbvlt 32 x (- k)))))
   :hints (("Goal" :cases ((equal x -1))
-           :in-theory (e/d (bvplus bvlt getbit-of-plus sbvlt-rewrite)
+           :in-theory (e/d (bvplus bvlt getbit-of-+ sbvlt-rewrite)
                            (EQUAL-OF-BVCHOP-EXTEND ;looped
                             )))))
 
@@ -14176,7 +14176,7 @@
            (equal (sbvlt 32 x y)
                   (sbvlt 32 (bvplus 32 x k) (bvplus 32 y k))))
   :hints (("Goal" :cases ((equal 0 (getbit 31 k)))
-           :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases bvminus BVCHOP-WHEN-TOP-BIT-1-CHEAP getbit-of-plus sbvlt-rewrite)
+           :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases bvminus BVCHOP-WHEN-TOP-BIT-1-CHEAP getbit-of-+ sbvlt-rewrite)
                            (GETBIT-WHEN-BVLT-OF-SMALL-HELPER
                             ;BVCHOP-OF-IF
                             ;BVPLUS-SUBST-VALUE
@@ -14197,7 +14197,7 @@
                   (sbvlt 32 (bvplus 32 x k) (bvplus 32 y k))))
   :hints (("Goal"
            :cases ((equal 0 (getbit 31 k)))
-           :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases bvminus  getbit-of-plus
+           :in-theory (e/d (bvlt bvplus bvchop-of-sum-cases bvminus  getbit-of-+
                                  bvchop-when-top-bit-1-cheap
                                  <-OF-IF-ARG1 sbvlt-rewrite)
                            ;some of these are for speed
@@ -14733,7 +14733,7 @@
                 )
            (equal (< (+ (- x) y) z)
                   (sbvlt 27 (bvminus 27 y x) z)))
-  :hints (("Goal" :in-theory (enable bvlt sbvlt bvminus bvplus bvchop-of-sum-cases getbit-of-plus sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvlt sbvlt bvminus bvplus bvchop-of-sum-cases getbit-of-+ sbvlt-rewrite))))
 
 ;gen the sizes! and the -1
 (defthmd <-of-+-of-minus-alt
@@ -14780,7 +14780,7 @@
                 )
            (equal (< (+ (- x) y) z)
                   (sbvlt 33 (bvminus 33 y x) z)))
-  :hints (("Goal" :in-theory (enable bvlt sbvlt bvminus bvplus bvchop-of-sum-cases getbit-of-plus sbvlt-rewrite))))
+  :hints (("Goal" :in-theory (enable bvlt sbvlt bvminus bvplus bvchop-of-sum-cases getbit-of-+ sbvlt-rewrite))))
 
 ;gen the sizes! and the -1
 (defthmd <-of-+-of-minus-alt-32
@@ -15025,7 +15025,7 @@
                   (sbvlt 36 (bvminus 36 y x) k)))
   :hints (("Goal"
            :use (:instance signed-byte-p-when-top-bit-1 (n 36))
-           :in-theory (enable bvlt sbvlt bvminus bvplus bvchop-of-sum-cases getbit-of-plus sbvlt-rewrite))))
+           :in-theory (enable bvlt sbvlt bvminus bvplus bvchop-of-sum-cases getbit-of-+ sbvlt-rewrite))))
 
 ;gen!
 (defthmd <-of-+-of-minus-and-constant-alt
@@ -15987,7 +15987,7 @@
                                    bvuminus
                                    bvdiv
                                    bvlt
-                                   getbit-of-plus
+                                   getbit-of-+
                                    sbvlt-rewrite)
                                   (floor-minus-arg1-hack)))))
 

@@ -4850,7 +4850,7 @@
 
 
 ;gen!
-(defthm getbit-of-plus-of-expt-2
+(defthm getbit-of-+-of-expt-2
   (implies (integerp x)
            (equal (GETBIT 31 (+ 2147483648 x))
                   (if (equal 0 (GETBIT 31 x))
@@ -4924,7 +4924,7 @@
 ;i don't like the bvplus here
 ;trying disabled.
 ;just go to getbit of bvplus?
-(defthmd getbit-of-plus
+(defthmd getbit-of-+
   (implies (and (integerp x)
                 (natp size)
                 (integerp y)
@@ -4968,12 +4968,12 @@
                       (+ (logext size x) (logext size y))))))
   :hints (("Goal"
            :use bvchop-plus-bvchop-bound
-           :in-theory (e/d (logapp logext LOGAPP-0 bvplus BVCHOP-OF-SUM-CASES getbit-of-plus bvchop mod-sum-cases)
+           :in-theory (e/d (logapp logext LOGAPP-0 bvplus BVCHOP-OF-SUM-CASES getbit-of-+ bvchop mod-sum-cases)
                            (TIMES-4-BECOMES-LOGAPP  bvchop-plus-bvchop-bound expt
                                                     MOD-EXPT-SPLIT ;bad rule!
                                                     )))))
 
-;todo: prove a getbit-of-sum-cases rule?  does it already exist?  see getbit-of-plus
+;todo: prove a getbit-of-sum-cases rule?  does it already exist?  see getbit-of-+
 ;; (thm
 ;;  (equal (GETBIT 31 (+ x y))
 
@@ -5949,7 +5949,7 @@
                 (posp size))
            (< (bvminus size x (bvplus size 1 y))
               (bvminus size x y)))
-  :hints (("Goal" :in-theory (e/d (sbvlt-rewrite bvplus bvuminus bvminus getbit-of-plus bvlt bvchop-of-sum-cases)
+  :hints (("Goal" :in-theory (e/d (sbvlt-rewrite bvplus bvuminus bvminus getbit-of-+ bvlt bvchop-of-sum-cases)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;helpful for termination
@@ -5959,7 +5959,7 @@
                 (posp size))
            (< (bvminus size x (bvplus size 1 y))
               (bvminus size x y)))
-  :hints (("Goal" :in-theory (e/d (sbvlt-rewrite bvplus bvuminus bvminus getbit-of-plus bvlt bvchop-of-sum-cases)
+  :hints (("Goal" :in-theory (e/d (sbvlt-rewrite bvplus bvuminus bvminus getbit-of-+ bvlt bvchop-of-sum-cases)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvand-of-repeatbit-of-1
