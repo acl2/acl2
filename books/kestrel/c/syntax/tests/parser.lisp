@@ -176,6 +176,220 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Test reading and unreading of characters.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event ; empty file
+ (b* ((pstate0 (init-parstate nil))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (not char?)
+        (equal pos (position 1 0)) ; just past end of (empty) file
+        (equal pstate pstate0))))
+
+(assert-event ; disallowed character 0
+ (b* (((mv erp & & &) (read-char (init-parstate (list 0)))))
+   erp))
+
+(assert-event ; character 32
+ (b* ((pstate0 (init-parstate (list 32 1 2 3)))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? 32)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes (list 1 2 3)
+                :position (position 1 1)
+                :chars-read (list (char+position 32 (position 1 0))))))))
+
+(assert-event ; line feed
+ (b* ((pstate0 (init-parstate (list 10 1 2 3)))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? 10)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes (list 1 2 3)
+                :position (position 2 0)
+                :chars-read (list (char+position 10 (position 1 0))))))))
+
+(assert-event ; carriage return
+ (b* ((pstate0 (init-parstate (list 13 1 2 3)))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? 10)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes (list 1 2 3)
+                :position (position 2 0)
+                :chars-read (list (char+position 10 (position 1 0))))))))
+
+(assert-event ; carriage return + line feed
+ (b* ((pstate0 (init-parstate (list 13 10 1 2 3)))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? 10)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes (list 1 2 3)
+                :position (position 2 0)
+                :chars-read (list (char+position 10 (position 1 0))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-event
+ (b* ((pstate0 (init-parstate (list 65 66 67))) ; A B C
+      ((mv erp1 char-a pos-a pstate1) (read-char pstate0))
+      ((mv erp2 char-b pos-b pstate2) (read-char pstate1))
+      (pstate3 (unread-char pstate2))
+      ((mv erp4 char-b2 pos-b2 pstate4) (read-char pstate3))
+      ((mv erp5 char-c pos-c pstate5) (read-char pstate4))
+      ((mv erp6 char-eof pos-eof pstate6) (read-char pstate5)))
+   (and (not erp1)
+        (not erp2)
+        (not erp4)
+        (not erp5)
+        (not erp6)
+        (equal char-a 65)
+        (equal char-b 66)
+        (equal char-b2 66)
+        (equal char-c 67)
+        (equal char-eof nil)
+        (equal pos-a (position 1 0))
+        (equal pos-b (position 1 1))
+        (equal pos-b2 (position 1 1))
+        (equal pos-c (position 1 2))
+        (equal pos-eof (position 1 3))
+        (equal pstate1
+               (change-parstate
+                pstate0
+                :bytes (list 66 67)
+                :position (position 1 1)
+                :chars-read (list (char+position 65 (position 1 0)))))
+        (equal pstate2
+               (change-parstate
+                pstate1
+                :bytes (list 67)
+                :position (position 1 2)
+                :chars-read (list (char+position 66 (position 1 1))
+                                  (char+position 65 (position 1 0)))))
+        (equal pstate3
+               (change-parstate
+                pstate2
+                :chars-read (list (char+position 65 (position 1 0)))
+                :chars-unread (list (char+position 66 (position 1 1)))))
+        (equal pstate4
+               (change-parstate
+                pstate3
+                :chars-read (list (char+position 66 (position 1 1))
+                                  (char+position 65 (position 1 0)))
+                :chars-unread nil))
+        (equal pstate5
+               (change-parstate
+                pstate4
+                :bytes nil
+                :position (position 1 3)
+                :chars-read (list (char+position 67 (position 1 2))
+                                  (char+position 66 (position 1 1))
+                                  (char+position 65 (position 1 0)))))
+        (equal pstate6
+               pstate5))))
+
+(assert-event
+ (b* ((pstate0 (init-parstate (list 65 10 66))) ; A LF B
+      ((mv erp1 char-a pos-a pstate1) (read-char pstate0))
+      ((mv erp2 char-nl pos-nl pstate2) (read-char pstate1))
+      (pstate3 (unread-chars 2 pstate2))
+      ((mv erp4 char-a2 pos-a2 pstate4) (read-char pstate3))
+      ((mv erp5 char-nl2 pos-nl2 pstate5) (read-char pstate4))
+      (pstate6 (unread-char pstate5))
+      ((mv erp7 char-nl3 pos-nl3 pstate7) (read-char pstate6))
+      ((mv erp8 char-b pos-b pstate8) (read-char pstate7))
+      ((mv erp9 char-eof pos-eof pstate9) (read-char pstate8)))
+   (and (not erp1)
+        (not erp2)
+        (not erp4)
+        (not erp5)
+        (not erp7)
+        (not erp8)
+        (not erp9)
+        (equal char-a 65)
+        (equal char-nl 10)
+        (equal char-a2 65)
+        (equal char-nl2 10)
+        (equal char-nl3 10)
+        (equal char-b 66)
+        (equal char-eof nil)
+        (equal pos-a (position 1 0))
+        (equal pos-a2 (position 1 0))
+        (equal pos-nl (position 1 1))
+        (equal pos-nl2 (position 1 1))
+        (equal pos-nl3 (position 1 1))
+        (equal pos-b (position 2 0))
+        (equal pos-eof (position 2 1))
+        (equal pstate1
+               (change-parstate
+                pstate0
+                :bytes (list 10 66)
+                :position (position 1 1)
+                :chars-read (list (char+position 65 (position 1 0)))))
+        (equal pstate2
+               (change-parstate
+                pstate1
+                :bytes (list 66)
+                :position (position 2 0)
+                :chars-read (list (char+position 10 (position 1 1))
+                                  (char+position 65 (position 1 0)))))
+        (equal pstate3
+               (change-parstate
+                pstate2
+                :chars-read nil
+                :chars-unread (list (char+position 65 (position 1 0))
+                                    (char+position 10 (position 1 1)))))
+        (equal pstate4
+               (change-parstate
+                pstate3
+                :chars-read (list (char+position 65 (position 1 0)))
+                :chars-unread (list (char+position 10 (position 1 1)))))
+        (equal pstate5
+               (change-parstate
+                pstate4
+                :chars-read (list (char+position 10 (position 1 1))
+                                  (char+position 65 (position 1 0)))
+                :chars-unread nil))
+        (equal pstate6
+               (change-parstate
+                pstate5
+                :chars-read (list (char+position 65 (position 1 0)))
+                :chars-unread (list (char+position 10 (position 1 1)))))
+        (equal pstate7
+               (change-parstate
+                pstate6
+                :chars-read (list (char+position 10 (position 1 1))
+                                  (char+position 65 (position 1 0)))
+                :chars-unread nil))
+        (equal pstate8
+               (change-parstate
+                pstate7
+                :bytes nil
+                :position (position 2 1)
+                :chars-read (list (char+position 66 (position 2 0))
+                                  (char+position 10 (position 1 1))
+                                  (char+position 65 (position 1 0)))))
+        (equal pstate9
+               pstate8))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test parsing functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
