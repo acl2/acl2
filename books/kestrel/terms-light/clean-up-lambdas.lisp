@@ -11,6 +11,16 @@
 
 (in-package "ACL2")
 
+;; See also remove-guard-holders-and-clean-up-lambdas and remove-guard-holders-weak.
+
+;; TODO: Also handle the case where the lambda body is just a var (one of the
+;; lambda formals -- in fact, the only lambda formal once we clean up).
+
+;; TODO: Consider also removing guard holders.
+
+;; TODO: Consider (optionally?) not lambda-binding a value that is only used
+;; once in the lambda body.
+
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
