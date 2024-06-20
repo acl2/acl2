@@ -494,7 +494,7 @@
                   :stobjs state))
   (b* ((cbd (cbd-fn state))
        (- (cw "~%Looking for books to repair under ~s0.~%" cbd))
-       (failed-books (find-failed-books))
+       ((mv failed-books state) (find-failed-books state))
        (failed-books (extend-pathnames$ cbd failed-books state))
        ((when (not (consp failed-books)))
         (cw "WARNING: Cannot find any books to repair (based on .cert.out files).")

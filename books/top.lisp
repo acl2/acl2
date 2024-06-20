@@ -81,6 +81,7 @@
 (non-parallel-book)
 
 (include-book "centaur/misc/tshell" :dir :system)
+(include-book "centaur/misc/tshell-unsound" :dir :system)
 (value-triple (acl2::tshell-ensure))
 
 (include-book "centaur/misc/memory-mgmt" :dir :system)
