@@ -353,7 +353,7 @@
                 (integerp y))
            (equal (bvplus size x y)
                   (+ x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;anti-bvplus
+  :hints (("Goal" :in-theory (e/d (bvplus) (;
                                             )))))
 
 ;; x plus 1 is greater than x unless the addition overflows or x is just wider than size.

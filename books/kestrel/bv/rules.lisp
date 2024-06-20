@@ -4071,7 +4071,7 @@
          (bvchop size y))
   :hints (("Goal" :in-theory (e/d (bvuminus bvplus bvminus)
                                   (bvminus-becomes-bvplus-of-bvuminus
-                                   ;anti-bvplus
+                                   ;
                                    )))))
 
 ;-alt version?
@@ -4553,7 +4553,7 @@
                            (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
 ;                            bvminus
                             equal-bvchop-bvchop-move-minus
-                            ;anti-bvplus
+                            ;
                             )))))
 
 

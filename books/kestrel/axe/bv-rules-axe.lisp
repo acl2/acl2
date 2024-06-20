@@ -1233,8 +1233,7 @@
                    (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
    :hints (("Goal" :expand ((SLICE (+ -1 SIZE) SIZE2 (+ X Y)))
             :in-theory (e/d (SLICE BVPLUS SLICE-TOO-HIGH-IS-0 SLICE-WHEN-VAL-IS-NOT-AN-INTEGER LOGTAIL-OF-BVCHOP unsigned-byte-p-forced)
-                            (;anti-bvplus
-                             LOGTAIL-OF-BVCHOP-BECOMES-SLICE BVCHOP-OF-LOGTAIL-BECOMES-SLICE SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                            (LOGTAIL-OF-BVCHOP-BECOMES-SLICE BVCHOP-OF-LOGTAIL-BECOMES-SLICE SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                                               BVCHOP-OF-LOGTAIL)))))
 
 (local (in-theory (enable unsigned-byte-p-forced)))
@@ -1313,7 +1312,7 @@
 ;;                 (natp size))
 ;;            (equal (slice high low x)
 ;;                   (slice high low (bvchop + 1 high) x)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (anti-bvplus)))))
+;;   :hints (("Goal" :in-theory (e/d (bvplus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) ()))))
 
 (defthmd bvif-with-small-arg1
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1542,8 +1541,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P unsigned-byte-p-forced
                                    expt-of-+)
-                           (;anti-bvplus
-                            ;;<-OF-EXPT-AND-EXPT
+                           (;;<-OF-EXPT-AND-EXPT
                             )))))
 
 ;; ;y is a free var - yuck!
@@ -1567,7 +1565,7 @@
 ;;                            (i XSIZE)
 ;;                            (j ysize))
 ;;            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P)
-;;                            (anti-bvplus)))))
+;;                            ()))))
 
 ;;    :hints (("Goal" :use (:instance bvplus-tighten-better)
 ;;             :in-theory (disable bvplus-tighten-better
@@ -1577,7 +1575,7 @@
 ;;             :use (:instance sum-bound-lemma)
 ;; ;          :expand (UNSIGNED-BYTE-P SIZE (+ X Y))
 ;;             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
-;;                                     ) (anti-bvplus ;max
+;;                                     ) ( ;max
 ;;                                     sum-bound-lemma))))
 
 (defthmd bvplus-tighten-hack2
@@ -1597,10 +1595,8 @@
             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
                                     SLICE-TOO-HIGH-IS-0
                                     expt-of-+
-                                    ) (;anti-bvplus ;max
+                                    ) ( ;max
                                     sum-bound-lemma)))))
-
-
 
 ;free var rule from usb to integerp of the index?
 
