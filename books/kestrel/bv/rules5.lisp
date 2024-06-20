@@ -40,21 +40,21 @@
                 (integerp x))
            (equal (getbit n (+ (expt 2 n) x))
                   (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthm getbit-of-+-of---of-expt-same-arg2
   (implies (and (natp n)
                 (integerp x))
            (equal (getbit n (+ x (- (expt 2 n))))
                   (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthm getbit-of-+-of-expt-same-arg2
   (implies (and (natp n)
                 (integerp x))
            (equal (getbit n (+ x (expt 2 n)))
                   (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
@@ -72,7 +72,7 @@
                                    bvchop-of-sum-cases
                                    sbvlt
                                    bvlt
-                                   getbit-of-plus
+                                   getbit-of-+
                                    logext-cases
                                    bvminus
                                    bvchop-when-top-bit-1
@@ -110,7 +110,7 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           logext-of-plus
                                           bvminus
@@ -131,7 +131,7 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -149,7 +149,7 @@
                 (not (signed-addition-underflowsp size k y))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           logext-of-plus
                                           bvminus
@@ -168,7 +168,7 @@
                 (not (signed-addition-underflowsp size k x))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -186,7 +186,7 @@
                 (not (signed-addition-overflowsp size k y))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -204,7 +204,7 @@
                 (not (signed-addition-overflowsp size k x))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -339,7 +339,7 @@
   :hints (("Goal":in-theory (e/d (signed-addition-overflowsp
                                   bvplus bvchop-of-sum-cases
                                   sbvlt bvlt
-                                  getbit-of-plus
+                                  getbit-of-+
                                   bvuminus
                                   logext-cases
                                   bvminus
@@ -359,7 +359,7 @@
                 (not (equal (bvchop 32 k2) (expt 2 31)))) ;k2 not min int
            (not (signed-addition-underflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))))
   :hints (("Goal":in-theory (e/d (signed-addition-underflowsp
-                                  bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+                                  bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                   bvuminus
                                   logext-cases
                                   bvminus
@@ -429,7 +429,7 @@
 (defthm sbvlt-of-bvplus-of-min-int-and-0
   (equal (sbvlt 32 (bvplus 32 2147483648 x) 0)
          (sbvle 32 0 x))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-PLUS
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
                                           logext-cases
                                           bvminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -477,7 +477,7 @@
                 (sbvlt size x (- (expt 2 (+ -1 size)) k)) ; x+k doesn't overflow
                 (posp size))
            (sbvlt size x y))
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases getbit-of-plus bvplus
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases getbit-of-+ bvplus
                                      getbit-when-not-integerp-arg1
                                      sbvlt-rewrite
                                      ;;expt-of-+
@@ -492,7 +492,7 @@
                 (sbvle size k y) ; y-k doesn't underflow
                 (posp size))
            (sbvlt size x y))
-  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases getbit-of-plus bvplus
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases getbit-of-+ bvplus
                                      getbit-when-not-integerp-arg1
                                      sbvlt-rewrite
                                      ;;expt-of-+

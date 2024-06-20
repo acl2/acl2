@@ -373,22 +373,22 @@
 (defthm bvplus-not-negative
   (not (< (bvplus size x y) 0)))
 
-(defthmd bvplus-of-plus-arg3
+(defthmd bvplus-of-+-arg3
   (implies (and (integerp y)
                 (integerp z))
            (equal (bvplus size x (+ y z))
                   (bvplus size x (bvplus size y z))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthmd bvplus-of-plus-arg2
+(defthmd bvplus-of-+-arg2
   (implies (and (integerp y)
                 (integerp z))
            (equal (bvplus size (+ y z) x)
                   (bvplus size (bvplus size y z) x)))
-  :hints (("Goal" :use (:instance bvplus-of-plus-arg3))))
+  :hints (("Goal" :use (:instance bvplus-of-+-arg3))))
 
-(theory-invariant (incompatible (:rewrite bvplus-of-plus-arg3) (:definition bvplus)))
-(theory-invariant (incompatible (:rewrite bvplus-of-plus-arg2) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-+-arg3) (:definition bvplus)))
+(theory-invariant (incompatible (:rewrite bvplus-of-+-arg2) (:definition bvplus)))
 
 (defthm bvplus-trim-leading-constant
   (implies (and (syntaxp (and (quotep k)
