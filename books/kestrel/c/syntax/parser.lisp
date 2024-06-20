@@ -169,7 +169,7 @@
   (:keyword ((unwrap string)))
   (:ident ((unwrap ident)))
   (:const ((unwrap const)))
-  (:stringlit ((unwrap stringlit)))
+  (:string ((unwrap stringlit)))
   (:punctuator ((unwrap stringp)))
   :pred tokenp)
 
@@ -231,7 +231,7 @@
        :keyword (msg "the keyword ~x0" token.unwrap)
        :ident "an identifier"
        :const "a constant"
-       :stringlit "a string literal"
+       :string "a string literal"
        :punctuator (msg "the punctuator ~x0" token.unwrap))
     "end of file"))
 
@@ -1747,7 +1747,7 @@
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
        ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate))
        (span (make-span :start first-pos :end closing-dquote-pos)))
-    (retok (lexeme-token (token-stringlit (stringlit eprefix? schars)))
+    (retok (lexeme-token (token-string (stringlit eprefix? schars)))
            span
            pstate))
 
@@ -4247,11 +4247,11 @@
   (b* (((reterr) (irr-stringlit) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate))
        ((unless (and token
-                     (token-case token :stringlit)))
+                     (token-case token :string)))
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a string literal"
                     :found (token-to-msg token)))
-       (stringlit (token-stringlit->unwrap token)))
+       (stringlit (token-string->unwrap token)))
     (retok stringlit span pstate))
 
   ///
@@ -4678,7 +4678,7 @@
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
-           (token-case token? :stringlit)
+           (token-case token? :string)
            (equal token? (token-punctuator "("))
            (equal token? (token-keyword "_Generic"))))
   ///
@@ -7422,12 +7422,12 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
-       ((and token (token-case token :ident)) ; ident
+       ((and token (token-case token :ident)) ; identifier
         (retok (expr-ident (token-ident->unwrap token)) span pstate))
-       ((and token (token-case token :const)) ; const
+       ((and token (token-case token :const)) ; constant
         (retok (expr-const (token-const->unwrap token)) span pstate))
-       ((and token (token-case token :stringlit)) ; stringlit
-        (retok (expr-string (token-stringlit->unwrap token)) span pstate))
+       ((and token (token-case token :string)) ; string literal
+        (retok (expr-string (token-string->unwrap token)) span pstate))
        ((equal token (token-punctuator "(")) ; (
         (b* (((erp expr & pstate) ; ( expr
               (parse-expression pstate))
