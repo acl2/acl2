@@ -276,7 +276,8 @@
 ;; ; :hints (("Goal" :in-theory (enable strip-cars SUBSETP-EQUAL append)))
 ;;  )
 
-;; Special case for when the formals include all the free vars in the body
+;; Special case for when the formals include all the free vars in the body,
+;; as often will be the case (e.g., when processing an existing [closed] lambda).
 (defthm empty-eval-of-make-lambda-application-simple-correct-2
   (implies (and (subsetp-equal (free-vars-in-term body) formals) ; this case
                 (pseudo-termp body)
