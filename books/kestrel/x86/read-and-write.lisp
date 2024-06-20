@@ -1920,7 +1920,7 @@
            :in-theory (e/d (write
                             write-alt
                             write-alt-of-xw-memi-irrel ;write-alt-of-!memi-irrel
-                            ACL2::BVPLUS-OF-PLUS-ARG3
+                            ACL2::BVPLUS-OF-+-ARG3
                             write-byte)
                            (;X86ISA::!MEMI$INLINE
                             ))
@@ -1998,7 +1998,7 @@
                                      (:i write)
                                      write
                                      write-of-xw-mem ;WRITE-OF-!MEMI
-                                     ACL2::BVPLUS-OF-PLUS-ARG3
+                                     ACL2::BVPLUS-OF-+-ARG3
                                      write-byte
                                      )
                            (;X86ISA::!MEMI$INLINE
@@ -3292,8 +3292,8 @@
                             acl2::bvchop-of-logtail-becomes-slice
                             bvlt
                             ACL2::BVUMINUS-OF-+
-                            ACL2::BVPLUS-OF-PLUS-ARG2
-                            ACL2::BVPLUS-OF-PLUS-ARG3
+                            ACL2::BVPLUS-OF-+-ARG2
+                            ACL2::BVPLUS-OF-+-ARG3
                             ;bvplus
                             ;bvuminus
                             ACL2::BVCHOP-OF-SUM-CASES
@@ -3343,8 +3343,8 @@
 ;;                             acl2::bvchop-of-logtail-becomes-slice
 ;;                             bvlt
 ;;                             ;; ACL2::BVUMINUS-OF-+
-;;                             ;; ACL2::BVPLUS-OF-PLUS-ARG2
-;;                             ;; ACL2::BVPLUS-OF-PLUS-ARG3
+;;                             ;; ACL2::BVPLUS-OF-+-ARG2
+;;                             ;; ACL2::BVPLUS-OF-+-ARG3
 ;;                             bvplus
 ;;                             bvuminus
 ;;                             ACL2::BVCHOP-OF-SUM-CASES

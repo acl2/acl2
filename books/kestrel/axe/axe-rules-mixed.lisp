@@ -47,7 +47,7 @@
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1)
-                           (getbit-of-plus
+                           (getbit-of-+
 ;                            <-of-bvchop-arg1
                             ;<-when-unsigned-byte-p
                             ;<-when-unsigned-byte-p-alt
@@ -524,7 +524,7 @@
                       (< k (bvplus (+ 1 (max xsize zsize)) (bvplus (+ 1 (max xsize zsize)) x z) (- y)))
                     nil)))
   :hints (("Goal" :use (:instance <-of-constant-and-+-of-minus-and-bv (x (+ x z)) (xsize (+ 1 (max xsize zsize))))
-           :in-theory (e/d (unsigned-byte-p-forced BVPLUS-OF-PLUS-ARG2)
+           :in-theory (e/d (unsigned-byte-p-forced BVPLUS-OF-+-ARG2)
                            (<-of-constant-and-+-of-minus-and-bv
                             SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
 
@@ -589,7 +589,7 @@
                        (sbvlt (+ 1 (max xsize ysize)) (+ (- x) y) (expt 2 n)))))
   :hints (("Goal"
 ;           :cases ((equal 1 (GETBIT 29 X)))
-           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-plus sbvlt-rewrite))))
+           :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-+ sbvlt-rewrite))))
 
 ;move
 (defthm <-of-if-arg1-safe

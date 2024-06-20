@@ -740,7 +740,7 @@
                                    ;acl2::logapp
                                    acl2::logext-of-plus
                                    acl2::bvchop-of-sum-cases
-                                   acl2::getbit-of-plus
+                                   acl2::getbit-of-+
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
                                   (

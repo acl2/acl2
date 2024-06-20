@@ -2191,7 +2191,7 @@
            (equal (GETBIT n x)
                   (bitnot (getbit n (+ (expt 2 n) x)))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthm getbit-of-+-bvchop-expand
   (implies (and (natp n)
@@ -2201,7 +2201,7 @@
                       (getbit n (bvchop (+ 1 n) x))
                     (bitnot (getbit n (bvchop (+ 1 n) x))))))
   :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthmd getbit-of-+-bvchop-expand2
   (implies (and (natp n)
@@ -2212,7 +2212,7 @@
                       (getbit n (bvchop (+ 1 n) (+ y x)))
                     (bitnot (getbit n (bvchop (+ 1 n) (+ y x)))))))
 ;  :rule-classes nil
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthmd getbit-of-+-bvchop-expand3
   (implies (and (natp n)
@@ -2262,7 +2262,7 @@
 ;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable ripple-carry-adder
 ;;                                       unsigned-byte-p-of-size-1
-;;                                       ;GETBIT-OF-PLUS yuck
+;;                                       ;GETBIT-OF-+ yuck
 ;;                                       )
 ;;             :induct t
 ;;             :do-not '(generalize eliminate-destructors))))

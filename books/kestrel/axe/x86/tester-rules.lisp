@@ -502,7 +502,7 @@
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
            :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
                                   acl2::truncate-becomes-floor-gen
-                                  acl2::getbit-of-plus
+                                  acl2::getbit-of-+
                                   bvplus
                                   acl2::bvchop-of-sum-cases)
                            ( ;disable
@@ -525,7 +525,7 @@
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
            :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
                                   acl2::truncate-becomes-floor-gen
-                                  acl2::getbit-of-plus
+                                  acl2::getbit-of-+
                                   bvplus
                                   acl2::bvchop-of-sum-cases)
                            (acl2::sbvlt-rewrite ;disable

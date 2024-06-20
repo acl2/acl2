@@ -93,7 +93,7 @@
                            (+ (- (EXPT 2 LOW))
                               (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
                     0))
-    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-PLUS)
+    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+)
                                     (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                      <-OF-BVCHOP-HACK))))))
 

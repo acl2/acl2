@@ -392,7 +392,7 @@
                                      sf-spec64
                                      ZF-SPEC
                                      ;; ACL2::GETBIT-OF-+ ; rename
-                                     ACL2::GETBIT-OF-plus
+                                     ACL2::getbit-of-+
                                      acl2::bvchop-of-sum-cases
                                      ACL2::BVPLUS
                                      ACL2::LOGEXT-CASES))))

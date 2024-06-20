@@ -4550,9 +4550,9 @@
             ;acl2::bvand-of-bvchop-1 ;rename
             ;acl2::bvand-of-bvchop-2 ;rename
             acl2::bvchop-of-minus-becomes-bvuminus ; todo: or re-characterize the subl instruction
-            acl2::bvplus-of-plus-arg2 ; todo: drop once we characterize long negation?
-            acl2::bvplus-of-plus-arg3 ; todo: drop once we characterize long negation?
-            ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-plus rules.
+            acl2::bvplus-of-+-arg2 ; todo: drop once we characterize long negation?
+            acl2::bvplus-of-+-arg3 ; todo: drop once we characterize long negation?
+            ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
             x86isa::integerp-of-xr-rgf
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same

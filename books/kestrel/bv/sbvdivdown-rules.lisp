@@ -280,7 +280,7 @@
                                    sbvlt-rewrite
                                    ;SBVDIVDOWN-REWRITE-CASE-2
                                    bvchop-of-sum-cases
-                                   getbit-of-plus
+                                   getbit-of-+
                                    truncate-becomes-floor-gen
                                    )
                                   (BVLT-OF-BVCHOP-ARG2
