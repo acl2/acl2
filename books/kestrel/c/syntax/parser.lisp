@@ -1025,7 +1025,13 @@
    (xdoc::p
     "This is called after the first character of the identifier
      has been already read;
-     that character is passed to this function.")
+     that character is passed to this function.
+     The position of that character is also passed as input.")
+   (xdoc::p
+    "Since grammatically keywords are identifiers,
+     we just lex grammatical identifiers,
+     but return a keyword lexeme if the grammatical identifier
+     matches a keyword.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -1041,7 +1047,7 @@
      which the caller combines with the first character to form a string.
      This is an ASCII string by construction,
      so the characters all satisfy @('(unsigned-byte-p 7)'),
-     but we use @('(unsigned-byte-p 8)'),
+     but we use @('(unsigned-byte-p 8)')
      in the guard of this function and in the return type of the loop,
      because @(tsee nats=>string) has that as guard
      (more precisely, lists of that).
@@ -1124,7 +1130,8 @@
                        (= char (char-code #\_)))) ; A-Z a-z 0-9 _
            (b* ((pstate (unread-char pstate)))
              (retok nil (position-fix pos-so-far) pstate)))
-          ((erp chars last-pos pstate) (lex-identifier-or-keyword-loop pos pstate)))
+          ((erp chars last-pos pstate)
+           (lex-identifier-or-keyword-loop pos pstate)))
        (retok (cons char chars) last-pos pstate))
      :measure (parsize pstate)
      :hints (("Goal" :in-theory (enable o< o-finp)))
