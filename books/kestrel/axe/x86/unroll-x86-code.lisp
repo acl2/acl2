@@ -606,9 +606,8 @@
                         nil ; todo
                       (if (eq :pe-32 executable-type)
                           nil ; todo
-                        ;;todo: add support for :elf-32
-                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                assumptions))))))))
+                        ;; todo: add support for :elf-32
+                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (code-length
          (and 64-bitp ; todo
               (if (eq :mach-o-64 executable-type)
@@ -622,8 +621,7 @@
                       (if (eq :pe-32 executable-type)
                           nil ; todo
                         ;;todo: add support for :elf-32
-                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                assumptions))))))))
+                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (automatic-assumptions
         (if suppress-assumptions
             ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
