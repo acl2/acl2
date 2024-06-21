@@ -1069,18 +1069,7 @@
     "The grammar in [C] defines expressions and declarations
      via a large and complex collection of mutually recursive rules.
      We use a corresponding collection of mutually recursive fixtypes,
-     which take a few seconds to process on fast machines.
-     If we run into scalability issues, we could split the recursion
-     by using more generic fixtypes in certain places
-     and by enforcing the more restricted fixtypes in predicates.
-     For instance, to avoid the dependency of expressions on type names
-     (which in turn depend on expressions, hence the mutual recursion),
-     we could use the fixtype for @(tsee acl2::any-p)
-     in the definition of expressions instead of the fixtype for type names,
-     and then we could define predicates requiring
-     those values to be in fact type names,
-     whose fixtype would be defined after, and non-recursively with,
-     the fixtype of expressions.")
+     which take a few seconds to process on fast machines.")
    (xdoc::p
     "A few fixtypes related to declarations
      are actually outside this mutual recursion,
@@ -1112,7 +1101,7 @@
      has one more than the component fixtypes.
      There is one instance in which it does not seem possible
      to find appropriate second lexicographic components:
-     in an @(tsee dirabsdeclor), all the cases except @(':paren')
+     in a @(tsee dirabsdeclor), all the cases except @(':paren')
      contain an @(tsee dirabsdeclor-option),
      which as discussed above must have a larger second lexicographic component;
      thus the only possible base case is @(':paren'),
@@ -1135,7 +1124,7 @@
      (xdoc::p
       "This corresponds to <i>expression</i> in the grammar in [C].")
      (xdoc::p
-      "Given that abstract syntax is tree-structured,
+      "Given that the abstract syntax is tree-structured,
        we do not explicitly introduce the various kinds of binary expressions
        defined in the grammar in [C],
        and instead use a single kind of binary expression
@@ -1192,7 +1181,7 @@
        a list of expressions (it associates to the left).
        But for now the current model is adequate.")
      (xdoc::p
-      "The remaining four kinds of expressions capture expressions of the form")
+      "The last four kinds of expressions capture expressions of the form")
      (xdoc::codeblock
       "( I ) * E"
       "( I ) + E"
