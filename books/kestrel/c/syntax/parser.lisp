@@ -1010,9 +1010,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-ident/keyword ((first-char (unsigned-byte-p 8 first-char))
-                           (first-pos positionp)
-                           (pstate parstatep))
+(define lex-identifier-or-keyword ((first-char (unsigned-byte-p 8 first-char))
+                                   (first-pos positionp)
+                                   (pstate parstatep))
   :guard (or (and (<= (char-code #\A) first-char)
                   (<= first-char (char-code #\Z)))
              (and (<= (char-code #\a) first-char)
@@ -1049,7 +1049,7 @@
      Otherwise, we return an identifier token."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
        ((erp rest-chars last-pos pstate)
-        (lex-ident/keyword-loop first-pos pstate))
+        (lex-identifier-or-keyword-loop first-pos pstate))
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
@@ -1102,8 +1102,8 @@
 
   :prepwork
 
-  ((define lex-ident/keyword-loop ((pos-so-far positionp)
-                                   (pstate parstatep))
+  ((define lex-identifier-or-keyword-loop ((pos-so-far positionp)
+                                           (pstate parstatep))
      :returns (mv erp
                   (chars (unsigned-byte-listp 8 chars)
                          :hints (("Goal"
@@ -1124,7 +1124,7 @@
                        (= char (char-code #\_)))) ; A-Z a-z 0-9 _
            (b* ((pstate (unread-char pstate)))
              (retok nil (position-fix pos-so-far) pstate)))
-          ((erp chars last-pos pstate) (lex-ident/keyword-loop pos pstate)))
+          ((erp chars last-pos pstate) (lex-identifier-or-keyword-loop pos pstate)))
        (retok (cons char chars) last-pos pstate))
      :measure (parsize pstate)
      :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -1132,10 +1132,10 @@
 
      ///
 
-     (verify-guards lex-ident/keyword-loop
+     (verify-guards lex-identifier-or-keyword-loop
        :hints (("Goal" :in-theory (enable rationalp-when-natp))))
 
-     (defret parsize-of-lex-ident/keyword-loop-<=
+     (defret parsize-of-lex-identifier-or-keyword-loop-<=
        (<= (parsize new-pstate)
            (parsize pstate))
        :rule-classes :linear
@@ -1143,7 +1143,7 @@
 
   ///
 
-  (defret parsize-of-lex-ident/keyword-uncond
+  (defret parsize-of-lex-identifier-or-keyword-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear))
@@ -3502,10 +3502,10 @@
              (t ; u 8 other
               (b* ((pstate (unread-char pstate)) ; u 8
                    (pstate (unread-char pstate))) ; u
-                (lex-ident/keyword char first-pos pstate))))))
+                (lex-identifier-or-keyword char first-pos pstate))))))
          (t ; u other
           (b* ((pstate (unread-char pstate))) ; u
-            (lex-ident/keyword char first-pos pstate))))))
+            (lex-identifier-or-keyword char first-pos pstate))))))
 
      ((= char (char-code #\U)) ; U
       (b* (((erp char2 & pstate) (read-char pstate)))
@@ -3520,7 +3520,7 @@
           (lex-stringlit (eprefix-upcase-u) first-pos pstate))
          (t ; U other
           (b* ((pstate (unread-char pstate))) ; U
-            (lex-ident/keyword char first-pos pstate))))))
+            (lex-identifier-or-keyword char first-pos pstate))))))
 
      ((= char (char-code #\L)) ; L
       (b* (((erp char2 & pstate) (read-char pstate)))
@@ -3535,12 +3535,12 @@
           (lex-stringlit (eprefix-upcase-l) first-pos pstate))
          (t ; L other
           (b* ((pstate (unread-char pstate))) ; L
-            (lex-ident/keyword char first-pos pstate))))))
+            (lex-identifier-or-keyword char first-pos pstate))))))
 
      ((or (and (<= (char-code #\A) char) (<= char (char-code #\Z))) ; A-Z
           (and (<= (char-code #\a) char) (<= char (char-code #\z))) ; a-z
           (= char (char-code #\_))) ; _
-      (lex-ident/keyword char first-pos pstate))
+      (lex-identifier-or-keyword char first-pos pstate))
 
      ((and (<= (char-code #\0) char) (<= char (char-code #\9))) ; 0-9
       (b* (((erp const last-pos pstate)
