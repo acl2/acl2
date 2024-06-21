@@ -1,7 +1,7 @@
 ; A lightweight book about floor, mod, and expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -66,7 +66,7 @@
                 (integerp j))
            (equal (mod (floor j 2) (expt 2 (+ -1 n)))
                   (floor (mod j (expt 2 n)) 2)))
-  :hints (("Goal" :use (:instance mod-of-floor-of-2-and-expt-of-one-less)
+  :hints (("Goal" :use mod-of-floor-of-2-and-expt-of-one-less
            :in-theory (disable mod-of-floor-of-2-and-expt-of-one-less))))
 
 (local

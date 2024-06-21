@@ -152,7 +152,7 @@
                 (rationalp y))
            (equal (< (* y x1) (* y x2))
                   (< x1 x2)))
-  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+  :hints (("Goal" :use <-of-*-and-*-cancel
            :in-theory (disable <-of-*-and-*-cancel))))
 
 (defthm <-of-*-and-*-cancel-arg1-and-arg2
@@ -162,7 +162,7 @@
                 (rationalp y))
            (equal (< (* y x1) (* x2 y))
                   (< x1 x2)))
-  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+  :hints (("Goal" :use <-of-*-and-*-cancel
            :in-theory (disable <-of-*-and-*-cancel))))
 
 (defthm <-of-*-and-*-cancel-arg2-and-arg1
@@ -172,7 +172,7 @@
                 (rationalp y))
            (equal (< (* x1 y) (* y x2))
                   (< x1 x2)))
-  :hints (("Goal" :use (:instance <-of-*-and-*-cancel)
+  :hints (("Goal" :use <-of-*-and-*-cancel
            :in-theory (disable <-of-*-and-*-cancel))))
 
 (local
@@ -212,7 +212,7 @@
                  (<= 0 y)
                  (rationalp y))
             (<= (* x1 y) (* x2 y)))
-   :hints (("Goal" :use (:instance <-of-*-and-*-same-helper)
+   :hints (("Goal" :use <-of-*-and-*-same-helper
             :in-theory (disable <-of-*-and-*-same-helper)
             :cases ((and (rationalp x1)
                          (rationalp x2))
@@ -255,7 +255,7 @@
                 (rationalp y))
            (< (* x1 y) (* x2 y)))
   :rule-classes ((:forward-chaining :trigger-terms ((* x2 y))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1))))
+  :hints (("Goal" :use <-of-*-and-*-same-forward-1)))
 
 ;; When considering a product, if the second argument is bounded above, add a
 ;; bound on the product.
@@ -265,7 +265,7 @@
                 (rationalp y))
            (< (* y x1) (* y x2)))
   :rule-classes ((:forward-chaining :trigger-terms ((* y x1))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1))))
+  :hints (("Goal" :use <-of-*-and-*-same-forward-1)))
 
 ;; When considering a product, if the second argument is bounded below, add a
 ;; bound on the product.
@@ -275,7 +275,7 @@
                 (rationalp y))
            (< (* y x1) (* y x2)))
   :rule-classes ((:forward-chaining :trigger-terms ((* y x2))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-forward-1))))
+  :hints (("Goal" :use <-of-*-and-*-same-forward-1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +296,7 @@
                 (rationalp y))
            (< (* x1 y) (* x2 y)))
   :rule-classes ((:linear :trigger-terms ((* x2 y))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear-1))))
+  :hints (("Goal" :use <-of-*-and-*-same-linear-1)))
 
 ;; When considering a product, if the second argument is bounded above, add a
 ;; bound on the product.
@@ -306,7 +306,7 @@
                 (rationalp y))
            (< (* y x1) (* y x2)))
   :rule-classes ((:linear :trigger-terms ((* y x1))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear-1))))
+  :hints (("Goal" :use <-of-*-and-*-same-linear-1)))
 
 ;; When considering a product, if the second argument is bounded below, add a
 ;; bound on the product.
@@ -316,7 +316,7 @@
                 (rationalp y))
            (< (* y x1) (* y x2)))
   :rule-classes ((:linear :trigger-terms ((* y x2))))
-  :hints (("Goal" :use (:instance <-of-*-and-*-same-linear-1))))
+  :hints (("Goal" :use <-of-*-and-*-same-linear-1)))
 
 (deftheory <-of-*-and-*-same-linear
   '(<-of-*-and-*-same-linear-1
@@ -341,7 +341,7 @@
                 (rationalp y))
            (<= (* x1 y) (* x2 y)))
   :rule-classes ((:forward-chaining :trigger-terms ((* x2 y))))
-  :hints (("Goal" :use (:instance <=-of-*-and-*-same-forward-1))))
+  :hints (("Goal" :use <=-of-*-and-*-same-forward-1)))
 
 (defthm <=-of-*-and-*-same-forward-3
   (implies (and (<= x1 x2)
@@ -349,7 +349,7 @@
                 (rationalp y))
            (<= (* y x1) (* y x2)))
   :rule-classes ((:forward-chaining :trigger-terms ((* y x1))))
-  :hints (("Goal" :use (:instance <=-of-*-and-*-same-forward-1))))
+  :hints (("Goal" :use <=-of-*-and-*-same-forward-1)))
 
 (defthm <=-of-*-and-*-same-forward-4
   (implies (and (<= x1 x2)
@@ -357,7 +357,7 @@
                 (rationalp y))
            (<= (* y x1) (* y x2)))
   :rule-classes ((:forward-chaining :trigger-terms ((* y x2))))
-  :hints (("Goal" :use (:instance <=-of-*-and-*-same-forward-1))))
+  :hints (("Goal" :use <=-of-*-and-*-same-forward-1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +378,7 @@
                 (<= 0 y)
                 (rationalp y))
            (<= (* y x1) (* y x2)))
-  :hints (("Goal" :use (:instance <=-of-*-and-*-same-linear)
+  :hints (("Goal" :use <=-of-*-and-*-same-linear
            :in-theory (disable <=-of-*-and-*-same-linear)))
   :rule-classes :linear)
 

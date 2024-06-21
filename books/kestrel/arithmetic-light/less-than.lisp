@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function <.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
                       t
                     (and (equal x (realpart y))
                          (< 0 (imagpart y))))))
-  :hints (("Goal" :use (:instance completion-of-<) )))
+  :hints (("Goal" :use completion-of-<)))
 
 (defthmd <-when-complex-rationalp-and-rationalp
   (implies (and (complex-rationalp x)
@@ -28,7 +28,7 @@
                       t
                     (and (equal y (realpart x))
                          (< (imagpart x) 0)))))
-  :hints (("Goal" :use (:instance completion-of-<))))
+  :hints (("Goal" :use completion-of-<)))
 
 (defthmd <-when-complex-rationalp-and-complex-rationalp
   (implies (and (complex-rationalp y)
@@ -38,7 +38,7 @@
                       t
                     (and (equal (realpart x) (realpart y))
                          (< (imagpart x) (imagpart y))))))
-  :hints (("Goal" :use (:instance completion-of-<) )))
+  :hints (("Goal" :use completion-of-<)))
 
 (defthm not-<-same
   (not (< x x)))
