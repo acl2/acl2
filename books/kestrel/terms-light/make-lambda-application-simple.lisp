@@ -1,6 +1,6 @@
 ; A simple utility to make a lambda application (drops ignored vars)
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,12 +20,15 @@
 
 (local (in-theory (disable mv-nth)))
 
-;; Returns (mv formals actuals) where the FORMALS returned are the members of
-;; FORMALS-TO-KEEP and the ACTUALS returned are their corresponding actuals.
+;; Returns (mv new-formals new-actuals) where the NEW-FORMALS returned are
+;; those members of FORMAL that are also in FORMALS-TO-KEEP and the NEW-ACTUALS
+;; returned are their corresponding actuals.  The order of the formals is not
+;; changed.
 (defund filter-formals-and-actuals (formals actuals formals-to-keep)
   (declare (xargs :guard (and (symbol-listp formals)
-                              (symbol-listp formals-to-keep)
-                              (equal (len formals) (len actuals)))))
+                              (true-listp actuals) ;; actuals is a list of terms (often pseudo-terms)
+                              (equal (len formals) (len actuals))
+                              (symbol-listp formals-to-keep))))
   (if (endp formals)
       (mv nil nil)
     (mv-let (formals-res actuals-res)
@@ -64,23 +67,24 @@
 ;; Make a term that wraps BODY in a binding of the FORMALS to the ACTUALS, but make a LAMBDA instead of a LET.
 ;; Similar to make-lambda-application, but make-lambda-application is worse because of the accumulator in all-vars1.
 ;; Similar to make-lambda-term-simple, but this avoids adding unnecessary bindings.
+;; Note that, despite the name, the result is not always a lambda application.
 (defund make-lambda-application-simple (formals actuals body)
   (declare (xargs :guard (and (pseudo-termp body)
                               (symbol-listp formals)
                               (pseudo-term-listp actuals)
                               (equal (len formals)
                                      (len actuals)))))
-  (let* ((free-vars (free-vars-in-term body))
-         ;; These have to be added to ensure the lambda is closed:
-         (extra-vars (set-difference-eq free-vars formals)))
+  (let ((free-vars (free-vars-in-term body)))
     ;; Removes any formals not mentioned in the body (and their actuals):
     (mv-let (reduced-formals reduced-actuals)
       (filter-formals-and-actuals formals actuals free-vars)
-      ;; Binds the formals to their actuals and all other vars to themselves:
-      (let ((new-formals (append reduced-formals extra-vars))
-            (new-actuals (append reduced-actuals extra-vars)))
-        (if (equal new-formals new-actuals) ; also handles the case where new-formals is empty, todo: just compare the reduced lists
-            body ; no need to make a lambda at all (it would be trivial)
+      (if (equal reduced-formals reduced-actuals) ; also handles the case where reduced-formals is empty
+          body ; no need to make a lambda at all (it would be trivial)
+        ;; Binds the formals to their actuals and the any extra-vars to themselves:
+        (let* (;; These have to be added to ensure the lambda is closed:
+               (extra-vars (set-difference-eq free-vars formals))
+               (new-formals (append reduced-formals extra-vars))
+               (new-actuals (append reduced-actuals extra-vars)))
           `((lambda ,new-formals ,body) ,@new-actuals))))))
 
 (defthm pseudo-termp-of-make-lambda-application-simple
