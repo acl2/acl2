@@ -394,7 +394,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; lex-identifier-or-keyword
+; lex-identifier/keyword
 
 (assert-event
  (b* ((first-char (char-code #\w))
@@ -402,7 +402,7 @@
       (pstate (init-parstate (acl2::string=>nats " abc")))
       (pstate (change-parstate pstate :position (position 8 4)))
       ((mv erp lexeme span &)
-       (lex-identifier-or-keyword first-char first-pos pstate)))
+       (lex-identifier/keyword first-char first-pos pstate)))
    (and (not erp)
         (equal lexeme (lexeme-token (token-ident (ident "w"))))
         (equal span (span (position 8 3) (position 8 3))))))
@@ -413,7 +413,7 @@
       (pstate (init-parstate (acl2::string=>nats "abc456")))
       (pstate (change-parstate pstate :position (position 8 4)))
       ((mv erp lexeme span &)
-       (lex-identifier-or-keyword first-char first-pos pstate)))
+       (lex-identifier/keyword first-char first-pos pstate)))
    (and (not erp)
         (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
         (equal span (span (position 8 3) (position 8 9))))))
