@@ -406,6 +406,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-expression-or-type-name
+
+(test-parser
+ parse-expression-or-type-name
+ "abc)")
+
+(test-parser
+ parse-expression-or-type-name
+ "id(id))")
+
+(test-parser
+ parse-expression-or-type-name
+ "+x)")
+
+(test-parser
+ parse-expression-or-type-name
+ "int *)")
+
+(test-parser
+ parse-expression-or-type-name
+ "a + b)")
+
+(test-parser
+ parse-expression-or-type-name
+ "a _Atomic)")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (test-parser
  parse-external-declaration-list
  "struct mystruct
