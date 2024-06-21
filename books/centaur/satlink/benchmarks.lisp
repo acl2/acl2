@@ -102,6 +102,7 @@ by editing the @('books/centaur/satlink/add-benchmark.pl') script.</p>")
                                 (env$)
                                 (state))
   (declare (ignorable cnf filename status env$ state))
+  :returns (state state-p1 :hyp (state-p1 state))
   (b* ((cmd (concatenate 'string
                          *add-benchmark.pl*
                          " --filename " filename
@@ -110,9 +111,9 @@ by editing the @('books/centaur/satlink/add-benchmark.pl') script.</p>")
                                         "unsat")
                          ;; BOZO add --comment <name of theorem>
                          ))
-       ((mv ?status ?lines)
+       ((mv ?status ?lines state)
         (tshell-call cmd :print t :save nil)))
-    nil))
+    state))
 
 (defattach satlink-extra-hook gather-benchmarks-hook)
 

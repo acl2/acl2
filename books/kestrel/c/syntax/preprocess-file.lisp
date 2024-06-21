@@ -198,7 +198,7 @@
           (str::join (append (list* preprocessor "-E" extra-args)
                              (list filename ">" out))
                      " "))
-        ((mv exit-status -)
+        ((mv exit-status - state)
          (acl2::tshell-call preprocess-cmd :print nil :save nil))
         ((unless (int= 0 exit-status))
          (er-soft-with
