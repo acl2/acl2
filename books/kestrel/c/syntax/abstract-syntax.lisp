@@ -966,6 +966,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum inc/dec-op
+  :short "Fixtype of increment and decrement operators
+          [C:6.5.3] [C:6.5.2] [C:A.2.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the @('++') and @('--') operators,
+     for pre- and post- increment and decrement.
+     They are already part of @(tsee unop),
+     but we also need a fixtype for just the two of them,
+     so we can form lists in @(tsee inc/dec-op-list)."))
+  (:inc ())
+  (:dec ())
+  :pred inc/dec-opp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist inc/dec-op-list
+  :short "Fixtype of lists of increment and decrement operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Increment and decrement operators are defined in @(tsee inc/dec-op)."))
+  :elt-type inc/dec-op
+  :true-listp t
+  :elementp-of-nil nil
+  :pred inc/dec-op-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum stoclaspec
   :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
   :long
