@@ -169,7 +169,7 @@
   (:keyword ((unwrap string)))
   (:ident ((unwrap ident)))
   (:const ((unwrap const)))
-  (:stringlit ((unwrap stringlit)))
+  (:string ((unwrap stringlit)))
   (:punctuator ((unwrap stringp)))
   :pred tokenp)
 
@@ -231,7 +231,7 @@
        :keyword (msg "the keyword ~x0" token.unwrap)
        :ident "an identifier"
        :const "a constant"
-       :stringlit "a string literal"
+       :string "a string literal"
        :punctuator (msg "the punctuator ~x0" token.unwrap))
     "end of file"))
 
@@ -1747,7 +1747,7 @@
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
        ((erp schars closing-dquote-pos pstate) (lex-s-chars pstate))
        (span (make-span :start first-pos :end closing-dquote-pos)))
-    (retok (lexeme-token (token-stringlit (stringlit eprefix? schars)))
+    (retok (lexeme-token (token-string (stringlit eprefix? schars)))
            span
            pstate))
 
@@ -4247,11 +4247,11 @@
   (b* (((reterr) (irr-stringlit) (irr-span) (irr-parstate))
        ((erp token span pstate) (read-token pstate))
        ((unless (and token
-                     (token-case token :stringlit)))
+                     (token-case token :string)))
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "a string literal"
                     :found (token-to-msg token)))
-       (stringlit (token-stringlit->unwrap token)))
+       (stringlit (token-string->unwrap token)))
     (retok stringlit span pstate))
 
   ///
@@ -4316,7 +4316,15 @@
        (checkpoints (parstate->checkpoints pstate))
        (new-checkpoints (cons (len tokens-read) checkpoints))
        (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
-    new-pstate))
+    new-pstate)
+
+  ///
+
+  (defret parsize-of-record-checkpoint
+    (equal (parsize new-pstate)
+           (parsize pstate))
+    :rule-classes (:rewrite :linear)
+    :hints (("Goal" :in-theory (enable parsize)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4340,7 +4348,15 @@
         (parstate-fix pstate))
        (new-checkpoints (cdr checkpoints))
        (new-pstate (change-parstate pstate :checkpoints new-checkpoints)))
-    new-pstate))
+    new-pstate)
+
+  ///
+
+  (defret parsize-of-clear-checkpoint
+    (equal (parsize new-pstate)
+           (parsize pstate))
+    :rule-classes (:rewrite :linear)
+    :hints (("Goal" :in-theory (enable parsize)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4678,7 +4694,7 @@
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
-           (token-case token? :stringlit)
+           (token-case token? :string)
            (equal token? (token-punctuator "("))
            (equal token? (token-keyword "_Generic"))))
   ///
@@ -7422,12 +7438,12 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
-       ((and token (token-case token :ident)) ; ident
+       ((and token (token-case token :ident)) ; identifier
         (retok (expr-ident (token-ident->unwrap token)) span pstate))
-       ((and token (token-case token :const)) ; const
+       ((and token (token-case token :const)) ; constant
         (retok (expr-const (token-const->unwrap token)) span pstate))
-       ((and token (token-case token :stringlit)) ; stringlit
-        (retok (expr-string (token-stringlit->unwrap token)) span pstate))
+       ((and token (token-case token :string)) ; string literal
+        (retok (expr-string (token-string->unwrap token)) span pstate))
        ((equal token (token-punctuator "(")) ; (
         (b* (((erp expr & pstate) ; ( expr
               (parse-expression pstate))
@@ -9870,6 +9886,247 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define parse-expression-or-type-name ((pstate parstatep))
+    :returns (mv erp
+                 (expr/tyname amb?-expr/tyname-p)
+                 (span spanp)
+                 (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse an expression or a type name."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when either an expression or a type name is allowed.
+       As discussed in @(tsee amb-expr/tyname),
+       there is a complex syntactic overlap between expressions and type names,
+       which cannot be disambiguated purely syntactically.
+       Thus, this parsing function returns
+       a possibly ambiguous expression or type name.")
+     (xdoc::p
+      "We try to parse both an expression and a type name,
+       using the checkpointing and backtracking feature.
+       If only one succeeds, there is no ambiguity,
+       and we return either an expression or a type name (wrapped).
+       If both succeed, there is an ambiguity,
+       which we return as such.
+       If none succeeds, it is an error.")
+     (xdoc::p
+      "A complication is that some type names are prefixes of expressions
+       (e.g. @('a') is a prefix of @('a+b')),
+       and some expressions are prefixes of type names
+       (e.g. @('a') is a prefix of @('a*')).
+       But all the places where either an expression or a type name is allowed
+       are enclosed by the parentheses in the C grammar.
+       We exploit this fact by checking, under some conditions,
+       after parsing an expression and after parsing a type name,
+       that the next token is a closed parenthesis;
+       if the check fails, the parsing is considered to have failed.
+       This check ensures that, when both parsing attempts succeed,
+       we have parsed the whole phrase, and not just a prefix.")
+     (xdoc::p
+      "The size of the input after backtracking
+       should not exceed the size of the input before backtracking.
+       For now we insert a run-time check without @(tsee mbt),
+       but we plan to revisit this to see if we can have an @(tsee mbt)."))
+    (b* (((reterr) (irr-amb?-expr/tyname) (irr-span) (irr-parstate))
+         (pstate (record-checkpoint pstate)) ; we will backtrack here
+         (psize (parsize pstate))
+         ((mv erp-expr expr span-expr pstate) (parse-expression pstate)))
+      (if erp-expr
+          ;; If the parsing of an expression fails,
+          ;; we must have a type name.
+          (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+               ((unless (<= (parsize pstate) psize))
+                (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                       (parsize pstate) psize)
+                ;; Here we have (> (parsize pstate) psize),
+                ;; but we need to return a parser state
+                ;; no larger than the initial one,
+                ;; so we just return the empty parser state.
+                ;; This is just logical: execution stops at the RAISE above.
+                (b* ((pstate (init-parstate nil)))
+                  (reterr t)))
+               ((erp tyname span pstate) (parse-type-name pstate))
+               ;; Ensure there is a closed parenthesis,
+               ;; but put it back since it is not part of the type name.
+               ((erp & pstate) (read-punctuator ")" pstate))
+               (pstate (unread-token pstate))) ; put back )
+            (retok (amb?-expr/tyname-tyname tyname) span pstate))
+        ;; If the parsing of an expression succeeds,
+        ;; we read a token to see whether a closed parenthesis follows.
+        (b* (((erp token & pstate) (read-token pstate)))
+          (if (equal token (token-punctuator ")"))
+              ;; If a closed parenthesis follows,
+              ;; the parsing of the expression has succeeded,
+              ;; but we must see whether
+              ;; the parsing of a type name will also succeed.
+              ;; So we backtrack
+              ;; (which will also put back the closed parenthesis)
+              ;; and we attempt to parse a type name.
+              (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                   ((unless (<= (parsize pstate) psize))
+                    (raise "Internal error: ~
+                            size ~x0 after backtracking exceeds ~
+                            size ~x1 before backtracking."
+                           (parsize pstate) psize)
+                    ;; Here we have (> (parsize pstate) psize),
+                    ;; but we need to return a parser state
+                    ;; no larger than the initial one,
+                    ;; so we just return the empty parser state.
+                    ;; This is just logical:
+                    ;; execution stops at the RAISE above.
+                    (b* ((pstate (init-parstate nil)))
+                      (reterr t)))
+                   (pstate (record-checkpoint pstate)) ; we may backtrack again
+                   ((mv erp tyname span-tyname pstate)
+                    (parse-type-name pstate)))
+                (if erp
+                    ;; If the parsing of a type name fails,
+                    ;; we have an unambiguous expression, already parsed.
+                    ;; We re-parse it (which must succeed),
+                    ;; after backtracking,
+                    ;; so that we end up in the right parser state.
+                    ;; This re-parsing is not ideal:
+                    ;; we may revisit this with
+                    ;; a more elaborate backtracking scheme
+                    ;; that lets us backtrack from backtracking.
+                    (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                         ((unless (<= (parsize pstate) psize))
+                          (raise "Internal error: ~
+                                  size ~x0 after backtracking exceeds ~
+                                  size ~x1 before backtracking."
+                                 (parsize pstate) psize)
+                          ;; Here we have (> (parsize pstate) psize),
+                          ;; but we need to return a parser state
+                          ;; no larger than the initial one,
+                          ;; so we just return the empty parser state.
+                          ;; This is just logical:
+                          ;; execution stops at the RAISE above.
+                          (b* ((pstate (init-parstate nil)))
+                            (reterr t)))
+                         ((mv erp expr1 span-expr1 pstate)
+                          (parse-expression pstate))
+                         ((when erp)
+                          (raise "Internal error: ~
+                                  parsing the same expression ~x0 twice ~
+                                  gives the error ~x1."
+                                 expr erp)
+                          (reterr t))
+                         ((unless (equal expr1 expr))
+                          (raise "Internal error: ~
+                                  parsing the same expression ~x0 twice ~
+                                  gives a different expression ~x1."
+                                 expr expr1)
+                          (reterr t))
+                         ((unless (equal span-expr1 span-expr))
+                          (raise "Internal error: ~
+                                  parsing the same expression ~x0 twice ~
+                                  gives a different span ~x1 from ~x2."
+                                 expr span-expr1 span-expr)
+                          (reterr t)))
+                      (retok (amb?-expr/tyname-expr expr) span-expr pstate))
+                  ;; If the parsing of a type name succeeds,
+                  ;; we read a token to see whether
+                  ;; a closed parenthesis follows.
+                  (b* (((erp token & pstate) (read-token pstate)))
+                    (if (equal token (token-punctuator ")"))
+                        ;; If a closed parenthesis follows,
+                        ;; we have an ambiguous expression or type name.
+                        ;; We double-check that the two spans are the same;
+                        ;; this is always expected to succeed,
+                        ;; because we have checked that in both cases
+                        ;; we have reached a closed parenthesis,
+                        ;; and the parser reads only balanced parentheses.
+                        ;; We put back the closed parenthesis.
+                        (b* ((pstate
+                              (clear-checkpoint pstate)) ; no backtracking
+                             ((unless (equal span-expr span-tyname))
+                              (raise "Internal error:
+                                      span ~x0 of expression ~x1 differs from ~
+                                      span ~x2 of type name ~x3."
+                                     span-expr expr span-tyname tyname)
+                              (reterr t))
+                             (pstate (unread-token pstate)))
+                          (retok (amb?-expr/tyname-ambig
+                                  (make-amb-expr/tyname :expr expr
+                                                        :tyname tyname))
+                                 span-expr ; = span-tyname
+                                 pstate))
+                      ;; If a closed parenthesis does not follow,
+                      ;; we regard the parsing of the type name to have failed,
+                      ;; perhaps because we have only parsed
+                      ;; a prefix of an expression.
+                      ;; So we must have an expression instead,
+                      ;; which we have already parsed,
+                      ;; but again we need to re-parse it.
+                      (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                           ((unless (<= (parsize pstate) psize))
+                            (raise "Internal error: ~
+                                    size ~x0 after backtracking exceeds ~
+                                    size ~x1 before backtracking."
+                                   (parsize pstate) psize)
+                            ;; Here we have (> (parsize pstate) psize),
+                            ;; but we need to return a parser state
+                            ;; no larger than the initial one,
+                            ;; so we just return the empty parser state.
+                            ;; This is just logical:
+                            ;; execution stops at the RAISE above.
+                            (b* ((pstate (init-parstate nil)))
+                              (reterr t)))
+                           ((mv erp expr1 span-expr1 pstate)
+                            (parse-expression pstate))
+                           ((when erp)
+                            (raise "Internal error: ~
+                                    parsing the same expression ~x0 twice ~
+                                    gives the error ~x1."
+                                   expr erp)
+                            (reterr t))
+                           ((unless (equal expr1 expr))
+                            (raise "Internal error: ~
+                                    parsing the same expression ~x0 twice ~
+                                    gives a different expression ~x1."
+                                   expr expr1)
+                            (reterr t))
+                           ((unless (equal span-expr1 span-expr))
+                            (raise "Internal error: ~
+                                    parsing the same expression ~x0 twice ~
+                                    gives a different span ~x1 from ~x2."
+                                   expr span-expr1 span-expr)
+                            (reterr t)))
+                        (retok (amb?-expr/tyname-expr expr)
+                               span-expr
+                               pstate))))))
+            ;; If no closed parenthesis follows the parsed expression,
+            ;; we regard the parsing of the expression to have failed,
+            ;; perhaps because we have only parsed a prefix of a type name.
+            ;; So we must have a type name instead.
+            ;; We backtrack, which also puts back the token just read if any,
+            ;; and we attempt to parse a type name.
+            (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                 ((unless (<= (parsize pstate) psize))
+                  (raise "Internal error: ~
+                          size ~x0 after backtracking exceeds ~
+                          size ~x1 before backtracking."
+                         (parsize pstate) psize)
+                  ;; Here we have (> (parsize pstate) psize),
+                  ;; but we need to return a parser state
+                  ;; no larger than the initial one,
+                  ;; so we just return the empty parser state.
+                  ;; This is just logical: execution stops at the RAISE above.
+                  (b* ((pstate (init-parstate nil)))
+                    (reterr t)))
+                 ((erp tyname span pstate) (parse-type-name pstate))
+                 ;; Ensure there is a closed parenthesis,
+                 ;; but put it back since it is not part of the type name.
+                 ((erp & pstate) (read-punctuator ")" pstate))
+                 (pstate (unread-token pstate))) ; put back )
+              (retok (amb?-expr/tyname-tyname tyname) span pstate))))))
+    :measure (two-nats-measure (parsize pstate) 17))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((local (in-theory (disable acl2::member-of-cons)))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10207,6 +10464,11 @@
           (parsize pstate))
       :rule-classes :linear
       :fn parse-type-name)
+    (defret parsize-of-parse-expression-or-type-name-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-expression-or-type-name)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -10585,6 +10847,12 @@
                    (1- (parsize pstate))))
       :rule-classes :linear
       :fn parse-type-name)
+    (defret parsize-of-parse-expression-or-type-name-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-expression-or-type-name)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond

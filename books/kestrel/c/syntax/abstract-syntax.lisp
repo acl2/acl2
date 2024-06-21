@@ -2063,6 +2063,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum amb?-expr/tyname
+  :short "Fixtype of possibly ambiguous expressions or type names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note the difference between this fixtype,
+     with a question mark in @('amb?'),
+     and the fixtype @(tsee amb-expr/tyname).
+     The latter captures definitely ambiguous constructs
+     that may be expressions or type names.
+     In contrast, this fixtype includes constructs that are
+     either just expressions, or just type names, or ambiguous ones."))
+  (:expr ((unwrap expr)))
+  (:tyname ((unwrap tyname)))
+  (:ambig ((unwrap amb-expr/tyname)))
+  :pred amb?-expr/tyname-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod initdeclor
   :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
   :long
