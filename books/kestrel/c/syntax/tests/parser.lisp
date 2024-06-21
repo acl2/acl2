@@ -390,6 +390,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Testing lexing functions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-identifier-or-keyword
+
+(assert-event
+ (b* ((first-char (char-code #\w))
+      (first-pos (position 8 3))
+      (pstate (init-parstate (acl2::string=>nats " abc")))
+      (pstate (change-parstate pstate :position (position 8 4)))
+      ((mv erp lexeme span &)
+       (lex-identifier-or-keyword first-char first-pos pstate)))
+   (and (not erp)
+        (equal lexeme (lexeme-token (token-ident (ident "w"))))
+        (equal span (span (position 8 3) (position 8 3))))))
+
+(assert-event
+ (b* ((first-char (char-code #\u))
+      (first-pos (position 8 3))
+      (pstate (init-parstate (acl2::string=>nats "abc456")))
+      (pstate (change-parstate pstate :position (position 8 4)))
+      ((mv erp lexeme span &)
+       (lex-identifier-or-keyword first-char first-pos pstate)))
+   (and (not erp)
+        (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
+        (equal span (span (position 8 3) (position 8 9))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test parsing functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
