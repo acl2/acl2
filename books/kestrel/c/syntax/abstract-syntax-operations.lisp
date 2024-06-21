@@ -283,6 +283,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-amb?-expr/tyname
+  :short "An irrelevant possibly ambiguous expression or type name."
+  :type amb?-expr/tyname-p
+  :body (amb?-expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initdeclor
   :short "An irrelevant initializer declarator."
   :type initdeclorp
