@@ -394,15 +394,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parse (parse-fn input-string)
+(defmacro test-parse (fn input &key cond)
+  ;; optional COND may be over variables AST, SPAN, PSTATE
+  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST
   `(assert-event
-    (b* ((,(if (eq parse-fn 'parse-external-declaration-list)
-               '(mv erp & & & &)
-             '(mv erp & & &))
-          (,parse-fn (init-parstate (acl2::string=>nats ,input-string)))))
+    (b* ((,(if (eq fn 'parse-external-declaration-list)
+               '(mv erp ?ast ?span ?eofpos ?pstate)
+             '(mv erp ?ast ?span ?pstate))
+          (,fn (init-parstate (acl2::string=>nats ,input)))))
       (if erp
-          (cw "~@0" erp) ; CW returns nil, so ASSERT-EVENT fails
-        t)))) ; ASSERT-EVENT passes
+          (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
+        ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,27 +412,33 @@
 
 (test-parse
  parse-expression-or-type-name
- "abc)")
+ "abc)"
+ :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
- "id(id))")
+ "id(id))"
+ :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
- "+x)")
+ "+x)"
+ :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
- "int *)")
+ "int *)"
+ :cond (amb?-expr/tyname-case ast :tyname))
 
 (test-parse
  parse-expression-or-type-name
- "a + b)")
+ "a + b)"
+ :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
- "a _Atomic)")
+ "a _Atomic)"
+ :cond (amb?-expr/tyname-case ast :tyname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
