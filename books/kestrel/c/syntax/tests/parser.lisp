@@ -408,6 +408,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-unary-expression
+
+(test-parse
+ parse-unary-expression
+ "123")
+
+(test-parse
+ parse-unary-expression
+ "sizeof y"
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "sizeof (x+y)"
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "sizeof (_Atomic(int))"
+ :cond (expr-case ast :sizeof))
+
+(test-parse
+ parse-unary-expression
+ "sizeof (var_or_tydef)"
+ :cond (expr-case ast :sizeof-ambig))
+
+(test-parse
+ parse-unary-expression
+ "sizeof(also(ambig))"
+ :cond (expr-case ast :sizeof-ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-expression-or-type-name
 
 (test-parse
