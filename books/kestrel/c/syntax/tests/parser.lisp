@@ -394,7 +394,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parser (parse-fn input-string)
+(defmacro test-parse (parse-fn input-string)
   `(assert-event
     (b* ((,(if (eq parse-fn 'parse-external-declaration-list)
                '(mv erp & & & &)
@@ -408,33 +408,33 @@
 
 ; parse-expression-or-type-name
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
  "abc)")
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
  "id(id))")
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
  "+x)")
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
  "int *)")
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
  "a + b)")
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
  "a _Atomic)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "struct mystruct
 {
@@ -443,7 +443,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "typedef void foo;
 struct bar
@@ -453,7 +453,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int ith(int *a) {
  return a[0];
@@ -461,7 +461,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int ith(int a[]) {
  return a[0];
@@ -469,7 +469,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
@@ -477,13 +477,13 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int main() { }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (unsigned int v)
 {
@@ -492,14 +492,14 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void encrypt (uint32_t* v) {
 }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void encrypt () {
   uint32_t v0=1;
@@ -507,7 +507,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void foo () {
   gen_config_t gen_config = {100};
@@ -515,13 +515,13 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int A [] = {0,1,2,3};")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int spec_int(unsigned int v)
 {
@@ -533,7 +533,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int sum(int a[], int n) {
   int s = 0;
@@ -544,25 +544,25 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (char x, char y) { return x < y && y < x; }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (int x, int y) { return x < y || y < x; }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (int x) { int z = 0 ; z &= x; }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void foo () {
   while (x > y) {
@@ -572,7 +572,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo () {
   int i = 0;
@@ -581,7 +581,7 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int main() {
  int a = 10, b = 5;
@@ -590,12 +590,12 @@ struct bar
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-external-declaration-list
  "char string[] = \"\";")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+(test-parse
  parse-block-item
  "idx = &((char*)session_peak())[i*BUFSIZE];")
