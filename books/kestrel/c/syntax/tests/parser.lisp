@@ -475,14 +475,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-external-declaration-list
+
 (test-parse
  parse-external-declaration-list
  "struct mystruct
 {
    int *val;
 };")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -492,15 +492,11 @@ struct bar
  int val;
 };")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int ith(int *a) {
  return a[0];
 }")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -508,21 +504,15 @@ struct bar
  return a[0];
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int main() { }")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -531,14 +521,10 @@ struct bar
  return (v >> 1);
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "void encrypt (uint32_t* v) {
 }")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -546,21 +532,15 @@ struct bar
   uint32_t v0=1;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "void foo () {
   gen_config_t gen_config = {100};
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int A [] = {0,1,2,3};")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -572,8 +552,6 @@ struct bar
   return c;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int sum(int a[], int n) {
@@ -583,25 +561,17 @@ struct bar
   return s;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int foo (char x, char y) { return x < y && y < x; }")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
  "int foo (int x, int y) { return x < y || y < x; }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int foo (int x) { int z = 0 ; z &= x; }")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -611,16 +581,12 @@ struct bar
   }
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "int foo () {
   int i = 0;
   i--;
 }")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-external-declaration-list
@@ -629,13 +595,9 @@ struct bar
  a %= b;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (test-parse
  parse-external-declaration-list
  "char string[] = \"\";")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-parse
  parse-block-item
