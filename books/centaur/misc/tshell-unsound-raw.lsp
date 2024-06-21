@@ -31,38 +31,7 @@
 
 (in-package "ACL2")
 
-; See the Shellpool API documentation to understand all of this.
-
-(defun tshell-start-fn (n)
-  (shellpool:start n)
-  nil)
-
-(defun tshell-ensure-fn (n)
-  (shellpool:ensure n)
-  nil)
-
-(defun tshell-echo (line   ; current line of stderr or stdout output
-                    rlines ; previous lines of output, in reverse order, if :save t
-                    stream ; stream to print to
-                    )
-
-; This is how tshell prints output from the sub-program using :print t.
-;
-; We originally put this in a separate function so that it can be redefined.
-; Now there's no reason to do that because you can give a custom argument to
-; :print.  But your function should be signature-compatible with tshell-echo.
-;
-; Note: Redefined in transistor/equiv-check (Centaur internal), so don't change
-; it unless you update that, too.
-;
-; We could probably make this more general.  At least it's better than it was
-; before.
-
-  (declare (ignorable rlines))
-  (write-line line stream)
-  (force-output stream))
-
-(defun tshell-call-fn1 (cmd print save state)
+(defun tshell-call-unsound-fn (cmd print save)
   (let* ((rlines nil)
          (stream (get-output-stream-from-channel *standard-co*))
          (print  (if (eq print t)
@@ -74,25 +43,4 @@
                                                (push line rlines))
                                              (when print
                                                (funcall print line rlines stream))))))
-    (mv status (nreverse rlines) state)))
-
-(defun tshell-run-background (cmd)
-  (shellpool:run& cmd))
-
-
-#|
-
-;; everything works with no status
-
-(include-book "str/strprefixp" :dir :system)
-:q
-(load "tshell-raw.lsp")
-(in-package "AIGPU")
-
-(setq *tshell-debug* t)
-(tshell-start)
-(tshell "echo hello")
-(tshell "./run_aigpu.sh mul35.aigpu")
-(tshell "echo hello")
-
-|#
+    (mv status (nreverse rlines))))
