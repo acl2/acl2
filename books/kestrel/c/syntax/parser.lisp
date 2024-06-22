@@ -1124,10 +1124,11 @@
           ((erp char pos pstate) (read-char pstate))
           ((when (not char))
            (retok nil (position-fix pos-so-far) pstate))
-          ((unless (or (and (<= (char-code #\A) char) (<= char (char-code #\Z)))
-                       (and (<= (char-code #\a) char) (<= char (char-code #\z)))
-                       (and (<= (char-code #\0) char) (<= char (char-code #\9)))
-                       (= char (char-code #\_)))) ; A-Z a-z 0-9 _
+          ((unless ; A-Z a-z 0-9 _
+               (or (and (<= (char-code #\A) char) (<= char (char-code #\Z)))
+                   (and (<= (char-code #\a) char) (<= char (char-code #\z)))
+                   (and (<= (char-code #\0) char) (<= char (char-code #\9)))
+                   (= char (char-code #\_))))
            (b* ((pstate (unread-char pstate)))
              (retok nil (position-fix pos-so-far) pstate)))
           ((erp chars last-pos pstate)
