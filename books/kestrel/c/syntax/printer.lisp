@@ -1618,23 +1618,44 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous cast/mul expression.
+           :cast/call-ambig
+           (prog2$ (raise "Misusage error: ~
+                           ambiguous cast or call ~x0."
+                          (expr-fix expr))
+                   (pristate-fix pstate))
+           ;; We temporarily allow an ambiguous cast/mul expression
+           ;; provided that the ambiguous expression or type name
+           ;; is just an identifier (the same in both cases), which is common.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/mul-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-ident expr.type/arg1 pstate))
+           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
+                ((unless ident)
+                 (raise "Misusage error: ~
+                         ambiguous expression or type name ~x0."
+                        expr.type/arg1)
+                 (pristate-fix pstate))
+                (pstate (print-astring "(" pstate))
+                (pstate (print-ident ident pstate))
                 (pstate (print-astring ") * " pstate))
                 (pstate (print-expr expr.arg/arg2
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous cast/add expression.
+           ;; We temporarily allow an ambiguous cast/add expression
+           ;; provided that the ambiguous expression or type name
+           ;; is just an identifier (the same in both cases), which is common.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/add-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-ident expr.type/arg1 pstate))
+           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
+                ((unless ident)
+                 (raise "Misusage error: ~
+                         ambiguous expression or type name ~x0."
+                        expr.type/arg1)
+                 (pristate-fix pstate))
+                (pstate (print-astring "(" pstate))
+                (pstate (print-ident ident pstate))
                 (pstate (print-astring ") + " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
@@ -1644,12 +1665,20 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous cast/sub expression.
+           ;; We temporarily allow an ambiguous cast/sub expression
+           ;; provided that the ambiguous expression or type name
+           ;; is just an identifier (the same in both cases), which is common.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/sub-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-ident expr.type/arg1 pstate))
+           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
+                ((unless ident)
+                 (raise "Misusage error: ~
+                         ambiguous expression or type name ~x0."
+                        expr.type/arg1)
+                 (pristate-fix pstate))
+                (pstate (print-astring "(" pstate))
+                (pstate (print-ident ident pstate))
                 (pstate (print-astring ") - " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
@@ -1659,12 +1688,20 @@
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
-           ;; We temporarily allow an ambiguous cast/and expression.
+           ;; We temporarily allow an ambiguous cast/and expression
+           ;; provided that the ambiguous expression or type name
+           ;; is just an identifier (the same in both cases), which is common.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/and-ambig
-           (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-ident expr.type/arg1 pstate))
+           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
+                ((unless ident)
+                 (raise "Misusage error: ~
+                         ambiguous expression or type name ~x0."
+                        expr.type/arg1)
+                 (pristate-fix pstate))
+                (pstate (print-astring "(" pstate))
+                (pstate (print-ident ident pstate))
                 (pstate (print-astring ") & " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;

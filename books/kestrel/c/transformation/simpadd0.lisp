@@ -111,6 +111,9 @@
      :comma (make-expr-comma
              :first (simpadd0-expr expr.first)
              :next (simpadd0-expr expr.next))
+     :cast/call-ambig (prog2$
+                       (raise "Misusage error: ~x0." (expr-fix expr))
+                       (expr-fix expr))
      :cast/mul-ambig (prog2$
                       (raise "Misusage error: ~x0." (expr-fix expr))
                       (expr-fix expr))

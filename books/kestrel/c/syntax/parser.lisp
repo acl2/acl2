@@ -4577,11 +4577,25 @@
      we need to construct two different kinds of
      syntactically ambiguous expressions in our abstract syntax."))
   (cond ((equal token (token-punctuator "+"))
-         (make-expr-cast/add-ambig :type/arg1 ident
-                                   :arg/arg2 expr))
+         (make-expr-cast/add-ambig
+          :type/arg1 (make-amb-expr/tyname
+                      :expr (expr-ident ident)
+                      :tyname (make-tyname
+                               :specqual (list (specqual-tyspec
+                                                (tyspec-tydef ident)))
+                               :decl? nil))
+          :inc/dec nil
+          :arg/arg2 expr))
         ((equal token (token-punctuator "-"))
-         (make-expr-cast/sub-ambig :type/arg1 ident
-                                   :arg/arg2 expr))
+         (make-expr-cast/sub-ambig
+          :type/arg1 (make-amb-expr/tyname
+                      :expr (expr-ident ident)
+                      :tyname (make-tyname
+                               :specqual (list (specqual-tyspec
+                                                (tyspec-tydef ident)))
+                               :decl? nil))
+          :inc/dec nil
+          :arg/arg2 expr))
         (t (prog2$ (impossible) (irr-expr))))
   :guard-hints (("Goal" :in-theory (enable token-additive-operator-p))))
 
@@ -6535,7 +6549,14 @@
                     (b* (((erp expr last-span pstate) ; ( ident ) * expr
                           (parse-cast-expression pstate)))
                       (retok (make-expr-cast/mul-ambig
-                              :type/arg1 ident
+                              :type/arg1
+                              (make-amb-expr/tyname
+                               :expr (expr-ident ident)
+                               :tyname (make-tyname
+                                        :specqual (list (specqual-tyspec
+                                                         (tyspec-tydef ident)))
+                                        :decl? nil))
+                              :inc/dec nil
                               :arg/arg2 expr)
                              (span-join span last-span)
                              pstate)))
@@ -6561,7 +6582,14 @@
                     (b* (((erp expr last-span pstate) ; ( ident ) & expr
                           (parse-equality-expression pstate)))
                       (retok (make-expr-cast/and-ambig
-                              :type/arg1 ident
+                              :type/arg1
+                              (make-amb-expr/tyname
+                               :expr (expr-ident ident)
+                               :tyname (make-tyname
+                                        :specqual (list (specqual-tyspec
+                                                         (tyspec-tydef ident)))
+                                        :decl? nil))
+                              :inc/dec nil
                               :arg/arg2 expr)
                              (span-join span last-span)
                              pstate)))

@@ -1211,41 +1211,143 @@
        a list of expressions (it associates to the left).
        But for now the current model is adequate.")
      (xdoc::p
-      "The last four kinds of expressions capture expressions of the form")
+      "The last five kinds of expressions capture
+       syntactically ambiguous expressions of the forms")
      (xdoc::codeblock
-      "( I ) * E"
-      "( I ) + E"
-      "( I ) - E"
-      "( I ) & E")
+      "( X ) IncDec ( E ) Pr"
+      "( X ) IncDec * E"
+      "( X ) IncDec + E"
+      "( X ) IncDec - E"
+      "( X ) IncDec & E")
      (xdoc::p
-      "where @('I') is an identifier
-       and @('E') is an expression of a certain form
-       (depending on the preceding operator).
-       These expressions are syntactically ambiguous because they may be
-       either cast expressions (if @('I') is a type name)
-       or binary expressions (if @('I') is an expression).
-       More precisely, @('E') could be a binary expression,
-       and thus things would associate differently, e.g.")
-     (xdoc::codeblock
-      "(I) + E1 * E2")
+      "where @('X') is an ambiguous expression or type name,
+       @('IncDec') is a sequence of zero or more
+       increment and decrement operators @('++') and @('--'),
+       @('E') is an expression,
+       and @('Pr') is a possibly empty rest of a postfix expression.
+       All of this is now explained in detail.")
      (xdoc::p
-      "could be either the product of a cast expression and another expression
-       or the sum of an identifier and a product of two expressions.")
+      "If @('X') is an ambiguous expression of type name
+       (i.e. something captured by @(tsee amb-expr/tyname)),
+       then a @('(X)') could either start a proper cast expression
+       (if @('X') is a type name)
+       or be or start an expression that is or starts with
+       a parenthesized primary expression
+       (if @('X') is an expression).
+       Note that @('(X)') could also start a compound literal,
+       but in that case we would be able to disambiguate @('X')
+       to be a type name and not an expression,
+       because an expression @('(X)') cannot be followed by an open curly brace.
+       So if @('(X)') is not followed by an open curly brace,
+       there are a number of other tokens that may follow:
+       some would let us disambiguate @('X')
+       to be either a type name or an expression;
+       but in other cases it is not possibly to disambiguate @('X'),
+       and so, similarly to @(':sizeof-ambig'),
+       we capture the ambiguous constructs explicitly in our abstract syntax.
+       But for these ambiguous casts, the situation is more complex.")
      (xdoc::p
-      "The problem is that the four operators above
-       are both unary and binary,
-       and that type names and expressions overlap in identifiers.
-       There is no way to resolve this ambiguity purely syntactically:
-       some (static) semantic analysis is needed,
-       in particular to determine
-       whether @('I') is a type name or an expression,
-       based on what is in scope at that point.
-       Our definition of expressions includes
-       cases that represent syntactically ambiguous expressions:
-       there are four cases, one for each unary/binary operator,
-       and each case has two components, namely
-       the identifier that is either a type name or an expression,
-       and a subsequent expression."))
+      "In the five patterns shown above,
+       it is easier to ignore the @('IncDec') part at first,
+       pretending it is not there.
+       In the first pattern, the @('Pr') is either empty
+       or one or more of the constructs that
+       may be cascaded in postfix expressions.
+       For instance, @('Pr') could have the form @('[3].mem(ab)++'),
+       which consists of
+       an array access @('[3]'),
+       a member access @('.mem'),
+       a function call @('(ab)') where @('ab') is the argument,
+       and a postincrement operator @('++').
+       In this situation, if @('X') is an expression
+       then @('(E)') is another function call that precedes the array access;
+       but if @('X') is a type name,
+       then @('(E)') is the start of a postfix expression.
+       Note that in general an expression @('E')
+       could be a comma-separated sequence of (assignment) expressions,
+       but that still looks like a function call,
+       with multiple arguments:
+       see the isomorphism between the grammar rules for
+       <i>argument-expression-list</i> and <i>expression</i> in [C].
+       The two situations cannot be disambiguated purely syntactically.
+       So the @(':cast/call-ambig') case of this fixtype
+       captures this ambiguous situation:
+       it is either a cast to @('X') or a call of @('X'),
+       where the @('X') component (an @(tsee amb-expr/tyname))
+       is either a type (name) or a function,
+       and where the @('(E)Pr') component (an expression)
+       is either the argument of the cast
+       or the rest of the postfix expression.
+       Currently this fixtype does not capture the requirement that
+       the expression has in fact the form @('(E)Pr'),
+       but this should be an invariant after parsing,
+       and it can be enforced externally to this fixtype.")
+     (xdoc::p
+      "The addition of @('IncDec') maintains the ambiguity.
+       If @('X') is a type name,
+       the sequence of operators are pre-increment/decrement ones
+       that are part of the argument of the cast,
+       and whose final argument is @('(E)Pr').
+       If instead @('X') is an expression,
+       we have a postfix expression starting with @('X'),
+       continuing with those as post-increment/decrement operators,
+       and ending with @('(E)Pr').
+       So the @(':cast/call-ambig') case of this fixtype
+       includes, between the components for @('X') and @('(E)Pr'),
+       a list of zero or more increment and decrement operators.")
+     (xdoc::p
+      "The other four of the five patterns shown earlier
+       are more uniform with each other.
+       Again, ignore @('IncDec') initially.
+       The issue here is that the operators @('*'), @('+'), @('-'), @('&')
+       are both unary and binary.
+       Thus, if @('X') is a type name,
+       the @('* E') or @('+ E') or @('- E') or @('& E')
+       is a unary expression that is the argument of the cast;
+       the operator is unary.
+       If instead @('X') is an expression,
+       the operator is binary with operands @('(X)') and @('E').
+       The cases
+       @(':cast/mul-ambig'),
+       @(':cast/add-ambig'),
+       @(':cast/sub-ambig'), and
+       @(':cast/and-ambig') of this fixtype
+       capture these ambiguous situations.
+       They are either casts or
+       multiplications/additions/subtractions/conjunctions.
+       Their first component is @('X'),
+       and their last component is @('E').
+       Their middle component is a list of zero or more
+       increment and decrement operators that may be in between,
+       i.e. @('IncDec') in the patterns shown earlier.
+       Their presence maintain the ambiguity:
+       if @('X') is a type name,
+       they are pre-increment and pre-decrement operators
+       applied to @('* E') or @('+ E') or @('- E') or @('& E');
+       if @('X') is an expression,
+       they are post-increment and post-decrement operators applied to @('X'),
+       forming the left operand of the binary operators.")
+     (xdoc::p
+      "These should capture all the possible ambiguous cases.
+       One needs to look, in the grammar, at what can follow the @('(X)'),
+       where @('X') is an ambiguous type name or expression.
+       The cases explained above lead to unresolvable syntactic ambiguities
+       (which can be resolved semantically, of course).
+       Other cases lead to disambiguation.
+       For instance, if @('(X)') is followed by @('!'),
+       then @('X') must be a type name,
+       and the @('!') must start a unary expression
+       that is the argument of the cast expression:
+       the @('!') cannot follow an expression,
+       if @('X') were an expression instead.
+       But it should be apparent that this is all very tricky;
+       we plan to work on a formal proof showing that
+       indeed the last five cases of this fixtype
+       captures all and only the ambiguous expressions
+       that start with @('(X)')
+       where @('X') is an ambiguous type name or expression.
+       Also see how @(see parser) handles
+       possibly ambiguous cast expressions."))
     (:ident ((unwrap ident)))
     (:const ((unwrap const)))
     (:string ((unwrap stringlit)))
@@ -1278,13 +1380,20 @@
             (else expr)))
     (:comma ((first expr)
              (next expr)))
-    (:cast/mul-ambig ((type/arg1 ident)
+    (:cast/call-ambig ((type/fun amb-expr/tyname)
+                       (inc/dec inc/dec-op-list)
+                       (arg/rest expr)))
+    (:cast/mul-ambig ((type/arg1 amb-expr/tyname)
+                      (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
-    (:cast/add-ambig ((type/arg1 ident)
+    (:cast/add-ambig ((type/arg1 amb-expr/tyname)
+                      (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
-    (:cast/sub-ambig ((type/arg1 ident)
+    (:cast/sub-ambig ((type/arg1 amb-expr/tyname)
+                      (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
-    (:cast/and-ambig ((type/arg1 ident)
+    (:cast/and-ambig ((type/arg1 amb-expr/tyname)
+                      (inc/dec inc/dec-op-list)
                       (arg/arg2 expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
