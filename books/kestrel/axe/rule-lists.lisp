@@ -1540,14 +1540,6 @@
 ;;   '(
 ;;     ;; SLICE-OF-BVCAT-HACK-GEN-BETTER
 
-;;     ;;trying
-;;     ;; slice-7-0-bvxor-8
-;;     ;; slice-7-0-bvor-8
-;;     ;; slice-7-0-bvand-8
-
-;;     ;; bvchop-8-becomes-slice-7-0 ;bozo do i really want this?  maybe having bvchop is nicer, since fewer rules?
-
-;;     ;; slice-8-0-bvxor-9
 ;; ;    get-rid-of-logtail ;bbozo drop me! we need a more systematic way to get rid of logtail? or does it not appear?
 
 ;;     subrange-rewrite ;fixme rename subrange-unroll? or -opener?
