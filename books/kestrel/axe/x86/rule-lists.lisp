@@ -288,7 +288,9 @@
 ;; Rules about the actual functions READ and WRITE.
 (defund read-and-write-rules ()
   (declare (xargs :guard t))
-  '(read-of-write-same
+  '(read-1-of-write-1-diff
+    ;read-1-of-write-1-both-alt ; trying
+    read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-disjoint
     read-of-write-disjoint2
