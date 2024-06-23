@@ -390,60 +390,131 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Testing lexing functions.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-identifier/keyword
+
+(assert-event
+ (b* ((first-char (char-code #\w))
+      (first-pos (position 8 3))
+      (pstate (init-parstate (acl2::string=>nats " abc")))
+      (pstate (change-parstate pstate :position (position 8 4)))
+      ((mv erp lexeme span &)
+       (lex-identifier/keyword first-char first-pos pstate)))
+   (and (not erp)
+        (equal lexeme (lexeme-token (token-ident (ident "w"))))
+        (equal span (span (position 8 3) (position 8 3))))))
+
+(assert-event
+ (b* ((first-char (char-code #\u))
+      (first-pos (position 8 3))
+      (pstate (init-parstate (acl2::string=>nats "abc456")))
+      (pstate (change-parstate pstate :position (position 8 4)))
+      ((mv erp lexeme span &)
+       (lex-identifier/keyword first-char first-pos pstate)))
+   (and (not erp)
+        (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
+        (equal span (span (position 8 3) (position 8 9))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Test parsing functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-parser (parse-fn input-string)
+(defmacro test-parse (fn input &key cond)
+  ;; optional COND may be over variables AST, SPAN, PSTATE
+  ;; and also EOF-POS for PARSE-EXTERNAL-DECLARATION-LIST
   `(assert-event
-    (b* ((,(if (eq parse-fn 'parse-external-declaration-list)
-               '(mv erp & & & &)
-             '(mv erp & & &))
-          (,parse-fn (init-parstate (acl2::string=>nats ,input-string)))))
+    (b* ((,(if (eq fn 'parse-external-declaration-list)
+               '(mv erp ?ast ?span ?eofpos ?pstate)
+             '(mv erp ?ast ?span ?pstate))
+          (,fn (init-parstate (acl2::string=>nats ,input)))))
       (if erp
-          (cw "~@0" erp) ; CW returns nil, so ASSERT-EVENT fails
-        t)))) ; ASSERT-EVENT passes
+          (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
+        ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-unary-expression
+
+(test-parse
+ parse-unary-expression
+ "123")
+
+(test-parse
+ parse-unary-expression
+ "sizeof y"
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "sizeof (x+y)"
+ :cond (expr-case ast :unary))
+
+(test-parse
+ parse-unary-expression
+ "sizeof (_Atomic(int))"
+ :cond (expr-case ast :sizeof))
+
+(test-parse
+ parse-unary-expression
+ "sizeof (var_or_tydef)"
+ :cond (expr-case ast :sizeof-ambig))
+
+(test-parse
+ parse-unary-expression
+ "sizeof(also(ambig))"
+ :cond (expr-case ast :sizeof-ambig))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-expression-or-type-name
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
- "abc)")
+ "abc)"
+ :cond (amb?-expr/tyname-case ast :ambig))
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
- "id(id))")
+ "id(id))"
+ :cond (amb?-expr/tyname-case ast :ambig))
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
- "+x)")
+ "+x)"
+ :cond (amb?-expr/tyname-case ast :expr))
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
- "int *)")
+ "int *)"
+ :cond (amb?-expr/tyname-case ast :tyname))
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
- "a + b)")
+ "a + b)"
+ :cond (amb?-expr/tyname-case ast :expr))
 
-(test-parser
+(test-parse
  parse-expression-or-type-name
- "a _Atomic)")
+ "a _Atomic)"
+ :cond (amb?-expr/tyname-case ast :tyname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-parser
+; parse-external-declaration-list
+
+(test-parse
  parse-external-declaration-list
  "struct mystruct
 {
    int *val;
 };")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "typedef void foo;
 struct bar
@@ -451,77 +522,57 @@ struct bar
  int val;
 };")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int ith(int *a) {
  return a[0];
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int ith(int a[]) {
  return a[0];
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void foo (int val) {
  printf(\"Val = %d\\n\", val);
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int main() { }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (unsigned int v)
 {
  return (v >> 1);
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void encrypt (uint32_t* v) {
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void encrypt () {
   uint32_t v0=1;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void foo () {
   gen_config_t gen_config = {100};
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int A [] = {0,1,2,3};")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int spec_int(unsigned int v)
 {
@@ -531,9 +582,7 @@ struct bar
   return c;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int sum(int a[], int n) {
   int s = 0;
@@ -542,27 +591,19 @@ struct bar
   return s;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (char x, char y) { return x < y && y < x; }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (int x, int y) { return x < y || y < x; }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo (int x) { int z = 0 ; z &= x; }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "void foo () {
   while (x > y) {
@@ -570,32 +611,24 @@ struct bar
   }
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int foo () {
   int i = 0;
   i--;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "int main() {
  int a = 10, b = 5;
  a %= b;
 }")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-external-declaration-list
  "char string[] = \"\";")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(test-parser
+(test-parse
  parse-block-item
  "idx = &((char*)session_peak())[i*BUFSIZE];")

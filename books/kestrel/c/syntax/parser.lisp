@@ -1010,9 +1010,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-ident/keyword ((first-char (unsigned-byte-p 8 first-char))
-                           (first-pos positionp)
-                           (pstate parstatep))
+(define lex-identifier/keyword ((first-char (unsigned-byte-p 8 first-char))
+                                (first-pos positionp)
+                                (pstate parstatep))
   :guard (or (and (<= (char-code #\A) first-char)
                   (<= first-char (char-code #\Z)))
              (and (<= (char-code #\a) first-char)
@@ -1025,7 +1025,13 @@
    (xdoc::p
     "This is called after the first character of the identifier
      has been already read;
-     that character is passed to this function.")
+     that character is passed to this function.
+     The position of that character is also passed as input.")
+   (xdoc::p
+    "Since grammatically keywords are identifiers,
+     we just lex grammatical identifiers,
+     but return a keyword lexeme if the grammatical identifier
+     matches a keyword.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -1041,7 +1047,7 @@
      which the caller combines with the first character to form a string.
      This is an ASCII string by construction,
      so the characters all satisfy @('(unsigned-byte-p 7)'),
-     but we use @('(unsigned-byte-p 8)'),
+     but we use @('(unsigned-byte-p 8)')
      in the guard of this function and in the return type of the loop,
      because @(tsee nats=>string) has that as guard
      (more precisely, lists of that).
@@ -1049,7 +1055,7 @@
      Otherwise, we return an identifier token."))
   (b* (((reterr) (irr-lexeme) (irr-span) (irr-parstate))
        ((erp rest-chars last-pos pstate)
-        (lex-ident/keyword-loop first-pos pstate))
+        (lex-identifier/keyword-loop first-pos pstate))
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
@@ -1102,8 +1108,8 @@
 
   :prepwork
 
-  ((define lex-ident/keyword-loop ((pos-so-far positionp)
-                                   (pstate parstatep))
+  ((define lex-identifier/keyword-loop ((pos-so-far positionp)
+                                        (pstate parstatep))
      :returns (mv erp
                   (chars (unsigned-byte-listp 8 chars)
                          :hints (("Goal"
@@ -1124,7 +1130,8 @@
                        (= char (char-code #\_)))) ; A-Z a-z 0-9 _
            (b* ((pstate (unread-char pstate)))
              (retok nil (position-fix pos-so-far) pstate)))
-          ((erp chars last-pos pstate) (lex-ident/keyword-loop pos pstate)))
+          ((erp chars last-pos pstate)
+           (lex-identifier/keyword-loop pos pstate)))
        (retok (cons char chars) last-pos pstate))
      :measure (parsize pstate)
      :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -1132,10 +1139,10 @@
 
      ///
 
-     (verify-guards lex-ident/keyword-loop
+     (verify-guards lex-identifier/keyword-loop
        :hints (("Goal" :in-theory (enable rationalp-when-natp))))
 
-     (defret parsize-of-lex-ident/keyword-loop-<=
+     (defret parsize-of-lex-identifier/keyword-loop-<=
        (<= (parsize new-pstate)
            (parsize pstate))
        :rule-classes :linear
@@ -1143,7 +1150,7 @@
 
   ///
 
-  (defret parsize-of-lex-ident/keyword-uncond
+  (defret parsize-of-lex-identifier/keyword-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear))
@@ -3502,10 +3509,10 @@
              (t ; u 8 other
               (b* ((pstate (unread-char pstate)) ; u 8
                    (pstate (unread-char pstate))) ; u
-                (lex-ident/keyword char first-pos pstate))))))
+                (lex-identifier/keyword char first-pos pstate))))))
          (t ; u other
           (b* ((pstate (unread-char pstate))) ; u
-            (lex-ident/keyword char first-pos pstate))))))
+            (lex-identifier/keyword char first-pos pstate))))))
 
      ((= char (char-code #\U)) ; U
       (b* (((erp char2 & pstate) (read-char pstate)))
@@ -3520,7 +3527,7 @@
           (lex-stringlit (eprefix-upcase-u) first-pos pstate))
          (t ; U other
           (b* ((pstate (unread-char pstate))) ; U
-            (lex-ident/keyword char first-pos pstate))))))
+            (lex-identifier/keyword char first-pos pstate))))))
 
      ((= char (char-code #\L)) ; L
       (b* (((erp char2 & pstate) (read-char pstate)))
@@ -3535,12 +3542,12 @@
           (lex-stringlit (eprefix-upcase-l) first-pos pstate))
          (t ; L other
           (b* ((pstate (unread-char pstate))) ; L
-            (lex-ident/keyword char first-pos pstate))))))
+            (lex-identifier/keyword char first-pos pstate))))))
 
      ((or (and (<= (char-code #\A) char) (<= char (char-code #\Z))) ; A-Z
           (and (<= (char-code #\a) char) (<= char (char-code #\z))) ; a-z
           (= char (char-code #\_))) ; _
-      (lex-ident/keyword char first-pos pstate))
+      (lex-identifier/keyword char first-pos pstate))
 
      ((and (<= (char-code #\0) char) (<= char (char-code #\9))) ; 0-9
       (b* (((erp const last-pos pstate)
@@ -4570,11 +4577,25 @@
      we need to construct two different kinds of
      syntactically ambiguous expressions in our abstract syntax."))
   (cond ((equal token (token-punctuator "+"))
-         (make-expr-cast/add-ambig :type/arg1 ident
-                                   :arg/arg2 expr))
+         (make-expr-cast/add-ambig
+          :type/arg1 (make-amb-expr/tyname
+                      :expr (expr-ident ident)
+                      :tyname (make-tyname
+                               :specqual (list (specqual-tyspec
+                                                (tyspec-tydef ident)))
+                               :decl? nil))
+          :inc/dec nil
+          :arg/arg2 expr))
         ((equal token (token-punctuator "-"))
-         (make-expr-cast/sub-ambig :type/arg1 ident
-                                   :arg/arg2 expr))
+         (make-expr-cast/sub-ambig
+          :type/arg1 (make-amb-expr/tyname
+                      :expr (expr-ident ident)
+                      :tyname (make-tyname
+                               :specqual (list (specqual-tyspec
+                                                (tyspec-tydef ident)))
+                               :decl? nil))
+          :inc/dec nil
+          :arg/arg2 expr))
         (t (prog2$ (impossible) (irr-expr))))
   :guard-hints (("Goal" :in-theory (enable token-additive-operator-p))))
 
@@ -6528,7 +6549,14 @@
                     (b* (((erp expr last-span pstate) ; ( ident ) * expr
                           (parse-cast-expression pstate)))
                       (retok (make-expr-cast/mul-ambig
-                              :type/arg1 ident
+                              :type/arg1
+                              (make-amb-expr/tyname
+                               :expr (expr-ident ident)
+                               :tyname (make-tyname
+                                        :specqual (list (specqual-tyspec
+                                                         (tyspec-tydef ident)))
+                                        :decl? nil))
+                              :inc/dec nil
                               :arg/arg2 expr)
                              (span-join span last-span)
                              pstate)))
@@ -6554,7 +6582,14 @@
                     (b* (((erp expr last-span pstate) ; ( ident ) & expr
                           (parse-equality-expression pstate)))
                       (retok (make-expr-cast/and-ambig
-                              :type/arg1 ident
+                              :type/arg1
+                              (make-amb-expr/tyname
+                               :expr (expr-ident ident)
+                               :tyname (make-tyname
+                                        :specqual (list (specqual-tyspec
+                                                         (tyspec-tydef ident)))
+                                        :decl? nil))
+                              :inc/dec nil
                               :arg/arg2 expr)
                              (span-join span last-span)
                              pstate)))
@@ -6705,121 +6740,31 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We read a token:")
-     (xdoc::ol
-      (xdoc::li
-       "If the token may start a postfix expression,
-        or equivalently if the token may start a primary expression,
-        then we put back the token and we parse a postfix expression.
-        There is no overlap between postfix expressions
-        and unary expressions proper.")
-      (xdoc::li
-       "If the token is a preincrement or predecrement operator,
-        we recursively parse a unary expression after that.
-        This is the only possibility, given this token.")
-      (xdoc::li
-       "If the token is
-        one of @('&'), @('*'), @('+') , @('-'), @('~'), and @('!'),
-        i.e. what the grammar calls `unary operators'
-        (which is more narrow than
-        our definition of @(tsee unop) in our abstract syntax),
-        we parse a cast expression
-        (not a unary one, unlike the previous case).
-        This is the only possibility, given this token.")
-      (xdoc::li
-       "If the token is @('_Alignof'),
-        we proceed to parsing
-        an open parenthesis, a type name, and a closed parenthesis.
-        This is the only possibility, given this token.")
-      (xdoc::li
-       "If the token is @('sizeof'), there are possible ambiguities.
-        We describe this case below, after describing the remaining case,
-        which is simpler.")
-      (xdoc::li
-       "If none of the above cases apply,
-        including the case of an absent token due to end of file,
-        it is an error: we do not have a unary expression.
-        The error message is based on all the possible ways
-        in which a unary expression may start."))
+      "We can always distinguish the alternatives of
+       the grammar rule for unary expressions based on the next token,
+       except for the potential ambiguity between
+       parenthesized expressions or type names after @('sizeof').")
      (xdoc::p
-      "Now we describe the case of a @('sizeof') token, mentioned above.
-       What follows may be a parenthesized type name or a unary expression.
-       We read a second token:")
-     (xdoc::ol
-      (xdoc::li
-       "If this second token is an open parenthesis,
-        things are still ambiguous.
-        We could have a parenthesized expression.
-        We describe this case below,
-        after describing the remaining cases for this second token,
-        which are easier.")
-      (xdoc::li
-       "If this second token may be the start of a unary expression,
-        since the case of an open parenthesis
-        has already been handled in the previous case,
-        then we parse the unary expression, after putting back the token.")
-      (xdoc::li
-       "If this second token is none of the above,
-        then we do not have a valid @('sizeof') expression."))
-     (xdoc::p
-      "Now we describe the more complex first case above,
-       where we have a @('sizeof') followed by an open parenthesis.
-       We read a third token, and proceed by cases:")
-     (xdoc::ol
-      (xdoc::li
-       "If this third token is an identifier,
-        things are still ambiguous,
-        because expressions and type names overlap in identifiers.
-        We describe this case in more detail below,
-        after describing the other cases, which are simpler.")
-      (xdoc::li
-       "If this third token may start an expression,
-        since it is not an identifier (which is the case above),
-        we have resolved the ambiguity.
-        We put back the token,
-        we parse an expression,
-        and we parse the closing parenthesis.")
-      (xdoc::li
-       "If this third token may start a type name,
-        since it is not an identifier (which is the first case above),
-        we have resolved the ambiguity.
-        We put back the token, we parse a type name,
-        and we parse the closing parenthesis.")
-      (xdoc::li
-       "If this third token is none of the above,
-        including the case in which there is no third token (end of file),
-        we have an error.
-        The message lists all possible starts of expressions and type names."))
-     (xdoc::p
-      "Now we describe the more complex first case above,
-       where we have a @('sizeof'), an open parenthesis, and an identifier.
-       We read a fourth token, and proceed by cases:")
-     (xdoc::ol
-      (xdoc::li
-       "If this fourth token could start
-        the rest of a postfix expression starting with an identifier,
-        we have resolved the ambiguity in favor of an expression.
-        We put back this and the previous token (the identifer),
-        we parse a postfix expression,
-        and we parse a closing parenthesis.")
-      (xdoc::li
-       "If this fourth token is a closing parenthesis,
-        we have a syntactic ambiguity, because the identifier
-        may be an expression or a type name.
-        As explained in @(tsee expr),
-        during parsing we classify this expression as an ambiguous @('sizeof'),
-        to be unambiguously re-classified during semantic analysis.")
-      (xdoc::li
-       "If this fourth token is none of the above,
-        including the case that this token is absent (end of file),
-        it is an error.
-        The message describes the tokens for the preceding cases.")))
+      "If we encounter a @('sizeof') not followed by an open parenthesis,
+       there is no potential ambiguity: the operand must be an expression.
+       If there is an open parenthesis,
+       we parse an expression or type name via a separate function,
+       and based on the result we return a @('sizeof') expression with
+       an expression, a type name, or an ambiguous type name or expression."))
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
+       ;; If token may start a postfix expression
+       ;; (or equivalently a primary expression),
+       ;; we put back the token and we parse a postfix expression.
+       ;; There is no overlap between postfix expressions
+       ;; and the other kinds of unary expressions.
        ((token-primary-expression-start-p token) ; expr...
         (b* ((pstate (unread-token pstate)))
           (parse-postfix-expression pstate)))
+       ;; If token is a double plus or double minus
+       ;; (i.e. a preincrement or predecrement operator),
+       ;; we recursively parse the operand unary expression.
        ((token-preinc/predec-operator-p token) ; preop
         (b* (((erp expr last-span pstate) ; preop expr
               (parse-unary-expression pstate))
@@ -6827,6 +6772,9 @@
           (retok (make-expr-unary :op unop :arg expr)
                  (span-join span last-span)
                  pstate)))
+       ;; If token is a unay operator as defined in the grammar
+       ;; (our abstract syntax has a broader notion),
+       ;; then we recursively parse a cast expression as operand.
        ((token-unary-operator-p token) ; unop
         (b* (((erp expr last-span pstate) ; unop expr
               (parse-cast-expression pstate))
@@ -6834,6 +6782,39 @@
           (retok (make-expr-unary :op unop :arg expr)
                  (span-join span last-span)
                  pstate)))
+       ;; If token is 'sizeof', we need to read another token.
+       ((equal token (token-keyword "sizeof")) ; sizeof
+        (b* (((erp token2 & pstate) (read-token pstate)))
+          (cond
+           ;; If token2 is an open parenthesis,
+           ;; we are in a potentially ambiguous situation.
+           ;; We parse an expression or type name,
+           ;; and then the closed parenthesis.
+           ((equal token2 (token-punctuator "(")) ; sizeof (
+            (b* (((erp expr/tyname & pstate) ; sizeof ( exprtyname
+                  (parse-expression-or-type-name pstate))
+                 ((erp last-span pstate) ; sizeof ( exprtyname )
+                  (read-punctuator ")" pstate))
+                 (expr
+                  (amb?-expr/tyname-case
+                   expr/tyname
+                   :expr (make-expr-unary :op (unop-sizeof)
+                                          :arg expr/tyname.unwrap)
+                   :tyname (expr-sizeof expr/tyname.unwrap)
+                   :ambig (expr-sizeof-ambig expr/tyname.unwrap))))
+              (retok expr (span-join span last-span) pstate)))
+           ;; If token2 is not an open parenthesis,
+           ;; the operand must be a unary expression.
+           (t ; sizeof other
+            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; sizeof
+                 ((erp expr last-span pstate) ; sizeof expr
+                  (parse-unary-expression pstate)))
+              (retok (make-expr-unary :op (unop-sizeof)
+                                      :arg expr)
+                     (span-join span last-span)
+                     pstate))))))
+       ;; If token is '_Alignof',
+       ;; we parse an open parenthesis, a type name, and a closed parenthesis.
        ((equal token (token-keyword "_Alignof")) ; _Alignof
         (b* (((erp & pstate) ; _Alignof (
               (read-punctuator "(" pstate))
@@ -6844,138 +6825,7 @@
           (retok (expr-alignof tyname)
                  (span-join span last-span)
                  pstate)))
-       ((equal token (token-keyword "sizeof")) ; sizeof
-        (b* (((erp token2 span2 pstate) (read-token pstate)))
-          (cond
-           ((equal token2 (token-punctuator "(")) ; sizeof (
-            (b* (((erp token3 span3 pstate) (read-token pstate)))
-              (cond
-               ((and token3
-                     (token-case token3 :ident)) ; sizeof ( ident
-                (b* (((erp token4 span4 pstate) (read-token pstate)))
-                  (cond
-                   ((token-postfix-expression-rest-start-p
-                     token4) ; sizeof ( ident...
-                    (b* ((pstate (unread-token pstate)) ; sizeof ( ident
-                         (pstate (unread-token pstate)) ; sizeof (
-                         ((erp expr & pstate) ; sizeof ( expr
-                          (parse-postfix-expression pstate))
-                         ((erp last-span pstate) ; sizeof ( expr )
-                          (read-punctuator ")" pstate)))
-                      (retok (expr-paren expr)
-                             (span-join span last-span)
-                             pstate)))
-                   ((equal token4 (token-punctuator ")")) ; sizeof ( ident )
-                    (b* ((ident (token-ident->unwrap token3)))
-                      (retok (expr-sizeof-ambig
-                              (make-amb-expr/tyname
-                               :expr (expr-ident ident)
-                               :tyname (make-tyname
-                                        :specqual (list (specqual-tyspec
-                                                         (tyspec-tydef ident)))
-                                        :decl? nil)))
-                             (span-join span span4)
-                             pstate)))
-                   (t
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "a parenthesis ~
-                                           or an open square bracket ~
-                                           or a dot ~
-                                           or a plus ~
-                                           or a minus"
-                                :found (token-to-msg token4))))))
-               ((token-expression-start-p token3) ; sizeof ( expr...
-                (b* ((pstate (unread-token pstate)) ; sizeof (
-                     ((erp expr & pstate) ; sizeof ( expr
-                      (parse-expression pstate))
-                     ((erp last-span pstate) ; sizeof ( expr )
-                      (read-punctuator ")" pstate)))
-                  (retok (make-expr-unary
-                          :op (unop-sizeof)
-                          :arg (expr-paren expr))
-                         (span-join span last-span)
-                         pstate)))
-               ((token-type-name-start-p token3) ; sizeof ( typename...
-                (b* ((pstate (unread-token pstate)) ; sizeof (
-                     ((erp tyname & pstate) ; sizeof ( typename
-                      (parse-type-name pstate))
-                     ((erp last-span pstate) ; sizeof ( typename )
-                      (read-punctuator ")" pstate)))
-                  (retok (expr-sizeof tyname)
-                         (span-join span last-span)
-                         pstate)))
-               (t ; sizeof ( other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "an identifier ~
-                                       or a constant ~
-                                       or a string literal ~
-                                       or a keyword in {~
-                                       _Alignas, ~
-                                       _Alignof, ~
-                                       _Atomic, ~
-                                       _Bool, ~
-                                       _Complex, ~
-                                       _Generic, ~
-                                       char, ~
-                                       const, ~
-                                       double, ~
-                                       enum, ~
-                                       float, ~
-                                       int, ~
-                                       long, ~
-                                       restrict, ~
-                                       short, ~
-                                       signed, ~
-                                       sizeof, ~
-                                       struct, ~
-                                       union, ~
-                                       unsigned, ~
-                                       void, ~
-                                       volatile~
-                                       } ~
-                                       or a punctuator in {~
-                                       \"++\", ~
-                                       \"--\", ~
-                                       \"+\", ~
-                                       \"-\", ~
-                                       \"~~\", ~
-                                       \"!\", ~
-                                       \"*\", ~
-                                       \"&\", ~
-                                       \"(\"~
-                                       }"
-                            :found (token-to-msg token3))))))
-           ((token-unary-expression-start-p token2) ; sizeof expr...
-            (b* ((pstate (unread-token pstate)) ; sizeof
-                 ((erp expr last-span pstate) ; sizeof expr
-                  (parse-unary-expression pstate)))
-              (retok (make-expr-unary
-                      :op (unop-sizeof)
-                      :arg expr)
-                     (span-join span last-span)
-                     pstate)))
-           (t ; sizeof other
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "an identifier ~
-                                       or a constant ~
-                                       or a string literal ~
-                                       or a keyword in {~
-                                       _Alignof, ~
-                                       _Generic, ~
-                                       sizeof~
-                                       } ~
-                                       or a punctuator in {~
-                                       \"++\", ~
-                                       \"--\", ~
-                                       \"+\", ~
-                                       \"-\", ~
-                                       \"~~\", ~
-                                       \"!\", ~
-                                       \"*\", ~
-                                       \"&\", ~
-                                       \"(\"~
-                                       }"
-                        :found (token-to-msg token2))))))
+       ;; If token is anything else, it is an error.
        (t ; other
         (reterr-msg :where (position-to-msg (span->start span))
                     :expected "an identifier ~

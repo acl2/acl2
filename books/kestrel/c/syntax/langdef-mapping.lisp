@@ -621,6 +621,10 @@
                   ((erp else) (ldm-expr expr.else)))
                (retok (c::make-expr-cond :test test :then then :else else)))
        :comma (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
+       :cast/call-ambig (prog2$
+                         (raise "Misusage error: ambiguous expression ~x0."
+                                (expr-fix expr))
+                         (reterr t))
        :cast/mul-ambig (prog2$
                         (raise "Misusage error: ambiguous expression ~x0."
                                (expr-fix expr))
