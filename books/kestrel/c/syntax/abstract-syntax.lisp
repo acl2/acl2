@@ -2163,7 +2163,38 @@
     ((expr expr)
      (tyname tyname))
     :pred amb-expr/tyname-p
-    :measure (two-nats-measure (acl2-count x) 5)))
+    :measure (two-nats-measure (acl2-count x) 5))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::defprod amb-declor/absdeclor
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of ambiguous declarators or abstract declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A parameter declaration may include, after the declaration specifiers,
+       either a declarator or an abstract declarator (or also nothing).
+       Syntactically,
+       there is a complex overlap between declarators and abstract declarators.
+       For instance, if @('I') is an identifier, @('(I)') could be
+       either a direct declarator for the parenthesized identifier
+       or a function abstract declarator
+       where @('I') is a type specifier for the (one) parameter.
+       But this is just a simple example:
+       there are infinite overlapping constructs,
+       e.g. obtained by adding array and function declarator parts to @('(I)'),
+       but not only those.")
+     (xdoc::p
+      "So here, analogously to @(tsee amb-expr/tyname),
+       we introduce a fixtype to capture constructs that, syntactically,
+       are both declarators and abstract declarators.
+       The two components of this fixtype should be the same in concrete syntax,
+       but we do not enforce that in the fixtype."))
+    ((declor declor)
+     (absdeclor absdeclor))
+    :pred amb-declor/absdeclor-p
+    :measure (two-nats-measure (acl2-count x) 3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
