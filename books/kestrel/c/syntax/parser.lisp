@@ -4562,40 +4562,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define make-expr-cast/add-or-cast/sub-ambig ((token tokenp)
-                                              (ident identp)
+(define make-expr-cast/add-or-cast/sub-ambig ((plus/minus tokenp)
+                                              (expr/tyname amb-expr/tyname-p)
+                                              (incdec inc/dec-op-listp)
                                               (expr exprp))
-  :guard (token-additive-operator-p token)
+  :guard (token-additive-operator-p plus/minus)
   :returns (new-expr exprp)
-  :short "Create an ambiguous expression based on
+  :short "Create an ambiguous cast expression based on
           a token that is an additive operator."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is introduced just to avoid case splits in
      the large clique of mutually recursive parsing functions defined below.
-     In certain cases, based on a parsed additive operator,
+     At some point in those functions, based on a parsed additive operator,
      we need to construct two different kinds of
-     syntactically ambiguous expressions in our abstract syntax."))
-  (cond ((equal token (token-punctuator "+"))
+     syntactically ambiguous cast expressions in our abstract syntax."))
+  (cond ((equal plus/minus (token-punctuator "+"))
          (make-expr-cast/add-ambig
-          :type/arg1 (make-amb-expr/tyname
-                      :expr (expr-ident ident)
-                      :tyname (make-tyname
-                               :specqual (list (specqual-tyspec
-                                                (tyspec-tydef ident)))
-                               :decl? nil))
-          :inc/dec nil
+          :type/arg1 expr/tyname
+          :inc/dec incdec
           :arg/arg2 expr))
-        ((equal token (token-punctuator "-"))
+        ((equal plus/minus (token-punctuator "-"))
          (make-expr-cast/sub-ambig
-          :type/arg1 (make-amb-expr/tyname
-                      :expr (expr-ident ident)
-                      :tyname (make-tyname
-                               :specqual (list (specqual-tyspec
-                                                (tyspec-tydef ident)))
-                               :decl? nil))
-          :inc/dec nil
+          :type/arg1 expr/tyname
+          :inc/dec incdec
           :arg/arg2 expr))
         (t (prog2$ (impossible) (irr-expr))))
   :guard-hints (("Goal" :in-theory (enable token-additive-operator-p))))
@@ -5629,6 +5620,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-*-increment/decrement ((pstate parstatep))
+  :returns (mv erp (ops inc/dec-op-listp) (new-pstate parstatep))
+  :short "Parse zero or more increment and decrement operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to handle possibly ambiguous cast expressions.
+     We never need the spans of these operators,
+     so this function returns no span."))
+  (b* (((reterr) nil (irr-parstate))
+       ((erp token & pstate) (read-token pstate))
+       ((when (equal token (token-punctuator "++")))
+        (b* (((erp ops pstate) (parse-*-increment/decrement pstate)))
+          (retok (cons (inc/dec-op-inc) ops) pstate)))
+       ((when (equal token (token-punctuator "--")))
+        (b* (((erp ops pstate) (parse-*-increment/decrement pstate)))
+          (retok (cons (inc/dec-op-dec) ops) pstate)))
+       (pstate (if token (unread-token pstate) pstate)))
+    (retok nil pstate))
+  :measure (parsize pstate)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret parsize-of-parse-*-increment/decrement
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-expr-unary-with-preinc/predec-ops ((ops inc/dec-op-listp)
+                                                (expr exprp))
+  :returns (new-expr exprp)
+  :short "Apply to an expression
+          all the pre-increment and pre-decrement operators in a list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The operators are applied starting from the right,
+     i.e. the last one in the list is applied first,
+     then the second-to-last,
+     and so on until the first (i.e. @(tsee car)).
+     If the list is empty, the expression is unchanged."))
+  (b* (((when (endp ops)) (expr-fix expr))
+       (op (car ops))
+       (preop (inc/dec-op-case op :inc (unop-preinc) :dec (unop-predec)))
+       (expr1 (make-expr-unary-with-preinc/predec-ops (cdr ops) expr)))
+    (make-expr-unary :op preop :arg expr1))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines parse-exprs/decls
   :short "Parse expressions, declarations, and related entities."
   :long
@@ -6514,221 +6561,238 @@
       (cond
        ;; If token is an open parenthesis,
        ;; we may have a cast expression proper or a unary expression,
-       ;; and we may also have the ambiguity discussed in :DOC EXPR.
+       ;; and we may also have the ambiguities discussed in :DOC EXPR.
+       ;; We try parsing a possibly ambiguous expression or type name,
+       ;; after recording a checkpoint for possible backtracking.
        ((equal token (token-punctuator "(")) ; (
-        (b* (((erp token2 span2 pstate) (read-token pstate)))
-          (cond
-           ;; If token2 is an identifier, things are still ambiguous:
-           ;; the identifier could be (part of) an expression,
-           ;; or it could be a type name.
-           ((and token2 (token-case token2 :ident)) ; ( ident
-            (b* (((erp token3 span3 pstate) (read-token pstate)))
-              (cond
-               ;; If token3 is a closed parenthesis,
-               ;; things are still ambiguous:
-               ;; we could have a parenthesized identifier expression,
-               ;; or the identifier could be a type name.
-               ((equal token3 (token-punctuator ")")) ; ( ident )
-                (b* ((ident (token-ident->unwrap token2))
-                     ((erp token4 & pstate) (read-token pstate)))
-                  (cond
-                   ;; If token4 is an open curly brace,
-                   ;; we have resolved the ambiguity:
-                   ;; we must have a compund literal.
-                   ((equal token4 (token-punctuator "{")) ; ( ident ) {
-                    (b* ((pstate (unread-token pstate)) ; ( ident )
-                         (tyname (make-tyname
-                                  :specqual (list (specqual-tyspec
-                                                   (tyspec-tydef ident)))
-                                  :decl? nil)))
-                      (parse-compound-literal tyname span pstate)))
-                   ;; If token4 is a star, it may be a unary or binary operator:
-                   ;; we have a syntactic ambiguity,
-                   ;; but what follows must be a cast expression,
-                   ;; whether the star is unary or binary.
-                   ((equal token4 (token-punctuator "*")) ; ( ident ) *
-                    (b* (((erp expr last-span pstate) ; ( ident ) * expr
-                          (parse-cast-expression pstate)))
-                      (retok (make-expr-cast/mul-ambig
-                              :type/arg1
-                              (make-amb-expr/tyname
-                               :expr (expr-ident ident)
-                               :tyname (make-tyname
-                                        :specqual (list (specqual-tyspec
-                                                         (tyspec-tydef ident)))
-                                        :decl? nil))
-                              :inc/dec nil
-                              :arg/arg2 expr)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is a plus or minus,
-                   ;; it could be a unary or binary operator,
-                   ;; similarly to the star case.
-                   ;; We have a syntactic ambiguity.
-                   ;; We parse a multiplicative expression after that,
-                   ;; which is needed in case the plus or minus is binary.
-                   ((token-additive-operator-p token4) ; ( ident ) +-
-                    (b* (((erp expr last-span pstate) ; ( ident ) +- expr
-                          (parse-multiplicative-expression pstate)))
-                      (retok (make-expr-cast/add-or-cast/sub-ambig
-                              token4 ident expr)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 is an ampersand,
-                   ;; it could be a unary or binary operator,
-                   ;; analogously to the cases above of start, plus, and minus.
-                   ;; We parse a equality expression after that,
-                   ;; in case the ampersand is binary.
-                   ((or (equal token4 (token-punctuator "&")))
-                    (b* (((erp expr last-span pstate) ; ( ident ) & expr
-                          (parse-equality-expression pstate)))
-                      (retok (make-expr-cast/and-ambig
-                              :type/arg1
-                              (make-amb-expr/tyname
-                               :expr (expr-ident ident)
-                               :tyname (make-tyname
-                                        :specqual (list (specqual-tyspec
-                                                         (tyspec-tydef ident)))
-                                        :decl? nil))
-                              :inc/dec nil
-                              :arg/arg2 expr)
-                             (span-join span last-span)
-                             pstate)))
-                   ;; If token4 may start a (cast) expression,
-                   ;; we have resolved the ambiguity:
-                   ;; the identifier must be a type name,
-                   ;; and we were parsing a proper cast expression all along.
-                   ((token-unary-expression-start-p token4) ; ( ident ) expr...
-                    (b* ((pstate (unread-token pstate)) ; ( ident )
-                         ((erp expr last-span pstate) ; ( ident ) expr
-                          (parse-cast-expression pstate)))
-                      (retok
-                       (make-expr-cast
-                        :type (make-tyname
-                               :specqual (list (specqual-tyspec
-                                                (tyspec-tydef ident)))
-                               :decl? nil)
-                        :arg expr)
-                       (span-join span last-span)
-                       pstate)))
-                   ;; If token4 may not start an expression,
-                   ;; we have resolved the ambiguity:
-                   ;; we must simply have a parenthesized identifier expression.
-                   (t ; ( ident ) other
-                    (b* ((pstate
-                          (if token (unread-token pstate) pstate))) ; ( ident )
-                      (retok (expr-paren (expr-ident ident))
-                             (span-join span span3)
-                             pstate))))))
-               ;; If token3 is not a closed parenthesis,
-               ;; the identifier must be the start of an expression,
-               ;; so we put back the tokens and we parse an expression,
-               ;; and then the closed parenthesis after that.
-               (t ; ( ident other
-                (b* ((pstate (if token3 (unread-token pstate) pstate)) ; ( ident
-                     (pstate (unread-token pstate)) ; (
-                     ((erp expr & pstate) ; ( expr
-                      (parse-expression pstate))
-                     ((erp last-span pstate) ; ( expr )
-                      (read-punctuator ")" pstate)))
-                  (retok (expr-paren expr)
-                         (span-join span last-span)
-                         pstate))))))
-           ;; If token2 may start an expression,
-           ;; it means that the cast expression is in fact a unary expression,
-           ;; and so we go back to the beginning,
-           ;; unreading the start of the expression and the open parenthesis,
-           ;; and we attempt to parse a unary expression.
-           ((token-expression-start-p token2) ; ( expr...
-            (b* ((pstate (unread-token pstate)) ; (
-                 (pstate (unread-token pstate))) ;
-              (parse-unary-expression pstate)))
-           ((token-type-name-start-p token2) ; ( typename...
-            (b* ((pstate (unread-token pstate)) ; (
-                 (psize (parsize pstate))
-                 ((erp tyname & pstate) ; ( typename
-                  (parse-type-name pstate))
-                 ((unless (mbt (<= (parsize pstate) (1- psize))))
-                  (reterr :impossible))
-                 ((erp & pstate) ; ( typename )
-                  (read-punctuator ")" pstate))
-                 ((erp token3 span3 pstate) (read-token pstate)))
-              (cond
-               ((equal token3 (token-punctuator "{")) ; ( typename ) {
-                (b* ((pstate (unread-token pstate))) ; ( typename )
-                  (parse-compound-literal tyname span pstate)))
-               ((token-unary-expression-start-p token3) ; ( typename ) expr...
-                (b* ((pstate (unread-token pstate)) ; ( typename )
-                     ((erp expr last-span pstate) ; ( typename ) expr
-                      (parse-cast-expression pstate)))
-                  (retok (make-expr-cast :type tyname :arg expr)
-                         (span-join span last-span)
-                         pstate)))
-               (t ; ( typename ) other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "an identifier ~
-                                       or a constant ~
-                                       or a string literal ~
-                                       or a keyword in {~
-                                       _Alignof, ~
-                                       _Generic, ~
-                                       sizeof~
-                                       } ~
-                                       or a punctuator in {~
-                                       \"++\", ~
-                                       \"--\", ~
-                                       \"+\", ~
-                                       \"-\", ~
-                                       \"~~\", ~
-                                       \"!\", ~
-                                       \"*\", ~
-                                       \"&\", ~
-                                       \"(\"~
-                                       }"
-                            :found (token-to-msg token3))))))
-           (t ; ( other
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "an identifier ~
-                                   or a constant ~
-                                   or a string literal ~
-                                   or a keyword in {~
-                                   _Alignas, ~
-                                   _Alignof, ~
-                                   _Atomic, ~
-                                   _Bool, ~
-                                   _Complex, ~
-                                   _Generic, ~
-                                   char, ~
-                                   const, ~
-                                   double, ~
-                                   enum, ~
-                                   float, ~
-                                   int, ~
-                                   long, ~
-                                   restrict, ~
-                                   short, ~
-                                   signed, ~
-                                   sizeof, ~
-                                   struct, ~
-                                   union, ~
-                                   unsigned, ~
-                                   void, ~
-                                   volatile~
-                                   } ~
-                                   or a punctuator in {~
-                                   \"++\", ~
-                                   \"--\", ~
-                                   \"+\", ~
-                                   \"-\", ~
-                                   \"~~\", ~
-                                   \"!\", ~
-                                   \"*\", ~
-                                   \"&\", ~
-                                   \"(\"~
-                                   }"
-                        :found (token-to-msg token2))))))
-       (t ; not-(
-        (b* ((pstate (if token (unread-token pstate) pstate))) ; put back not-(
+        (b* ((pstate (record-checkpoint pstate))
+             (psize (parsize pstate))
+             ((erp expr/tyname & pstate) ; ( expr/tyname
+              (parse-expression-or-type-name pstate))
+             ((unless (mbt (<= (parsize pstate) (1- psize))))
+              (reterr :impossible)))
+          (amb?-expr/tyname-case
+           expr/tyname
+           ;; If we have an ambiguous type name,
+           ;; we may be parsing a proper cast expression
+           ;; or a compound literal.
+           ;; But there is no need to backtrack now,
+           ;; so we clear the checkpoint saved earlier.
+           ;; We parse the closed parenthesis
+           ;; and we read another token to disambiguate
+           ;; between a cast expression and a compound literal.
+           :tyname ; ( tyname
+           (b* ((pstate (clear-checkpoint pstate))
+                ((erp & pstate) (read-punctuator ")" pstate)) ; ( tyname )
+                ((erp token2 & pstate) (read-token pstate)))
+             (cond
+              ;; If token2 is an open curly brace,
+              ;; we must have a compound literal.
+              ;; We put back the open curly brace,
+              ;; and we call the function to parse compound literals.
+              ((equal token2 (token-punctuator "{")) ; ( tyname ) {
+               (b* ((pstate (unread-token pstate)))
+                 (parse-compound-literal expr/tyname.unwrap span pstate)))
+              ;; If token2 is not an open curly brace,
+              ;; we must be parsing a cast expression proper,
+              ;; so we put back the token (if any)
+              ;; and we attempt to recursively parse a cast expression,
+              ;; which is the argument of the one being parsed.
+              (t ; ( tyname ) other
+               (b* ((pstate ; ( tyname )
+                     (if token2 (unread-token pstate) pstate))
+                    ((erp expr last-span pstate) ; ( tyname ) expr
+                     (parse-cast-expression pstate)))
+                 (retok (make-expr-cast :type expr/tyname.unwrap
+                                        :arg expr)
+                        (span-join span last-span)
+                        pstate)))))
+           ;; If we have an unambiguous expression,
+           ;; we must be actually parsing a unary expression,
+           ;; precisely a postfix expression because
+           ;; it starts with an open parenthesis.
+           ;; So we backtrack to the previously saved checkpoint,
+           ;; namely at the open parenthesis,
+           ;; we also put back the open parenthesis,
+           ;; and we attempt to parse a postfix expression.
+           :expr ; ( expr
+           (b* ((pstate (backtrack-checkpoint pstate)) ; (
+                ((unless (<= (parsize pstate) psize))
+                 (raise "Internal error: ~
+                         size ~x0 after backtracking exceeds ~
+                         size ~x1 before backtracking."
+                        (parsize pstate) psize)
+                 ;; Here we have (> (parsize pstate) psize),
+                 ;; but we need to return a parser state
+                 ;; no larger than the initial one,
+                 ;; so we just return the empty parser state.
+                 ;; This is just logical: execution stops at the RAISE above.
+                 (b* ((pstate (init-parstate nil)))
+                   (reterr t)))
+                (pstate (unread-token pstate))) ;
+             (parse-postfix-expression pstate))
+           ;; If we have an ambiguous expression or type name,
+           ;; we need to read more tokens,
+           ;; on the basis of which we may be able to disambiguate things,
+           ;; unless we end up with an ambiguous cast.
+           ;; First we read any increment and decrement operators that follow.
+           :ambig ; ( expr/tyname
+           (b* (((erp & pstate) (read-punctuator ")" pstate)) ; ( expr/tyname )
+                ((erp incdecops pstate) ; ( expr/tyname ) [ops]
+                 (parse-*-increment/decrement pstate))
+                ((erp token2 & pstate) (read-token pstate)))
+             (cond
+              ;; If token2 is an open parenthesis,
+              ;; it must start a postfix expression,
+              ;; and we are in an ambiguous situation
+              ;; (see the first pattern in :DOC EXPR).
+              ;; We also clear the checkpoint,
+              ;; since we no longer need to backtrack.
+              ((equal token2 (token-punctuator "(")) ; ( expr/tyname ) [ops] (
+               (b* ((pstate (clear-checkpoint pstate))
+                    (pstate (unread-token pstate)) ; ( expr/tyname ) [ops]
+                    ((erp expr last-span pstate) ; ( expr/tyname ) [ops] expr
+                     (parse-postfix-expression pstate)))
+                 (retok (make-expr-cast/call-ambig
+                         :type/fun expr/tyname.unwrap
+                         :inc/dec incdecops
+                         :arg/rest expr)
+                        (span-join span last-span)
+                        pstate)))
+              ;; If token2 is a star, we have an ambiguity.
+              ;; We parse a cast expression after the star,
+              ;; which is the same kind of expected expression
+              ;; whether the star is unary or binary.
+              ;; We also clear the checkpoint,
+              ;; since we no longer need to backtrack.
+              ((equal token2 (token-punctuator "*")) ; ( expr/tyname ) [ops] *
+               (b* ((pstate (clear-checkpoint pstate))
+                    ((erp expr last-span pstate) ; ( expr/tyname ) [ops] * expr
+                     (parse-cast-expression pstate)))
+                 (retok (make-expr-cast/mul-ambig
+                         :type/arg1 expr/tyname.unwrap
+                         :inc/dec incdecops
+                         :arg/arg2 expr)
+                        (span-join span last-span)
+                        pstate)))
+              ;; If token2 is a plus or minus, we have an ambiguity.
+              ;; We parse a multiplicative expression after the plus or minus,
+              ;; which is the kind required if the plus or minus is binary.
+              ;; If the plus or minus is unary,
+              ;; then we would need to parse a cast expression instead.
+              ;; This means that we may be parsing a larger expression,
+              ;; in case the plus or minus turns out to be unary
+              ;; during post-parsing semantic analysis.
+              ;; But in that case we can adjust the expressions accordingly,
+              ;; and it should be easier to adjust them like that
+              ;; than if we had parsed a smaller cast expression.
+              ;; We also clear the checkpoint,
+              ;; since we no longer need to backtrack.
+              ((or (equal token2
+                          (token-punctuator "+")) ; ( expr/tyname ) [ops] +
+                   (equal token2
+                          (token-punctuator "-"))) ; ( expr/tyname ) [ops] -
+               (b* ((pstate (clear-checkpoint pstate))
+                    ((erp expr last-span pstate) ; ( expr/tyname ) [ops] +- expr
+                     (parse-multiplicative-expression pstate)))
+                 (retok (make-expr-cast/add-or-cast/sub-ambig
+                         token2 expr/tyname.unwrap incdecops expr)
+                        (span-join span last-span)
+                        pstate)))
+              ;; If token2 is an ampersand, we have an ambiguity.
+              ;; We parse an equality expression after the ampersand,
+              ;; which is the kind required if the ampersand is binary.
+              ;; If the ampersand is unary,
+              ;; then we would need to parse a cast expression instead.
+              ;; This means that we may be parsing a larger expression,
+              ;; in case the ampersand turns out to be unary
+              ;; during post-parsing semantic analysis.
+              ;; But in that case we can adjust the expressions accordingly,
+              ;; and it should be easier to adjust them like that
+              ;; than if we had parsed a smaller cast expression.
+              ;; We also clear the checkpoint,
+              ;; since we no longer need to backtrack.
+              ((equal token2 (token-punctuator "&")) ; ( expr/tyname ) [ops] &
+               (b* ((pstate (clear-checkpoint pstate))
+                    ((erp expr last-span pstate) ; ( expr/tyname ) [ops] & expr
+                     (parse-equality-expression pstate)))
+                 (retok (make-expr-cast/and-ambig
+                         :type/arg1 expr/tyname.unwrap
+                         :inc/dec incdecops
+                         :arg/arg2 expr)
+                        (span-join span last-span)
+                        pstate)))
+              ;; If token2 may start a unary expression,
+              ;; given that we have already covered the cases of
+              ;; open parenthesis, star, plus, minus, and ampersand,
+              ;; and that we have already parsed
+              ;; past any increment and decrement operators,
+              ;; the ambiguity is resolved:
+              ;; we must have a cast expression,
+              ;; with the ambiguous type name or expression
+              ;; actually being a type name,
+              ;; and with a unary expression as argument.
+              ;; So we put back the token,
+              ;; we parse a unary expression,
+              ;; we apply any increment and decrement operators to it,
+              ;; and we form and return the cast expression.
+              ;; We also clear the checkpoint,
+              ;; since we no longer need to backtrack.
+              ((token-unary-expression-start-p
+                token2) ; ( expr/tyname ) [ops] unaryexpr...
+               (b* ((pstate (clear-checkpoint pstate))
+                    (pstate (unread-token pstate)) ; ( expr/tyname ) [ops]
+                    ((erp expr last-span pstate) ; ( expr/tyname ) [ops] expr
+                     (parse-unary-expression pstate))
+                    (expr
+                     (make-expr-unary-with-preinc/predec-ops incdecops expr))
+                    (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
+                 (retok (make-expr-cast :type tyname :arg expr)
+                        (span-join span last-span)
+                        pstate)))
+              ;; If token2 is anything else,
+              ;; we must have resolved the ambiguity:
+              ;; the ambiguous expression or type name
+              ;; is in fact an expression,
+              ;; and the increment and decrement operators, if any,
+              ;; are postfix operators.
+              ;; Furthermore, there may be further postfix constructs,
+              ;; e.g. an array access.
+              ;; In this case we backtrack all the way
+              ;; to the initial open parenthesis,
+              ;; we put back that one too,
+              ;; and we parse a postfix expression.
+              ;; It must be a postfix expression,
+              ;; because it starts with an open parenthesis,
+              ;; and we are expecting either a cast expression proper
+              ;; (which has been excluded at this point)
+              ;; or a unary expression that starts with an open parenthesis,
+              ;; so in fact it is a primary parenthesized expression,
+              ;; or a postfix expression starting with
+              ;; a primary parenthesized expression.
+              (t ; ( expr/tyname ) [ops] other
+               (b* ((pstate (backtrack-checkpoint pstate)) ; (
+                    ((unless (<= (parsize pstate) psize))
+                     (raise "Internal error: ~
+                             size ~x0 after backtracking exceeds ~
+                             size ~x1 before backtracking."
+                            (parsize pstate) psize)
+                     ;; Here we have (> (parsize pstate) psize),
+                     ;; but we need to return a parser state
+                     ;; no larger than the initial one,
+                     ;; so we just return the empty parser state.
+                     ;; This is just logical: execution stops at the RAISE above.
+                     (b* ((pstate (init-parstate nil)))
+                       (reterr t)))
+                    (pstate (unread-token pstate))) ;
+                 (parse-postfix-expression pstate))))))))
+       ;; If token is not an open parenthesis,
+       ;; we must be parsing a unary expression,
+       ;; not a proper cast expression.
+       ;; We put back the token (if any)
+       ;; and we attempt to parse a unary expression.
+       (t ; other
+        (b* ((pstate (if token (unread-token pstate) pstate))) ;
           (parse-unary-expression pstate)))))
     :measure (two-nats-measure (parsize pstate) 3))
 
@@ -6947,125 +7011,69 @@
     (b* (((reterr) (irr-expr) (irr-span) (irr-parstate))
          ((erp token span pstate) (read-token pstate)))
       (cond
+       ;; If token is an open parenthesis,
+       ;; it may start a compound literal
+       ;; or a (parenthesized) primary expresssion.
+       ;; So we start by parsing a possibly ambiguous type name or expression
+       ;; and we decide what to do next based on that result
+       ;; (we also parse past the closed parenthesis).
        ((equal token (token-punctuator "(")) ; (
-        (b* (((erp token2 span2 pstate) (read-token pstate)))
-          (cond
-           ((and token2 (token-case token2 :ident)) ; ( ident
-            (b* (((erp token3 span3 pstate) (read-token pstate)))
-              (cond
-               ((equal token3 (token-punctuator ")")) ; ( ident )
-                (b* (((erp token4 span4 pstate) (read-token pstate)))
-                  (cond
-                   ((equal token4 (token-punctuator "{")) ; ( ident ) {
-                    (b* ((pstate (unread-token pstate)) ; ( ident )
-                         (ident (token-ident->unwrap token2))
-                         (tyname (make-tyname
-                                  :specqual (list (specqual-tyspec
-                                                   (tyspec-tydef ident)))
-                                  :decl? nil)))
-                      (parse-compound-literal tyname span pstate)))
-                   ((token-postfix-expression-rest-start-p
-                     token4) ; ( ident ) postrest...
-                    (b* ((pstate (unread-token pstate)) ; ( ident )
-                         (ident (token-ident->unwrap token2))
-                         (expr (expr-paren (expr-ident ident))))
-                      (parse-postfix-expression-rest expr
-                                                     (span-join span span3)
-                                                     pstate)))
-                   (t ; ( ident ) other
-                    (reterr-msg :where (position-to-msg (span->start span4))
-                                :expected "an open parenthesis ~
-                                           or an open square bracket ~
-                                           or an open curly brace ~
-                                           or a member access operator ~
-                                           (dot or arrow) ~
-                                           or a postincrement operator ~
-                                           or a postdecrement operator"
-                                :found (token-to-msg token4))))))
-               ((token-postfix-expression-rest-start-p token3) ; ( expr...
-                (b* ((pstate (unread-token pstate)) ; (
-                     (psize (parsize pstate))
-                     ((erp expr next-span pstate) ; ( expr
-                      (parse-expression pstate))
-                     ((unless (mbt (<= (parsize pstate) (1- psize))))
-                      (reterr :impossible)))
-                  (parse-postfix-expression-rest (expr-paren expr)
-                                                 (span-join span next-span)
-                                                 pstate)))
-               (t ; ( ident other
-                (reterr-msg :where (position-to-msg (span->start span3))
-                            :expected "a parenthesis ~
-                                       or an open square bracket ~
-                                       or a member access operator ~
-                                       (dot or arrow) ~
-                                       or a postincrement operator ~
-                                       or a postdecrement operator"
-                            :found (token-to-msg token3))))))
-           ((token-expression-start-p token2) ; ( expr...
-            (b* ((pstate (unread-token pstate)) ; (
-                 (psize (parsize pstate))
-                 ((erp expr & pstate) ; ( expr
-                  (parse-expression pstate))
-                 ((unless (mbt (<= (parsize pstate) (1- psize))))
-                  (reterr :impossible))
-                 ((erp next-span pstate) ; ( expr )
-                  (read-punctuator ")" pstate)))
-              (parse-postfix-expression-rest (expr-paren expr)
-                                             (span-join span next-span)
-                                             pstate)))
-           ((token-type-name-start-p token2) ; ( typename...
-            (b* ((pstate (unread-token pstate)) ; (
-                 (psize (parsize pstate))
-                 ((erp tyname & pstate) ; ( typename
-                  (parse-type-name pstate))
-                 ((unless (mbt (<= (parsize pstate) (1- psize))))
-                  (reterr :impossible))
-                 ((erp & pstate) ; ( typename )
-                  (read-punctuator ")" pstate)))
-              (parse-compound-literal tyname span pstate)))
-           (t ; ( other
-            (reterr-msg :where (position-to-msg (span->start span2))
-                        :expected "an identifier ~
-                                   or a constant ~
-                                   or a string literal ~
-                                   or a keyword in {~
-                                   _Alignas, ~
-                                   _Alignof, ~
-                                   _Atomic, ~
-                                   _Bool, ~
-                                   _Complex, ~
-                                   _Generic, ~
-                                   char, ~
-                                   const, ~
-                                   double, ~
-                                   enum, ~
-                                   float, ~
-                                   int, ~
-                                   long, ~
-                                   restrict, ~
-                                   short, ~
-                                   signed, ~
-                                   sizeof, ~
-                                   struct, ~
-                                   union, ~
-                                   unsigned, ~
-                                   void, ~
-                                   volatile~
-                                   } ~
-                                   or a punctuator in {~
-                                   \"++\", ~
-                                   \"--\", ~
-                                   \"+\", ~
-                                   \"-\", ~
-                                   \"~~\", ~
-                                   \"!\", ~
-                                   \"*\", ~
-                                   \"&\", ~
-                                   \"(\"~
-                                   }"
-                        :found (token-to-msg token2))))))
-       (t ; not-(
-        (b* ((pstate (if token (unread-token pstate) pstate))
+        (b* ((psize (parsize pstate))
+             ((erp expr/tyname & pstate) ; ( expr/tyname
+              (parse-expression-or-type-name pstate))
+             ((unless (mbt (<= (parsize pstate) (1- psize))))
+              (reterr :impossible))
+             ((erp close-paren-span pstate) ; ( expr/tyname )
+              (read-punctuator ")" pstate)))
+          (amb?-expr/tyname-case
+           expr/tyname
+           ;; If we just parsed a parenthesized type name,
+           ;; the only possibility is to have a compound literal.
+           :tyname
+           (parse-compound-literal expr/tyname.unwrap
+                                   (span-join span close-paren-span)
+                                   pstate)
+           ;; If we just parsed a parenthesized expression,
+           ;; we cannot have a compound literal,
+           ;; and instead we have just parsed the primary expression
+           ;; that always starts a non-compound-literal postfix expression.
+           ;; So we proceed to parse the rest of the postfix expression
+           :expr
+           (b* ((prev-expr (expr-paren expr/tyname.unwrap))
+                (prev-span (span-join span close-paren-span)))
+             (parse-postfix-expression-rest prev-expr prev-span pstate))
+           ;; If we just parsed an ambiguous type name or expression,
+           ;; we can actually disambiguate it by looking at what comes next.
+           :ambig
+           (b* (((erp token2 & pstate) (read-token pstate)))
+             (cond
+              ;; If token2 is an open curly brace,
+              ;; we must have a compound literal,
+              ;; and the ambiguous expression or type name must be a type name.
+              ((equal token2 (token-punctuator "{")) ; ( expr/tyname ) {
+               (b* ((pstate (unread-token pstate)) ; ( expr/tyname )
+                    (tyname (amb-expr/tyname->tyname expr/tyname.unwrap)))
+                 (parse-compound-literal tyname
+                                         (span-join span close-paren-span)
+                                         pstate)))
+              ;; If token2 is not an open curly brace,
+              ;; we cannot have a compound literal,
+              ;; and thus we must have just parsed a parenthesized expression,
+              ;; which is the primary expression that starts
+              ;; this postfix expression.
+              (t ; ( expr/tyname ) other
+               (b* ((pstate ; ( expr/tyname )
+                     (if token2 (unread-token pstate) pstate))
+                    (expr (amb-expr/tyname->expr expr/tyname.unwrap))
+                    (prev-expr (expr-paren expr))
+                    (prev-span (span-join span close-paren-span)))
+                 (parse-postfix-expression-rest prev-expr prev-span pstate))))))))
+       ;; If token is not an open parenthesis,
+       ;; we cannot have a compound literal,
+       ;; and thus we parse the primary expression
+       ;; that starts the postfix expression.
+       (t ; other
+        (b* ((pstate (if token (unread-token pstate) pstate)) ;
              (psize (parsize pstate))
              ((erp expr span pstate) ; expr
               (parse-primary-expression pstate))
