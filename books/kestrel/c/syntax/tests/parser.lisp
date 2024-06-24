@@ -438,6 +438,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-cast-expression
+
+(test-parse
+ parse-cast-expression
+ "0xFFFF"
+ :cond (expr-case ast :const))
+
+(test-parse
+ parse-cast-expression
+ "(uint32_t) x"
+ :cond (expr-case ast :cast))
+
+(test-parse
+ parse-cast-expression
+ "(T) (x)"
+ :cond (expr-case ast :cast/call-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) * x"
+ :cond (expr-case ast :cast/mul-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) + x"
+ :cond (expr-case ast :cast/add-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) - x"
+ :cond (expr-case ast :cast/sub-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) & x"
+ :cond (expr-case ast :cast/and-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(A(B)) ++ (C) [3]"
+ :cond (and (expr-case ast :cast/call-ambig)
+            (equal (expr-cast/call-ambig->inc/dec ast)
+                   (list (inc/dec-op-inc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-unary-expression
 
 (test-parse
@@ -468,6 +514,31 @@
  parse-unary-expression
  "sizeof(also(ambig))"
  :cond (expr-case ast :sizeof-ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-postfix-expression
+
+(test-parse
+ parse-postfix-expression
+ "var"
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-postfix-expression
+ "var[4]"
+ :cond (expr-case ast :arrsub))
+
+(test-parse
+ parse-postfix-expression
+ "var[4].a->u(y,w)[q+e]"
+ :cond (and (expr-case ast :arrsub)
+            (expr-case (expr-arrsub->arg1 ast) :funcall)
+            (expr-case (expr-arrsub->arg2 ast) :binary)))
+
+(test-parse
+ parse-postfix-expression
+ "(int[]) { 1, 2, 3, }")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
