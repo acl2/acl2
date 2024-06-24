@@ -46,7 +46,17 @@
 (include-book "utilities" :dir :utils)
 (include-book "structures" :dir :utils)
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)
-(include-book "centaur/bigmem/bigmem" :dir :system)
+
+; WAHJr. We lack a mechanism to decide what memory model we should use.  Note,
+; we could replace the slow memory in ``bignum-asymmetric'' to gain performance
+; above the linear memory limit.
+
+; The orginal three-level memory model.
+; (include-book "centaur/bigmem/bigmem" :dir :system)
+
+; Asymmetric memory model; faster for "small" addresses, and otherwise slower.
+(include-book "centaur/bigmem/bigmem-asymmetric" :dir :system)
+
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
 

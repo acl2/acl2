@@ -57,7 +57,7 @@ records.  The only difference is that the @('g-same-s') theorem becomes:</p>
 multityped record structure.</p>
 
 <p>Multityped records are a generalization of typed records (see @(see
-rstobj::def-typed-record)).  A typed-record can be viewed as a multityped
+rstobj2::def-typed-record)).  A typed-record can be viewed as a multityped
 record for which the @('elem-p'), @('elem-fix'), and @('elem-default')
 functions ignore the key.</p>
 
