@@ -104,7 +104,7 @@
                                          getbit
                                          ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                                          )
-                                   ( ; BVPLUS-OF-*-ARG2 ;anti-bvplus
+                                   ( ; BVPLUS-OF-*-ARG2 ;
                                     ;;BVCAT-OF-+-HIGH ;looped
                                     BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                     BVCHOP-1-BECOMES-GETBIT

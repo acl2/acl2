@@ -303,7 +303,7 @@
                             (;EQUAL-OF-SUM-OF-LOW-BITS
 ;full-adder-sum
                              ;full-adder-carry
-                             ;anti-bvplus
+                             ;
                              ;;BVCAT-OF-+-LOW
                              BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                          BVCAT-TIGHTEN-UPPER-SIZE
@@ -331,7 +331,7 @@
                                                 GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                                 )
                             ((:definition ripple-carry-adder)
-                             ;;anti-bvplus
+                             ;;
                              ;BVCAT-OF-+-LOW ;looped
                              ;;<-OF-BVCHOP-HACK ;looped
                              ;; GETBIT-OF-+-BVCHOP-EXPAND4

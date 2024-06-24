@@ -295,7 +295,6 @@
   :hints (("Goal" :use (:instance plus-becomes-bvplus-arg2-free)
            :in-theory (disable plus-becomes-bvplus-arg2-free))))
 
-
 ;; ;gen the 1
 ;; (defthmd +-becomes-bvplus-when-bv-dag
 ;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -305,7 +304,7 @@
 ;;                   (bvplus (+ 1 xsize) 1 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvplus
 ;;                                    UNSIGNED-BYTE-P-FORCED)
-;;                                   (anti-bvplus
+;;                                   (
 ;;                                    PLUS-BECOMES-BVPLUS
 ;;                                    <-OF-CONSTANT-WHEN-UNSIGNED-BYTE-P-SIZE-PARAM
 ;;                                    )))))

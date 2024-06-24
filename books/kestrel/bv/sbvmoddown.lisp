@@ -83,7 +83,7 @@
                                    ;MOD-BOUNDED-BY-MODULUS
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;sbvrem-rewrite
-                                   ;;anti-bvplus
+                                   ;;
                                    )))))
 
 (defthm equal-of-+-of-expt-of-one-less-and-expt-cancel
@@ -128,7 +128,7 @@
                                    sbvrem-rewrite
                                    ;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;anti-bvplus
+                                   ;
                                    ;;SBVREM-BECOMES-BVMOD
                                    sbvlt
                                    bvmod
@@ -192,7 +192,7 @@
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;anti-bvplus
+                                   ;
                                    ;;SBVREM-BECOMES-BVMOD
                                    EXPT-HALF-LINEAR
                                    EQUAL-OF-BVCHOP-AND-BVCHOP-ONE-WIDER
