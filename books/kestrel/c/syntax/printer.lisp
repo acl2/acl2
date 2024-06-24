@@ -1870,14 +1870,25 @@
     :parents (printer print-exprs/decls)
     :short "Print an alignment specifier."
     (b* ((pstate (print-astring "_Alignas(" pstate))
-         (pstate (alignspec-case
-                  alignspec
-                  :alignas-type (print-tyname alignspec.type pstate)
-                  :alignas-expr (print-const-expr alignspec.arg pstate)
-                  ;; For now we allow an ambiguous _Alignas,
-                  ;; even though it should disappear during elaboration,
-                  ;; which is normally done before printing.
-                  :alignas-ambig (print-ident alignspec.ident pstate)))
+         (pstate
+          (alignspec-case
+           alignspec
+           :alignas-type (print-tyname alignspec.type pstate)
+           :alignas-expr (print-const-expr alignspec.arg pstate)
+           ;; We temporarily allow an ambiguous alignment specifier
+           ;; provided that the ambiguous expression or type name
+           ;; is just an identifier (the same in both cases),
+           ;; which is common.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
+           :alignas-ambig
+           (b* ((ident (check-amb-expr/tyname-ident alignspec.type/arg))
+                ((unless ident)
+                 (raise "Misusage error: ~
+                         ambiguous expression or type name ~x0."
+                        alignspec.type/arg)
+                 pstate))
+             (print-ident ident pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)
     :measure (alignspec-count alignspec))
