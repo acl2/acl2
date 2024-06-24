@@ -8647,56 +8647,29 @@
     (b* (((reterr) (irr-alignspec) (irr-span) (irr-parstate))
          ;; There must be an open parenthesis.
          ((erp & pstate) (read-punctuator "(" pstate)) ; (
-         ;; To decide whether we have a type name or a constant expression,
-         ;; we read another token.
-         ((erp token & pstate) (read-token pstate)))
-      (cond
-       ;; If token is an identifier,
-       ;; things are still ambiguous, and we need to read more tokens.
-       ((and token (token-case token :ident)) ;; ( ident
-        (b* (((erp token2 span2 pstate) (read-token pstate)))
-          (cond
-           ;; If token2 is a closed parenthesis, we have an ambiguity.
-           ;; The identifier may be a type name or an expression.
-           ;; Note that this should be a constant expression,
-           ;; and an identifier expression is a variable,
-           ;; which is not a constant expression,
-           ;; but grammatically a constant expression is an expression,
-           ;; and we defer to later the checks on constant expressions.
-           ((equal token2 (token-punctuator ")")) ; ( ident )
-            (retok (alignspec-alignas-ambig (token-ident->unwrap token))
-                   (span-join first-span span2)
-                   pstate))
-           ;; If token2 is not a closed parenthesis,
-           ;; we unread token2 and the identifier,
-           ;; and we attempt to parse a type name.
-           ;; This may reject code
-           ;; if there is an expression instead of a type name:
-           ;; we will improve the parser with
-           ;; a more complete treatment.
-           (t
-            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; ( ident
-                 (pstate (unread-token pstate)) ; (
-                 ((erp tyname & pstate) (parse-type-name pstate)) ; ( typename
-                 ((erp last-span pstate) ; ( typename )
-                  (read-punctuator ")" pstate)))
-              (retok (alignspec-alignas-type tyname)
+         ;; Next comes a possibly ambiguous expression or type name.
+         ((erp expr/tyname & pstate) ; ( expr/tyname
+          (parse-expression-or-type-name pstate))
+         ;; There must be a closed parenthesis.
+         ((erp last-span pstate) ; ( expr/tyname )
+          (read-punctuator ")" pstate)))
+      (amb?-expr/tyname-case
+       expr/tyname
+       ;; If we parsed an expression,
+       ;; we return an @('_Alignas') with an expression.
+       :expr (retok (alignspec-alignas-expr (const-expr expr/tyname.unwrap))
+                    (span-join first-span last-span)
+                    pstate)
+       ;; If we parsed a type name,
+       ;; we return an @('_Alignas') with a type name.
+       :tyname (retok (alignspec-alignas-type expr/tyname.unwrap)
+                      (span-join first-span last-span)
+                      pstate)
+       ;; If we parsed an ambiguous expression or type name,
+       ;; we return an ambiguous @('_Alignas').
+       :ambig (retok (alignspec-alignas-ambig expr/tyname.unwrap)
                      (span-join first-span last-span)
-                     pstate))))))
-       ;; If token is not an identifier,
-       ;; we unread the token and we attempt to parse a type name.
-       ;; This may reject code
-       ;; if there is an expression instead of a type name:
-       ;; we will improve the parser with
-       ;; a more complete treatment.
-       (t
-        (b* ((pstate (if token (unread-token pstate) pstate)) ; (
-             ((erp tyname & pstate) (parse-type-name pstate)) ; ( typename
-             ((erp last-span pstate) ; ( typename )
-              (read-punctuator ")" pstate)))
-          (retok (alignspec-alignas-type tyname)
-                 (span-join first-span last-span)
-                 pstate)))))
+                     pstate)))
     :measure (two-nats-measure (parsize pstate) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
