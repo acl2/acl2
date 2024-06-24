@@ -12,6 +12,8 @@
 (in-package "X86ISA") ;todo: use X package?
 
 (include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system)
+(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
+(include-book "kestrel/bv/bvchop" :dir :system)
 
 ;; todo: drop these irrelevant params from separate
 (defthm separate-normalize-r-w-x-1
@@ -539,3 +541,47 @@
                 (posp stack-size))
            (not (equal rsp k)))
   :hints (("Goal" :by not-equal-constant-when-separate-of-constants)))
+
+;; not quite true?
+(defthm not-equal-constant-and-bvchop-48-when-separate-of-constants
+  (implies (and (syntaxp (quotep k))
+                ;; n and base typically indicate where the program is:
+                (separate rwx1 n base rwx2 stack-size (binary-+ neg-stack-size rsp)) ; stack-size is commonly 800
+                (syntaxp (and (quotep base)
+                              (quotep n)
+                              (quotep neg-stack-size)
+                              (quotep stack-size)))
+                (< base k) ; strict, since the separate claim doesn't actually cover rsp itself
+                (< k (+ n base))
+                (equal neg-stack-size (- stack-size))
+                (posp stack-size)
+                (canonical-address-p rsp)
+                (canonical-address-p (+ (- stack-size) rsp))
+                (natp base) (integerp n)
+                (equal 0 base) ; !!
+                (< k stack-size)
+                )
+           (not (equal k (acl2::bvchop 48 rsp))))
+  :hints (("Goal" :in-theory (enable separate canonical-address-p acl2::bvchop-when-signed-byte-p signed-byte-p))))
+
+(defthm not-equal-constant-and-bvchop-48-when-separate-of-constants-alt
+  (implies (and (syntaxp (quotep k))
+                ;; n and base typically indicate where the program is:
+                (separate rwx1 n base rwx2 stack-size (binary-+ neg-stack-size rsp)) ; stack-size is commonly 800
+                (syntaxp (and (quotep base)
+                              (quotep n)
+                              (quotep neg-stack-size)
+                              (quotep stack-size)))
+                (< base k) ; strict, since the separate claim doesn't actually cover rsp itself
+                (< k (+ n base))
+                (equal neg-stack-size (- stack-size))
+                (posp stack-size)
+                (canonical-address-p rsp)
+                (canonical-address-p (+ (- stack-size) rsp))
+                (natp base) (integerp n)
+                (equal 0 base) ; !!
+                (< k stack-size)
+                )
+           (not (equal (acl2::bvchop 48 rsp) k)))
+  :hints (("Goal" :use not-equal-constant-and-bvchop-48-when-separate-of-constants
+           :in-theory (disable not-equal-constant-and-bvchop-48-when-separate-of-constants))))

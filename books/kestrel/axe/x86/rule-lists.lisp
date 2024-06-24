@@ -276,6 +276,20 @@
     write-of-xw-irrel
     set-flag-of-write
 
+    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+    write-of-write-same
+    write-of-write-of-write-same
+    write-of-write-of-write-of-write-same
+    ;; write-of-write-of-write-of-write-of-write-same
+
+    write-of-bvchop-arg3-gen
+    ))
+
+;; Rules about the actual functions READ and WRITE.
+(defund read-and-write-rules ()
+  (declare (xargs :guard t))
+  '(read-1-of-write-1-diff
+    ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-disjoint
@@ -285,14 +299,6 @@
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-
-    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
-    write-of-write-same
-    write-of-write-of-write-same
-    write-of-write-of-write-of-write-same
-    ;; write-of-write-of-write-of-write-of-write-same
-
-    write-of-bvchop-arg3-gen
     ))
 
 (defund reader-and-writer-intro-rules ()
@@ -3039,6 +3045,7 @@
           (write-introduction-rules)
           (read-rules)
           (write-rules)
+          (read-and-write-rules)
           (read-byte-rules)
           (linear-memory-rules)
           (get-prefixes-rules64)
@@ -4165,6 +4172,7 @@
           (write-introduction-rules)
           (read-rules)
           (write-rules)
+          (read-and-write-rules)
           '(x86isa::rme08$inline
             x86isa::rme16$inline
             x86isa::rme32$inline

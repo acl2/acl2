@@ -50,7 +50,7 @@
                     (+ (logtail size x) (logtail size y)))))
   :hints (("Goal" :use logtail-of-plus-helper
            :in-theory (e/d (bvplus expt-of-+) ( logtail-of-plus-helper
-                                      ;anti-bvplus
+                                      ;
                                       )))))
 
 (defthmd slice-of-sum-cases
@@ -102,5 +102,5 @@
                       (bvchop (+ 1 high (- low)) (- (slice high low x)))
                     (bvchop (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low))) (- (slice high low x)))))))
   :hints (("Goal" :in-theory (e/d (slice bvplus bvchop-of-sum-cases)
-                                  (;anti-slice ;anti-bvplus
+                                  (;anti-slice ;
                                    )))))
