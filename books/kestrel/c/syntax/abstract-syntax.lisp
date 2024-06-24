@@ -1147,7 +1147,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum expr
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of expressions [C:6.5] [C:A.2.1]."
     :long
     (xdoc::topstring
@@ -1401,7 +1401,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist expr-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of expressions."
     :long
     (xdoc::topstring
@@ -1417,7 +1417,7 @@
 
   (fty::defoption expr-option
     expr
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of optional expressions."
     :long
     (xdoc::topstring
@@ -1429,7 +1429,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod const-expr
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of constant expressions [C:6.6] [C:A.2.1]."
     :long
     (xdoc::topstring
@@ -1447,7 +1447,7 @@
 
   (fty::defoption const-expr-option
     const-expr
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of optional constant expressions."
     :long
     (xdoc::topstring
@@ -1459,7 +1459,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum genassoc
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of generic associations [C:6.5.1.1] [C:A.2.1]."
     :long
     (xdoc::topstring
@@ -1475,7 +1475,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist genassoc-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of generic associations."
     :long
     (xdoc::topstring
@@ -1493,7 +1493,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum tyspec
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type specifiers [C:6.7.3] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1530,7 +1530,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum specqual
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type specifiers and type qualifiers
             [C:6.7.2.1] [C:A.2.2]."
     :long
@@ -1549,7 +1549,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist specqual-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of type specifiers and type qualifiers."
     :long
     (xdoc::topstring
@@ -1567,7 +1567,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum alignspec
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of alignment specifiers [C:6.7.5] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1593,7 +1593,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum declspec
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of declaration specifiers [C:6.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1613,7 +1613,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist declspec-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of declaration specifiers."
     :long
     (xdoc::topstring
@@ -1631,7 +1631,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum initer
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of initializers [C:6.7.9] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1651,7 +1651,7 @@
 
   (fty::defoption initer-option
     initer
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of optional initializers."
     :long
     (xdoc::topstring
@@ -1678,14 +1678,14 @@
        which has a non-empty list of designators."))
     ((design designor-list)
      (init initer))
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :pred desiniterp
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist desiniter-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of initializers with designations."
     :long
     (xdoc::topstring
@@ -1703,7 +1703,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum designor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of designators [C:6.7.9] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1717,7 +1717,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist designor-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of designators."
     :long
     (xdoc::topstring
@@ -1732,7 +1732,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod declor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of declarators [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1754,7 +1754,7 @@
 
   (fty::defoption declor-option
     declor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of optional declarators."
     :long
     (xdoc::topstring
@@ -1766,7 +1766,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum dirdeclor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of direct declarators [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1824,7 +1824,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod absdeclor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of abstract declarators [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1843,7 +1843,7 @@
 
   (fty::defoption absdeclor-option
     absdeclor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of optional abstract declarators [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1855,7 +1855,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum dirabsdeclor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of direct abstract declarators [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1891,7 +1891,7 @@
 
   (fty::defoption dirabsdeclor-option
     dirabsdeclor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of optional direct abstract declarators."
     :long
     (xdoc::topstring
@@ -1903,7 +1903,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum paramdecl
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of parameter declarations [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1923,7 +1923,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist paramdecl-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of parameter declarations."
     :long
     (xdoc::topstring
@@ -1940,7 +1940,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod tyname
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of type names [C:6.7.7] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1954,7 +1954,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod strunispec
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of structure or union specifiers [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1977,7 +1977,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum structdecl
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of structure declarations [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -2000,7 +2000,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist structdecl-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of structure declarations."
     :long
     (xdoc::topstring
@@ -2017,7 +2017,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod structdeclor
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of structure declarators [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -2038,7 +2038,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist structdeclor-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of structure declarators."
     :long
     (xdoc::topstring
@@ -2055,7 +2055,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod enumspec
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of enumeration specifiers [C:6.7.2.2] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -2074,7 +2074,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod enumer
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of enumerators [C:6.7.2.2] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -2088,7 +2088,7 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (fty::deflist enumer-list
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of lists of enumerators."
     :long
     (xdoc::topstring
@@ -2105,7 +2105,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod statassert
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of static assertion declarations [C:6.7.10] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -2120,7 +2120,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::defprod amb-expr/tyname
-    :parents (abstract-syntax expr/decls)
+    :parents (abstract-syntax exprs/decls)
     :short "Fixtype of ambiguous expressions or type names."
     :long
     (xdoc::topstring
