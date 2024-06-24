@@ -43,7 +43,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; K is the total number of bits, and P is the number of bits of precision.  K
-;; and P together define a floating-point format, denoted (K,P).
+;; and P together define a floating-point format, denoted (K,P).  Note that,
+;; while P is the number of bits in the significand, only P-1 bits are stored
+;; in the trailing significand field.  The leading bit of the significand can
+;; be 0 or 1 and is implied by the value of the exponent field.
 (defun formatp (k p)
   (declare (xargs :guard t))
   (and (integerp k)

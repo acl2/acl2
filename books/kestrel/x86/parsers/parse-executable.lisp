@@ -31,7 +31,7 @@
   (b* (((mv erp magic-number)
         (parse-executable-magic-number bytes filename))
        ((when erp) (mv erp nil)))
-    (if (eq magic-number *elf-magic-number*)
+    (if (= magic-number *elf-magic-number*)
         (prog2$ (cw "ELF file detected.~%")
                 (mv nil ;no error
                     (parse-elf-file-bytes bytes)))

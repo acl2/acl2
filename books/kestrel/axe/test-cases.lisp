@@ -212,6 +212,8 @@
            (test-case-typep (make-bv-array-type element-width len)))
   :hints (("Goal" :in-theory (enable test-case-typep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Recognize an alist from vars to their "test types"
 (defund test-case-type-alistp (alist)
   (declare (xargs :guard t))

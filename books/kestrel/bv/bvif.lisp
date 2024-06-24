@@ -26,10 +26,10 @@
       (bvchop size thenpart)
     (bvchop size elsepart)))
 
-(defthm integerp-of-bvif
+(defthmd integerp-of-bvif
   (integerp (bvif size test thenpart elsepart)))
 
-(defthm natp-of-bvif
+(defthmd natp-of-bvif
   (natp (bvif size test thenpart elsepart)))
 
 (defthm bvchop-of-bvif
@@ -510,3 +510,7 @@
            (equal (bvif size (equal k (bvchop size x)) x y)
                   (bvif size (equal k (bvchop size x)) k y)))
   :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bitp-of-bvif-of-1-type
+  (bitp (bvif 1 test then else))
+  :rule-classes :type-prescription)

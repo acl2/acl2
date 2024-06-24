@@ -45,7 +45,7 @@
               (if (fquotep expr)
                   (vars-that-support-dag-nodes-aux (+ -1 steps-left) (rest worklist) dag-array-name dag-array dag-len (aset1 'done-array done-array nodenum t) acc)
                 ;;function call:
-                (vars-that-support-dag-nodes-aux (+ -1 steps-left) (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len (aset1 'done-array done-array nodenum t) acc)))))))))
+                (vars-that-support-dag-nodes-aux (+ -1 steps-left) (append-nodenum-dargs (dargs expr) (rest worklist)) dag-array-name dag-array dag-len (aset1 'done-array done-array nodenum t) acc)))))))))
 
 (defthm true-listp-of-vars-that-support-dag-nodes-aux
   (implies (true-listp acc)

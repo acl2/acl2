@@ -17,7 +17,7 @@
 (include-book "bvcat2")
 (include-book "unsigned-byte-p")
 (include-book "bvplus")
-(include-book "rules") ; for GETBIT-OF-PLUS
+(include-book "rules") ; for GETBIT-OF-+
 (include-book "rules0") ; for bvplus-1-becomes-bitxor
 (local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -282,8 +282,8 @@
                     (and (equal 1 carry) (equal 0 (GETBIT (+ -1 N) x)) (equal 1 (GETBIT (+ -1 N) y)))
                     (and (equal 1 carry) (equal 1 (GETBIT (+ -1 N) x)) (equal 0 (GETBIT (+ -1 N) y)))
                     (and (equal 1 carry) (equal 1 (GETBIT (+ -1 N) x)) (equal 1 (GETBIT (+ -1 N) y))))
-;            :use ( ;(:instance getbit-of-plus (size n) (y (+ carry y)))
-;(:instance getbit-of-plus (size n) (x carry))
+;            :use ( ;(:instance getbit-of-+ (size n) (y (+ carry y)))
+;(:instance getbit-of-+ (size n) (x carry))
 ;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1(BVCHOP (+ -1 N) Y))))
 ;                 (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)))
 ;                  (:instance split-bv (x x) (n n) (m (+ -1 n)))
@@ -291,9 +291,9 @@
 ;                  )
             :in-theory (e/d (helper-helper
                              ;bvchop-recollapse
-                             GETBIT-OF-PLUS
+                             GETBIT-OF-+
                              BVCHOP-OF-SUM-CASES
-                             ;;getbit-of-plus
+                             ;;getbit-of-+
 ;                             getbit-of-+-bvchop-expand2
  ;                            getbit-of-+-bvchop-expand3
   ;                           getbit-of-+-bvchop-expand4
@@ -303,7 +303,7 @@
                             (;EQUAL-OF-SUM-OF-LOW-BITS
 ;full-adder-sum
                              ;full-adder-carry
-                             ;anti-bvplus
+                             ;
                              ;;BVCAT-OF-+-LOW
                              BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
                                          BVCAT-TIGHTEN-UPPER-SIZE
@@ -327,11 +327,11 @@
            ("Goal" :induct (RIPPLE-CARRY-ADDER N X Y CARRY)
             :in-theory (e/d (;ripple-carry-adder
                              (:induction ripple-carry-adder)
-                             bvplus ;getbit-of-plus
+                             bvplus ;getbit-of-+
                                                 GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                                 )
                             ((:definition ripple-carry-adder)
-                             ;;anti-bvplus
+                             ;;
                              ;BVCAT-OF-+-LOW ;looped
                              ;;<-OF-BVCHOP-HACK ;looped
                              ;; GETBIT-OF-+-BVCHOP-EXPAND4

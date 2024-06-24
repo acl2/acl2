@@ -31,7 +31,7 @@
 ;; Underlying functions:
 (include-book "lognot")
 (include-book "logand")
-(include-book "logand2") ; todo: rename logand-b?
+(include-book "logand-b")
 (include-book "logior")
 (include-book "logior-b")
 (include-book "logorc1")
@@ -147,6 +147,7 @@
 (include-book "defs")
 
 ;; Conversions between booleans and bits
+(include-book "bool-to-bit-def")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool")
 

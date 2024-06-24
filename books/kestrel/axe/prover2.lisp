@@ -104,7 +104,7 @@
          (- (and (eq print :verbose) (cw "Initial literals: ~x0. Initial DAG:~%" literal-nodenums-or-quoteps)))
          (- (and (eq print :verbose) (print-array2 'dag-array dag-array dag-len)))
          ((mv erp result & & & & & ;; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-              info tries state)
+              hit-counts tries state)
           (prove-disjunction-with-axe-prover literal-nodenums-or-quoteps
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                         (list rule-alist)
@@ -115,7 +115,7 @@
                                         max-conflicts
                                         t ;print-max-conflicts-goalp
                                         t ;work-hard..
-                                        (and print (empty-info-world))
+                                        (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                         (and print (zero-tries))
                                         0                  ;prover-depth
                                         nil                ;options
@@ -123,7 +123,7 @@
                                         state))
          ((when erp) (mv erp (list clause) state))
          (- (and print (cw "(~x0 tries.)~%" tries)))
-         (- (and print (maybe-print-hit-counts print info))))
+         (- (maybe-print-hit-counts hit-counts)))
       (if (eq :proved result)
           (prog2$ (cw "!! The DAG prover proved the clause)~%")
                   ;;fixme very cryptic error message when we only returned the one value

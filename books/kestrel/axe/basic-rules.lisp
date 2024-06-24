@@ -52,6 +52,9 @@
 (defthmd booleanp-of-equal
   (booleanp (equal x y)))
 
+(defthmd booleanp-of-iff
+  (booleanp (iff x y)))
+
 (defthmd booleanp-of-<
   (booleanp (< x y)))
 

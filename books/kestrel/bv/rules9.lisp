@@ -15,7 +15,7 @@
 (include-book "bvcat-rules") ; make local?
 (include-book "bitwise") ; make local?
 (include-book "bvplus")
-(include-book "rules") ; for getbit-of-plus
+(include-book "rules") ; for getbit-of-+
 ;(include-book "leftrotate")
 (include-book "rightrotate")
 (include-book "bvcat")
@@ -696,7 +696,7 @@
                 (integerp k))
            (equal (getbit n (+ k x))
                   (getbit n x)))
-  :hints (("Goal" :in-theory (enable getbit-of-plus))))
+  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 (defthm getbit-of-+-of-expt-same-arg1
   (implies (and (natp n)

@@ -1440,8 +1440,8 @@
                 acl2::bitxor-of-bvcat-low-arg1
                 acl2::bitxor-of-bvcat-low-arg2
                 acl2::bitxor-commutative-increasing-axe
-                acl2::bvplus-of-plus-arg2
-                acl2::bvplus-of-plus-arg3
+                acl2::bvplus-of-+-arg2
+                acl2::bvplus-of-+-arg3
                 acl2::getbit-of-bvplus-tighten-to-32
                 acl2::slice-of-bvplus-tighten-to-32
                 acl2::getbit-of-0-when-bitp

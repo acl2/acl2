@@ -13,7 +13,7 @@
 
 (include-book "bvchop")
 (include-book "unsigned-byte-p")
-(include-book "bvlt") ;hmmm
+(include-book "bvlt-def") ;hmmm
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

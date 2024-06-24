@@ -65,4 +65,4 @@
 (prove-equivalence *tea*
                    *tea-encrypt-spec*
                    :initial-rule-sets (list (make-axe-rules! (amazing-rules-bv) (w state))) ;don't bit-blast
-                   :tactic :rewrite-and-sweep)
+                   :tactic :rewrite)

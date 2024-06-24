@@ -1073,8 +1073,8 @@
                                                             known-booleans)
              (declare (ignore node-replacement-array node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
              (implies (not erp)
-                      (and
-                           (integerp new-dag-len)
+                      (and (natp new-dag-len)
+                           (integerp new-dag-len) ; drop?
                            ))))
   :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
            :in-theory (disable make-node-replacement-array-and-extend-dag-return-type))))

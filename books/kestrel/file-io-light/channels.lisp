@@ -1,6 +1,6 @@
 ; A lightweight book about i/o channels
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,15 +32,8 @@
                    nil))
    :hints (("Goal" :in-theory (enable ordered-symbol-alistp assoc-equal)))))
 
-;; We give this notion a name that we can keep disabled, since it is an unwieldy conjunction.
-(defund channel-headerp (header)
-  (declare (xargs :guard t))
-  (and (true-listp header)
-       (equal (length header) 4)
-       (eq (car header) :header)
-       (member-eq (cadr header) *file-types*)
-       (stringp (caddr header))
-       (integerp (cadddr header))))
+;; We keep this disabled, since it is an unwieldy conjunction:
+(in-theory (disable channel-headerp))
 
 (defthm channel-headerp-of-list
   (equal (channel-headerp (list a b c d))

@@ -141,7 +141,7 @@
                     (lambda$ (alist)
                              (list nil nil 
                                    (list (cons 'n (cdr (assoc-eq-safe 'n alist))))))
-                    nil nil nil)
+                    nil nil)
                (+ (cdr (assoc-eq-safe 'n alist))
                   (cdr (assoc-eq-safe 'm alist))))))
 

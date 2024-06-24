@@ -15,6 +15,7 @@
 
 (include-book "bvchop")
 (include-book "bvuminus")
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; Compute the (modular) difference of X and Y.
 ;; TODO: Consider defining this in terms of bvplus and bvuminus.
@@ -126,7 +127,7 @@
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvminus))))
 
-(defthm bvminus-normalize-constant-arg1
+(defthm bvminus-normalize-constant-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (unsigned-byte-p size k))
@@ -134,6 +135,17 @@
                 )
            (equal (bvminus size k x)
                   (bvminus size (bvchop size k) x)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+;rename
+(defthm bvminus-normalize-constant-arg3
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (not (unsigned-byte-p size k))
+                (natp size) ; prevents loops
+                )
+           (equal (bvminus size x k)
+                  (bvminus size x (bvchop size k))))
   :hints (("Goal" :in-theory (enable bvminus))))
 
 (defthm bvminus-of-bvuminus
@@ -235,4 +247,16 @@
 (defthm bvminus-of-bvplus-same-alt
   (equal (bvminus size (bvplus size y x) y)
          (bvchop size x))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; (y-x) + x = y
+(defthm bvplus-of-bvminus-same-arg2
+  (equal (bvplus size (bvminus size y x) x)
+         (bvchop size y))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; x + (y-x) = y
+(defthm bvplus-of-bvminus-same-arg3
+  (equal (bvplus size x (bvminus size y x))
+         (bvchop size y))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))

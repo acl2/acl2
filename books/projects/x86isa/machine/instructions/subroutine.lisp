@@ -167,6 +167,8 @@
 
   :parents (one-byte-opcodes)
 
+  :guard-debug t
+
   :guard-hints (("Goal" :in-theory (e/d (riml08
                                          riml32
                                          select-address-size)
@@ -228,8 +230,22 @@
         (!!fault-fresh :gp 0 :bad-return-address call-rip)) ;; #GP(0)
 
        (rsp (read-*sp proc-mode x86))
-       ((the (integer 2 8) addr-size) (select-address-size proc-mode nil x86))
-       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- addr-size) x86))
+
+       ;; The size of the RIP/EIP/IP is determined by
+       ;; the processor mode and the CS.D bit (see READ-*IP).
+       ;; It is not (necessarily) the result of SELECT-ADDRESS-SIZE,
+       ;; which may be subject to address size overrides.
+       (rip-size (case proc-mode
+                   (#.*64-bit-mode* 8)
+                   (#.*compatibility-mode*
+                    (b* (((the (unsigned-byte 16) cs-attr)
+                          (seg-hidden-attri #.*cs* x86))
+                         (cs.d (code-segment-descriptor-attributesbits->d
+                                cs-attr)))
+                      (if (= cs.d 1) 4 2)))
+                   (t 0))) ; other modes not implemented yet
+
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp (- rip-size) x86))
        ((when flg) (!!fault-fresh :ss 0 :call flg)) ;; #SS(0)
 
        ;; Update the x86 state:
@@ -238,14 +254,35 @@
        ((mv flg x86)
         ;; Note that instruction pointers are modeled as signed in 64-bit mode,
         ;; but unsigned in 32-bit mode.
-        (if (= operand-size 8)
-            ;; Note that we need check-canonicity t only for operand-size = 8,
-            ;; because we get this size only in 64-bit mode.
-            (wime-size-opt
-             proc-mode operand-size rsp #.*ss* call-rip check-alignment? x86
-             :check-canonicity t)
-          (wme-size-opt
-           proc-mode operand-size rsp #.*ss* call-rip check-alignment? x86)))
+        (case rip-size
+          ;; Note that we need check-canonicity t only for rip-size = 8,
+          ;; because we get this size only in 64-bit mode.
+          (8 (wime-size-opt proc-mode
+                            rip-size
+                            new-rsp
+                            #.*ss*
+                            next-rip
+                            check-alignment?
+                            x86
+                            :check-canonicity t))
+          ;; It should be an invariant that, if rip-size = 4,
+          ;; next-rip is 32 bits, but since at the moment
+          ;; we don't have that invariant, we coerce next-rip.
+          (4 (wme-size-opt proc-mode
+                           rip-size
+                           new-rsp
+                           #.*ss*
+                           (n32 next-rip)
+                           check-alignment?
+                           x86))
+          (2 (wme-size-opt proc-mode
+                           rip-size
+                           new-rsp
+                           #.*ss*
+                           (n16 next-rip)
+                           check-alignment?
+                           x86))
+          (t (mv :not-implemented x86))))
        ((when flg) (!!ms-fresh :stack-writing-error flg))
        ;; Update the rip to point to the called procedure.
        (x86 (write-*ip proc-mode call-rip x86))

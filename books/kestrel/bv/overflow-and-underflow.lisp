@@ -16,7 +16,7 @@
 (include-book "bvlt")
 (include-book "bvplus")
 (include-book "bvminus")
-(include-book "rules") ;reduce? for getbit-of-plus
+(include-book "rules") ;reduce? for getbit-of-+
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -50,7 +50,7 @@
            (equal (signed-addition-overflowsp size x y)
                   (signed-addition-overflowsp size y x)))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
-                                          getbit-of-plus
+                                          getbit-of-+
                                           logext-cases
                                           bvminus bvuminus
                                           bvchop-when-top-bit-1
@@ -77,7 +77,6 @@
                 ;; could also say "not signed-byte-p ..."
                 (<= (expt 2 (+ -1 size)) (+ (logext size x) (logext size y)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
-                                          GETBIT-OF-PLUS
                                           logext-cases
                                           bvminus  bvuminus
                                           BVCHOP-WHEN-TOP-BIT-1
@@ -85,7 +84,7 @@
                                           )
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    bvchop-when-top-bit-1 ; for speed
-                                   getbit-of-plus ; for speed
+                                   getbit-of-+ ; for speed
                                    )))))
 
 ;todo: more like this
@@ -125,7 +124,7 @@
            (iff (signed-addition-underflowsp size x y)
                 (signed-addition-underflowsp size y x)))
   :hints (("Goal" :in-theory (e/d ( ;bvplus
-                                   bvchop-of-sum-cases sbvlt bvlt getbit-of-plus
+                                   bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                    logext-cases
                                    bvminus bvuminus
                                    bvchop-when-top-bit-1
@@ -149,7 +148,7 @@
                 (unsigned-byte-p size y))
            (iff (signed-addition-underflowsp size x y)
                 (< (+ (logext size x) (logext size y)) (- (expt 2 (+ -1 size))))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-plus
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           logext-of-plus
                                           bvminus bvuminus

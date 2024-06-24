@@ -34,6 +34,7 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
@@ -72,26 +73,13 @@
            :in-theory (enable pseudo-termp nth-of-0
                               nth-when-not-consp-cheap))))
 
-(defthm lookup-equal-forward-to-assoc-equal
-  (implies (lookup-equal key alist)
-           (assoc-equal key alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-;dup
-(defthm assoc-equal-when-lookup-equal-cheap
-  (implies (lookup-equal term var-replacement-alist)
-           (assoc-equal term var-replacement-alist))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
 ;dup
 (defthm dargp-less-than-of-lookup-equal
   (implies (and (lookup-equal term var-replacement-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist)
                                                 dag-len))
            (dargp-less-than (lookup-equal term var-replacement-alist) dag-len))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs))))
 
 (defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
@@ -114,12 +102,6 @@
   :hints (("Goal" :induct t
            :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
-
-;dup
-(defthmd not-equal-of-len-and-1-when-dargp
-  (implies (dargp x)
-           (not (equal (len x) 1)))
-  :hints (("Goal" :in-theory (enable dargp myquotep))))
 
 ;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
@@ -693,6 +675,23 @@
              (declare (ignore erp nodenums-or-quoteps))
              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :use (:instance merge-terms-into-dag-array-basic-return-type)
+           :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
+
+(defthm merge-terms-into-dag-array-basic-return-type-linear
+    (implies (and (pseudo-term-listp terms)
+                  (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                  (symbol-alistp var-replacement-alist)
+                  (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                  ;;no errors:
+                  (not (mv-nth 0 (merge-terms-into-dag-array-basic terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+             (<= dag-len
+                      (mv-nth 3 (merge-terms-into-dag-array-basic
+                                 terms
+                                 var-replacement-alist
+                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                 interpreted-function-alist))))
+  :rule-classes :linear
+  :hints (("Goal" :use merge-terms-into-dag-array-basic-return-type
            :in-theory (disable merge-terms-into-dag-array-basic-return-type))))
 
 (defthm pseudo-dag-arrayp-after-merge-terms-into-dag-array-basic

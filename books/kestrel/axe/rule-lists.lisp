@@ -114,10 +114,13 @@
     boolif-same-branches
     boolif-same-arg1-arg2
     boolif-of-t-and-nil
+    boolif-of-nil-and-t
     boolif-when-quotep-arg1 ; for when the test can be resolved
     boolif-of-not-same-arg2-alt
     boolif-of-not-same-arg3-alt
     boolif-of-equal-and-nil-and-equal-diff ; could restrict to constants if needed
+    boolif-when-quotep-and-not-booleanp-arg2
+    boolif-when-quotep-and-not-booleanp-arg3
     ;; Rules about equal:
     equal-of-t-when-booleanp-arg1
     equal-of-t-when-booleanp-arg2
@@ -626,8 +629,8 @@
 
      ;; or should we always open bvminus to bvplus of bvuminus?
      bvminus-same                             ;tue dec 15 12:03:12 2015
-     bvplus-bvminus-same
-     bvplus-bvminus-same-arg2
+     bvplus-of-bvminus-same-arg2
+     bvplus-of-bvminus-same-arg3
      bvminus-of-0-arg1
      bvminus-of-0-arg2
      bvminus-of-0-arg3
@@ -734,7 +737,6 @@
      bvcat-of-ifix-arg2
      bvcat-of-ifix-arg4
 
-
      bvplus-of-bvplus-of-bvuminus
 
      natp-when-unsigned-byte-p ;uses the dag assumptions, has a free var so should be cheap? (put last of the natp rules?) moved from yet-more-rules
@@ -823,6 +825,11 @@
      bvlt-transitive-4-b
      bvlt-transitive-5-a
      bvlt-transitive-5-b
+
+     not-bvlt-of-max-arg2-constant-version
+     bvlt-of-max-when-bvlt-constant-version
+     bvlt-of-max-arg3-constant-version-axe ; has a rewrite-objective
+     bvlt-of-max-minus-1-arg2-constant-version
 
      not-equal-max-int-when-<=      ;new, rename
 
@@ -916,6 +923,8 @@
      ;; bvsx base cases?
      ;; introduce-bvsx-25-7 ;fixme yuck
      bvsx-of-bvsx
+     bvsx-of-bvchop
+     bvsx-when-equal-of-getbit-and-0
 
      ;;bvif-trim-constant-arg1
      ;;bvif-trim-constant-arg2
@@ -944,6 +953,7 @@
      bvor-1-becomes-bitor
 
      bvand-with-constant-mask-arg2
+     bvand-of-constant-when-low-byte-0 ; for masks that pick out bytes
      ;; trying without
 ;            bvor-appending-idiom-low
 ;           bvor-appending-idiom-low-alt
@@ -992,7 +1002,7 @@
      ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
      slice-becomes-bvchop
-     slice-of-slice-gen-better
+     slice-of-slice
 ;            slice-of-bvcat-hack-gen-better-case-1 ;trying the real versions
 ;           slice-of-bvcat-hack-gen-better-case-2
 ;          slice-of-bvcat-hack-gen-better-case-3
@@ -1033,7 +1043,7 @@
 
      unsigned-byte-p-when-unsigned-byte-p-smaller
 
-     ;; rules to introduce bvequal:
+     ;; rules to introduce bvequal (these change the flow of proofs like rc4-loop2-auto.lisp):
      ;; equal-becomes-bvequal-axe-1-strong
      ;; equal-becomes-bvequal-axe-2-strong
 
@@ -1054,7 +1064,12 @@
      bvequal-tighten-axe-bind-and-bind
      bvequal-of-constant-and-bvuminus
      bvequal-of-bvuminus-and-constant
-     )))
+
+     bvif-of-if-becomes-bvif-of-boolif-arg2
+
+     ;; for now, we open these to expose bvcat:
+     putbyte
+     putbits)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1119,7 +1134,6 @@
 
     ;; leftrotate32-cases
     leftrotate32alt ;this is what we rewrite to if we want to expand stuff
-;    bvplus-of-bvminus
 ;    unsigned-byte-p-of-bvminus-gen-better
     bvchop-upper-bound-3-constant-version
     slice-bound-3-constant-version ;bozo make a dag version
@@ -1858,8 +1872,7 @@
 
 (defun bvplus-rules ()
   (declare (xargs :guard t))
-  '(
-            ;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
+  '(;; bvplus rules (can be expensive, perhaps try just bvplus-commutative-axe):
     bvplus-commutative-axe
     bvplus-commutative-2-axe ;seemed to fire a lot?! in rc4 example
     bvplus-associative))
@@ -2055,7 +2068,6 @@
     booleanp-of-all-same
     booleanp-of-all-equal$
     equal-of-constant-and-repeat
-    equal-of-constant-and-bvuminus
     equal-of-bvmult-and-expt-of-2-constant-version
     slice-of-times-of-expt-constant-version
     bvplus-of-*-arg2
@@ -2085,10 +2097,10 @@
     bvlt-self ;drop
     bvlt-of-bvcat-arg3-bvmult-version
     bvdiv-31-4
-    bvlt-of-max-minus-1-arg2-constant-version ;    bvlt-2-max
+
     bvlt-when-bound-dag
-;    bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
-    bvlt-of-max-arg2          ;alt version?
+    ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:15:59 2010
+;    not-bvlt-of-max-arg2          ;alt version?
     ;bvlt-of-bvchop-arg3-same  ;gen and move? or drop?
     bvmod-of-power-of-2
     unsigned-byte-p-of-bvmod-gen ;remove since added to big list
@@ -2171,7 +2183,7 @@
 
      ;;           not-of-booland ;trying without this? new4
 
-     sbvlt-false-from-bound-dag
+     not-sbvlt-from-bound-better
 ;     SBVLT-BECOMES-BVLT ;Sun Mar 28 16:56:24 2010
      not-sbvlt-of-0-when-sbvlt-free
 ;                        SBVLT-REWRITE ;trying without this..
@@ -2266,7 +2278,6 @@
      consp-when-len-equal-constant
      add-to-end
      car-of-bv-array-write
-     sbvrem-when-positive
 ;     bvlt-tighten-free-alt ;problems? ;Tue Aug 31 19:45:37 2010
 ;     bvlt-tighten-free ;problems? ;Tue Aug 31 19:45:37 2010
      bvplus-tighten-arg2
@@ -2275,7 +2286,7 @@
 
      bvplus-10-shrink-to-9
 
-;                               bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
+     ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
      <-becomes-bvlt-alt-dag
      assoc-equal-of-cons
      bvplus-commutative-axe
@@ -2297,10 +2308,8 @@
      unsigned-byte-p-of-bvplus-wider-9-10
      bvlt-add-to-both-sides-constant-lemma-alt-no-split
      bvlt-add-to-both-sides-constant-lemma-alt ;new
-     bvlt-of-max
-     bvlt-of-max-constant-version
+;     not-bvlt-of-max-arg2
 ;                        bvlt-of-max-when-bvlt
-     bvlt-of-max-when-bvlt-constant-dag
 
      ;;trying without these:
      ;;bvuminus-when-smaller-bind-free-dag ;this may be a bad idea
@@ -2324,12 +2333,11 @@
      turn-equal-around-axe4 ;this subsumes the other rules?
      bvlt-of-bvplus-32-31-trim-alt ;gen (but only when "trimmable"?)
      bvlt-of-bvplus-32-31-trim  ;gen (but only when "trimmable"?)
-     bvlt-max-arg3-constant-version ;bvlt-max-val               ;;add polarity!
 
 ;sbvlt-becomes-bvlt
 ;     sbvlt-becomes-bvlt-better
      bv-array-write-of-0
-     ;bvplus-of-plus
+     ;bvplus-of-+
 
      bvlt-when-unsigned-byte-p-better-helper
 ;;     recollapse-hack ;sun mar 28 15:19:01 2010
@@ -2350,7 +2358,12 @@
 ;     bvplus-minus-4-tighten-32-gen ;wed apr  7 19:47:05 2010
      plus-of-minus-3-bv-5
      sbvmoddown-32-4-non-neg ;gen
+
+     sbvrem-when-positive
+     sbvrem-of-bvchop-arg2
+     sbvrem-of-bvchop-arg3
      sbvrem-rewrite
+
      sbvdiv-when-y-negative
 ;sbvdiv-when-x-negative
      bvdiv-of-4
@@ -2465,7 +2478,6 @@
 ;     slice-when-bvlt-30-2-31-4 ;kill
      sha1-lemma-8
      equal-of-slice-and-slice-when-bvchops-same
-     bvlt-of-max-2
      bvlt-when-not-bvlt-of-slice-and-slice2
      bvlt-when-not-bvlt-of-slice-and-slice
      bvplus-of-bvmult-tighten
@@ -2771,7 +2783,7 @@
             equal-of-bvchop-and-constant-when-not-bvlt-constant-2
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
-            bvlt-of-max-arg3
+            bvlt-of-max-arg3-axe
             bvlt-of-constant-arg3
             bvlt-of-constant-arg2
             slice-when-bvlt-gen      ;wed mar 16 00:52:46 2011
@@ -2886,7 +2898,7 @@
 
              ;; logext can still appear (if arraycopy is called):
              logext-when-usb-cheap
-             logext-identity-when-usb-smaller-dag
+             logext-identity-when-usb-smaller-axe
 
              all-unsigned-byte-p-of-take-of-subrange ;Fri Dec 17 03:22:09 2010
              all-true-listp-of-map-unpackbv
@@ -3091,7 +3103,7 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             not-equal-constant-when-unsigned-byte-p-bind-free-dag ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
+             not-equal-constant-when-unsigned-byte-p-bind-free-axe ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter
@@ -3178,7 +3190,7 @@
 
 
              equal-of-bitxor-and-bitxor-same-6
-             bvplus-of-bvcat-constants
+             ;bvplus-of-bvcat-constants ; trying..
              slice-when-bvchop-known-2
 
              consp-of-group
@@ -3397,8 +3409,8 @@
              equal-of-myif-same-2
              bvif-of-myif-arg3
              bvif-of-myif-arg4
-             bvplus-of-plus-arg3
-             bvplus-of-plus-arg2
+             bvplus-of-+-arg3
+             bvplus-of-+-arg2
              slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
              <-of-+-of-minus-and-bv
@@ -3895,6 +3907,62 @@
     bvif-when-not-nil
     boolif-when-nil
     boolif-when-not-nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Note that this gets supplemented with any rules that are passed to the tactic-prover for rewriting
+;; TODO: Use these whenever we translate to STP, not just in the tactic prover.
+(defund pre-stp-rules ()
+  (declare (xargs :guard t))
+  (append
+   '(;; since we don't translate these shift operations to STP:
+     bvshl-rewrite-with-bvchop-for-constant-shift-amount ;introduces bvcat ; todo: replace with the definition of bvshl?
+     bvshr-rewrite-for-constant-shift-amount             ; introduces slice
+     bvashr-rewrite-for-constant-shift-amount            ;new, introduces bvsx
+     ;; todo: handle more cases.  a general solution? ; see the leftrotate-unroller
+     bvshl-16-cases
+     bvshl-32-cases
+     bvshl-64-cases
+     bvshr-16-cases
+     bvshr-32-cases
+     bvshr-64-cases
+     bvashr-16-cases
+     bvashr-32-cases
+     bvashr-64-cases
+     ;; these are needed to resolve claims about the indices being in bounds (todo: generalize the rules above):
+     <-lemma-for-known-operators-axe
+     <-lemma-for-known-operators-axe-alt
+     eql ; introduced by case
+     not-equal-of-constant-and-bv-term-axe ; can get rid of impossible shift amounts
+     not-equal-of-constant-and-bv-term-alt-axe ; can get rid of impossible shift amounts
+     bvcat-of-0-arg1
+     bvcat-of-0-arg3 ; can arise from unrolling a rotate
+     equal-of-bvuminus-and-constant
+     bvcat-of-bvchop-high
+     bvcat-of-bvchop-low
+     ;; Rules about rotates (since we don't translate most rotates to STP):
+     leftrotate-open-when-constant-shift-amount
+     rightrotate-open-when-constant-shift-amount
+     rightrotate-becomes-rightrotate-unroller-strong2
+     rightrotate-unroller-opener
+     leftrotate-becomes-leftrotate-unroller-strong2
+     leftrotate-unroller-opener
+     ;; Introduce bvif when we can:
+     if-becomes-bvif-1-axe
+     if-becomes-bvif-2-axe
+     if-becomes-bvif-3-axe
+     if-becomes-bvif-4-axe)
+   (bv-function-of-bvchop-rules)
+   (type-rules)
+   (unsigned-byte-p-forced-rules)))
+
+(in-theory (disable (:e pre-stp-rules))) ; avoid big goals
+
+(defthmd symbol-listp-of-pre-stp-rules
+  (symbol-listp (pre-stp-rules))
+  :hints (("Goal" :in-theory (enable (:e pre-stp-rules)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
 ;; priorities

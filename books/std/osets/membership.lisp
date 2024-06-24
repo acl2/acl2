@@ -743,7 +743,14 @@ equal to one another.</p>
 
 <p>Unfortunately, because this rule targets @('equal') it can get quite
 expensive.  You may sometimes wish to disable it to speed up your proofs, as
-directed by @(see accumulated-persistence).</p>"
+directed by @(see accumulated-persistence).  In fact, this rule is disabled
+when importing @('[books]/std/osets/top.lisp'). To reduce its cost when enabled,
+this rule has a backchain limit.</p>
+
+<p>On the other hand, there are cases in which this rule works well, and where
+the backchain limit is detrimental.  For this reason, we also provide a version
+of the rule that has no backchain limit.  This version can be enabled
+as needed.</p>"
 
 ; The general argument is the following:
 ;
@@ -828,7 +835,7 @@ directed by @(see accumulated-persistence).</p>"
                    :in-theory (enable head-tail-same)
                    :induct (double-tail-induction X Y)))))
 
-  (defthm double-containment
+  (defthm double-containment ; version with the backchain limit
     ;; I added backchain limits to this because targetting equal is so expensive.
     ;; Even so it is possibly very expensive.
     (implies (and (setp X)
@@ -837,7 +844,15 @@ directed by @(see accumulated-persistence).</p>"
 		    (and (subset X Y)
 			 (subset Y X))))
     :rule-classes ((:rewrite :backchain-limit-lst 1))
-    :hints(("Goal" :use (:instance double-containment-is-equality)))))
+    :hints(("Goal" :use (:instance double-containment-is-equality))))
+
+  (defthmd double-containment-no-backchain-limit ; version w/o backchain limit
+    (implies (and (setp x)
+                  (setp y))
+             (equal (equal x y)
+                    (and (subset x y)
+                         (subset y x))))
+    :hints (("Goal" :by double-containment))))
 
 
 ; We are now done with the membership level.  We disable all of the order based

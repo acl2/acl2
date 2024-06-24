@@ -1,7 +1,7 @@
 ; Tests of make-evaluator-simple
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -57,20 +57,18 @@
               (let ((args-to-walk-down (cdr args-to-walk-down)))
                 (if (endp args-to-walk-down)
                     (let ((arg1 (nth 0 args)))
-                      (if (eq 'cdr fn)
-                          (mv t (cdr arg1))
-                        (if (eq 'consp fn)
-                            (mv t (consp arg1))
-                          (if (eq 'len fn)
-                              (mv t (len arg1))
-                            (mv nil nil)))))
+                      (case fn
+                        (len (mv t (len arg1)))
+                        (consp (mv t (consp arg1)))
+                        (cdr (mv t (cdr arg1)))
+                        (t (mv nil nil))))
                   (let ((args-to-walk-down (cdr args-to-walk-down)))
                     (if (endp args-to-walk-down)
                         (let ((arg2 (nth 1 args))
                               (arg1 (nth 0 args)))
-                          (if (eq 'binary-+ fn)
-                              (mv t (binary-+ arg1 arg2))
-                            (mv nil nil)))
+                          (case fn
+                            (binary-+ (mv t (binary-+ arg1 arg2)))
+                            (t (mv nil nil))))
                       (mv nil nil))))))
             (if hit
                 (mv (erp-nil) val)
@@ -164,20 +162,18 @@
              (let ((args-to-walk-down (cdr args-to-walk-down)))
                (if (endp args-to-walk-down)
                    (let ((arg1 (unquote (nth 0 args))))
-                     (if (eq 'cdr fn)
-                         (mv t (cdr arg1))
-                       (if (eq 'consp fn)
-                           (mv t (consp arg1))
-                         (if (eq 'len fn)
-                             (mv t (len arg1))
-                           (mv nil nil)))))
+                     (case fn
+                       (len (mv t (len arg1)))
+                       (consp (mv t (consp arg1)))
+                       (cdr (mv t (cdr arg1)))
+                       (t (mv nil nil))))
                  (let ((args-to-walk-down (cdr args-to-walk-down)))
                    (if (endp args-to-walk-down)
                        (let ((arg2 (unquote (nth 1 args)))
                              (arg1 (unquote (nth 0 args))))
-                         (if (eq 'binary-+ fn)
-                             (mv t (binary-+ arg1 arg2))
-                           (mv nil nil)))
+                         (case fn
+                           (binary-+ (mv t (binary-+ arg1 arg2)))
+                           (t (mv nil nil))))
                      (mv nil nil))))))
            (if hit
                (mv (erp-nil) val)

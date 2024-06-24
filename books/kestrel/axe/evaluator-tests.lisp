@@ -42,1183 +42,313 @@
         (IF
          (ENDP ARGS-TO-WALK-DOWN)
          (MV NIL NIL)
-         (LET
-          ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-          (IF
-           (ENDP ARGS-TO-WALK-DOWN)
-           (LET
-            ((ARG1 (NTH 0 ARGS)))
-            (IF
-             (EQ 'NUMERATOR FN)
-             (MV T (NUMERATOR-UNGUARDED ARG1))
-            (IF
-             (EQ 'DENOMINATOR FN)
-             (MV T (DENOMINATOR-UNGUARDED ARG1))
-            (IF
-             (EQ 'COMPLEX-RATIONALP FN)
-             (MV T (COMPLEX-RATIONALP ARG1))
-             (IF
-              (EQ 'CHARACTERP FN)
-              (MV T (CHARACTERP ARG1))
-              (IF
-               (EQ 'SYMBOLP FN)
-               (MV T (SYMBOLP ARG1))
-               (IF
-                (EQ 'IMAGPART FN)
-                (MV T (IMAGPART-UNGUARDED ARG1))
-                (IF
-                 (EQ 'REALPART FN)
-                 (MV T (REALPART-UNGUARDED ARG1))
-                 (IF
-                  (EQ 'MAP-REVERSE-LIST FN)
-                  (MV T (MAP-REVERSE-LIST ARG1))
-                  (IF
-                   (EQ 'CDR FN)
-                   (MV T (CDR-UNGUARDED ARG1))
-                   (IF
-                    (EQ 'CAR FN)
-                    (MV T (CAR-UNGUARDED ARG1))
-                    (IF
-                     (EQ 'ATOM FN)
-                     (MV T (ATOM ARG1))
-                     (IF
-                      (EQ 'UNARY-- FN)
-                      (MV T (UNARY---UNGUARDED ARG1))
-                      (IF
-                       (EQ 'ZP FN)
-                       (MV T (ZP-UNGUARDED ARG1))
-                       (IF
-                        (EQ 'ACL2-NUMBERP FN)
-                        (MV T (ACL2-NUMBERP ARG1))
-                        (IF
-                         (EQ 'REVERSE-LIST FN)
-                         (MV T (REVERSE-LIST-UNGUARDED ARG1))
-                         (IF
-                          (EQ 'LEN FN)
-                          (MV T (LEN ARG1))
-                          (IF
-                           (EQ 'IFIX FN)
-                           (MV T (IFIX ARG1))
-                           (IF
-                            (EQ 'NFIX FN)
-                            (MV T (NFIX ARG1))
-                            (IF
-                             (EQ 'UNARY-/ FN)
-                             (MV T (UNARY-/-UNGUARDED ARG1))
-                             (IF
-                              (EQ 'CEILING-OF-LG FN)
-                              (MV T (CEILING-OF-LG-unguarded ARG1))
-                              (IF
-                               (EQ 'INTEGER-LENGTH FN)
-                               (MV
-                                T
-                                (INTEGER-LENGTH-UNGUARDED ARG1))
-                               (IF
-                                (EQ 'LOGMASKP FN)
-                                (MV T (LOGMASKP ARG1))
-                                (IF
-                                 (EQ 'BITNOT FN)
-                                 (MV T (BITNOT-UNGUARDED ARG1))
-                                 (IF
-                                  (EQ 'ENDP FN)
-                                  (MV T (ENDP-UNGUARDED ARG1))
-                                  (IF
-                                   (EQ 'ALL-NATP FN)
-                                   (MV T (ALL-NATP ARG1))
-                                   (IF
-                                    (EQ 'WIDTH-OF-WIDEST-INT FN)
-                                    (MV
-                                     T
-                                     (WIDTH-OF-WIDEST-INT-UNGUARDED ARG1))
-                                    (IF
-                                     (EQ 'BYTES-TO-BITS FN)
-                                     (MV T (BYTES-TO-BITS ARG1))
-                                     (IF
-                                      (EQ 'CONSP FN)
-                                      (MV T (CONSP ARG1))
-                                      (IF
-                                       (EQ 'TRUE-LISTP FN)
-                                       (MV T (TRUE-LISTP ARG1))
-                                       (IF
-                                        (EQ 'STRINGP FN)
-                                        (MV T (STRINGP ARG1))
-                                        (IF
-                                         (EQ 'STRIP-CARS FN)
-                                         (MV T
-                                             (STRIP-CARS-UNGUARDED
-                                              ARG1))
-                                         (IF
-                                          (EQ 'STRIP-CDRS FN)
-                                          (MV T
-                                              (STRIP-CDRS-UNGUARDED
-                                               ARG1))
-                                          (IF
-                                           (EQ 'NO-DUPLICATESP-EQUAL FN)
-                                           (MV
-                                            T (NO-DUPLICATESP-EQUAL ARG1))
-                                           (IF
-                                            (EQ 'ALL-INTEGERP FN)
-                                            (MV
-                                             T
-                                             (ALL-INTEGERP ARG1))
-                                            (IF
-                                             (EQ 'TRUE-LIST-FIX
-                                                 FN)
-                                             (MV T
-                                                 (TRUE-LIST-FIX
-                                                  ARG1))
-                                             (IF
-                                              (EQ 'KEY-LIST FN)
-                                              (MV
-                                               T (KEY-LIST ARG1))
-                                              (IF
-                                               (EQ 'RKEYS FN)
-                                               (MV
-                                                T (RKEYS ARG1))
-                                               (IF
-                                                (EQ 'LIST::2SET
-                                                    FN)
-                                                (MV T
-                                                    (LIST::2SET
-                                                     ARG1))
-                                                (IF
-                                                 (EQ 'BOOLEANP
-                                                     FN)
-                                                 (MV T
-                                                     (BOOLEANP
-                                                      ARG1))
-                                                 (IF
-                                                  (EQ
-                                                   'BOOL-FIX$INLINE
-                                                   FN)
-                                                  (MV T
-                                                      (BOOL-FIX$INLINE
-                                                       ARG1))
-                                                  (IF
-                                                   (EQ 'ALL-SAME
-                                                       FN)
-                                                   (MV
-                                                    T
-                                                    (ALL-SAME
-                                                     ARG1))
-                                                   (IF
-                                                    (EQ
-                                                     'SYMBOL-NAME
-                                                     FN)
-                                                    (MV
-                                                     T
-                                                     (SYMBOL-NAME-UNGUARDED
-                                                      ARG1))
-                                                    (IF
-                                                     (EQ
-                                                      'SYMBOL-PACKAGE-NAME
-                                                      FN)
-                                                     (MV
-                                                      T
-                                                      (SYMBOL-PACKAGE-NAME-UNGUARDED
-                                                       ARG1))
-                                                     (IF
-                                                      (EQ
-                                                       'CODE-CHAR
-                                                       FN)
-                                                      (MV
-                                                       T
-                                                       (CODE-CHAR-UNGUARDED
-                                                        ARG1))
-                                                      (IF
-                                                       (EQ
-                                                        'CHAR-CODE
-                                                        FN)
-                                                       (MV
-                                                        T
-                                                        (CHAR-CODE-UNGUARDED
-                                                         ARG1))
-                                                       (IF
-                                                        (EQ
-                                                         'BOOL-TO-BIT
-                                                         FN)
-                                                        (MV
-                                                         T
-                                                         (BOOL-TO-BIT
-                                                          ARG1))
-                                                        (IF
-                                                         (EQ 'LG
-                                                             FN)
-                                                         (MV
-                                                          T
-                                                          (LG-UNGUARDED
-                                                           ARG1))
-                                                         (IF
-                                                          (EQ
-                                                           'POWER-OF-2P
-                                                           FN)
-                                                          (MV
-                                                           T
-                                                           (POWER-OF-2P
-                                                            ARG1))
-                                                          (IF
-                                                           (EQ
-                                                            'NOT
-                                                            FN)
-                                                           (MV
-                                                            T
-                                                            (NOT
-                                                             ARG1))
-                                                           (IF
-                                                            (EQ
-                                                             'PRINT-CONSTANT
-                                                             FN)
-                                                            (MV
-                                                             T
-                                                             (PRINT-CONSTANT
-                                                              ARG1))
-                                                            (IF
-                                                             (EQ
-                                                              'RATIONALP
-                                                              FN)
-                                                             (MV
-                                                              T
-                                                              (RATIONALP
-                                                               ARG1))
-                                                             (IF
-                                                              (EQ
-                                                               'INTEGERP
-                                                               FN)
-                                                              (MV
-                                                               T
-                                                               (INTEGERP
-                                                                ARG1))
-                                                              (IF
-                                                               (EQ
-                                                                'POSP
-                                                                FN)
-                                                               (MV
-                                                                T
-                                                                (POSP
-                                                                 ARG1))
-                                                               (IF
-                                                                (EQ
-                                                                 'NATP
-                                                                 FN)
-                                                                (MV
-                                                                 T
-                                                                 (NATP
-                                                                  ARG1))
-                                                                (IF
-                                                                 (EQ
-                                                                  'QUOTEP
-                                                                  FN)
-                                                                 (MV
-                                                                  T
-                                                                  (QUOTEP ARG1))
-                                                                 (MV
-                                                                  NIL
-                                                                  NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-           (LET
-            ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-            (IF
-             (ENDP ARGS-TO-WALK-DOWN)
-             (LET
-              ((ARG2 (NTH 1 ARGS))
-               (ARG1 (NTH 0 ARGS)))
-              (IF
-               (EQ 'SYMBOL< FN)
-               (MV T (SYMBOL<-UNGUARDED ARG1 ARG2))
-              (IF
-               (EQ 'SET::IN FN)
-               (MV T (SET::IN-UNGUARDED ARG1 ARG2))
-               (IF
-                (EQ 'GROUP2 FN)
-                (MV T (GROUP2 ARG1 ARG2))
-                (IF
-                 (EQ 'GROUP FN)
-                 (MV T (GROUP ARG1 ARG2))
-                 (IF
-                  (EQ 'LOOKUP FN)
-                  (MV T (LOOKUP ARG1 ARG2))
-                  (IF
-                   (EQ 'LOOKUP-EQ FN)
-                   (MV T (LOOKUP-EQ ARG1 ARG2))
-                   (IF
-                    (EQ 'CEILING FN)
-                    (MV T (CEILING-UNGUARDED ARG1 ARG2))
-                    (IF
-                     (EQ 'EQ FN)
-                     (MV T (EQUAL ARG1 ARG2))
-                     (IF
-                      (EQ 'BVNOT-LIST FN)
-                      (MV T (BVNOT-LIST-UNGUARDED ARG1 ARG2))
-                      (IF
-                       (EQ 'BINARY-* FN)
-                       (MV T (BINARY-*-UNGUARDED ARG1 ARG2))
-                       (IF
-                        (EQ 'NTH FN)
-                        (MV T (NTH-UNGUARDED ARG1 ARG2))
-                        (IF
-                         (EQ 'LOGEXT FN)
-                         (MV T (LOGEXT-unguarded ARG1 ARG2))
-                         (IF
-                          (EQ 'LOGTAIL$INLINE FN)
-                          (MV T (LOGTAIL-UNGUARDED ARG1 ARG2))
-                          (IF
-                           (EQ 'BVCHOP FN)
-                           (MV T (BVCHOP-UNGUARDED ARG1 ARG2))
-                           (IF
-                            (EQ 'CONS FN)
-                            (MV T (CONS ARG1 ARG2))
-                            (IF
-                             (EQ 'GETBIT FN)
-                             (MV T (GETBIT-UNGUARDED ARG1 ARG2))
-                             (IF
-                              (EQ 'MOD FN)
-                              (MV T (MOD ARG1 ARG2))
-                              (IF
-                               (EQ 'MAX FN)
-                               (MV T (MAX-UNGUARDED ARG1 ARG2))
-                               (IF
-                                (EQ 'MIN FN)
-                                (MV T (MIN-UNGUARDED ARG1 ARG2))
-                                (IF
-                                 (EQ 'EXPT FN)
-                                 (MV
-                                  T (EXPT-UNGUARDED ARG1 ARG2))
-                                 (IF
-                                  (EQ 'BITXOR FN)
-                                  (MV
-                                   T
-                                   (BITXOR-UNGUARDED ARG1 ARG2))
-                                  (IF
-                                   (EQ 'BITAND FN)
-                                   (MV
-                                    T
-                                    (BITAND-UNGUARDED ARG1 ARG2))
-                                   (IF
-                                    (EQ 'BITOR FN)
-                                    (MV
-                                     T
-                                     (BITOR-UNGUARDED ARG1 ARG2))
-                                    (IF
-                                     (EQ 'ALL-SIGNED-BYTE-P FN)
-                                     (MV T
-                                         (ALL-SIGNED-BYTE-P
-                                          ARG1 ARG2))
-                                     (IF
-                                      (EQ 'ALL-UNSIGNED-BYTE-P
-                                          FN)
-                                      (MV T
-                                          (ALL-UNSIGNED-BYTE-P
-                                           ARG1 ARG2))
-                                      (IF
-                                       (EQ 'BVCHOP-LIST FN)
-                                       (MV T
-                                           (BVCHOP-LIST-UNGUARDED
-                                            ARG1 ARG2))
-                                       (IF
-                                        (EQ 'UNSIGNED-BYTE-P FN)
-                                        (MV T
-                                            (UNSIGNED-BYTE-P
-                                             ARG1 ARG2))
-                                        (IF
-                                         (EQ 'SIGNED-BYTE-P FN)
-                                         (MV T
-                                             (SIGNED-BYTE-P
-                                              ARG1 ARG2))
-                                         ;; (IF
-                                         ;;  (EQ 'GETBIT-IS-ALWAYS-1
-                                         ;;      FN)
-                                         ;;  (MV T
-                                         ;;      (GETBIT-IS-ALWAYS-1-UNGUARDED
-                                         ;;       ARG1 ARG2))
-                                         ;;  (IF
-                                         ;;   (EQ
-                                         ;;    'GETBIT-IS-ALWAYS-0
-                                         ;;    FN)
-                                         ;;   (MV T
-                                         ;;       (GETBIT-IS-ALWAYS-0-UNGUARDED
-                                         ;;        ARG1 ARG2))
-                                           (IF
-                                            (EQ 'BINARY-APPEND
-                                                FN)
-                                            (MV T
-                                                (BINARY-APPEND-UNGUARDED
-                                                 ARG1 ARG2))
-                                            (IF
-                                             (EQ 'FIRSTN FN)
-                                             (MV T
-                                                 (FIRSTN-UNGUARDED
-                                                  ARG1 ARG2))
-                                             (IF
-                                              (EQ 'TAKE FN)
-                                              (MV
-                                               T
-                                               (TAKE-UNGUARDED
-                                                ARG1 ARG2))
-                                              (IF
-                                               (EQ 'NTHCDR FN)
-                                               (MV
-                                                T
-                                                (NTHCDR-UNGUARDED
-                                                 ARG1 ARG2))
-                                               (IF
-                                                (EQ 'G FN)
-                                                (MV
-                                                 T (G ARG1 ARG2))
-                                                (IF
-                                                 (EQ
-                                                  'MEMBER-EQUAL
-                                                  FN)
-                                                 (MV
-                                                  T
-                                                  (MEMBER-EQUAL-unguarded
-                                                   ARG1 ARG2))
-                                                 (IF
-                                                  (EQ 'FLOOR FN)
-                                                  (MV
-                                                   T
-                                                   (FLOOR
-                                                    ARG1 ARG2))
-                                                  (IF
-                                                   (EQ
-                                                    'SET::INSERT
-                                                    FN)
-                                                   (MV
-                                                    T
-                                                    (SET::INSERT
-                                                     ARG1 ARG2))
-                                                   (IF
-                                                    (EQ
-                                                     'LEFTROTATE32
-                                                     FN)
-                                                    (MV
-                                                     T
-                                                     (LEFTROTATE32-UNGUARDED
-                                                      ARG1 ARG2))
-                                                    (IF
-                                                     (EQ
-                                                      'SET::UNION
-                                                      FN)
-                                                     (MV
-                                                      T
-                                                      (SET::UNION
-                                                       ARG1
-                                                       ARG2))
-                                                     (IF
-                                                      (EQ
-                                                       'GETBIT-LIST
-                                                       FN)
-                                                      (MV
-                                                       T
-                                                       (GETBIT-LIST
-                                                        ARG1
-                                                        ARG2))
-                                                      (IF
-                                                       (EQ
-                                                        'BOOLOR
-                                                        FN)
-                                                       (MV
-                                                        T
-                                                        (BOOLOR
-                                                         ARG1
-                                                         ARG2))
-                                                       (IF
-                                                        (EQ
-                                                         'BOOLAND
-                                                         FN)
-                                                        (MV
-                                                         T
-                                                         (BOOLAND
-                                                          ARG1
-                                                          ARG2))
-                                                        (IF
-                                                         (EQ
-                                                          'FIRST-NON-MEMBER
-                                                          FN)
-                                                         (MV
-                                                          T
-                                                          (FIRST-NON-MEMBER
-                                                           ARG1
-                                                           ARG2))
-                                                         (IF
-                                                          (EQ
-                                                           'IMPLIES
-                                                           FN)
-                                                          (MV
-                                                           T
-                                                           (IMPLIES
-                                                            ARG1
-                                                            ARG2))
-                                                          ;; (IF
-                                                          ;;  (EQ
-                                                          ;;   'BINARY-AND
-                                                          ;;   FN)
-                                                          ;;  (MV
-                                                          ;;   T
-                                                          ;;   (BINARY-AND
-                                                          ;;    ARG1
-                                                          ;;    ARG2))
-                                                           (IF
-                                                            (EQ
-                                                             'REPEATBIT
-                                                             FN)
-                                                            (MV
-                                                             T
-                                                             (REPEATBIT-unguarded
-                                                              ARG1
-                                                              ARG2))
-                                                            (IF
-                                                             (EQ
-                                                              'ALL-EQUAL$
-                                                              FN)
-                                                             (MV
-                                                              T
-                                                              (ALL-EQUAL$
-                                                               ARG1
-                                                               ARG2))
-                                                             (IF
-                                                              (EQ
-                                                               'INTERSECTION-EQUAL
-                                                               FN)
-                                                              (MV
-                                                               T
-                                                               (INTERSECTION-EQUAL
-                                                                ARG1
-                                                                ARG2))
-                                                              (IF
-                                                               (EQ
-                                                                'EVERY-NTH
-                                                                FN)
-                                                               (MV
-                                                                T
-                                                                (EVERY-NTH
-                                                                 ARG1
-                                                                 ARG2))
-                                                               (IF
-                                                                (EQ
-                                                                 'ALL-ITEMS-LESS-THAN
-                                                                 FN)
-                                                                (MV
-                                                                 T
-                                                                 (ALL-ITEMS-LESS-THAN
-                                                                  ARG1
-                                                                  ARG2))
-                                                                (IF
-                                                                 (EQ
-                                                                  'BINARY-+
-                                                                  FN)
-                                                                 (MV
-                                                                  T
-                                                                  (BINARY-+-UNGUARDED
-
-                                                                   ARG1
-
-                                                                   ARG2))
-                                                                 (IF
-                                                                  (EQ
-
-                                                                   'TRIM
-
-                                                                   FN)
-                                                                  (MV
-
-                                                                   T
-
-                                                                   (TRIM-UNGUARDED
-
-                                                                    ARG1
-
-                                                                    ARG2))
-                                                                  (IF
-
-                                                                   (EQ
-
-                                                                    'UNSIGNED-BYTE-P-FORCED
-
-                                                                    FN)
-
-                                                                   (MV
-
-                                                                    T
-
-                                                                    (UNSIGNED-BYTE-P-FORCED
-
-                                                                     ARG1
-
-                                                                     ARG2))
-
-                                                                   (IF
-
-                                                                    (EQ
-
-                                                                     'ASSOC-EQUAL
-
-                                                                     FN)
-
-                                                                    (MV
-
-                                                                     T
-
-                                                                     (ASSOC-EQUAL-UNGUARDED
-
-                                                                      ARG1
-
-                                                                      ARG2))
-
-                                                                    (IF
-
-                                                                     (EQ
-
-                                                                      'BVUMINUS
-
-                                                                      FN)
-
-                                                                     (MV
-
-                                                                      T
-
-                                                                      (BVUMINUS-UNGUARDED
-
-                                                                       ARG1
-
-                                                                       ARG2))
-
-                                                                     (IF
-
-                                                                      (EQ
-
-                                                                       'BVNOT
-
-                                                                       FN)
-
-                                                                      (MV
-
-                                                                       T
-
-                                                                       (BVNOT-UNGUARDED
-
-                                                                        ARG1
-
-                                                                        ARG2))
-
-                                                                      (IF
-
-                                                                       (EQ
-
-                                                                        'LOOKUP
-
-                                                                        FN)
-
-                                                                       (MV
-
-                                                                        T
-
-                                                                        (LOOKUP
-
-                                                                         ARG1
-
-                                                                         ARG2))
-
-                                                                       (IF
-
-                                                                        (EQ
-
-                                                                         'LOOKUP-EQUAL
-
-                                                                         FN)
-
-                                                                        (MV
-
-                                                                         T
-
-                                                                         (LOOKUP-EQUAL
-
-                                                                          ARG1
-
-                                                                          ARG2))
-
-                                                                        (IF
-
-                                                                         (EQ
-
-                                                                          'PREFIXP
-
-                                                                          FN)
-
-                                                                         (MV
-
-                                                                          T
-
-                                                                          (PREFIXP
-
-                                                                           ARG1
-
-                                                                           ARG2))
-
-                                                                         (IF
-
-                                                                          (EQ
-
-                                                                           'LIST-EQUIV
-
-                                                                           FN)
-
-                                                                          (MV
-
-                                                                           T
-
-                                                                           (LIST-EQUIV
-
-                                                                            ARG1
-
-                                                                            ARG2))
-
-                                                                          (IF
-
-                                                                           (EQ
-
-                                                                            'EQL
-
-                                                                            FN)
-
-                                                                           (MV
-
-                                                                            T
-
-                                                                            (EQUAL
-
-                                                                             ARG1
-
-                                                                             ARG2))
-
-                                                                           (IF
-
-                                                                            (EQ
-
-                                                                             'EQUAL
-
-                                                                             FN)
-
-                                                                            (MV
-
-                                                                             T
-
-                                                                             (EQUAL
-
-                                                                              ARG1
-
-                                                                              ARG2))
-
-                                                                            (IF
-
-                                                                             (EQ
-
-                                                                              '<
-
-                                                                              FN)
-
-                                                                             (MV
-
-                                                                              T
-
-                                                                              (<-UNGUARDED
-
-                                                                               ARG1
-
-                                                                               ARG2))
-
-                                                                             (IF
-
-                                                                              (EQ
-
-                                                                               'COERCE
-
-                                                                               FN)
-
-                                                                              (MV
-
-                                                                               T
-
-                                                                               (COERCE-UNGUARDED
-
-                                                                                ARG1
-
-                                                                                ARG2))
-
-                                                                              (IF
-
-                                                                               (EQ
-
-                                                                                'ADD-TO-END
-
-                                                                                FN)
-
-                                                                               (MV
-
-                                                                                T
-
-                                                                                (ADD-TO-END
-
-                                                                                 ARG1
-
-                                                                                 ARG2))
-
-                                                                               (IF
-
-                                                                                (EQ
-
-                                                                                 'ALL-ALL-UNSIGNED-BYTE-P
-
-                                                                                 FN)
-
-                                                                                (MV
-
-                                                                                 T
-
-                                                                                 (ALL-ALL-UNSIGNED-BYTE-P
-
-                                                                                  ARG1
-
-                                                                                  ARG2))
-
-                                                                                (IF
-
-                                                                                 (EQ
-
-                                                                                  'ITEMS-HAVE-LEN
-
-                                                                                  FN)
-
-                                                                                 (MV
-
-                                                                                  T
-
-                                                                                  (ITEMS-HAVE-LEN-UNGUARDED
-
-                                                                                   ARG1
-
-                                                                                   ARG2))
-                                                                                 (IF (EQ 'MV-NTH FN)
-                                                                                     (MV T (MV-NTH-UNGUARDED ARG1 ARG2))
-                                                                                 (MV
-
-                                                                                  NIL
-
-                                                                                  NIL))))))))))))))))))))))))
-                                                           ;;)
-                                                           ))))))))))))))) ;))
-                                           )))))))))))))))))))))))))))))
-             (LET
-              ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-              (IF
-               (ENDP ARGS-TO-WALK-DOWN)
-               (LET
-                ((ARG3 (NTH 2 ARGS))
-                 (ARG2 (NTH 1 ARGS))
-                 (ARG1 (NTH 0 ARGS)))
-                (IF
-                 (EQ 'BVXOR-LIST FN)
-                 (MV T (BVXOR-LIST-UNGUARDED ARG1 ARG2 ARG3))
-                 (IF
-                  (EQ 'SUBRANGE FN)
-                  (MV T
-                      (SUBRANGE (NFIX ARG1) (NFIX ARG2) ARG3))
-                  (IF
-                   (EQ 'KEEP-ITEMS-LESS-THAN FN)
-                   (MV T
-                       (KEEP-ITEMS-LESS-THAN-UNGUARDED
-                        ARG1 ARG2 ARG3))
-                   (IF
-                    (EQ 'BVSHL FN)
-                    (MV T (BVSHL ARG1 ARG2 ARG3))
-                    (IF
-                     (EQ 'SLICE FN)
-                     (MV T (SLICE-LESS-GUARDED ARG1 ARG2 ARG3))
-                     (IF
-                      (EQ 'IF FN)
-                      (MV T (IF ARG1 ARG2 ARG3))
-                      (IF
-                       (EQ 'UPDATE-NTH FN)
-                       (MV T (UPDATE-NTH ARG1 ARG2 ARG3))
-                       (IF
-                        (EQ 'ARRAY-ELEM-2D FN)
-                        (MV T (ARRAY-ELEM-2D ARG1 ARG2 ARG3))
-                        (IF
-                         (EQ 'BOOLIF FN)
-                         (MV T (BOOLIF ARG1 ARG2 ARG3))
-                         (IF
-                          (EQ 'MYIF FN)
-                          (MV T (MYIF ARG1 ARG2 ARG3))
-                          ;; (IF
-                          ;;  (EQ 'NTH2 FN)
-                          ;;  (MV T (NTH2 ARG1 ARG2 ARG3))
-                           (IF
-                            (EQ 'S FN)
-                            (MV T (S ARG1 ARG2 ARG3))
-                            (IF
-                             (EQ 'SBVLE FN)
-                             (MV T (SBVLE ARG1 ARG2 ARG3))
-                             (IF
-                              (EQ 'SBVLT FN)
-                              (MV T
-                                  (SBVLT ARG1 (IFIX ARG2)
-                                         (IFIX ARG3)))
-                              (IF
-                               (EQ 'SBVMODDOWN FN)
-                               (MV T (SBVMODDOWN ARG1 ARG2 ARG3))
-                               (IF
-                                (EQ 'SBVREM FN)
-                                (MV T (SBVREM ARG1 ARG2 ARG3))
-                                (IF
-                                 (EQ 'SBVDIVDOWN FN)
-                                 (MV
-                                  T (SBVDIVDOWN ARG1 ARG2 ARG3))
-                                 (IF
-                                  (EQ 'SBVDIV FN)
-                                  (MV T (SBVDIV ARG1 ARG2 ARG3))
-                                  (IF
-                                   (EQ 'BVSX FN)
-                                   (MV T (BVSX-unguarded ARG1 ARG2 ARG3))
-                                   (IF
-                                    (EQ 'BVDIV FN)
-                                    (MV T
-                                        (BVDIV-UNGUARDED
-                                         ARG1 ARG2 ARG3))
-                                    (IF
-                                     (EQ 'BVMOD FN)
-                                     (MV T
-                                         (BVMOD-UNGUARDED
-                                          ARG1 ARG2 ARG3))
-                                     (IF
-                                      (EQ 'BVMINUS FN)
-                                      (MV T
-                                          (BVMINUS-UNGUARDED
-                                           ARG1 ARG2 ARG3))
-                                      (IF
-                                       (EQ 'BVPLUS FN)
-                                       (MV T
-                                           (BVPLUS-UNGUARDED
-                                            ARG1 ARG2 ARG3))
-                                       (IF
-                                        (EQ 'BVMULT FN)
-                                        (MV T
-                                            (BVMULT-UNGUARDED
-                                             ARG1 ARG2 ARG3))
-                                        (IF
-                                         (EQ 'BVAND FN)
-                                         (MV
-                                          T
-                                          (BVAND-UNGUARDED
-                                           ARG1 ARG2 ARG3))
-                                         (IF
-                                          (EQ 'BVOR FN)
-                                          (MV
-                                           T
-                                           (BVOR-UNGUARDED
-                                            ARG1 ARG2 ARG3))
-                                          (IF
-                                           (EQ 'BVXOR FN)
-                                           (MV
-                                            T
-                                            (BVXOR-UNGUARDED
-                                             ARG1 ARG2 ARG3))
-                                           (IF
-                                            (EQ 'BVLE FN)
-                                            (MV
-                                             T
-                                             (BVLE-UNGUARDED
-                                              ARG1 ARG2 ARG3))
-                                            (IF
-                                             (EQ 'BVLT FN)
-                                             (MV
-                                              T
-                                              (BVLT-UNGUARDED
-                                               ARG1 ARG2 ARG3))
-                                            (IF
-                                             (EQ 'BVequal FN)
-                                             (MV T (BVequal-UNGUARDED ARG1 ARG2 ARG3))
-                                             (IF
-                                              (EQ 'BVPLUS-LST FN)
-                                              (MV
-                                               T
-                                               (BVPLUS-LST
-                                                ARG1 ARG2 ARG3))
-                                              (IF
-                                               (EQ 'UNPACKBV FN)
-                                               (MV
-                                                T
-                                                (UNPACKBV-LESS-GUARDED
-                                                 ARG1 ARG2 ARG3))
-                                               (IF
-                                                (EQ 'PACKBV FN)
-                                                (MV
-                                                 T
-                                                 (PACKBV
-                                                  ARG1
-                                                  ARG2 ARG3))
-                                                (IF
-                                                 (EQ
-                                                  'BVASHR
-                                                  FN)
-                                                 (MV
-                                                  T
-                                                  (BVASHR
-                                                   ARG1
-                                                   ARG2 ARG3))
-                                                 (IF
-                                                  (EQ 'BVSHR FN)
-                                                  (MV
-                                                   T
-                                                   (BVSHR
-                                                    ARG1
-                                                    ARG2 ARG3))
-                                                  (IF
-                                                   (EQ 'ACONS FN)
-                                                   (MV
-                                                    T
-                                                    (ACONS
-                                                     ARG1
-                                                     ARG2 ARG3))
-                                                   (IF
-                                                    (EQ
-                                                     'LEFTROTATE
-                                                     FN)
-                                                    (MV
-                                                     T
-                                                     (LEFTROTATE
-                                                      ARG1
-                                                      ARG2 ARG3))
-                                                    (IF
-                                                     (EQ
-                                                      'NEGATED-ELEMS-LISTP
-                                                      FN)
-                                                     (MV
-                                                      T
-                                                      (NEGATED-ELEMS-LISTP-UNGUARDED
-                                                       ARG1 ARG2
-                                                       ARG3))
-                                                     (IF
-                                                      (EQ
-                                                       'REPEAT-TAIL
-                                                       FN)
-                                                      (MV
-                                                       T
-                                                       (REPEAT-TAIL
-                                                        ARG1 ARG2
-                                                        ARG3))
-                                                      (MV
-                                                       NIL
-                                                       NIL))))))))))))))))))))))))))))) ;)
-                           )))))))))))
-               (LET
-                ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                (IF
-                 (ENDP ARGS-TO-WALK-DOWN)
-                 (LET
-                  ((ARG4 (NTH 3 ARGS))
-                   (ARG3 (NTH 2 ARGS))
-                   (ARG2 (NTH 1 ARGS))
-                   (ARG1 (NTH 0 ARGS)))
-                  (IF
-                   (EQ 'BVIF FN)
-                   (MV T (BVIF-UNGUARDED ARG1 ARG2 ARG3 ARG4))
-                   (IF
-                    (EQ 'BV-ARRAY-READ FN)
-                    (MV T
-                        (BV-ARRAY-READ-UNGUARDED
-                         ARG1 ARG2 ARG3 ARG4))
-                    ;; (IF
-                    ;;  (EQ 'BVNTH FN)
-                    ;;  (MV T (BVNTH ARG1 ARG2 (NFIX ARG3) ARG4))
-                     (IF
-                      (EQ 'BVCAT FN)
-                      (MV
-                       T (BVCAT-UNGUARDED ARG1 ARG2 ARG3 ARG4))
-                      (IF
-                       (EQ 'BV-ARRAY-CLEAR FN)
-                       (MV
-                        T (BV-ARRAY-CLEAR ARG1 ARG2 ARG3 ARG4))
-                       (IF
-                        (EQ 'UPDATE-NTH2 FN)
-                        (MV T (UPDATE-NTH2 ARG1 ARG2 ARG3 ARG4))
-                        (IF
-                         (EQ 'UPDATE-SUBRANGE FN)
-                         (MV
-                          T
-                          (UPDATE-SUBRANGE ARG1 ARG2 ARG3 ARG4))
-                         (IF
-                          (EQ 'APPLY-AXE-EVALUATOR FN)
-                          (MV T
-                              (APPLY-AXE-EVALUATOR
-                               ARG1 ARG2 ARG3 ARRAY-DEPTH))
-                          (IF
-                           (EQ 'DAG-VAL-WITH-AXE-EVALUATOR FN)
-                           (MV
-                            T
-                            (DAG-VAL-WITH-AXE-EVALUATOR
-                             ARG1 ARG2 ARG3 (+ 1 ARRAY-DEPTH)))
-                           (MV NIL NIL)))))))
-;)
-                     )))
-                 (LET
-                  ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                  (IF
-                   (ENDP ARGS-TO-WALK-DOWN)
-                   (LET
-                    ((ARG5 (NTH 4 ARGS))
-                     (ARG4 (NTH 3 ARGS))
-                     (ARG3 (NTH 2 ARGS))
-                     (ARG2 (NTH 1 ARGS))
-                     (ARG1 (NTH 0 ARGS)))
-                    (IF
-                     (EQ 'BV-ARRAY-CLEAR-RANGE FN)
-                     (MV T
-                         (BV-ARRAY-CLEAR-RANGE
-                          ARG1 ARG2 ARG3 ARG4 ARG5))
-                     (IF (EQ 'BV-ARRAY-WRITE FN)
-                         (MV T
-                             (BV-ARRAY-WRITE-UNGUARDED (NFIX ARG1)
-                                             (NFIX ARG2)
-                                             (NFIX ARG3)
-                                             ARG4 ARG5))
-                         (IF (EQ 'UPDATE-SUBRANGE2 FN)
-                             (MV T
-                                 (UPDATE-SUBRANGE2
-                                  ARG1 ARG2 ARG3 ARG4 ARG5))
-                             (MV NIL NIL)))))
-                   (LET
-                    ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                    (IF
-                     (ENDP ARGS-TO-WALK-DOWN)
-                     (MV NIL NIL)
-                     (LET
-                      ((ARGS-TO-WALK-DOWN
-                        (CDR ARGS-TO-WALK-DOWN)))
-                      (IF
-                       (ENDP ARGS-TO-WALK-DOWN)
-                       (MV NIL NIL)
-                       (LET
-                        ((ARGS-TO-WALK-DOWN
-                          (CDR ARGS-TO-WALK-DOWN)))
-                        (IF
-                         (ENDP ARGS-TO-WALK-DOWN)
-                         (LET
-                          ((ARG8 (NTH 7 ARGS))
-                           (ARG7 (NTH 6 ARGS))
-                           (ARG6 (NTH 5 ARGS))
-                           (ARG5 (NTH 4 ARGS))
-                           (ARG4 (NTH 3 ARGS))
-                           (ARG3 (NTH 2 ARGS))
-                           (ARG2 (NTH 1 ARGS))
-                           (ARG1 (NTH 0 ARGS)))
-                          (DECLARE (IGNORE ARG8)) ;since we use array-depth instead
-                          (IF
-                           (EQ 'EVAL-DAG-WITH-AXE-EVALUATOR FN)
-                           (MV
-                            T
-                            (EVAL-DAG-WITH-AXE-EVALUATOR
-                             ARG1 ARG2 ARG3
-                             ARG4 ARG5 ARG6 ARG7 ARRAY-DEPTH))
-                           (MV NIL NIL)))
-                         (MV NIL NIL))))))))))))))))))
+         (let ((args-to-walk-down (cdr args-to-walk-down)))
+                      (if
+                       (endp args-to-walk-down)
+                       (let ((arg1 (nth 0 args)))
+                        (case fn
+                          (quotep (mv t (quotep arg1)))
+                          (natp (mv t (natp arg1)))
+                          (posp (mv t (posp arg1)))
+                          (integerp (mv t (integerp arg1)))
+                          (rationalp (mv t (rationalp arg1)))
+                          (print-constant (mv t (print-constant arg1)))
+                          (not (mv t (not arg1)))
+                          (power-of-2p (mv t (power-of-2p arg1)))
+                          (lg (mv t (lg-unguarded arg1)))
+                          (bool-to-bit (mv t (bool-to-bit arg1)))
+                          (char-code (mv t (char-code-unguarded arg1)))
+                          (code-char (mv t (code-char-unguarded arg1)))
+                          (symbol-package-name
+                               (mv t (symbol-package-name-unguarded arg1)))
+                          (symbol-name (mv t (symbol-name-unguarded arg1)))
+                          (all-same (mv t (all-same arg1)))
+                          (bool-fix$inline (mv t (bool-fix$inline arg1)))
+                          (booleanp (mv t (booleanp arg1)))
+                          (list::2set (mv t (list::2set arg1)))
+                          (rkeys (mv t (rkeys arg1)))
+                          (key-list (mv t (key-list arg1)))
+                          (true-list-fix (mv t (true-list-fix arg1)))
+                          (all-integerp (mv t (all-integerp arg1)))
+                          (no-duplicatesp-equal
+                               (mv t (no-duplicatesp-equal arg1)))
+                          (strip-cdrs (mv t (strip-cdrs-unguarded arg1)))
+                          (strip-cars (mv t (strip-cars-unguarded arg1)))
+                          (stringp (mv t (stringp arg1)))
+                          (true-listp (mv t (true-listp arg1)))
+                          (consp (mv t (consp arg1)))
+                          (bytes-to-bits (mv t (bytes-to-bits arg1)))
+                          (width-of-widest-int
+                               (mv t (width-of-widest-int-unguarded arg1)))
+                          (all-natp (mv t (all-natp arg1)))
+                          (endp (mv t (endp-unguarded arg1)))
+                          (bitnot (mv t (bitnot-unguarded arg1)))
+                          (logmaskp (mv t (logmaskp arg1)))
+                          (integer-length
+                               (mv t (integer-length-unguarded arg1)))
+                          (ceiling-of-lg
+                               (mv t (ceiling-of-lg-unguarded arg1)))
+                          (unary-/ (mv t (unary-/-unguarded arg1)))
+                          (nfix (mv t (nfix arg1)))
+                          (ifix (mv t (ifix arg1)))
+                          (len (mv t (len arg1)))
+                          (reverse-list (mv t (reverse-list-unguarded arg1)))
+                          (acl2-numberp (mv t (acl2-numberp arg1)))
+                          (zp (mv t (zp-unguarded arg1)))
+                          (unary-- (mv t (unary---unguarded arg1)))
+                          (atom (mv t (atom arg1)))
+                          (car (mv t (car-unguarded arg1)))
+                          (cdr (mv t (cdr-unguarded arg1)))
+                          (map-reverse-list (mv t (map-reverse-list arg1)))
+                          (realpart (mv t (realpart-unguarded arg1)))
+                          (imagpart (mv t (imagpart-unguarded arg1)))
+                          (symbolp (mv t (symbolp arg1)))
+                          (characterp (mv t (characterp arg1)))
+                          (complex-rationalp (mv t (complex-rationalp arg1)))
+                          (denominator (mv t (denominator-unguarded arg1)))
+                          (numerator (mv t (numerator-unguarded arg1)))
+                          (t (mv nil nil))))
+                       (let ((args-to-walk-down (cdr args-to-walk-down)))
+                        (if
+                         (endp args-to-walk-down)
+                         (let ((arg2 (nth 1 args))
+                               (arg1 (nth 0 args)))
+                          (case fn
+                           (mv-nth (mv t (mv-nth-unguarded arg1 arg2)))
+                           (items-have-len
+                                (mv t (items-have-len-unguarded arg1 arg2)))
+                           (all-all-unsigned-byte-p
+                                (mv t (all-all-unsigned-byte-p arg1 arg2)))
+                           (add-to-end (mv t (add-to-end arg1 arg2)))
+                           (coerce (mv t (coerce-unguarded arg1 arg2)))
+                           (< (mv t (<-unguarded arg1 arg2)))
+                           (equal (mv t (equal arg1 arg2)))
+                           (eql (mv t (equal arg1 arg2)))
+                           (list-equiv (mv t (list-equiv arg1 arg2)))
+                           (prefixp (mv t (prefixp arg1 arg2)))
+                           (lookup-equal (mv t (lookup-equal arg1 arg2)))
+                           (lookup (mv t (lookup arg1 arg2)))
+                           (bvnot (mv t (bvnot-unguarded arg1 arg2)))
+                           (bvuminus (mv t (bvuminus-unguarded arg1 arg2)))
+                           (assoc-equal
+                                (mv t (assoc-equal-unguarded arg1 arg2)))
+                           (unsigned-byte-p-forced
+                                (mv t (unsigned-byte-p-forced arg1 arg2)))
+                           (trim (mv t (trim-unguarded arg1 arg2)))
+                           (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
+                           (all-items-less-than
+                                (mv t (all-items-less-than arg1 arg2)))
+                           (every-nth (mv t (every-nth arg1 arg2)))
+                           (intersection-equal
+                                (mv t (intersection-equal arg1 arg2)))
+                           (all-equal$ (mv t (all-equal$ arg1 arg2)))
+                           (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
+                           (implies (mv t (implies arg1 arg2)))
+                           (first-non-member
+                                (mv t (first-non-member arg1 arg2)))
+                           (booland (mv t (booland arg1 arg2)))
+                           (boolor (mv t (boolor arg1 arg2)))
+                           (getbit-list (mv t (getbit-list arg1 arg2)))
+                           (set::union (mv t (set::union arg1 arg2)))
+                           (leftrotate32
+                                (mv t (leftrotate32-unguarded arg1 arg2)))
+                           (set::insert (mv t (set::insert arg1 arg2)))
+                           (floor (mv t (floor arg1 arg2)))
+                           (member-equal
+                                (mv t (member-equal-unguarded arg1 arg2)))
+                           (g (mv t (g arg1 arg2)))
+                           (nthcdr (mv t (nthcdr-unguarded arg1 arg2)))
+                           (take (mv t (take-unguarded arg1 arg2)))
+                           (firstn (mv t (firstn-unguarded arg1 arg2)))
+                           (binary-append
+                                (mv t (binary-append-unguarded arg1 arg2)))
+                           (signed-byte-p (mv t (signed-byte-p arg1 arg2)))
+                           (unsigned-byte-p
+                                (mv t (unsigned-byte-p arg1 arg2)))
+                           (bvchop-list
+                                (mv t (bvchop-list-unguarded arg1 arg2)))
+                           (all-unsigned-byte-p
+                                (mv t (all-unsigned-byte-p arg1 arg2)))
+                           (all-signed-byte-p
+                                (mv t (all-signed-byte-p arg1 arg2)))
+                           (bitor (mv t (bitor-unguarded arg1 arg2)))
+                           (bitand (mv t (bitand-unguarded arg1 arg2)))
+                           (bitxor (mv t (bitxor-unguarded arg1 arg2)))
+                           (expt (mv t (expt-unguarded arg1 arg2)))
+                           (min (mv t (min-unguarded arg1 arg2)))
+                           (max (mv t (max-unguarded arg1 arg2)))
+                           (mod (mv t (mod arg1 arg2)))
+                           (getbit (mv t (getbit-unguarded arg1 arg2)))
+                           (cons (mv t (cons arg1 arg2)))
+                           (bvchop (mv t (bvchop-unguarded arg1 arg2)))
+                           (logtail$inline
+                                (mv t (logtail-unguarded arg1 arg2)))
+                           (logext (mv t (logext-unguarded arg1 arg2)))
+                           (nth (mv t (nth-unguarded arg1 arg2)))
+                           (binary-* (mv t (binary-*-unguarded arg1 arg2)))
+                           (bvnot-list
+                                (mv t (bvnot-list-unguarded arg1 arg2)))
+                           (eq (mv t (equal arg1 arg2)))
+                           (ceiling (mv t (ceiling-unguarded arg1 arg2)))
+                           (lookup-eq (mv t (lookup-eq arg1 arg2)))
+                           (lookup (mv t (lookup arg1 arg2)))
+                           (group (mv t (group arg1 arg2)))
+                           (group2 (mv t (group2 arg1 arg2)))
+                           (set::in (mv t (set::in-unguarded arg1 arg2)))
+                           (symbol< (mv t (symbol<-unguarded arg1 arg2)))
+                           (t (mv nil nil))))
+                         (let ((args-to-walk-down (cdr args-to-walk-down)))
+                          (if
+                           (endp args-to-walk-down)
+                           (let ((arg3 (nth 2 args))
+                                 (arg2 (nth 1 args))
+                                 (arg1 (nth 0 args)))
+                            (case fn
+                             (repeat-tail
+                                  (mv t (repeat-tail arg1 arg2 arg3)))
+                             (negated-elems-listp (mv t
+                                                      (negated-elems-listp-unguarded
+                                                           arg1 arg2 arg3)))
+                             (leftrotate (mv t (leftrotate arg1 arg2 arg3)))
+                             (acons (mv t (acons arg1 arg2 arg3)))
+                             (bvshr (mv t (bvshr arg1 arg2 arg3)))
+                             (bvashr (mv t (bvashr arg1 arg2 arg3)))
+                             (packbv (mv t (packbv arg1 arg2 arg3)))
+                             (unpackbv
+                                 (mv t
+                                     (unpackbv-less-guarded arg1 arg2 arg3)))
+                             (bvplus-lst (mv t (bvplus-lst arg1 arg2 arg3)))
+                             (bvequal
+                                  (mv t (bvequal-unguarded arg1 arg2 arg3)))
+                             (bvlt (mv t (bvlt-unguarded arg1 arg2 arg3)))
+                             (bvle (mv t (bvle-unguarded arg1 arg2 arg3)))
+                             (bvxor (mv t (bvxor-unguarded arg1 arg2 arg3)))
+                             (bvor (mv t (bvor-unguarded arg1 arg2 arg3)))
+                             (bvand (mv t (bvand-unguarded arg1 arg2 arg3)))
+                             (bvmult
+                                  (mv t (bvmult-unguarded arg1 arg2 arg3)))
+                             (bvplus
+                                  (mv t (bvplus-unguarded arg1 arg2 arg3)))
+                             (bvminus
+                                  (mv t (bvminus-unguarded arg1 arg2 arg3)))
+                             (bvmod (mv t (bvmod-unguarded arg1 arg2 arg3)))
+                             (bvdiv (mv t (bvdiv-unguarded arg1 arg2 arg3)))
+                             (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
+                             (sbvdiv (mv t (sbvdiv arg1 arg2 arg3)))
+                             (sbvdivdown (mv t (sbvdivdown arg1 arg2 arg3)))
+                             (sbvrem (mv t (sbvrem arg1 arg2 arg3)))
+                             (sbvmoddown (mv t (sbvmoddown arg1 arg2 arg3)))
+                             (sbvlt
+                                 (mv t (sbvlt arg1 (ifix arg2) (ifix arg3))))
+                             (sbvle (mv t (sbvle arg1 arg2 arg3)))
+                             (s (mv t (s arg1 arg2 arg3)))
+                             (myif (mv t (myif arg1 arg2 arg3)))
+                             (boolif (mv t (boolif arg1 arg2 arg3)))
+                             (array-elem-2d
+                                  (mv t (array-elem-2d arg1 arg2 arg3)))
+                             (update-nth (mv t (update-nth arg1 arg2 arg3)))
+                             (if (mv t (if arg1 arg2 arg3)))
+                             (slice
+                                  (mv t (slice-less-guarded arg1 arg2 arg3)))
+                             (bvshl (mv t (bvshl arg1 arg2 arg3)))
+                             (keep-items-less-than (mv t
+                                                       (keep-items-less-than-unguarded
+                                                            arg1 arg2 arg3)))
+                             (subrange (mv t
+                                           (subrange (nfix arg1)
+                                                     (nfix arg2)
+                                                     arg3)))
+                             (bvxor-list
+                                  (mv t
+                                      (bvxor-list-unguarded arg1 arg2 arg3)))
+                             (t (mv nil nil))))
+                           (let ((args-to-walk-down (cdr args-to-walk-down)))
+                            (if
+                             (endp args-to-walk-down)
+                             (let ((arg4 (nth 3 args))
+                                   (arg3 (nth 2 args))
+                                   (arg2 (nth 1 args))
+                                   (arg1 (nth 0 args)))
+                              (case fn
+                               (dag-val-with-axe-evaluator
+                                 (mv t
+                                     (dag-val-with-axe-evaluator
+                                          arg1 arg2 arg3 (+ 1 array-depth))))
+                               (apply-axe-evaluator
+                                    (mv t
+                                        (apply-axe-evaluator
+                                             arg1 arg2 arg3 array-depth)))
+                               (update-subrange
+                                  (mv t
+                                      (update-subrange arg1 arg2 arg3 arg4)))
+                               (update-nth2
+                                    (mv t (update-nth2 arg1 arg2 arg3 arg4)))
+                               (bv-array-clear
+                                 (mv t (bv-array-clear arg1 arg2 arg3 arg4)))
+                               (bvcat
+                                  (mv t
+                                      (bvcat-unguarded arg1 arg2 arg3 arg4)))
+                               (bv-array-read (mv t
+                                                  (bv-array-read-unguarded
+                                                       arg1 arg2 arg3 arg4)))
+                               (bvif
+                                 (mv t (bvif-unguarded arg1 arg2 arg3 arg4)))
+                               (t (mv nil nil))))
+                             (let
+                               ((args-to-walk-down (cdr args-to-walk-down)))
+                              (if
+                               (endp args-to-walk-down)
+                               (let ((arg5 (nth 4 args))
+                                     (arg4 (nth 3 args))
+                                     (arg3 (nth 2 args))
+                                     (arg2 (nth 1 args))
+                                     (arg1 (nth 0 args)))
+                                (case fn
+                                 (update-subrange2
+                                      (mv t
+                                          (update-subrange2
+                                               arg1 arg2 arg3 arg4 arg5)))
+                                 (bv-array-write
+                                   (mv t
+                                       (bv-array-write-unguarded (nfix arg1)
+                                                                 (nfix arg2)
+                                                                 (nfix arg3)
+                                                                 arg4 arg5)))
+                                 (bv-array-clear-range
+                                      (mv t
+                                          (bv-array-clear-range
+                                               arg1 arg2 arg3 arg4 arg5)))
+                                 (t (mv nil nil))))
+                               (let
+                                ((args-to-walk-down (cdr args-to-walk-down)))
+                                (if (endp args-to-walk-down)
+                                    (mv nil nil)
+                                 (let ((args-to-walk-down
+                                            (cdr args-to-walk-down)))
+                                  (if (endp args-to-walk-down)
+                                      (mv nil nil)
+                                   (let ((args-to-walk-down
+                                              (cdr args-to-walk-down)))
+                                    (if
+                                     (endp args-to-walk-down)
+                                     (let ((arg8 (nth 7 args))
+                                           (arg7 (nth 6 args))
+                                           (arg6 (nth 5 args))
+                                           (arg5 (nth 4 args))
+                                           (arg4 (nth 3 args))
+                                           (arg3 (nth 2 args))
+                                           (arg2 (nth 1 args))
+                                           (arg1 (nth 0 args)))
+                                      (declare (ignore arg8))
+                                      (case fn
+                                       (eval-dag-with-axe-evaluator
+                                        (mv
+                                         t
+                                         (eval-dag-with-axe-evaluator
+                                           arg1 arg2 arg3
+                                           arg4 arg5 arg6 arg7 array-depth)))
+                                       (t (mv nil nil))))
+                                     (mv nil nil))))))))))))))))))
         (IF
          HIT VAL
          (LET
@@ -1516,1142 +646,308 @@
         (MV NIL NIL)
         (LET
          ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-         (IF
-          (ENDP ARGS-TO-WALK-DOWN)
-          (LET
-           ((ARG1 (UNQUOTE (NTH 0 ARGS))))
-            (IF
-             (EQ 'NUMERATOR FN)
-             (MV T (NUMERATOR-UNGUARDED ARG1))
-            (IF
-             (EQ 'DENOMINATOR FN)
-             (MV T (DENOMINATOR-UNGUARDED ARG1))
-           (IF
-            (EQ 'COMPLEX-RATIONALP FN)
-            (MV T (COMPLEX-RATIONALP ARG1))
-            (IF
-             (EQ 'CHARACTERP FN)
-             (MV T (CHARACTERP ARG1))
-             (IF
-              (EQ 'SYMBOLP FN)
-              (MV T (SYMBOLP ARG1))
-              (IF
-               (EQ 'IMAGPART FN)
-               (MV T (IMAGPART-UNGUARDED ARG1))
-               (IF
-                (EQ 'REALPART FN)
-                (MV T (REALPART-UNGUARDED ARG1))
-                (IF
-                 (EQ 'MAP-REVERSE-LIST FN)
-                 (MV T (MAP-REVERSE-LIST ARG1))
-                 (IF
-                  (EQ 'CDR FN)
-                  (MV T (CDR-UNGUARDED ARG1))
-                  (IF
-                   (EQ 'CAR FN)
-                   (MV T (CAR-UNGUARDED ARG1))
-                   (IF
-                    (EQ 'ATOM FN)
-                    (MV T (ATOM ARG1))
-                    (IF
-                     (EQ 'UNARY-- FN)
-                     (MV T (UNARY---UNGUARDED ARG1))
-                     (IF
-                      (EQ 'ZP FN)
-                      (MV T (ZP-UNGUARDED ARG1))
-                      (IF
-                       (EQ 'ACL2-NUMBERP FN)
-                       (MV T (ACL2-NUMBERP ARG1))
-                       (IF
-                        (EQ 'REVERSE-LIST FN)
-                        (MV T (REVERSE-LIST-UNGUARDED ARG1))
-                        (IF
-                         (EQ 'LEN FN)
-                         (MV T (LEN ARG1))
-                         (IF
-                          (EQ 'IFIX FN)
-                          (MV T (IFIX ARG1))
-                          (IF
-                           (EQ 'NFIX FN)
-                           (MV T (NFIX ARG1))
-                           (IF
-                            (EQ 'UNARY-/ FN)
-                            (MV T (UNARY-/-UNGUARDED ARG1))
-                            (IF
-                             (EQ 'CEILING-OF-LG FN)
-                             (MV T (CEILING-OF-LG-unguarded ARG1))
-                             (IF
-                              (EQ 'INTEGER-LENGTH FN)
-                              (MV
-                               T (INTEGER-LENGTH-UNGUARDED ARG1))
-                              (IF
-                               (EQ 'LOGMASKP FN)
-                               (MV T (LOGMASKP ARG1))
-                               (IF
-                                (EQ 'BITNOT FN)
-                                (MV T (BITNOT-UNGUARDED ARG1))
-                                (IF
-                                 (EQ 'ENDP FN)
-                                 (MV T (ENDP-UNGUARDED ARG1))
-                                 (IF
-                                  (EQ 'ALL-NATP FN)
-                                  (MV T (ALL-NATP ARG1))
-                                  (IF
-                                   (EQ 'WIDTH-OF-WIDEST-INT FN)
-                                   (MV
-                                    T (WIDTH-OF-WIDEST-INT-unguarded ARG1))
-                                   (IF
-                                    (EQ 'BYTES-TO-BITS FN)
-                                    (MV T (BYTES-TO-BITS ARG1))
-                                    (IF
-                                     (EQ 'CONSP FN)
-                                     (MV T (CONSP ARG1))
-                                     (IF
-                                      (EQ 'TRUE-LISTP FN)
-                                      (MV T (TRUE-LISTP ARG1))
-                                      (IF
-                                       (EQ 'STRINGP FN)
-                                       (MV T (STRINGP ARG1))
-                                       (IF
-                                        (EQ 'STRIP-CARS FN)
-                                        (MV T
-                                            (STRIP-CARS-UNGUARDED
-                                             ARG1))
-                                        (IF
-                                         (EQ 'STRIP-CDRS FN)
-                                         (MV T
-                                             (STRIP-CDRS-UNGUARDED
-                                              ARG1))
-                                         (IF
-                                          (EQ 'no-duplicatesp-equal FN)
-                                          (MV
-                                           T (no-duplicatesp-equal ARG1))
-                                          (IF
-                                           (EQ 'ALL-INTEGERP FN)
-                                           (MV
-                                            T
-                                            (ALL-INTEGERP ARG1))
-                                           (IF
-                                            (EQ 'TRUE-LIST-FIX
-                                                FN)
-                                            (MV T
-                                                (TRUE-LIST-FIX
-                                                 ARG1))
-                                            (IF
-                                             (EQ 'KEY-LIST FN)
-                                             (MV
-                                              T (KEY-LIST ARG1))
-                                             (IF
-                                              (EQ 'RKEYS FN)
-                                              (MV T (RKEYS ARG1))
-                                              (IF
-                                               (EQ 'LIST::2SET
-                                                   FN)
-                                               (MV T
-                                                   (LIST::2SET
-                                                    ARG1))
-                                               (IF
-                                                (EQ 'BOOLEANP FN)
-                                                (MV
-                                                 T
-                                                 (BOOLEANP ARG1))
-                                                (IF
-                                                 (EQ
-                                                  'BOOL-FIX$INLINE
-                                                  FN)
-                                                 (MV T
-                                                     (BOOL-FIX$INLINE
-                                                      ARG1))
-                                                 (IF
-                                                  (EQ 'ALL-SAME
-                                                      FN)
-                                                  (MV T
-                                                      (ALL-SAME
-                                                       ARG1))
-                                                  (IF
-                                                   (EQ
-                                                    'SYMBOL-NAME
-                                                    FN)
-                                                   (MV
-                                                    T
-                                                    (SYMBOL-NAME-UNGUARDED
-                                                     ARG1))
-                                                   (IF
-                                                    (EQ
-                                                     'SYMBOL-PACKAGE-NAME
-                                                     FN)
-                                                    (MV
-                                                     T
-                                                     (SYMBOL-PACKAGE-NAME-UNGUARDED
-                                                      ARG1))
-                                                    (IF
-                                                     (EQ
-                                                      'CODE-CHAR
-                                                      FN)
-                                                     (MV
-                                                      T
-                                                      (CODE-CHAR-UNGUARDED
-                                                       ARG1))
-                                                     (IF
-                                                      (EQ
-                                                       'CHAR-CODE
-                                                       FN)
-                                                      (MV
-                                                       T
-                                                       (CHAR-CODE-UNGUARDED
-                                                        ARG1))
-                                                      (IF
-                                                       (EQ
-                                                        'BOOL-TO-BIT
-                                                        FN)
-                                                       (MV
-                                                        T
-                                                        (BOOL-TO-BIT
-                                                         ARG1))
-                                                       (IF
-                                                        (EQ 'LG
-                                                            FN)
-                                                        (MV
-                                                         T
-                                                         (LG-UNGUARDED
-                                                          ARG1))
-                                                        (IF
-                                                         (EQ
-                                                          'POWER-OF-2P
-                                                          FN)
-                                                         (MV
-                                                          T
-                                                          (POWER-OF-2P
-                                                           ARG1))
-                                                         (IF
-                                                          (EQ
-                                                           'NOT
-                                                           FN)
-                                                          (MV
-                                                           T
-                                                           (NOT
-                                                            ARG1))
-                                                          (IF
-                                                           (EQ
-                                                            'PRINT-CONSTANT
-                                                            FN)
-                                                           (MV
-                                                            T
-                                                            (PRINT-CONSTANT
-                                                             ARG1))
-                                                           (IF
-                                                            (EQ
-                                                             'RATIONALP
-                                                             FN)
-                                                            (MV
-                                                             T
-                                                             (RATIONALP
-                                                              ARG1))
-                                                            (IF
-                                                             (EQ
-                                                              'INTEGERP
-                                                              FN)
-                                                             (MV
-                                                              T
-                                                              (INTEGERP
-                                                               ARG1))
-                                                             (IF
-                                                              (EQ
-                                                               'POSP
-                                                               FN)
-                                                              (MV
-                                                               T
-                                                               (POSP
-                                                                ARG1))
-                                                              (IF
-                                                               (EQ
-                                                                'NATP
-                                                                FN)
-                                                               (MV
-                                                                T
-                                                                (NATP
-                                                                 ARG1))
-                                                               (IF
-                                                                (EQ
-                                                                 'QUOTEP
-                                                                 FN)
-                                                                (MV
-                                                                 T
-                                                                 (QUOTEP
-                                                                  ARG1))
-                                                                (MV
-                                                                 NIL
-                                                                 NIL)))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-          (LET
-           ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-           (IF
-            (ENDP ARGS-TO-WALK-DOWN)
-            (LET
-             ((ARG2 (UNQUOTE (NTH 1 ARGS)))
-              (ARG1 (UNQUOTE (NTH 0 ARGS))))
-             (IF
-              (EQ 'symbol< FN)
-              (MV T (symbol<-unguarded ARG1 ARG2))
-              (IF
-               (EQ 'SET::IN FN)
-               (MV T (SET::IN-UNGUARDED ARG1 ARG2))
-               (IF
-                (EQ 'GROUP2 FN)
-                (MV T (GROUP2 ARG1 ARG2))
-                (IF
-                 (EQ 'GROUP FN)
-                 (MV T (GROUP ARG1 ARG2))
-                 (IF
-                  (EQ 'LOOKUP FN)
-                  (MV T (LOOKUP ARG1 ARG2))
-                  (IF
-                   (EQ 'LOOKUP-EQ FN)
-                   (MV T (LOOKUP-EQ ARG1 ARG2))
-                   (IF
-                    (EQ 'CEILING FN)
-                    (MV T (CEILING-UNGUARDED ARG1 ARG2))
-                    (IF
-                     (EQ 'EQ FN)
-                     (MV T (EQUAL ARG1 ARG2))
-                     (IF
-                      (EQ 'BVNOT-LIST FN)
-                      (MV T (BVNOT-LIST-UNGUARDED ARG1 ARG2))
-                      (IF
-                       (EQ 'BINARY-* FN)
-                       (MV T (BINARY-*-UNGUARDED ARG1 ARG2))
-                       (IF
-                        (EQ 'NTH FN)
-                        (MV T (NTH-UNGUARDED ARG1 ARG2))
-                        (IF
-                         (EQ 'LOGEXT FN)
-                         (MV T (LOGEXT-unguarded ARG1 ARG2))
-                         (IF
-                          (EQ 'LOGTAIL$INLINE FN)
-                          (MV T (LOGTAIL-UNGUARDED ARG1 ARG2))
-                          (IF
-                           (EQ 'BVCHOP FN)
-                           (MV T (BVCHOP-UNGUARDED ARG1 ARG2))
-                           (IF
-                            (EQ 'CONS FN)
-                            (MV T (CONS ARG1 ARG2))
-                            (IF
-                             (EQ 'GETBIT FN)
-                             (MV T (GETBIT-UNGUARDED ARG1 ARG2))
-                             (IF
-                              (EQ 'MOD FN)
-                              (MV T (MOD ARG1 ARG2))
-                              (IF
-                               (EQ 'MAX FN)
-                               (MV T (MAX-UNGUARDED ARG1 ARG2))
-                               (IF
-                                (EQ 'MIN FN)
-                                (MV T (MIN-UNGUARDED ARG1 ARG2))
-                                (IF
-                                 (EQ 'EXPT FN)
-                                 (MV T (EXPT-UNGUARDED ARG1 ARG2))
-                                 (IF
-                                  (EQ 'BITXOR FN)
-                                  (MV
-                                   T (BITXOR-UNGUARDED ARG1 ARG2))
-                                  (IF
-                                   (EQ 'BITAND FN)
-                                   (MV
-                                    T
-                                    (BITAND-UNGUARDED ARG1 ARG2))
-                                   (IF
-                                    (EQ 'BITOR FN)
-                                    (MV
-                                     T
-                                     (BITOR-UNGUARDED ARG1 ARG2))
-                                    (IF
-                                     (EQ 'ALL-SIGNED-BYTE-P FN)
-                                     (MV T
-                                         (ALL-SIGNED-BYTE-P
-                                          ARG1 ARG2))
-                                     (IF
-                                      (EQ 'ALL-UNSIGNED-BYTE-P FN)
-                                      (MV T
-                                          (ALL-UNSIGNED-BYTE-P
-                                           ARG1 ARG2))
-                                      (IF
-                                       (EQ 'BVCHOP-LIST FN)
-                                       (MV T
-                                           (BVCHOP-LIST-UNGUARDED
-                                            ARG1 ARG2))
-                                       (IF
-                                        (EQ 'UNSIGNED-BYTE-P FN)
-                                        (MV T
-                                            (UNSIGNED-BYTE-P
-                                             ARG1 ARG2))
-                                        (IF
-                                         (EQ 'SIGNED-BYTE-P FN)
-                                         (MV T
-                                             (SIGNED-BYTE-P
-                                              ARG1 ARG2))
-                                         ;; (IF
-                                         ;;  (EQ 'GETBIT-IS-ALWAYS-1
-                                         ;;      FN)
-                                         ;;  (MV T
-                                         ;;      (GETBIT-IS-ALWAYS-1-UNGUARDED
-                                         ;;       ARG1 ARG2))
-                                         ;;  (IF
-                                         ;;   (EQ 'GETBIT-IS-ALWAYS-0
-                                         ;;       FN)
-                                         ;;   (MV T
-                                         ;;       (GETBIT-IS-ALWAYS-0-UNGUARDED
-                                         ;;        ARG1 ARG2))
-                                           (IF
-                                            (EQ 'BINARY-APPEND FN)
-                                            (MV T
-                                                (BINARY-APPEND-UNGUARDED
-                                                 ARG1 ARG2))
-                                            (IF
-                                             (EQ 'FIRSTN FN)
-                                             (MV T
-                                                 (FIRSTN-UNGUARDED
-                                                  ARG1 ARG2))
-                                             (IF
-                                              (EQ 'TAKE FN)
-                                              (MV T
-                                                  (TAKE-UNGUARDED
-                                                   ARG1 ARG2))
-                                              (IF
-                                               (EQ 'NTHCDR FN)
-                                               (MV
-                                                T
-                                                (NTHCDR-UNGUARDED
-                                                 ARG1 ARG2))
-                                               (IF
-                                                (EQ 'G FN)
-                                                (MV
-                                                 T (G ARG1 ARG2))
-                                                (IF
-                                                 (EQ 'MEMBER-EQUAL
-                                                     FN)
-                                                 (MV
-                                                  T
-                                                  (MEMBER-EQUAL-unguarded
-                                                   ARG1 ARG2))
-                                                 (IF
-                                                  (EQ 'FLOOR FN)
-                                                  (MV
-                                                   T
-                                                   (FLOOR
-                                                    ARG1 ARG2))
-                                                  (IF
-                                                   (EQ
-                                                    'SET::INSERT
-                                                    FN)
-                                                   (MV
-                                                    T
-                                                    (SET::INSERT
-                                                     ARG1 ARG2))
-                                                   (IF
-                                                    (EQ
-                                                     'LEFTROTATE32
-                                                     FN)
-                                                    (MV
-                                                     T
-                                                     (LEFTROTATE32-UNGUARDED
-                                                      ARG1 ARG2))
-                                                    (IF
-                                                     (EQ
-                                                      'SET::UNION
-                                                      FN)
-                                                     (MV
-                                                      T
-                                                      (SET::UNION
-                                                       ARG1 ARG2))
-                                                     (IF
-                                                      (EQ
-                                                       'GETBIT-LIST
-                                                       FN)
-                                                      (MV
-                                                       T
-                                                       (GETBIT-LIST
-                                                        ARG1
-                                                        ARG2))
-                                                      (IF
-                                                       (EQ 'BOOLOR
-                                                           FN)
-                                                       (MV
-                                                        T
-                                                        (BOOLOR
-                                                         ARG1
-                                                         ARG2))
-                                                       (IF
-                                                        (EQ
-                                                         'BOOLAND
-                                                         FN)
-                                                        (MV
-                                                         T
-                                                         (BOOLAND
-                                                          ARG1
-                                                          ARG2))
-                                                        (IF
-                                                         (EQ
-                                                          'FIRST-NON-MEMBER
-                                                          FN)
-                                                         (MV
-                                                          T
-                                                          (FIRST-NON-MEMBER
-                                                           ARG1
-                                                           ARG2))
-                                                         (IF
-                                                          (EQ
-                                                           'IMPLIES
-                                                           FN)
-                                                          (MV
-                                                           T
-                                                           (IMPLIES
-                                                            ARG1
-                                                            ARG2))
-                                                          ;; (IF
-                                                          ;;  (EQ
-                                                          ;;   'BINARY-AND
-                                                          ;;   FN)
-                                                          ;;  (MV
-                                                          ;;   T
-                                                          ;;   (BINARY-AND
-                                                          ;;    ARG1
-                                                          ;;    ARG2))
-                                                           (IF
-                                                            (EQ
-                                                             'REPEATBIT
-                                                             FN)
-                                                            (MV
-                                                             T
-                                                             (REPEATBIT-unguarded
-                                                              ARG1
-                                                              ARG2))
-                                                            (IF
-                                                             (EQ
-                                                              'ALL-EQUAL$
-                                                              FN)
-                                                             (MV
-                                                              T
-                                                              (ALL-EQUAL$
-                                                               ARG1
-                                                               ARG2))
-                                                             (IF
-                                                              (EQ
-                                                               'INTERSECTION-EQUAL
-                                                               FN)
-                                                              (MV
-                                                               T
-                                                               (INTERSECTION-EQUAL
-                                                                ARG1
-                                                                ARG2))
-                                                              (IF
-                                                               (EQ
-                                                                'EVERY-NTH
-                                                                FN)
-                                                               (MV
-                                                                T
-                                                                (EVERY-NTH
-                                                                 ARG1
-                                                                 ARG2))
-                                                               (IF
-                                                                (EQ
-                                                                 'ALL-ITEMS-LESS-THAN
-                                                                 FN)
-                                                                (MV
-                                                                 T
-                                                                 (ALL-ITEMS-LESS-THAN
-                                                                  ARG1
-                                                                  ARG2))
-                                                                (IF
-                                                                 (EQ
-                                                                  'BINARY-+
-                                                                  FN)
-                                                                 (MV
-                                                                  T
-                                                                  (BINARY-+-UNGUARDED
-                                                                   ARG1
-                                                                   ARG2))
-                                                                 (IF
-                                                                  (EQ
-                                                                   'TRIM
-                                                                   FN)
-                                                                  (MV
-                                                                   T
-                                                                   (TRIM-UNGUARDED
-
-                                                                    ARG1
-
-                                                                    ARG2))
-                                                                  (IF
-                                                                   (EQ
-
-                                                                    'UNSIGNED-BYTE-P-FORCED
-
-                                                                    FN)
-                                                                   (MV
-
-                                                                    T
-
-                                                                    (UNSIGNED-BYTE-P-FORCED
-
-                                                                     ARG1
-
-                                                                     ARG2))
-                                                                   (IF
-
-                                                                    (EQ
-
-                                                                     'ASSOC-EQUAL
-
-                                                                     FN)
-
-                                                                    (MV
-
-                                                                     T
-
-                                                                     (ASSOC-EQUAL-UNGUARDED
-
-                                                                      ARG1
-
-                                                                      ARG2))
-
-                                                                    (IF
-
-                                                                     (EQ
-
-                                                                      'BVUMINUS
-
-                                                                      FN)
-
-                                                                     (MV
-
-                                                                      T
-
-                                                                      (BVUMINUS-UNGUARDED
-
-                                                                       ARG1
-
-                                                                       ARG2))
-
-                                                                     (IF
-
-                                                                      (EQ
-
-                                                                       'BVNOT
-
-                                                                       FN)
-
-                                                                      (MV
-
-                                                                       T
-
-                                                                       (BVNOT-UNGUARDED
-
-                                                                        ARG1
-
-                                                                        ARG2))
-
-                                                                      (IF
-
-                                                                       (EQ
-
-                                                                        'LOOKUP
-
-                                                                        FN)
-
-                                                                       (MV
-
-                                                                        T
-
-                                                                        (LOOKUP
-
-                                                                         ARG1
-
-                                                                         ARG2))
-
-                                                                       (IF
-
-                                                                        (EQ
-
-                                                                         'LOOKUP-EQUAL
-
-                                                                         FN)
-
-                                                                        (MV
-
-                                                                         T
-
-                                                                         (LOOKUP-EQUAL
-
-                                                                          ARG1
-
-                                                                          ARG2))
-
-                                                                        (IF
-
-                                                                         (EQ
-
-                                                                          'PREFIXP
-
-                                                                          FN)
-
-                                                                         (MV
-
-                                                                          T
-
-                                                                          (PREFIXP
-
-                                                                           ARG1
-
-                                                                           ARG2))
-
-                                                                         (IF
-
-                                                                          (EQ
-
-                                                                           'LIST-EQUIV
-
-                                                                           FN)
-
-                                                                          (MV
-
-                                                                           T
-
-                                                                           (LIST-EQUIV
-
-                                                                            ARG1
-
-                                                                            ARG2))
-
-                                                                          (IF
-
-                                                                           (EQ
-
-                                                                            'EQL
-
-                                                                            FN)
-
-                                                                           (MV
-
-                                                                            T
-
-                                                                            (EQUAL
-
-                                                                             ARG1
-
-                                                                             ARG2))
-
-                                                                           (IF
-
-                                                                            (EQ
-
-                                                                             'EQUAL
-
-                                                                             FN)
-
-                                                                            (MV
-
-                                                                             T
-
-                                                                             (EQUAL
-
-                                                                              ARG1
-
-                                                                              ARG2))
-
-                                                                            (IF
-
-                                                                             (EQ
-
-                                                                              '<
-
-                                                                              FN)
-
-                                                                             (MV
-
-                                                                              T
-
-                                                                              (<-UNGUARDED
-
-                                                                               ARG1
-
-                                                                               ARG2))
-
-                                                                             (IF
-
-                                                                              (EQ
-
-                                                                               'COERCE
-
-                                                                               FN)
-
-                                                                              (MV
-
-                                                                               T
-
-                                                                               (COERCE-UNGUARDED
-
-                                                                                ARG1
-
-                                                                                ARG2))
-
-                                                                              (IF
-
-                                                                               (EQ
-
-                                                                                'ADD-TO-END
-
-                                                                                FN)
-
-                                                                               (MV
-
-                                                                                T
-
-                                                                                (ADD-TO-END
-
-                                                                                 ARG1
-
-                                                                                 ARG2))
-
-                                                                               (IF
-
-                                                                                (EQ
-
-                                                                                 'ALL-ALL-UNSIGNED-BYTE-P
-
-                                                                                 FN)
-
-                                                                                (MV
-
-                                                                                 T
-
-                                                                                 (ALL-ALL-UNSIGNED-BYTE-P
-
-                                                                                  ARG1
-
-                                                                                  ARG2))
-
-                                                                                (IF (EQ 'ITEMS-HAVE-LEN FN)
-
-                                                                                    (MV T (ITEMS-HAVE-LEN-UNGUARDED ARG1 ARG2))
-                                                                                    (IF (EQ 'mv-nth FN)
-
-                                                                                        (MV T (mv-nth-unguarded ARG1 ARG2))
-
-                                                                                        (MV
-
-                                                                                         NIL
-
-                                                                                         NIL))))))))))))))))))))))))
-                                                           ;;)
-                                                           ))))))))))))))) ;))
-                                           )))))))))))))))))))))))))))))
-                        (LET
-                         ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                         (IF
-                          (ENDP ARGS-TO-WALK-DOWN)
-                          (LET
-                           ((ARG3 (UNQUOTE (NTH 2 ARGS)))
-                            (ARG2 (UNQUOTE (NTH 1 ARGS)))
-                            (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                           (IF
-                            (EQ 'BVXOR-LIST FN)
-                            (MV T (BVXOR-LIST-UNGUARDED ARG1 ARG2 ARG3))
-                            (IF
-                             (EQ 'SUBRANGE FN)
-                             (MV T
-                                 (SUBRANGE (NFIX ARG1) (NFIX ARG2) ARG3))
-                             (IF
-                              (EQ 'KEEP-ITEMS-LESS-THAN FN)
-                              (MV T
-                                  (KEEP-ITEMS-LESS-THAN-UNGUARDED
-                                       ARG1 ARG2 ARG3))
-                              (IF
-                               (EQ 'BVSHL FN)
-                               (MV T (BVSHL ARG1 ARG2 ARG3))
-                               (IF
-                                (EQ 'SLICE FN)
-                                (MV T (SLICE-LESS-GUARDED ARG1 ARG2 ARG3))
-                                (IF
-                                 (EQ 'IF FN)
-                                 (MV T (IF ARG1 ARG2 ARG3))
-                                 (IF
-                                  (EQ 'UPDATE-NTH FN)
-                                  (MV T (UPDATE-NTH ARG1 ARG2 ARG3))
-                                  (IF
-                                   (EQ 'ARRAY-ELEM-2D FN)
-                                   (MV T (ARRAY-ELEM-2D ARG1 ARG2 ARG3))
-                                   (IF
-                                    (EQ 'BOOLIF FN)
-                                    (MV T (BOOLIF ARG1 ARG2 ARG3))
-                                    (IF
-                                     (EQ 'MYIF FN)
-                                     (MV T (MYIF ARG1 ARG2 ARG3))
-                                     ;; (IF
-                                     ;;  (EQ 'NTH2 FN)
-                                     ;;  (MV T (NTH2 ARG1 ARG2 ARG3))
-                                      (IF
-                                       (EQ 'S FN)
-                                       (MV T (S ARG1 ARG2 ARG3))
-                                       (IF
-                                        (EQ 'SBVLE FN)
-                                        (MV T (SBVLE ARG1 ARG2 ARG3))
-                                        (IF
-                                         (EQ 'SBVLT FN)
-                                         (MV T
-                                             (SBVLT ARG1 (IFIX ARG2)
-                                                    (IFIX ARG3)))
-                                         (IF
-                                          (EQ 'SBVMODDOWN FN)
-                                          (MV T (SBVMODDOWN ARG1 ARG2 ARG3))
-                                          (IF
-                                           (EQ 'SBVREM FN)
-                                           (MV T (SBVREM ARG1 ARG2 ARG3))
-                                           (IF
-                                            (EQ 'SBVDIVDOWN FN)
-                                            (MV
-                                               T (SBVDIVDOWN ARG1 ARG2 ARG3))
-                                            (IF
-                                             (EQ 'SBVDIV FN)
-                                             (MV T (SBVDIV ARG1 ARG2 ARG3))
-                                             (IF
-                                              (EQ 'BVSX FN)
-                                              (MV T (BVSX-unguarded ARG1 ARG2 ARG3))
-                                              (IF
-                                               (EQ 'BVDIV FN)
-                                               (MV T
-                                                   (BVDIV-UNGUARDED
-                                                        ARG1 ARG2 ARG3))
-                                               (IF
-                                                (EQ 'BVMOD FN)
-                                                (MV T
-                                                    (BVMOD-UNGUARDED
-                                                         ARG1 ARG2 ARG3))
-                                                (IF
-                                                 (EQ 'BVMINUS FN)
-                                                 (MV T
-                                                     (BVMINUS-UNGUARDED
-                                                          ARG1 ARG2 ARG3))
-                                                 (IF
-                                                  (EQ 'BVPLUS FN)
-                                                  (MV T
-                                                      (BVPLUS-UNGUARDED
-                                                           ARG1 ARG2 ARG3))
-                                                  (IF
-                                                   (EQ 'BVMULT FN)
-                                                   (MV T
-                                                       (BVMULT-UNGUARDED
-                                                            ARG1 ARG2 ARG3))
-                                                   (IF
-                                                    (EQ 'BVAND FN)
-                                                    (MV T
-                                                        (BVAND-UNGUARDED
-                                                             ARG1 ARG2 ARG3))
-                                                    (IF
-                                                     (EQ 'BVOR FN)
-                                                     (MV
-                                                        T
-                                                        (BVOR-UNGUARDED
-                                                             ARG1 ARG2 ARG3))
-                                                     (IF
-                                                      (EQ 'BVXOR FN)
-                                                      (MV
-                                                        T
-                                                        (BVXOR-UNGUARDED
-                                                             ARG1 ARG2 ARG3))
-                                                      (IF
-                                                       (EQ 'BVLE FN)
-                                                       (MV
-                                                        T
-                                                        (BVLE-UNGUARDED
-                                                             ARG1 ARG2 ARG3))
-                                                       (IF
-                                                        (EQ 'BVLT FN)
-                                                        (MV
-                                                         T
-                                                         (BVLT-UNGUARDED
-                                                             ARG1 ARG2 ARG3))
-                                                       (IF
-                                                        (EQ 'BVequal FN)
-                                                        (MV T (BVequal-UNGUARDED ARG1 ARG2 ARG3))
-                                                        (IF
-                                                         (EQ 'BVPLUS-LST FN)
-                                                         (MV
-                                                          T
-                                                          (BVPLUS-LST
-                                                             ARG1 ARG2 ARG3))
-                                                         (IF
-                                                          (EQ 'UNPACKBV FN)
-                                                          (MV
-                                                           T
-                                                           (UNPACKBV-LESS-GUARDED
-                                                             ARG1 ARG2 ARG3))
-                                                          (IF
-                                                           (EQ 'PACKBV FN)
-                                                           (MV
-                                                            T
-                                                            (PACKBV
-                                                             ARG1 ARG2 ARG3))
-                                                           (IF
-                                                            (EQ
-                                                               'BVASHR
-                                                               FN)
-                                                            (MV
-                                                             T
-                                                             (BVASHR
-                                                                  ARG1
-                                                                  ARG2 ARG3))
-                                                            (IF
-                                                             (EQ 'BVSHR FN)
-                                                             (MV
-                                                              T
-                                                              (BVSHR
-                                                                  ARG1
-                                                                  ARG2 ARG3))
-                                                             (IF
-                                                              (EQ 'ACONS FN)
-                                                              (MV
-                                                               T
-                                                               (ACONS
-                                                                  ARG1
-                                                                  ARG2 ARG3))
-                                                              (IF
-                                                               (EQ
-                                                                  'LEFTROTATE
-                                                                  FN)
-                                                               (MV
-                                                                T
-                                                                (LEFTROTATE
-                                                                  ARG1
-                                                                  ARG2 ARG3))
-                                                               (IF
-                                                                (EQ
-                                                                 'NEGATED-ELEMS-LISTP
-                                                                 FN)
-                                                                (MV
-                                                                 T
-                                                                 (NEGATED-ELEMS-LISTP-UNGUARDED
-                                                                  ARG1
-                                                                  ARG2 ARG3))
-                                                                (IF
-                                                                 (EQ
-                                                                  'REPEAT-TAIL
-                                                                  FN)
-                                                                 (MV
-                                                                  T
-                                                                  (REPEAT-TAIL
-                                                                    ARG1 ARG2
-                                                                    ARG3))
-                                                                 (MV
-                                                                  NIL
-                                                                  NIL)))))))))))))))))))))))))))))
-;)
-                                      )))))))))))
-                          (LET
-                           ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                           (IF
-                            (ENDP ARGS-TO-WALK-DOWN)
-                            (LET
-                             ((ARG4 (UNQUOTE (NTH 3 ARGS)))
-                              (ARG3 (UNQUOTE (NTH 2 ARGS)))
-                              (ARG2 (UNQUOTE (NTH 1 ARGS)))
-                              (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                             (IF
-                              (EQ 'BVIF FN)
-                              (MV T (BVIF-UNGUARDED ARG1 ARG2 ARG3 ARG4))
-                              (IF
-                               (EQ 'BV-ARRAY-READ FN)
-                               (MV T
-                                   (BV-ARRAY-READ-UNGUARDED
-                                        ARG1 ARG2 ARG3 ARG4))
-                               ;; (IF
-                               ;;  (EQ 'BVNTH FN)
-                               ;;  (MV T (BVNTH ARG1 ARG2 (NFIX ARG3) ARG4))
-                                (IF
-                                 (EQ 'BVCAT FN)
-                                 (MV T (BVCAT-UNGUARDED ARG1 ARG2 ARG3 ARG4))
-                                 (IF
-                                  (EQ 'BV-ARRAY-CLEAR FN)
-                                  (MV T (BV-ARRAY-CLEAR ARG1 ARG2 ARG3 ARG4))
-                                  (IF
-                                   (EQ 'UPDATE-NTH2 FN)
-                                   (MV T (UPDATE-NTH2 ARG1 ARG2 ARG3 ARG4))
-                                   (IF
-                                    (EQ 'UPDATE-SUBRANGE FN)
-                                    (MV
-                                     T (UPDATE-SUBRANGE ARG1 ARG2 ARG3 ARG4))
-                                    (IF
-                                     (EQ 'APPLY-AXE-EVALUATOR FN)
-                                     (MV T
-                                         (APPLY-AXE-EVALUATOR
-                                              ARG1 ARG2 ARG3 ARRAY-DEPTH))
-                                     (IF
-                                      (EQ 'DAG-VAL-WITH-AXE-EVALUATOR FN)
-                                      (MV
-                                       T
-                                       (DAG-VAL-WITH-AXE-EVALUATOR
-                                           ARG1 ARG2 ARG3 (+ 1 ARRAY-DEPTH)))
-                                      (MV NIL NIL))))))) ;)
-                                )))
-                            (LET
-                             ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                             (IF
-                              (ENDP ARGS-TO-WALK-DOWN)
-                              (LET
-                               ((ARG5 (UNQUOTE (NTH 4 ARGS)))
-                                (ARG4 (UNQUOTE (NTH 3 ARGS)))
-                                (ARG3 (UNQUOTE (NTH 2 ARGS)))
-                                (ARG2 (UNQUOTE (NTH 1 ARGS)))
-                                (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                               (IF
-                                  (EQ 'BV-ARRAY-CLEAR-RANGE FN)
-                                  (MV T
-                                      (BV-ARRAY-CLEAR-RANGE
-                                           ARG1 ARG2 ARG3 ARG4 ARG5))
-                                  (IF (EQ 'BV-ARRAY-WRITE FN)
-                                      (MV T
-                                          (BV-ARRAY-WRITE-UNGUARDED (NFIX ARG1)
-                                                          (NFIX ARG2)
-                                                          (NFIX ARG3)
-                                                          ARG4 ARG5))
-                                      (IF (EQ 'UPDATE-SUBRANGE2 FN)
-                                          (MV T
-                                              (UPDATE-SUBRANGE2
-                                                   ARG1 ARG2 ARG3 ARG4 ARG5))
-                                          (MV NIL NIL)))))
-                              (LET
-                               ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                               (IF
-                                (ENDP ARGS-TO-WALK-DOWN)
-                                (MV NIL NIL)
-                                (LET
-                                 ((ARGS-TO-WALK-DOWN
-                                       (CDR ARGS-TO-WALK-DOWN)))
-                                 (IF
-                                  (ENDP ARGS-TO-WALK-DOWN)
-                                  (MV NIL NIL)
-                                  (LET
-                                   ((ARGS-TO-WALK-DOWN
-                                         (CDR ARGS-TO-WALK-DOWN)))
-                                   (IF
-                                    (ENDP ARGS-TO-WALK-DOWN)
-                                    (LET
-                                     ((ARG8 (UNQUOTE (NTH 7 ARGS)))
-                                      (ARG7 (UNQUOTE (NTH 6 ARGS)))
-                                      (ARG6 (UNQUOTE (NTH 5 ARGS)))
-                                      (ARG5 (UNQUOTE (NTH 4 ARGS)))
-                                      (ARG4 (UNQUOTE (NTH 3 ARGS)))
-                                      (ARG3 (UNQUOTE (NTH 2 ARGS)))
-                                      (ARG2 (UNQUOTE (NTH 1 ARGS)))
-                                      (ARG1 (UNQUOTE (NTH 0 ARGS))))
-                                     (DECLARE (IGNORE ARG8))
-                                     (IF
-                                      (EQ 'EVAL-DAG-WITH-AXE-EVALUATOR FN)
-                                      (MV
-                                       T
-                                       (EVAL-DAG-WITH-AXE-EVALUATOR
-                                            ARG1 ARG2 ARG3
-                                            ARG4 ARG5 ARG6 ARG7 ARRAY-DEPTH))
-                                      (MV NIL NIL)))
-                                    (MV NIL NIL))))))))))))))))))
+         (if
+                      (endp args-to-walk-down)
+                      (let ((arg1 (unquote (nth 0 args))))
+                       (case fn
+                        (quotep (mv t (quotep arg1)))
+                        (natp (mv t (natp arg1)))
+                        (posp (mv t (posp arg1)))
+                        (integerp (mv t (integerp arg1)))
+                        (rationalp (mv t (rationalp arg1)))
+                        (print-constant (mv t (print-constant arg1)))
+                        (not (mv t (not arg1)))
+                        (power-of-2p (mv t (power-of-2p arg1)))
+                        (lg (mv t (lg-unguarded arg1)))
+                        (bool-to-bit (mv t (bool-to-bit arg1)))
+                        (char-code (mv t (char-code-unguarded arg1)))
+                        (code-char (mv t (code-char-unguarded arg1)))
+                        (symbol-package-name
+                             (mv t (symbol-package-name-unguarded arg1)))
+                        (symbol-name (mv t (symbol-name-unguarded arg1)))
+                        (all-same (mv t (all-same arg1)))
+                        (bool-fix$inline (mv t (bool-fix$inline arg1)))
+                        (booleanp (mv t (booleanp arg1)))
+                        (list::2set (mv t (list::2set arg1)))
+                        (rkeys (mv t (rkeys arg1)))
+                        (key-list (mv t (key-list arg1)))
+                        (true-list-fix (mv t (true-list-fix arg1)))
+                        (all-integerp (mv t (all-integerp arg1)))
+                        (no-duplicatesp-equal
+                             (mv t (no-duplicatesp-equal arg1)))
+                        (strip-cdrs (mv t (strip-cdrs-unguarded arg1)))
+                        (strip-cars (mv t (strip-cars-unguarded arg1)))
+                        (stringp (mv t (stringp arg1)))
+                        (true-listp (mv t (true-listp arg1)))
+                        (consp (mv t (consp arg1)))
+                        (bytes-to-bits (mv t (bytes-to-bits arg1)))
+                        (width-of-widest-int
+                             (mv t (width-of-widest-int-unguarded arg1)))
+                        (all-natp (mv t (all-natp arg1)))
+                        (endp (mv t (endp-unguarded arg1)))
+                        (bitnot (mv t (bitnot-unguarded arg1)))
+                        (logmaskp (mv t (logmaskp arg1)))
+                        (integer-length
+                             (mv t (integer-length-unguarded arg1)))
+                        (ceiling-of-lg (mv t (ceiling-of-lg-unguarded arg1)))
+                        (unary-/ (mv t (unary-/-unguarded arg1)))
+                        (nfix (mv t (nfix arg1)))
+                        (ifix (mv t (ifix arg1)))
+                        (len (mv t (len arg1)))
+                        (reverse-list (mv t (reverse-list-unguarded arg1)))
+                        (acl2-numberp (mv t (acl2-numberp arg1)))
+                        (zp (mv t (zp-unguarded arg1)))
+                        (unary-- (mv t (unary---unguarded arg1)))
+                        (atom (mv t (atom arg1)))
+                        (car (mv t (car-unguarded arg1)))
+                        (cdr (mv t (cdr-unguarded arg1)))
+                        (map-reverse-list (mv t (map-reverse-list arg1)))
+                        (realpart (mv t (realpart-unguarded arg1)))
+                        (imagpart (mv t (imagpart-unguarded arg1)))
+                        (symbolp (mv t (symbolp arg1)))
+                        (characterp (mv t (characterp arg1)))
+                        (complex-rationalp (mv t (complex-rationalp arg1)))
+                        (denominator (mv t (denominator-unguarded arg1)))
+                        (numerator (mv t (numerator-unguarded arg1)))
+                        (t (mv nil nil))))
+                      (let ((args-to-walk-down (cdr args-to-walk-down)))
+                       (if
+                        (endp args-to-walk-down)
+                        (let ((arg2 (unquote (nth 1 args)))
+                              (arg1 (unquote (nth 0 args))))
+                         (case fn
+                           (mv-nth (mv t (mv-nth-unguarded arg1 arg2)))
+                           (items-have-len
+                                (mv t (items-have-len-unguarded arg1 arg2)))
+                           (all-all-unsigned-byte-p
+                                (mv t (all-all-unsigned-byte-p arg1 arg2)))
+                           (add-to-end (mv t (add-to-end arg1 arg2)))
+                           (coerce (mv t (coerce-unguarded arg1 arg2)))
+                           (< (mv t (<-unguarded arg1 arg2)))
+                           (equal (mv t (equal arg1 arg2)))
+                           (eql (mv t (equal arg1 arg2)))
+                           (list-equiv (mv t (list-equiv arg1 arg2)))
+                           (prefixp (mv t (prefixp arg1 arg2)))
+                           (lookup-equal (mv t (lookup-equal arg1 arg2)))
+                           (lookup (mv t (lookup arg1 arg2)))
+                           (bvnot (mv t (bvnot-unguarded arg1 arg2)))
+                           (bvuminus (mv t (bvuminus-unguarded arg1 arg2)))
+                           (assoc-equal
+                                (mv t (assoc-equal-unguarded arg1 arg2)))
+                           (unsigned-byte-p-forced
+                                (mv t (unsigned-byte-p-forced arg1 arg2)))
+                           (trim (mv t (trim-unguarded arg1 arg2)))
+                           (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
+                           (all-items-less-than
+                                (mv t (all-items-less-than arg1 arg2)))
+                           (every-nth (mv t (every-nth arg1 arg2)))
+                           (intersection-equal
+                                (mv t (intersection-equal arg1 arg2)))
+                           (all-equal$ (mv t (all-equal$ arg1 arg2)))
+                           (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
+                           (implies (mv t (implies arg1 arg2)))
+                           (first-non-member
+                                (mv t (first-non-member arg1 arg2)))
+                           (booland (mv t (booland arg1 arg2)))
+                           (boolor (mv t (boolor arg1 arg2)))
+                           (getbit-list (mv t (getbit-list arg1 arg2)))
+                           (set::union (mv t (set::union arg1 arg2)))
+                           (leftrotate32
+                                (mv t (leftrotate32-unguarded arg1 arg2)))
+                           (set::insert (mv t (set::insert arg1 arg2)))
+                           (floor (mv t (floor arg1 arg2)))
+                           (member-equal
+                                (mv t (member-equal-unguarded arg1 arg2)))
+                           (g (mv t (g arg1 arg2)))
+                           (nthcdr (mv t (nthcdr-unguarded arg1 arg2)))
+                           (take (mv t (take-unguarded arg1 arg2)))
+                           (firstn (mv t (firstn-unguarded arg1 arg2)))
+                           (binary-append
+                                (mv t (binary-append-unguarded arg1 arg2)))
+                           (signed-byte-p (mv t (signed-byte-p arg1 arg2)))
+                           (unsigned-byte-p
+                                (mv t (unsigned-byte-p arg1 arg2)))
+                           (bvchop-list
+                                (mv t (bvchop-list-unguarded arg1 arg2)))
+                           (all-unsigned-byte-p
+                                (mv t (all-unsigned-byte-p arg1 arg2)))
+                           (all-signed-byte-p
+                                (mv t (all-signed-byte-p arg1 arg2)))
+                           (bitor (mv t (bitor-unguarded arg1 arg2)))
+                           (bitand (mv t (bitand-unguarded arg1 arg2)))
+                           (bitxor (mv t (bitxor-unguarded arg1 arg2)))
+                           (expt (mv t (expt-unguarded arg1 arg2)))
+                           (min (mv t (min-unguarded arg1 arg2)))
+                           (max (mv t (max-unguarded arg1 arg2)))
+                           (mod (mv t (mod arg1 arg2)))
+                           (getbit (mv t (getbit-unguarded arg1 arg2)))
+                           (cons (mv t (cons arg1 arg2)))
+                           (bvchop (mv t (bvchop-unguarded arg1 arg2)))
+                           (logtail$inline
+                                (mv t (logtail-unguarded arg1 arg2)))
+                           (logext (mv t (logext-unguarded arg1 arg2)))
+                           (nth (mv t (nth-unguarded arg1 arg2)))
+                           (binary-* (mv t (binary-*-unguarded arg1 arg2)))
+                           (bvnot-list
+                                (mv t (bvnot-list-unguarded arg1 arg2)))
+                           (eq (mv t (equal arg1 arg2)))
+                           (ceiling (mv t (ceiling-unguarded arg1 arg2)))
+                           (lookup-eq (mv t (lookup-eq arg1 arg2)))
+                           (lookup (mv t (lookup arg1 arg2)))
+                           (group (mv t (group arg1 arg2)))
+                           (group2 (mv t (group2 arg1 arg2)))
+                           (set::in (mv t (set::in-unguarded arg1 arg2)))
+                           (symbol< (mv t (symbol<-unguarded arg1 arg2)))
+                           (t (mv nil nil))))
+                        (let ((args-to-walk-down (cdr args-to-walk-down)))
+                         (if
+                          (endp args-to-walk-down)
+                          (let ((arg3 (unquote (nth 2 args)))
+                                (arg2 (unquote (nth 1 args)))
+                                (arg1 (unquote (nth 0 args))))
+                           (case fn
+                            (repeat-tail (mv t (repeat-tail arg1 arg2 arg3)))
+                            (negated-elems-listp (mv t
+                                                     (negated-elems-listp-unguarded
+                                                          arg1 arg2 arg3)))
+                            (leftrotate (mv t (leftrotate arg1 arg2 arg3)))
+                            (acons (mv t (acons arg1 arg2 arg3)))
+                            (bvshr (mv t (bvshr arg1 arg2 arg3)))
+                            (bvashr (mv t (bvashr arg1 arg2 arg3)))
+                            (packbv (mv t (packbv arg1 arg2 arg3)))
+                            (unpackbv
+                                 (mv t
+                                     (unpackbv-less-guarded arg1 arg2 arg3)))
+                            (bvplus-lst (mv t (bvplus-lst arg1 arg2 arg3)))
+                            (bvequal
+                                 (mv t (bvequal-unguarded arg1 arg2 arg3)))
+                            (bvlt (mv t (bvlt-unguarded arg1 arg2 arg3)))
+                            (bvle (mv t (bvle-unguarded arg1 arg2 arg3)))
+                            (bvxor (mv t (bvxor-unguarded arg1 arg2 arg3)))
+                            (bvor (mv t (bvor-unguarded arg1 arg2 arg3)))
+                            (bvand (mv t (bvand-unguarded arg1 arg2 arg3)))
+                            (bvmult (mv t (bvmult-unguarded arg1 arg2 arg3)))
+                            (bvplus (mv t (bvplus-unguarded arg1 arg2 arg3)))
+                            (bvminus
+                                 (mv t (bvminus-unguarded arg1 arg2 arg3)))
+                            (bvmod (mv t (bvmod-unguarded arg1 arg2 arg3)))
+                            (bvdiv (mv t (bvdiv-unguarded arg1 arg2 arg3)))
+                            (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
+                            (sbvdiv (mv t (sbvdiv arg1 arg2 arg3)))
+                            (sbvdivdown (mv t (sbvdivdown arg1 arg2 arg3)))
+                            (sbvrem (mv t (sbvrem arg1 arg2 arg3)))
+                            (sbvmoddown (mv t (sbvmoddown arg1 arg2 arg3)))
+                            (sbvlt
+                                 (mv t (sbvlt arg1 (ifix arg2) (ifix arg3))))
+                            (sbvle (mv t (sbvle arg1 arg2 arg3)))
+                            (s (mv t (s arg1 arg2 arg3)))
+                            (myif (mv t (myif arg1 arg2 arg3)))
+                            (boolif (mv t (boolif arg1 arg2 arg3)))
+                            (array-elem-2d
+                                 (mv t (array-elem-2d arg1 arg2 arg3)))
+                            (update-nth (mv t (update-nth arg1 arg2 arg3)))
+                            (if (mv t (if arg1 arg2 arg3)))
+                            (slice
+                                 (mv t (slice-less-guarded arg1 arg2 arg3)))
+                            (bvshl (mv t (bvshl arg1 arg2 arg3)))
+                            (keep-items-less-than (mv t
+                                                      (keep-items-less-than-unguarded
+                                                           arg1 arg2 arg3)))
+                            (subrange (mv t
+                                          (subrange (nfix arg1)
+                                                    (nfix arg2)
+                                                    arg3)))
+                            (bvxor-list
+                                 (mv t
+                                     (bvxor-list-unguarded arg1 arg2 arg3)))
+                            (t (mv nil nil))))
+                          (let ((args-to-walk-down (cdr args-to-walk-down)))
+                           (if
+                            (endp args-to-walk-down)
+                            (let ((arg4 (unquote (nth 3 args)))
+                                  (arg3 (unquote (nth 2 args)))
+                                  (arg2 (unquote (nth 1 args)))
+                                  (arg1 (unquote (nth 0 args))))
+                             (case fn
+                              (dag-val-with-axe-evaluator
+                                 (mv t
+                                     (dag-val-with-axe-evaluator
+                                          arg1 arg2 arg3 (+ 1 array-depth))))
+                              (apply-axe-evaluator
+                                   (mv t
+                                       (apply-axe-evaluator
+                                            arg1 arg2 arg3 array-depth)))
+                              (update-subrange
+                                  (mv t
+                                      (update-subrange arg1 arg2 arg3 arg4)))
+                              (update-nth2
+                                   (mv t (update-nth2 arg1 arg2 arg3 arg4)))
+                              (bv-array-clear
+                                 (mv t (bv-array-clear arg1 arg2 arg3 arg4)))
+                              (bvcat
+                                  (mv t
+                                      (bvcat-unguarded arg1 arg2 arg3 arg4)))
+                              (bv-array-read (mv t
+                                                 (bv-array-read-unguarded
+                                                      arg1 arg2 arg3 arg4)))
+                              (bvif
+                                 (mv t (bvif-unguarded arg1 arg2 arg3 arg4)))
+                              (t (mv nil nil))))
+                            (let
+                               ((args-to-walk-down (cdr args-to-walk-down)))
+                             (if
+                              (endp args-to-walk-down)
+                              (let ((arg5 (unquote (nth 4 args)))
+                                    (arg4 (unquote (nth 3 args)))
+                                    (arg3 (unquote (nth 2 args)))
+                                    (arg2 (unquote (nth 1 args)))
+                                    (arg1 (unquote (nth 0 args))))
+                               (case fn
+                                (update-subrange2
+                                     (mv t
+                                         (update-subrange2
+                                              arg1 arg2 arg3 arg4 arg5)))
+                                (bv-array-write
+                                   (mv t
+                                       (bv-array-write-unguarded (nfix arg1)
+                                                                 (nfix arg2)
+                                                                 (nfix arg3)
+                                                                 arg4 arg5)))
+                                (bv-array-clear-range
+                                     (mv t
+                                         (bv-array-clear-range
+                                              arg1 arg2 arg3 arg4 arg5)))
+                                (t (mv nil nil))))
+                              (let
+                               ((args-to-walk-down (cdr args-to-walk-down)))
+                               (if (endp args-to-walk-down)
+                                   (mv nil nil)
+                                (let ((args-to-walk-down
+                                           (cdr args-to-walk-down)))
+                                 (if (endp args-to-walk-down)
+                                     (mv nil nil)
+                                  (let ((args-to-walk-down
+                                             (cdr args-to-walk-down)))
+                                   (if
+                                    (endp args-to-walk-down)
+                                    (let ((arg8 (unquote (nth 7 args)))
+                                          (arg7 (unquote (nth 6 args)))
+                                          (arg6 (unquote (nth 5 args)))
+                                          (arg5 (unquote (nth 4 args)))
+                                          (arg4 (unquote (nth 3 args)))
+                                          (arg3 (unquote (nth 2 args)))
+                                          (arg2 (unquote (nth 1 args)))
+                                          (arg1 (unquote (nth 0 args))))
+                                     (declare (ignore arg8))
+                                     (case fn
+                                      (eval-dag-with-axe-evaluator
+                                       (mv
+                                        t
+                                        (eval-dag-with-axe-evaluator
+                                           arg1 arg2 arg3
+                                           arg4 arg5 arg6 arg7 array-depth)))
+                                      (t (mv nil nil))))
+                                    (mv nil nil))))))))))))))))))
                    (IF
                     HIT VAL
                     (LET

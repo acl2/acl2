@@ -1,7 +1,7 @@
 ; Tests for functions in clean-up-lambdas.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "clean-up-lambdas")
-(include-book "deftest")
+(include-book "kestrel/utilities/deftest" :dir :system)
 
 ;; Drop the binding of __function__(not used in the body), and then drop the
 ;; entire resulting lambda since it just binds x to itself.

@@ -20,6 +20,7 @@
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-strengthen
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
 (local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for logand-of-bvchop-becomes-bvand etc
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
