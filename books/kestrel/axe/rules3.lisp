@@ -2325,7 +2325,6 @@
 ;;                                                  BVPLUS-OF-*-ARG2 anti-bvplus
 ;;                                                  MOD-RECOLLAPSE-LEMMA2
 ;;                                                  MOD-RECOLLAPSE-LEMMA
-;;                                                  |0-1-SPLIT-CHEAP|
 ;;                                                  IF-BACKCHAIN-RULE
 ;;                                                  USB-PLUS-FROM-BOUNDS
 ;;                                                  ))

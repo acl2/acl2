@@ -633,28 +633,28 @@
 ;bozo gen the size..
 ;needed for DES proof
 ;use a subst rule instead?
-;yuck?
+;yuck? drop!
 ;rename
-(defthm bvxor-cancel-special
-  (implies (equal (getbit 0 x)
-                  (getbit 0 w))
-           (equal (equal (bvxor 1 x y) (bvxor 1 w z))
-                  (equal (bvchop 1 y) (bvchop 1 z))))
-  :hints (("Goal" :use (bvxor-1-of-getbit-arg1
-                        (:instance bvxor-1-of-getbit-arg1 (x w) (y z))
-                        (:instance bvxor-cancel
-                                   (x (getbit 0 x))
-                                   (y y)
-                                   (z z)
-                                   (size 1)
-                                   ))
-           :in-theory (disable bvxor-cancel-cross-2
-                               bvxor-cancel-cross-1
-                               bvxor-cancel-alt ;bvxor-usb1-cancel
-                               bvxor-cancel
-                               bvxor-1-becomes-bitxor
-                               bvxor-1-of-getbit-arg1 bvxor-1-of-getbit-arg2 bvxor-commutative ;bvxor-commutative
-                               ))))
+;; (defthmd bvxor-cancel-special
+;;   (implies (equal (getbit 0 x)
+;;                   (getbit 0 w))
+;;            (equal (equal (bvxor 1 x y) (bvxor 1 w z))
+;;                   (equal (bvchop 1 y) (bvchop 1 z))))
+;;   :hints (("Goal" :use (bvxor-1-of-getbit-arg1
+;;                         (:instance bvxor-1-of-getbit-arg1 (x w) (y z))
+;;                         (:instance bvxor-cancel
+;;                                    (x (getbit 0 x))
+;;                                    (y y)
+;;                                    (z z)
+;;                                    (size 1)
+;;                                    ))
+;;            :in-theory (disable bvxor-cancel-cross-2
+;;                                bvxor-cancel-cross-1
+;;                                bvxor-cancel-alt ;bvxor-usb1-cancel
+;;                                bvxor-cancel
+;;                                bvxor-1-becomes-bitxor
+;;                                bvxor-1-of-getbit-arg1 bvxor-1-of-getbit-arg2 bvxor-commutative ;bvxor-commutative
+;;                                ))))
 
 ;gen?! expand range for x at all?
 (defthm logext-times-4-hack
@@ -684,22 +684,22 @@
 
 ; todo: copy all bitxor thms for bitand and bitor
 
-;bbozo gen and add
-(defthmd 0-1-split
-  (implies (and (not (< 1 x))
-                (integerp x))
-           (equal (< x 0)
-                  (and (not (equal x 0))
-                       (not (equal x 1))))))
+;; ;bbozo gen and add
+;; (defthmd 0-1-split
+;;   (implies (and (not (< 1 x))
+;;                 (integerp x))
+;;            (equal (< x 0)
+;;                   (and (not (equal x 0))
+;;                        (not (equal x 1))))))
 
-;trying disabled
-(defthmd 0-1-split-cheap
-  (implies (and (not (< 1 x))
-                (integerp x))
-           (equal (< x 0)
-                  (and (not (equal x 0))
-                       (not (equal x 1)))))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 1))))
+;; ;trying disabled
+;; (defthmd 0-1-split-cheap
+;;   (implies (and (not (< 1 x))
+;;                 (integerp x))
+;;            (equal (< x 0)
+;;                   (and (not (equal x 0))
+;;                        (not (equal x 1)))))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (1 1))))
 
 (defthm integer-squeeze-0-1
   (implies (and (integerp x)
@@ -716,7 +716,7 @@
            (equal (integerp (* (/ m) (mod x m)))
                   (equal (mod x m)
                          0)))
-  :hints (("Goal" :in-theory (disable |0-1-SPLIT-CHEAP|)
+  :hints (("Goal"
            :use (:instance integer-squeeze-0-1 (x  (* (/ m)
                                                       (mod x m)))))))
 
@@ -1291,7 +1291,7 @@
 (defthm integer-of-bvchop-divided-by-expt
   (equal (INTEGERP (* (/ (EXPT 2 N)) (BVCHOP N A)))
          (equal 0 (BVCHOP N A)))
-  :hints (("Goal" :in-theory (disable |0-1-SPLIT-CHEAP|)
+  :hints (("Goal"
            :use (:instance integer-squeeze-0-1 (x (* (/ (EXPT 2 N)) (BVCHOP N A)))))))
 
 (defthm integerp-power2-hack
