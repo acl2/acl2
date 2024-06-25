@@ -707,3 +707,15 @@ struct bar
 (test-parse
  parse-external-declaration-list
  "char string[] = \"\";")
+
+(test-parse
+ parse-external-declaration-list
+ "void foo () {
+  managedtask * newtask = (managedtask *) malloc(sizeof(managedtask));
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "void foo () {
+ idx = (arr)[3];
+}")
