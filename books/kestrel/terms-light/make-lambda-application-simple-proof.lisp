@@ -89,35 +89,7 @@
                          (empty-eval term alist2))
                   t)))
 
-;move
-(defthm alists-equiv-on-of-append-arg1
-  (implies (alistp x)
-           (equal (alists-equiv-on keys (binary-append x y) z)
-                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
-                                             x
-                                             z)
-                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
-                                             y
-                                             z))))
-  :hints (("Goal" :in-theory (enable (:d SET-DIFFERENCE-EQUAL)
-                                     intersection-equal
-                                     MEMBER-EQUAL-OF-STRIP-CARS-IFF
-                                     ))))
 
-;move
-(defthm alists-equiv-on-of-append-arg2
-  (implies (and (alistp x)
-                )
-           (equal (alists-equiv-on keys z (binary-append x y))
-                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
-                                             z
-                                             x)
-                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
-                                             z
-                                             y))))
-  :hints (("Goal" :in-theory (enable (:d SET-DIFFERENCE-EQUAL)
-                                     intersection-equal
-                                     MEMBER-EQUAL-OF-STRIP-CARS-IFF))))
 
 
 
