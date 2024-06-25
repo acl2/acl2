@@ -1,6 +1,6 @@
 ; Making a list of lambda terms
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -125,7 +125,10 @@
                   (empty-eval term
                                (append (pairlis$ lambda-formals (empty-eval-list args a)) ; these pairs may shadow pairs in a
                                        a))))
-  :hints (("Goal" :in-theory (enable make-lambda-term-simple))))
+  :hints (("Goal" :in-theory (e/d (make-lambda-term-simple) ((:i len)
+                                                             ;; why these?:
+                                                             alists-equiv-on-of-append-arg1
+                                                             alists-equiv-on-of-append-arg2)))))
 
 
 ;todo: split out

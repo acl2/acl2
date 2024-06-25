@@ -1,6 +1,6 @@
 ; A predicate that checks whether two alists agree on a given list of keys
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,10 @@
 
 (local (include-book "assoc-equal"))
 (local (include-book "pairlis-dollar"))
+(local (include-book "strip-cars"))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
+(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
 ;; purposes, not having a binding for a key is equivalent to binding it to nil.
@@ -84,3 +87,31 @@
                             (cons (cons key (cdr (assoc-equal key a))) a2)
                             a))
   :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+(defthm alists-equiv-on-of-append-arg1
+  (implies (alistp x)
+           (equal (alists-equiv-on keys (binary-append x y) z)
+                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
+                                        x
+                                        z)
+                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
+                                        y
+                                        z))))
+  :hints (("Goal" :in-theory (enable (:d set-difference-equal)
+                                     (:i intersection-equal)
+                                     intersection-equal
+                                     member-equal-of-strip-cars-iff
+                                     ))))
+
+(defthm alists-equiv-on-of-append-arg2
+  (implies (alistp x)
+           (equal (alists-equiv-on keys z (binary-append x y))
+                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
+                                        z
+                                        x)
+                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
+                                        z
+                                        y))))
+  :hints (("Goal" :in-theory (enable (:d set-difference-equal)
+                                     intersection-equal
+                                     member-equal-of-strip-cars-iff))))
