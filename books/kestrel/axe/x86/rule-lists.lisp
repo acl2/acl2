@@ -3070,7 +3070,24 @@
 
 (defun lifter-rules64-new ()
   (declare (xargs :guard t))
-  '(;; Rules about rip/set-rip:
+  '(signed-byte-p-64-of-rax
+    signed-byte-p-64-of-rbx
+    signed-byte-p-64-of-rcx
+    signed-byte-p-64-of-rdx
+    signed-byte-p-64-of-rsi
+    signed-byte-p-64-of-rdi
+    signed-byte-p-64-of-r8
+    signed-byte-p-64-of-r9
+    signed-byte-p-64-of-r10
+    signed-byte-p-64-of-r11
+    signed-byte-p-64-of-r12
+    signed-byte-p-64-of-r13
+    signed-byte-p-64-of-r14
+    signed-byte-p-64-of-r15
+    signed-byte-p-64-of-rsp
+    signed-byte-p-64-of-rbp
+
+    ;; Rules about rip/set-rip:
     xr-becomes-rip ; introduces rip
     xw-becomes-set-rip ; introduces set-rip
     xw-of-set-rip-irrel
@@ -4018,6 +4035,24 @@
     set-r15-of-set-r15
     set-rsp-of-set-rsp
     set-rbp-of-set-rbp
+
+    ;; Write of read of the same register (state terms can differ):
+    set-rax-of-rax-same-gen
+    set-rbx-of-rbx-same-gen
+    set-rcx-of-rcx-same-gen
+    set-rdx-of-rdx-same-gen
+    set-rdi-of-rdi-same-gen
+    set-rsi-of-rsi-same-gen
+    set-r8-of-r8-same-gen
+    set-r9-of-r9-same-gen
+    set-r10-of-r10-same-gen
+    set-r11-of-r11-same-gen
+    set-r12-of-r12-same-gen
+    set-r13-of-r13-same-gen
+    set-r14-of-r14-same-gen
+    set-r15-of-r15-same-gen
+    set-rsp-of-rsp-same-gen
+    set-rbp-of-rbp-same-gen
 
     !rflags-of-set-rip
     !rflags-of-set-rax
