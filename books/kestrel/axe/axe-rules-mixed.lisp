@@ -58,7 +58,6 @@
                             bvminus-becomes-bvplus-of-bvuminus
                             <-of-bvplus-becomes-bvlt-arg1
                             <-of-bvplus-becomes-bvlt-arg2
-                            ;anti-bvplus
                             ;plus-becomes-bvplus
                             )))))
 
@@ -192,7 +191,7 @@
            (equal (unsigned-byte-p '31 (bvplus '32 x y))
                   t))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus unsigned-byte-p-forced)
-                                  (anti-bvplus)))))
+                                  ()))))
 
 (defthmd plus-of-minus-one-and-bv-dag
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))

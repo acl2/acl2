@@ -228,7 +228,7 @@
            (equal (EQUAL (LOGEXT 32 (BVPLUS 32 x y))
                          (+ x y))
                   (signed-byte-p 32 (+ x y))))
-  :hints (("Goal" :in-theory (e/d (BVPLUS) (;anti-bvplus
+  :hints (("Goal" :in-theory (e/d (BVPLUS) (;
                                             ;logext-of-plus
                                             )))))
 
