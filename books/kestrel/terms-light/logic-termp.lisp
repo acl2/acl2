@@ -1,6 +1,6 @@
 ; A book about logic-termp and related functions
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,9 +10,18 @@
 
 (in-package "ACL2")
 
+(local (include-book "logic-fnsp"))
+
+;; This book is about these functions:
 (in-theory (disable logic-termp
                     logic-term-listp
                     logic-term-list-listp))
+
+(local (in-theory (disable ;member-equal
+                           arglistp
+                           all-vars
+                           ;true-listp
+                           )))
 
 (defthm logic-termp-when-quotep
   (implies (quotep term)
@@ -97,3 +106,48 @@
   :hints (("Goal" :in-theory (enable logic-term-list-listp
                                      logic-fns-list-listp
                                      logic-term-listp))))
+
+(defthm logic-term-listp-forward-to-true-listp
+  (implies (logic-term-listp terms w)
+           (true-listp terms))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable logic-term-listp))))
+
+;; Note sure if we want this
+(defthmd logic-term-listp-forward-to-term-listp
+  (implies (logic-term-listp terms w)
+           (term-listp terms w))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable logic-term-listp))))
+
+;move
+(local
+  (defthm arglistp-forward-to-true-listp
+    (implies (arglistp x)
+             (true-listp x))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable arglistp)))))
+
+(defthm logic-termp-of-cons
+  (equal (logic-termp (cons a x) wrld)
+         (cond ((equal a 'quote) (and (consp x) (null (cdr x))))
+               ((symbolp a)
+                (and (not (programp a wrld))
+                     (let ((arity (arity a wrld)))
+                       (and arity
+                            (logic-term-listp x wrld)
+                            (equal (len x) ; was length
+                                   arity)))))
+               (t (and (consp a)
+                       (true-listp a)
+                       (equal (car a) 'lambda)
+                       (equal 3 (len a)) ; was length
+                       (arglistp (cadr a)) ; todo: call this legal-variable-listp?
+                       (logic-termp (caddr a) wrld)
+                       (null (set-difference-eq (all-vars (caddr a))
+                                                (cadr a)))
+                       (logic-term-listp x wrld)
+                       ;; the calls of len here were calls of length
+                       (eql (len (cadr a))
+                            (len x))))))
+  :hints (("Goal" :in-theory (enable logic-termp logic-term-listp))))
