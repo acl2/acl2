@@ -208,16 +208,22 @@
                  c$::dirabsdeclor-option-count
                  c$::dirabsdeclor-option-case
 
+                 c$::paramdecl
                  c$::paramdeclp
                  c$::paramdecl-fix
                  c$::paramdecl-count
-                 c$::paramdecl-case
-                 c$::make-paramdecl-nonabstract
-                 c$::make-paramdecl-abstract
+                 c$::make-paramdecl
 
                  c$::paramdecl-listp
                  c$::paramdecl-list-fix
                  c$::paramdecl-list-count
+
+                 c$::paramdeclorp
+                 c$::paramdeclor-count
+                 c$::paramdeclor-case
+                 c$::paramdeclor-declor
+                 c$::paramdeclor-absdeclor
+                 c$::paramdeclor-none
 
                  c$::tynamep
                  c$::tyname-fix

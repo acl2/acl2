@@ -492,14 +492,9 @@
     :returns (new-paramdecl paramdeclp)
     :parents (simpadd0 simpadd0-exprs/decls)
     :short "Transform a parameter declaration."
-    (paramdecl-case
-     paramdecl
-     :nonabstract (make-paramdecl-nonabstract
-                   :spec (simpadd0-declspec-list paramdecl.spec)
-                   :decl (simpadd0-declor paramdecl.decl))
-     :abstract (make-paramdecl-abstract
-                :spec (simpadd0-declspec-list paramdecl.spec)
-                :decl (simpadd0-absdeclor-option paramdecl.decl)))
+    (b* (((paramdecl paramdecl) paramdecl))
+      (make-paramdecl :spec (simpadd0-declspec-list paramdecl.spec)
+                      :decl (simpadd0-paramdeclor paramdecl.decl)))
     :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -512,6 +507,19 @@
           (t (cons (simpadd0-paramdecl (car paramdecls))
                    (simpadd0-paramdecl-list (cdr paramdecls)))))
     :measure (paramdecl-list-count paramdecls))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define simpadd0-paramdeclor ((paramdeclor paramdeclorp))
+    :returns (new-paramdeclor paramdeclorp)
+    :parents (simpadd0 simpadd0-exprs/decls)
+    :short "Transform a parameter declarator."
+    (paramdeclor-case
+     paramdeclor
+     :declor (paramdeclor-declor (simpadd0-declor paramdeclor.unwrap))
+     :absdeclor (paramdeclor-absdeclor (simpadd0-absdeclor paramdeclor.unwrap))
+     :none (paramdeclor-none))
+    :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
