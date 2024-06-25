@@ -755,6 +755,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-parameter-declaration
+
+(test-parse
+ parse-parameter-declaration
+ "int x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :absdeclor))
+
+(test-parse
+ parse-parameter-declaration
+ "int (x)(y))"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-declarator-or-abstract-declarator
 
 (test-parse
