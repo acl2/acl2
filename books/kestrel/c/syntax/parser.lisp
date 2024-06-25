@@ -9602,16 +9602,18 @@
        ((token-declarator-start-p token) ; declspecs declor...
         (b* ((pstate (unread-token pstate)) ; declspecs
              ((erp declor last-span pstate) ; declspecs declor
-              (parse-declarator pstate)))
-          (retok (make-paramdecl-nonabstract :spec declspecs
-                                             :decl declor)
+              (parse-declarator pstate))
+             (paramdeclor (paramdeclor-declor declor)))
+          (retok (make-paramdecl :spec declspecs
+                                 :decl paramdeclor)
                  (span-join span last-span)
                  pstate)))
        ;; Otherwise, the parameter declarator has no declarator.
        (t ; declspecs other
-        (b* ((pstate (if token (unread-token pstate) pstate)))
-          (retok (make-paramdecl-abstract :spec declspecs
-                                          :decl nil)
+        (b* ((pstate (if token (unread-token pstate) pstate))
+             (paramdeclor (paramdeclor-none)))
+          (retok (make-paramdecl :spec declspecs
+                                 :decl paramdeclor)
                  span
                  pstate)))))
     :measure (two-nats-measure (parsize pstate) 2))
