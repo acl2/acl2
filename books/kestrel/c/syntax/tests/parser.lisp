@@ -759,32 +759,32 @@
 
 (test-parse
  parse-declarator-or-abstract-declarator
- "zzz"
+ "zzz,"
  :cond (amb?-declor/absdeclor-case ast :declor))
 
 (test-parse
  parse-declarator-or-abstract-declarator
- "(*)"
+ "(*),"
  :cond (amb?-declor/absdeclor-case ast :absdeclor))
 
 (test-parse
  parse-declarator-or-abstract-declarator
- "(h)"
+ "(h),"
  :cond (amb?-declor/absdeclor-case ast :ambig))
 
 (test-parse
  parse-declarator-or-abstract-declarator
- "(h)[*]"
+ "(h)[*],"
  :cond (amb?-declor/absdeclor-case ast :ambig))
 
 (test-parse
  parse-declarator-or-abstract-declarator
- "(h)[*](uint32_t)"
+ "(h)[*](uint32_t),"
  :cond (amb?-declor/absdeclor-case ast :ambig))
 
 (test-parse
  parse-declarator-or-abstract-declarator
- "(h)[*](uint32_t)(T,T)"
+ "(h)[*](uint32_t)(T,T),"
  :cond (amb?-declor/absdeclor-case ast :ambig))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
