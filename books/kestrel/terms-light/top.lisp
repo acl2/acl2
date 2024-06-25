@@ -16,6 +16,9 @@
 (include-book "logic-termp")
 (include-book "all-fnnames1")
 
+;; Utilities:
+(include-book "filter-formals-and-actuals")
+
 (include-book "all-quotep")
 (include-book "trivial-formals")
 (include-book "non-trivial-formals")
