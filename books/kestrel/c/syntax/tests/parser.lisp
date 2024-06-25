@@ -542,6 +542,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-direct-declarator
+
+(test-parse
+ parse-direct-declarator
+ "x"
+ :cond (dirdeclor-case ast :ident))
+
+(test-parse
+ parse-direct-declarator
+ "(x)"
+ :cond (dirdeclor-case ast :paren))
+
+(test-parse
+ parse-direct-declarator
+ "x[]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[10]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[a+b]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[const a+b]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[const volatile a+b]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[static a+b]"
+ :cond (dirdeclor-case ast :array-static1))
+
+(test-parse
+ parse-direct-declarator
+ "x[static const a+b]"
+ :cond (dirdeclor-case ast :array-static1))
+
+(test-parse
+ parse-direct-declarator
+ "x[const static a+b]"
+ :cond (dirdeclor-case ast :array-static2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-expression-or-type-name
 
 (test-parse
