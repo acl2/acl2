@@ -20,10 +20,9 @@
 
 (local (in-theory (disable mv-nth)))
 
-;; Returns (mv new-formals new-actuals) where the NEW-FORMALS returned are
-;; those members of FORMAL that are also in FORMALS-TO-KEEP and the NEW-ACTUALS
-;; returned are their corresponding actuals.  The order of the formals is not
-;; changed.
+;; Returns (mv new-formals new-actuals) where the NEW-FORMALS are those members
+;; of FORMALS that are also in FORMALS-TO-KEEP and the NEW-ACTUALS are their
+;; corresponding actuals.  The order of the FORMALS is not changed.
 (defund filter-formals-and-actuals (formals actuals formals-to-keep)
   (declare (xargs :guard (and (symbol-listp formals)
                               (true-listp actuals) ;; actuals is a list of terms (often pseudo-terms)
