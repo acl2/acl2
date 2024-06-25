@@ -104,6 +104,7 @@
 (include-book "centaur/acre/top" :dir :system)
 
 (include-book "centaur/bigmem/bigmem" :dir :system)
+(include-book "centaur/bigmem-asymmetric/bigmem-asymmetric" :dir :system)
 
 (include-book "centaur/bridge/top" :dir :system)
 
