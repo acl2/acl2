@@ -8704,12 +8704,32 @@
                                             :expr? nil)
                    (span-join span span2)
                    pstate))
-           ;; If token2 is a star, we must have a declarator [*].
+           ;; If token2 is a star, it may start an expression,
+           ;; or we may have a variable length array declarator.
+           ;; So we read another token
            ((equal token2 (token-punctuator "*")) ; [ *
-            (b* (((erp last-span pstate) (read-punctuator "]" pstate))) ; [ * ]
-              (retok (dirabsdeclor-array-star nil)
-                     (span-join span last-span)
-                     pstate)))
+            (b* (((erp token3 span3 pstate) (read-token pstate)))
+              (cond
+               ;; If token3 is a closed square bracket,
+               ;; we have a variable length array declarator.
+               ((equal token3 (token-punctuator "]")) ; [ * ]
+                (retok (make-dirabsdeclor-array-star :decl? nil)
+                       (span-join span span3)
+                       pstate))
+               ;; If token3 is not a closed square bracket,
+               ;; the star must start an (assignment) expression.
+               (t ; [ * other
+                (b* ((pstate (if token3 (unread-token pstate) pstate)) ; [ *
+                     (pstate (unread-token pstate)) ; [
+                     ((erp expr & pstate) ; [ expr
+                      (parse-assignment-expression pstate))
+                     ((erp last-span pstate) ; [ expr ]
+                      (read-punctuator "]" pstate)))
+                  (retok (make-dirabsdeclor-array :decl? nil
+                                                  :tyquals nil
+                                                  :expr? expr)
+                         (span-join span last-span)
+                         pstate))))))
            ;; If token2 is the keyword 'static',
            ;; the keyword may be followed by a list of type qualifiers,
            ;; and then must be followed by an assignment expression.
