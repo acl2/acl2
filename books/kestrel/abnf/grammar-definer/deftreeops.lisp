@@ -277,6 +277,52 @@
              (iff (deftreeops-rulename-infop (cdr (assoc-equal key alist)))
                   (cdr (assoc-equal key alist))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod num-range
+  :short "Fixtype of numeric range notations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of the @(':range') case of @(tsee num-val),
+     which perhaps should be refactored so that the fixtype introduced here
+     is instead introduced as part of the ABNF abstract syntax."))
+  ((base num-base)
+   (min nat)
+   (max nat))
+  :pred num-range-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod deftreeops-numrange-info
+  :short "Fixtype of @(tsee deftreeops) information about numeric ranges."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This information consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "The name of the function that maps
+      a tree matching the range
+      to the natural number at the leaf of the tree.")
+    (xdoc::li
+     "The name of the theorem about the bounds of
+      the result of the just aforementioned function.")))
+  ((get-nat-fn acl2::symbol)
+   (bounds-thm acl2::symbol))
+  :pred deftreeops-numrange-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist deftreeops-numrange-info-alist
+  :short "Fixtype of alists from numeric ranges to information about them."
+  :key-type num-range
+  :val-type deftreeops-numrange-info
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil nil
+  :pred deftreeops-numrange-info-alistp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ deftreeops-table
@@ -297,10 +343,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of the alist from rule names to rule name information.
-     We put it into a one-component product type for future extensibility,
-     and also so that we can define the option type based on this."))
-  ((rulename-info-alist deftreeops-rulename-info-alist))
+    "This consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "The alist from rule names to rule name information.")
+    (xdoc::li
+     "The alist from numeric ranges to numeric range information.")))
+  ((rulename-info-alist deftreeops-rulename-info-alist)
+   (numrange-info-alist deftreeops-numrange-info-alist))
   :pred deftreeops-table-valuep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1854,7 +1904,10 @@
   (b* ((matchers (deftreeops-gen-matchers grammar prefix))
        ((mv rulename-infos rulename-events)
         (deftreeops-gen-all-rulename-infos+events rules prefix))
-       (table-value (deftreeops-table-value rulename-infos))
+       (numrange-infos nil) ; This will be extended soon.
+       (table-value (make-deftreeops-table-value
+                     :rulename-info-alist rulename-infos
+                     :numrange-info-alist numrange-infos))
        (event `(defsection ,(add-suffix grammar "-TREE-OPERATIONS")
                  :parents (,grammar)
                  :short ,(str::cat
