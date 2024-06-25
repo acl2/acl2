@@ -8757,7 +8757,7 @@
             (b* ((pstate (unread-token pstate)) ; [
                  ((erp tyquals & pstate) ; [ tyquals
                   (parse-type-qualifier-list pstate))
-                 ((erp token3 & pstate) (read-token pstate)))
+                 ((erp token3 span3 pstate) (read-token pstate)))
               (cond
                ;; If token3 is the keyword 'static',
                ;; we must have an assignment expression after that.
@@ -8772,7 +8772,17 @@
                           :expr expr)
                          (span-join span last-span)
                          pstate)))
-               ;; If token3 is not the keyword 'static',
+               ;; If token3 is a closed square bracket,
+               ;; there is no expression, and we have determined the variant.
+               ((equal token3 (token-punctuator "]")) ; [ tyquals ]
+                (retok (make-dirabsdeclor-array
+                        :decl? nil
+                        :tyquals tyquals
+                        :expr? nil)
+                       (span-join span span3)
+                       pstate))
+               ;; If token3 is not the keyword 'static'
+               ;; and is not a closed square bracket,
                ;; we must have an assignment expression here.
                (t ; [ tyquals other
                 (b* ((pstate
