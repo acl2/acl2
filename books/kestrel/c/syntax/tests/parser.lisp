@@ -576,6 +576,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-block-item
+
+(test-parse
+ parse-block-item
+ "idx = &((char*)session_peak())[i*BUFSIZE];")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-external-declaration-list
 
 (test-parse
@@ -699,7 +707,3 @@ struct bar
 (test-parse
  parse-external-declaration-list
  "char string[] = \"\";")
-
-(test-parse
- parse-block-item
- "idx = &((char*)session_peak())[i*BUFSIZE];")
