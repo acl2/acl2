@@ -167,7 +167,7 @@
 (defirrelevant irr-alignspec
   :short "An irrelevant alignment specifier."
   :type alignspecp
-  :body (alignspec-alignas-ambig (irr-ident)))
+  :body (alignspec-alignas-expr (irr-const-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,7 +230,7 @@
 (defirrelevant irr-paramdecl
   :short "An irrelevant parameter declaration."
   :type paramdeclp
-  :body (make-paramdecl-nonabstract :spec nil :decl (irr-declor)))
+  :body (make-paramdecl :spec nil :decl (paramdeclor-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -287,6 +287,13 @@
   :short "An irrelevant possibly ambiguous expression or type name."
   :type amb?-expr/tyname-p
   :body (amb?-expr/tyname-expr (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-amb?-declor/absdeclor
+  :short "An irrelevant possibly ambiguous declarators or abstract declarators."
+  :type amb?-declor/absdeclor-p
+  :body (amb?-declor/absdeclor-declor (irr-declor)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
