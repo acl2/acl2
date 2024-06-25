@@ -2268,27 +2268,13 @@
     (xdoc::topstring
      (xdoc::p
       "We ensure that there are declaration specifiers."))
-    (paramdecl-case
-     paramdecl
-     :nonabstract
-     (b* (((unless paramdecl.spec)
-           (raise "Misusage error: no declaration specifiers.")
-           (pristate-fix pstate))
-          (pstate (print-declspec-list paramdecl.spec pstate))
-          (pstate (print-astring " " pstate))
-          (pstate (print-declor paramdecl.decl pstate)))
-       pstate)
-     :abstract
-     (b* (((unless paramdecl.spec)
-           (raise "Misusage error: no declaration specifiers.")
-           (pristate-fix pstate))
-          (pstate (print-declspec-list paramdecl.spec pstate))
-          ((unless (absdeclor-option-case paramdecl.decl :some)) pstate)
-          (pstate (print-astring " " pstate))
-          (pstate (print-absdeclor (absdeclor-option-some->val
-                                    paramdecl.decl)
-                                   pstate)))
-       pstate))
+    (b* (((paramdecl paramdecl) paramdecl)
+         ((unless paramdecl.spec)
+          (raise "Misusage error: no declaration specifiers.")
+          (pristate-fix pstate))
+         (pstate (print-declspec-list paramdecl.spec pstate))
+         (pstate (print-paramdeclor paramdecl.decl pstate)))
+      pstate)
     :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2305,6 +2291,31 @@
          (pstate (print-astring ", " pstate)))
       (print-paramdecl-list (cdr paramdecls) pstate))
     :measure (paramdecl-list-count paramdecls))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define print-paramdeclor ((paramdeclor paramdeclorp) (pstate pristatep))
+    :returns (new-pstate pristatep)
+    :parents (printer print-exprs/decls)
+    :short "Print a parameter declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is always called after printing
+       the declaration specifiers that start a parameter declaration.
+       Thus, if the parameter declarator is present,
+       we print a space to separate the declaration specifiers
+       from the declarator or abstract declarator."))
+    (paramdeclor-case
+     paramdeclor
+     :declor (b* ((pstate (print-astring " " pstate))
+                  (pstate (print-declor paramdeclor.unwrap pstate)))
+               pstate)
+     :absdeclor (b* ((pstate (print-astring " " pstate))
+                     (pstate (print-absdeclor paramdeclor.unwrap pstate)))
+                  pstate)
+     :none (pristate-fix pstate))
+    :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
