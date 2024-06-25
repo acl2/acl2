@@ -2256,6 +2256,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum amb?-declor/absdeclor
+  :short "Fixtype of possibly ambiguous declarators or abstract declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Note the difference between this fixtype,
+     with a question mark in @('amb?'),
+     and the fixtype @(tsee amb-declor/absdeclor).
+     The latter captures definitely ambiguous constructs
+     that may be declarators or abstract declarators.
+     In contrast, this fixtype includes constructs that are
+     either just declarators,
+     or just abstract declarators,
+     or ambiguous ones."))
+  (:declor ((unwrap declor)))
+  (:absdeclor ((unwrap absdeclor)))
+  (:ambig ((unwrap amb-declor/absdeclor)))
+  :pred amb?-declor/absdeclor-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod initdeclor
   :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
   :long

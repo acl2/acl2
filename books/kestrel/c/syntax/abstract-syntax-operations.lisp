@@ -290,6 +290,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-amb?-declor/absdeclor
+  :short "An irrelevant possibly ambiguous declarators or abstract declarators."
+  :type amb?-declor/absdeclor-p
+  :body (amb?-declor/absdeclor-declor (irr-declor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-initdeclor
   :short "An irrelevant initializer declarator."
   :type initdeclorp
