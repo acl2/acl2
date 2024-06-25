@@ -9166,15 +9166,48 @@
            ;; If token2 is a type qualifier,
            ;; we put it back and read a list of type qualifiers,
            ;; but the array variant is still not determined,
-           ;; so we read more tokens.
+           ;; so we read another token after that.
            ((token-type-qualifier-p token2) ; [ tyqual
             (b* ((pstate (unread-token pstate)) ; [
                  ((erp tyquals & pstate) ; [ tyquals
                   (parse-type-qualifier-list pstate))
                  ((erp token3 span3 pstate) (read-token pstate)))
               (cond
+               ;; If token3 is a star, it may start an expression,
+               ;; or it may be just a star for a variable length array.
+               ;; So we need to read another token to disambiguate.
+               ((equal token3 (token-punctuator "*")) ; [ tyquals *
+                (b* (((erp token4 span4 pstate) (read-token pstate)))
+                  (cond
+                   ;; If token4 is a closed square bracket,
+                   ;; we have a variable length array declarator.
+                   ((equal token4 (token-punctuator "]")) ; [ tyquals * ]
+                    (retok (make-dirdeclor-array-star :decl prev-dirdeclor
+                                                      :tyquals tyquals)
+                           (span-join prev-span span4)
+                           pstate))
+                   ;; If token4 is not a square bracket,
+                   ;; the star must start an expression,
+                   ;; so we put the tokens back
+                   ;; and we proceed to parse an assignment expression.
+                   ;; We have determined the array variant.
+                   (t ; [ tyquals * other
+                    (b* ((pstate ; [ tyquals *
+                          (if token4 (unread-token pstate) pstate))
+                         (pstate (unread-token pstate)) ; [ tyquals
+                         ((erp expr & pstate) ; [ tyquals expr
+                          (parse-assignment-expression pstate))
+                         ((erp last-span pstate) ; [ tyquals expr ]
+                          (read-punctuator "]" pstate)))
+                      (retok (make-dirdeclor-array :decl prev-dirdeclor
+                                                   :tyquals tyquals
+                                                   :expr? expr)
+                             (span-join prev-span last-span)
+                             pstate))))))
                ;; If token3 may start an (assignment) expression,
                ;; we parse it, and we have determined the array variant.
+               ;; We have already considered the case of a star above,
+               ;; so this can only be an expression at this point.
                ((token-expression-start-p token3) ; [ tyquals expr...
                 (b* ((pstate (unread-token pstate)) ; [ tyquals
                      ((erp expr & pstate) ; [ tyquals expr
@@ -9214,8 +9247,37 @@
                                        or the 'static' keyword ~
                                        or a closed square bracket"
                             :found (token-to-msg token3))))))
+           ;; If token2 is a star, it may start an expression,
+           ;; or it may be just a star for a variable length array.
+           ;; So we need to read another token to disambiguate.
+           ((equal token2 (token-punctuator "*")) ; [ *
+            (b* (((erp token3 span3 pstate) (read-token pstate)))
+              (cond
+               ;; If token3 is a closed square bracket,
+               ;; we have a variable length array declarator.
+               ((equal token3 (token-punctuator "]")) ; [ * ]
+                (retok (make-dirdeclor-array-star :decl prev-dirdeclor
+                                                  :tyquals nil)
+                       (span-join prev-span span3)
+                       pstate))
+               ;; If token3 is not a star,
+               ;; we must have an expression,
+               ;; and we have determined the array declarator variant.
+               (t ; [ * other
+                (b* ((pstate (if token3 (unread-token pstate) pstate)) ; [ *
+                     (pstate (unread-token pstate)) ; [
+                     ((erp expr & pstate) ; [ expr
+                      (parse-assignment-expression pstate))
+                     ((erp last-span pstate) ; [ expr ]
+                      (read-punctuator "]" pstate)))
+                  (retok (make-dirdeclor-array :decl prev-dirdeclor
+                                               :tyquals nil
+                                               :expr? expr)
+                         (span-join prev-span last-span)
+                         pstate))))))
            ;; If token2 may start an assignment expression,
            ;; we have determined the variant.
+           ;; Note that we have already considered the case of a star above.
            ((token-expression-start-p token2) ; [ expr...
             (b* ((pstate (unread-token pstate)) ; [
                  ((erp expr & pstate) ; [ expr
