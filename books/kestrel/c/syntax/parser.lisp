@@ -9112,70 +9112,28 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-direct-declarator ((pstate parstatep))
+  (define parse-array/function-declarator ((prev-dirdeclor dirdeclorp)
+                                           (prev-span spanp)
+                                           (pstate parstatep))
     :returns (mv erp
                  (dirdeclor dirdeclorp)
                  (span spanp)
                  (new-pstate parstatep))
     :parents (parser parse-exprs/decls)
-    :short "Parse a direct declarator."
+    :short "Parse an array or function declarator."
     :long
     (xdoc::topstring
      (xdoc::p
-      "A direct declarator always starts with
-       either an identifier or a parenthesized declarator,
-       and continues with zero or more array or function constructs
-       that augment the declarator.
-       First we parse the initial identifier or parenthesized declarator,
-       then we call a separate function to parse
-       the zero or more array or function constructs."))
-    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
-         ((erp token span pstate) (read-token pstate)))
-      (cond
-       ;; If token is an identifier,
-       ;; that must be the start of the direct declarator.
-       ((and token (token-case token :ident)) ; ident
-        (parse-direct-declarator-rest (dirdeclor-ident
-                                       (token-ident->unwrap token))
-                                      span
-                                      pstate))
-       ;; If token is an open parenthesis,
-       ;; we must have a parenthesized declarator.
-       ((equal token (token-punctuator "(")) ; (
-        (b* ((psize (parsize pstate))
-             ((erp declor & pstate) (parse-declarator pstate)) ; ( declor
-             ((unless (mbt (<= (parsize pstate) (1- psize))))
-              (reterr :impossible))
-             ((erp last-span pstate) (read-punctuator ")" pstate))) ; ( declor )
-          (parse-direct-declarator-rest (dirdeclor-paren declor)
-                                        (span-join span last-span)
-                                        pstate)))
-       ;; If token is anything else, it is an error:
-       ;; we do not have a direct declarator.
-       (t
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "an identifier ~
-                               or an open parenthesis"
-                    :found (token-to-msg token)))))
-    :measure (two-nats-measure (parsize pstate) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define parse-direct-declarator-rest ((prev-dirdeclor dirdeclorp)
-                                        (prev-span spanp)
-                                        (pstate parstatep))
-    :returns (mv erp (dirdeclor dirdeclorp) (span spanp) (new-pstate parstatep))
-    :parents (parser parse-exprs/decls)
-    :short "Parse the rest of a direct declarator."
-    :long
-    (xdoc::topstring
+      "These are the kinds of direct declarators
+       that can be chained, one after the other.
+       See @(tsee parse-direct-declarator).")
      (xdoc::p
-      "This is called after parsing
-       the identifier or parenthesized declarator
-       that starts the direct declarator,
-       and which is a direct declarator itself,
-       and is passed to this function as the @('prev-dirdeclor') input,
-       along with its span.")
+      "This function is called when we expect this kind of declarator.")
+     (xdoc::p
+      "The @('prev-dirdeclor') input to this function
+       is the direct declarator parsed so far,
+       which must be extended with the next array or function declarator.
+       The @('prev-span') input is the span of that direct declarator.")
      (xdoc::p
       "Although there are two possible variants for function declarators,
        since an identifier is a type specifier and thus a parameter declaration,
@@ -9400,14 +9358,115 @@
                                                      :ellipsis ellipsis)
                      (span-join prev-span last-span)
                      pstate))))))
-       ;; If token is anything else,
-       ;; we have reached the end of the direct declarator.
+       ;; If token is not an open parenthesis or an open square bracket,
+       ;; it is an internal implementation error:
+       ;; this function should be always called
+       ;; when the next token is an open parenthesis or open square bracket.
+       (t ;; other
+        (prog2$
+         (raise "Internal error: unexpected token ~x0." token)
+         (reterr t)))))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-direct-declarator ((pstate parstatep))
+    :returns (mv erp
+                 (dirdeclor dirdeclorp)
+                 (span spanp)
+                 (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse a direct declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A direct declarator always starts with
+       either an identifier or a parenthesized declarator,
+       and continues with zero or more array or function constructs
+       that augment the declarator.
+       First we parse the initial identifier or parenthesized declarator,
+       then we call a separate function to parse
+       the zero or more array or function constructs."))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+         ((erp token span pstate) (read-token pstate)))
+      (cond
+       ;; If token is an identifier,
+       ;; that must be the start of the direct declarator.
+       ((and token (token-case token :ident)) ; ident
+        (parse-direct-declarator-rest (dirdeclor-ident
+                                       (token-ident->unwrap token))
+                                      span
+                                      pstate))
+       ;; If token is an open parenthesis,
+       ;; we must have a parenthesized declarator.
+       ((equal token (token-punctuator "(")) ; (
+        (b* ((psize (parsize pstate))
+             ((erp declor & pstate) (parse-declarator pstate)) ; ( declor
+             ((unless (mbt (<= (parsize pstate) (1- psize))))
+              (reterr :impossible))
+             ((erp last-span pstate) (read-punctuator ")" pstate))) ; ( declor )
+          (parse-direct-declarator-rest (dirdeclor-paren declor)
+                                        (span-join span last-span)
+                                        pstate)))
+       ;; If token is anything else, it is an error:
+       ;; we do not have a direct declarator.
+       (t
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "an identifier ~
+                               or an open parenthesis"
+                    :found (token-to-msg token)))))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-direct-declarator-rest ((prev-dirdeclor dirdeclorp)
+                                        (prev-span spanp)
+                                        (pstate parstatep))
+    :returns (mv erp (dirdeclor dirdeclorp) (span spanp) (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse the rest of a direct declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called after parsing
+       the identifier or parenthesized declarator
+       that starts the direct declarator,
+       and which is a direct declarator itself,
+       and is passed to this function as the @('prev-dirdeclor') input,
+       along with its span."))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+         ;; We read the next token, to determine whether
+         ;; there is another array or function declarator.
+         ((erp token & pstate) (read-token pstate)))
+      (cond
+       ;; If token is an open parenthesis or an open square bracket,
+       ;; we must have a function or array declarator.
+       ;; We put back the token
+       ;; and call the function to parse the next declarator,
+       ;; which combines that with the previous one passed to this function,
+       ;; obtaining an extended direct declarator
+       ;; which we recursively pass to this function
+       ;; for possibly further extension.
+       ((or (equal token (token-punctuator "(")) ; (
+            (equal token (token-punctuator "["))) ; [
+        (b* ((pstate (unread-token pstate)) ;
+             (psize (parsize pstate))
+             ((erp curr-dirdeclor curr-span pstate) ; dirdeclor
+              (parse-array/function-declarator prev-dirdeclor prev-span pstate))
+             ((unless (mbt (<= (parsize pstate) (1- psize))))
+              (reterr :impossible)))
+          (parse-direct-declarator-rest curr-dirdeclor
+                                        curr-span
+                                        pstate)))
+       ;; If token is not an open parenthesis or an open square bracket,
+       ;; we have reached the end of the sequence of zero or more
+       ;; array and function abstract declarators.
        (t ; other
-        (b* ((pstate (if token (unread-token pstate) pstate)))
+        (b* ((pstate (if token (unread-token pstate) pstate))) ;
           (retok (dirdeclor-fix prev-dirdeclor)
                  (span-fix prev-span)
                  pstate)))))
-    :measure (two-nats-measure (parsize pstate) 0))
+    :measure (two-nats-measure (parsize pstate) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -10477,6 +10536,11 @@
           (parsize pstate))
       :rule-classes :linear
       :fn parse-abstract-declarator)
+    (defret parsize-of-parse-array/function-declarator-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-array/function-declarator)
     (defret parsize-of-parse-direct-declarator-uncond
       (<= (parsize new-pstate)
           (parsize pstate))
@@ -10857,6 +10921,12 @@
                    (1- (parsize pstate))))
       :rule-classes :linear
       :fn parse-abstract-declarator)
+    (defret parsize-of-parse-array/function-declarator-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-array/function-declarator)
     (defret parsize-of-parse-direct-declarator-cond
       (implies (not erp)
                (<= (parsize new-pstate)
