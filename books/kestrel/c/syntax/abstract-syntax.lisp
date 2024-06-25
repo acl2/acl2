@@ -1902,23 +1902,21 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum paramdecl
+  (fty::defprod paramdecl
     :parents (abstract-syntax exprs/decls)
     :short "Fixtype of parameter declarations [C:6.7.6] [C:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>parameter-declaration</i> in the grammar in [C].
-       There are declaration specifiers followed by
-       either a (non-abstract) declarator
-       or an optional abstract declarator."))
-    (:nonabstract ((spec declspec-list)
-                   (decl declor)))
-    (:abstract ((spec declspec-list)
-                (decl absdeclor-option)))
+       In our abstract syntax, this is defined as consisting of
+       declaration specifiers followed by a parameter declarator;
+       see @(tsee paramdeclor) for a description and motivation
+       for this notion of parameter declarator."))
+    ((spec declspec-list)
+     (decl paramdeclor))
     :pred paramdeclp
-    :base-case-override :nonabstract
-    :measure (two-nats-measure (acl2-count x) 2))
+    :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -1935,6 +1933,32 @@
     :true-listp t
     :elementp-of-nil nil
     :pred paramdecl-listp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (fty::deftagsum paramdeclor
+    :parents (abstract-syntax exprs/decls)
+    :short "Fixtype of parameter declarators [C:6.7.6] [C:A.2.2]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "There is actually no notion of `parameter declarator' in [C],
+       but it is convenient to introduce in our abstract syntax,
+       to factor it better.
+       Our notion of parameter declarator is analogous to
+       the notions of various kinds of declarators in [C],
+       which, when preceded by declaration specifiers,
+       form declarations.")
+     (xdoc::p
+      "We define a parameter declarator as
+       either a declarator or an abstract declarator or nothing.
+       These are the three possibilities for what can follow
+       the declaration specifiers in a parameter declaration."))
+    (:declor ((unwrap declor)))
+    (:absdeclor ((unwrap absdeclor)))
+    (:none ())
+    :pred paramdeclorp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
