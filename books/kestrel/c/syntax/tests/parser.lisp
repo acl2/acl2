@@ -594,6 +594,41 @@
  "x[const static a+b]"
  :cond (dirdeclor-case ast :array-static2))
 
+(test-parse
+ parse-direct-declarator
+ "x[*]"
+ :cond (dirdeclor-case ast :array-star))
+
+(test-parse
+ parse-direct-declarator
+ "x[*y]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[restrict *]"
+ :cond (dirdeclor-case ast :array-star))
+
+(test-parse
+ parse-direct-declarator
+ "x[restrict *y]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[_Atomic static *y]"
+ :cond (dirdeclor-case ast :array-static2))
+
+(test-parse
+ parse-direct-declarator
+ "(a)(b)"
+ :cond (dirdeclor-case ast :function-params))
+
+(test-parse
+ parse-direct-declarator
+ "f(int, _Bool)"
+ :cond (dirdeclor-case ast :function-params))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-expression-or-type-name
