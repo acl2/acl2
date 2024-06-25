@@ -185,7 +185,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Write-of-read of the same register
+;; Write-of-read of the same register (but see the -gen rules below that match better).
 (defthm set-rax-of-rax-same (equal (set-rax (rax x86) x86) x86) :hints (("Goal" :in-theory (enable rax set-rax))))
 (defthm set-rbx-of-rbx-same (equal (set-rbx (rbx x86) x86) x86) :hints (("Goal" :in-theory (enable rbx set-rbx))))
 (defthm set-rcx-of-rcx-same (equal (set-rcx (rcx x86) x86) x86) :hints (("Goal" :in-theory (enable rcx set-rcx))))
@@ -202,6 +202,24 @@
 (defthm set-r15-of-r15-same (equal (set-r15 (r15 x86) x86) x86) :hints (("Goal" :in-theory (enable r15 set-r15))))
 (defthm set-rsp-of-rsp-same (equal (set-rsp (rsp x86) x86) x86) :hints (("Goal" :in-theory (enable rsp set-rsp))))
 (defthm set-rbp-of-rbp-same (equal (set-rbp (rbp x86) x86) x86) :hints (("Goal" :in-theory (enable rbp set-rbp))))
+
+;; These match better
+(defthm set-rax-of-rax-same-gen (implies (equal (rax x86_2) (rax x86)) (equal (set-rax (rax x86_2) x86) x86)))
+(defthm set-rbx-of-rbx-same-gen (implies (equal (rbx x86_2) (rbx x86)) (equal (set-rbx (rbx x86_2) x86) x86)))
+(defthm set-rcx-of-rcx-same-gen (implies (equal (rcx x86_2) (rcx x86)) (equal (set-rcx (rcx x86_2) x86) x86)))
+(defthm set-rdx-of-rdx-same-gen (implies (equal (rdx x86_2) (rdx x86)) (equal (set-rdx (rdx x86_2) x86) x86)))
+(defthm set-rdi-of-rdi-same-gen (implies (equal (rdi x86_2) (rdi x86)) (equal (set-rdi (rdi x86_2) x86) x86)))
+(defthm set-rsi-of-rsi-same-gen (implies (equal (rsi x86_2) (rsi x86)) (equal (set-rsi (rsi x86_2) x86) x86)))
+(defthm set-r8-of-r8-same-gen (implies (equal (r8 x86_2) (r8 x86)) (equal (set-r8 (r8 x86_2) x86) x86)))
+(defthm set-r9-of-r9-same-gen (implies (equal (r9 x86_2) (r9 x86)) (equal (set-r9 (r9 x86_2) x86) x86)))
+(defthm set-r10-of-r10-same-gen (implies (equal (r10 x86_2) (r10 x86)) (equal (set-r10 (r10 x86_2) x86) x86)))
+(defthm set-r11-of-r11-same-gen (implies (equal (r11 x86_2) (r11 x86)) (equal (set-r11 (r11 x86_2) x86) x86)))
+(defthm set-r12-of-r12-same-gen (implies (equal (r12 x86_2) (r12 x86)) (equal (set-r12 (r12 x86_2) x86) x86)))
+(defthm set-r13-of-r13-same-gen (implies (equal (r13 x86_2) (r13 x86)) (equal (set-r13 (r13 x86_2) x86) x86)))
+(defthm set-r14-of-r14-same-gen (implies (equal (r14 x86_2) (r14 x86)) (equal (set-r14 (r14 x86_2) x86) x86)))
+(defthm set-r15-of-r15-same-gen (implies (equal (r15 x86_2) (r15 x86)) (equal (set-r15 (r15 x86_2) x86) x86)))
+(defthm set-rsp-of-rsp-same-gen (implies (equal (rsp x86_2) (rsp x86)) (equal (set-rsp (rsp x86_2) x86) x86)))
+(defthm set-rbp-of-rbp-same-gen (implies (equal (rbp x86_2) (rbp x86)) (equal (set-rbp (rbp x86_2) x86) x86)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -939,6 +957,25 @@
 (defthm integerp-of-r15 (implies (x86p x86) (integerp (r15 x86))) :hints (("Goal" :in-theory (enable r15))))
 (defthm integerp-of-rsp (implies (x86p x86) (integerp (rsp x86))) :hints (("Goal" :in-theory (enable rsp))))
 (defthm integerp-of-rbp (implies (x86p x86) (integerp (rbp x86))) :hints (("Goal" :in-theory (enable rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm signed-byte-p-64-of-rax (signed-byte-p 64 (rax x86)) :hints (("Goal" :in-theory (enable rax))))
+(defthm signed-byte-p-64-of-rbx (signed-byte-p 64 (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
+(defthm signed-byte-p-64-of-rcx (signed-byte-p 64 (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
+(defthm signed-byte-p-64-of-rdx (signed-byte-p 64 (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
+(defthm signed-byte-p-64-of-rsi (signed-byte-p 64 (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
+(defthm signed-byte-p-64-of-rdi (signed-byte-p 64 (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
+(defthm signed-byte-p-64-of-r8 (signed-byte-p 64 (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
+(defthm signed-byte-p-64-of-r9 (signed-byte-p 64 (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
+(defthm signed-byte-p-64-of-r10 (signed-byte-p 64 (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
+(defthm signed-byte-p-64-of-r11 (signed-byte-p 64 (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
+(defthm signed-byte-p-64-of-r12 (signed-byte-p 64 (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
+(defthm signed-byte-p-64-of-r13 (signed-byte-p 64 (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
+(defthm signed-byte-p-64-of-r14 (signed-byte-p 64 (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
+(defthm signed-byte-p-64-of-r15 (signed-byte-p 64 (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
+(defthm signed-byte-p-64-of-rsp (signed-byte-p 64 (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
+(defthm signed-byte-p-64-of-rbp (signed-byte-p 64 (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
