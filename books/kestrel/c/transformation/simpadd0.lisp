@@ -518,7 +518,10 @@
      paramdeclor
      :declor (paramdeclor-declor (simpadd0-declor paramdeclor.unwrap))
      :absdeclor (paramdeclor-absdeclor (simpadd0-absdeclor paramdeclor.unwrap))
-     :none (paramdeclor-none))
+     :none (paramdeclor-none)
+     :ambig (prog2$
+             (raise "Misusage error: ~x0." (paramdeclor-fix paramdeclor))
+             (paramdeclor-fix paramdeclor)))
     :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

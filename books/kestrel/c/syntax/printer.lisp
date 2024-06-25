@@ -2314,7 +2314,16 @@
      :absdeclor (b* ((pstate (print-astring " " pstate))
                      (pstate (print-absdeclor paramdeclor.unwrap pstate)))
                   pstate)
-     :none (pristate-fix pstate))
+     :none (pristate-fix pstate)
+     ;; We temporarily print an ambiguous parameter declarator
+     ;; as if it were a (non-abstract) declarator.
+     ;; This must go away during static semantic elaboration,
+     ;; which should be normally done prior to printing.
+     :ambig (b* ((pstate (print-astring " " pstate))
+                 (pstate (print-declor
+                          (amb-declor/absdeclor->declor paramdeclor.unwrap)
+                          pstate)))
+              pstate))
     :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

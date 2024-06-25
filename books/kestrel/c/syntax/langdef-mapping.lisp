@@ -845,6 +845,10 @@
                      (paramdeclor-fix paramdeclor))))
        ((when (paramdeclor-case paramdeclor :none))
         (reterr (msg "Unsupported absent parameter declarator ~x0.")))
+       ((when (paramdeclor-case paramdeclor :ambig))
+        (raise "Misusage error: ambiguous parameter declarator ~x0."
+               (paramdeclor-fix paramdeclor))
+        (reterr t))
        (declor (paramdeclor-declor->unwrap paramdeclor)))
     (ldm-declor-obj declor))
   :hooks (:fix))

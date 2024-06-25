@@ -219,6 +219,7 @@
                  c$::paramdecl-list-count
 
                  c$::paramdeclorp
+                 c$::paramdeclor-fix
                  c$::paramdeclor-count
                  c$::paramdeclor-case
                  c$::paramdeclor-declor
