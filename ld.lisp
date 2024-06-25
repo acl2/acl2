@@ -3351,6 +3351,7 @@
             (cert-obj (chk-certificate-file
                        full-book-string
                        nil
+                       nil ; safest not to consider hcomp hash tables here
                        'puff
                        ctx
                        state

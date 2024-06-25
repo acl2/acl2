@@ -14278,6 +14278,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     #+acl2-devel ilks-plist-worldp
     defstobj-field-fns-raw-defs ; CCL bug #446
+    chk-certificate-file
+    get-cert-obj-and-cert-filename
+    include-book-raw-error
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -23013,6 +23016,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 #-acl2-loop-only
+(defvar *bad-lisp-object-ok* nil)
+
+#-acl2-loop-only
 (defun-one-output chk-bad-lisp-object (x)
 
 ; We avoid the check when including a book, for efficiency.  In one experiment
@@ -23020,6 +23026,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; simply to return nil.
 
   (when (not (or *inside-include-book-fn*
+                 *bad-lisp-object-ok*
 
 ; We avoid the bad-lisp-objectp check during the Convert procedure of
 ; provisional certification, in part because it is not necessary but, more

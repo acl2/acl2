@@ -438,6 +438,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-cast-expression
+
+(test-parse
+ parse-cast-expression
+ "0xFFFF"
+ :cond (expr-case ast :const))
+
+(test-parse
+ parse-cast-expression
+ "(uint32_t) x"
+ :cond (expr-case ast :cast))
+
+(test-parse
+ parse-cast-expression
+ "(T) (x)"
+ :cond (expr-case ast :cast/call-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) * x"
+ :cond (expr-case ast :cast/mul-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) + x"
+ :cond (expr-case ast :cast/add-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) - x"
+ :cond (expr-case ast :cast/sub-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(T) & x"
+ :cond (expr-case ast :cast/and-ambig))
+
+(test-parse
+ parse-cast-expression
+ "(A(B)) ++ (C) [3]"
+ :cond (and (expr-case ast :cast/call-ambig)
+            (equal (expr-cast/call-ambig->inc/dec ast)
+                   (list (inc/dec-op-inc)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-unary-expression
 
 (test-parse
@@ -468,6 +514,208 @@
  parse-unary-expression
  "sizeof(also(ambig))"
  :cond (expr-case ast :sizeof-ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-postfix-expression
+
+(test-parse
+ parse-postfix-expression
+ "var"
+ :cond (expr-case ast :ident))
+
+(test-parse
+ parse-postfix-expression
+ "var[4]"
+ :cond (expr-case ast :arrsub))
+
+(test-parse
+ parse-postfix-expression
+ "var[4].a->u(y,w)[q+e]"
+ :cond (and (expr-case ast :arrsub)
+            (expr-case (expr-arrsub->arg1 ast) :funcall)
+            (expr-case (expr-arrsub->arg2 ast) :binary)))
+
+(test-parse
+ parse-postfix-expression
+ "(int[]) { 1, 2, 3, }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-array/function-abstract-declarator
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[const]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[const _Atomic]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[*uu]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[*]"
+ :cond (dirabsdeclor-case ast :array-star))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[80]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[restrict 80+0]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[static restrict 80+0]"
+ :cond (dirabsdeclor-case ast :array-static1))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[restrict static 80+0]"
+ :cond (dirabsdeclor-case ast :array-static2))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "(id)"
+ :cond (dirabsdeclor-case ast :function))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "(int x, int y)"
+ :cond (dirabsdeclor-case ast :function))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-direct-abstract-declarator
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)"
+ :cond (dirabsdeclor-case ast :paren))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[const _Atomic]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[80]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[80](int x, int y)"
+ :cond (dirabsdeclor-case ast :function))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-direct-declarator
+
+(test-parse
+ parse-direct-declarator
+ "x"
+ :cond (dirdeclor-case ast :ident))
+
+(test-parse
+ parse-direct-declarator
+ "(x)"
+ :cond (dirdeclor-case ast :paren))
+
+(test-parse
+ parse-direct-declarator
+ "x[]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[10]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[a+b]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[const a+b]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[const volatile a+b]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[static a+b]"
+ :cond (dirdeclor-case ast :array-static1))
+
+(test-parse
+ parse-direct-declarator
+ "x[static const a+b]"
+ :cond (dirdeclor-case ast :array-static1))
+
+(test-parse
+ parse-direct-declarator
+ "x[const static a+b]"
+ :cond (dirdeclor-case ast :array-static2))
+
+(test-parse
+ parse-direct-declarator
+ "x[*]"
+ :cond (dirdeclor-case ast :array-star))
+
+(test-parse
+ parse-direct-declarator
+ "x[*y]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[restrict *]"
+ :cond (dirdeclor-case ast :array-star))
+
+(test-parse
+ parse-direct-declarator
+ "x[restrict *y]"
+ :cond (dirdeclor-case ast :array))
+
+(test-parse
+ parse-direct-declarator
+ "x[_Atomic static *y]"
+ :cond (dirdeclor-case ast :array-static2))
+
+(test-parse
+ parse-direct-declarator
+ "(a)(b)"
+ :cond (dirdeclor-case ast :function-params))
+
+(test-parse
+ parse-direct-declarator
+ "f(int, _Bool)"
+ :cond (dirdeclor-case ast :function-params))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,6 +750,14 @@
  parse-expression-or-type-name
  "a _Atomic)"
  :cond (amb?-expr/tyname-case ast :tyname))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-block-item
+
+(test-parse
+ parse-block-item
+ "idx = &((char*)session_peak())[i*BUFSIZE];")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -630,5 +886,13 @@ struct bar
  "char string[] = \"\";")
 
 (test-parse
- parse-block-item
- "idx = &((char*)session_peak())[i*BUFSIZE];")
+ parse-external-declaration-list
+ "void foo () {
+  managedtask * newtask = (managedtask *) malloc(sizeof(managedtask));
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "void foo () {
+ idx = (arr)[3];
+}")
