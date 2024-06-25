@@ -133,7 +133,7 @@
        (erp (silent-error state))
        (t (chk-acceptable-certify-book1 book-name
                                         full-book-string full-book-name
-                                        dir k cmds nil
+                                        dir k cmds
                                         cbds names cert-op
                                         suspect-book-action-alist wrld ctx
                                         state)))))))
