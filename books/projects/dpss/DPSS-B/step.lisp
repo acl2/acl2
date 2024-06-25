@@ -4042,9 +4042,9 @@
           (pattern-hint
            (not (consp ens))
            :expand ((flip nil)))
-          (stable-p ::in-theory (enable get-escort
-                                        flip-uav
-                                        flip-uav-index))
+          (stable-p :in-theory (enable get-escort
+                                       flip-uav
+                                       flip-uav-index))
           (pattern-hint
            (:term (left-moving-bool-to-sign (LEFT-MOVING-P-FLIP X ENS)))
            :in-theory (enable left-moving-p-flip))))

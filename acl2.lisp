@@ -961,6 +961,41 @@
                           (values t))
                 acl2::large-consp))
 
+(defun acl2::elided-defconst-index (term)
+
+; First, here is a pleasant definition, but since case-match isn't yet defined,
+; we can't use it here.
+
+; (case-match term
+;   (('cadr (acl2::*elided-defconst* n))
+;    n)
+;   (& nil))
+
+  (and (consp term)
+       (consp (cdr term))
+       (null (cddr term))
+       (eq (car term) 'cadr)
+       (let ((x (cadr term)))
+         (and (consp x)
+              (consp (cdr x))
+              (null (cddr x))
+              (eq (car x) (symbol-value 'acl2::*elided-defconst*))
+              (cadr x)))))
+
+(defvar acl2::*hcomp-elided-defconst-alist* nil)
+
+(defun acl2::elided-defconst (name index)
+  (let ((pair (pop acl2::*hcomp-elided-defconst-alist*)))
+    (if (and (consp pair)
+             (eql (car pair) index)
+             (eq (cadr pair) name))
+        (cddr pair)
+      (error "An unexpected error was encountered when trying to obtain a ~%~
+              value for the constant, ~s.  If you have not deliberately ~%~
+              messed with write-dates of files, please report this error to ~%~
+              the ACL2 implementors."
+             name))))
+
 (defmacro acl2::defconst (name term &rest rst)
   (declare (ignore rst))
   (let ((disc (gensym)))
@@ -1012,14 +1047,20 @@
 ; the second check, which uses that term's value) could be intractable.  For a
 ; concrete example, see :doc note-7-2.
 
-                        (or (let ((disc ,disc)
-                                  (qterm ',term))
+; If (elided-defconst-index term) holds, then the intended term's value and its
+; quotation differ only in the QUOTE wrapper, so we avoid checking the equality
+; of quotations.
 
-; We check that acl2::large-consp to avoid a boot-strapping problem in GCL.
+                        (or ,@(and (not (acl2::elided-defconst-index term))
+                                   `((let ((disc ,disc)
+                                           (qterm ',term))
 
-                              (and (not (and (fboundp 'acl2::large-consp)
-                                             (acl2::large-consp qterm)))
-                                   (equal (car (cdr disc)) qterm)))
+; We check (fboundp 'acl2::large-consp) to avoid early failures in the
+; boot-strap, before large-consp is defined.
+
+                                       (and (fboundp 'acl2::large-consp)
+                                            (not (acl2::large-consp qterm))
+                                            (equal (car (cdr disc)) qterm)))))
                             (equal (cdr (cdr ,disc)) ,term)))
                    (symbol-value ',name))
                   (t (acl2::qfuncall acl2::defconst-redeclare-error ',name))))
@@ -1038,11 +1079,22 @@
 ; but you never know!)  We may want to enforce that this code is only executed
 ; during the boot-strap; see the Essay on Guard Checking.
 
-          (t (let* ((val ,term)
-                    (d (list* 'acl2::defconst ',term val)))
-               (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
-                     d)
-               (cdr (cdr d)))))))))
+          (t
+           ,(let ((index (acl2::elided-defconst-index term)))
+              (if (null index) ; normal case
+                  `(let* ((val ,term)
+                          (d (list* 'acl2::defconst ',term val)))
+                     (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
+                           d)
+                     (cdr (cdr d)))
+                `(let* ((qval (acl2::elided-defconst ',name ,index))
+                        (val (progn (assert (and (consp qval)
+                                                 (eq (car qval) 'quote)))
+                                    (cadr qval)))
+                        (d (list* 'acl2::defconst qval val)))
+                   (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
+                         d)
+                   (cdr (cdr d)))))))))))
 
 ; We now get our imports for package ACL2, putting them into the
 ; variable acl2::*common-lisp-symbols-from-main-lisp-package*.

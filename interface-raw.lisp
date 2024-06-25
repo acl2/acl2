@@ -4155,22 +4155,24 @@
 ; Part 1: A more detailed introduction
 ; Part 2: Including a certified book
 ; Part 3: Writing an expansion file for compilation
+; Appendix: Saving space by eliding certain defconst forms
 
 ; Part 0: High-level summary
 
-; We strive for efficiency of include-book.  By doing all compilation at
-; certify-book time rather than include-book time, we may greatly speed up
-; definitional processing in lisps such as CCL and SBCL, which compile every
-; definition on the fly.  We were motivated by profiling results showing that
-; such processing can take 45% of include-book time: a test case from Centaur
-; using CCL was spending this proportion of time in the installation of a
-; Common Lisp symbol-function for each defun event, in add-trip.  The problem
-; was that the CCL compiler is called every time a defun is evaluated, and
-; although the CCL compiler is impressively fast, it's not instantaneous.  Dave
-; Greve has reported observing significant such slowdowns using CCL at Rockwell
-; Collins.
+; We strive for efficiency of include-book.  For lisps that compile every
+; definition on the fly, including CCL and SBCL, we may greatly speed up
+; definitional processing by doing all compilation at certify-book time rather
+; than include-book time.  Indeed, profiling results have shown that
+; compilation can take 45% of include-book time: a test case from Centaur using
+; CCL was spending this proportion of time in the installation of a Common Lisp
+; symbol-function for each defun event, in add-trip.  The problem was that the
+; CCL compiler is called every time a defun is evaluated, and although the CCL
+; compiler is impressively fast, it's not instantaneous.  Dave Greve has
+; reported observing significant such slowdowns using CCL at Rockwell Collins.
 
-; Happily, with this change we found the time cut roughly in half for two
+; Happily, with this change starting with Version  4.0 (July, 2010) --
+; compiling books even for CCL and SBCL, and loading them early in the
+; include-book process -- we found the time cut roughly in half for two
 ; include-book tests from Centaur provided by Sol Swords.  Other tests suggest
 ; no noticeable slowdown for certify-book or include-book for GCL or Allegro
 ; CL, which do not compile on the fly.  For additional tests, see community
@@ -4182,25 +4184,27 @@
 ; by include-book, by instead using existing code previously compiled by
 ; certify-book, which is loaded before processing of events by include-book.
 ; Thus, the main efficiency gains from this change are expected to be for ACL2
-; built on CCL or SBCL, as these are the Lisps we know of (as of March 2010)
-; that compile all definitions at submission time and therefore had been
-; compiling on behalf of add-trip.  However, this approach may also boost
-; efficiency in some cases even for Lisps other than CCL and SBCL.  For one
-; thing, include-book will now install a compiled symbol-function for each
-; defun, even for those other Lisps, which can speed up computations in ensuing
-; defconst forms and defmacro forms of the book.  Moreover, compiled code will
-; be installed for defmacro and defconst forms, which can avoid the need for
-; redoing macroexpansion of the bodies of such forms during add-trip.
+; built on CCL or SBCL, as these are the Lisps hosting ACL2 that compile all
+; definitions at submission time and therefore had been compiling on behalf of
+; add-trip.  However, this approach may also boost efficiency in some cases
+; even for Lisps other than CCL and SBCL.  For one thing, include-book will now
+; install a compiled symbol-function for each defun, even for those other
+; Lisps, which can speed up computations in ensuing defconst forms and defmacro
+; forms of the book.  Moreover, compiled code will be installed for defmacro
+; and defconst forms, which can avoid the need for redoing macroexpansion of
+; the bodies of such forms during add-trip.
 
-; A simple-minded approach is to load the compiled file for a book *before*
-; processing events in the book.  The obvious problem is that ACL2 demands that
-; a function not be pre-defined in raw Lisp when evaluating a defun event, and
-; for good reason: we want to protect against accidental previous definition in
-; raw Lisp.  So instead, our solution is to arrange that loading compiled files
-; does not actually install definitions, but rather, builds hash tables that
-; associate symbols with their definitions.  The file to be compiled thus has
-; roughly the following structure; the prefix "hcomp" is intended to refer to
-; "hash-table-supported compilation".
+; A simple-minded approach is simply to load the compiled file for a book
+; *before* processing events in the book.  The obvious problem is that ACL2
+; demands that a function not be pre-defined in raw Lisp when evaluating a
+; defun event, and for good reason: we want to protect against previous
+; definition in raw Lisp, both by accident and for system functions defined
+; only in raw Lisp, such as add-trip.  So instead, our solution is to arrange
+; that loading a book's compiled files does not ultimately install definitions,
+; but rather, builds hash tables that associate symbols with their compiled
+; symbol-functions.  The file to be compiled thus has roughly the following
+; structure; the prefix "hcomp" is intended to refer to "hash-table-supported
+; compilation".
 
 ; (in-package "ACL2")
 ;;; Introduce some packages, without any imports:
@@ -4209,8 +4213,8 @@
 ; (setq *hcomp-fn-alist* '((fn1 ..) (fn2 ..) ..))
 ; (setq *hcomp-const-alist* '((c1 ..) (c2 ..) ..))
 ; (setq *hcomp-macro-alist* '((mac1 ..) (mac2 ..) ..))
-;;; Build a hash table associating fni, ci, and maci with pre-existing
-;;; compiled definitions or special *unbound* mark:
+;;; Build hash tables, including "restore" hash tables that associate fni, ci,
+;;; and maci with pre-existing compiled definitions or special *unbound* mark:
 ; (hcomp-init)
 ;;; Generate declaim forms (depending on the Lisp):
 ; ...
@@ -4221,7 +4225,7 @@
 
 ; Let's focus on functions (macros and constants have similar handling).  The
 ; load of each book in raw Lisp (by function load-compiled-book) is followed by
-; code that saves the symbol-function for each fni in a hash table,
+; code that saves the new symbol-function for each fni in a hash table,
 ; *hcomp-fn-ht* (function hcomp-transfer-to-hash-tables), which in turn is
 ; associated with the full-book-name in a global hash table, *hcomp-book-ht*.
 ; But first, the (hcomp-init) form arranges to save -- in a global hash table,
@@ -4246,7 +4250,7 @@
 ; complications.
 
 ; We are breaking from ACL2 versions up through  3.6.1, by insisting that the
-; compiled file for a book is loaded "early" (if it is loaded at all), i.e.,
+; compiled file for a book be loaded "early" (if it is loaded at all), i.e.,
 ; before events are processed from that book.  This approach not only can boost
 ; efficiency of include-book, but it also provides a solution to a soundness
 ; bug in the redundancy of :program mode definitions with preceding :logic mode
@@ -4335,16 +4339,21 @@
 ; Of course, these issues disappear if the compiled file is not loaded at all;
 ; and we support that too, using state global 'compiler-enabled.
 
-; We conclude this Part (High-level summary) with a few words about handling of
-; the case that include-book argument :load-compiled-file has argument :comp.
-; The basic idea is to wait until the book is included, and then check that
-; either the compiled file or the expansion file exists and is not older than
-; the certificate; and only then, if the expansion file exists but the compiled
-; file does not, do we compile the expansion file and then load it in the
-; ordinary way (without messing with hash tables, by leaving the relevant
-; variables such as *hcomp-fn-ht* bound to nil).  We considered more complex
-; approaches but are quite happy with this simple solution, and we don't say
-; anything further about the case of :load-compiled-file :comp in this Essay.
+; Before concluding this Part (High-level summary), we say a few words about
+; handling of the case that include-book argument :load-compiled-file has
+; argument :comp.  The basic idea is to wait until the book is included, and
+; then check that either the compiled file or the expansion file exists and is
+; not older than the certificate; and only then, if the expansion file exists
+; but the compiled file does not, do we compile the expansion file and then
+; load it in the ordinary way (without messing with hash tables, by leaving the
+; relevant variables such as *hcomp-fn-ht* bound to nil).  We considered more
+; complex approaches but are quite happy with this simple solution, and we
+; don't say anything further about the case of :load-compiled-file :comp in
+; this Essay.
+
+; Not discussed above is an optimization that avoids duplicating quoted bodies
+; of generated defconst forms.  We defer all discussion of that optimization to
+; the Appendix.
 
 ; Part 1: A more detailed introduction
 
@@ -4386,14 +4395,14 @@
 ; for later use, when add-trip deals with 'cltl-command properties.  Those
 ; extra forms are based on information deduced during the include-book phase of
 ; book certification, at which time Lisp global *inside-include-book-fn* has
-; value 'hcomp-build.  Later, during subsequent include-books, that information
+; value 'hcomp-build.  During subsequent include-books, that information
 ; directs which definitions from the expansion file are to be stored in our
 ; hash tables.  Additional forms are evaluated after completion of the load of
 ; the compiled file, to transfer the compiled definitions to hash tables and
-; eventually to remove each definition installed by the expansion file
-; (restoring any pre-existing definitions).  This eventual removal occurs only
-; after a load completes for the top-level compiled file of a book, and hence
-; also for all books included therein.
+; eventually to remove all definitions installed by the expansion file,
+; restoring any pre-existing definitions.  This eventual removal occurs (in
+; include-book-raw-top) only after a load completes for the top-level compiled
+; file of a book, and hence also for all books included therein.
 
 ; Portcullis commands and included sub-books present challenges.  Consider for
 ; example a constant whose value is a symbol in a package defined in a
@@ -4438,25 +4447,22 @@
 ; (Aside: Why does it work to start the expansion file with the introduction of
 ; an empty package, say "MY-PKG", and then lay down forms like the
 ; *hcomp-fn-alist* form, above, that may refer to symbols written out at the
-; end of book certification?  The only symbols where one might imagine this is
-; an issue are ones that are printed differently when "MY-PKG" is fully defined
-; (near the end of certification) than when it is introduced with no imports by
-; an initial form that introduces the package as "empty" (no imports).  The
-; only such symbols are those written without a package prefix, hence included
-; in the "ACL2" package, that are in the import list for "MY-PKG".  But such
-; symbols aren't a problem after all, because any reference to such a symbol in
-; the "ACL2" package is really a reference to a symbol of that name in the
-; "MY-PKG" package, once that package is "truly" introduced by defpkg.  And
-; until such a defpkg form is evaluated, ACL2 will not dabble in symbols in the
-; "MY-PKG" package, other than to save them in *hcomp-fn-alist* and related
-; lists near the top of the expansion file.)
+; end of book certification, at which time all packages are defined?  The short
+; answer is that at that print time, the symbol is printed with respect to the
+; package in which it was introduced, and that doesn't change when the symbol
+; is later read.  Here is a longer answer.  The only symbols where one might
+; imagine this is an issue are ones whose printed representation is not in
+; "MY-PKG" before but not after that package is defined.  Any such symbol would
+; have to be in the import list for "MY-PKG".  But then such an imported symbol
+; is printed as "FOO::SYM" at the end of certification, which indeed also
+; signifies the "SYM" symbol in "MY-PKG" after "MY-PKG" is defined.)
 
-; Note that in a break from ACL2 versions up through  3.6.1, where ACL2 could
+; Note that in a break from ACL2 versions up through 3.6.1, where ACL2 could
 ; load compiled files for uncertified books, the write-date comparison of the
 ; compiled file (or expansion file) is against the certificate rather than the
-; source .lisp file.  (Well, that's not quite true: the comparison remains
-; against the source book when include-book is executed in raw mode, since raw
-; mode does not involve the certificate file.)
+; source .lisp file.  (Exception: the comparison remains against the source
+; book when include-book is executed in raw mode, since raw mode does not
+; involve the certificate file.)
 
 ; We designate three "add-trip contexts", according to whether processing of a
 ; 'cltl-command property by add-trip is assigning a function, a global variable
@@ -4469,11 +4475,12 @@
 ; symbol can be an add-trip symbol.  The final step after loading a top-level
 ; compiled file will be to undo the load's assignment of relevant values to
 ; add-trip symbols.  This step will be done in the cleanup form of an
-; unwind-protect, so as to clean up if an error or interrupt occurs during
-; loading of the compiled file.  (The clean-up won't be complete for functions
-; defined in raw-mode, just as it hasn't been in earlier versions of ACL2 that
-; did not load compiled files early.  But raw-mode is ultimately the user's
-; responsibility, and we expect problems from such aborts to be rare.)
+; acl2-unwind-protect (see the calls of hcomp-restore-defs in
+; include-book-raw-top), so as to clean up if an error or interrupt occurs
+; during loading of the compiled file.  (The clean-up won't be complete for
+; functions defined in raw-mode, just as it hasn't been in earlier versions of
+; ACL2 that did not load compiled files early.  But raw-mode is ultimately the
+; user's responsibility, and we expect problems from such aborts to be rare.)
 
 ; We next describe several variables and a constant, which we define before
 ; include-book-fn.
@@ -4503,8 +4510,8 @@
 ; describes the attempt to load the book's compiled file, and also has optional
 ; fields corresponding to values of *hcomp-fn-ht*, *hcomp-const-ht*, and
 ; *hcomp-macro-ht*.  When ACL2 encounters an include-book form during an early
-; raw-Lisp load of an include-book whose full-book-name is not already a key of
-; the world's 'include-book-alist or of *hcomp-book-ht*, then include-book
+; raw-Lisp load for an include-book whose full-book-name is not already a key
+; of the world's 'include-book-alist or of *hcomp-book-ht*, then include-book
 ; loads that sub-book's compiled file, hence with new let-bindings of the
 ; *hcomp-xxx-alist* and *hcomp-xxx-ht* variables, along with unwind protection
 ; using the *hcomp-xxx-restore-ht* values that can restore relevant values
@@ -4577,11 +4584,11 @@
 ; (load "tmp3") ; faster (some kind of memoization?)
 ; (quit)
 
-; We conclude this Part with a discussion of some tricky issues for the case
-; that an expansion or compiled file is loaded by include-book, i.e., the case
-; that a book is being included with a non-nil effective value of
-; :load-compiled-file, where by "effective value" we mean the value after
-; accounting for state global 'compiler-enabled.
+; We turn now to a discussion of some tricky issues for the case that an
+; expansion or compiled file is loaded by include-book, i.e., the case that a
+; book is being included with a non-nil effective value of :load-compiled-file,
+; where by "effective value" we mean the value after accounting for state
+; global 'compiler-enabled.
 
 ; If the compiled file or certificate is missing, or else if the compiled file
 ; is older than the certificate, we may print a warning and go on, assigning
@@ -4671,10 +4678,10 @@
 ; book certification.
 
 ; In this essay, while we occasionally mention the use of raw mode within a
-; book, presumably within a progn! form in the presence of a trust tag, we do
-; not consider explicitly the evaluation of include-book forms in raw Lisp.
-; This case is simpler than evaluation of include-book forms in the ACL2 loop;
-; for example, the value of *hcomp-book-ht* is irrelevant for include-book
+; book, perhaps within a progn! form in the presence of a trust tag, we do not
+; consider explicitly the evaluation of include-book forms in raw Lisp.  This
+; case is simpler than evaluation of include-book forms in the ACL2 loop; for
+; example, the value of *hcomp-book-ht* is irrelevant for include-book
 ; performed in raw mode.
 
 ; Part 2: Including a certified book
@@ -4808,6 +4815,29 @@
 ; because of redundancy, so the last value is the only one that can reliably be
 ; assigned (if the count ever gets down to 1).
 
+; We conclude this Part with discussion of a slight hole in our approach.  the
+; hole is that because of early loading of the compiled file, the user can
+; arrange to avoid printing a "TTAG NOTE" when including a certified book, for
+; example with the following book.
+
+;   (in-package "ACL2")
+;   (defttag t)
+
+;   (progn!
+;    (set-raw-mode t)
+;    (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
+;      (declare (ignore val active-book-name include-bookp deferred-p))
+;      state)
+;    (set-raw-mode nil))
+
+; This isn't actually a hole, because the "TTAG NOTE" is still printed during
+; certification.  But can we eliminate this hole?  A possibility might seem to
+; be that we print ttag notes before the early load of the compiled file, say,
+; by moving the call of include-book-raw-top from include-book-fn into
+; include-book-fn1.  But that probably would not be helpful, since we rightly
+; populate hash tables before evaluation of the portcullis commands, but ttag
+; information is read from the certificate after that evaluation.
+
 ; Part 3: Writing an expansion file for compilation
 
 ; We next consider the writing of the expansion file by certify-book.  This
@@ -4918,9 +4948,68 @@
 ; Note that some of these are wrapped together in a progn to maximize sharing
 ; using #n# syntax.
 
+; Appendix: Saving space by eliding certain defconst forms
+
+; ACL2 provides the opportunity to use make-event to create very large defconst
+; forms, for example, (make-event `(defconst *c* ',(make-list 1000000))).
+; Consider certifying a book with just that form.  Before June 2024, CCL
+; created a compiled file of size 1,001,793 (bytes).  After June 2024 the size
+; was only 1965.  This was accomplished by eliding quoted bodies of defconst
+; forms generated by make-event.  The main idea is that those elided bodies
+; point to values stored in the book's certificate; thus, we are avoiding
+; duplication in such cases.  We thank Sol Swords for suggesting that
+; duplication of such large constants be avoided.  Here we summarize how that
+; works.
+
+; There are three stages in replacing such defconst events of a book with
+; elided forms.  First, for each defconst form (defconst *c* (quote val)) at
+; index i in the expansion-alist, including any such form within a progn or
+; encapsulate, function elided-defconst-forms replaces it with (defconst *c*
+; (cadr (elided-defconst i))); see elided-defconst-form.  Then later, when ACL2
+; reads the book's compiled file (or corresponding expansion file), the form
+; (hcomp-init) invokes chk-certificate-file to populate
+; *hcomp-elided-defconst-alist* with entries (i '*c* . (quote val)) for *c* and
+; val as above, by applying function hcomp-elided-defconst-alist to the
+; cert-obj that is based on the certificate file.  Finally, when the form
+; (elided-defconst '*c* i) is evaluated during load of the compiled (or
+; expansion) file, the next pair (i '*c* . (quote val)) is popped from
+; *hcomp-elided-defconst-alist*.  Note that a form (progn ... (defconst ...)
+; ...) at position i in an expansion-alist can generate several entries with
+; index i in *hcomp-elided-defconst-alist*.  The point of storing (i '*c*
+; . (quote val)) rather than just (quote val) in that variable is simply to add
+; a sanity check that the top form in *hcomp-elided-defconst-alist* is as
+; expected, when evaluating the form (elided-defconst i); see function
+; elided-defconst.
+
+; Note that we elide every quoted defconst body that appears in the
+; :expansion-alist of the .cert file.  A consequence is that such elision will
+; occur for a quoted defconst inside a progn or encapsulate form that contains
+; a make-event form -- even a local one.  Consider for example a book
+; containing the following form.
+
+;   (progn
+;     (defconst *c* '(a b))
+;     (local (make-event '(defun h (x) x))))
+
+; The expansion file then contains the following defconst form, even though the
+; defconst form would appear unchanged if it were at the top level.
+
+;   (DEFCONST *C* (CADR (ELIDED-DEFCONST '*C* 1)))
+
+; Finally we note a subtle issue: When the compiled (or expansion) file reads
+; the :expansion-alist from the .cert file, are all necessary packages defined?
+; In raw Lisp they are, because the expansion-file contains the necessary calls
+; of maybe-introduce-empty-pkg-1, and these are made at the top of the file,
+; before the call of hcomp-init (which calls chk-certificate-file).  Those
+; packages might not all be defined in ACL2, but chk-bad-lisp-objectp skips the
+; check for a bad-lisp-object when *bad-lisp-object-ok* is non-nil, and that
+; variable is set to a non-nil value in chk-certificate-file when the caller is
+; 'include-book-raw.  That check is done later; see the call of
+; chk-bad-lisp-object in chk-certificate-file.
+
 ; End of Essay on Hash Table Support for Compilation
 
-(defun hcomp-init ()
+(defun hcomp-init (&aux (state *the-live-state*))
 
 ; For context, see the Essay on Hash Table Support for Compilation.
 
@@ -4934,7 +5023,7 @@
 ; the eventual restoration of relevant values for add-trip symbols.  For
 ; details, see the Essay on Hash Table Support for Compilation.
 
-  (when (or (raw-mode-p *the-live-state*)
+  (when (or (raw-mode-p state)
             (null *hcomp-fn-ht*))
 
 ; In raw mode, or when loading before compiling for include-book with
@@ -4955,13 +5044,13 @@
             (cdr pair)))
     (when *hcomp-const-restore-ht*
       (multiple-value-bind (old present-p)
-          (gethash (car pair) *hcomp-const-restore-ht*)
-        (declare (ignore old))
-        (when (not present-p)
-          (setf (gethash (car pair) *hcomp-const-restore-ht*)
-                (cond ((boundp (car pair))
-                       (symbol-value (car pair)))
-                      (t *hcomp-fake-value*)))))))
+                           (gethash (car pair) *hcomp-const-restore-ht*)
+                           (declare (ignore old))
+                           (when (not present-p)
+                             (setf (gethash (car pair) *hcomp-const-restore-ht*)
+                                   (cond ((boundp (car pair))
+                                          (symbol-value (car pair)))
+                                         (t *hcomp-fake-value*)))))))
   (dolist (pair *hcomp-macro-alist*)
     (when (cdr pair)
       (setf (gethash (car pair) *hcomp-macro-ht*)
@@ -4969,16 +5058,39 @@
   (when *hcomp-fn-macro-restore-ht*
     (dolist (pair (append *hcomp-macro-alist* *hcomp-fn-alist*))
       (multiple-value-bind (old present-p)
-          (gethash (car pair) *hcomp-fn-macro-restore-ht*)
-        (declare (ignore old))
-        (when (not present-p)
-          (setf (gethash (car pair) *hcomp-fn-macro-restore-ht*)
-                (let ((mac (macro-function (car pair))))
-                  (cond (mac (cons 'macro mac))
-                        ((fboundp (car pair))
-                         (cons 'function
-                               (symbol-function (car pair))))
-                        (t *hcomp-fake-value*)))))))))
+                           (gethash (car pair) *hcomp-fn-macro-restore-ht*)
+                           (declare (ignore old))
+                           (when (not present-p)
+                             (setf (gethash (car pair) *hcomp-fn-macro-restore-ht*)
+                                   (let ((mac (macro-function (car pair))))
+                                     (cond (mac (cons 'macro mac))
+                                           ((fboundp (car pair))
+                                            (cons 'function
+                                                  (symbol-function (car pair))))
+                                           (t *hcomp-fake-value*))))))))
+
+; Defconst forms with quoted constants are elided when writing the certificate
+; file (by the call of function subst-by-position-eliding-defconst by function
+; write-expansion-file).  Such constants have their values read from the
+; certificate when loading the compiled file.  Those values may be needed by
+; macroexpansion.  At that load time, special variable *load-compiled-stack*
+; will be non-nil and special variables *hcomp-full-book-string*,
+; *hcomp-directory-name*, *hcomp-full-book-name*, and *hcomp-ctx* will be
+; bound.
+
+; On the other hand, when *load-compiled-stack* is nil, which is during
+; certify-book, we don't need to consult the certificate because the constant
+; values are in place at that time (because at that point in the certification
+; process, all events in the book have been evaluated).
+
+  (when *load-compiled-stack*
+    (assert (boundp '*hcomp-full-book-string*)) ; so other such are bound too
+    (chk-certificate-file *hcomp-full-book-string* *hcomp-directory-name*
+                          *hcomp-full-book-name* 'include-book-raw *hcomp-ctx*
+                          state
+                          nil ; suspect-book-action-alist, which is irrelevant
+                          nil))
+  nil)
 
 (defabbrev reclassifying-value-p (x)
 
@@ -5573,7 +5685,11 @@
 ; tables.  We therefore protect the one global managed by add-trip that is not
 ; managed by those hash tables: *user-stobj-alist*.
 
-                      *user-stobj-alist*))
+                      *user-stobj-alist*)
+                     (*hcomp-full-book-string* full-book-string)
+                     (*hcomp-full-book-name* full-book-name)
+                     (*hcomp-directory-name* directory-name)
+                     (*hcomp-ctx* ctx))
                  (load-compiled-book full-book-string full-book-name
                                      directory-name load-compiled-file
                                      ctx state))))
@@ -5582,7 +5698,9 @@
                       :status   status
                       :fn-ht    *hcomp-fn-ht*
                       :const-ht *hcomp-const-ht*
-                      :macro-ht *hcomp-macro-ht*))
+                      :macro-ht *hcomp-macro-ht*
+                      :cert-obj *hcomp-cert-obj*
+                      :cert-filename *hcomp-cert-filename*))
           (cond ((member-eq status '(to-be-compiled complete))
                  status)
                 (status
@@ -10776,7 +10894,7 @@ such that feature :acl2-loop-only is true."))
   (assert (or (null arg)
               (stringp arg)))
   (or
-   (with-standard-io-syntax
+   (our-with-standard-io-syntax
     (case (our-uname)
       (:linux
        (let ((arg (or arg  "MemTotal:")))

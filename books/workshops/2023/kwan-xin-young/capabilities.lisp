@@ -1,8 +1,12 @@
 (in-package "ACL2")
 
 ; Matt K. mod: certification with ACL2 based on Allegro CL seemed to be taking
-; about 3 hours, so let's exclude that Lisp.
-; cert_param: (non-allegro)
+; about 3 hours, so let's exclude that Lisp.  A GCL regression with
+; GCL_MEM_MULTIPLE=0.25 with 16G memory on a 2019 MacBook Pro ran out of memory
+; during processing of decode-encode-b-bound-len>2^12 ("The storage for
+; RELOCATABLE-BLOCKS is exhausted. 598817 pages allocated"), so I'm excluding
+; GCL as well.
+; cert_param: (non-allegro , non-gcl)
 
 (include-book "operations-nbp")
 
