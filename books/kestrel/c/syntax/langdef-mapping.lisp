@@ -828,6 +828,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ldm-paramdeclor ((paramdeclor paramdeclorp))
+  :returns (mv erp (objdeclor c::obj-declorp))
+  :short "Map a parameter declarator to
+          an object declarator in the language definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The parameter declarator must be present and not abstract.
+     The declarator must be for an object,
+     which we map to an object declarator."))
+  (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
+       ((when (paramdeclor-case paramdeclor :absdeclor))
+        (reterr (msg "Unsupported parameter declarator ~x0 ~
+                      with abstract declarator."
+                     (paramdeclor-fix paramdeclor))))
+       ((when (paramdeclor-case paramdeclor :none))
+        (reterr (msg "Unsupported absent parameter declarator ~x0.")))
+       ((when (paramdeclor-case paramdeclor :ambig))
+        (raise "Misusage error: ambiguous parameter declarator ~x0."
+               (paramdeclor-fix paramdeclor))
+        (reterr t))
+       (declor (paramdeclor-declor->unwrap paramdeclor)))
+    (ldm-declor-obj declor))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-paramdecl ((paramdecl paramdeclp))
   :returns (mv erp (paramdecl1 c::param-declonp))
   :short "Map a parameter declaration to
@@ -835,29 +862,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The parameter declaration must have a declarator,
-     not an abstract declarator.
-     The declarator must be for an object,
-     which we map to an object declarator.")
-   (xdoc::p
     "The declaration specifiers must be all type specifiers,
-     and must form a supported type specifier sequence."))
+     and must form a supported type specifier sequence.")
+   (xdoc::p
+    "The parameter declarator must map to an object declarator."))
   (b* (((reterr) (c::param-declon (c::tyspecseq-void)
                                   (c::obj-declor-ident
                                    (c::ident "irrelevant"))))
-       ((when (paramdecl-case paramdecl :abstract))
-        (reterr (msg "Unsupported parameter declaration ~x0 ~
-                      with abstract declarator."
-                     (paramdecl-fix paramdecl))))
-       (declspecs (paramdecl-nonabstract->spec paramdecl))
-       (declor (paramdecl-nonabstract->decl paramdecl))
+       (declspecs (paramdecl->spec paramdecl))
+       (declor (paramdecl->decl paramdecl))
        ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifier list ~
                       in parameter declaration ~x0."
                      (paramdecl-fix paramdecl))))
        ((erp tyspecseq) (ldm-tyspec-list tyspecs))
-       ((erp objdeclor) (ldm-declor-obj declor)))
+       ((erp objdeclor) (ldm-paramdeclor declor)))
     (retok (c::make-param-declon :tyspec tyspecseq :declor objdeclor)))
   :hooks (:fix))
 
