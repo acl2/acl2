@@ -71,13 +71,7 @@
 ;  :hints (("Goal" :expand ((LOGIC-TERMP TERM W))))
   )
 
-(defthm logic-term-list-listp-of-cons
-  (equal (logic-term-list-listp (cons x y) w)
-         (and (logic-term-listp x w)
-              (logic-term-list-listp y w)))
-  :hints (("Goal" :in-theory (enable logic-term-list-listp
-                                     logic-fns-list-listp
-                                     logic-term-listp))))
+
 
 (defthm logic-term-listp-of-nil
   (logic-term-listp nil w)
@@ -88,7 +82,6 @@
          (and (logic-termp x w)
               (logic-term-listp y w)))
   :hints (("Goal" :in-theory (enable logic-termp
-                                     logic-term-list-listp
                                      logic-fns-list-listp
                                      logic-term-listp))))
 
@@ -97,19 +90,20 @@
          (and (logic-term-listp (true-list-fix x) w)
               (logic-term-listp y w)))
   :hints (("Goal" :in-theory (enable logic-termp
-                                     logic-term-list-listp
                                      logic-fns-list-listp
                                      logic-term-listp))))
 
-(defthm logic-term-list-listp-of-nil
-  (logic-term-list-listp nil w)
-  :hints (("Goal" :in-theory (enable logic-term-list-listp
-                                     logic-fns-list-listp
-                                     logic-term-listp))))
+
 
 (defthm logic-term-listp-forward-to-true-listp
   (implies (logic-term-listp terms w)
            (true-listp terms))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable logic-term-listp))))
+
+(defthmd logic-term-listp-forward-logic-fns-listp
+  (implies (logic-term-listp terms w)
+           (logic-fns-listp terms w))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable logic-term-listp))))
 
@@ -151,3 +145,32 @@
                        (eql (len (cadr a))
                             (len x))))))
   :hints (("Goal" :in-theory (enable logic-termp logic-term-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm logic-fns-list-listp-of-cons
+  (equal (logic-fns-list-listp (cons x y) w)
+         (and (logic-fns-listp x w)
+              (logic-fns-list-listp y w)))
+  :hints (("Goal" :in-theory (enable logic-fns-list-listp
+                                     logic-term-listp-forward-to-term-listp))))
+
+(defthm logic-fns-list-listp-of-nil
+  (logic-fns-list-listp nil w)
+  :hints (("Goal" :in-theory (enable logic-fns-list-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm logic-term-list-listp-of-cons
+  (equal (logic-term-list-listp (cons x y) w)
+         (and (logic-term-listp x w)
+              (logic-term-list-listp y w)))
+  :hints (("Goal" :in-theory (enable logic-term-listp
+                                     logic-term-list-listp
+                                     logic-term-listp-forward-to-term-listp
+                                     logic-term-listp-forward-logic-fns-listp
+                                     ))))
+
+(defthm logic-term-list-listp-of-nil
+  (logic-term-list-listp nil w)
+  :hints (("Goal" :in-theory (enable logic-term-list-listp))))
