@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "logand2")
+;(include-book "logand-b") ; todo
 (include-book "bvchop")
 (include-book "getbit")
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
@@ -23,21 +23,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "unsigned-byte-p"))
-
-(defthm slice-of-logand
-  (equal (slice low high (logand x y))
-         (logand (slice low high x)
-                 (slice low high y)))
-  :hints (("Goal" :cases ((equal low high) (< low high))
-           :in-theory (e/d (slice) (slice-becomes-bvchop  BVCHOP-1-BECOMES-GETBIT
-                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
-
-(defthmd getbit-of-logand
-  (equal (getbit bit (logand x y))
-         (logand (getbit bit x)
-                 (getbit bit y)))
-  :hints (("Goal" :in-theory (e/d (getbit)
-                                  ( bvchop-1-becomes-getbit)))))
+(local (include-book "logand-b"))
 
 (defund bvand (size x y)
   (declare (type integer x y)
@@ -443,3 +429,24 @@
   (equal (bvand width -1 x)
          (bvchop width x))
   :hints (("Goal" :in-theory (enable bvand))))
+
+;make versions of these for other ops..
+(defthm bvand-subst-arg2
+  (implies (and (syntaxp (not (quotep x)))
+                (equal (bvchop free x) k)
+                (syntaxp (quotep k))
+                (<= n free)
+                (integerp free))
+           (equal (bvand n x y)
+                  (bvand n k y)))
+  :hints (("Goal" :in-theory (e/d (bvand) nil))))
+
+(defthm bvand-subst-arg3
+  (implies (and (syntaxp (not (quotep y)))
+                (equal (bvchop free y) k)
+                (syntaxp (quotep k))
+                (<= n free)
+                (integerp free))
+           (equal (bvand n x y)
+                  (bvand n x k)))
+  :hints (("Goal" :in-theory (e/d (bvand) nil))))

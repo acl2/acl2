@@ -64,28 +64,16 @@
 
 (local (in-theory (disable add-to-set-equal)))
 
-
-
 (local
  (defthm rationalp-when-integerp
    (implies (integerp x)
             (rationalp x))))
-
-
 
 ;dup
 (defthmd consp-when-<-of-0-and-nth
   (implies (< 0 (NTH n x))
            (consp x))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defund keep-non-atoms (items)
-  (declare (xargs :guard t))
-  (if (atom items) ;would endp be faster here?
-      nil
-    (if (atom (car items))
-        (keep-non-atoms (cdr items))
-      (cons (car items) (keep-non-atoms (cdr items))))))
 
 ;why are these firing?
 ;; (local (in-theory (disable bag::not-subbagp-of-cons-from-not-subbagp
@@ -1437,8 +1425,7 @@
 
 (defund print-axe-prover-case-aux (literal-nodenums dag-array-name dag-array dag-len no-print-fns)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (all-natp literal-nodenums)
-                              (true-listp literal-nodenums)
+                              (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
                               (symbol-listp no-print-fns))))
   (if (endp literal-nodenums)
@@ -1454,8 +1441,7 @@
                                no-print-fns ; we don't print literals that are calls of these (after stripping nots)
                                )
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (all-natp literal-nodenums)
-                              (true-listp literal-nodenums)
+                              (nat-listp literal-nodenums)
                               (all-< literal-nodenums dag-len)
                               (stringp case-adjective)
                               (booleanp print-as-clausesp)

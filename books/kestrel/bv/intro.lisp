@@ -17,6 +17,7 @@
 (include-book "bvminus")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
+(include-book "bvif")
 (include-book "defs-bitwise")
 (include-book "unsigned-byte-p-forced")
 (include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
@@ -25,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
+(local (include-book "logand-b"))
 (local (include-book "slice-rules"))
 (local (include-book "slice"))
 (local (include-book "rules"))
@@ -171,3 +173,17 @@
                          amt
                          0)))
   :hints (("Goal" :in-theory (enable bvcat ash))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvif-of---arg3
+  (implies (integerp x)
+           (equal (bvif size test (- x) z)
+                  (bvif size test (bvuminus size x) z)))
+  :hints (("Goal" :in-theory (enable bvif bvuminus bvminus))))
+
+(defthm bvif-of---arg4
+  (implies (integerp x)
+           (equal (bvif size test z (- x))
+                  (bvif size test z (bvuminus size x))))
+  :hints (("Goal" :in-theory (enable bvif bvuminus bvminus))))

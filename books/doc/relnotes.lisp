@@ -231,6 +231,19 @@
 
    ;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented Syntax"))
+
+   (xdoc::p
+    "A new sub-library has been added,
+     which contains an abstract syntax,
+     and accompanying concrete syntax formulation,
+     intended for use by tools like code generators and transformers.
+     This sub-library also includes
+     a parser from the concrete to the abstract syntax,
+     as well as an ACL2 tool to invoke an external C preprocessor.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h5 (xdoc::seetopic "c::atc" "ATC, the C Code Generator for ACL2"))
 
    (xdoc::p
@@ -419,6 +432,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
+
+   (xdoc::p
+    "The recognizers of digit characters in various bases
+     have been renamed to have the suffix @('-list*p'),
+     because they are loose list recognizers.
+     New recognizers have been added with suffix @('-listp')
+     for true lists of such digit characters.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
 
    (xdoc::p
@@ -469,6 +493,11 @@
 
    (xdoc::p
     "The @('set::empty') function has been renamed to @(tsee set::emptyp).")
+
+   (xdoc::p
+    "A variant without backchain limit
+     of the @(tsee set::double-containment) rule
+     has been added, disabled by default.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

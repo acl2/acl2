@@ -29,5 +29,5 @@
                   (if (< x (len lst))
                       (first lst)
                     nil)))
-  :hints (("Goal" :use (:instance nth-when-all-same)
+  :hints (("Goal" :use nth-when-all-same
            :in-theory (disable nth-when-all-same))))

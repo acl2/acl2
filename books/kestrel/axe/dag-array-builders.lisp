@@ -32,7 +32,7 @@
 ;(include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(in-theory (disable alistp))
+(local (in-theory (disable alistp)))
 
 ;;;
 ;;; add-variable-to-dag-array
@@ -775,9 +775,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;; We could rename this to just empty-dag.
+;; The dag-len returned is always 0.
 ;; TODO: Use this more?
-;; TODO: Generalize to take in the array names
 (defund empty-dag-array (slack-amount)
   (declare (xargs :guard (and (posp slack-amount)
                               (<= slack-amount *max-1d-array-length*))))
@@ -794,3 +793,6 @@
              (empty-dag-array slack-amount)
              (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :in-theory (enable wf-dagp empty-dag-array))))
+
+;; Avoid making huge dags during proofs
+(in-theory (disable (:e empty-dag-array)))

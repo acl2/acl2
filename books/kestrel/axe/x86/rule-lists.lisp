@@ -160,8 +160,13 @@
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
-            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll)
-          *instruction-decoding-and-spec-rules*))
+            x86isa::simd-sub-spec-base-1 x86isa::simd-sub-spec-base-2 x86isa::simd-sub-spec-unroll
+
+            ;; Improved versions of instruction semantic functions:
+            x86isa::x86-cbw/cwd/cdqe-redef)
+          (set-difference-equal *instruction-decoding-and-spec-rules*
+                                ;; We remove these because we have better versions:
+                                '(x86isa::x86-cbw/cwd/cdqe))))
 
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
@@ -247,6 +252,7 @@
     <-of-read-and-constant ; in case we backchain to < to try to resolve a bvlt
     bvchop-of-read
     trim-of-read
+    slice-of-read
     svblt-of-read-trim-arg2
     svblt-of-read-trim-arg3))
 
@@ -270,6 +276,20 @@
     write-of-xw-irrel
     set-flag-of-write
 
+    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
+    write-of-write-same
+    write-of-write-of-write-same
+    write-of-write-of-write-of-write-same
+    ;; write-of-write-of-write-of-write-of-write-same
+
+    write-of-bvchop-arg3-gen
+    ))
+
+;; Rules about the actual functions READ and WRITE.
+(defund read-and-write-rules ()
+  (declare (xargs :guard t))
+  '(read-1-of-write-1-diff
+    ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-disjoint
@@ -279,14 +299,6 @@
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-
-    ;; todo: uncomment these but first organize rules:
-    ;;write-of-write-same
-    ;;write-of-write-of-write-same
-    ;;write-of-write-of-write-of-write-same
-    ;; I guess we are not normalizing write nests, perhaps due to partial overlap?  could sort when known disjoint...
-
-    write-of-bvchop-arg3-gen
     ))
 
 (defund reader-and-writer-intro-rules ()
@@ -315,7 +327,6 @@
     x86isa::fault x86isa::fault$a ; exposes xr
     x86isa::!fault x86isa::!fault$a ; exposes xw
     ))
-
 
 (defund read-over-write-rules ()
   (declare (xargs :guard t))
@@ -438,8 +449,6 @@
     mxcsr-of-write-byte-to-segment
     ))
 
-
-
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
@@ -525,12 +534,12 @@
     x86isa::rflagsbits->sf$inline-of-if
     x86isa::rflagsbits->zf$inline-of-if
 
-    x86isa::rflagsbits->af-of-bvif
-    x86isa::rflagsbits->cf-of-bvif
-    x86isa::rflagsbits->of-of-bvif
-    x86isa::rflagsbits->pf-of-bvif
-    x86isa::rflagsbits->sf-of-bvif
-    x86isa::rflagsbits->zf-of-bvif
+    rflagsbits->af-of-bvif
+    rflagsbits->cf-of-bvif
+    rflagsbits->of-of-bvif
+    rflagsbits->pf-of-bvif
+    rflagsbits->sf-of-bvif
+    rflagsbits->zf-of-bvif
 
     ;; These introduce set-flag:
     !rflags-of-!rflagsbits->af
@@ -540,12 +549,12 @@
     !rflags-of-!rflagsbits->sf
     !rflags-of-!rflagsbits->zf
 
-    X86ISA::RFLAGSBITS->aF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->cF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->OF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->pF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->sF-OF-RFLAGSBITS
-    X86ISA::RFLAGSBITS->zF-OF-RFLAGSBITS
+    x86isa::rflagsbits->af-of-rflagsbits
+    x86isa::rflagsbits->cf-of-rflagsbits
+    x86isa::rflagsbits->of-of-rflagsbits
+    x86isa::rflagsbits->pf-of-rflagsbits
+    x86isa::rflagsbits->sf-of-rflagsbits
+    x86isa::rflagsbits->zf-of-rflagsbits
 
     rflagsbits->af$inline-of-bvchop-32
     rflagsbits->cf$inline-of-bvchop-32
@@ -669,6 +678,11 @@
     acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
     acl2::bitp-becomes-unsigned-byte-p
+
+    ;; Just for making terms in failures more readable:
+    mv-nth-1-of-rb-1-of-set-rip
+    mv-nth-1-of-rb-of-set-rip
+    mv-nth-1-of-rb-of-set-rax ; could add more like this
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -810,22 +824,22 @@
     x86isa::unsigned-byte-p-1-of-sub-af-spec32
 
     ;; todo: now we turn bitp into unsigned-byte-p, so these won't fire:
-    x86isa::bitp-of-cf-spec-8
-    x86isa::bitp-of-cf-spec-16
-    x86isa::bitp-of-cf-spec-32
-    x86isa::bitp-of-cf-spec-64
-    x86isa::bitp-of-of-spec-8
-    x86isa::bitp-of-of-spec-16
-    x86isa::bitp-of-of-spec-32
-    x86isa::bitp-of-of-spec-64
-    x86isa::bitp-of-pf-spec-8
-    x86isa::bitp-of-pf-spec-16
-    x86isa::bitp-of-pf-spec-32
-    x86isa::bitp-of-pf-spec-64
-    x86isa::bitp-of-sf-spec-8
-    x86isa::bitp-of-sf-spec-16
-    x86isa::bitp-of-sf-spec-32
-    x86isa::bitp-of-sf-spec-64
+    x86isa::bitp-of-cf-spec8
+    x86isa::bitp-of-cf-spec16
+    x86isa::bitp-of-cf-spec32
+    x86isa::bitp-of-cf-spec64
+    x86isa::bitp-of-of-spec8
+    x86isa::bitp-of-of-spec16
+    x86isa::bitp-of-of-spec32
+    x86isa::bitp-of-of-spec64
+    x86isa::bitp-of-pf-spec8
+    x86isa::bitp-of-pf-spec16
+    x86isa::bitp-of-pf-spec32
+    x86isa::bitp-of-pf-spec64
+    x86isa::bitp-of-sf-spec8
+    x86isa::bitp-of-sf-spec16
+    x86isa::bitp-of-sf-spec32
+    x86isa::bitp-of-sf-spec64
     x86isa::bitp-of-zf-spec
     x86isa::bitp-of-add-af-spec8
     x86isa::bitp-of-add-af-spec16
@@ -920,6 +934,13 @@
   '(acl2::bvchop-of-*-becomes-bvmult
     acl2::getbit-of-*-becomes-getbit-of-bvmult
     acl2::slice-of-*-becomes-slice-of-bvmult
+    acl2::bvuminus-of-+
+    acl2::bvminus-of-+-arg2 ; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?
+    acl2::bvminus-of-+-arg3
+    acl2::bvif-of-+-arg4
+    acl2::bvif-of-+-arg3
+    acl2::bvif-of---arg3
+    acl2::bvif-of---arg4
     ;; todo: more
     ))
 
@@ -945,7 +966,7 @@
     acl2::bvchop-of-logior-becomes-bvor
     acl2::bvchop-of-logxor-becomes-bvxor
     acl2::bvchop-of-+-becomes-bvplus
-    acl2::bvuminus-of-+
+
     acl2::logapp-becomes-bvcat-bind-free-axe
     acl2::logtail-becomes-slice-bind-free-axe
     acl2::logtail-of-bvchop-becomes-slice ; todo: other way?
@@ -1000,7 +1021,6 @@
 
     acl2::logext-trim-arg-axe-all
 
-    acl2::bvuminus-of-logext
     acl2::bvchop-of-if-when-constants
 
     ;; this is needed to handle a divide:
@@ -1026,9 +1046,13 @@
 (defun if-rules ()
   (declare (xargs :guard t))
   '(acl2::if-nil-t
+    acl2::if-of-t-and-nil-becomes-bool-fix
     acl2::if-of-not
-    x86isa::if-of-if-same-arg2
-    x86isa::if-of-if-arg3-same
+    acl2::if-of-if-same-arg2
+    acl2::if-of-if-same-arg3
+    acl2::if-of-if-t-nil
+    acl2::if-of-if-of-cons-arg1-arg2
+    acl2::if-of-if-of-cons-arg1-arg3
     ))
 
 ;; For this strategy, we lower the IF when the 2 states have the same PC and no
@@ -1402,8 +1426,8 @@
     jb-condition-of-bvif-1-1-0
     jnb-condition-of-bvif-1-0-1
     jnb-condition-of-bvif-1-1-0
-    acl2::bool-fix-of-myif
-    boolif-of-myif-arg1-true ; drop
+    ;;acl2::bool-fix-of-myif
+    ;;boolif-of-myif-arg1-true ; drop
     equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe ;equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
     equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
     equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
@@ -1432,6 +1456,8 @@
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
 
+;; Do this late, to give the bitp rules a chance to fire first:
+(set-axe-rule-priority acl2::bitp-becomes-unsigned-byte-p 1)
 
 ;; Fire very early to remove bvchop from things like (+ 4 (ESP X86)), at least for now:
 (set-axe-rule-priority bvchop-of-+-of-esp-becomes-+-of-esp -2)
@@ -1521,7 +1547,7 @@
           (x86-type-rules)
           (logops-to-bv-rules)
           (acl2::bv-of-logext-rules)
-          (arith-to-bv-rules) ; todo: try
+          (arith-to-bv-rules)
           (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
@@ -1544,7 +1570,7 @@
             ;; x86isa::xw-of-xr
             ;; xw-of-rflags-does-nothing ; use a more general rule?
             ;; alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
-            alignment-checking-enabled-p-of-!rflags-of-xr
+            alignment-checking-enabled-p-of-!rflags
             ;; get-flag-of-xw-rflags-of-xr-rflags
             get-flag-of-!rflags-of-xr
             ;; xw-of-rflags-of-xw
@@ -1655,8 +1681,9 @@
 
             x86isa::create-canonical-address-list-1
 
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
+            x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
             x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
             x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
@@ -1793,14 +1820,11 @@
             ;; stuff from the timessix example:
             ;acl2::getbit-of-bvchop
 
-            x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
             x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
-            acl2::bvplus-of-logext-arg2
-            acl2::bvplus-of-logext-arg3
             ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
 ;<-when-canonical-address-p
@@ -2081,7 +2105,9 @@
             x86isa::wz512$inline
 
             x86isa::x86-operand-to-zmm/mem
-            )))
+            64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
+
+            acl2::integerp-of-ash)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -2171,7 +2197,7 @@
      x86isa::canonical-address-p-of-if
      the-check
      acl2::lookup-eq-safe
-     eql
+     eql ; just include base-rules?
      acl2::+-commutative-axe
      unicity-of-0
      ;; all-addreses-of-stack-slots
@@ -2189,7 +2215,10 @@
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-of-xr-rgf-4
-     x86isa::fix-of-xr-rgf-4)
+     x86isa::fix-of-xr-rgf-4
+     x86isa::integerp-when-canonical-address-p-cheap
+     acl2::fix-when-integerp
+     acl2::equal-same)
    (acl2::lookup-rules)))
 
 ;move?
@@ -2213,7 +2242,8 @@
 ;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
-  (append (lifter-rules-common)
+  (set-difference-equal
+   (append (lifter-rules-common)
           (read-over-write-rules32)
           '(x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
@@ -2312,9 +2342,10 @@
 
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
-
-            if-of-if-of-cons-and-nil
-            )))
+            ))
+   '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
+     acl2::bvminus-of-+-arg2
+     acl2::bvminus-of-+-arg3)))
 
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 (defun lifter-rules32-new ()
@@ -2328,8 +2359,11 @@
     xw-becomes-set-esp
     xw-becomes-set-ebp
 
+    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
+    read-*ip-becomes-eip
+    xr-becomes-eip
+
     ;; Introduce register readers:
-    read-*ip-becomes-eip ; add a rule about xr as well?
     xr-becomes-eax
     xr-becomes-ebx
     xr-becomes-ecx
@@ -2344,6 +2378,14 @@
     get-flag-of-set-edx
     get-flag-of-set-esp
     get-flag-of-set-ebp
+
+    program-at-of-set-eip
+    program-at-of-set-eax
+    program-at-of-set-ebx
+    program-at-of-set-ecx
+    program-at-of-set-edx
+    program-at-of-set-esp
+    program-at-of-set-ebp
 
     code-segment-readable-bit-of-set-eip
     code-segment-readable-bit-of-set-eax
@@ -2543,7 +2585,7 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    bvchop-of-+-of-esp-becomes-+-of-esp ; new, let's us drop the bvchop
+    bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
 
@@ -2981,7 +3023,7 @@
     esp-of-xw
     ebp-of-xw
 
-    bvplus-of-constant-and-esp-when-overflow
+    bvplus-of-constant-and-esp-when-overflow ; caused loops with turning + into bvplus
     ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
 
     read-stack-dword-of-write-to-segment-diff-segments
@@ -3003,15 +3045,16 @@
           (write-introduction-rules)
           (read-rules)
           (write-rules)
+          (read-and-write-rules)
           (read-byte-rules)
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs ; puts in rml-size
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
             ;; protection value is read via the FS segment register):
             x86isa::rme-size-when-64-bit-modep-fs/gs
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs ; puts in wml-size
+            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
             x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::read-*ip-when-64-bit-modep
@@ -4129,6 +4172,7 @@
           (write-introduction-rules)
           (read-rules)
           (write-rules)
+          (read-and-write-rules)
           '(x86isa::rme08$inline
             x86isa::rme16$inline
             x86isa::rme32$inline
@@ -4250,8 +4294,8 @@
   (append (debug-rules-common)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
-          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs
+          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
+            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-DISJOINT2
             )))
@@ -4271,12 +4315,13 @@
             x86isa::canonical-address-p-between-special5
             x86isa::canonical-address-p-between-special5-alt
             x86isa::canonical-address-p-between-special6
+            x86isa::canonical-address-p-between-special7
             bitops::ash-is-expt-*-x
             acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
             <-of-15-and-*-of-4
             unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-            acl2::bvlt-of-max-arg2
+            acl2::not-bvlt-of-max-arg2
             <-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
@@ -4293,8 +4338,7 @@
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;rflagsbits->af-of-myif
-            acl2::eql ; drop soon?
-            acl2::equal-of-constant-and-bvuminus
+            ;; acl2::equal-of-constant-and-bvuminus
             ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvif-of-myif-arg3 ; introduces bvif
@@ -4317,7 +4361,7 @@
             acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
             unicity-of-1 ; simplified something that showed up in an error case
             bvcat-of-repeatbit-of-getbit-becomes-bvsx
-            bvcat-of-repeatit-tighten-64-32 ;gen!
+            bvcat-of-repeatbit-tighten-64-32 ;gen!
             acl2::bvlt-of-bvsx-arg2
             sbvlt-of-bvsx-32-16-constant
 ;            rflagsbits->af-of-if
@@ -4345,13 +4389,8 @@
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
-            acl2::equal-of-myif-arg1-safe
-            acl2::equal-of-myif-arg2-safe
-            write-of-write-same ; todo: move to write-rules?
-            write-of-write-of-write-same
-            write-of-write-of-write-of-write-same
-            acl2::bvminus-of-+-arg2
-            acl2::bvminus-of-+-arg3
+            ;; acl2::equal-of-myif-arg1-safe
+            ;; acl2::equal-of-myif-arg2-safe
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
             acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus
@@ -4359,7 +4398,7 @@
             acl2::if-becomes-bvif-1-axe
             ;; acl2::boolif-of-t-and-nil-when-booleanp
             slice-of-bvand-of-constant
-            acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
+            ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
             acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
             acl2::equal-of-bvplus-constant-and-constant
             acl2::equal-of-bvplus-constant-and-constant-alt
@@ -4389,8 +4428,6 @@
             logext-of-bool-to-bit
             acl2::<-of-if-arg1-safe
             ;; acl2::<-of-if-arg2-safe
-            acl2::bvif-of-logext-arg3
-            acl2::bvif-of-logext-arg4
             acl2::equal-of-bvif-safe2
             acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
             )
@@ -4442,7 +4479,7 @@
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
-            acl2::bvchop-of-myif
+            ;; acl2::bvchop-of-myif
             xr-of-if ;restrict?
             ;acl2::slice-out-of-order
 
@@ -4477,7 +4514,6 @@
             jnl-condition-of-sf-spec64-and-0
             of-spec64-of-logext-64
             acl2::sbvlt-of-bvsx-arg2
-            acl2::bvsx-of-bvchop
 
             integerp-of-part-install-width-low$inline
             x86isa::sp-sse-cmp
@@ -4503,7 +4539,6 @@
             acl2::bvcat-of-slice-of-bvsx-same
             not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
             not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-            if-of-if-of-cons-and-nil ; why not already included
             acl2::bvplus-commutative-increasing-axe
             acl2::bvplus-commutative-2-increasing-axe
             ;;acl2::equal-same
@@ -4523,16 +4558,15 @@
             ;acl2::bvand-of-bvchop-1 ;rename
             ;acl2::bvand-of-bvchop-2 ;rename
             acl2::bvchop-of-minus-becomes-bvuminus ; todo: or re-characterize the subl instruction
-            acl2::bvplus-of-plus-arg2 ; todo: drop once we characterize long negation?
-            acl2::bvplus-of-plus-arg3 ; todo: drop once we characterize long negation?
-            ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-plus rules.
+            acl2::bvplus-of-+-arg2 ; todo: drop once we characterize long negation?
+            acl2::bvplus-of-+-arg3 ; todo: drop once we characterize long negation?
+            ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
             x86isa::integerp-of-xr-rgf
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
             acl2::<-becomes-bvlt-dag-alt-gen-better2
             acl2::<-becomes-bvlt-dag-gen-better2
             ;; after adding core-rules-bv:
-            acl2::bvuminus-of-logext
             acl2::bvlt-tighten-bind-and-bind-dag
             ;;acl2::unsigned-byte-p-of-0-arg1 ; move to a more fundamental rule list
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
@@ -4540,7 +4574,6 @@
             ;; bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
-            acl2::bool-fix$inline-constant-opener
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
@@ -4550,8 +4583,7 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-
-            read-of-2 ; splits into 2 reads
+            read-of-2 ; splits into 2 reads -- todo: do better?
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
@@ -4559,18 +4591,14 @@
 
 (defun tester-proof-rules ()
   (declare (xargs :guard t))
-  (append '(myif-of-sub-zf-spec32-arg2
-            myif-of-sub-zf-spec32-arg3
+  (append '(;;myif-of-sub-zf-spec32-arg2
+            ;;myif-of-sub-zf-spec32-arg3
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
             acl2::equal-of-if-constants
-            acl2::if-becomes-myif ; todo: do we want this when lifting?
-            acl2::myif-becomes-bvif-1-axe
-            acl2::bvchop-of-myif
-            acl2::bvif-of-+-arg4
-            acl2::bvif-of-+-arg3
-            acl2::bvif-of---arg3
-            acl2::bvif-of---arg4
+            ;; acl2::if-becomes-myif ; todo: do we want this when lifting?
+            ;; acl2::myif-becomes-bvif-1-axe
+            ;; acl2::bvchop-of-myif
             acl2::integerp-of---when-integerp
             acl2::equal-of-bvplus-move-bvminus-better
             acl2::equal-of-bvplus-move-bvminus-alt-better
@@ -4584,10 +4612,6 @@
             acl2::boolif-when-quotep-arg3
             acl2::bvchop-of-bvsx
             acl2::bvchop-of-bvuminus-same
-            acl2::bvsx-of-bvchop
-            acl2::bvplus-of-logext-arg2
-            acl2::bvplus-of-logext-arg3
-            acl2::bvuminus-of-logext
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
             acl2::signed-byte-p-when-unsigned-byte-p-one-less
@@ -4596,10 +4620,21 @@
             ;bvlt-hack-1-gen
             acl2::bvchop-subst-constant
             acl2::bvchop-subst-constant-alt
-            acl2::bool-fix$inline-constant-opener
             boolif-of-bvlt-strengthen-to-equal
             bvlt-reduce-when-not-equal-one-less
-            ;; trying opening these up if they surive to the proof stage (todo: add the rest, or drop these?):
+            ;; trying opening these up if they surive to the proof stage:
+            js-condition
+            jns-condition
+            jo-condition
+            jno-condition
+            jb-condition
+            jnb-condition
+            jbe-condition
+            jnbe-condition
+            jl-condition
+            jnl-condition
+            jle-condition
+            jnle-condition
             jp-condition
             jnp-condition
             jz-condition
@@ -4610,5 +4645,6 @@
           (lifter-rules64-new) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
+          (acl2::bv-of-logext-rules)
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))

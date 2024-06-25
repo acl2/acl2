@@ -108,6 +108,7 @@
 
 (add-known-boolean not)
 (add-known-boolean equal)
+(add-known-boolean eql) ; but we should usually replace eql with equal
 (add-known-boolean eq) ; but we should usually replace eq with equal
 (add-known-boolean =) ; but we should usually replace = with equal
 (add-known-boolean unsigned-byte-p)
@@ -118,6 +119,9 @@
 (add-known-boolean rationalp)
 (add-known-boolean complex-rationalp)
 (add-known-boolean acl2-numberp)
+(add-known-boolean symbolp)
+(add-known-boolean stringp)
+(add-known-boolean characterp)
 (add-known-boolean consp)
 (add-known-boolean atom) ; but we should usually open to expose consp
 (add-known-boolean endp) ; but we should usually open to expose consp
@@ -125,7 +129,7 @@
 (add-known-boolean booleanp)
 (add-known-boolean true-listp)
 (add-known-boolean iff)
-(add-known-boolean <)
+(add-known-boolean <) ; note that >, <=, and >= are macros
 (add-known-boolean alistp)
 (add-known-boolean symbol-alistp)
 (add-known-boolean logbitp)
@@ -133,3 +137,5 @@
 (add-known-boolean oddp)
 (add-known-boolean bitp)
 (add-known-boolean no-duplicatesp-equal)
+(add-known-boolean subsetp-equal)
+(add-known-boolean keywordp)

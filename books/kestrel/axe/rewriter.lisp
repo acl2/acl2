@@ -1,7 +1,7 @@
 ; The Axe Rewriter (somewhat old)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -130,7 +130,7 @@
 
 (mutual-recursion
 
- ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state), where extended-alist is irrelevant if hyps-relievedp is nil
+ ;; Returns (mv erp hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state), where extended-alist is irrelevant if hyps-relievedp is nil
  ;; keeps trying ASSUMPTION-ARG-LISTS until it finds a match for HYP-ARGS (thus binding some free vars) for which it can relieve all the OTHER-HYPS (using those variable bindings)
  (defund relieve-free-var-hyp-and-all-others (assumption-arg-lists ;these are lists of nodenums/quoteps for calls of fn that we can assume (where fn is the top function symbol of the hyp)
                                              hyp-args ;partially instantiated; any vars that remain must match the assumption
@@ -142,7 +142,7 @@
                                              equality-assumption-alist
                                              node-replacement-alist ;pairs of the form (<nodenum> . <nodenum-or-quotep>)
                                              print
-                                             memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                             memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
    (declare (xargs :mode :program ;;because of termination
                    :verify-guards nil
                    :stobjs state))
@@ -150,7 +150,7 @@
        ;; failed to relieve the hyp:
        (prog2$ (and (member-eq rule-symbol monitored-symbols)
                     (cw "(Failed to relieve free vars in hyp ~x0 of rule ~x1.)~%" hyp-num rule-symbol))
-               (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state))
+               (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
      (b* ((arg-list (first assumption-arg-lists))
           (fail-or-extended-alist (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
        (if (eq :fail fail-or-extended-alist)
@@ -160,9 +160,9 @@
                                                 alist rule-symbol
                                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                 print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                                memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
          ;; the assumption matched, so try to relieve the rest of the hyps using the resulting extension of ALIST:
-         (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
+         (mv-let (erp other-hyps-relievedp extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
            (relieve-rule-hyps other-hyps (+ 1 hyp-num)
                               fail-or-extended-alist ;ASSUMPTION bound some free vars
                               rule-symbol
@@ -170,11 +170,11 @@
                               print-interval rewriter-rule-alist
                               refined-assumption-alist
                               equality-assumption-alist node-replacement-alist print
-                              memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                              memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
            (if erp
-               (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
+               (mv erp nil nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
              (if other-hyps-relievedp
-                 (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
+                 (mv (erp-nil) t extended-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
                ;;this assumption matched, but we couldn't relieve the rest of the hyps:
                (relieve-free-var-hyp-and-all-others (rest assumption-arg-lists)
                                                     hyp-args hyp-num other-hyps
@@ -182,24 +182,24 @@
                                                     rule-symbol
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                    memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))))))))
+                                                    memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))))))))
 
  ;; ALIST is the substitution alist so far (it maps vars in the rule to nodenums and quoteps). If alist doesn't bind all the variables in the
  ;; HYP, we'll search for free variable matches in REFINED-ASSUMPTION-ALIST.
- ;; Relieving the hyp through rewriting may cause more nodes to be added to the DAG and more things to be added to memoization, info, and tries.
+ ;; Relieving the hyp through rewriting may cause more nodes to be added to the DAG and more things to be added to memoization, hit-counts, and tries.
  ;; BOZO precompute the list of vars in the hyp?  or maybe just the ones that need to be bound in the alist?
- ;; Returns (mv erp hyps-relievedp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state), where alist is irrelevant if hyps-relievedp is nil.
+ ;; Returns (mv erp hyps-relievedp alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state), where alist is irrelevant if hyps-relievedp is nil.
  ;; Otherwise, the alist returned may have been extended by the binding of free vars.
  (defund relieve-rule-hyps (hyps hyp-num alist rule-symbol
                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                  print-interval rewriter-rule-alist
                                  refined-assumption-alist ;maps each fn to a list of arg-lists (quoteps / nodenums in dag-array?) (have been refined for matching), can be assumed for all nodes (the vars may or may not appear already in the dag?? i think now they must appear?)
                                  equality-assumption-alist node-replacement-alist print
-                                 memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                 memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
    (declare (xargs :stobjs state :measure (len hyps)))
    (if (endp hyps)
        ;; all hyps relieved:
-       (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
+       (mv (erp-nil) t alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
      (b* ((hyp (first hyps))
           (fn (ffn-symb hyp)) ;; all hyps are conses
           (- (and (eq :verbose! print)
@@ -213,7 +213,7 @@
                  (relieve-rule-hyps (rest hyps) (+ 1 hyp-num) alist rule-symbol
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                     print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                    memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                    memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
                (prog2$ (and (member-eq rule-symbol monitored-symbols)
                             ;;is it worth printing in this case?
                             (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
@@ -222,7 +222,7 @@
                                     ;; (print-array2 'dag-array dag-array dag-len)
                                     ;; (cw ")~%")
                                     ))
-                       (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state))))
+                       (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
          (if (eq :axe-bind-free fn)
              ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps (fffffixme free vars may be bound to entire terms!) but we also bind the special variable dag-array to the dag-array.
              ;;The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. TODO: What if the axe-bind-free function gives back a result that is not even well-formed?
@@ -235,17 +235,17 @@
                      (if (not (axe-bind-free-result-okayp result vars-to-bind dag-len))
                          (mv (erp-t)
                              (er hard? 'relieve-rule-hyps "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
-                             alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
+                             alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
                        ;; this hyp counts as relieved:
                        (relieve-rule-hyps (rest hyps) (+ 1 hyp-num)
                                           (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
                                           rule-symbol dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                           print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                          memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)))
+                                          memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)))
                  ;; failed to relieve the axe-bind-free hyp:
                  (prog2$ (and (member-eq rule-symbol monitored-symbols)
                               (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
-                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state))))
+                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
            (if (eq :free-vars fn) ;can't be a work-hard
                (b* (((mv instantiated-hyp &)
                      (instantiate-hyp (cdr hyp) ;strip the :free-vars
@@ -262,7 +262,7 @@
                                                       print-interval rewriter-rule-alist
                                                       refined-assumption-alist
                                                       equality-assumption-alist node-replacement-alist print
-                                                      memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                                      memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
 
                  ;;                  (mv-let (flg alist-for-free-vars)
                  ;;                          (unify-pattern-sexp-lst instantiated-hyp refined-assumptions dag-array)
@@ -277,7 +277,7 @@
                  ;;                                                   rule-symbol
                  ;;                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                  ;;                                                   print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                 ;;                                                   memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp))
+                 ;;                                                   memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp))
                  ;;                            ;;fail.  didn't find a match for the hyp...
                  ;;                            (prog2$ (and (member-eq rule-symbol monitored-symbols)
                  ;;                                         (progn$ (cw "(Failed to match free var in hyp: ~x0 for ~x1." instantiated-hyp rule-symbol)
@@ -286,7 +286,7 @@
                  ;;                                                 (print-list refined-assumptions)
                  ;;                                                 ;;fixme print the part of the dag array that supports the hyp??
                  ;;                                                 (cw ")~%Alist: ~x0~%)~%" alist)))
-                 ;;                                    (mv nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries))))
+                 ;;                                    (mv nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries))))
 
                  )
              ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :free-vars:
@@ -305,7 +305,7 @@
                  ;; TODO: Consider adding a special case here to check whether the hyp is a constant (can happen during instantiation and may be very common).
                  ;; Since no free vars are in the hyp, we try to relieve the fully instantiated hyp:
                  (b* ((old-try-count tries)
-                      ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                      ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                        ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible (why??? did i mean atom hyps must be symbolps?)- but should be rare:
                        ;;bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms?
                        (simplify-tree-and-add-to-dag instantiated-hyp
@@ -314,8 +314,8 @@
                                                      nil ;nothing is yet known to be equal to instantiated-HYP - fixme name this use of nil
                                                      refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
                                                      memoization
-                                                     info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                      ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state))
+                                                     hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                      ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
                       (try-diff (and old-try-count (- tries old-try-count))))
                    (if (consp new-nodenum-or-quotep) ;tests for quotep
                        (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
@@ -327,7 +327,7 @@
                                                       rule-symbol
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                       print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                      memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                                                      memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                          ;;hyp rewrote to *nil*:
                          (progn$ (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
                                  (and (member-eq rule-symbol monitored-symbols)
@@ -341,7 +341,7 @@
                                               ;;print these better?:
                                               ;; (cw "node equality assumptions: ~x0~%)" node-replacement-alist)
                                               ))
-                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))
+                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
                      ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
                      ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
                      (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array)
@@ -353,7 +353,7 @@
                                                     rule-symbol
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                     print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                    memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                                                    memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                        (prog2$
                         (and old-try-count print (or (eq :verbose print) (eq :verbose! print)) (< 100 try-diff) (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
                         (if (and work-hardp work-hard-when-instructedp)
@@ -378,9 +378,9 @@
                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
                                    nil ;fixme ifns
                                    ))
-                                 ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state))
+                                 ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
                                  ;;call the full prover:
-                                 ((mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries state)
+                                 ((mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
                                   ;;fixme should this do mitering and merging (which would then call the prover on individual node pairs)?
                                   (prove-disjunction-with-axe-prover (cons new-nodenum-or-quotep negated-assumptions) ;these are the literals
                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -392,14 +392,14 @@
                                                                      *default-stp-max-conflicts* ;max-conflicts ;fixme pass this around
                                                                      t ;nil ;print-max-conflicts-goalp
                                                                      nil ;don't work hard on another work-hard hyp fffixme think about this
-                                                                     info tries
+                                                                     hit-counts tries
                                                                      1 ;prover-depth > 1 disallows changing existing nodes
                                                                      nil ;options
                                                                      (+ -1 (expt 2 59)) ;max fixnum?
                                                                      state))
-                                 ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))
+                                 ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
                               (if (eq :proved result)
-                                  (progn$ ;(maybe-print-hit-counts t info) ;ffffixme these are cumulative counts
+                                  (progn$ ;(maybe-print-hit-counts hit-counts) ;ffffixme these are cumulative counts
                                    (cw "Proved the work-hard hyp)~%")
                                    ;;the hyp counts as relieved:
                                    (relieve-rule-hyps (rest hyps)
@@ -407,10 +407,10 @@
                                                       alist rule-symbol
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                       print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                      memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp
+                                                      memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp
                                                       tag limits state))
                                 (prog2$ (cw "Failed to prove the work-hard hyp for ~x0)~%" rule-symbol)
-                                        (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state))))
+                                        (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
                           (prog2$ (and (member-eq rule-symbol monitored-symbols)
                                        (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1 (work-hardp: ~x2, work-hard-when-instructedp: ~x3).~%" hyp rule-symbol work-hardp work-hard-when-instructedp)
                                                (cw "Reason: Rewrote to:~%")
@@ -423,24 +423,24 @@
                                                ;; (print-array2 'dag-array dag-array dag-len)
                                                ;; (cw ")")
                                                (cw ")~%")))
-                                  (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))))))))))))))
+                                  (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))))))))))))))
 
- ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+ ;;returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund try-to-apply-rules (stored-rules ;the list of rules for the fn in question
                             rewriter-rule-alist args-to-match
                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                             refined-assumption-alist ;can be assumed for all nodes
-                            equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                            equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                             embedded-dag-depth work-hard-when-instructedp tag limits state)
    (declare (xargs :stobjs state))
    (if (endp stored-rules) ;no rule fired
-       (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+       (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
      (b* ((stored-rule (first stored-rules))
           ((when (and limits (limit-reachedp stored-rule limits print)))
            ;; the limit for this rule has been reached, so skip this rule:
            (try-to-apply-rules (rest stored-rules) rewriter-rule-alist args-to-match
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist refined-assumption-alist equality-assumption-alist
-                               node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                               node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                embedded-dag-depth work-hard-when-instructedp tag limits state))
           (tries (and tries (+ 1 tries)))
           (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule)
@@ -452,14 +452,14 @@
            (try-to-apply-rules
             (rest stored-rules) rewriter-rule-alist args-to-match
             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist refined-assumption-alist equality-assumption-alist
-            node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+            node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
             embedded-dag-depth work-hard-when-instructedp tag limits state)
          ;; The rule matched, so try to relieve its hyps:
          (b* ((- (and (eq print :verbose!)
                       (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
               (hyps (stored-rule-hyps stored-rule))
               ((mv erp hyps-relievedp alist ; may get extended by the binding of free vars
-                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)
+                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
                (if hyps
                    (let ((rule-symbol (stored-rule-symbol stored-rule))) ;delay extracting this? not always needed?
                      (relieve-rule-hyps hyps
@@ -467,10 +467,10 @@
                                         alist-or-fail
                                         rule-symbol
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                        print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))
+                                        print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))
                  ;;if there are no hyps, don't even bother: BOZO inefficient?:
-                 (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist info tries memoization limits state)))
-              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                 (mv (erp-nil) t alist-or-fail dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
+              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
            (if hyps-relievedp
                ;; the hyps were relieved, so instantiate the RHS:
                (prog2$ (and (eq print :verbose!)
@@ -480,7 +480,7 @@
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                            memoization
                            ;;no need to assemble the info if we are not going to print it
-                           (and info (increment-hit-count-in-info-world (stored-rule-symbol stored-rule) info))
+                           (maybe-increment-hit-count (stored-rule-symbol stored-rule) hit-counts)
                            tries
                            (and limits (decrement-rule-limit stored-rule limits))
                            state))
@@ -492,14 +492,14 @@
                       rewriter-rule-alist args-to-match
                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                       refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization
-                      info ;(cons (cons :fail (rule-symbol rule)) info)
+                      hit-counts ;(cons (cons :fail (rule-symbol rule)) hit-counts)
                       tries
                       interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp
                       tag limits state))))))))
 
  ;;rename
  ;;this also simplifies as it goes!
- ;;returns (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+ ;;returns (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund merge-embedded-dag-into-dag (rev-dag
                                      renaming-array-name
                                      renaming-array2 ;associates nodenums in the embedded dag with the nodenums (or qupteps) they rewrote to in the main dag
@@ -508,12 +508,12 @@
                                      rewriter-rule-alist
                                      refined-assumption-alist ;can be assumed for all nodes
                                      equality-assumption-alist node-replacement-alist print-interval print
-                                     memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                     memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
    (declare (xargs :measure t ;fake!
                    :stobjs state
                    ))
    (if (endp rev-dag)
-       (mv (erp-nil) renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+       (mv (erp-nil) renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
      (let* ((entry (car rev-dag))
             (nodenum (car entry))
             (expr (cdr entry)))
@@ -526,7 +526,7 @@
                                           embedded-dag-var-alist
                                           rewriter-rule-alist
                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                                          memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))
+                                          memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))
          (let ((fn (ffn-symb expr)))
            (if (eq 'quote fn)
                (merge-embedded-dag-into-dag (cdr rev-dag)
@@ -536,14 +536,14 @@
                                             embedded-dag-var-alist
                                             rewriter-rule-alist
                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                                            memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state)
+                                            memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state)
              ;;function call:
              ;;first fixup the call to be about nodenums in the main dag:
              (let* ((args (dargs expr))
                     (args (rename-dargs args renaming-array-name renaming-array2))
                     (expr (cons fn args)))
                ;;then simplify the function applied to the simplified args:
-               (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+               (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                  ;;fffixme this can create a new renaming-array2 which can lead to slow-array warnings...
                  ;;ffixme call simplify-fun-call-and-add-to-dag?
                  (simplify-tree-and-add-to-dag expr
@@ -552,9 +552,9 @@
                                                nil ;;trees-equal-to-tree
                                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
                                                memoization
-                                               info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state)
+                                               hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state)
                  (if erp
-                     (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                     (mv erp renaming-array2 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                    (merge-embedded-dag-into-dag (cdr rev-dag)
                                                 renaming-array-name
                                                 (aset1-safe renaming-array-name renaming-array2 nodenum new-nodenum-or-quotep)
@@ -562,7 +562,7 @@
                                                 embedded-dag-var-alist
                                                 rewriter-rule-alist
                                                 refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                                                memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))))))))))
+                                                memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp  tag limits state))))))))))
 
   (defund simplify-fun-call-and-add-to-dag (fn ;; a function
                                            args ;; list of simplified args (so these are nodenums or quoteps?)
@@ -575,7 +575,7 @@
                                            print-interval ;if non-nil the whole dag gets printed each time its size hits a multiple of this!
                                            print
                                            memoization ;conceptually, a mapping from trees to (constants and nodenums)
-                                           info ;this is an info-world ;fixme call this info-world everywhere?
+                                           hit-counts
                                            tries interpreted-function-alist monitored-symbols
                                            embedded-dag-depth ;helps keep the names of the arrays distinct
                                            work-hard-when-instructedp
@@ -593,7 +593,7 @@
                                             memo-match ;the nodenum or quotep they are all equal to
                                             memoization)
                 memoization)
-              info tries limits state)
+              hit-counts tries limits state)
         ;;Try looking it up in equality-assumption-alist (BOZO should we move this down? or up?)
         ;; this uses the simplified args, so assumptions not in normal form may not ever match ;fffixme what about node-replacement-alist?
         ;; TODO: Doesn't equality-assumption-alist contain terms, rather than axe-trees?
@@ -608,14 +608,14 @@
                                             refined-assumption-alist equality-assumption-alist node-replacement-alist
                                             print-interval
                                             print
-                                            memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                            memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
             ;; Next, try to apply rules:
-            (b* (((mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+            (b* (((mv erp rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                   (try-to-apply-rules
                    (get-rules-for-fn fn rewriter-rule-alist)
                    rewriter-rule-alist args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                   memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                   memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                 ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
               (if rhs-or-nil
                   ;;A rule fired, so simplify the instantiated right-hand-side:
                   ;; This is a tail call, which allows long chains of rewrites:
@@ -625,7 +625,7 @@
                                                 ;;in the common case in which simplifying the args had no effect, the car of trees-equal-to-tree will be the same as (cons fn args), so don't add it twice
                                                 (cons-if-not-equal-car (cons fn args) ;could save this and similar conses in the function
                                                                        trees-equal-to-tree)
-                                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries
+                                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries
                                                 interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
                 ;; check for dag-val-with-axe-evaluator (move up?)
                 (if (and (eq 'dag-val-with-axe-evaluator fn) ;fixme what if we can just evaluate it because all args are ground terms?
@@ -637,26 +637,26 @@
                     ;;ffffixme this should/could be simplified! can we call add-simplified-dag-to-dag-array (bring it into the mutual rec.)? no, vars must be handled differently!?
                     (let* ((embedded-dag (unquote (first args)))) ;either a dag or a quoted constant
                       (if (quotep embedded-dag)
-                          (mv (erp-nil) embedded-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state) ;todo: update the memoization?
+                          (mv (erp-nil) embedded-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state) ;todo: update the memoization?
                         (b* ((embedded-dag-len (len embedded-dag))
                              (alist-nodenum (second args))
                              ;; (interpreted-function-alist (third args)) ;fffixme pay attention to this!
                              (embedded-dag-vars (dag-vars embedded-dag))
                              (var-lookup-terms (make-var-lookup-terms embedded-dag-vars alist-nodenum))
                              ;;add the lookup of each var to the dag:
-                             ((mv erp var-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries & limits state)
+                             ((mv erp var-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries & limits state)
                               (simplify-trees-and-add-to-dag
                                var-lookup-terms
                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                rewriter-rule-alist
                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                               memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                             ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
+                               memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                             ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
                              ;;now rewrite the embedded dag.  each var rewrites to the corresponding result we just computed for looking it up in the alist
                              ;;other nodes get fixed up and then simplified.
                              (renaming-array-for-merge-embedded-dag-name (pack$ 'renaming-array-for-merge-embedded-dag embedded-dag-depth))
                              ((mv erp renaming-array-for-merge-embedded-dag ;this renames nodes in the embedded dag to nodes in the main dag
-                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                               (merge-embedded-dag-into-dag
                                (reverse embedded-dag)
                                renaming-array-for-merge-embedded-dag-name
@@ -665,11 +665,11 @@
                                (pairlis$ embedded-dag-vars var-nodenums-or-quoteps)
                                rewriter-rule-alist
                                refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                               memoization info tries interpreted-function-alist monitored-symbols (+ 1 embedded-dag-depth) work-hard-when-instructedp  tag limits state))
-                             ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                               memoization hit-counts tries interpreted-function-alist monitored-symbols (+ 1 embedded-dag-depth) work-hard-when-instructedp  tag limits state))
+                             ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
                           (mv (erp-nil)
                               (aref1 renaming-array-for-merge-embedded-dag-name renaming-array-for-merge-embedded-dag (top-nodenum embedded-dag))
-                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))))
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))))
                   ;; No rule fired, so no simplifcation can be done:
                   ;; This node is ready to add to the dag
                   ;; in-line this?
@@ -682,10 +682,10 @@
                                             trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
                      memoization)
                     (if erp
-                        (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                        (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                       ;; combine with the case above?
                       (if (consp nodenum-or-quotep) ;must be a quotep (fixme can this happen?!):
-                          (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                          (mv (erp-nil) nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                         ;; nodenum-or-quotep is a nodenum:
                         ;; ffixme move this up?  or move the logic for equality-assumption-alist down?
                         ;; better yet, combine the two
@@ -694,9 +694,9 @@
                               (if node-equality-assumption-match
                                   (cdr node-equality-assumption-match) ;fffffffffffixme shouldn't rewrite this? do that for all the node-equality-assumptions outside the main clique?
                                 nodenum-or-quotep)
-                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))))))))))))
+                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))))))))))))
 
- ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state).
+ ;; Returns (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state).
  ;; Rewrite TREE repeatedly using REWRITER-RULE-ALIST and REFINED-ASSUMPTION-ALIST and add the result to the DAG-ARRAY, returning a nodenum or a quotep.
  ;; TREE is a term with nodenums and quoteps and variables at the leaves.
  ;; TREES-EQUAL-TO-TREE is a list of terms (not vars) equal to TREE (at the bottom is the original term we are rewriting)- when we get the final result, all these terms will be equal to it - BOZO option to turn this off?
@@ -729,7 +729,7 @@
                                       print-interval ;if non-nil the whole dag gets printed each time its size hits a multiple of this!
                                       print
                                       memoization ;conceptually, a mapping from trees to (constants and nodenums)
-                                      info ;this is an info-world ;fixme call this info-world everywhere?
+                                      hit-counts
                                       tries interpreted-function-alist monitored-symbols
                                       embedded-dag-depth ;helps keep the names of the arrays distinct
                                       work-hard-when-instructedp
@@ -750,16 +750,16 @@
                                                rewriter-rule-alist
                                                ;; we don't equate the variable with anything in the memoization (we don't look up vars in the memoization either):
                                                trees-equal-to-tree
-                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries
+                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries
                                                interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
                ;; no luck looking it up in assumptions, so we just add the variable to the DAG:
                ;; BOZO make this a macro! same for other adding to dag operations?
-               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info) ;fixme don't bother to pass through the info and memo?  do memo separately?
+               (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts) ;fixme don't bother to pass through the hit-counts and memo?  do memo separately?
                  (add-variable-to-dag-array-with-memo tree
                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                       trees-equal-to-tree
-                                                      memoization info)
-                 (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))))
+                                                      memoization hit-counts)
+                 (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))))
          ;; TREE is a nodenum (because it's an atom but not a symbol): fixme use equalities?
 ;ffffixme, this assumes that nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the cdrs of node-replacement-alist once at the beginning?  also think about equality-assumption-alist (they are terms so the cdr gets simplified each time an equality fires, but maybe they get simplified over and over).
          ;; First, see if the nodenum is mapped to anything in the node-replacement-alist:
@@ -779,7 +779,7 @@
                                              tree ;the nodenum/quotep they are all equal to
                                              memoization)
                  memoization)
-               info tries
+               hit-counts tries
                limits state)))
 
      ;; TREE is not an atom:
@@ -795,7 +795,7 @@
                                              tree ;the constant they are all equal to
                                              memoization)
                  memoization)
-               info tries
+               hit-counts tries
                limits state)
 
          ;; TREE is a function call:
@@ -811,78 +811,78 @@
                                                  memo-match ;the nodenum or quotep they are all equal to
                                                  memoization)
                      memoization)
-                   info tries
+                   hit-counts tries
                    limits state)
 
              ;; Handle the various kinds of if:
              (if (or (eq 'if fn)
                      (eq 'myif fn))
                  ;; First, try to resolve the if-test (fixme would like to do this in an iff context):
-                 (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
-                   (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                 (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
+                   (b* (((mv erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                          (simplify-tree-and-add-to-dag (farg1 tree) ;the if-test
                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                        rewriter-rule-alist
                                                        nil ;no trees are yet known equal to the test
                                                        refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval
-                                                       print memoization info tries interpreted-function-alist monitored-symbols
+                                                       print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                        embedded-dag-depth work-hard-when-instructedp tag limits state))
-                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
                      (if (consp simplified-test)
                          ;; test simplified to a constant:
-                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                        ;; test didn't simplify to a constant, so it's a nodenum.  now try looking it up in the refined-assumption-alist:
                        ;; TODO: Do this also for the other kinds of IF below
                        (if (nodenum-equal-to-refined-assumptionp simplified-test refined-assumption-alist dag-array)
                            ;; Since the test is known to be true from the refined-assumption-alist, it's as if it rewrote to 't (even though it may not be a predicate, IF/MYIF only looks at whether it is nil):
-                           (mv (erp-nil) *t* dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
-                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))))
+                           (mv (erp-nil) *t* dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
+                         (mv (erp-nil) simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))))
                    (if erp
-                       (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                       (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                      (if (consp simplified-test)
                          ;; Rewrite either the then branch or the else branch, according to whether the test simplified to nil:
                          (simplify-tree-and-add-to-dag (if (unquote simplified-test) (farg2 tree) (farg3 tree))
                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                        rewriter-rule-alist
                                                        (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                       refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                       refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                        embedded-dag-depth work-hard-when-instructedp tag limits state)
                        ;;couldn't resolve the if-test:
                        ;;fffixme i guess these are not tail calls...
-                       (b* (((mv erp thenpart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                       (b* (((mv erp thenpart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                              (simplify-tree-and-add-to-dag (farg2 tree) ;"then" branch
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            rewriter-rule-alist
                                                            nil ;no trees are yet known equal to the then branch
-                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                            embedded-dag-depth work-hard-when-instructedp tag limits state))
-                            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
-                            ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
+                            ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                              (simplify-tree-and-add-to-dag (farg3 tree) ;"else" branch
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            rewriter-rule-alist
                                                            nil ;no trees are yet known equal to the else branch
-                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                            embedded-dag-depth work-hard-when-instructedp tag limits state))
-                            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                            ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
 
                          ;;this function takes simplified args and does not handle ifs (or else things might loop):
                          (simplify-fun-call-and-add-to-dag fn (list simplified-test thenpart-result elsepart-result)
                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                        rewriter-rule-alist
                                                        (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                       refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                       refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                        embedded-dag-depth work-hard-when-instructedp tag limits state)))))
                (if (eq 'boolif fn)
                    ;; First, try to resolve the if-test:
-                   (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                   (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                      (simplify-tree-and-add-to-dag (farg1 tree) ;the if-test
                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                    rewriter-rule-alist
                                                    nil ;no trees are yet known equal to the test
-                                                   refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                                   refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
                      (if erp
-                         (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                         (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                        (if (consp simplified-test)
                            (if (unquote simplified-test)
                                ;;test rewrote to non-nil:
@@ -890,49 +890,49 @@
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rewriter-rule-alist
                                                              (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                              embedded-dag-depth work-hard-when-instructedp tag limits state)
                              ;;test rewrote to nil:
                              (simplify-tree-and-add-to-dag `(bool-fix$inline ,(farg3 tree)) ;the "else" branch
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            rewriter-rule-alist
                                                            (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                            embedded-dag-depth work-hard-when-instructedp tag limits state))
                          ;;couldn't resolve the if-test:
-                         (b* (((mv erp thenpart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                         (b* (((mv erp thenpart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                                (simplify-tree-and-add-to-dag (farg2 tree) ;"then" branch
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rewriter-rule-alist
                                                              nil ;no trees are yet known equal to the then branch
-                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                              embedded-dag-depth work-hard-when-instructedp tag limits state))
-                              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
-                              ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
+                              ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                                (simplify-tree-and-add-to-dag (farg3 tree) ;"else" branch
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rewriter-rule-alist
                                                              nil ;no trees are yet known equal to the else branch
-                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                              embedded-dag-depth work-hard-when-instructedp tag limits state))
-                              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                              ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
                            (simplify-fun-call-and-add-to-dag 'boolif (list simplified-test thenpart-result elsepart-result)
                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                          rewriter-rule-alist
                                                          (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                          embedded-dag-depth work-hard-when-instructedp tag limits state)))))
 
                  (if (eq 'bvif fn)
                      ;; First, try to resolve the if-test:
-                     (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                     (mv-let (erp simplified-test dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                        (simplify-tree-and-add-to-dag (farg2 tree) ;the if-test
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      rewriter-rule-alist
                                                      nil ;no trees are yet known equal to the test
-                                                     refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                                     refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
                        (if erp
-                           (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                           (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                          (if (consp simplified-test)
                              (if (unquote simplified-test)
                                  ;;test rewrote to non-nil:
@@ -941,7 +941,7 @@
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rewriter-rule-alist
                                                                (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                                embedded-dag-depth work-hard-when-instructedp tag limits state)
                                ;;test rewrote to nil:
                                (simplify-tree-and-add-to-dag `(bvchop ;$inline
@@ -949,38 +949,38 @@
                                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                              rewriter-rule-alist
                                                              (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                             refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                              embedded-dag-depth work-hard-when-instructedp tag limits state))
                            ;;couldn't resolve the if-test:
-                           (b* (((mv erp size-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                           (b* (((mv erp size-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                                  (simplify-tree-and-add-to-dag (farg1 tree) ;size param
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rewriter-rule-alist
                                                                nil ;no trees are yet known equal to the the size param
-                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                                embedded-dag-depth work-hard-when-instructedp tag limits state))
-                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
-                                ((mv erp thenpart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
+                                ((mv erp thenpart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                                  (simplify-tree-and-add-to-dag (farg3 tree) ;"then" branch
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rewriter-rule-alist
                                                                nil ;no trees are yet known equal to the then branch
-                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                                embedded-dag-depth work-hard-when-instructedp tag limits state))
-                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
-                                ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
+                                ((mv erp elsepart-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                                  (simplify-tree-and-add-to-dag (farg4 tree) ;"else" branch
                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                rewriter-rule-alist
                                                                nil ;no trees are yet known equal to the else branch
-                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                               refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                                embedded-dag-depth work-hard-when-instructedp tag limits state))
-                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)))
+                                ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)))
                              (simplify-fun-call-and-add-to-dag 'bvif (list size-result simplified-test thenpart-result elsepart-result)
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                            rewriter-rule-alist
                                                            (cons tree trees-equal-to-tree) ;the thing we are rewriting here is equal to tree
-                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries interpreted-function-alist monitored-symbols
+                                                           refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols
                                                            embedded-dag-depth work-hard-when-instructedp tag limits state)))))
 
                    ;;It wasn't any kind of IF:
@@ -993,13 +993,13 @@
                         ;; ffixme maybe we should try to apply rules here (maybe outside-in rules) instead of rewriting the args
                         ;; fixme could pass in a flag for the common case where the args are known to be already simplified (b/c the tree is a dag node?)
                         (- (and (eq :verbose! print) (cw "(Rewriting args of ~x0:~%" fn)))
-                        ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries & limits state) ;ffixme dont ignore and use any-arg-was-simplifiedp?
+                        ((mv erp args dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries & limits state) ;ffixme dont ignore and use any-arg-was-simplifiedp?
                          (simplify-trees-and-add-to-dag args
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         rewriter-rule-alist
                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                                                        memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state))
+                                                        memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                        ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state))
                         (- (and (eq :verbose! print) (cw "Done rewriting args.)~%")))
                         ;;ARGS is now a list of nodenums and quoteps.
                         ;;Now we simplify FN applied to (the simplified) ARGS:
@@ -1016,7 +1016,7 @@
                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                          rewriter-rule-alist
                                                          (cons tree trees-equal-to-tree) ;we memoize the lambda
-                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization info tries
+                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print memoization hit-counts tries
                                                          interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
                        ;;test for ground term
                        (if (and (all-consp args)
@@ -1038,7 +1038,7 @@
                                       (add-pairs-to-memoization (cons tree trees-equal-to-tree)
                                                                 result ;the quoted constant they are all equal to
                                                                 memoization))
-                                 info tries limits state))
+                                 hit-counts tries limits state))
                          ;;Otherwise, simplify the non-lambda FN applied to the simplified args:
                          (simplify-fun-call-and-add-to-dag fn args
                                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -1048,11 +1048,11 @@
                                                            print-interval
                                                            print
                                                            memoization
-                                                           info tries interpreted-function-alist monitored-symbols
+                                                           hit-counts tries interpreted-function-alist monitored-symbols
                                                            embedded-dag-depth work-hard-when-instructedp tag limits state)))))))))))))
 
  ;;simplify all the trees in tree-lst and add to the DAG
- ;;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries changed-anything-flg limits state)
+ ;;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries changed-anything-flg limits state)
  ;;if the items in TREES are already all nodenums or quoted constants this doesn't re-cons-up the list
  ;;not tail-recursive, btw.
  ;; The changed-anything-flg flag is not used by callers other than this function itself.
@@ -1061,24 +1061,24 @@
                                        rewriter-rule-alist
                                        refined-assumption-alist ;can be assumed for all nodes
                                        equality-assumption-alist node-replacement-alist print-interval print
-                                       memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
+                                       memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
    (declare (xargs :measure (len trees) :stobjs state))
    (if (endp trees)
-       (mv (erp-nil) trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries nil limits state)
+       (mv (erp-nil) trees dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries nil limits state)
      (b* ((first-tree (first trees))
           ;; why do we do the rest before the first?
-          ((mv erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries changed-anything-for-rest limits state)
+          ((mv erp rest-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries changed-anything-for-rest limits state)
            (simplify-trees-and-add-to-dag (rest trees)
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                           rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist
-                                          print-interval print memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries nil limits state))
-          ((mv erp first-tree-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                                          print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries nil limits state))
+          ((mv erp first-tree-result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
            (simplify-tree-and-add-to-dag first-tree
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          rewriter-rule-alist nil refined-assumption-alist equality-assumption-alist node-replacement-alist
-                                         print-interval print memoization info tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries nil limits state))
+                                         print-interval print memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+          ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries nil limits state))
           ;;this avoids reconsing when nothing changes (maybe use cons-with-hint?):
           (changed-anything (or changed-anything-for-rest
                                 (not (equal first-tree-result first-tree)) ;slow?
@@ -1086,12 +1086,12 @@
           (result (if changed-anything
                       (cons first-tree-result rest-result)
                     trees)))
-       (mv (erp-nil) result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries changed-anything limits state))))
+       (mv (erp-nil) result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries changed-anything limits state))))
 
   ) ;end of mutual-recursion
 
 ;; For each node in REV-DAG, fix up its args (if any) according to the renaming-array, then add its simplified form to the dag-array and add its new nodenum or quotep to the renaming.
-;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array info tries limits state).
+;; Returns (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array hit-counts tries limits state).
 ;; TODO: For speed, we could keep track the lowest node renamed (anything lower renames to itself).
 (defun add-simplified-dag-to-dag-array (rev-dag ;low nodes come first; can there be gaps in the numbering?
                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -1101,7 +1101,7 @@
                                         equality-assumption-alist ;dotted pairs of terms (can be assumed for all nodes) ;fffixme handle this better (see the node-replacement-array)
                                         print-interval print
                                         memoization
-                                        info ;tracks numbers of rule hits
+                                        hit-counts ;tracks numbers of rule hits
                                         tries ;tracks the amount of work (number of attempts to match a rule with a term) done by the rewriter
                                         interpreted-function-alist
                                         monitored-symbols
@@ -1124,7 +1124,7 @@
                               (rule-limitsp limits))
                   :stobjs state))
   (if (endp rev-dag)
-      (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array info tries limits state)
+      (mv (erp-nil) dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array hit-counts tries limits state)
     (let* ((entry (first rev-dag))
            (nodenum (car entry)) ;or, if they are consecutive, we could track this numerically..
            (expr (cdr entry)))
@@ -1132,7 +1132,7 @@
           (add-simplified-dag-to-dag-array (rest rev-dag)
                                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                            (aset1 'renaming-array renaming-array nodenum expr)
-                                           rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print memoization info tries interpreted-function-alist
+                                           rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print memoization hit-counts tries interpreted-function-alist
                                            monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state)
         ;;expr is a variable or function call (TODO: Split out the var case):
         (let* ((context-for-this-node (if internal-context-array (aref1 'context-array internal-context-array nodenum) (true-context)))
@@ -1146,7 +1146,7 @@
                        (rest rev-dag)
                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                        (aset1 'renaming-array renaming-array nodenum (enquote :irrelevant)) ;fixme think about this
-                       rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print memoization info tries interpreted-function-alist
+                       rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print memoization hit-counts tries interpreted-function-alist
                        monitored-symbols internal-context-array context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))
             (b* ((node-replacement-alist-for-this-node (node-replacement-alist-for-context full-context dag-array known-booleans print)) ;fffixme this gets redone over and over for context-for-all-nodes?
                  ;; This is an attempt to include the context information in the assumptions used for free var matching:
@@ -1163,7 +1163,7 @@
                                  (and (not (eq :brief print)) ;new
                                       (equal 0 (mod nodenum 1000)) ;how expensive is this mod?  could keep a counter... or always track the next multiple of 1000 and compare to that?
                                       (cw " Processing node: ~x0~%" nodenum)))))
-                 ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization info tries limits state)
+                 ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
                   ;;BOZO might there be IFs here?
                   ;;bozo might get speed up by taking advantage of the fact that the expr came from a dag node and so can't be some big tree
                   ;;it's probably a function call tree? check whether it's of an if or lambda and if not, don't waste time simplifying the args? pass in a flag saying the args are simplified?
@@ -1178,18 +1178,18 @@
                    node-replacement-alist-for-this-node
                    print-interval print
                    (if internal-context-array nil memoization) ; TODO: Replace this with just memoization once have verified guards
-                   info tries interpreted-function-alist
+                   hit-counts tries interpreted-function-alist
                    monitored-symbols
                    0 ;embedded-dag-depth
                    work-hard-when-instructedp
                    tag limits state))
-                 ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array info tries limits state)))
+                 ((when erp) (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist renaming-array hit-counts tries limits state)))
               (add-simplified-dag-to-dag-array (rest rev-dag)
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                (aset1 'renaming-array renaming-array nodenum new-nodenum-or-quotep)
                                                rewriter-rule-alist refined-assumption-alist equality-assumption-alist print-interval print
                                                memoization ;invalid if internal-context-array is non-nil but won't be used on future iterations
-                                               info tries interpreted-function-alist monitored-symbols
+                                               hit-counts tries interpreted-function-alist monitored-symbols
                                                internal-context-array
                                                context-for-all-nodes known-booleans work-hard-when-instructedp tag limits state))))))))
 
@@ -1257,7 +1257,7 @@
                                    )
        (known-booleans (known-booleans (w state)))
        ;; STEP 1: Rewrite dag by simplifying its nodes and adding to dag-array:
-       ((mv erp dag-array & & & & renaming-array info tries limits state) ;use the ignored values?!
+       ((mv erp dag-array & & & & renaming-array hit-counts tries limits state) ;use the ignored values?!
         (add-simplified-dag-to-dag-array (reverse dag) ;;we'll simplify nodes from the bottom-up
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                          (make-empty-array 'renaming-array original-dag-len)
@@ -1267,7 +1267,7 @@
                                          print-interval print
                                          (and memoizep ;hope this is okay and not too slow:
                                               (empty-memoization)) ;fixme add some option to make this bigger?
-                                         (and print (empty-info-world)) ;used to track the number of rule hits
+                                         (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                          (and print (zero-tries)) ;(if rewriter-rule-alist (zero-tries) nil) ;fixme think about this
                                          interpreted-function-alist
                                          monitored-symbols ;; (if use-internal-contextsp nil monitored-symbols) ;; (don't monitor if this is the first of two passes) -- TODO: Note that this can cause problems if we get an unexpected error (e.g., in an axe-syntaxp function) on the first pass)
@@ -1279,7 +1279,7 @@
                                          limits
                                          state))
        ((when erp) (mv erp nil limits state))
-       (- (and print (maybe-print-hit-counts print info)))
+       (- (maybe-print-hit-counts hit-counts))
        (- (and print tries (cw "(~x0 tries.)" tries))) ;print these after dropping non supps?
        (- (and print (cw ")~%"))) ; balances "(Simplifying with no internal contexts"
        (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
@@ -1334,7 +1334,7 @@
              ;; Fixup the refined-assumption-alist to refer to nodes in dag-array:
              (refined-assumption-alist (fixup-refined-assumption-alist refined-assumption-alist 'renaming-array renaming-array nil))
              ;; Simplify all the nodes:
-             ((mv erp dag-array & & & & renaming-array info tries limits state) ;use the ignored things ?!
+             ((mv erp dag-array & & & & renaming-array hit-counts tries limits state) ;use the ignored things ?!
               (add-simplified-dag-to-dag-array (reverse dag)
                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                (make-empty-array 'renaming-array dag-len-without-assumption-nodes) ;reuse this? does the default value need to be in every slot?
@@ -1343,7 +1343,7 @@
                                                equality-assumption-alist ; pairs of terms, so no nodenums to fix up (todo: optimize the representation?)
                                                print-interval print
                                                nil ;memoization (not sound to memoize between nodes when using internal contexts)  :TODO: Print a warning if this turns off memoization.
-                                               (and print (empty-info-world)) ;used to track the number of rule hits
+                                               (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                                (and print (zero-tries)) ;fixme think about this (if rewriter-rule-alist (zero-tries) nil)
                                                interpreted-function-alist monitored-symbols
                                                ;;fixme refine the internal contexts? handle equalities?:
@@ -1352,7 +1352,7 @@
              ((when erp) (mv erp nil nil state))
              (- (and print
                      (progn$ (cw "(~x0 tries.)~%" tries)
-                             (maybe-print-hit-counts print info)
+                             (maybe-print-hit-counts hit-counts)
                              (cw ")"))))
              (top-nodenum (top-nodenum dag))
              (renamed-top-node (aref1 'renaming-array renaming-array top-nodenum)))
@@ -1669,6 +1669,7 @@
                                 priorities ;the priorities to use, or :default, ignored for rule-alists ;todo: drop this arg?
                                 interpreted-function-alist
                                 monitored-symbols
+                                print-monitor-message ; whether to print that we are monitoring the monitored-symbols
                                 remove-duplicate-rulesp
                                 memoizep
                                 use-internal-contextsp
@@ -1697,6 +1698,7 @@
                                   (alistp priorities))
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-symbols)
+                              (booleanp print-monitor-message)
                               (booleanp remove-duplicate-rulesp)
                               (booleanp memoizep)
                               (booleanp use-internal-contextsp)
@@ -1745,7 +1747,7 @@
                                                 nil))
          ((when erp) (mv erp nil state))
          (refined-assumption-alist (make-refined-assumption-alist refined-assumption-exprs)) ;the nodenums mentioned are in the new-context-array!
-         (- (and monitored-symbols (cw "(Monitoring: ~x0)~%" monitored-symbols))) ;move this?
+         (- (and monitored-symbols print-monitor-message (cw "(Monitoring: ~x0)~%" monitored-symbols)))
          (priorities (if (eq :default priorities)
                          (table-alist 'axe-rule-priorities-table (w state))
                        priorities))
@@ -1789,6 +1791,7 @@
                     print
                     interpreted-function-alist
                     monitored-symbols
+                    print-monitor-message
                     remove-duplicate-rulesp
                     memoizep
                     use-internal-contextsp
@@ -1858,6 +1861,7 @@
                              :default
                              interpreted-function-alist
                              monitored-symbols
+                             print-monitor-message
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
@@ -1885,6 +1889,7 @@
                     (print 'nil)
                     (interpreted-function-alist 'nil)
                     (monitor 'nil)
+                    (print-monitor-message 't)
                     (remove-duplicate-rulesp 't)
                     (memoizep 't)
                     (use-internal-contextsp 'nil) ;should t be the default instead?
@@ -1910,6 +1915,7 @@
                 ,print
                 ,interpreted-function-alist
                 ,monitor
+                ,print-monitor-message
                 ,remove-duplicate-rulesp
                 ,memoizep
                 ,use-internal-contextsp
@@ -1941,6 +1947,7 @@
                      print
                      interpreted-function-alist
                      monitored-symbols
+                     print-monitor-message
                      remove-duplicate-rulesp
                      memoizep
                      use-internal-contextsp
@@ -2015,6 +2022,7 @@
                              :default
                              interpreted-function-alist
                              monitored-symbols
+                             print-monitor-message
                              remove-duplicate-rulesp
                              memoizep
                              use-internal-contextsp
@@ -2046,6 +2054,7 @@
                      (print 'nil)
                      (interpreted-function-alist 'nil)
                      (monitor 'nil)
+                     (print-monitor-message 't)
                      (remove-duplicate-rulesp 't)
                      (memoizep 't)
                      (use-internal-contextsp 'nil) ;should t be the default instead?
@@ -2066,6 +2075,7 @@
                  ,slack-amount ,normalize-xors ,assumptions ,print-interval ,warn-missingp ,print
                  ,interpreted-function-alist
                  ,monitor
+                 ,print-monitor-message
                  ,remove-duplicate-rulesp
                  ,memoizep
                  ,use-internal-contextsp
@@ -2126,27 +2136,27 @@
 ;; (defmacro simplify-terms-to-new-terms (terms rule-alist &key (monitor 'nil))
 ;;   `(simplify-terms-to-new-terms-fn ,terms ,rule-alist ,monitor state))
 
-;;Returns (mv erp old-term new-term state) where old-term is nil if nothing simplified.
-;; TODO: Deprecate
-(defun find-a-term-to-simplify (terms-to-simplify rule-alist monitored-rules all-terms state)
-  (declare (xargs :mode :program :stobjs state))
-  (if (endp terms-to-simplify)
-      (mv nil nil nil state) ;failed to simplify anything
-    (let ((term (first terms-to-simplify)))
-      (mv-let (erp result-dag state)
-        ;; could instead call rewrite-term...
-        (simp-term term :rule-alist rule-alist
-                   :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
-                   :monitor monitored-rules
-                   :check-inputs nil)
-        (if erp
-            (mv erp nil nil state)
-          (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
-            (if (equal result-term term)
-                ;;no change, so keep looking
-                (find-a-term-to-simplify (rest terms-to-simplify) rule-alist monitored-rules all-terms state)
-              ;;term was simplified, so stop this pass:
-              (mv nil term result-term state))))))))
+;; ;;Returns (mv erp old-term new-term state) where old-term is nil if nothing simplified.
+;; ;; TODO: Deprecate
+;; (defun find-a-term-to-simplify (terms-to-simplify rule-alist monitored-symbols all-terms state)
+;;   (declare (xargs :mode :program :stobjs state))
+;;   (if (endp terms-to-simplify)
+;;       (mv nil nil nil state) ;failed to simplify anything
+;;     (let ((term (first terms-to-simplify)))
+;;       (mv-let (erp result-dag state)
+;;         ;; could instead call rewrite-term...
+;;         (simp-term term :rule-alist rule-alist
+;;                    :assumptions (remove-equal term all-terms) ;don't use the term to simplify itself!
+;;                    :monitor monitored-symbols
+;;                    :check-inputs nil)
+;;         (if erp
+;;             (mv erp nil nil state)
+;;           (let ((result-term (dag-to-term result-dag))) ;fixme could this ever blow up?
+;;             (if (equal result-term term)
+;;                 ;;no change, so keep looking
+;;                 (find-a-term-to-simplify (rest terms-to-simplify) rule-alist monitored-symbols all-terms state)
+;;               ;;term was simplified, so stop this pass:
+;;               (mv nil term result-term state))))))))
 
 ;; ;; See also improve-invars.
 ;; ;fixme handle boolands?
@@ -2155,11 +2165,11 @@
 ;; (defun simplify-terms (terms
 ;;                        ;;print
 ;;                        rule-alist
-;;                        monitored-rules
+;;                        monitored-symbols
 ;;                        state)
 ;;   (declare (xargs :mode :program :stobjs state))
 ;;   (mv-let (erp old-term new-term state)
-;;     (find-a-term-to-simplify terms rule-alist monitored-rules terms state)
+;;     (find-a-term-to-simplify terms rule-alist monitored-symbols terms state)
 ;;     (if erp
 ;;         (mv erp nil state)
 ;;       (if (not old-term)
@@ -2167,9 +2177,9 @@
 ;;           (mv (erp-nil) terms state)
 ;;         (if (equal *t* new-term) ;todo: also check for *nil*?
 ;;             ;; if the term became t, drop it and start again (this can happen if there is redundancy between the terms)
-;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-rules state)
+;;             (simplify-terms (remove-equal old-term terms) rule-alist monitored-symbols state)
 ;;           (let ((conjuncts (get-conjuncts-of-term2 new-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-rules state)))))))
+;;             (simplify-terms (append conjuncts (remove-equal old-term terms)) rule-alist monitored-symbols state)))))))
 
 
 ;; ;; TODO: Deprecate in favor of simplify-terms-repeatedly
@@ -2177,14 +2187,14 @@
 ;; ;; others (being careful not to let two terms each simplify the other to true).
 ;; ;todo: maybe translate the terms
 ;; ;; Returns (mv erp new-terms state).
-;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-rules state)
+;; (defun simplify-terms-using-each-other-fn (terms rule-alist monitored-symbols state)
 ;;   (declare (xargs :guard (and (pseudo-term-listp terms)
 ;;                               (rule-alistp rule-alist)
-;;                               (symbol-listp monitored-rules)) ;todo: turn some of these into checks
+;;                               (symbol-listp monitored-symbols)) ;todo: turn some of these into checks
 ;;                   :stobjs state
 ;;                   :mode :program))
 ;;   (let ((terms (get-conjuncts-of-terms2 terms))) ;start by flattening all conjunctions (all new conjunctions generated also get flattened)
-;;     (simplify-terms terms rule-alist monitored-rules state)))
+;;     (simplify-terms terms rule-alist monitored-symbols state)))
 
 ;; ;; TODO: Deprecate
 ;; ;; Returns (mv erp new-terms state).
@@ -2200,7 +2210,7 @@
                             done-terms ; an accumulator, also used as assumptions
                             ;;print
                             rule-alist
-                            monitored-rules
+                            monitored-symbols
                             memoizep
                             warn-missingp
                             againp
@@ -2208,7 +2218,7 @@
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (pseudo-term-listp done-terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)
+                              (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp)
                               (booleanp againp))
@@ -2222,27 +2232,28 @@
                      :rule-alist rule-alist
                      ;; Can assume all the other terms, because, if any is false, the whole conjunction is false:
                      :assumptions (append (rest terms) done-terms) ; note that we don't use the term to simplify itself!
-                     :monitor monitored-rules
+                     :monitor monitored-symbols
+                     :print-monitor-message nil ; done once, outside this function
                      :memoizep memoizep
                      :warn-missingp warn-missingp
                      :check-inputs nil))
          ((when erp) (mv erp nil nil state))
          (result-term (dag-to-term result-dag))) ; todo: in theory, this could blow up
       (if (equal result-term term) ;; no change:
-          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-rules memoizep warn-missingp againp state)
+          (simplify-terms-once (rest terms) (cons term done-terms) rule-alist monitored-symbols memoizep warn-missingp againp state)
         (if (equal *t* result-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it:
-            (simplify-terms-once (rest terms) done-terms rule-alist monitored-rules memoizep warn-missingp againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
+            (simplify-terms-once (rest terms) done-terms rule-alist monitored-symbols memoizep warn-missingp againp state) ; we don't set againp here since the term got dropped and won't support further simplifications
           (let ((conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-rules memoizep warn-missingp t state)))))))
+            (simplify-terms-once (rest terms) (append conjuncts done-terms) rule-alist monitored-symbols memoizep warn-missingp t state)))))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-rules memoizep warn-missingp state)
+(defun simplify-terms-repeatedly-aux (passes-left terms rule-alist monitored-symbols memoizep warn-missingp state)
   (declare (xargs :guard (and (natp passes-left)
                               (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)
+                              (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp))
                   :stobjs state
@@ -2251,26 +2262,27 @@
       (prog2$ (cw "NOTE: Limit reached when simplifying terms repeatedly.~%")
               (mv (erp-nil) terms state))
     (b* (((mv erp new-terms againp state)
-          (simplify-terms-once terms nil rule-alist monitored-rules memoizep warn-missingp nil state))
+          (simplify-terms-once terms nil rule-alist monitored-symbols memoizep warn-missingp nil state))
          ((when erp) (mv erp nil state)))
       (if againp
-          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-rules memoizep warn-missingp state)
+          (simplify-terms-repeatedly-aux (+ -1 passes-left) new-terms rule-alist monitored-symbols memoizep warn-missingp state)
         (mv (erp-nil) new-terms state)))))
 
 ;; Returns (mv erp new-terms state) where NEW-TERMS is a set of terms
 ;; whose conjunction is equal to the conjunction of the TERMS.
-(defun simplify-terms-repeatedly (terms rule-alist monitored-rules memoizep warn-missingp state)
+(defun simplify-terms-repeatedly (terms rule-alist monitored-symbols memoizep warn-missingp state)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (rule-alistp rule-alist)
-                              (symbol-listp monitored-rules)
+                              (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp))
                   :stobjs state
                   :mode :program))
-  (prog2$ (and warn-missingp (print-missing-rules monitored-rules rule-alist)) ; do this just once, here
+  (progn$ (and warn-missingp (print-missing-rules monitored-symbols rule-alist)) ; do this just once, here
+          (and monitored-symbols (cw "(Monitoring: ~x0)~%" monitored-symbols))
           (let ((len (len terms)))
             ;; We add 1 so that if len=1 we get at least 2 passes:
-            (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-rules memoizep
+            (simplify-terms-repeatedly-aux (+ 1 (* len len)) terms rule-alist monitored-symbols memoizep
                                            nil ; don't warn again about missing monitored rules
                                            state))))
 
@@ -2300,6 +2312,7 @@
                           print
                           interpreted-function-alist
                           monitored-symbols
+                          print-monitor-message
                           remove-duplicate-rulesp
                           memoizep
                           ;; use-internal-contextsp
@@ -2354,6 +2367,7 @@
                              :default
                              interpreted-function-alist
                              monitored-symbols
+                             print-monitor-message
                              remove-duplicate-rulesp
                              memoizep
                              nil ;use-internal-contextsp
@@ -2383,6 +2397,7 @@
                           (print 'nil)
                           (interpreted-function-alist 'nil)
                           (monitor 'nil)
+                          (print-monitor-message 't)
                           (remove-duplicate-rulesp 't)
                           (memoizep 'nil)
                           ;; use-internal-contextsp
@@ -2407,6 +2422,7 @@
                       ,print
                       ,interpreted-function-alist
                       ,monitor
+                      ,print-monitor-message
                       ,remove-duplicate-rulesp
                       ,memoizep
                       ;; nil ;;use-internal-contextsp
@@ -2440,6 +2456,7 @@
                                             print
                                             interpreted-function-alist
                                             monitored-symbols
+                                            print-monitor-message
                                             remove-duplicate-rulesp
                                             memoizep
                                             ;; use-internal-contextsp
@@ -2469,6 +2486,7 @@
                        print
                        interpreted-function-alist
                        monitored-symbols
+                       print-monitor-message
                        remove-duplicate-rulesp
                        memoizep
                        ;; nil ;use-internal-contextsp
@@ -2499,6 +2517,7 @@
                                             (print 'nil)
                                             (interpreted-function-alist 'nil)
                                             (monitor 'nil)
+                                            (print-monitor-message 't)
                                             (remove-duplicate-rulesp 't)
                                             (memoizep 'nil)
                                             ;; use-internal-contextsp
@@ -2525,6 +2544,7 @@
                                         ,print
                                         ,interpreted-function-alist
                                         ,monitor
+                                        ,print-monitor-message
                                         ,remove-duplicate-rulesp
                                         ,memoizep
                                         ;;nil ;;use-internal-contextsp

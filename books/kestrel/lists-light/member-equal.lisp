@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function member-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -203,3 +203,11 @@
 (defthm member-equal-of-nth-same
   (implies (< (nfix n) (len x))
            (member-equal (nth n x) x)))
+
+(defthm member-equal-of-singleton-constant-iff
+  (implies (and (syntaxp (quotep lst))
+                (= 1 (len lst)))
+           (iff (member-equal x lst)
+                (equal x (first lst))))
+  :hints (("Goal" :expand ((member-equal x lst)
+                           (len (cdr lst))))))

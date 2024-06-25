@@ -23,6 +23,7 @@
 ;; TODO: Some of these are not BV rules.
 
 ;(include-book "bv-rules-axe0") ;drop?
+(include-book "ihs/basic-definitions" :dir :system) ; for logmask
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)
@@ -659,7 +660,7 @@
                 (posp size))
            (equal (logext size x)
                   (logext size (trim size x))))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -924,19 +925,18 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-bind-free-dag
+(defthm not-equal-constant-when-unsigned-byte-p-bind-free-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (syntaxp (quotep xsize))
                 (not (unsigned-byte-p xsize k))
                 (unsigned-byte-p-forced xsize x))
-           (equal (equal k x)
-                  nil))
+           (not (equal k x)))
   :rule-classes nil ; because of xsize
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;a cheap case of logext-identity
-(defthmd logext-identity-when-usb-smaller-dag
+(defthmd logext-identity-when-usb-smaller-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'size2 dag-array) '(size2))
                 (< size2 n)
                 (unsigned-byte-p-forced size2 x)
@@ -952,16 +952,14 @@
 (defthmd rationalp-when-bv-operator
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
-           (equal (rationalp x)
-                  t))
+           (rationalp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;rename axe-
 (defthmd acl2-numberp-when-bv-operator
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
-           (equal (acl2-numberp x)
-                  t))
+           (acl2-numberp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 (defthmd acl2-numberp-of-logext
@@ -1044,7 +1042,7 @@
            (equal (bvlt size x k)
                   (not (bvlt size (+ -1 k) x))))
   :hints (("Goal" :cases ((Natp size))
-           :in-theory (e/d (bvlt bvchop-of-sum-cases) (BVLT-OF-PLUS-ARG1)))))
+           :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
 
 ;ex: strengthen 10<x to 11<=x
 (defthmd bvlt-of-constant-arg2
@@ -1054,9 +1052,9 @@
                 (integerp k))
            (equal (bvlt size k x)
                   (not (bvlt size x (+ 1 k)))))
-  :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) (BVLT-OF-PLUS-ARG2)))))
+  :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
 
-(defthmd bvlt-of-max-arg3
+(defthmd bvlt-of-max-arg3-constant-version-axe
   (implies (and (axe-rewrite-objective 't)
                 (syntaxp (and (quotep k)
                               (quotep size)))
@@ -1108,7 +1106,6 @@
            (not (< x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-
 (defthmd bvlt-of-constant-when-too-narrow
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1117,10 +1114,8 @@
                 (natp size)
                 (unsigned-byte-p-forced xsize x)
                 )
-           (equal (bvlt size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
-
 
 (defthmd bvlt-when-bound-dag
   (implies (and (syntaxp (quotep k))
@@ -1129,8 +1124,7 @@
                 (natp size)
                 (bvle size (expt 2 xsize) k)
                 (unsigned-byte-p-forced xsize x))
-           (equal (bvlt size x k)
-                  t))
+           (bvlt size x k))
   :hints (("Goal" :use (:instance bvlt-when-bound)
            :in-theory (disable bvlt-when-bound))))
 
@@ -1239,8 +1233,7 @@
                    (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
    :hints (("Goal" :expand ((SLICE (+ -1 SIZE) SIZE2 (+ X Y)))
             :in-theory (e/d (SLICE BVPLUS SLICE-TOO-HIGH-IS-0 SLICE-WHEN-VAL-IS-NOT-AN-INTEGER LOGTAIL-OF-BVCHOP unsigned-byte-p-forced)
-                            (;anti-bvplus
-                             LOGTAIL-OF-BVCHOP-BECOMES-SLICE BVCHOP-OF-LOGTAIL-BECOMES-SLICE SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL-BECOMES-SLICE
+                            (LOGTAIL-OF-BVCHOP-BECOMES-SLICE BVCHOP-OF-LOGTAIL-BECOMES-SLICE SLICE-BECOMES-BVCHOP BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                                               BVCHOP-OF-LOGTAIL)))))
 
 (local (in-theory (enable unsigned-byte-p-forced)))
@@ -1319,7 +1312,7 @@
 ;;                 (natp size))
 ;;            (equal (slice high low x)
 ;;                   (slice high low (bvchop + 1 high) x)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) (anti-bvplus)))))
+;;   :hints (("Goal" :in-theory (e/d (bvplus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) ()))))
 
 (defthmd bvif-with-small-arg1
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1548,8 +1541,7 @@
   :hints (("Goal"
            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P unsigned-byte-p-forced
                                    expt-of-+)
-                           (;anti-bvplus
-                            ;;<-OF-EXPT-AND-EXPT
+                           (;;<-OF-EXPT-AND-EXPT
                             )))))
 
 ;; ;y is a free var - yuck!
@@ -1573,7 +1565,7 @@
 ;;                            (i XSIZE)
 ;;                            (j ysize))
 ;;            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P)
-;;                            (anti-bvplus)))))
+;;                            ()))))
 
 ;;    :hints (("Goal" :use (:instance bvplus-tighten-better)
 ;;             :in-theory (disable bvplus-tighten-better
@@ -1583,7 +1575,7 @@
 ;;             :use (:instance sum-bound-lemma)
 ;; ;          :expand (UNSIGNED-BYTE-P SIZE (+ X Y))
 ;;             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
-;;                                     ) (anti-bvplus ;max
+;;                                     ) ( ;max
 ;;                                     sum-bound-lemma))))
 
 (defthmd bvplus-tighten-hack2
@@ -1603,10 +1595,8 @@
             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
                                     SLICE-TOO-HIGH-IS-0
                                     expt-of-+
-                                    ) (;anti-bvplus ;max
+                                    ) ( ;max
                                     sum-bound-lemma)))))
-
-
 
 ;free var rule from usb to integerp of the index?
 
@@ -1958,14 +1948,14 @@
                   x))
   :hints (("Goal" :in-theory (enable bvsx getbit-too-high))))
 
-;gen
+;gen, rename
 (defthmd sbvlt-of-0-when-shorter2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize 32)
                 (natp xsize)
                 (unsigned-byte-p-forced xsize x))
-           (equal (sbvlt 32 x 0) ;gen the 0
-                  nil))
+           (not (sbvlt 32 x 0) ;gen the 0
+                ))
   :hints (("Goal" :use (:instance sbvlt-of-0-when-shorter2)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-of-0-when-shorter2)))))
 
@@ -2227,6 +2217,7 @@
 
 (defthmd equal-becomes-bvequal-axe-1-strong
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (< 0 xsize) ; prevent loops (unsigned-byte-p of 0 can go to equal 0, which triggers this rule again)
                 (unsigned-byte-p-forced xsize x))
            (equal (equal x y)
                   (if (unsigned-byte-p xsize y)
@@ -2236,6 +2227,7 @@
 
 (defthmd equal-becomes-bvequal-axe-2-strong
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< 0 ysize) ; prevent loops (unsigned-byte-p of 0 can go to equal 0, which triggers this rule again)
                 (unsigned-byte-p-forced ysize y))
            (equal (equal x y)
                   (if (unsigned-byte-p ysize x)
@@ -2245,12 +2237,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; not really bv rules...
-;; Only needed by Axe
-
-(defthmd integerp-of-logand (integerp (logand x y)))
-(defthmd integerp-of-logior (integerp (logior x y)))
-(defthmd integerp-of-logxor (integerp (logxor x y)))
-
-(def-constant-opener acl2::logmask$inline)
-(def-constant-opener acl2::binary-logand)
+;rename
+;version for <=?
+;not a bv rule
+(defthmd equal-when-bound-dag
+  (implies (and (syntaxp (quotep y))
+                ;(equal (< free x) t) ;awkward
+                (< free x)
+                (syntaxp (quotep free))
+                (<= y free))
+           (not (equal y x))))

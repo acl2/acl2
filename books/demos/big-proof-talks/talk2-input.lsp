@@ -241,9 +241,9 @@
           (lequal (isort (isort x)) (isort x)))
 
 (defun terminal-marker (x)
-         (cond
-          ((atom x) x)
-          (t (terminal-marker (cdr x)))))
+         (if (consp x)
+             (terminal-marker (cdr x))
+           x))
 
 (defthm terminal-marker-isort
          (equal (terminal-marker (isort x))

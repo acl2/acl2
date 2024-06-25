@@ -161,6 +161,10 @@
                        (integerp size1))))
   :hints (("Goal" :in-theory (enable bvchop UNSIGNED-BYTE-P))))
 
+(defthm bitp-of-bvchop-of-1-type
+  (bitp (bvchop 1 x))
+  :rule-classes :type-prescription)
+
 ;bozo drop any special cases
 (defthm bvchop-bound
   (implies (and (syntaxp (and (quotep k)
@@ -877,3 +881,24 @@
                 (integerp y))
            (equal (bvchop size (+ x (* (expt 2 size) y)))
                   (bvchop size x))))
+
+;rename
+(defthmd bvchop-when-negative-lemma
+  (implies (and (< x 0)
+                (<= (- (expt 2 size)) x)
+                (integerp x)
+                (natp size))
+           (equal (bvchop size x)
+                  (+ (expt 2 size) x)))
+  :hints (("Goal"
+           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
+           :in-theory (enable bvchop unsigned-byte-p))))
+
+(defthmd bvchop-when-signed-byte-p
+  (implies (and (signed-byte-p size x)
+                (posp size))
+           (equal (bvchop size x)
+                  (if (< x 0)
+                      (+ x (expt 2 size))
+                    x)))
+  :hints (("Goal" :in-theory (enable signed-byte-p bvchop))))

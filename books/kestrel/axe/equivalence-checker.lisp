@@ -19,6 +19,7 @@
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
 (include-book "sweep-and-merge-support")
 (include-book "kestrel/alists-light/assoc-equal" :dir :system)
+(include-book "kestrel/alists-light/clear-keys" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
@@ -31,7 +32,7 @@
 (include-book "kestrel/utilities/keyword-value-lists2" :dir :system)
 (include-book "kestrel/utilities/subtermp" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
-(include-book "kestrel/alists-light/clear-key" :dir :system)
+(include-book "kestrel/alists-light/remove-assoc-equal" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/fresh-names2" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
@@ -60,7 +61,7 @@
 (include-book "kestrel/bv/arith" :dir :system)
 (include-book "kestrel/bv-lists/packing" :dir :system) ;bring in some stuff in axe-runes
 (include-book "unify-term-and-dag-with-name")
-(include-book "rules2") ;drop?
+;(include-book "rules2") ;drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "lists-axe")
 (include-book "group-axe")
@@ -69,8 +70,7 @@
 (include-book "replace-node")
 (include-book "prover2")
 (include-book "extract-dag-array")
-(include-book "kestrel/lists-light/append" :dir :system)
-(include-book "kestrel/lists-light/nthcdr" :dir :system)
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (include-book "kestrel/lists-light/last-elem" :dir :system)
 ;(include-book "kestrel/lists-light/update-nth" :dir :system) ;brings in consp-of-update-nth
 (include-book "kestrel/lists-light/cons" :dir :system) ;for equal-of-cons
@@ -86,6 +86,7 @@
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -101,13 +102,6 @@
                 (natp n))
            (not (< (maxelem x) (nth n x))))
   :hints (("Goal" :in-theory (enable maxelem (:i nth)))))
-
-;;move
-(defthm nat-listp-of-add-to-end
-  (implies (and (nat-listp lst)
-                (natp val))
-           (nat-listp (add-to-end val lst)))
-  :hints (("Goal" :in-theory (enable add-to-end))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1021,7 +1015,7 @@
                                ;;if we passed in a test-case-array, just look-up the arg vals
                                (get-vals-of-args dargs test-case-array-name test-case-array)
                              ;;no test-case-array was passed in, so we have to compute the whole test case:
-                             (let* ((dargs-to-eval (keep-atoms dargs)))
+                             (let* ((dargs-to-eval (keep-nodenum-dargs dargs)))
                                (if (not dargs-to-eval)
                                    ;; args were all constants:
                                    dargs
@@ -3530,13 +3524,6 @@
                 (terms-equated-to target (rest explans)))
         (terms-equated-to target (rest explans))))))
 
-(defun clear-keys (keys alist)
-  (declare (xargs :guard (and (true-listp keys)
-                              (alistp alist))))
-  (if (endp keys)
-      alist
-    (clear-keys (rest keys) (clear-key (first keys) alist))))
-
 (skip-proofs
  (mutual-recursion
   ;;the target is a tree.  first we try to express the whole thing.  then we
@@ -3682,7 +3669,7 @@
            (try-to-explain-terms-aux (cdr term-traces-alist) whole-term-traces-alist claims-acc explanation-graph formal-to-old-var-alist components-not-to-try-to-explain unchanged-components)
          (let* ((traces (cdr entry))
                 ;; we don't allow term to explain itself: ;fixme could we use the ignore-alist for this? ;fixme what about subterms?
-                (whole-term-traces-alist-without-term (clear-key term whole-term-traces-alist))
+                (whole-term-traces-alist-without-term (remove-assoc-equal term whole-term-traces-alist))
                 (explanation (try-to-express-whole-target-with-any-candidate term
                                                                              traces
                                                                              whole-term-traces-alist-without-term
@@ -3811,7 +3798,7 @@
                                                      ;;ffixme what about using a subcomponent of one component to explain a different component (or subcomponent)?
                                                      (append component-term-traces-alist
                                                              ;;don't use term to explain one of its components:
-                                                             (clear-key term whole-term-traces-alist) ;whole-term-traces-alist-without-term
+                                                             (remove-assoc-equal term whole-term-traces-alist) ;whole-term-traces-alist-without-term
                                                              )
                                                      claims-acc
                                                      explanation-graph formal-to-old-var-alist unchanged-components)
@@ -3821,7 +3808,7 @@
                   (length-traces (len-list-list traces))
                   ;;don't use term to explain its own length: ffixme what about a component of term???
                   (length-explanation (try-to-express-whole-target-with-any-candidate length-term length-traces
-                                                                                      (clear-key term whole-term-traces-alist) ;;whole-term-traces-alist-without-term (consider not clearing?)
+                                                                                      (remove-assoc-equal term whole-term-traces-alist) ;;whole-term-traces-alist-without-term (consider not clearing?)
                                                                                       (get-terms-to-ignore length-term explanation-graph) ;(lookup-equal length-term terms-to-ignore-alist)
                                                                                       formal-to-old-var-alist unchanged-components))
                   (- (and length-explanation (cw "(Can explain ~x0 as ~x1.)~%" length-term length-explanation)))
@@ -7620,7 +7607,7 @@
                                  :in-theory (disable natp natp-of-max-array-elem2-when-depth-arrayp)))
                   :stobjs state))
   (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
        ;;(- (and print (cw ")~%")))
        ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
        ;; TODO: Option to suppress this for speed?
@@ -7726,7 +7713,7 @@
                    (non-tagged-supporters-with-rec-fns-to-handle-aux (rest nodenums) miter-array-name miter-array tag-array-name tag-array done-array-name done-array acc state)
                  ;;function call (add the function to the accumulator, mark as done, and add children to the worklist):
                  (non-tagged-supporters-with-rec-fns-to-handle-aux
-                  (append (keep-atoms (dargs expr)) ;ffixme could pass in an acc to keep-atoms
+                  (append (keep-nodenum-dargs (dargs expr)) ;ffixme could pass in an acc to keep-nodenum-dargs
                           (rest nodenums))
                   miter-array-name miter-array tag-array-name tag-array
                   done-array-name
@@ -7735,12 +7722,6 @@
                       (add-to-set-eql nodenum acc)
                     acc)
                   state))))))))))
-
-(local
-  (defthm nat-listp-of-keep-atoms
-    (implies (darg-listp dargs)
-             (nat-listp (keep-atoms dargs)))
-    :hints (("Goal" :in-theory (enable keep-atoms)))))
 
 (verify-guards non-tagged-supporters-with-rec-fns-to-handle-aux)
 
@@ -8248,7 +8229,7 @@
                 (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
               (and (pure-fn-call-exprp expr)
                    ;;we checked nodenum, and now we have to check its children (the non-quotep args):
-                   (nodes-are-purep (append-atoms (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
+                   (nodes-are-purep (append-nodenum-dargs (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
                                     (aset1 'done-array-temp done-array nodenum t))))))))))
 
 ;; Checks whether nodenum and all of its supporters are pure.
@@ -9721,7 +9702,7 @@
         (mv (erp-nil) nil state result-array-stobj)
       ;;and there must be a numcdrs formal such that the lst-formal is only used inside:
       ;; (endp (nthcdr <numcdrs-formal> <lst-formal>)) and (car (nthcdr <numcdrs-formal> <lst-formal>))
-      (let ((update-expr-alist-for-other-formals (clear-key lst-formal formal-update-expr-alist)))
+      (let ((update-expr-alist-for-other-formals (remove-assoc-equal lst-formal formal-update-expr-alist)))
         (find-numcdrs-formal-for-tail-rec-consumer
          update-expr-alist-for-other-formals
          (cons exit-test-expr (cons base-case-expr (strip-cdrs update-expr-alist-for-other-formals)))
@@ -9752,7 +9733,7 @@
 ;;                   lst-formal)))
 ;;      ;;and there must be a numcdrs formal such that the lst-formal is only used inside:
 ;;      ;; (endp (nthcdr <numcdrs-formal> <lst-formal>)) and (car (nthcdr <numcdrs-formal> <lst-formal>))
-;;      (let ((update-expr-alist-for-other-formals (clear-key lst-formal formal-update-expr-alist)))
+;;      (let ((update-expr-alist-for-other-formals (remove-assoc-equal lst-formal formal-update-expr-alist)))
 ;;        (find-numcdrs-formal-for-tail-rec-consumer
 ;;         update-expr-alist-for-other-formals
 ;;         (cons exit-test-expr (cons base-case-expr (strip-cdrs update-expr-alist-for-other-formals)))
@@ -9886,7 +9867,7 @@
        ((when erp) (mv erp nil nil state result-array-stobj))
        (formal-update-dag-alist (pairlis$-fast formals update-dags))
        ;;the alist for formals other than the numcdrs and lst formals:
-       (other-formal-update-dag-alist (clear-key numcdrs-formal (clear-key lst-formal formal-update-dag-alist)))
+       (other-formal-update-dag-alist (remove-assoc-equal numcdrs-formal (remove-assoc-equal lst-formal formal-update-dag-alist)))
        (dags-to-check (cons exit-test-dag
                             (cons base-case-dag
                                   (strip-cdrs other-formal-update-dag-alist))))
@@ -10144,7 +10125,7 @@
             (producer-formal-update-dag-alist (pairlis$ producer-formals producer-update-dags)) ;keeps the same order
             (consumer-formal-update-dag-alist (clear-keys (list lst-formal numcdrs-formal)
                                                          consumer-formal-update-dag-alist))
-            (producer-formal-update-dag-alist (clear-key produced-formal producer-formal-update-dag-alist))
+            (producer-formal-update-dag-alist (remove-assoc-equal produced-formal producer-formal-update-dag-alist))
             (remaining-consumer-formals (strip-cars consumer-formal-update-dag-alist))
             (remaining-producer-formals (strip-cars producer-formal-update-dag-alist))
             (new-fn (packnew 'composition-of-- consumer-fn '--and-- producer-fn))
@@ -10408,7 +10389,7 @@
                                       nil    ;print-interval
                                       :brief ;;nil ;; print
                                       nil    ;memoization
-                                      (and print (empty-info-world))
+                                      (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                                       (and print (zero-tries))
                                       interpreted-function-alist
                                       monitored-symbols ;;just monitor the newest rules??
@@ -10418,7 +10399,7 @@
                                       nil ;limits todo:support this?
                                       state))
        ((when erp) (mv erp nil dag-array dag-len state result-array-stobj))
-       (- (and print (maybe-print-hit-counts print info)))
+       (- (maybe-print-hit-counts info))
        (- (and tries (cw "(~x0 tries.)" tries)))
        )
     (mv (erp-nil) miter-nodenum-or-quotep dag-array dag-len state result-array-stobj)))
@@ -15683,7 +15664,7 @@
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
                         ;; we show the simplified miter - that should contain everything interesting from the dag
-                        (print-dag-array-nodes-and-supporters miter-array-name miter-array (list smaller-nodenum larger-nodenum)))))
+                        (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum)))))
 ;fixme finish this.  the point was not to merge two nodes of different array types - but get-type-of-nodenum may sometimes give unfortunate errors here.
 ;could look at how the two nodes are used.  if they are not used as arrays (or equated to arrays?) then it's okay to merge them?
         ;; (let* ((smaller-node-type (get-type-of-nodenum smaller-nodenum miter-array-name miter-array
@@ -20156,10 +20137,11 @@
                        ,@(clear-key-in-keyword-value-list :test-case-count
                                                           (clear-key-in-keyword-value-list :input-type-alist rest))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
 ;; Returns (mv erp event state rand result-array-stobj).
-;; TODO: Auto-generate the name
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
@@ -20175,13 +20157,16 @@
                              normalize-xors
                              interpreted-function-alist
                              check-vars
+                             prove-theorem
                              local
                              whole-form
                              state rand result-array-stobj)
   (declare (xargs :guard (and (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
-                              (test-case-type-alistp types)
+                              (or (eq types :bits)
+                                  (eq types :bytes)
+                                  (test-case-type-alistp types))
                               (symbolp name)
                               ;; print
                               (booleanp debug)
@@ -20196,6 +20181,7 @@
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
                               (booleanp check-vars)
+                              (booleanp prove-theorem)
                               (booleanp local))
                   :mode :program
                   :stobjs (state rand result-array-stobj)))
@@ -20212,11 +20198,12 @@
        ((when erp) (mv erp nil state rand result-array-stobj))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand result-array-stobj))
-       ;; Check vars:
-       (vars1 (and check-vars (merge-sort-symbol< (dag-vars dag1))))
-       (vars2 (and check-vars (merge-sort-symbol< (dag-vars dag2))))
+       ;; Compute and check var lists:
+       (vars1 (merge-sort-symbol< (dag-vars dag1)))
+       (vars2 (merge-sort-symbol< (dag-vars dag2)))
        ((when (and check-vars
-                   (not (perm vars1 vars2))))
+                   ;; can use equal here since the lists are sorted and duplicate-free:
+                   (not (equal vars1 vars2))))
         (and (not (subsetp-eq vars1 vars2))
              (er hard? 'prove-equivalence-fn "The first dag has vars, ~x0, not in the second dag.~%" (set-difference-eq vars1 vars2)))
         (and (not (subsetp-eq vars2 vars1))
@@ -20241,6 +20228,18 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand result-array-stobj))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
+       ;; Handle the special values :bits and :bytes for the types:
+       (types (if (eq :bits types)
+                  (let ((all-vars (merge-symbol< vars1 vars2 nil) ; usually the same as just the vars1.
+                                  ))
+                    (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len all-vars))
+                            (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 1)))))
+                (if (eq :bytes types)
+                    (let ((all-vars (merge-symbol< vars1 vars2 nil) ; usually the same as just the vars1.
+                                    ))
+                      (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len all-vars))
+                              (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 8)))))
+                  types)))
        ;; Try to prove the equality:
        ((mv erp provedp state rand result-array-stobj)
         (prove-miter-core equality-dag
@@ -20271,7 +20270,7 @@
                           ;; nil ; treat-as-purep
                           debug
                           state rand result-array-stobj))
-       ;; Remove the tempp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
+       ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
                            (mv erp nil state rand result-array-stobj)))
@@ -20279,23 +20278,29 @@
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand result-array-stobj)))
        (- (cw "Proof of equivalence succeeded.~%"))
-       ;; make the theorem (TODO: Make this optional):
-       (term1 (dag-or-term-to-term dag-or-term1 state))
-       (term2 (dag-or-term-to-term dag-or-term2 state))
-       (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
-                 (defthmd ,miter-name
-                   (implies (and ,@assumptions)
-                            (equal ,term1
-                                   ,term2)))))
-       ;; The event may include a theorem:
-       (event (if types ;todo: remove this restriction
-                  (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
-                          `(progn))
-                defthm))
-       ;; The event includes a table event for redundancy checking:
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       (prove-theorem (and prove-theorem
+                           (if  types ;todo: remove this restriction
+                                (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
+                                        nil)
+                             t)))
+       ;; Maybe add the theorem to the progn:
+       (event (if prove-theorem
+                  (let* ((term1 (dag-or-term-to-term dag-or-term1 state))
+                         (term2 (dag-or-term-to-term dag-or-term2 state))
+                         (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
+                                    (defthmd ,miter-name
+                                      (implies (and ,@assumptions)
+                                               (equal ,term1
+                                                      ,term2))))))
+                    (extend-progn event defthm))
+                event))
+       ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
        (event (extend-progn event `(value-triple ',miter-name)))
+       ;; Make the whole thing local if instructed:
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand result-array-stobj)))
 
@@ -20306,37 +20311,41 @@
 
 @({
      (prove-equivalence
-        dag1                   ;; The first DAG or term to compare
-        dag2                   ;; The second DAG or term to compare
-        [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
-        [:assumptions]         ;; Assumptions to use when proving equivalence
-        [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
-        [:types]               ;; An alist from variables to their types, used to generate test cases
-        [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
-        [:name]                ;; A name to assign to the equivalence term, if desired
-        [:debug]               ;; Leave temp files around for debugging, Default: nil
-        [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
-        [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
-        [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
-        [:monitor]             ;; Rule names (symbols) to monitor when rewriting
-        [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
-        [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
-        [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
+         dag1                   ;; The first DAG or term to compare
+         dag2                   ;; The second DAG or term to compare
+         [:assumptions]         ;; Assumptions to use when proving equivalence
+         [:types]               ;; An alist from variables to their types, or one of the special values :bits or :bytes.  Used to generate test cases.
+         [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
+         [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
+         [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
+         [:name]                ;; A name to assign to the equivalence term, if desired
+         [:debug]               ;; Leave temp files around for debugging, Default: nil
+         [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
+         [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
+         [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
+         [:monitor]             ;; Rule names (symbols) to monitor when rewriting
+         [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
+         [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
+         [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
+         [:check-vars] ;; whether to check that the two DAGs/terms have exactly the same vars
+         [:prove-theorem] ;; whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)
+         [:local] ;; whether to make the generated events local
         )
 })
 
 <p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
+;; TODO: Use defmacrodoc to define this (see xdoc above).
 (defmacro prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
                                     &key
-                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
-                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (assumptions 'nil) ;assumed when rewriting the miter
-                                    (print ':brief)
                                     (types 'nil) ;gives types to the vars so we can generate tests for sweeping
+                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
+                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (print ':brief)
                                     (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
@@ -20347,6 +20356,7 @@
                                     (normalize-xors 't)
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
+                                    (prove-theorem 'nil)
                                     (local 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
@@ -20365,6 +20375,7 @@
                                            ',normalize-xors
                                            ,interpreted-function-alist
                                            ,check-vars
+                                           ,prove-theorem
                                            ,local
                                            ',whole-form
                                            state rand result-array-stobj)))

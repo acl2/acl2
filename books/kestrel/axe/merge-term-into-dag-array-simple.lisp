@@ -73,26 +73,13 @@
                               nth-of-0
                               nth-when-not-consp-cheap))))
 
-(defthm lookup-equal-forward-to-assoc-equal
-  (implies (lookup-equal key alist)
-           (assoc-equal key alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-;dup
-(defthm assoc-equal-when-lookup-equal-cheap
-  (implies (lookup-equal term var-replacement-alist)
-           (assoc-equal term var-replacement-alist))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
 ;dup
 (defthm dargp-less-than-of-lookup-equal
   (implies (and (lookup-equal term var-replacement-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist)
                                                 dag-len))
            (dargp-less-than (lookup-equal term var-replacement-alist) dag-len))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs))))
 
 (defthmd consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
@@ -115,12 +102,6 @@
   :hints (("Goal" :induct t
            :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
-
-;dup
-(defthmd not-equal-of-len-and-1-when-dargp
-  (implies (dargp x)
-           (not (equal (len x) 1)))
-  :hints (("Goal" :in-theory (enable dargp myquotep))))
 
 ;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
@@ -517,6 +498,7 @@
                                                       ALL-MYQUOTEP-WHEN-DARG-LISTP)
                            (natp dargp pseudo-term-listp pseudo-termp)))))
 
+;; how does this differ from the return type theorem?
 (defthm wf-dagp-of-merge-term-into-dag-array-simple
   (implies (and (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -556,6 +538,78 @@
              (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :use (:instance merge-terms-into-dag-array-simple-return-type)
            :in-theory (disable merge-terms-into-dag-array-simple-return-type))))
+
+(defthm pseudo-dag-arrayp-of-merge-terms-into-dag-array-simple
+  (implies (and (pseudo-term-listp terms)
+                (true-listp terms)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                (not (mv-nth 0 (merge-terms-into-dag-array-simple
+                                terms
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                ))))
+           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (merge-terms-into-dag-array-simple
+              terms
+              var-replacement-alist
+              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+              )
+             (declare (ignore erp nodenums-or-quoteps dag-parent-array dag-constant-alist dag-variable-alist))
+             (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
+  :hints (("Goal" :use wf-dagp-of-merge-terms-into-dag-array-simple
+           :in-theory (disable wf-dagp-of-merge-terms-into-dag-array-simple
+                               merge-terms-into-dag-array-simple-return-type))))
+
+(defthm alen1-of-of-merge-terms-into-dag-array-simple-parent-array
+  (implies (and (pseudo-term-listp terms)
+                (true-listp terms)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                (not (mv-nth 0 (merge-terms-into-dag-array-simple
+                                terms
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                ))))
+           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (merge-terms-into-dag-array-simple
+              terms
+              var-replacement-alist
+              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+              )
+             (declare (ignore erp nodenums-or-quoteps dag-len dag-constant-alist dag-variable-alist))
+             (equal (alen1 dag-parent-array-name dag-parent-array)
+                    (alen1 dag-array-name dag-array))))
+  :hints (("Goal" :use wf-dagp-of-merge-terms-into-dag-array-simple
+           :in-theory (disable wf-dagp-of-merge-terms-into-dag-array-simple
+                               merge-terms-into-dag-array-simple-return-type))))
+
+(defthm bounded-dag-parent-arrayp-of-merge-terms-into-dag-array-simple
+  (implies (and (pseudo-term-listp terms)
+                (true-listp terms)
+                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+                (not (mv-nth 0 (merge-terms-into-dag-array-simple
+                                terms
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                ))))
+           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (merge-terms-into-dag-array-simple
+              terms
+              var-replacement-alist
+              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+              )
+             (declare (ignore erp nodenums-or-quoteps dag-array dag-constant-alist dag-variable-alist))
+             (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)))
+  :hints (("Goal" :use wf-dagp-of-merge-terms-into-dag-array-simple
+           :in-theory (disable wf-dagp-of-merge-terms-into-dag-array-simple
+                               merge-terms-into-dag-array-simple-return-type))))
+
+
 
 (defthm-flag-merge-term-into-dag-array-simple
   (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-simple-dummy

@@ -376,19 +376,19 @@
                        (:REWRITE APPLY$-PRIM-META-FN-EV-CONSTRAINT-8)
                        (:REWRITE ; df0
                         #-non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-968
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-970
                         #+non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-972)
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-974)
                        (:REWRITE ; df1
                         #-non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-969
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-971
                         #+non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-973)
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-975)
                        (:REWRITE ; from-df
                         #-non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-186
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-187
                         #+non-standard-analysis
-                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-189)
+                        APPLY$-PRIM-META-FN-EV-CONSTRAINT-190)
                        n-car-cadr-caddr-etc-opener
                        (natp)
                        ;; apply$-prim-meta-fn-ev-constraint-1

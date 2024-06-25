@@ -1,6 +1,6 @@
 ; A lightweight function to read a channel's contents into a list of bytes
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,9 @@
 (in-package "ACL2")
 
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 (local (include-book "read-byte-dollar"))
 
 (local (in-theory (disable assoc-equal
@@ -47,29 +49,22 @@
   (implies (state-p state)
            (state-p (mv-nth 1 (read-bytes-from-channel channel acc state)))))
 
-;todo
-;; (defthm open-input-channels-of-mv-nth-1-of-read-bytes-from-channel
-;;   (implies (and
-;;                 ;(open-input-channel-p channel typ state)
-;;                 ;; (true-listp acc)
-;;                 (state-p1 state))
-;;            (equal (open-input-channels (mv-nth 1 (read-bytes-from-channel channel acc state)))
-;;                   (open-input-channels state)))
-;;   :hints (("Goal" :in-theory (enable read-bytes-from-channel
-;;                                      open-input-channel-p
-;;                                      open-input-channel-p1
-;;                                      channel-contents))))
-
 (defthm true-listp-of-mv-nth-0-of-read-bytes-from-channel
   (implies (true-listp acc)
            (true-listp (mv-nth 0 (read-bytes-from-channel channel acc state))))
   :hints (("Goal" :in-theory (enable read-bytes-from-channel))))
 
+;; todo: also add a rule about byte-listp
 (defthm unsigned-byte-listp-of-mv-nth-0-of-read-bytes-from-channel
   (implies (unsigned-byte-listp 8 acc)
            (unsigned-byte-listp 8 (mv-nth 0 (read-bytes-from-channel channel acc state))))
   :hints (("Goal" :in-theory (enable read-bytes-from-channel
                                      unsigned-byte-listp))))
+
+(defthm byte-listp-of-mv-nth-0-of-read-bytes-from-channel
+  (implies (byte-listp acc)
+           (byte-listp (mv-nth 0 (read-bytes-from-channel channel acc state))))
+  :hints (("Goal" :in-theory (enable read-bytes-from-channel byte-listp))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-bytes-from-channel
   (implies (open-input-channel-p1 channel typ state)

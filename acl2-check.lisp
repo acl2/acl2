@@ -97,7 +97,8 @@ is using two characters to indicate a new line?"))
 ; Lisps but is 13 in [now-obsolete] MCL!)  Thus, the soundness of ACL2 rests on
 ; a caveat that all books are certified using the same Lisp image.  When we say
 ; ``same lisp image'' we don't mean the same exact process necessarily, but
-; rather, an invocation of the same saved image.  Another reason for such a
+; rather, an invocation of the same saved image.  Character operations can
+; differ between Lisps, too; see :DOC soundness.  Another reason for such a
 ; caveat, independent of the character-reading issue, is that different saved
 ; images may be tied into different compilers, thus making the object files of
 ; the books incompatible.
@@ -188,7 +189,7 @@ is using two characters to indicate a new line?"))
                 (error "Bad character in file ~s: character ~s at position ~s."
                        filename (char-code temp) i))))))
 
-; The check just above does not say anything about the five character names
+; The check just above does not say anything about the six character names
 ; that we support (see acl2-read-character-string), as described in :doc
 ; characters; so we add suitable checks on these here.
 
@@ -232,11 +233,8 @@ is using two characters to indicate a new line?"))
                 (if (standard-char-p ch) "is" "is not")
                 (if (standard-char-p ch) "not " "")))))
 
-; Check that char-upcase and char-downcase have the same values in all lisps,
-; and in particular, keep us in the realm of ACL2 characters.  Starting with
-; Version_2.6 we limit our check to the standard characters (and we no longer
-; avoid the check for mcl) because the guard to char-upcase and char-downcase
-; limits the use of these functions to standard characters.
+; Check that char-upcase and char-downcase have the same values in all lisps
+; on standard characters.
 
 (dotimes (i 256)
          (let ((ch (code-char i)))
@@ -273,6 +271,54 @@ is using two characters to indicate a new line?"))
                          (<= i 90))
                     (code-char (- (char-code ch) 32))
                   ch)))))
+
+; The following test supports the partial-encapslate in axioms.lisp that
+; introduces alpha-char-p-non-standard, upper-case-p-non-standard,
+; lower-case-p-non-standard, char-downcase-non-standard, and
+; char-upcase-non-standard.  See comments there referencing:
+; "Checks on character case".
+
+(dotimes (i 256)
+  (let ((ch (code-char i))
+        bad)
+    (unless #-cmucl (equal (standard-char-p (char-upcase ch))
+                           (standard-char-p ch))
+            #+cmucl t ; avoid char-upcase; see char-upcase-cmucl
+            (setq bad 0))
+    (unless (equal (standard-char-p (char-downcase ch))
+                   (standard-char-p ch))
+      (setq bad 1))
+    (unless (or (not (upper-case-p ch))
+                (equal (char-upcase
+                        (char-downcase ch))
+                       ch))
+      (setq bad 2))
+    (unless (or (not (lower-case-p ch))
+                #+cmucl (= i 181) ; avoid char-upcase; see char-upcase-cmucl
+                (equal (char-downcase
+                        (char-upcase ch))
+                       ch))
+      (setq bad 3))
+    (when bad
+      (exit-with-build-error
+       "This Common Lisp is unsuitable for ACL2 because the following test ~%~
+        failed for the character ch = (code-char ~s):~%~s"
+       i
+       (case bad
+         (0 '(equal (standard-char-p (char-upcase ch))
+                    (standard-char-p ch)))
+         (1 '(equal (standard-char-p (char-downcase ch))
+                    (standard-char-p ch)))
+         (2 '(or (not (upper-case-p ch))
+                 (equal (char-upcase
+                         (char-downcase ch))
+                        ch)))
+         (3 '(or (not (lower-case-p ch))
+                 (equal (char-downcase
+                         (char-upcase ch))
+                        ch)))
+         (otherwise
+          "Implementation Error!   Please contact the ACL2 implementors."))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                           FEATURES, MISC.

@@ -25,6 +25,7 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/-arg2
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; todo, for logtail-of-one-more
+(local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system)) ;prevent calls of expt on huge args
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -289,6 +290,7 @@
            (EQUAL (FLOOR X (* (EXPT 2 LOW) (/ (EXPT 2 N))))
                   (FLOOR (* X (EXPT 2 N)) (EXPT 2 LOW)))))
 
+;move
 (defthm rotate-left-becomes-leftrotate
   (implies (and (natp places)
                 (<= places 32) ;gen

@@ -114,7 +114,7 @@
 ;;almost a dup
 (defun map-code-char3 (codes)
   (declare (xargs :guard (byte-listp codes)
-                  :guard-hints (("Goal" :in-theory (enable bytep)))
+                  :guard-hints (("Goal" :in-theory (enable bytep byte-listp)))
                   ))
   (if (endp codes)
       nil

@@ -37,6 +37,7 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/bitops" :dir :system))
 (local (include-book "kestrel/bv/rtl" :dir :system))
+(local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

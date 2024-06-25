@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; See also simpler functions for making dags, such as make-term-into-dag-simple.
+;; See also simpler functions for making dags, such as
+;; make-term-into-dag-simple and make-term-into-dag-basic.
 
 (include-book "kestrel/alists-light/lookup-eq-lst" :dir :system)
 (include-book "dag-array-builders2")
@@ -39,6 +40,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 (in-theory (disable bounded-dag-exprp)) ;move?
 
@@ -121,11 +123,6 @@
            (equal (cdr x)
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
-
-(defthmd not-equal-of-len-and-1-when-dargp
-  (implies (dargp x)
-           (not (equal (len x) 1)))
-  :hints (("Goal" :in-theory (enable dargp))))
 
 ;dup, needed?
 (defthm dargp-of-lookup-equal-when-darg-listp-of-strip-cdrs
@@ -1608,12 +1605,6 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable call-of-dag-val-with-axe-evaluator-with-inlineable-dagp
                                      car-becomes-nth-of-0))))
-
-(defthm assoc-equal-when-lookup-equal-cheap
-  (implies (lookup-equal term var-replacement-alist)
-           (assoc-equal term var-replacement-alist))
-  :rule-classes ((:rewrite :backchain-limit-lst (1)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
 
 (defthm dargp-less-than-of-lookup-equal
   (implies (and (lookup-equal term var-replacement-alist)

@@ -90,37 +90,37 @@
 
 ;move
 ;not a great linear rule due to the free var
-(defthm maxelem-of-keep-atoms-bound
+(defthm maxelem-of-keep-nodenum-dargs-bound
   (implies (and (bounded-darg-listp items n)
                 (natp n)
-                (consp (keep-atoms items)) ;there must be at least one atom
+                (consp (keep-nodenum-dargs items)) ;there must be at least one atom
                 )
-           (< (maxelem (keep-atoms items)) n))
+           (< (maxelem (keep-nodenum-dargs items)) n))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
 ;;move
 ;;not a great linear rule due to the free var
-(defthm <-of-maxelem-of-keep-atoms-of-dargs-when-bounded-dag-exprp
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
   (implies (and (bounded-dag-exprp n expr)
                 (consp expr)
                 (natp n)
                 (consp (dargs expr))
                 (not (eq 'quote (car expr)))
-                (consp (keep-atoms (dargs expr))))
-           (< (maxelem (keep-atoms (dargs expr)))
+                (consp (keep-nodenum-dargs (dargs expr))))
+           (< (maxelem (keep-nodenum-dargs (dargs expr)))
               n))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
 ;move
-(defthm <-of-maxelem-of-keep-atoms-of-dargs-when-pseudo-dag-arrayp-aux
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-pseudo-dag-arrayp-aux
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
                 (consp (aref1 dag-array-name dag-array n))
                 (not (equal 'quote (car (aref1 dag-array-name dag-array n))))
-                (consp (keep-atoms (dargs (aref1 dag-array-name dag-array n))))
+                (consp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
                 (natp n))
-           (< (maxelem (keep-atoms (dargs (aref1 dag-array-name dag-array n))))
+           (< (maxelem (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
               n))
   :rule-classes (:rewrite :linear))
 
@@ -145,9 +145,9 @@
                 (if (or (quotep expr)
                         (not (consp expr)))
                     (cw "~x0" expr)
-                  (if (not (keep-atoms (dargs expr)))
+                  (if (not (keep-nodenum-dargs (dargs expr)))
                       (cw "All args are constants so not printing a DAG.~%")
-                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (keep-atoms (dargs expr)))))
+                    (print-dag-array-nodes-and-supporters 'dag-array dag-array (+ 1 frame) (keep-nodenum-dargs (dargs expr)))))
                 (er hard? 'get-pc-from-frame "Unexpected frame: ~x0.  See DAG just above." expr)
                 (mv (erp-t) nil))))))
 

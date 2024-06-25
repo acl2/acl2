@@ -16,6 +16,8 @@
 ;; dag-array-builders-maybe.lisp, the functions in this book do not assume that
 ;; the dag-array and dag-parent-array have particular names.
 
+;; See also dag-array-builders3.lisp.
+
 (include-book "wf-dagp")
 (include-book "numeric-lists")
 (include-book "make-dag-constant-alist")
@@ -23,11 +25,9 @@
 (include-book "dag-parent-array-with-name")
 (include-book "kestrel/utilities/erp" :dir :system)
 
-(in-theory (disable alistp))
+(local (in-theory (disable alistp)))
 
-;;;
-;;; add-variable-to-dag-array-with-name
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 (defund add-variable-to-dag-array-with-name (var dag-array dag-len
@@ -320,9 +320,7 @@
                                      dag-variable-alist-correct-after-add-variable-to-dag-array-with-name
                                      dag-constant-alist-after-add-variable-to-dag-array-with-name))))
 
-;;;
-;;; add-function-call-expr-to-dag-array-with-name
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;expands the array if needed
@@ -722,3 +720,37 @@
                     ))
   :hints (("Goal" :in-theory (enable wf-dagp
                                      dag-constant-alist-correct-after-add-function-call-expr-to-dag-array-with-name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
+(defund empty-dag-array-with-name (slack-amount dag-array-name dag-parent-array-name)
+  (declare (xargs :guard (and (posp slack-amount)
+                              (<= slack-amount *max-1d-array-length*)
+                              (symbolp dag-array-name)
+                              (symbolp dag-parent-array-name))))
+  (mv (make-empty-array dag-array-name slack-amount)
+      0
+      (make-empty-array dag-parent-array-name slack-amount)
+      nil ; empty-dag-constant-alist ; todo: name that notion
+      (empty-dag-variable-alist)))
+
+(defthm wf-dagp-of-empty-dag-array-with-name
+  (implies (and (posp slack-amount)
+                (<= slack-amount *max-1d-array-length*)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name))
+           (mv-let (dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (empty-dag-array-with-name slack-amount dag-array-name dag-parent-array-name)
+             (declare (ignore dag-len)) ; always 0
+             (wf-dagp dag-array-name dag-array 0 dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)))
+  :hints (("Goal" :in-theory (enable empty-dag-array-with-name wf-dagp))))
+
+(defthm mv-nth-1-of-empty-dag-array-with-name
+  (implies (and (posp slack-amount)
+                (<= slack-amount *max-1d-array-length*)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name))
+           (equal (mv-nth 1 (empty-dag-array-with-name slack-amount dag-array-name dag-parent-array-name))
+                  0))
+  :hints (("Goal" :in-theory (enable empty-dag-array-with-name wf-dagp))))

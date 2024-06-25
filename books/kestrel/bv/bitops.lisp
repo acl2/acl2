@@ -19,6 +19,7 @@
 (include-book "rightrotate")
 (include-book "leftrotate")
 (local (include-book "rules"))
+(local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "intro"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -92,7 +93,7 @@
                            (+ (- (EXPT 2 LOW))
                               (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
                     0))
-    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-PLUS)
+    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+)
                                     (BVCHOP-OF-LOGTAIL-BECOMES-SLICE
                                      <-OF-BVCHOP-HACK))))))
 

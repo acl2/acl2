@@ -406,6 +406,24 @@
        ((when flg1)
         (!!ms-fresh :rme-size-error flg1))
 
+       ;; Sign-extend the immediate to the operand size.
+       ;; Recall that imm is an unsigned integer of byte size imm-size.
+       ;; This is a no-op if imm-size = reg/mem-size.
+       ;; But if imm-size < reg/mem-size,
+       ;; the logext makes the integer negative if the high bit is set,
+       ;; and the loghead truncates the bits higher than the operand size.
+       ;; (It is never the case that imm-size > reg/mem-size.)
+       ;; IMUL-SPEC, called below, needs two unsigned operands of the same size,
+       ;; so here we ensure the immediate is of the same size,
+       ;; but taking the sign extension into account,
+       ;; as required in the Intel manual's description of IMUL.
+       ;; Then IMUL-SPEC internally takes care of
+       ;; interpreting the operands with the appropriate signs
+       ;; (based on their high bits),
+       ;; but here we need to ensure that
+       ;; we pass the appropriate values to IMUL-SPEC.
+       (imm (loghead (* 8 reg/mem-size) (logext (* 8 imm-size) imm)))
+
        ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
         (add-to-*ip proc-mode temp-rip imm-size x86))
        ((when flg) (!!ms-fresh :rip-increment-error temp-rip))

@@ -128,34 +128,42 @@ API documentation</a> for details.</p>"
       __function__))
 
 
-(defun tshell-useless-clauseproc (clause)
-  (list clause))
-
-(defsection tshell-call-fn1
+(define tshell-call-fn1
   :parents (tshell)
   :short "Logical story for @(see tshell-call)."
 
-  :long "<p>We use the @(':partial-theory') feature of @(see
-define-trusted-clause-processor) to introduce a function, @('tshell-call-fn1'),
-about which we assume nothing.</p>
+  ((cmd stringp)
+   (print symbolp)
+   (save booleanp)
+   state)
+  (declare (ignore cmd print save))
 
-<p>BOZO this probably isn't sound.  Don't we get the equality axioms for
-tshell-call-fn1?  But those aren't necessarily satisfied by command-line
-programs.  We should probably be using oracle reads instead, but then we'll
-need to involve state.</p>"
+  :returns
+  (mv exit-status
+      lines
+      (state state-p1 :hyp (state-p1 state)))
 
-  (partial-encapsulate
-   (((tshell-call-fn1 * * *) => (mv * *)))
-   nil ;; supporters
-   (local (defun tshell-call-fn1 (x y z)
-            (declare (ignorable x y z))
-            (mv 0 nil)))
+  :long "<p>Logically, this function is defined in terms of @(see
+read-acl2-oracle). For execution, a raw lisp function is installed
+under-the-hood.</p>"
 
-   (defthm return-type-of-tshell-call-fn1
-     (b* (((mv status lines)
-           (tshell-call-fn1 cmd print save)))
-       (and (natp status)
-            (string-listp lines))))))
+  (b* ((- (cw "Warning: under-the-hood definition of ~s0 not installed?"
+              __function__))
+       ((mv - exit-status state)
+        (read-acl2-oracle state))
+       ((mv - lines state)
+        (read-acl2-oracle state)))
+    (mv exit-status lines state))
+
+  ///
+  (defthm state-p-of-mv-nth-2-of-tshell-call-fn1-when-state-p
+    (implies (state-p state)
+             (state-p (mv-nth 2 (tshell-call-fn1 cmd print save state)))))
+
+  (defthm w-of-mv-nth-2-of-tshell-call-fn1
+    (equal (w (mv-nth 2 (tshell-call-fn1 cmd print save state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable read-acl2-oracle update-acl2-oracle)))))
 
 
 (define tshell-call
@@ -180,7 +188,8 @@ forks ACL2)."
           by @('cmd') and return them as the @('lines') output.  If you aren't
           going to analyze the program's output, you might want to set this to
           @('nil') to cut down on memory usage.")
-    't))
+    't)
+   (state 'state))
 
   :returns
   (mv (exit-status natp :rule-classes :type-prescription
@@ -191,7 +200,8 @@ forks ACL2)."
       (lines string-listp
              "The output from the command (from both standard output and
               standard error.)  Note that @('lines') will always just be
-              @('nil') if you're using @(':save nil')."))
+              @('nil') if you're using @(':save nil').")
+      (state state-p1 :hyp (state-p1 state)))
 
   :long "<p>Before using @('tshell-call') you need to make sure that the bash
 processes for tshell have been started; see @(see tshell-start) and @(see
@@ -201,10 +211,24 @@ tshell-ensure).</p>
 can print without saving, save without printing, save and print, or do neither
 and just get the exit code.</p>"
 
-  (progn$
-   (cw "Warning: under-the-hood definition of ~s0 not installed?"
-       __function__)
-   (tshell-call-fn1 cmd print save)))
+  (b* (((mv exit-status lines state)
+        (tshell-call-fn1 cmd print save state)))
+    (mv (nfix exit-status)
+        (if (string-listp lines)
+            lines
+          nil)
+        state))
+
+  ///
+  (defthm state-p-of-mv-nth-2-of-tshell-call-fn-when-state-p
+    (implies (state-p state)
+             (state-p (mv-nth 2 (tshell-call-fn cmd print save state)))))
+
+  (defthm w-of-mv-nth-2-of-tshell-call-fn
+    (equal (w (mv-nth 2 (tshell-call-fn cmd print save state)))
+           (w state))
+    :hints (("Goal" :in-theory (disable w)))))
+
 
 (define tshell-run-background
   :parents (tshell)

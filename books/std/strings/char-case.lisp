@@ -45,14 +45,19 @@
 
 
 (define up-alpha-p ((x :type character))
+
+; Matt K. mods, May 2024: Updated for acl2::upper-case-p change.
+
   :returns bool
   :parents (cases acl2::upper-case-p)
   :short "Determine if a character is an upper-case letter (A-Z)."
 
   :long "<p>ACL2 has a built-in alternative to this function, @(see
-acl2::upper-case-p), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, @('up-alpha-p') works on arbitrary
-characters.</p>"
+ acl2::upper-case-p), which however can also recognize characters that are not
+ standard characters.  (Historical note: Before May 2024, the guard for
+ acl2::upper-case-p required standard-char-p yet also converted only standard
+ characters; this provided motivation for the development of
+ up-alpha-p.)</p>"
   :inline t
   (b* (((the (unsigned-byte 8) code) (char-code x)))
     (and (<= (big-a) code)
@@ -91,8 +96,10 @@ characters.</p>"
                    :induct (exhaustive-test n)
                    :in-theory (enable exhaustive-test)))))
 
+  (local (in-theory (enable standard-char-p)))
+
   (local (defthm lemma3
-           (implies (characterp x)
+           (implies (standard-char-p x)
                     (equal (acl2::upper-case-p x)
                            (and (<= (big-a) (char-code x))
                                 (<= (char-code x) (big-z)))))
@@ -108,14 +115,16 @@ characters.</p>"
            :hints(("Goal" :in-theory (enable acl2::upper-case-p)))))
 
   (local (defthm lemma5
-           (equal (acl2::upper-case-p x)
-                  (and (<= (big-a) (char-code x))
-                       (<= (char-code x) (big-z))))
+           (implies (standard-char-p x)
+                    (equal (acl2::upper-case-p x)
+                           (and (<= (big-a) (char-code x))
+                                (<= (char-code x) (big-z)))))
            :hints(("Goal" :cases ((characterp x))))))
 
   (defthm upper-case-p-is-up-alpha-p
-    (equal (acl2::upper-case-p x)
-           (up-alpha-p (double-rewrite x))))
+    (implies (standard-char-p x)
+             (equal (acl2::upper-case-p x)
+                    (up-alpha-p (double-rewrite x)))))
 
   ;; No longer necessary since we'll rewrite upper-case-p away
   (in-theory (disable acl2::upper-case-p-char-upcase)))
@@ -123,14 +132,19 @@ characters.</p>"
 
 
 (define down-alpha-p ((x :type character))
+
+; Matt K. mods, May 2024: Updated for acl2::lower-case-p change.
+
   :returns bool
   :parents (cases acl2::lower-case-p)
   :short "Determine if a character is a lower-case letter (a-z)."
 
   :long "<p>ACL2 has a built-in alternative to this function, @(see
-acl2::lower-case-p), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, @('down-alpha-p') works on arbitrary
-characters.</p>"
+ acl2::lower-case-p), which however can also recognize characters that are not
+ standard characters.  (Historical note: Before May 2024, the guard for
+ acl2::lower-case-p required standard-char-p yet also converted only standard
+ characters; this provided motivation for the development of
+ down-alpha-p.)</p>"
 
   :inline t
   (b* (((the (unsigned-byte 8) code) (char-code x)))
@@ -170,8 +184,10 @@ characters.</p>"
                    :induct (exhaustive-test n)
                    :in-theory (enable exhaustive-test)))))
 
+  (local (in-theory (enable standard-char-p)))
+
   (local (defthm lemma3
-           (implies (characterp x)
+           (implies (standard-char-p x)
                     (equal (acl2::lower-case-p x)
                            (and (<= (little-a) (char-code x))
                                 (<= (char-code x) (little-z)))))
@@ -187,14 +203,16 @@ characters.</p>"
            :hints(("Goal" :in-theory (enable acl2::lower-case-p)))))
 
   (local (defthm lemma5
-           (equal (acl2::lower-case-p x)
-                  (and (<= (little-a) (char-code x))
-                       (<= (char-code x) (little-z))))
+           (implies (standard-char-p x)
+                    (equal (acl2::lower-case-p x)
+                           (and (<= (little-a) (char-code x))
+                                (<= (char-code x) (little-z)))))
            :hints(("Goal" :cases ((characterp x))))))
 
   (defthm lower-case-p-is-down-alpha-p
-    (equal (acl2::lower-case-p x)
-           (down-alpha-p (double-rewrite x))))
+    (implies (standard-char-p x)
+             (equal (acl2::lower-case-p x)
+                    (down-alpha-p (double-rewrite x)))))
 
   ;; No longer necessary since we'll rewrite lower-case-p away
   (in-theory (disable acl2::lower-case-p-char-downcase))
@@ -207,16 +225,21 @@ characters.</p>"
 
 
 (define upcase-char ((x :type character))
+
+; Matt K. mods, May 2024: Updated for acl2::char-upcase change.
+
   :returns (char characterp :rule-classes :type-prescription)
   :parents (cases acl2::char-upcase)
   :short "Convert a character to upper-case."
 
-  :long "<p>@(call upcase-char) converts lower-case characters into their
-upper-case equivalents, and returns other characters unchanged.</p>
+  :long "<p>@(call upcase-char) converts lower-case standard characters into
+ their upper-case equivalents, and returns other characters unchanged.</p>
 
-<p>ACL2 has a built-in alternative to this function, @(see acl2::char-upcase),
-but it is irritating to use because it has @(see standard-char-p) guards.  In
-contrast, @('upcase-char') works on arbitrary characters.</p>"
+ <p>ACL2 has a built-in alternative to this function, @(see acl2::char-upcase),
+ which however can also convert characters that are not standard characters.
+ (Historical note: Before May 2024, the guard for acl2::char-upcase required
+ standard-char-p yet also converted only standard characters; this provided
+ motivation for the development of upcase-char.)</p>"
   :inline t
   (b* (((the (unsigned-byte 8) code) (char-code x)))
     (if (and (<= (little-a) code)
@@ -241,11 +264,12 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
 
   (local (defund exhaustive-test (n)
            (and (let ((x (code-char n)))
-                  (equal (acl2::char-upcase x)
-                         (if (and (<= (little-a) (char-code x))
-                                  (<= (char-code x) (little-z)))
-                             (code-char (- (char-code x) (case-delta)))
-                           x)))
+                  (implies (standard-char-p x)
+                           (equal (acl2::char-upcase x)
+                                  (if (and (<= (little-a) (char-code x))
+                                           (<= (char-code x) (little-z)))
+                                      (code-char (- (char-code x) (case-delta)))
+                                    x))))
                 (or (zp n)
                     (exhaustive-test (- n 1))))))
 
@@ -261,7 +285,8 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
                          (exhaustive-test n)
                          (= x (code-char m))
                          (<= m n)
-                         (<= n 255))
+                         (<= n 255)
+                         (standard-char-p x))
                     (equal (acl2::char-upcase x)
                            (if (and (<= (little-a) (char-code x))
                                     (<= (char-code x) (little-z)))
@@ -272,7 +297,7 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
                    :in-theory (enable exhaustive-test)))))
 
   (local (defthm lemma3
-           (implies (characterp x)
+           (implies (standard-char-p x)
                     (equal (acl2::char-upcase x)
                            (if (and (<= (little-a) (char-code x))
                                     (<= (char-code x) (little-z)))
@@ -285,23 +310,17 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
                                     (m (char-code x))))))))
 
   (local (defthm lemma4
-           (implies (not (characterp x))
+           (implies (standard-char-p x)
                     (equal (acl2::char-upcase x)
-                           (code-char 0)))
-           :hints(("Goal" :in-theory (enable acl2::char-upcase)))))
-
-  (local (defthm lemma5
-           (equal (acl2::char-upcase x)
-                  (if (characterp x)
-                      (if (and (<= (little-a) (char-code x))
-                               (<= (char-code x) (little-z)))
-                          (code-char (- (char-code x) (case-delta)))
-                        x)
-                    (code-char 0)))))
+                           (if (and (<= (little-a) (char-code x))
+                                    (<= (char-code x) (little-z)))
+                               (code-char (- (char-code x) (case-delta)))
+                             x)))))
 
   (defthm char-upcase-is-upcase-char
-    (equal (acl2::char-upcase x)
-           (upcase-char (double-rewrite x))))
+    (implies (standard-char-p x)
+             (equal (acl2::char-upcase x)
+                    (upcase-char (double-rewrite x)))))
 
   ;; Mihir M. mod: added a lemma.
   (defthm
@@ -313,17 +332,22 @@ contrast, @('upcase-char') works on arbitrary characters.</p>"
 
 
 (define downcase-char ((x :type character))
+
+; Matt K. mods, May 2024: Updated for acl2::char-downcase change.
+
   :returns (char characterp :rule-classes :type-prescription)
   :parents (cases acl2::char-downcase)
   :short "Convert a character to lower-case."
 
   :long "<p>@(call downcase-char) converts upper-case characters into their
-lower-case equivalents, and returns other characters unchanged.</p>
+ lower-case equivalents, and returns other characters unchanged.</p>
 
-<p>ACL2 has a built-in alternative to this function, @(see
-acl2::char-downcase), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, @('downcase-char') works on arbitrary
-characters.</p>"
+ <p>ACL2 has a built-in alternative to this function, @(see
+ acl2::char-downcase), which however can also convert characters that are not
+ standard characters.  (Historical note: Before May 2024, the guard for
+ acl2::char-downcase required standard-char-p yet also converted only standard
+ characters; this provided motivation for the development of
+ downcase-char.)</p>"
   :inline t
   (b* (((the (unsigned-byte 8) code) (char-code x)))
     (if (and (<= (big-a) code)
@@ -360,11 +384,12 @@ characters.</p>"
 
   (local (defund exhaustive-test (n)
            (and (let ((x (code-char n)))
-                  (equal (acl2::char-downcase x)
-                         (if (and (<= (big-a) (char-code x))
-                                  (<= (char-code x) (big-z)))
-                             (code-char (+ (char-code x) (case-delta)))
-                           x)))
+                  (implies (standard-char-p x)
+                           (equal (acl2::char-downcase x)
+                                  (if (and (<= (big-a) (char-code x))
+                                           (<= (char-code x) (big-z)))
+                                      (code-char (+ (char-code x) (case-delta)))
+                                    x))))
                 (or (zp n)
                     (exhaustive-test (- n 1))))))
 
@@ -380,7 +405,8 @@ characters.</p>"
                          (exhaustive-test n)
                          (= x (code-char m))
                          (<= m n)
-                         (<= n 255))
+                         (<= n 255)
+                         (standard-char-p x))
                     (equal (acl2::char-downcase x)
                            (if (and (<= (big-a) (char-code x))
                                     (<= (char-code x) (big-z)))
@@ -391,7 +417,7 @@ characters.</p>"
                    :in-theory (enable exhaustive-test)))))
 
   (local (defthm lemma3
-           (implies (characterp x)
+           (implies (standard-char-p x)
                     (equal (acl2::char-downcase x)
                            (if (and (<= (big-a) (char-code x))
                                     (<= (char-code x) (big-z)))
@@ -404,23 +430,19 @@ characters.</p>"
                                     (m (char-code x))))))))
 
   (local (defthm lemma4
-           (implies (not (characterp x))
+           (implies (standard-char-p x)
                     (equal (acl2::char-downcase x)
-                           (code-char 0)))
-           :hints(("Goal" :in-theory (enable acl2::char-downcase)))))
-
-  (local (defthm lemma5
-           (equal (acl2::char-downcase x)
-                  (if (characterp x)
-                      (if (and (<= (big-a) (char-code x))
-                               (<= (char-code x) (big-z)))
-                          (code-char (+ (char-code x) (case-delta)))
-                        x)
-                    (code-char 0)))))
+                           (if (characterp x)
+                               (if (and (<= (big-a) (char-code x))
+                                        (<= (char-code x) (big-z)))
+                                   (code-char (+ (char-code x) (case-delta)))
+                                 x)
+                             (code-char 0))))))
 
   (defthm char-downcase-is-downcase-char
-    (equal (acl2::char-downcase x)
-           (downcase-char (double-rewrite x)))))
+    (implies (standard-char-p x)
+             (equal (acl2::char-downcase x)
+                    (downcase-char (double-rewrite x))))))
 
 
 
