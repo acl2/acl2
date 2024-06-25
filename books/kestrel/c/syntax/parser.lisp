@@ -9961,6 +9961,143 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define parse-declarator-or-abstract-declarator ((pstate parstatep))
+    :returns (mv erp
+                 (declor/absdeclor amb?-declor/absdeclor-p)
+                 (span spanp)
+                 (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse a declarator or an abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when expecting
+       either a declarator or an abstract declarator
+       (this happens in a parameter declaration,
+       after establishing that the parameter declarator is present).
+       Thus, this parsing function returns
+       a possibly ambiguous declarator or abstract declarator.")
+     (xdoc::p
+      "We try to parse both a declarator and an abstract declarator,
+       using the checkpointing and backtracking feature.
+       If only one succeeds, there is no ambiguity,
+       and we return either a declarator or an abstract declarator (wrapped).
+       If both succeed, there is an ambiguity,
+       which we return as such.
+       If none succeeds, it is an error."))
+    (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) (irr-parstate))
+         (pstate (record-checkpoint pstate)) ; we will backtrack here
+         (psize (parsize pstate))
+         ((mv erp-declor declor span-declor pstate) (parse-declarator pstate)))
+      (if erp-declor
+          ;; If the parsing of a declarator fails,
+          ;; we must have an abstract declarator.
+          (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+               ((unless (<= (parsize pstate) psize))
+                (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                       (parsize pstate) psize)
+                ;; Here we have (> (parsize pstate) psize),
+                ;; but we need to return a parser state
+                ;; no larger than the initial one,
+                ;; so we just return the empty parser state.
+                ;; This is just logical: execution stops at the RAISE above.
+                (b* ((pstate (init-parstate nil)))
+                  (reterr t)))
+               ((erp absdeclor span pstate) (parse-abstract-declarator pstate)))
+            (retok (amb?-declor/absdeclor-absdeclor absdeclor) span pstate))
+        ;; If the parsing of a declarator succeeds,
+        ;; we must see whether the parsing of an abstract declarator
+        ;; also succeeds, after backtracking.
+        (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+             ((unless (<= (parsize pstate) psize))
+              (raise "Internal error: ~
+                      size ~x0 after backtracking exceeds ~
+                      size ~x1 before backtracking."
+                     (parsize pstate) psize)
+              ;; Here we have (> (parsize pstate) psize),
+              ;; but we need to return a parser state
+              ;; no larger than the initial one,
+              ;; so we just return the empty parser state.
+              ;; This is just logical:
+              ;; execution stops at the RAISE above.
+              (b* ((pstate (init-parstate nil)))
+                (reterr t)))
+             (pstate (record-checkpoint pstate)) ; we may backtrack again
+             ((mv erp absdeclor span-absdeclor pstate)
+              (parse-abstract-declarator pstate)))
+          (if erp
+              ;; If the parsing of an abstract declarator fails,
+              ;; we have an unambiguous declarator, already parsed.
+              ;; We re-parse it (which must succeed),
+              ;; after backtracking,
+              ;; so that we end up in the right parser state.
+              ;; This re-parsing is not ideal:
+              ;; we may revisit this with
+              ;; a more elaborate backtracking scheme
+              ;; that lets us backtrack from backtracking.
+              (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                   ((unless (<= (parsize pstate) psize))
+                    (raise "Internal error: ~
+                            size ~x0 after backtracking exceeds ~
+                            size ~x1 before backtracking."
+                           (parsize pstate) psize)
+                    ;; Here we have (> (parsize pstate) psize),
+                    ;; but we need to return a parser state
+                    ;; no larger than the initial one,
+                    ;; so we just return the empty parser state.
+                    ;; This is just logical:
+                    ;; execution stops at the RAISE above.
+                    (b* ((pstate (init-parstate nil)))
+                      (reterr t)))
+                   ((mv erp declor1 span-declor1 pstate)
+                    (parse-declarator pstate))
+                   ((when erp)
+                    (raise "Internal error: ~
+                            parsing the same declarator ~x0 twice ~
+                            gives the error ~x1."
+                           declor erp)
+                    (reterr t))
+                   ((unless (equal declor1 declor))
+                    (raise "Internal error: ~
+                            parsing the same declarator ~x0 twice ~
+                            gives a different declarator ~x1."
+                           declor declor1)
+                    (reterr t))
+                   ((unless (equal span-declor1 span-declor))
+                    (raise "Internal error: ~
+                            parsing the same declarator ~x0 twice ~
+                            gives a different span ~x1 from ~x2."
+                           declor span-declor1 span-declor)
+                    (reterr t)))
+                (retok (amb?-declor/absdeclor-declor declor)
+                       span-declor
+                       pstate))
+            ;; If the parsing of an abstract declarator succeeds,
+            ;; we have an ambiguous declarator or abstract declarator.
+            ;; We double-check that the two spans are the same;
+            ;; we have not yet analyzed in detail
+            ;; whether this check should always succeed,
+            ;; but we will revisit the issue if we observe failures
+            ;; (in which case we can handle things similarly to
+            ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
+            (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
+                 ((unless (equal span-absdeclor span-declor))
+                  (raise "Internal error: ~
+                          span ~x0 of declarator ~x1 differs from ~
+                          span ~x2 of abstract declarator ~x3."
+                         span-declor declor span-absdeclor absdeclor)
+                  (reterr t)))
+              (retok (amb?-declor/absdeclor-ambig
+                      (make-amb-declor/absdeclor :declor declor
+                                                 :absdeclor absdeclor))
+                     span-declor ; = span-absdeclor
+                     pstate))))))
+    :measure (two-nats-measure (parsize pstate) 3))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :prepwork ((local (in-theory (disable acl2::member-of-cons)))) ; for speed
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10303,6 +10440,11 @@
           (parsize pstate))
       :rule-classes :linear
       :fn parse-expression-or-type-name)
+    (defret parsize-of-parse-declarator-or-abstract-declarator-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-declarator-or-abstract-declarator)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
@@ -10687,6 +10829,12 @@
                    (1- (parsize pstate))))
       :rule-classes :linear
       :fn parse-expression-or-type-name)
+    (defret parsize-of-parse-declarator-or-abstract-declarator-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-declarator-or-abstract-declarator)
     :hints
     (("Goal" :in-theory (enable fix nfix))
      (cond
