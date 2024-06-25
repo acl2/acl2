@@ -75,6 +75,28 @@
                  (list 'vl-unhierarchicalize-interfaceport
                        (with-local-ps (vl-pp-plainarg new-arg))))))
 
+
+(trace$ #!vl (vl-expr-to-svex-datatyped-fn
+              :entry (list 'vl-expr-to-svex-datatyped
+                           (with-local-ps (vl-pp-expr x))
+                           (And lhs (with-local-ps (vl-pp-expr lhs)))
+                           (with-local-ps (vl-pp-datatype type)))
+              :exit (b* (((list & type-err svex) values)) (list 'vl-expr-to-svex-datatyped type-err svex))))
+
+(trace$ #!vl (vl-expr-to-svex-selfdet
+              :entry (list 'vl-expr-to-svex-selfdet
+                           (with-local-ps (vl-pp-expr x)) ctxsize)
+              :exit (b* (((list & svex size) values)) (list 'vl-expr-to-svex-selfdet svex size))))
+(trace$ #!vl (vl-expr-opacity :entry (list 'vl-expr-opacity (with-local-ps (vl-pp-expr x)))))
+
+(trace$ #!vl (vl-expr-typedecide :entry (list 'vl-expr-typedecide (with-local-ps (vl-pp-expr x)))))
+
+(trace$ #!vl (vl-datatype-packedp :entry (list 'vl-datatype-packedp (with-local-ps (vl-pp-datatype x)))))
+
+(trace$ #!vl (vl-datatype-size :entry (list 'vl-datatype-size (with-local-ps (vl-pp-datatype x)))))
+
+(trace$ #!vl (vl-expr-resolved-p$inline :entry (list 'vl-expr-resolved-p (with-local-ps (vl-pp-expr x)))))
+
 ||#
 
 (in-package "SV")
