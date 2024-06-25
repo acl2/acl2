@@ -9727,20 +9727,14 @@
        a list of one or more declaration specifiers, which we parse.
        Then we may have a declarator, an abstract declarator, or nothing.")
      (xdoc::p
-      "There is a non-trivial syntactic overlap
+      "As explained in @(tsee amb-declor/absdeclor),
+       there is a complex syntactic overlap
        between declarators and abstract declarators.
-       For instance, if @('I') is an identifier, @('(I)') could be
-       either a direct declarator for the parenthesized identifier
-       or a function abstract declarator
-       where @('I') is a type specifier for the (one) parameter.
-       But this is just a simple example:
-       there are infinite overlapping constructs,
-       e.g. obtained by adding array and function declarator parts to @('I'),
-       but not only those.
-       We plan to revisit this issue,
-       but for now here we just consider declarators,
-       and not abstract declarators.
-       This is very crude, so we should improve this soon."))
+       Thus, unless there is no (abstract or non-abstract) declarator,
+       which we recognize by the presence of a comma or closed parenthesis,
+       we parse a possibly ambiguous declarator or abstract declarator,
+       and generate a parameter declarator accordingly,
+       and then a parameter declaration with the declaration specifiers."))
     (b* (((reterr) (irr-paramdecl) (irr-span) (irr-parstate))
          (psize (parsize pstate))
          ((erp declspecs span pstate) ; declspecs
@@ -9749,24 +9743,50 @@
           (reterr :impossible))
          ((erp token & pstate) (read-token pstate)))
       (cond
-       ;; If token may start a declarator, we parse it.
-       ((token-declarator-start-p token) ; declspecs declor...
-        (b* ((pstate (unread-token pstate)) ; declspecs
-             ((erp declor last-span pstate) ; declspecs declor
-              (parse-declarator pstate))
-             (paramdeclor (paramdeclor-declor declor)))
+       ;; If token is a comma or a closed parenthesis,
+       ;; there is no parameter declarator.
+       ((or (equal token (token-punctuator ")")) ; declspecs )
+            (equal token (token-punctuator ","))) ; declspecs ,
+        (b* ((pstate (unread-token pstate))) ; declspecs
           (retok (make-paramdecl :spec declspecs
-                                 :decl paramdeclor)
-                 (span-join span last-span)
-                 pstate)))
-       ;; Otherwise, the parameter declarator has no declarator.
-       (t ; declspecs other
-        (b* ((pstate (if token (unread-token pstate) pstate))
-             (paramdeclor (paramdeclor-none)))
-          (retok (make-paramdecl :spec declspecs
-                                 :decl paramdeclor)
+                                 :decl (paramdeclor-none))
                  span
-                 pstate)))))
+                 pstate)))
+       ;; Otherwise, we parse
+       ;; a possibly ambiguous declarator or abstract declarator,
+       ;; and return a parameter declaration in accordance.
+       (t ; declspecs other
+        (b* ((pstate (if token (unread-token pstate) pstate)) ; declspecs
+             ((erp declor/absdeclor
+                   last-span
+                   pstate) ; declspecs declor/absdeclor
+              (parse-declarator-or-abstract-declarator pstate)))
+          (amb?-declor/absdeclor-case
+           declor/absdeclor
+           ;; If we parsed an unambiguous declarator,
+           ;; we return a parameter declaration with that.
+           :declor
+           (retok (make-paramdecl
+                   :spec declspecs
+                   :decl (paramdeclor-declor declor/absdeclor.unwrap))
+                  (span-join span last-span)
+                  pstate)
+           ;; If we parsed an unambiguous abstract declarator,
+           ;; we return a parameter declaration with that.
+           :absdeclor
+           (retok (make-paramdecl
+                   :spec declspecs
+                   :decl (paramdeclor-absdeclor declor/absdeclor.unwrap))
+                  (span-join span last-span)
+                  pstate)
+           ;; If we parsed an ambiguous declarator or abstract declarator,
+           ;; we return a parameter declaration with that.
+           :ambig
+           (retok (make-paramdecl
+                   :spec declspecs
+                   :decl (paramdeclor-ambig declor/absdeclor.unwrap))
+                  (span-join span last-span)
+                  pstate))))))
     :measure (two-nats-measure (parsize pstate) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10135,7 +10155,20 @@
        and we return either a declarator or an abstract declarator (wrapped).
        If both succeed, there is an ambiguity,
        which we return as such.
-       If none succeeds, it is an error."))
+       If none succeeds, it is an error.")
+     (xdoc::p
+      "A complication is that an abstract declarator
+       may be a prefix of a declarator,
+       e.g. @('int *') is a prefix of @('int *x').
+       In this case, we can disambiguate the situation
+       in favor or a declarator,
+       exploiting the fact that an ambiguous declarator or abstract declarator
+       only occurs in a parameter declaration,
+       which is always follows by a comma or closed parenthesis.
+       So, if we successfully parse an abstract declarator,
+       we also ensure that the next token is a comma or closed parenthesis,
+       otherwise we regard the parsing of the abstract declarator
+       to have failed."))
     (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) (irr-parstate))
          (pstate (record-checkpoint pstate)) ; we will backtrack here
          (psize (parsize pstate))
@@ -10226,25 +10259,78 @@
                        span-declor
                        pstate))
             ;; If the parsing of an abstract declarator succeeds,
-            ;; we have an ambiguous declarator or abstract declarator.
-            ;; We double-check that the two spans are the same;
-            ;; we have not yet analyzed in detail
-            ;; whether this check should always succeed,
-            ;; but we will revisit the issue if we observe failures
-            ;; (in which case we can handle things similarly to
-            ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
-            (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
-                 ((unless (equal span-absdeclor span-declor))
-                  (raise "Internal error: ~
-                          span ~x0 of declarator ~x1 differs from ~
-                          span ~x2 of abstract declarator ~x3."
-                         span-declor declor span-absdeclor absdeclor)
-                  (reterr t)))
-              (retok (amb?-declor/absdeclor-ambig
-                      (make-amb-declor/absdeclor :declor declor
-                                                 :absdeclor absdeclor))
-                     span-declor ; = span-absdeclor
-                     pstate))))))
+            ;; we still need to check whether
+            ;; it is followed by a comma or closed parenthesis,
+            ;; as explained in the documentation of the function above.
+            ;; So we read a token.
+            (b* (((erp token & pstate) (read-token pstate)))
+              (if (or (equal token (token-punctuator ","))
+                      (equal token (token-punctuator ")")))
+                  ;; If a comma or closed parenthesis follows,
+                  ;; the parsing of the abstract declarator has succeeded,
+                  ;; we have an ambiguous declarator or abstract declarator.
+                  ;; We double-check that the two spans are the same;
+                  ;; we have not yet analyzed in detail
+                  ;; whether this check should always succeed,
+                  ;; but we will revisit the issue if we observe failures
+                  ;; (in which case we can handle things similarly to
+                  ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
+                  (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
+                       ((unless (equal span-absdeclor span-declor))
+                        (raise "Internal error: ~
+                                span ~x0 of declarator ~x1 differs from ~
+                                span ~x2 of abstract declarator ~x3."
+                               span-declor declor span-absdeclor absdeclor)
+                        (reterr t))
+                       (pstate (unread-token pstate))) ; put back , or )
+                    (retok (amb?-declor/absdeclor-ambig
+                            (make-amb-declor/absdeclor :declor declor
+                                                       :absdeclor absdeclor))
+                           span-declor ; = span-absdeclor
+                           pstate))
+                ;; If a comma or closed parenthesis does not follow,
+                ;; the abstract declarator must be a prefix of a declarator,
+                ;; so it means that we have an unambiguous declarator.
+                ;; We must backtrack and re-parse it;
+                ;; note that the backtracking
+                ;; also puts back the token just read.
+                (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                     ((unless (<= (parsize pstate) psize))
+                      (raise "Internal error: ~
+                              size ~x0 after backtracking exceeds ~
+                              size ~x1 before backtracking."
+                             (parsize pstate) psize)
+                      ;; Here we have (> (parsize pstate) psize),
+                      ;; but we need to return a parser state
+                      ;; no larger than the initial one,
+                      ;; so we just return the empty parser state.
+                      ;; This is just logical:
+                      ;; execution stops at the RAISE above.
+                      (b* ((pstate (init-parstate nil)))
+                        (reterr t)))
+                     ((mv erp declor1 span-declor1 pstate)
+                      (parse-declarator pstate))
+                     ((when erp)
+                      (raise "Internal error: ~
+                              parsing the same declarator ~x0 twice ~
+                              gives the error ~x1."
+                             declor erp)
+                      (reterr t))
+                     ((unless (equal declor1 declor))
+                      (raise "Internal error: ~
+                              parsing the same declarator ~x0 twice ~
+                              gives a different declarator ~x1."
+                             declor declor1)
+                      (reterr t))
+                     ((unless (equal span-declor1 span-declor))
+                      (raise "Internal error: ~
+                              parsing the same declarator ~x0 twice ~
+                              gives a different span ~x1 from ~x2."
+                             declor span-declor1 span-declor)
+                      (reterr t)))
+                  (retok (amb?-declor/absdeclor-declor declor)
+                         span-declor
+                         pstate))))))))
     :measure (two-nats-measure (parsize pstate) 3))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
