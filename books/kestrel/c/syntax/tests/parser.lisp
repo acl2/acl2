@@ -542,6 +542,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-array/function-abstract-declarator
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[const]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[const _Atomic]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[*uu]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[*]"
+ :cond (dirabsdeclor-case ast :array-star))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[80]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[restrict 80+0]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[static restrict 80+0]"
+ :cond (dirabsdeclor-case ast :array-static1))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "[restrict static 80+0]"
+ :cond (dirabsdeclor-case ast :array-static2))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "(id)"
+ :cond (dirabsdeclor-case ast :function))
+
+(test-parse
+ parse-array/function-abstract-declarator
+ "(int x, int y)"
+ :cond (dirabsdeclor-case ast :function))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-direct-abstract-declarator
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)"
+ :cond (dirabsdeclor-case ast :paren))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[const _Atomic]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[80]"
+ :cond (dirabsdeclor-case ast :array))
+
+(test-parse
+ parse-direct-abstract-declarator
+ "(*)[80](int x, int y)"
+ :cond (dirabsdeclor-case ast :function))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-direct-declarator
 
 (test-parse
