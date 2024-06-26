@@ -875,6 +875,10 @@
 
    ))
 
+; Matt K. mod 6/25/2024:
+; The following seemed necessary for a run based on Allegro CL.
+(set-compile-fns t)
+
 (defstobj+ my-stobj1
   (my-array-field :type (array integer (10000)) :initially 0)
   )

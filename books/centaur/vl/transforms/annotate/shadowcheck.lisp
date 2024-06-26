@@ -1077,7 +1077,9 @@ object.</p>
     :vl-tagged nil
     :vl-pattern x.pattype
     :vl-special nil
-    :vl-eventexpr nil)
+    :vl-eventexpr nil
+    :vl-bitselect-expr nil
+    :vl-partselect-expr nil)
   ///
   (defret vl-maybe-datatype-count-of-vl-expr->maybe-subtype
     (< (vl-maybe-datatype-count subtype)

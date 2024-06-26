@@ -114,7 +114,7 @@
 
        (when (vl-is-token? :vl-1step)
          (:= (vl-match))
-         (return (make-vl-special :key :vl-1step :atts nil)))
+         (return (make-vl-special :key :vl-1step)))
 
        (return-raw
         (vl-parse-error "Illegal delay value."))))

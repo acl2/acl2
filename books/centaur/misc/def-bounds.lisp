@@ -42,10 +42,13 @@
                                 (rewrite 't)
                                 (repeat '1000)
                                 (backchain-limit '1000)
+                                (untrans-result 't)
                                 (state 'state))
   :mode :program
   (b* (((When (atom hints)) (value term))
-       ((er next-term) (acl2::easy-simplify-term-fn term hyp (car hints) equiv normalize rewrite repeat backchain-limit state)))
+       ((er next-term)
+        (acl2::easy-simplify-term-fn term hyp (car hints) equiv normalize
+                                     rewrite repeat backchain-limit untrans-result state)))
     (easy-simplify-sequence
      next-term (cdr hints)
      :hyp hyp :equiv equiv :normalize normalize :rewrite rewrite :repeat repeat :backchain-limit backchain-limit)))

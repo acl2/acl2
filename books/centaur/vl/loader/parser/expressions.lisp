@@ -2401,7 +2401,7 @@ which are used streaming concatenations.</p>
              (type := (vl-parse-simple-type))
              (return (make-vl-slicesize-type :type type)))))
 
-    (defparser vl-parse-any-sort-of-concatenation ()
+    (defparser vl-parse-any-sort-of-concatenation-aux ()
       :short "Match single, multiple, or streaming concatenations, or empty
 queues."
       :long "<p>Both Verilog-2005 and SystemVerilog-2012 agree on the syntax for
@@ -2445,8 +2445,9 @@ always start with one of these @('stream_operators').</p>
            (when (and (vl-is-token? :vl-rcurly) ;; {}
                       (not (eq (vl-loadconfig->edition config) :verilog-2005)))
              (:= (vl-match))
-             (return (make-vl-special :key :vl-emptyqueue
-                                      :atts (vl-extend-atts-with-linestart linestart nil))))
+             (return (vl-expr-update-atts
+                      (make-vl-special :key :vl-emptyqueue)
+                      (vl-extend-atts-with-linestart linestart nil))))
 
            (when (and (vl-is-some-token? '(:vl-shl :vl-shr))
                       (not (eq (vl-loadconfig->edition config) :verilog-2005)))
@@ -2486,9 +2487,33 @@ always start with one of these @('stream_operators').</p>
            (:= (vl-match-token :vl-rcurly))
            (return (make-vl-concat :parts (list e1)
                                    :atts (vl-extend-atts-with-linestart linestart nil)))))
-
-
-
+    
+    (defparser vl-parse-any-sort-of-concatenation ()
+      :short "Match single, multiple, or streaming concatenations, perhaps with a bit/partselect."
+      :measure (two-nats-measure (vl-tokstream-measure) 1)
+      (seq tokstream
+           (concat :s= (vl-parse-any-sort-of-concatenation-aux))
+           (when (vl-is-token? :vl-lbrack)
+             (:= (vl-match))
+             (range := (vl-parse-range-expression))
+             (:= (vl-match-token :vl-rbrack))
+             (return (b* (((vl-erange range)))
+                       (case range.type
+                         (:vl-index
+                          (make-vl-bitselect-expr
+                           :subexp concat :index range.left))
+                         (:vl-colon
+                          (make-vl-partselect-expr
+                           :subexp concat
+                           :part (vl-range->partselect
+                                  (make-vl-range :msb range.left :lsb range.right))))
+                         (otherwise
+                          (make-vl-partselect-expr
+                           :subexp concat
+                           :part (vl-plusminus->partselect
+                                  (make-vl-plusminus :base range.left :width range.right
+                                                     :minusp (eq range.type :vl-minuscolon)))))))))
+           (return concat)))
 
     (defparser vl-parse-hierarchical-identifier (recursivep)
       :short "Match a @('hierarchical_identifier')."
@@ -3249,7 +3274,9 @@ identifier, so we convert it into a hidpiece.</p>"
                          (unless post
                            (return nil))
 
-                         (return (make-vl-unary :op post :arg primary :atts atts))))
+                         (return (vl-expr-update-atts
+                                  (make-vl-unary :op post :arg primary)
+                                  atts))))
                    ((when (and (not err) val))
                     (mv nil val tokstream))
                    (tokstream (vl-tokstream-restore backup)))
@@ -3894,8 +3921,7 @@ identifier, so we convert it into a hidpiece.</p>"
       (seq tokstream
            (when (vl-is-token? :vl-atsign)
              (evatoms := (vl-parse-clocking-event))
-             (return (make-vl-eventexpr :atoms evatoms
-                                        :atts nil)))
+             (return (make-vl-eventexpr :atoms evatoms)))
            (expr := (vl-parse-expression))
            (return expr)))
 
@@ -4071,6 +4097,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-val-when-error-claim vl-parse-pva-tail)
         ,(vl-val-when-error-claim vl-parse-simple-type)
         ,(vl-val-when-error-claim vl-parse-slice-size)
+        ,(vl-val-when-error-claim vl-parse-any-sort-of-concatenation-aux)
         ,(vl-val-when-error-claim vl-parse-any-sort-of-concatenation)
         ,(vl-val-when-error-claim vl-parse-hierarchical-identifier :args (recursivep))
         ,(vl-val-when-error-claim vl-parse-call-namedarg-pair)
@@ -4209,6 +4236,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-warning-claim vl-parse-pva-tail)
         ,(vl-warning-claim vl-parse-simple-type)
         ,(vl-warning-claim vl-parse-slice-size)
+        ,(vl-warning-claim vl-parse-any-sort-of-concatenation-aux)
         ,(vl-warning-claim vl-parse-any-sort-of-concatenation)
         ,(vl-warning-claim vl-parse-hierarchical-identifier :args (recursivep))
         ,(vl-warning-claim vl-parse-function-call)
@@ -4386,6 +4414,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-progress-claim vl-parse-pva-tail)
         ,(vl-progress-claim vl-parse-simple-type)
         ,(vl-progress-claim vl-parse-slice-size)
+        ,(vl-progress-claim vl-parse-any-sort-of-concatenation-aux)
         ,(vl-progress-claim vl-parse-any-sort-of-concatenation)
         ,(vl-progress-claim vl-parse-hierarchical-identifier :args (recursivep))
         ,(vl-progress-claim vl-parse-call-namedarg-pair)
@@ -4537,6 +4566,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-pva-tail :error)
         ,(vl-eof-claim vl-parse-simple-type :error)
         ,(vl-eof-claim vl-parse-slice-size :error)
+        ,(vl-eof-claim vl-parse-any-sort-of-concatenation-aux :error)
         ,(vl-eof-claim vl-parse-any-sort-of-concatenation :error)
         ,(vl-eof-claim vl-parse-hierarchical-identifier :error :args (recursivep))
         ,(vl-eof-claim vl-parse-call-namedarg-pair :error)
@@ -4584,7 +4614,7 @@ identifier, so we convert it into a hidpiece.</p>"
         ,(vl-eof-claim vl-parse-1+-open-value-ranges :error)
         ,(vl-eof-claim vl-parse-patternkey :error)
         ,(vl-eof-claim vl-parse-expression-without-failure nil)
-        ,(vl-eof-claim vl-parse-scoped-hid nil)
+        ,(vl-eof-claim vl-parse-scoped-hid :error)
         ,(vl-eof-claim vl-parse-expression :error)
         :hints(;; baseline: 3.58 seconds
                ;; (and acl2::stable-under-simplificationp
@@ -4731,6 +4761,7 @@ identifier, so we convert it into a hidpiece.</p>"
       ,(vl-resulttype-claim vl-parse-pva-tail :scopeexpr)
       ,(vl-resulttype-claim vl-parse-simple-type :type)
       ,(vl-resulttype-claim vl-parse-slice-size :slicesize)
+      ,(vl-resulttype-claim vl-parse-any-sort-of-concatenation-aux :expr)
       ,(vl-resulttype-claim vl-parse-any-sort-of-concatenation :expr)
       ,(vl-resulttype-claim vl-parse-hierarchical-identifier :hidexpr :args (recursivep))
       ,(vl-resulttype-claim vl-parse-call-namedarg-pair :call-namedarg-pair)
