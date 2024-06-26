@@ -3279,7 +3279,7 @@
 ;;                 )
 ;;            (equal (bvminus n x (bvplus m y z))
 ;;                   (bvminus n x (bvplus n y z))))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) (anti-bvplus)))))
+;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ()))))
 
 ;; ;bozo handle this better
 ;; (defthm bvplus-of-bvminus
@@ -3287,7 +3287,7 @@
 ;;                 (integerp y))
 ;;            (equal (bvplus 5 x (bvminus 5 y x))
 ;;                   (bvchop 5 y)))
-;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) (anti-bvplus))))
+;;   :hints (("Goal" :in-theory (e/d (bvminus bvplus) ())))
 ;;   )
 
 ;; (defthm iushr-constant-opener

@@ -25,10 +25,12 @@
 (include-book "defs-bitwise")
 (include-book "bvshr-def")
 (include-book "bvshl-def")
+(include-book "bvlt-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
-(include-book "ihs/basic-definitions" :dir :system) ;for logext
+(include-book "logext-def")
+;(include-book "ihs/basic-definitions" :dir :system) ;for logext
 ;(include-book "to-signed")
 (include-book "bvcat2")
 (include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)
@@ -96,32 +98,6 @@
            (xargs :guard (not (EQUAL (LOGEXT N Y) 0))) ;rephrase in terms of bvchop?
            )
   (bvchop n (mod (logext n x) (logext n y))))
-
-;fixme some of these could be macros...
-;unsigned less-than
-(defund bvlt (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (< (bvchop size x)
-     (bvchop size y)))
-
-;unsigned less-than-or-equal
-(defun bvle (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (not (bvlt size y x)))
-
-;unsigned greater-than
-(defun bvgt (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (bvlt size y x))
-
-;unsigned greater-than-or-equal
-(defun bvge (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (not (bvlt size x y)))
 
 ;;signed less-than
 (defund sbvlt (n x y)
@@ -242,7 +218,3 @@
 (defun bit-to-bool (x)
   (declare (xargs :guard (unsigned-byte-p 1 x)))
   (if (eql x 0) nil t))
-
-(defund bool-to-bit (test)
-  (declare (xargs :guard (booleanp test))) ;trying this
-  (if test 1 0))

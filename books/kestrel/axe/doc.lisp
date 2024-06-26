@@ -32,7 +32,7 @@ To test whether STP is being called correctly in your environment, run the scrip
 
 (defxdoc axe
   :short "The Axe toolkit"
-  :parents (software-verification kestrel-books)
+  :parents (software-verification kestrel-books projects)
   :long
   (xdoc::topparas
    "The Axe toolkit provides a variety of tools for software verification, including lifters-into-logic, rewriters, theorem provers, and equivalence checkers.

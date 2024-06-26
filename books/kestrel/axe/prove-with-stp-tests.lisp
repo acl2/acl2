@@ -374,3 +374,8 @@
 
 (must-prove-with-stp bvequal1 '(bvequal 32 x x))
 (must-prove-with-stp bvequal2 '(equal (bvequal 32 x y) (bvequal 32 y x)))
+
+;; since x need not be a bit
+(must-not-prove-with-stp equal-1 '(or (equal x 1) (equal x 0)))
+;; makes sure it doesn't improperly assing a bv1 type to x:
+(must-not-prove-with-stp equal-1 '(if (equal x 1) t (equal x (bvand 1 x 0))))

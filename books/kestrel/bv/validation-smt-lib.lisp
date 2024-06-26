@@ -1,6 +1,6 @@
 ; Theorems to validate the SMT-LIB translation of the BV operators
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,7 @@
 (local (include-book "sbvdiv-rules"))
 (local (include-book "sbvlt-rules"))
 (local (include-book "bvcat"))
+(local (include-book "logand-b"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; Validation theorems for a future SMT-LIB translation.
@@ -39,7 +40,7 @@
                                     (x (bvchop size x))
                                     (y (lognot (bvchop size y)))
                                     (m size)))))))
-   
+
 ;; (bvxor s t) abbreviates (bvor (bvand s (bvnot t)) (bvand (bvnot s) t))
 (thm
  (implies (natp size)
@@ -141,7 +142,7 @@
                          (bvdiv size (bvuminus size x) (bvuminus size y))))))))
  :hints (("Goal" :in-theory (enable sbvdiv-rewrite sbvlt-rewrite
                                     bvdiv-when-top-bits-are-0-narrow))))
-                           
+
 ;; TODO: Consider how to translate sbvrem for SMTLIB and add validation theorem here.
 
 ;; (bvslt s t) abbreviates:

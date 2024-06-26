@@ -17,6 +17,9 @@
 (include-book "syntaxp-evaluator-x86")
 (include-book "bind-free-evaluator-x86")
 
+;; Bad rule from x86 model:
+(in-theory (disable natp-when-gte-0))
+
 (local (in-theory (disable ;; these break the proofs below:
                            acl2::nth-when-zp ; loops with ACL2::CAR-OF-DARGS-BECOMES-NTH-0-OF-DARGS
                            reverse-removal ; introduces REV (not our normal form)
@@ -25,8 +28,7 @@
                            acl2::|(< 0 (len x))|
                            assoc-keyword ; why are these arising?
                            (:t assoc-keyword)
-                           KEYWORD-VALUE-LISTP
-                           )))
+                           keyword-value-listp)))
 
 ;; these slow down the proofs below:
 (local (in-theory (disable x86isa::unsigned-byte-p-when-sib-p
@@ -34,16 +36,16 @@
                            acl2::true-listp-of-car-when-true-list-listp
                            x86isa::member-p-pos-value ; hung in part on len (seems bad)
                            x86isa::n08p-element-of-byte-listp
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-MODR/M-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-VEX3-BYTE2-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-VEX3-BYTE1-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-VEX2-BYTE1-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE3-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE2-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-EVEX-BYTE1-P
-                           X86ISA::UNSIGNED-BYTE-P-WHEN-8BITS-P
-                           ACL2::ACL2-NUMBERP-OF-CAR-WHEN-ACL2-NUMBER-LISTP
-                           ;; (:EXECUTABLE-COUNTERPART TAU-SYSTEM) ; todo
+                           x86isa::unsigned-byte-p-when-modr/m-p
+                           x86isa::unsigned-byte-p-when-vex3-byte2-p
+                           x86isa::unsigned-byte-p-when-vex3-byte1-p
+                           x86isa::unsigned-byte-p-when-vex2-byte1-p
+                           x86isa::unsigned-byte-p-when-evex-byte3-p
+                           x86isa::unsigned-byte-p-when-evex-byte2-p
+                           x86isa::unsigned-byte-p-when-evex-byte1-p
+                           x86isa::unsigned-byte-p-when-8bits-p
+                           acl2::acl2-numberp-of-car-when-acl2-number-listp
+                           ;; (:executable-counterpart tau-system) ; todo
                            )))
 
 ;; Create the "x86" rewriter.  Here, "x86" refers to the set of functions to

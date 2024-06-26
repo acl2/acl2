@@ -243,7 +243,7 @@
 ;;                 (natp size))
 ;;            (equal (bvplus size x y)
 ;;                   (bvplus size (bvchop size x) y)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus) (anti-bvplus)))))
+;;   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 ;; (defthmd bvminus-solve-for-dag2
 ;;   (implies (and (syntaxp (quotep k))
@@ -1924,7 +1924,7 @@
 ;;                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE
 ;;                                                          SLICE-BECOMES-BVCHOP
 ;;                                                          BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-;;                                                          anti-bvplus)))))
+;;                                                          )))))
 
 (defthm bv-array-read-of-logext-arg3
   (implies (and (integerp index)

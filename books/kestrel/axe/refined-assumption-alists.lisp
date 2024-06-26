@@ -66,37 +66,60 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A "refined-assumption-alist" is an efficient way to store a list of
-;; axe-trees, all of which are function calls applied to dargs (args that are nodenums
+;; axe-trees, each of which is a function call applied to a darg-list (args that are nodenums
 ;; / quoteps).  We use "term indexing": the alist maps each topmost function to
 ;; a list of darg-lists (one for each call of fn in the list).
-;; TODO: Consider using a propery list world instead of an alist.
+;; TODO: Consider using a propery list world or fast alist instead of an alist.
+
+(defun refined-assumption-alist-entryp (entry)
+  (declare (xargs :guard t))
+  (and (consp entry)
+       (symbolp (car entry)) ;; should lambdas be allowed?
+       ;; (not (eq 'quote (car entry))) ;; TODO: Uncomment
+       (darg-list-listp (cdr entry)) ; checks that each member of (cdr entry) is a list of nodenum/quoteps
+       ))
 
 ;could add more checks to this
-(defun refined-assumption-alistp (alist)
+(defund refined-assumption-alistp (alist)
   (declare (xargs :guard t))
   (if (atom alist)
       (null alist)
-    (let ((entry (car alist)))
-      (and (consp entry)
-           (symbolp (car entry)) ;; should lambdas be allowed?
-           ;; (not (eq 'quote (car entry))) ;; TODO: Uncomment
-           (darg-list-listp (cdr entry)) ; checks that each member of (cdr entry) is a list of nodenum/quoteps
-           (refined-assumption-alistp (cdr alist))))))
+    (and (refined-assumption-alist-entryp (first alist))
+         (refined-assumption-alistp (rest alist)))))
+
+(local
+  (defthm refined-assumption-alistp-forward-to-alistp
+    (implies (refined-assumption-alistp alist)
+             (alistp alist))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable refined-assumption-alistp)))))
 
 (defthm symbol-alistp-when-refined-assumption-alistp-cheap
   (implies (refined-assumption-alistp acc)
            (symbol-alistp acc))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable refined-assumption-alistp))))
 
 ;; todo: ensure we always use lookup-in-refined-assumption-alist and then remove these
 (defthm true-listp-of-lookup-equal-when-refined-assumption-alistp-cheap
   (implies (refined-assumption-alistp alist)
            (true-listp (lookup-equal sym alist)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable refined-assumption-alistp))))
 
 (defthm darg-list-listp-of-lookup-equal-when-refined-assumption-alistp
   (implies (refined-assumption-alistp alist)
-           (darg-list-listp (lookup-equal fn alist))))
+           (darg-list-listp (lookup-equal fn alist)))
+  :hints (("Goal" :in-theory (enable refined-assumption-alistp))))
+
+(local
+  (defthm refined-assumption-alistp-of-cons
+    (equal (refined-assumption-alistp (cons entry alist))
+           (and (consp entry)
+                (symbolp (car entry))
+                (darg-list-listp (cdr entry))
+                (refined-assumption-alistp alist)))
+    :hints (("Goal" :in-theory (enable refined-assumption-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,7 +215,7 @@
 (defthm refined-assumption-alistp-when-bounded-refined-assumption-alistp
   (implies (bounded-refined-assumption-alistp alist bound)
            (refined-assumption-alistp alist))
-  :hints (("Goal" :in-theory (e/d (bounded-refined-assumption-alistp)
+  :hints (("Goal" :in-theory (e/d (bounded-refined-assumption-alistp refined-assumption-alistp)
                                   (darg-list-listp)))))
 
 (local
@@ -254,7 +277,8 @@
   (defthm refined-assumption-alistp-of-uniquify-alist-eq-aux
     (implies (and (refined-assumption-alistp acc)
                   (refined-assumption-alistp alist))
-             (refined-assumption-alistp (uniquify-alist-eq-aux alist acc)))))
+             (refined-assumption-alistp (uniquify-alist-eq-aux alist acc)))
+    :hints (("Goal" :in-theory (enable refined-assumption-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -338,13 +362,14 @@
                 (symbol-listp known-boolean-fns)
                 ;; no errors:
                 (not (mv-nth 0 (refine-assumptions-and-add-to-dag-array assumptions dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist known-boolean-fns))))
-           (mv-let (erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+           (mv-let (erp refined-assumption-alist dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (refine-assumptions-and-add-to-dag-array assumptions dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist known-boolean-fns)
              (declare (ignore erp ))
-             (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+             (and (wf-dagp dag-array-name dag-array new-dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                   (refined-assumption-alistp refined-assumption-alist)
-                  (bounded-refined-assumption-alistp refined-assumption-alist dag-len)
-                  (natp dag-len))))
+                  (bounded-refined-assumption-alistp refined-assumption-alist new-dag-len)
+                  (natp new-dag-len)
+                  (<= dag-len new-dag-len))))
   :hints (("Goal" :in-theory (e/d (refine-assumptions-and-add-to-dag-array) (natp)))))
 
 (defthm refine-assumptions-and-add-to-dag-array-return-type-gen
@@ -474,3 +499,106 @@
 (defund decode-refined-assumption-alist (refined-assumption-alist)
   (declare (xargs :guard (refined-assumption-alistp refined-assumption-alist)))
   (decode-refined-assumption-alist-aux refined-assumption-alist nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund append-nodenum-dargs-list (darg-lists acc)
+  (declare (xargs :guard (and (darg-list-listp darg-lists)
+                              (nat-listp acc))))
+  (if (endp darg-lists)
+      acc
+    (append-nodenum-dargs-list (rest darg-lists) (append-nodenum-dargs (first darg-lists) acc))))
+
+(defthm true-listp-of-append-nodenum-dargs-list-type
+  (implies (true-listp acc)
+           (true-listp (append-nodenum-dargs-list darg-lists acc)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs-list))))
+
+(defthm nat-listp-of-append-nodenum-dargs-list
+  (implies (darg-list-listp darg-lists)
+           (equal (nat-listp (append-nodenum-dargs-list darg-lists acc))
+                  (nat-listp acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs-list))))
+
+(defthm all-<-of-append-nodenum-dargs-list
+  (implies (and (bounded-darg-list-listp darg-lists bound)
+                (all-< acc bound))
+           (all-< (append-nodenum-dargs-list darg-lists acc) bound))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs-list
+                                     bounded-darg-list-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund nodenums-in-refined-assumption-alist (alist acc)
+  (declare (xargs :guard (and (refined-assumption-alistp alist)
+                              (nat-listp acc))))
+  (if (endp alist)
+      acc
+    (let ((entry (car alist)))
+      (nodenums-in-refined-assumption-alist (rest alist)
+                                            (append-nodenum-dargs-list (cdr entry) acc)))))
+
+(defthm nat-listp-of-nodenums-in-refined-assumption-alist-type
+  (implies (and (refined-assumption-alistp alist)
+                (nat-listp acc))
+           (nat-listp (nodenums-in-refined-assumption-alist alist acc)))
+  :hints (("Goal" :in-theory (enable nodenums-in-refined-assumption-alist))))
+
+(defthm true-listp-of-nodenums-in-refined-assumption-alist-type
+  (implies (true-listp acc)
+           (true-listp (nodenums-in-refined-assumption-alist alist acc)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable nodenums-in-refined-assumption-alist))))
+
+(defthm all-<-of-nodenums-in-refined-assumption-alist
+  (implies (and (bounded-refined-assumption-alistp alist bound)
+                (all-< acc bound))
+           (all-< (nodenums-in-refined-assumption-alist alist acc) bound))
+  :hints (("Goal" :in-theory (enable nodenums-in-refined-assumption-alist all-< bounded-refined-assumption-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun print-fn-applications-on-darg-lists (fn darg-lists fns-to-elide firstp)
+  (declare (xargs :guard (and (symbolp fn)
+                              (darg-list-listp darg-lists)
+                              (symbol-listp fns-to-elide)
+                              (booleanp firstp))))
+  (if (endp darg-lists)
+      nil
+    (prog2$ (if (member-eq fn fns-to-elide)
+                (if firstp
+                    (cw "((~x0 ...)~%" fn)
+                  (cw " (~x0 ...)~%" fn))
+              (if firstp
+                  (cw "(~y0" (cons fn (first darg-lists)))
+                (cw " ~y0" (cons fn (first darg-lists)))))
+            (print-fn-applications-on-darg-lists fn (rest darg-lists) fns-to-elide nil))))
+
+;; (defun print-refined-assumption-alist-entry-elided (entry fns-to-elide firstp)
+;;   (declare (xargs :guard (and (refined-assumption-alist-entryp entry)
+;;                               (symbol-listp fns-to-elide)
+;;                               (booleanp firstp))))
+;;   (let ((fn (car entry)))
+;;     (if (member-eq fn fns-to-elide)
+;;         (cw "(~x0 ...)~%" fn)
+;;       (print-fn-applications-on-darg-lists fn (cdr entry) firstp))))
+
+(defund print-refined-assumption-alist-elided-aux (alist fns-to-elide firstp)
+  (declare (xargs :guard (and (refined-assumption-alistp alist)
+                              (symbol-listp fns-to-elide)
+                              (booleanp firstp))
+                  :guard-hints (("Goal" :in-theory (enable refined-assumption-alistp)))))
+  (if (atom alist)
+      (cw ")") ; balances the paren printed for the first item
+    (let ((entry (first alist)))
+      (prog2$ (print-fn-applications-on-darg-lists (car entry) (cdr entry) fns-to-elide firstp)
+              (print-refined-assumption-alist-elided-aux (rest alist) fns-to-elide nil)))))
+
+(defund print-refined-assumption-alist-elided (alist fns-to-elide)
+  (declare (xargs :guard (and (refined-assumption-alistp alist)
+                              (symbol-listp fns-to-elide))))
+  (if (consp alist)
+      (print-refined-assumption-alist-elided-aux alist fns-to-elide t)
+    (cw "nil") ; or could print "()"
+    ))

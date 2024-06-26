@@ -41,22 +41,23 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logxor-b" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 
-(def-constant-opener bool-fix$inline) ; or build into axe?
+;(def-constant-opener bool-fix$inline) ; or build into axe?
 
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
            (not (sbvlt '64 (sbvdiv '64 x y) '18446744071562067968)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
 
 (defthm not-sbvlt-of-constant-and-sbvdiv-32-64
   (implies (unsigned-byte-p 31 x)
            (not (SBVLT '64 '2147483647 (SBVDIV '64 x y))))
-  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) (acl2::sbvlt-rewrite)))))
+  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-64-128
   (implies (unsigned-byte-p 64 x)
@@ -129,12 +130,14 @@
   (implies (BVLT '32 x '4)
            (UNSIGNED-BYTE-P '2 (BVCHOP '32 x))))
 
-;gen!
+;; could restrict to constants
 (defthm acl2::bvsx-when-bvlt
-  (implies (BVLT '32 x '4)
-           (equal (BVSX '64 '32 x)
-                  (bvchop 32 x)))
- :hints (("Goal" :in-theory (enable BVSX))))
+  (implies (and (bvlt old-size x (expt 2 (+ -1 old-size)))
+                (natp old-size)
+                (<= old-size new-size))
+           (equal (bvsx new-size old-size x)
+                  (bvchop old-size x)))
+ :hints (("Goal" :in-theory (enable bvsx))))
 
 
 ;; (defthmd bvlt-hack-1
@@ -222,10 +225,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; probably only needed for Axe
-(defthmd integerp-of-logxor
-  (integerp (logxor x y)))
-
 ;todo: generalize with a set of rules like the trim rules
 ;gen
 (defthm bvplus-of-logxor-arg1
@@ -238,18 +237,6 @@
   (equal (bvxor size x (logxor y z))
          (bvxor size x (bvxor size y z)))
   :hints (("Goal" :in-theory (enable bvxor))))
-
-(DEFTHM ACL2::BVIF-OF---ARG3
-  (IMPLIES (INTEGERP X)
-           (EQUAL (BVIF ACL2::SIZE ACL2::TEST (- X) ACL2::Z)
-                  (BVIF ACL2::SIZE ACL2::TEST (BVuminus ACL2::SIZE X) ACL2::Z)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BVIF BVuminus bvminus))))
-
-(DEFTHM ACL2::BVIF-OF---ARG4
-  (IMPLIES (INTEGERP X)
-           (EQUAL (BVIF ACL2::SIZE ACL2::TEST ACL2::Z (- X))
-                  (BVIF ACL2::SIZE ACL2::TEST ACL2::Z (BVuminus ACL2::SIZE X))))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BVIF BVuminus bvminus))))
 
 (defthm bvdiv-tighten-64-32 ;gen
   (implies (and (unsigned-byte-p 32 x)
@@ -277,12 +264,12 @@
 (defthm bvuminus-of-bvif-constants
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)))
-           (equal (bvuminus '32 (bvif '1 test k1 k2))
+           (equal (bvuminus 32 (bvif 1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
   :hints (("Goal" :in-theory (enable bvif))))
 
 (defthm of-spec-of-logext-32
-  (equal (of-spec32$inline (logext '32 x))
+  (equal (of-spec32$inline (logext 32 x))
          0)
   :hints (("Goal" :in-theory (enable of-spec32))))
 
@@ -301,7 +288,7 @@
   (integerp (ZF-SPEC$INLINE result)))
 
 (defthm SF-SPEC64-of-bvchop-64
-  (equal (SF-SPEC64$INLINE (BVCHOP '64 x))
+  (equal (SF-SPEC64$INLINE (BVCHOP 64 x))
          (SF-SPEC64$INLINE x))
   :hints (("Goal" :in-theory (enable SF-SPEC64))))
 
@@ -332,38 +319,38 @@
 ;; ;or use a defun-sk to state that all states have the same cpuid
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-xw
-;;   (equal (x86isa::feature-flag ':sse (xw fld index val x86))
-;;          (x86isa::feature-flag ':sse x86))
+;;   (equal (x86isa::feature-flag :sse (xw fld index val x86))
+;;          (x86isa::feature-flag :sse x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-write
-;;   (equal (x86isa::feature-flag ':sse (write n base-addr val x86))
-;;          (x86isa::feature-flag ':sse x86))
+;;   (equal (x86isa::feature-flag :sse (write n base-addr val x86))
+;;          (x86isa::feature-flag :sse x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse-of-set-flag
-;;   (equal (x86isa::feature-flag ':sse (set-flag flag val x86))
-;;          (x86isa::feature-flag ':sse x86))
+;;   (equal (x86isa::feature-flag :sse (set-flag flag val x86))
+;;          (x86isa::feature-flag :sse x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-xw
-;;   (equal (x86isa::feature-flag ':sse2 (xw fld index val x86))
-;;          (x86isa::feature-flag ':sse2 x86))
+;;   (equal (x86isa::feature-flag :sse2 (xw fld index val x86))
+;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-write
-;;   (equal (x86isa::feature-flag ':sse2 (write n base-addr val x86))
-;;          (x86isa::feature-flag ':sse2 x86))
+;;   (equal (x86isa::feature-flag :sse2 (write n base-addr val x86))
+;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 ;; (skip-proofs
 ;;  (defthm feature-flag-sse2-of-set-flag
-;;   (equal (x86isa::feature-flag ':sse2 (set-flag flag val x86))
-;;          (x86isa::feature-flag ':sse2 x86))
+;;   (equal (x86isa::feature-flag :sse2 (set-flag flag val x86))
+;;          (x86isa::feature-flag :sse2 x86))
 ;;   :hints (("Goal" :in-theory (enable ctri)))))
 
 (in-theory (disable x86isa::sub-zf-spec32))
@@ -515,10 +502,10 @@
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
            :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
                                   acl2::truncate-becomes-floor-gen
-                                  acl2::getbit-of-plus
+                                  acl2::getbit-of-+
                                   bvplus
                                   acl2::bvchop-of-sum-cases)
-                           (acl2::sbvlt-rewrite ;disable
+                           ( ;disable
                             )))))
 
 ;todo: also prove for slice and logtail
@@ -538,7 +525,7 @@
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
            :in-theory (e/d (sbvlt sbvdiv bvsx bvlt acl2::logext-cases bvcat logapp
                                   acl2::truncate-becomes-floor-gen
-                                  acl2::getbit-of-plus
+                                  acl2::getbit-of-+
                                   bvplus
                                   acl2::bvchop-of-sum-cases)
                            (acl2::sbvlt-rewrite ;disable
@@ -616,25 +603,25 @@
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k -128))
            (not (sbvlt 64 (bvsx 64 8 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-16
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k (- (expt 2 (+ -1 16)))))
            (not (sbvlt 64 (bvsx 64 16 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-64-32
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 k (- (expt 2 (+ -1 32)))))
            (not (sbvlt 64 (bvsx 64 32 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg2-128-64
   (implies (and (syntaxp (quotep k))
                 (sbvle 128 k (- (expt 2 (+ -1 64)))))
            (not (sbvlt 128 (bvsx 128 64 x) k)))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 ;; (defthm not-sbvlt-of-bvsx-of-constant-arg2-64
 ;;   (implies (and (syntaxp (quotep k))
@@ -652,27 +639,27 @@
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 128) k))
            (not (sbvlt 64 k (bvsx 64 8 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-16
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 (expt 2 (+ -1 16))) k))
            (not (sbvlt 64 k (bvsx 64 16 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-64-32
   (implies (and (syntaxp (quotep k))
                 (sbvle 64 (+ -1 (expt 2 (+ -1 32))) k))
            (not (sbvlt 64 k (bvsx 64 32 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
 (defthm not-sbvlt-of-bvsx-of-constant-arg3-128-64
   (implies (and (syntaxp (quotep k))
                 (sbvle 128 (+ -1 (expt 2 (+ -1 64))) k))
            (not (sbvlt 128 k (bvsx 128 64 x))))
-  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice))))
+  :hints (("Goal" :in-theory (enable acl2::bvsx-alt-def-2 acl2::booland bvlt acl2::equal-of-slice acl2::sbvlt-rewrite))))
 
-(defthm bvcat-of-repeatit-tighten-64-32 ;gen!
+(defthm bvcat-of-repeatbit-tighten-64-32 ;gen!
   (equal (bvcat 64 (repeatbit 32 bit) 32 lowval)
          (bvcat 32 (repeatbit 32 bit) 32 lowval)))
 
@@ -683,7 +670,7 @@
            (equal (sbvlt 32 k (bvsx 32 16 x))
                   (and (sbvlt 16 k x)
                        (not (sbvlt 16 x 0)))))
-  :hints (("Goal" :in-theory (enable bvlt ACL2::BVSX-ALT-DEF-2))))
+  :hints (("Goal" :in-theory (enable bvlt ACL2::BVSX-ALT-DEF-2 acl2::sbvlt-rewrite))))
 
 ;; todo: constant opener for X86ISA::!RFLAGSBITS->AF$INLINE
 
@@ -730,8 +717,8 @@
   (implies (and (integerp k)
                 (integerp text-offset)
                 (integerp index))
-           (equal (logext '64 (binary-+ k (bvplus '64 text-offset index)))
-                  (logext '64 (binary-+ k (+ text-offset index)))))
+           (equal (logext 64 (binary-+ k (bvplus 64 text-offset index)))
+                  (logext 64 (binary-+ k (+ text-offset index)))))
   :hints (("Goal" :in-theory (enable acl2::equal-of-logext-and-logext))))
 
 ;slow!
@@ -741,8 +728,8 @@
                 (integerp text-offset)
                 (integerp index)
                 (integerp val))
-           (equal (logext '64 (+ k (+ (bvmult 64 val index) text-offset)))
-                  (logext '64 (+ k (+ (* val index) text-offset)))))
+           (equal (logext 64 (+ k (+ (bvmult 64 val index) text-offset)))
+                  (logext 64 (+ k (+ (* val index) text-offset)))))
   :hints (("Goal" :in-theory (e/d (acl2::equal-of-logext-and-logext bvmult)
                                   (;X86ISA::LOGEXT-64-DOES-NOTHING-WHEN-CANONICAL-ADDRESS-P
                                    ;BVCHOP-TIGHTEN-WHEN-UNSIGNED-BYTE-P
@@ -812,7 +799,7 @@
 
 ;gen the (rxp x86)?
 (defthm not-equal-of-+-and-+-when-separate
-  (implies (and (separate :r text-offset-k text-offset :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (separate ':r '150 text-offset ':r '80 (binary-+ '-80 (rsp x86)))
+  (implies (and (separate :r text-offset-k text-offset :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (separate :r 150 text-offset :r 80 (binary-+ -80 (rsp x86)))
                 (<= k1 text-offset-k)
                 (natp text-offset-k)
                 (natp rsp-k)
@@ -826,7 +813,7 @@
   :hints (("Goal" :in-theory (enable separate))))
 
 (defthm not-equal-of-+-of-+-and-+-when-separate
-  (implies (and (separate :r text-offset-k (+ k1 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE ':R '512 (BINARY-+ '224 TEXT-OFFSET) ':R '80 (BINARY-+ '-80 (RSP X86)))
+  (implies (and (separate :r text-offset-k (+ k1 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE :R 512 (BINARY-+ 224 TEXT-OFFSET) :R 80 (BINARY-+ -80 (RSP X86)))
                 (<= index text-offset-k)
                 (natp index)
                 (natp text-offset-k)
@@ -841,7 +828,7 @@
   :hints (("Goal" :in-theory (enable separate))))
 
 (defthm not-equal-of-+-of-+-and-+-when-separate-gen
-  (implies (and (separate :r text-offset-k (+ k3 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE ':R '512 (BINARY-+ '224 TEXT-OFFSET) ':R '80 (BINARY-+ '-80 (RSP X86)))
+  (implies (and (separate :r text-offset-k (+ k3 text-offset) :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (SEPARATE :R 512 (BINARY-+ 224 TEXT-OFFSET) :R 80 (BINARY-+ -80 (RSP X86)))
                 (<= k3 (+ k1 index))
                 (<= (+ k1 index) (+ k3 text-offset-k))
                 (natp index)
@@ -988,7 +975,7 @@
 
 ;; usually negoffset, n1, n2, and minusn2 are constants
 (defthm not-equal-of-+-when-separate
-  (implies (and (separate :r n1 text-offset ':r n2 (binary-+ minusn2 (rsp x86)))
+  (implies (and (separate :r n1 text-offset :r n2 (binary-+ minusn2 (rsp x86)))
                 (posp n2)
                 (integerp negoffset)
                 (< negoffset 0)
@@ -999,7 +986,7 @@
   :hints (("Goal" :in-theory (enable separate))))
 
 (defthm not-equal-of-+-when-separate-alt
-  (implies (and (separate :r n1 text-offset ':r n2 (binary-+ minusn2 (rsp x86)))
+  (implies (and (separate :r n1 text-offset :r n2 (binary-+ minusn2 (rsp x86)))
                 (posp n2)
                 (integerp negoffset)
                 (< negoffset 0)

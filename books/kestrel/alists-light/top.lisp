@@ -17,10 +17,10 @@
 (include-book "rassoc-equal")
 (include-book "strip-cars")
 (include-book "strip-cdrs")
+(include-book "remove-assoc-equal")
 
 ;; Books about new functions:
 (include-book "acons-unique")
-(include-book "clear-key")
 (include-book "clear-keys")
 (include-book "keep-pairs")
 (include-book "lookup-eq-def")

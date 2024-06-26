@@ -1013,7 +1013,7 @@ most-significant bit of the original operand.</p>"
             (input-rflags (mbe :logic (n32 input-rflags)
                                :exec input-rflags))
 
-            ;; we juxtapose dst and srd,
+            ;; we juxtapose dst and src,
             ;; by shifting dst to the left by size bits
             ;; and OR'ing that with src,
             ;; obtaining a 2*size bit value:

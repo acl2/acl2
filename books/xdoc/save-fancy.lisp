@@ -550,7 +550,7 @@
        (cmd (string-append "sh "
              (string-append zip.sh
               (string-append " " dir-fix))))
-       ((mv exit-status lines)
+       ((mv exit-status lines state)
         (time$ (acl2::tshell-call cmd :print t)
                :msg "; XDOC zip.sh: ~st sec, ~sa bytes.~%"))
        ((unless (equal exit-status 0))

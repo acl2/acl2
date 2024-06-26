@@ -43,7 +43,7 @@
 (local (include-book "arithmetic"))
 ;(include-book "kestrel/lists-light/take" :dir :system)  ; when acl2-count-take rules added
 
-(local (in-theory (disable (:e tau-system))))
+(local (in-theory (e/d (print-base-p) ((:e tau-system)))))
 
 (local (defthm unsigned-byte-p-5-when-print-base-p
          (implies (print-base-p x)

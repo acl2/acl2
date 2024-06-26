@@ -1886,7 +1886,6 @@
   (cond
    ((endp alist) nil)
    ((and (stringp (car (car alist)))
-         (standard-string-p (car (car alist)))
          (member-string-equal (car (car alist))
                               *tracked-warning-summaries*))
     (clear-warning-summaries-alist (cdr alist)))
@@ -5277,9 +5276,9 @@
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 
-; In certify-book-fn we find a comment stating that "we are trying to record
-; whether there was a skip-proofs form in the present book, not merely on
-; behalf of an included book".  That is why here, we replace value
+; In certify-book-step-2 we find a comment stating that "we are trying to
+; record whether there was a skip-proofs form in the present book, not merely
+; on behalf of an included book".  That is why here, we replace value
 ; (:include-book ...) for 'skip-proofs-seen.
 
                                 (eq (car old) :include-book))))
@@ -9141,12 +9140,16 @@
                ((subsetp-eq (evens (cdar edcls)) keywords)
                 (chk-xargs-keywords1 (cdr edcls) keywords ctx state))
                (t (er soft ctx
-                      "The only acceptable XARGS keyword~#0~[ in this ~
-                       context is~/s in this context are~] ~&0.  Thus, ~
-                       the keyword~#1~[ ~&1 is~/s ~&1 are~] illegal."
+                      "The only acceptable XARGS keyword~#0~[ in this context ~
+                       is~/s in this context are~] ~&0.  Thus, the ~
+                       keyword~#1~[ ~&1 is~/s ~&1 are~] illegal.~#2~[~/  ~
+                       Perhaps you meant :HINTS instead of :MEASURE-HINTS.~]"
                       keywords
                       (set-difference-eq (evens (cdar edcls))
-                                         keywords)))))
+                                         keywords)
+                      (if (member-eq :measure-hints (evens (cdar edcls)))
+                          1
+                        0)))))
         (t (chk-xargs-keywords1 (cdr edcls) keywords ctx state))))
 
 (defun chk-xargs-keywords (lst keywords ctx state)
@@ -12726,7 +12729,7 @@
 ; arity for the style of the loop$ scion.
 
   (case-match term
-    (('do$ & & ('quote obj1) ('quote obj2) & & &)
+    (('do$ & & ('quote obj1) ('quote obj2) & &)
      (and (well-formed-lambda-objectp obj1 wrld)
           (well-formed-lambda-objectp obj2 wrld)
           (equal (length (lambda-object-formals obj1)) 1)

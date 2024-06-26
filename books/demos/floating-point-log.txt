@@ -2792,8 +2792,9 @@ Computing the guard conjecture for LOAD-AR-LOOP....
 
 The non-trivial part of the guard conjecture for LOAD-AR-LOOP, given
 the :compound-recognizer rule NATP-COMPOUND-RECOGNIZER, the :executable-
-counterparts of APPLY$-GUARD and CONS, primitive type reasoning, the
-:forward-chaining rules ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP and
+counterparts of APPLY$-GUARD, CONS and WEAK-DOLIA-P, primitive type
+reasoning, the :forward-chaining rules 
+ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP and 
 RATIONAL-LISTP-FORWARD-TO-ACL2-NUMBER-LISTP and the :type-prescription
 rules ACL2-NUMBER-LISTP, AR-LENGTH, ASSOC-EQ-SAFE, DO-BODY-GUARD-WRAPPER,
 LEN, LENGTH and RATIONAL-LISTP, is
@@ -2811,14 +2812,14 @@ Goal
          (XARGS
           :GUARD
           (DO-BODY-GUARD-WRAPPER
-           (AND
-              (ALISTP ALIST)
-              (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
-              (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
-              (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-              (NOT (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
-                      (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
-                                (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))))))))
+            (AND (ALISTP ALIST)
+                 (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                 (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                 (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                 (NOT (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                         (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                   (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))))))
+            '(ST3))))
         (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
               (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
               (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
@@ -2856,7 +2857,8 @@ Goal
                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                (<= (+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
                       (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))
-                   (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))))
+                   (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))))
+          '(ST3))
      (CASE EXIT-FLG
       ((NIL)
        (AND
@@ -2867,7 +2869,8 @@ Goal
                   (NATP (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST)))
                   (<= (+ (CDR (ASSOC-EQ-SAFE 'I NEW-ALIST))
                          (LEN (CDR (ASSOC-EQ-SAFE 'TMP NEW-ALIST))))
-                      (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 NEW-ALIST))))))
+                      (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 NEW-ALIST)))))
+             '(ST3))
         (L<
          (LEX-FIX
           (APPLY$
@@ -2877,14 +2880,14 @@ Goal
               :GUARD
               (DO-BODY-GUARD-WRAPPER
                (AND
-                (ALISTP ALIST)
-                (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
-                (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
-                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                (NOT
-                   (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
-                      (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
-                                (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))))))))
+                 (ALISTP ALIST)
+                 (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                 (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                 (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                 (NOT (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                         (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                   (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))))))
+               '(ST3))))
             (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                   (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
                   (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
@@ -2899,55 +2902,57 @@ Goal
               :GUARD
               (DO-BODY-GUARD-WRAPPER
                (AND
-                (ALISTP ALIST)
-                (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
-                (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
-                (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
-                (NOT
-                   (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
-                      (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
-                                (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))))))))
+                 (ALISTP ALIST)
+                 (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
+                 (ST3P (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                 (NATP (CDR (ASSOC-EQ-SAFE 'I ALIST)))
+                 (NOT (< (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST)))
+                         (BINARY-+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
+                                   (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))))))
+               '(ST3))))
             (LET ((I (CDR (ASSOC-EQ-SAFE 'I ALIST)))
                   (TMP (CDR (ASSOC-EQ-SAFE 'TMP ALIST)))
                   (ST3 (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
               (DECLARE (IGNORABLE I TMP ST3))
               (LEN TMP)))
            (LIST ALIST))))))
-      (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER (ALISTP NEW-ALIST)))
+      (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER (ALISTP NEW-ALIST)
+                                           '(ST3)))
       (OTHERWISE T))))))
  (IMPLIES
-   (AND (APPLY$-WARRANT-UPDATE-ARI)
-        (ST3P ST3)
-        (RATIONAL-LISTP LST)
-        (<= (LENGTH LST) (AR-LENGTH ST3)))
-   (DO-BODY-GUARD-WRAPPER
-        (AND (ALISTP (LIST '(I . 0)
-                           (CONS 'TMP LST)
-                           (CONS 'ST3 ST3)))
-             (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP
-                                                 (LIST '(I . 0)
-                                                       (CONS 'TMP LST)
-                                                       (CONS 'ST3 ST3)))))
-             (ST3P (CDR (ASSOC-EQ-SAFE 'ST3
-                                       (LIST '(I . 0)
-                                             (CONS 'TMP LST)
-                                             (CONS 'ST3 ST3)))))
-             (NATP (CDR (ASSOC-EQ-SAFE 'I
-                                       (LIST '(I . 0)
-                                             (CONS 'TMP LST)
-                                             (CONS 'ST3 ST3)))))
-             (<= (+ (CDR (ASSOC-EQ-SAFE 'I
-                                        (LIST '(I . 0)
-                                              (CONS 'TMP LST)
-                                              (CONS 'ST3 ST3))))
-                    (LEN (CDR (ASSOC-EQ-SAFE 'TMP
-                                             (LIST '(I . 0)
-                                                   (CONS 'TMP LST)
-                                                   (CONS 'ST3 ST3))))))
-                 (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3
-                                                (LIST '(I . 0)
-                                                      (CONS 'TMP LST)
-                                                      (CONS 'ST3 ST3)))))))))
+     (AND (APPLY$-WARRANT-UPDATE-ARI)
+          (ST3P ST3)
+          (RATIONAL-LISTP LST)
+          (<= (LENGTH LST) (AR-LENGTH ST3)))
+     (DO-BODY-GUARD-WRAPPER
+          (AND (ALISTP (LIST '(I . 0)
+                             (CONS 'TMP LST)
+                             (CONS 'ST3 ST3)))
+               (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TMP
+                                                   (LIST '(I . 0)
+                                                         (CONS 'TMP LST)
+                                                         (CONS 'ST3 ST3)))))
+               (ST3P (CDR (ASSOC-EQ-SAFE 'ST3
+                                         (LIST '(I . 0)
+                                               (CONS 'TMP LST)
+                                               (CONS 'ST3 ST3)))))
+               (NATP (CDR (ASSOC-EQ-SAFE 'I
+                                         (LIST '(I . 0)
+                                               (CONS 'TMP LST)
+                                               (CONS 'ST3 ST3)))))
+               (<= (+ (CDR (ASSOC-EQ-SAFE 'I
+                                          (LIST '(I . 0)
+                                                (CONS 'TMP LST)
+                                                (CONS 'ST3 ST3))))
+                      (LEN (CDR (ASSOC-EQ-SAFE 'TMP
+                                               (LIST '(I . 0)
+                                                     (CONS 'TMP LST)
+                                                     (CONS 'ST3 ST3))))))
+                   (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3
+                                                  (LIST '(I . 0)
+                                                        (CONS 'TMP LST)
+                                                        (CONS 'ST3 ST3)))))))
+          '(ST3)))
  (IMPLIES (AND (<= (+ (CDR (ASSOC-EQ-SAFE 'I ALIST))
                       (LEN (CDR (ASSOC-EQ-SAFE 'TMP ALIST))))
                    (AR-LENGTH (CDR (ASSOC-EQ-SAFE 'ST3 ALIST))))
@@ -3050,6 +3055,7 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART NATP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
+        (:EXECUTABLE-COUNTERPART WEAK-DOLIA-P)
         (:EXECUTABLE-COUNTERPART ZP)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
@@ -3117,9 +3123,9 @@ no constraints on the type of F11.
 Computing the guard conjecture for F11....
 
 The non-trivial part of the guard conjecture for F11, given the :executable-
-counterparts of APPLY$-GUARD, CONS and TO-DF, primitive type reasoning
-and the :type-prescription rules ASSOC-EQ-SAFE and DO-BODY-GUARD-WRAPPER,
-is
+counterparts of APPLY$-GUARD, CONS, TO-DF and WEAK-DOLIA-P, primitive
+type reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
+DO-BODY-GUARD-WRAPPER, is
 
 Goal
 (AND
@@ -3130,11 +3136,11 @@ Goal
       (LAMBDA$ (ALIST)
        (DECLARE
         (XARGS
-             :GUARD
-             (DO-BODY-GUARD-WRAPPER
-                  (AND (ALISTP ALIST)
-                       (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                       (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))))
+         :GUARD (DO-BODY-GUARD-WRAPPER
+                     (AND (ALISTP ALIST)
+                          (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                          (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))))
+                     'NIL)))
        (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
              (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
          (DECLARE (IGNORABLE TEMP ANS))
@@ -3169,25 +3175,28 @@ Goal
     (DO-BODY-GUARD-WRAPPER
          (AND (ALISTP ALIST)
               (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-              (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))
+              (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))))
+         NIL)
     (CASE EXIT-FLG
      ((NIL)
       (AND
        (DO-BODY-GUARD-WRAPPER
             (AND (ALISTP NEW-ALIST)
                  (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))
-                 (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP NEW-ALIST)))))
+                 (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP NEW-ALIST))))
+            NIL)
        (L<
         (LEX-FIX
          (APPLY$
           (LAMBDA$ (ALIST)
            (DECLARE
             (XARGS
-             :GUARD
-             (DO-BODY-GUARD-WRAPPER
-                  (AND (ALISTP ALIST)
-                       (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                       (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))))
+                :GUARD
+                (DO-BODY-GUARD-WRAPPER
+                     (AND (ALISTP ALIST)
+                          (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                          (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))))
+                     'NIL)))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
              (DECLARE (IGNORABLE TEMP ANS))
@@ -3198,34 +3207,38 @@ Goal
           (LAMBDA$ (ALIST)
            (DECLARE
             (XARGS
-             :GUARD
-             (DO-BODY-GUARD-WRAPPER
-                  (AND (ALISTP ALIST)
-                       (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-                       (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))))))
+                :GUARD
+                (DO-BODY-GUARD-WRAPPER
+                     (AND (ALISTP ALIST)
+                          (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                          (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))))
+                     'NIL)))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
              (DECLARE (IGNORABLE TEMP ANS))
              (ACL2-COUNT TEMP)))
           (LIST ALIST))))))
-     (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
-                        (AND (ALISTP NEW-ALIST)
-                             (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))))
+     (:LOOP-FINISH
+      (DO-BODY-GUARD-WRAPPER (AND (ALISTP NEW-ALIST)
+                                  (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))
+                             NIL))
      (OTHERWISE T)))))
  (IMPLIES
-   (RATIONAL-LISTP LST)
-   (DO-BODY-GUARD-WRAPPER
-        (AND (ALISTP (CONS (CONS 'TEMP LST) '((ANS . 0))))
-             (DFP (CDR (ASSOC-EQ-SAFE 'ANS
-                                      (CONS (CONS 'TEMP LST) '((ANS . 0))))))
-             (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP
-                                                 (CONS (CONS 'TEMP LST)
-                                                       '((ANS . 0)))))))))
+  (RATIONAL-LISTP LST)
+  (DO-BODY-GUARD-WRAPPER
+       (AND (ALISTP (CONS (CONS 'TEMP LST) '((ANS . 0))))
+            (DFP (CDR (ASSOC-EQ-SAFE 'ANS
+                                     (CONS (CONS 'TEMP LST) '((ANS . 0))))))
+            (RATIONAL-LISTP
+                 (CDR (ASSOC-EQ-SAFE 'TEMP
+                                     (CONS (CONS 'TEMP LST) '((ANS . 0)))))))
+       NIL))
  (IMPLIES
   (AND
-   (DO-BODY-GUARD-WRAPPER (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST))))
-   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
-   (ALISTP ALIST))
+    (DO-BODY-GUARD-WRAPPER (RATIONAL-LISTP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
+                           NIL)
+    (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+    (ALISTP ALIST))
   (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
         (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
     (AND (OR (CONSP TEMP) (EQ TEMP NIL))
@@ -3302,6 +3315,7 @@ Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART WEAK-DOLIA-P)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:FORWARD-CHAINING ACL2-NUMBER-LISTP-FORWARD-TO-TRUE-LISTP)
@@ -3376,26 +3390,28 @@ ACL2 !>>(VERIFY-GUARDS F12)
 Computing the guard conjecture for F12....
 
 The non-trivial part of the guard conjecture for F12, given the :executable-
-counterparts of APPLY$-GUARD, CONS and TO-DF, primitive type reasoning
-and the :type-prescription rules ASSOC-EQ-SAFE and DO-BODY-GUARD-WRAPPER,
-is
+counterparts of APPLY$-GUARD, CONS, TO-DF and WEAK-DOLIA-P, primitive
+type reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
+DO-BODY-GUARD-WRAPPER, is
 
 Goal
 (AND
  (DO-BODY-GUARD-WRAPPER
       (AND (ALISTP (CONS (CONS 'TEMP LST) '((ANS . 0))))
            (DFP (CDR (ASSOC-EQ-SAFE 'ANS
-                                    (CONS (CONS 'TEMP LST)
-                                          '((ANS . 0))))))))
+                                    (CONS (CONS 'TEMP LST) '((ANS . 0)))))))
+      NIL)
  (LET
   ((TRIPLE
     (TRUE-LIST-FIX
      (APPLY$
       (LAMBDA$ (ALIST)
        (DECLARE
-           (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
-                              (AND (ALISTP ALIST)
-                                   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+        (XARGS
+          :GUARD
+          (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
+                                      (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+                                 'NIL)))
        (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
              (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
          (DECLARE (IGNORABLE TEMP ANS))
@@ -3430,22 +3446,24 @@ Goal
         (NEW-ALIST (CADDR TRIPLE)))
    (IMPLIES
     (DO-BODY-GUARD-WRAPPER (AND (ALISTP ALIST)
-                                (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))
+                                (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+                           NIL)
     (CASE EXIT-FLG
      ((NIL)
       (AND
        (DO-BODY-GUARD-WRAPPER
             (AND (ALISTP NEW-ALIST)
-                 (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST)))))
+                 (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))
+            NIL)
        (L<
         (LEX-FIX
          (APPLY$
           (LAMBDA$ (ALIST)
            (DECLARE
-             (XARGS
-                  :GUARD (DO-BODY-GUARD-WRAPPER
-                              (AND (ALISTP ALIST)
-                                   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+              (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                                 (AND (ALISTP ALIST)
+                                      (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+                                 'NIL)))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
              (DECLARE (IGNORABLE TEMP ANS))
@@ -3455,20 +3473,22 @@ Goal
          (APPLY$
           (LAMBDA$ (ALIST)
            (DECLARE
-             (XARGS
-                  :GUARD (DO-BODY-GUARD-WRAPPER
-                              (AND (ALISTP ALIST)
-                                   (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))))))
+              (XARGS :GUARD (DO-BODY-GUARD-WRAPPER
+                                 (AND (ALISTP ALIST)
+                                      (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+                                 'NIL)))
            (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                  (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
              (DECLARE (IGNORABLE TEMP ANS))
              (ACL2-COUNT TEMP)))
           (LIST ALIST))))))
-     (:LOOP-FINISH (DO-BODY-GUARD-WRAPPER
-                        (AND (ALISTP NEW-ALIST)
-                             (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))))
+     (:LOOP-FINISH
+      (DO-BODY-GUARD-WRAPPER (AND (ALISTP NEW-ALIST)
+                                  (DFP (CDR (ASSOC-EQ-SAFE 'ANS NEW-ALIST))))
+                             NIL))
      (OTHERWISE T)))))
- (IMPLIES (AND (DO-BODY-GUARD-WRAPPER (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
+ (IMPLIES (AND (DO-BODY-GUARD-WRAPPER (DFP (CDR (ASSOC-EQ-SAFE 'ANS ALIST)))
+                                      NIL)
                (ALISTP ALIST))
           (LET ((TEMP (CDR (ASSOC-EQ-SAFE 'TEMP ALIST)))
                 (ANS (CDR (ASSOC-EQ-SAFE 'ANS ALIST))))
@@ -3555,6 +3575,7 @@ Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
         (:EXECUTABLE-COUNTERPART EQUAL)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART WEAK-DOLIA-P)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)
@@ -3653,8 +3674,11 @@ failed to decrease!  Recall that do$ tracks the values of do loop$
 variables in an alist.  The measure is computed using the values in
 the alist from before and after execution of the body.  We cannot print
 the values of double floats and live stobjs, if any are found in the
-alist, because they are raw Lisp objects, not ACL2 objects.  Before
-execution of the do body the alist was
+alist, because they are raw Lisp objects, not ACL2 objects.  We print
+any double float as its corresponding rational and simply print the
+name of any live stobj (as a string).
+
+Before execution of the do body the alist was
 ((X . 5) (AC . 0) (ST4 . "<st4>")).
 After the execution of the do body the alist was
 ((X . 5) (AC . 0) (ST4 . "<st4>")).
@@ -4034,6 +4058,7 @@ Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
         (:EXECUTABLE-COUNTERPART NOT)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART TO-DF)
+        (:EXECUTABLE-COUNTERPART WEAK-DOLIA-P)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE APPLY$-F0)

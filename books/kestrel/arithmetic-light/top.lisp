@@ -1,6 +1,6 @@
 ; Top-level book for the arithmetic-light library.
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,10 @@
 (include-book "times")
 (include-book "plus")
 (include-book "plus-and-minus")
+(include-book "plus-and-times")
+(include-book "plus-times-and-divide")
 (include-book "numerator")
+(include-book "numerator-and-denominator")
 (include-book "integerp")
 (include-book "ceiling")
 (include-book "nonnegative-integer-quotient")

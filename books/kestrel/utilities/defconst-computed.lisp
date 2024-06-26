@@ -1,7 +1,7 @@
 ; Functions to define constants using make-event
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,9 @@
 ;; NAME should be a legal constant name (a symbol that starts and ends with an
 ;; asterisk).  VALUE can be anything.
 (defun make-defconst-form (name val)
+  (declare (xargs :guard (and (symbolp name)
+                              ;; val is not quoted
+                              )))
   `(defconst ,name ',val))
 
 ;;;
@@ -41,7 +44,7 @@
 ;;;
 
 ;; A variant of defconst that takes a FORM that can mention stobjs and that
-;; returns STATE.  FORM should return (mv value state).  FORM gets evaluated.
+;; changes STATE.  FORM should return (mv value state).  FORM gets evaluated.
 (defmacro defconst-computed (name form)
   `(make-event (mv-let (result state)
                  ,form

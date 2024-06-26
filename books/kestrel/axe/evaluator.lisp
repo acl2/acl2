@@ -21,6 +21,7 @@
 ;; TODO: To evaluate a function defined using MBE, we might prefer to evaluate the :exec part.
 
 ;try to include less (but we need the functions to eval them)
+(include-book "ihs/basic-definitions" :dir :system) ; for logmaskp
 (include-book "kestrel/world-light/function-symbolsp" :dir :system)
 (include-book "kestrel/world-light/fn-definedp" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
@@ -28,7 +29,8 @@
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us bool-to-bit
+(include-book "kestrel/bv/defs" :dir :system) ;reduce? gets us sbvdiv
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
@@ -57,7 +59,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
-(include-book "kestrel/maps/maps" :dir :system) ;for key-list
+(include-book "kestrel/maps/maps" :dir :system) ;for key-list, todo: brings in too much, like osets
 (include-book "make-evaluator")
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
@@ -302,17 +304,6 @@
          (negated-elems-listp width lst1 lst2))
   :hints (("Goal" :in-theory (enable negated-elems-listp-unguarded))))
 
-(defund firstn-unguarded (n lst)
-  (declare (xargs :guard t))
-  (if (true-listp lst)
-      (firstn (nfix n) lst)
-    (firstn (nfix n) (true-list-fix lst))))
-
-(defthm firstn-unguarded-correct
-  (equal (firstn-unguarded n lst)
-         (firstn n lst))
-  :hints (("Goal" :in-theory (enable firstn-unguarded))))
-
 ;; (defund getbit-is-always-0-unguarded (n items)
 ;;   (declare (xargs :guard t))
 ;;   (if (atom items)
@@ -348,7 +339,6 @@
 ;fixme add a test that all of these are functions, not macros
 ;todo: get rid of set-field, set-fields, and get-field
 ;todo: see adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
-;; TODO: The functions actually get checked in the reverse order of how they appear here -- change that
 (defund axe-evaluator-function-info ()
   (declare (xargs :guard t))
   (acons 1

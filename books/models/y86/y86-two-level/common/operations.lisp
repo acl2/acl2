@@ -14,6 +14,8 @@
  (local
   (include-book "arithmetic-5/top" :dir :system))
 
+ (local (in-theory (enable print-base-p)))
+
  (defun my-explode-nonnegative-integer (n print-base ans)
    (declare (xargs :guard (and (integerp n)
                                (>= n 0)

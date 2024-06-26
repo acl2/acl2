@@ -23,15 +23,15 @@
 ;(include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/printing" :dir :system) ;for print-list
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; could make local, but many other books may need this
-(include-book "kestrel/acl2-arrays/bounded-nat-alists" :dir :system)
+(include-book "kestrel/acl2-arrays/bounded-nat-alists" :dir :system) ; for bounded-natp-alistp
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system) ; drop?
 ;(include-book "numeric-lists")
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "keep-atoms")
-(include-book "darg-listp")
-(include-book "tools/flag" :dir :system)
+(include-book "keep-nodenum-dargs")
+;(include-book "darg-listp")
+;(include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/utilities/lists/add-to-set-theorems" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -146,11 +146,15 @@
               (weak-dagp-aux dag)))
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
-
-(defthm rational-listp-of-strip-cars-when-weak-dagp-aux
+(defthm rational-listp-of-strip-cars-when-weak-dagp-aux-cheap
   (implies (weak-dagp-aux dag)
            (rational-listp (strip-cars dag)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+(defthmd integer-listp-of-strip-cars-when-weak-dagp-aux
+  (implies (weak-dagp-aux dag)
+           (integer-listp (strip-cars dag)))
+  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm weak-dagp-aux-of-cdr
   (implies (weak-dagp-aux dag)
@@ -458,6 +462,12 @@
   :hints (("Goal" :in-theory (enable pseudo-dagp pseudo-dagp-aux))))
 
 ;keeping this disabled for now, since it could be expensive.
+(defthmd consp-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (consp dag))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+;keeping this disabled for now, since it could be expensive.
 (defthmd true-listp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
            (true-listp dag)))
@@ -472,6 +482,10 @@
            (natp (car (car dag))))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
+(defthmd natp-of-car-of-car-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (natp (car (car dag)))))
 
 (defthm pseudo-dagp-forward-to-posp-of-len
   (implies (pseudo-dagp dag)
@@ -1266,6 +1280,13 @@
            (consp (car dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(defthm true-listp-of-dargs-of-cdr-of-car-when-pseudo-dagp-type
+  (implies (and (pseudo-dagp dag)
+                (consp dag))
+           (true-listp (dargs (cdr (car dag)))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
 (defthm dag-exprp-of-cdr-of-car-when-weak-dagp
   (implies (weak-dagp dag)
            (dag-exprp (cdr (car dag))))
@@ -1497,31 +1518,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; similar to (append (keep-atoms items) acc).
+;; similar to (append (keep-nodenum-dargs items) acc).
 ;move?
-(defund append-atoms (items acc)
-  (declare (xargs :guard (true-listp items)))
+;; Extends ACC with the members of ITEMS that are nodenums (also reverses their
+;; order).  Each member of ITEMS must be a nodenum or a quoted constant.
+(defund append-nodenum-dargs (items acc)
+  (declare (xargs :guard (and (darg-listp items)
+                              (true-listp acc))))
   (if (endp items)
       acc
     (let ((item (first items)))
-      (append-atoms (rest items)
+      (append-nodenum-dargs (rest items)
                     (if (atom item)
                         (cons item acc)
                       acc)))))
 
-(defthm all-<-of-append-atoms
-  (equal (all-< (append-atoms args acc) bound)
-         (and (all-< (keep-atoms args) bound)
+(defthm all-<-of-append-nodenum-dargs
+  (equal (all-< (append-nodenum-dargs args acc) bound)
+         (and (all-< (keep-nodenum-dargs args) bound)
               (all-< acc bound)))
-  :hints (("Goal" :in-theory (enable keep-atoms append-atoms all-<))))
+  :hints (("Goal" :in-theory (enable keep-nodenum-dargs append-nodenum-dargs all-<))))
 
-(defthm true-listp-of-append-atoms
+(defthm true-listp-of-append-nodenum-dargs
   (implies (true-listp acc)
-           (true-listp (append-atoms args acc)))
-  :hints (("Goal" :in-theory (enable append-atoms))))
+           (true-listp (append-nodenum-dargs args acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
 
-(defthm nat-listp-of-append-atoms
-  (implies (and (darg-listp dargs)
-                (nat-listp acc))
-           (nat-listp (append-atoms dargs acc)))
-  :hints (("Goal" :in-theory (enable append-atoms nat-listp))))
+(defthm true-listp-of-append-nodenum-dargs-type
+  (implies (true-listp acc)
+           (true-listp (append-nodenum-dargs args acc)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs))))
+
+(defthm nat-listp-of-append-nodenum-dargs
+  (implies (darg-listp dargs)
+           (equal (nat-listp (append-nodenum-dargs dargs acc))
+                  (nat-listp acc)))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs nat-listp))))
+
+(defthmd append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
+  (equal (append-nodenum-dargs items acc)
+         (append (reverse-list (keep-nodenum-dargs items))
+                 acc))
+  :hints (("Goal" :in-theory (enable append-nodenum-dargs keep-nodenum-dargs))))

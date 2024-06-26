@@ -7,13 +7,13 @@
 ;fix this up to use the fact that programs now contain pc/instr pairs
 
 (include-book "classes")
-(include-book "kestrel/alists-light/clear-key" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 ;; (include-book "coi/alists/clearkey" :dir :system) ;todo: brings in a lot
 ;; (in-theory (disable LIST::MEMBER-EQ-IS-MEMBERP-PROPOSITIONALLY
 ;;                     LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
 ;;                     LIST::MEMBER-EQUAL-IS-MEMBERP-PROPOSITIONALLY))
 (include-book "kestrel/maps/maps" :dir :system)
+(local (include-book "kestrel/alists-light/remove-assoc-equal" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 
 ;set several keys to the same value
@@ -380,7 +380,7 @@
            (basic-block-ids (cdr natural-loop-info))
            (prev-val (lookup header acc))
            (new-val (union-equal prev-val basic-block-ids))
-           (acc (clear-key header acc)) ;ensure no duplicate keys in the result
+           (acc (remove-assoc-equal header acc)) ;ensure no duplicate keys in the result
            (acc (acons header new-val acc)))
       (group-loops-aux (rest natural-loop-infos) acc))))
 

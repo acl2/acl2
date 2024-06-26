@@ -1,6 +1,6 @@
 ; Documentation for lists-light library
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/gen-xdoc-for-file" :dir :system)
+;(include-book "kestrel/utilities/gen-xdoc-for-file" :dir :system)
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 ;(include-book "all-true-listp")
 

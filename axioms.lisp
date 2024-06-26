@@ -5234,215 +5234,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((symbolp x) (symbol-name x))
    (t (coerce (list x) 'string))))
 
-#+acl2-loop-only
-(defun alpha-char-p (x)
-
-; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
-; we see characters other than standard characters that are treated as upper
-; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
-
-  (declare (xargs :guard (and (characterp x)
-                              (standard-char-p x))))
-  (and (member x
-               '(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
-                 #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z
-                 #\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K #\L #\M
-                 #\N #\O #\P #\Q #\R #\S #\T #\U #\V #\W #\X #\Y #\Z))
-       t))
-
-#+acl2-loop-only
-(defun upper-case-p (x)
-
-; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
-; we see characters other than standard characters that are treated as upper
-; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
-
-  (declare (xargs :guard (and (characterp x)
-                              (standard-char-p x))))
-  (and (member x
-               '(#\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K #\L #\M
-                 #\N #\O #\P #\Q #\R #\S #\T #\U #\V #\W #\X #\Y #\Z))
-       t))
-
-#+acl2-loop-only
-(defun lower-case-p (x)
-
-; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
-; we see characters other than standard characters that are treated as upper
-; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
-
-  (declare (xargs :guard (and (characterp x)
-                              (standard-char-p x))))
-  (and (member x
-               '(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
-                 #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z))
-       t))
-
-#+acl2-loop-only
-(defun char-upcase (x)
-
-; The guard characterp is required by p. 231 of CLtL.  However, In Allegro 6.0
-; we see characters other than standard characters that are treated as upper
-; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
-
-  (declare (xargs :guard (and (characterp x)
-                              (standard-char-p x))))
-  (let ((pair (assoc x
-                     '((#\a . #\A)
-                       (#\b . #\B)
-                       (#\c . #\C)
-                       (#\d . #\D)
-                       (#\e . #\E)
-                       (#\f . #\F)
-                       (#\g . #\G)
-                       (#\h . #\H)
-                       (#\i . #\I)
-                       (#\j . #\J)
-                       (#\k . #\K)
-                       (#\l . #\L)
-                       (#\m . #\M)
-                       (#\n . #\N)
-                       (#\o . #\O)
-                       (#\p . #\P)
-                       (#\q . #\Q)
-                       (#\r . #\R)
-                       (#\s . #\S)
-                       (#\t . #\T)
-                       (#\u . #\U)
-                       (#\v . #\V)
-                       (#\w . #\W)
-                       (#\x . #\X)
-                       (#\y . #\Y)
-                       (#\z . #\Z)))))
-    (cond (pair (cdr pair))
-          ((characterp x) x)
-          (t *null-char*))))
-
-#+acl2-loop-only
-(defun char-downcase (x)
-
-; The guard characterp is required by p. 231 of CLtL.  However, In Allegro 6.0
-; we see characters other than standard characters that are treated as upper
-; case, such as (code-char (+ 128 65)).  So we strengthen that guard.
-
-  (declare (xargs :guard (and (characterp x)
-                              (standard-char-p x))))
-    (let ((pair (assoc x
-                       '((#\A . #\a)
-                         (#\B . #\b)
-                         (#\C . #\c)
-                         (#\D . #\d)
-                         (#\E . #\e)
-                         (#\F . #\f)
-                         (#\G . #\g)
-                         (#\H . #\h)
-                         (#\I . #\i)
-                         (#\J . #\j)
-                         (#\K . #\k)
-                         (#\L . #\l)
-                         (#\M . #\m)
-                         (#\N . #\n)
-                         (#\O . #\o)
-                         (#\P . #\p)
-                         (#\Q . #\q)
-                         (#\R . #\r)
-                         (#\S . #\s)
-                         (#\T . #\t)
-                         (#\U . #\u)
-                         (#\V . #\v)
-                         (#\W . #\w)
-                         (#\X . #\x)
-                         (#\Y . #\y)
-                         (#\Z . #\z)))))
-      (cond (pair (cdr pair))
-            ((characterp x) x)
-            (t *null-char*))))
-
-(defthm lower-case-p-char-downcase
-  (implies (upper-case-p x)
-           (lower-case-p (char-downcase x))))
-
-(defthm upper-case-p-char-upcase
-  (implies (lower-case-p x)
-           (upper-case-p (char-upcase x))))
-
-(defthm lower-case-p-forward-to-alpha-char-p
-  (implies (lower-case-p x)
-           (alpha-char-p x))
-  :rule-classes :forward-chaining)
-
-(defthm upper-case-p-forward-to-alpha-char-p
-  (implies (upper-case-p x)
-           (alpha-char-p x))
-  :rule-classes :forward-chaining)
-
-(defthm alpha-char-p-forward-to-standard-char-p
-  (implies (alpha-char-p x)
-           (standard-char-p x))
-  :hints (("Goal" :in-theory (enable standard-char-p)))
-  :rule-classes :forward-chaining)
-
-(defthm standard-char-p-forward-to-characterp
-  (implies (standard-char-p x)
-           (characterp x))
-  :hints (("Goal" :in-theory (enable standard-char-p)))
-  :rule-classes :forward-chaining)
-
-(defthm characterp-char-downcase
-  (characterp (char-downcase x))
-  :rule-classes :type-prescription)
-
-(defthm characterp-char-upcase
-  (characterp (char-upcase x))
-  :rule-classes :type-prescription)
-
-; We disable the following functions in order to protect people from getting
-; burned by their explosive definitions.
-(in-theory (disable alpha-char-p upper-case-p lower-case-p
-                    char-upcase char-downcase))
-
-(defun string-downcase1 (l)
-  (declare (xargs :guard (standard-char-listp l)
-                  :guard-hints
-                  (("Goal" :in-theory (enable standard-char-listp)))))
-  (if (atom l)
-      nil
-    (cons (char-downcase (car l))
-          (string-downcase1 (cdr l)))))
-
-(defthm character-listp-string-downcase-1
-  (character-listp (string-downcase1 x)))
-
-#+acl2-loop-only
-(defun string-downcase (x)
-  (declare (xargs :guard (and (stringp x)
-                              (standard-char-listp (coerce x 'list)))))
-
-; As with other functions, e.g., reverse, the guards on this function
-; can't currently be proved because the outer coerce below requires
-; its argument to be made of standard characters.  We don't know that
-; the string x is made of standard characters.
-
-    (coerce (string-downcase1 (coerce x 'list)) 'string))
-
-(defun string-upcase1 (l)
-  (declare (xargs :guard (standard-char-listp l)
-                  :guard-hints
-                  (("Goal" :in-theory (enable standard-char-listp)))))
-  (if (atom l)
-      nil
-    (cons (char-upcase (car l))
-          (string-upcase1 (cdr l)))))
-
-(defthm character-listp-string-upcase1-1
-  (character-listp (string-upcase1 x)))
-
-#+acl2-loop-only
-(defun string-upcase (x)
-    (declare (xargs :guard (and (stringp x)
-                                (standard-char-listp (coerce x 'list)))))
-    (coerce (string-upcase1 (coerce x 'list)) 'string))
-
 (defun our-digit-char-p (ch radix)
   (declare (xargs :guard (and (characterp ch)
                               (integerp radix)
@@ -5519,15 +5310,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro digit-char-p (ch &optional (radix '10))
   `(our-digit-char-p ,ch ,radix))
 
-#+acl2-loop-only
-(defun char-equal (x y)
-  (declare (xargs :guard (and (characterp x)
-                              (standard-char-p x)
-                              (characterp y)
-                              (standard-char-p y))))
-  (eql (char-downcase x)
-       (char-downcase y)))
-
 (defun atom-listp (lst)
   (declare (xargs :guard t
                   :mode :logic))
@@ -5570,73 +5352,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (t (and (stringp (car x))
                 (standard-string-p (car x))
                 (standard-string-listp (cdr x))))))
-
-(defun string-equal1 (str1 str2 i maximum)
-  (declare (xargs :guard (and (stringp str1)
-                              (standard-string-p str1)
-                              (stringp str2)
-                              (standard-string-p str2)
-                              (integerp i)
-                              (integerp maximum)
-                              (<= maximum (length str1))
-                              (<= maximum (length str2))
-                              (<= 0 i)
-                              (<= i maximum))
-                  :measure (nfix (- (ifix maximum) (nfix i)))
-                  :mode :program))
-  (let ((i (nfix i)))
-    (cond
-     ((>= i (ifix maximum))
-      t)
-     (t (and (char-equal (char str1 i)
-                         (char str2 i))
-             (string-equal1 str1 str2 (+ 1 i) maximum))))))
-
-#+acl2-loop-only ; Commented out for patch file
-(defun string-equal (str1 str2)
-  (declare (xargs :guard (and (stringp str1)
-                              (standard-string-p str1)
-                              (stringp str2)
-                              (standard-string-p str2))
-                  :mode :program))
-  (let ((len1 (length str1)))
-    (and (= len1 (length str2))
-         (string-equal1 str1 str2 0 len1))))
-
-(defun member-string-equal (str lst)
-  (declare (xargs :guard (and (stringp str)
-                              (standard-string-p str)
-                              (standard-string-listp lst))
-                  :mode :program))
-  (cond
-   ((endp lst) nil)
-   (t (or (string-equal str (car lst))
-          (member-string-equal str (cdr lst))))))
-
-(defun standard-string-alistp (x)
-  (declare (xargs :guard t))
-  (cond
-   ((atom x) (eq x nil))
-   (t (and (consp (car x))
-           (stringp (car (car x)))
-           (standard-string-p (car (car x)))
-           (standard-string-alistp (cdr x))))))
-
-(defthm standard-string-alistp-forward-to-alistp
-  (implies (standard-string-alistp x)
-           (alistp x))
-  :rule-classes :forward-chaining)
-
-(defun assoc-string-equal (str alist)
-  (declare
-   (xargs :guard (and (stringp str)
-                      (standard-string-p str)
-                      (standard-string-alistp alist))
-          :mode :program))
-  (cond ((endp alist) nil)
-        ((string-equal str (car (car alist)))
-         (car alist))
-        (t (assoc-string-equal str (cdr alist)))))
 
 (defun list*-macro (lst)
   (declare (xargs :guard (and (true-listp lst)
@@ -14477,7 +14192,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev ; *ev-shortcut-okp*
     ev-lst ; *ev-shortcut-okp*
     allegro-allocate-slowly-fn ; sys:gsgc-parameter
-    certify-book-fn ; si::sgc-on
+    certify-book-step-3+
+    certify-book-fn
     translate11-local-def ; special-form-or-op-p
     include-book-fn1
     include-book-fn
@@ -14562,6 +14278,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     read-hons-copy-lambda-object-culprit ; reads wormhole data from oracle
     #+acl2-devel ilks-plist-worldp
     defstobj-field-fns-raw-defs ; CCL bug #446
+    chk-certificate-file
+    get-cert-obj-and-cert-filename
+    include-book-raw-error
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -15502,19 +15221,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *file-types* '(:character :byte :object))
 
+(defun channel-headerp (header)
+  (declare (xargs :guard t))
+  (and (true-listp header)
+       (equal (length header) 4)
+       (eq (car header) :header)
+       (member-eq (cadr header) *file-types*)
+       (stringp (caddr header))
+       (integerp (cadddr header))))
+
 (defun open-channel1 (l)
   (declare (xargs :guard t))
   (and (true-listp l)
        (consp l)
        (let ((header (car l)))
-         (and
-          (true-listp header)
-          (equal (length header) 4)
-          (eq (car header) :header)
-          (member-eq (cadr header) *file-types*)
-          (stringp (caddr header))
-          (integerp (cadddr header))
-          (typed-io-listp (cdr l) (cadr header))))))
+         (and (channel-headerp header)
+              (typed-io-listp (cdr l) (cadr header))))))
 
 (defthm open-channel1-forward-to-true-listp-and-consp
   (implies (open-channel1 x)
@@ -15720,6 +15442,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (getpropc 'acl2-defaults-table 'table-alist nil
                   (cdr (assoc 'current-acl2-world (global-table x)))))
        (timer-alistp (cdr (assoc 'timer-alist (global-table x))))
+       (print-base-p (cdr (assoc 'print-base (global-table x))))
        (known-package-alistp
         (getpropc 'known-package-alist 'global-value nil
                   (cdr (assoc 'current-acl2-world (global-table x)))))
@@ -15747,6 +15470,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (getpropc 'acl2-defaults-table 'table-alist nil
                        (cdr (assoc 'current-acl2-world (nth 2 x)))))
             (timer-alistp (cdr (assoc 'timer-alist (nth 2 x))))
+            (print-base-p (cdr (assoc 'print-base (nth 2 x))))
             (known-package-alistp
              (getpropc 'known-package-alist 'global-value nil
                        (cdr (assoc 'current-acl2-world (nth 2 x)))))
@@ -15762,7 +15486,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   ;; The hints can speed us up from over 40 seconds to less than 2.
   :hints (("Goal" :in-theory
            (disable nth length open-channels-p ordered-symbol-alistp
-                    all-boundp plist-worldp assoc timer-alistp
+                    all-boundp plist-worldp assoc timer-alistp print-base-p
                     known-package-alistp true-listp
                     integer-listp rational-listp
                     file-clock-p readable-files-p written-files-p
@@ -16539,38 +16263,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; With state-global-let* defined, we are now able to use LOCAL.
 
-(encapsulate
-  ()
-  (local (defthm hack
-           (implies (integerp i)
-                    (equal (+ -1 1 i)
-                           i))))
-  (local
-   (defthm standard-string-p1-forward-to-standard-char-p
-     (implies (and (standard-string-p1 s n) ; n is free
-                   (stringp s)
-                   (integerp n)
-                   (natp i)
-                   (< i n))
-              (standard-char-p (nth i (coerce s 'list))))))
-
-  (verify-termination-boot-strap string-equal1))
-
-; The following was probably formerly needed for the event just above,
-; (verify-termination-boot-strap string-equal1).  It's no longer necessary for
-; that but it's a nice rule nonetheless.
-(defthm standard-char-p-nth
-  (implies (and (standard-char-listp chars)
-                (<= 0 i)
-                (< i (len chars)))
-           (standard-char-p (nth i chars)))
-  :hints (("Goal" :in-theory (enable standard-char-listp))))
-
-(verify-termination-boot-strap string-equal)
-(verify-termination-boot-strap assoc-string-equal)
-(verify-termination-boot-strap member-string-equal)
-(verify-termination-boot-strap xxxjoin)
-
 ; Bishop Brock has contributed the lemma justify-integer-floor-recursion that
 ; follows.  Although he has proved this lemma as part of a larger proof effort,
 ; we are not yet in a hurry to isolate its proof just now.
@@ -16626,15 +16318,18 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (verify-guards explode-nonnegative-integer
                :hints (("Goal" :in-theory (disable mod))))
 
-(encapsulate
- ()
+; The following lemma is probably useful not only for the verify-termination
+; call just below but also for guard proofs for make-input-channel and
+; make-output-channel, and for verify-termination-boot-strap[+guards] for
+; packn-pos and related functions in boot-strap-pass-2-a.lisp where
+; character-listp-explode-atom is proved.
 
- (local
-  (defthm character-listp-explode-nonnegative-integer
-    (implies (character-listp ans)
-             (character-listp (explode-nonnegative-integer n 10 ans)))))
+(local
+ (defthm character-listp-explode-nonnegative-integer
+   (implies (character-listp z)
+            (character-listp (explode-nonnegative-integer x y z)))))
 
- (verify-termination-boot-strap make-var-lst1))
+(verify-termination-boot-strap make-var-lst1)
 
 (verify-termination-boot-strap make-var-lst)
 
@@ -18268,9 +17963,593 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (realpart x) (imagpart x))))
     (format stream "~:@(~x~)" x)))
 
+; Define support for the partial-encapsulate below.
+
+(defun all-function-symbolps (fns wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (cond ((atom fns) (equal fns nil))
+        (t (and (symbolp (car fns))
+                (function-symbolp (car fns) wrld)
+                (all-function-symbolps (cdr fns) wrld)))))
+
+(defconst *unknown-constraints*
+
+; This value must not be a function symbol, because functions may need to
+; distinguish conses whose car is this value from those consisting of function
+; symbols.
+
+  :unknown-constraints)
+
+(defun non-trivial-encapsulate-ee-entries (embedded-event-lst)
+  (declare (xargs :mode :program))
+  (cond ((endp embedded-event-lst)
+         nil)
+        ((and (eq (caar embedded-event-lst) 'encapsulate)
+              (cadar embedded-event-lst))
+         (cons (car embedded-event-lst)
+               (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst))))
+        (t (non-trivial-encapsulate-ee-entries (cdr embedded-event-lst)))))
+
+(defun unknown-constraints-table-guard (key val wrld)
+  (declare (xargs :mode :program))
+  (let ((er-msg "The proposed attempt to add unknown-constraints is illegal ~
+                 because ~@0.  See :DOC partial-encapsulate."))
+    (cond
+     ((eq key :supporters)
+      (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                         (global-val 'embedded-event-lst wrld))))
+        (cond
+         ((null ee-entries)
+          (mv nil
+              (msg er-msg
+                   "it is not being made in the scope of a non-trivial ~
+                    encapsulate")))
+         ((cdr ee-entries)
+          (mv nil
+              (msg er-msg
+                   (msg "it is being made in the scope of nested non-trivial ~
+                         encapsulates.  In particular, an enclosing ~
+                         encapsulate introduces function ~x0, while an ~
+                         encapsulate superior to that one introduces function ~
+                         ~x1"
+                        (caar (cadr (car ee-entries)))
+                        (caar (cadr (cadr ee-entries)))))))
+         ((not (all-function-symbolps val wrld))
+          (mv nil
+              (msg er-msg
+                   (msg "the value, ~x0, is not a list of known function ~
+                         symbols"
+                        val))))
+         ((not (subsetp-equal (strip-cars (cadr (car ee-entries)))
+                              val))
+          (mv nil
+              (msg er-msg
+                   (msg "the value, ~x0, does not include all of the ~
+                         signature functions of the partial-encapsulate"
+                        val))))
+         (t (mv t nil)))))
+     (t (mv nil nil)))))
+
+(table unknown-constraints-table nil nil
+       :guard
+       (unknown-constraints-table-guard key val world))
+
+(defmacro set-unknown-constraints-supporters (&rest fns)
+  `(table unknown-constraints-table
+          :supporters
+
+; Notice that by including the newly-constrained functions in the supporters,
+; we are guaranteeing that this table event is not redundant.  To see this,
+; first note that we are inside a non-trivial encapsulate (see
+; trusted-cl-proc-table-guard), and for that encapsulate to succeed, the
+; newly-constrained functions must all be new.  So trusted-cl-proc-table-guard
+; would have rejected a previous attempt to set to these supporters, since they
+; were not function symbols at that time.
+
+          (let ((ee-entries (non-trivial-encapsulate-ee-entries
+                             (global-val 'embedded-event-lst world))))
+            (union-equal (strip-cars (cadr (car ee-entries)))
+                         ',fns))))
+
+(defmacro assign (x y)
+  (declare (type symbol x))
+  `(pprogn (f-put-global ',x ,y state)
+           (mv nil (f-get-global ',x state) state)))
+
+(defmacro @ (x)
+  (declare (type symbol x))
+  `(f-get-global ',x state))
+
+(defun chk-inhibit-output-lst-msg (lst)
+  (declare (xargs :guard t))
+  (cond ((not (true-listp lst))
+         (msg "The argument to set-inhibit-output-lst must evaluate to a ~
+               true-listp, unlike ~x0."
+              lst))
+        ((not (subsetp-eq lst *valid-output-names*))
+         (msg "The argument to set-inhibit-output-lst must evaluate to a ~
+               subset of the list ~X01, but ~x2 contains ~&3."
+              *valid-output-names*
+              nil
+              lst
+              (set-difference-eq lst *valid-output-names*)))
+        (t nil)))
+
+(defun set-inhibit-output-lst-state (lst state)
+  (declare (xargs :guard t))
+  (let ((msg (chk-inhibit-output-lst-msg lst)))
+    (cond (msg (prog2$ (er hard? 'set-inhibit-output-lst "~@0" msg)
+                       state))
+          (t (f-put-global 'inhibit-output-lst
+                           (if (member-eq 'warning! lst)
+                               (add-to-set-eq 'warning lst)
+                             lst)
+                           state)))))
+
+#+acl2-loop-only
+(defmacro logic nil
+  '(state-global-let*
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
+    (er-progn (table acl2-defaults-table :defun-mode :logic)
+              (value :invisible))))
+
+#-acl2-loop-only
+(defmacro logic () nil)
+
+#+acl2-loop-only
+(defmacro program nil
+  '(state-global-let*
+    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
+    (er-progn (table acl2-defaults-table :defun-mode :program)
+              (value :invisible))))
+
+#-acl2-loop-only
+(defmacro program () nil)
+
+(encapsulate
+  ()
+
+; We introduce models for the behaviors of alpha-char-p and character case
+; functions on the non-standard characters.  Note that there are typically
+; characters other than standard characters that are treated as upper case or
+; lower case.  For example, (upper-case-p (code-char (+ 128 65))) is true in
+; CCL, and char-downcase is not the identity on (code-char (+ 128 65)).
+; However, Lisp implementations can differ on these functions; see :DOC
+; soundness.
+
+; Our models -- that is, the defthm events below -- are based on the following
+; principles.  Note that unlike alpha-char-p in Common Lisp, these functions
+; are total; in particular, the three recognizers return nil on non-character
+; inputs.
+
+; - Alpha-char-p-non-standard is a Boolean recognizer for the alphabetic
+;   characters (as defined in the HyperSpec; see below).
+; - Upper-case-p-non-standard and lower-case-p-non-standard are Boolean
+;   recognizer for the upper-case and lower-case characters, respectively.
+; - Char-downcase-non-standard and char-upcase-non-standard model the
+;   implementation's behavior of char-downcase and char-upcase (respectively)
+;   on character inputs, and they return an arbitrary character on
+;   non-character inputs.
+
+; We need the partial-encapsulate below to be executed in logic mode during the
+; first pass of the boot-strap so that it will be redundant in the second pass
+; of the boot-strap.
+
+  (logic)
+
+; The following passages from the Common Lisp HyperSpec support the axioms
+; exported below.
+
+;   Function ALPHA-CHAR-P
+
+;   Returns true if character is an alphabetic[1] character; otherwise, returns
+;   false.
+
+;   13.1.4.3 Characters With Case
+
+;   The characters with case are a subset of the alphabetic[1] characters. A
+;   character with case has the property of being either uppercase or
+;   lowercase. Every character with case is in one-to-one correspondence with
+;   some other character with the opposite case.
+
+;   Function CHAR-UPCASE, CHAR-DOWNCASE
+
+;   If character is a lowercase character, char-upcase returns the
+;   corresponding uppercase character. Otherwise, char-upcase just returns the
+;   given character.
+
+;   If character is an uppercase character, char-downcase returns the
+;   corresponding lowercase character. Otherwise, char-downcase just returns
+;   the given character.
+
+;   13.1.4.3.4 Case of Implementation-Defined Characters
+
+;   An implementation may define that other implementation-defined graphic
+;   characters have case. Such definitions must always be done in pairs---one
+;   uppercase character in one-to-one correspondence with one lowercase
+;   character.
+
+; Here is definition [1] of "alphabetic" in the HyperSpec, referenced above.
+
+;   alphabetic n., adj. 1. adj. (of a character) being one of the standard
+;   characters A through Z or a through z, or being any implementation-defined
+;   character that has case, or being some other graphic character defined by
+;   the implementation to be alphabetic[1].
+
+; We start by putting standard-char-p in logic mode, so that during the first
+; pass of the boot-strap, the partial-encapsulate below can process the defthm
+; events that mention it.
+
+  (verify-termination-boot-strap member-eql-exec)
+  (verify-termination-boot-strap standard-char-p)
+
+  (partial-encapsulate
+   (((alpha-char-p-non-standard *)  => * :formals (x))
+    ((upper-case-p-non-standard *)  => * :formals (x))
+    ((lower-case-p-non-standard *)  => * :formals (x))
+    ((char-downcase-non-standard *) => * :formals (x))
+    ((char-upcase-non-standard *)   => * :formals (x)))
+   ()
+   (local (defun alpha-char-p-non-standard (x)
+            (declare (ignore x))
+            nil))
+   (local (defun upper-case-p-non-standard (x)
+            (declare (ignore x))
+            nil))
+   (local (defun lower-case-p-non-standard (x)
+            (declare (ignore x))
+            nil))
+   (local (defun char-upcase-non-standard (x)
+            (if (characterp x) x #\c)))
+   (local (defun char-downcase-non-standard (x)
+            (if (characterp x) x #\c)))
+   (defthm booleanp-alpha-char-p-non-standard
+     (booleanp (alpha-char-p-non-standard x))
+     :rule-classes :type-prescription)
+   (defthm booleanp-upper-case-p-non-standard
+     (booleanp (upper-case-p-non-standard x))
+     :rule-classes :type-prescription)
+   (defthm booleanp-lower-case-p-non-standard
+     (booleanp (lower-case-p-non-standard x))
+     :rule-classes :type-prescription)
+   (defthm characterp-char-upcase-non-standard
+     (characterp (char-upcase-non-standard x))
+     :rule-classes :type-prescription)
+   (defthm characterp-char-downcase-non-standard
+     (characterp (char-downcase-non-standard x))
+     :rule-classes :type-prescription)
+   (defthm upper-case-p-non-standard-implies-alpha-char-p-non-standard
+     (implies (upper-case-p-non-standard x)
+              (alpha-char-p-non-standard x))
+     :rule-classes :forward-chaining)
+   (defthm lower-case-p-non-standard-implies-alpha-char-p-non-standard
+     (implies (lower-case-p-non-standard x)
+              (alpha-char-p-non-standard x))
+     :rule-classes :forward-chaining)
+   (defthm alpha-char-p-non-standard-implies-characterp
+     (implies (alpha-char-p-non-standard x)
+              (characterp x))
+     :rule-classes :forward-chaining)
+   (defthm char-upcase-maps-non-standard-to-non-standard
+; Supported by the "Checks on character case" in acl2-check.lisp.
+     (implies (characterp x)
+              (equal (standard-char-p (char-upcase-non-standard x))
+                     (standard-char-p x))))
+   (defthm char-downcase-maps-non-standard-to-non-standard
+; Supported by the "Checks on character case" in acl2-check.lisp.
+     (implies (characterp x)
+              (equal (standard-char-p (char-downcase-non-standard x))
+                     (standard-char-p x))))
+   (defthm lower-case-p-non-standard-char-downcase-non-standard
+     (implies (upper-case-p-non-standard x)
+              (lower-case-p-non-standard (char-downcase-non-standard x))))
+   (defthm upper-case-p-non-standard-char-upcase-non-standard
+     (implies (lower-case-p-non-standard x)
+              (upper-case-p-non-standard (char-upcase-non-standard x))))
+   (defthm lower/upper-case-p-non-standard-disjointness
+     (not (and (lower-case-p-non-standard x)
+               (upper-case-p-non-standard x)))
+     :rule-classes nil)
+   (defthm char-upcase/downcase-non-standard-inverses
+; Supported by the "Checks on character case" in acl2-check.lisp.
+     (implies (characterp x)
+              (and (implies (upper-case-p-non-standard x)
+                            (equal (char-upcase-non-standard
+                                    (char-downcase-non-standard x))
+                                   x))
+                   (implies (lower-case-p-non-standard x)
+                            (equal (char-downcase-non-standard
+                                    (char-upcase-non-standard x))
+                                   x)))))))
+
+#+acl2-loop-only
+(defun alpha-char-p (x)
+  (declare (xargs :guard (characterp x)))
+  (cond
+   ((standard-char-p x)
+    (and (member x
+                 '(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
+                   #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z
+                   #\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K #\L #\M
+                   #\N #\O #\P #\Q #\R #\S #\T #\U #\V #\W #\X #\Y #\Z))
+         t))
+   (t (alpha-char-p-non-standard x))))
+
+#+acl2-loop-only
+(defun upper-case-p (x)
+  (declare (xargs :guard (characterp x)))
+  (cond
+   ((standard-char-p x)
+    (and (member x
+                 '(#\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K #\L #\M
+                   #\N #\O #\P #\Q #\R #\S #\T #\U #\V #\W #\X #\Y #\Z))
+         t))
+   (t (upper-case-p-non-standard x))))
+
+#+acl2-loop-only
+(defun lower-case-p (x)
+  (declare (xargs :guard (characterp x)))
+  (cond
+   ((standard-char-p x)
+    (and (member x
+                 '(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
+                   #\n #\o #\p #\q #\r #\s #\t #\u #\v #\w #\x #\y #\z))
+         t))
+   (t (lower-case-p-non-standard x))))
+
+#+acl2-loop-only
+(defun char-upcase (x)
+
+; The guard characterp is required by p. 231 of CLtL.
+
+  (declare (xargs :guard (characterp x)))
+  (cond
+   ((standard-char-p x)
+    (let ((pair (assoc x
+                       '((#\a . #\A)
+                         (#\b . #\B)
+                         (#\c . #\C)
+                         (#\d . #\D)
+                         (#\e . #\E)
+                         (#\f . #\F)
+                         (#\g . #\G)
+                         (#\h . #\H)
+                         (#\i . #\I)
+                         (#\j . #\J)
+                         (#\k . #\K)
+                         (#\l . #\L)
+                         (#\m . #\M)
+                         (#\n . #\N)
+                         (#\o . #\O)
+                         (#\p . #\P)
+                         (#\q . #\Q)
+                         (#\r . #\R)
+                         (#\s . #\S)
+                         (#\t . #\T)
+                         (#\u . #\U)
+                         (#\v . #\V)
+                         (#\w . #\W)
+                         (#\x . #\X)
+                         (#\y . #\Y)
+                         (#\z . #\Z)))))
+      (cond (pair (cdr pair))
+            (t x))))
+   (t (char-upcase-non-standard x))))
+
+#+acl2-loop-only
+(defun char-downcase (x)
+
+; See comments in char-upcase.
+
+  (declare (xargs :guard (characterp x)))
+  (cond
+   ((standard-char-p x)
+    (let ((pair (assoc x
+                       '((#\A . #\a)
+                         (#\B . #\b)
+                         (#\C . #\c)
+                         (#\D . #\d)
+                         (#\E . #\e)
+                         (#\F . #\f)
+                         (#\G . #\g)
+                         (#\H . #\h)
+                         (#\I . #\i)
+                         (#\J . #\j)
+                         (#\K . #\k)
+                         (#\L . #\l)
+                         (#\M . #\m)
+                         (#\N . #\n)
+                         (#\O . #\o)
+                         (#\P . #\p)
+                         (#\Q . #\q)
+                         (#\R . #\r)
+                         (#\S . #\s)
+                         (#\T . #\t)
+                         (#\U . #\u)
+                         (#\V . #\v)
+                         (#\W . #\w)
+                         (#\X . #\x)
+                         (#\Y . #\y)
+                         (#\Z . #\z)))))
+      (cond (pair (cdr pair))
+            (t x))))
+   (t (char-downcase-non-standard x))))
+
+(defthm lower-case-p-forward-to-alpha-char-p
+  (implies (lower-case-p x)
+           (alpha-char-p x))
+  :hints (("Goal" :in-theory (enable lower-case-p alpha-char-p)))
+  :rule-classes :forward-chaining)
+
+(defthm upper-case-p-forward-to-alpha-char-p
+  (implies (upper-case-p x)
+           (alpha-char-p x))
+  :hints (("Goal" :in-theory (enable lower-case-p alpha-char-p)))
+  :rule-classes :forward-chaining)
+
+(defthm standard-char-p-forward-to-characterp
+  (implies (standard-char-p x)
+           (characterp x))
+  :hints (("Goal" :in-theory (enable standard-char-p)))
+  :rule-classes :forward-chaining)
+
+(defthm characterp-char-downcase
+  (characterp (char-downcase x))
+  :rule-classes :type-prescription)
+
+(defthm characterp-char-upcase
+  (characterp (char-upcase x))
+  :rule-classes :type-prescription)
+
+(defthm lower-case-p-char-downcase
+  (implies (upper-case-p x)
+           (lower-case-p (char-downcase x)))
+  :hints (("Goal"
+           :in-theory (enable upper-case-p char-upcase char-downcase)
+           :cases ((standard-char-p x)))))
+
+(defthm upper-case-p-char-upcase
+  (implies (lower-case-p x)
+           (upper-case-p (char-upcase x)))
+  :hints (("Goal"
+           :in-theory (enable lower-case-p char-upcase char-downcase)
+           :cases ((standard-char-p x)))))
+
+(defun string-downcase1 (l)
+  (declare (xargs :guard (character-listp l)))
+  (if (atom l)
+      nil
+    (cons (char-downcase (car l))
+          (string-downcase1 (cdr l)))))
+
+(defthm character-listp-string-downcase-1
+  (character-listp (string-downcase1 x)))
+
+#+acl2-loop-only
+(defun string-downcase (x)
+  (declare (xargs :guard (stringp x)))
+
+; As with other functions, e.g., reverse, the guards on this function
+; can't currently be proved because the outer coerce below requires
+; its argument to be made of standard characters.  We don't know that
+; the string x is made of standard characters.
+
+    (coerce (string-downcase1 (coerce x 'list)) 'string))
+
+(defun string-upcase1 (l)
+  (declare (xargs :guard (character-listp l)))
+  (if (atom l)
+      nil
+    (cons (char-upcase (car l))
+          (string-upcase1 (cdr l)))))
+
+(defthm character-listp-string-upcase1-1
+  (character-listp (string-upcase1 x)))
+
+#+acl2-loop-only
+(defun string-upcase (x)
+    (declare (xargs :guard (stringp x)))
+    (coerce (string-upcase1 (coerce x 'list)) 'string))
+
+#+acl2-loop-only
+(defun char-equal (x y)
+  (declare (xargs :guard (and (characterp x)
+                              (characterp y))))
+  (eql (char-downcase x)
+       (char-downcase y)))
+
+(defun string-equal1 (str1 str2 i maximum)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2)
+                              (integerp i)
+                              (integerp maximum)
+                              (<= maximum (length str1))
+                              (<= maximum (length str2))
+                              (<= 0 i)
+                              (<= i maximum))
+                  :measure (nfix (- (ifix maximum) (nfix i)))
+                  :mode :program))
+  (let ((i (nfix i)))
+    (cond
+     ((>= i (ifix maximum))
+      t)
+     (t (and (char-equal (char str1 i)
+                         (char str2 i))
+             (string-equal1 str1 str2 (+ 1 i) maximum))))))
+
+#+acl2-loop-only ; Commented out for patch file
+(defun string-equal (str1 str2)
+  (declare (xargs :guard (and (stringp str1)
+                              (stringp str2))
+                  :mode :program))
+  (let ((len1 (length str1)))
+    (and (= len1 (length str2))
+         (string-equal1 str1 str2 0 len1))))
+
+(defun member-string-equal (str lst)
+  (declare (xargs :guard (and (stringp str)
+                              (string-listp lst))
+                  :mode :program))
+  (cond
+   ((endp lst) nil)
+   (t (or (string-equal str (car lst))
+          (member-string-equal str (cdr lst))))))
+
+(defun string-alistp (x)
+  (declare (xargs :guard t))
+  (cond
+   ((atom x) (eq x nil))
+   (t (and (consp (car x))
+           (stringp (car (car x)))
+           (string-alistp (cdr x))))))
+
+(defthm string-alistp-forward-to-alistp
+  (implies (string-alistp x)
+           (alistp x))
+  :rule-classes :forward-chaining)
+
+(defun assoc-string-equal (str alist)
+  (declare
+   (xargs :guard (and (stringp str)
+                      (string-alistp alist))
+          :mode :program))
+  (cond ((endp alist) nil)
+        ((string-equal str (car (car alist)))
+         (car alist))
+        (t (assoc-string-equal str (cdr alist)))))
+
+(encapsulate
+  ()
+  (local (defthm hack
+           (implies (integerp i)
+                    (equal (+ -1 1 i)
+                           i))))
+
+  (verify-termination-boot-strap string-equal1))
+
+; The following rule has been here for a long time.  It is probably no longer
+; needed for the build but we leave it since it's perhaps used in books.
+(defthm standard-char-p-nth
+  (implies (and (standard-char-listp chars)
+                (<= 0 i)
+                (< i (len chars)))
+           (standard-char-p (nth i chars)))
+  :hints (("Goal" :in-theory (enable nth standard-char-listp))))
+
+(verify-termination-boot-strap string-equal)
+(verify-termination-boot-strap assoc-string-equal)
+(verify-termination-boot-strap member-string-equal)
+(verify-termination-boot-strap xxxjoin)
+
+; We disable the following functions in order to protect people from getting
+; burned by their explosive definitions.  In the case of print-base-p at least,
+; an added benefit is to allow state-p1-forward to infer it.
+(in-theory (disable alpha-char-p upper-case-p lower-case-p
+                    char-upcase char-downcase print-base-p))
+
 ; ?? (v. 1.8) I'm not going to look at many, or any, of the skip-proofs
 ; events on this pass.
-(skip-proofs
+
 (defun princ$ (x channel state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
@@ -18371,7 +18650,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (cdr entry)))
                (open-output-channels state-state))
      state-state)))
-)
 
 (defun write-byte$ (x channel state-state)
 
@@ -18506,28 +18784,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defparameter *file-clock* 1)
 
-(skip-proofs
 (defun make-input-channel (file-name clock)
   (declare (xargs :guard (and (rationalp clock)
-                              (standard-char-listp (explode-atom clock 10))
-                              (stringp file-name)
-                              (standard-char-listp (coerce file-name 'list)))))
+                              (stringp file-name))))
   (intern (coerce
            (append (coerce file-name 'list)
                    (cons '#\-
                          (explode-atom clock 10)))
            'string)
           "ACL2-INPUT-CHANNEL"))
-)
 
-(skip-proofs
 (defun make-output-channel (file-name clock)
   (declare (xargs :guard (and (rationalp clock)
-                              (standard-char-listp (explode-atom clock 10))
                               (or (eq file-name :string)
-                                  (and (stringp file-name)
-                                       (standard-char-listp
-                                        (coerce file-name 'list)))))))
+                                  (stringp file-name)))))
   (intern (coerce (cond ((eq file-name :string)
                          (explode-atom clock 10))
                         (t (append (coerce file-name 'list)
@@ -18535,7 +18805,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                          (explode-atom clock 10)))))
                   'string)
           "ACL2-OUTPUT-CHANNEL"))
-)
 
 ; We here set up the property list of the three channels that are open
 ; at the beginning.  The order of the setfs and the superfluous call
@@ -18743,7 +19012,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (setq *read-file-into-string-alist* nil)
   (incf *file-clock*))
 
-(skip-proofs
+(local
+ (defthm state-p1-implies-ordered-symbol-alistp-open-input-channels
+   (implies (state-p1 state-state)
+            (ordered-symbol-alistp (car state-state)))
+   :hints (("Goal" :expand ((NTH 0 STATE-STATE))
+            :in-theory '(state-p1 open-input-channels open-channels-p zp)))))
+
+(defthm nth-update-nth
+  (equal (nth m (update-nth n val l))
+         (if (equal (nfix m) (nfix n))
+             val
+           (nth m l)))
+  :hints (("Goal" :in-theory (enable nth))))
+
+(defthm true-listp-update-nth
+  (implies (true-listp l)
+           (true-listp (update-nth key val l)))
+  :rule-classes :type-prescription)
+
 (defun open-input-channel (file-name typ state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
@@ -18840,19 +19127,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                            (open-input-channels state-state))
                  state-state))))
             (t (mv nil state-state))))))
-)
-
-(defthm nth-update-nth
-  (equal (nth m (update-nth n val l))
-         (if (equal (nfix m) (nfix n))
-             val
-           (nth m l)))
-  :hints (("Goal" :in-theory (enable nth))))
-
-(defthm true-listp-update-nth
-  (implies (true-listp l)
-           (true-listp (update-nth key val l)))
-  :rule-classes :type-prescription)
 
 (local
  (defthm nth-zp
@@ -18912,7 +19186,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                 state-state)))
           state-state)))))
 
-(skip-proofs
 (defun open-output-channel (file-name typ state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
@@ -19018,13 +19291,102 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (open-output-channels state-state))
                state-state))))
           (t (mv nil state-state)))))
-)
 
-(skip-proofs
+(encapsulate
+ ()
+
+; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
+; It turns out that an easy way to prove the improved version below,
+; contributed by Jared Davis, is to prove the old version first as a lemma:
+
+ (local
+  (defthm len-update-nth-lemma
+    (implies (< (nfix n) (len x))
+             (equal (len (update-nth n val x))
+                    (len x)))))
+
+ (defthm len-update-nth
+   (equal (len (update-nth n val x))
+          (max (1+ (nfix n))
+               (len x)))))
+
+(defthm assoc-add-pair
+  (equal (assoc sym1 (add-pair sym2 val alist))
+         (if (equal sym1 sym2)
+             (cons sym1 val)
+           (assoc sym1 alist))))
+
+(defthm add-pair-preserves-all-boundp
+  (implies (all-boundp alist1 alist2)
+           (all-boundp alist1 (add-pair sym val alist2))))
+
+; Here are lemmas for opening up nth on explicitly given conses.
+
+(defthm nth-0-cons
+  (equal (nth 0 (cons a l))
+         a)
+  :hints (("Goal" :in-theory (enable nth))))
+
+(local
+ (defthm plus-minus-1-1
+   (implies (acl2-numberp x)
+            (equal (+ -1 1 x) x))))
+
+(defthm nth-add1
+  (implies (and (integerp n)
+                (>= n 0))
+           (equal (nth (+ 1 n) (cons a l))
+                  (nth n l)))
+  :hints (("Goal" :expand (nth (+ 1 n) (cons a l)))))
+
+(local
+  (defthm state-p1-put-global
+    (implies (and (state-p1 state)
+                  (symbolp key)
+                  (not (equal key 'current-acl2-world))
+                  (not (equal key 'timer-alist))
+                  (not (equal key 'print-base)))
+             (state-p1 (put-global key value state)))
+    :hints (("Goal" :do-not '(generalize eliminate-destructors)
+             :in-theory (e/d (put-global state-p1)
+                             (all-boundp true-listp))))))
+
+(local
+  (defthm open-channel-listp-add-pair
+    (implies (and (open-channel1 value)
+                  (open-channel-listp l))
+             (open-channel-listp (add-pair key value l)))
+    :hints (("Goal" :in-theory (e/d (add-pair) (open-channel1))))))
+
+(local
+  (defthm len-cons
+    (equal (len (cons a b))
+           (+ 1 (len b)))))
+
+(local
+  (defthm state-p1-mv-nth-1-open-output-channel
+    (implies (and (stringp file-name) ; could allow :string
+                  (member-eq typ *file-types*)
+                  (state-p1 state-state))
+             (state-p1 (mv-nth 1 (open-output-channel file-name
+                                                      typ
+                                                      state-state))))
+    :hints (("Goal" :in-theory (e/d (state-p1 open-channels-p)
+                                    (all-boundp
+                                     len
+                                     open-channel-listp
+                                     true-listp
+                                     ordered-symbol-alistp))))))
+
 (defun open-output-channel! (file-name typ state)
   (declare (xargs :guard (and (stringp file-name)
                               (member-eq typ *file-types*)
-                              (state-p state))))
+                              (state-p state))
+                  :guard-hints (("Goal" :in-theory (disable
+                                                     open-output-channel
+                                                     state-p
+                                                     put-global
+                                                     get-global)))))
   (cond
    ((eql 0 (f-get-global 'ld-level state))
 
@@ -19039,7 +19401,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (value chan)))
               (declare (ignore erp))
               (mv chan state)))))
-)
 
 (defmacro assert$ (test form)
   `(prog2$ (or ,test
@@ -19329,12 +19690,52 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (deflock *output-lock*) ; Keep in sync with :DOC with-output-lock.
 (deflock *local-state-lock*)
 
-(skip-proofs ; as with open-output-channel
+(local
+  (defthm typed-io-listp-of-character
+    (equal (typed-io-listp l ':character)
+           (character-listp l))))
+
+(local
+  (defthm character-listp-cdr-when-open-channel1
+    (implies (and (open-channel1 chan)
+                  (equal (cadr (car chan)) ':character))
+             (character-listp (cdr chan)))))
+
+(local
+  (defthm len-cdr-car-when-open-channel1
+    (implies (open-channel1 chan)
+             (equal (len (cdr (car chan)))
+                    3))))
+
+; We use defthm just above and in-theory just below, since it's too early in
+; the boot-strap to use defthmd.
+(local (in-theory (disable len-cdr-car-when-open-channel1)))
+
+(local
+  (defthm not-equal-string-nth-2-car-when-open-channel1
+    (implies (open-channel1 chan)
+             (not (equal (nth 2 (car chan)) :string)))))
+
+; We use defthm just above and in-theory just below, since it's too early in
+; the boot-strap to use defthmd.
+(local (in-theory (disable not-equal-string-nth-2-car-when-open-channel1)))
+
+(local
+  (defthm open-channel1-cdr-assoc-equal-when-open-channels-p
+    (implies (and (open-channels-p channels)
+                  (assoc-equal channel channels))
+             (open-channel1 (cdr (assoc-equal channel channels))))
+    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+
 (defun get-output-stream-string$-fn (channel state-state)
-  (declare (xargs :guard (and (state-p1 state-state)
-                              (symbolp channel)
-                              (open-output-channel-any-p1 channel
-                                                          state-state))))
+  (declare (xargs
+             :guard (and (state-p1 state-state)
+                         (symbolp channel)
+                         (open-output-channel-any-p1 channel state-state))
+             :guard-hints
+             (("Goal" :in-theory
+               (enable len-cdr-car-when-open-channel1
+                       not-equal-string-nth-2-car-when-open-channel1)))))
   #-acl2-loop-only
   (when (live-state-p state-state)
     (let ((stream (get-output-stream-from-channel channel)))
@@ -19374,7 +19775,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                      (open-output-channels state-state))
            state-state)))
      (t (mv t nil state-state)))))
-)
 
 (defmacro get-output-stream-string$ (channel state-state
                                              &optional
@@ -19704,34 +20104,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (equal (pairlis$ x (true-list-fix y))
          (pairlis$ x y)))
 
-(encapsulate
- ()
-
-; Before Version_2.9.3, len-update-nth had the form of the local lemma below.
-; It turns out that an easy way to prove the improved version below,
-; contributed by Jared Davis, is to prove the old version first as a lemma:
-
- (local
-  (defthm len-update-nth-lemma
-    (implies (< (nfix n) (len x))
-             (equal (len (update-nth n val x))
-                    (len x)))))
-
- (defthm len-update-nth
-   (equal (len (update-nth n val x))
-          (max (1+ (nfix n))
-               (len x)))))
-
-(defthm assoc-add-pair
-  (equal (assoc sym1 (add-pair sym2 val alist))
-         (if (equal sym1 sym2)
-             (cons sym1 val)
-           (assoc sym1 alist))))
-
-(defthm add-pair-preserves-all-boundp
-  (implies (all-boundp alist1 alist2)
-           (all-boundp alist1 (add-pair sym val alist2))))
-
 (defthm state-p1-read-acl2-oracle
     (implies (state-p1 state)
              (state-p1 (mv-nth 2 (read-acl2-oracle state))))
@@ -19820,7 +20192,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (implies (and (state-p1 st1)
                  (state-p1 st2)
                  (symbolp sym1)
-                 (not (member-eq sym1 '(timer-alist current-acl2-world))))
+                 (not (member-eq sym1 '(timer-alist
+                                        current-acl2-world
+                                        print-base))))
             (state-p1 (update-nth 2
                                   (add-pair
                                    sym1 val1
@@ -19834,8 +20208,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (state-p1 st2)
                  (symbolp sym1)
                  (symbolp sym2)
-                 (not (member-eq sym1 '(timer-alist current-acl2-world)))
-                 (not (member-eq sym2 '(timer-alist current-acl2-world))))
+                 (not (member-eq sym1 '(timer-alist
+                                        print-base
+                                        current-acl2-world)))
+                 (not (member-eq sym2 '(timer-alist
+                                        print-base
+                                        current-acl2-world))))
             (state-p1 (update-nth 2
                                   (add-pair
                                    sym1 val1
@@ -19852,9 +20230,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  (symbolp sym1)
                  (symbolp sym2)
                  (symbolp sym3)
-                 (not (member-eq sym1 '(timer-alist current-acl2-world)))
-                 (not (member-eq sym2 '(timer-alist current-acl2-world)))
-                 (not (member-eq sym3 '(timer-alist current-acl2-world))))
+                 (not (member-eq sym1 '(timer-alist
+                                        print-base
+                                        current-acl2-world)))
+                 (not (member-eq sym2 '(timer-alist
+                                        print-base
+                                        current-acl2-world)))
+                 (not (member-eq sym3 '(timer-alist
+                                        print-base
+                                        current-acl2-world))))
             (state-p1 (update-nth 2
                                   (add-pair
                                    sym1 val1
@@ -20182,7 +20566,72 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          t)
         (t (some-slashable (cdr l)))))
 
-(skip-proofs
+(local
+  (defthm state-p1-update-open-output-channels
+    (implies (state-p1 state)
+             (equal (state-p1 (update-open-output-channels x state))
+                    (open-channels-p x)))
+    :hints (("Goal" :in-theory (e/d (state-p1)
+                                    (open-channels-p all-boundp))))))
+
+(local (in-theory (disable channel-headerp)))
+
+(local
+  (defthm open-channel1-of-cons
+    (equal (open-channel1 (cons header vals))
+           (and (channel-headerp header)
+                (typed-io-listp vals (cadr header))))
+    :hints (("Goal" :in-theory (enable channel-headerp)))))
+
+(local
+  (defthm channel-headerp-cadr-assoc-equal-when-open-channels-p
+    (implies (and (open-channels-p channels)
+                  (assoc-equal channel channels))
+             (channel-headerp (cadr (assoc-equal channel channels))))
+    :hints (("Goal" :in-theory (e/d (open-channels-p) (open-channel1))))))
+
+(local
+  (defthm open-channel-listp-nth-1
+    (implies (state-p1 state)
+             (open-channel-listp (nth 1 state)))
+    :hints (("Goal" :in-theory (enable state-p1)))))
+
+(local
+  (defthm character-listp-expode-atom
+    (character-listp (explode-atom x print-base))))
+
+(local
+  (defthm character-listp-expode-atom+
+    (character-listp (explode-atom+ x print-base print-radix))
+    :hints (("Goal" :in-theory (disable explode-atom)))))
+
+(local
+  (defthm state-p1-princ$
+    (implies (and (atom x)
+                  (state-p1 state-state)
+                  (symbolp channel)
+                  (open-output-channel-p1 channel
+                                          :character state-state))
+             (state-p1 (princ$ x channel state-state)))
+    :hints (("Goal" :in-theory (e/d (open-channels-p open-channel-listp)
+                                    (update-open-output-channels
+                                     string-downcase explode-atom
+                                     open-channel1))))))
+
+(local
+  (defthm open-output-channel-p1-princ$
+    (implies (and (atom x)
+                  (state-p1 state-state)
+                  (symbolp channel)
+                  (open-output-channel-p1 channel :character state-state))
+             (open-output-channel-p1
+               channel
+               :character (princ$ x channel state-state)))
+    :hints (("Goal" :in-theory (e/d (open-channel-listp)
+                                    (string-downcase explode-atom
+                                     open-channel1
+                                     len))))))
+
 (defun prin1-with-slashes1 (l slash-char channel state)
   (declare (xargs :guard
                   (and (character-listp l)
@@ -20191,7 +20640,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (symbolp channel)
                        (open-output-channel-p channel
                                               :character
-                                              state))))
+                                              state))
+                  :guard-hints (("Goal" :in-theory
+                                 (disable princ$ open-output-channel-p1)))))
   (cond ((endp l) state)
         (t (pprogn
             (cond ((or (equal (car l) #\\) (equal (car l) slash-char))
@@ -20199,9 +20650,35 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (t state))
             (princ$ (car l) channel state)
             (prin1-with-slashes1 (cdr l) slash-char channel state)))))
-)
 
-(skip-proofs
+(local
+  (defthm state-p1-prin1-with-slashes1
+    (implies (and (character-listp l)
+                  (characterp slash-char)
+                  (state-p state)
+                  (symbolp channel)
+                  (open-output-channel-p channel :character state))
+             (state-p1 (prin1-with-slashes1 l slash-char channel state)))
+    :hints (("Goal" :in-theory (disable update-open-output-channels
+                                        princ$
+                                        open-output-channel-p1)))))
+
+(local
+  (defthm open-output-channel-p1-prin1-with-slashes1
+    (implies (and (character-listp l)
+                  (characterp slash-char)
+                  (state-p state)
+                  (symbolp channel)
+                  (open-output-channel-p channel :character state))
+             (open-output-channel-p1 channel :character
+                                     (prin1-with-slashes1 l
+                                                          slash-char
+                                                          channel
+                                                          state)))
+    :hints (("Goal" :in-theory (disable update-open-output-channels
+                                        princ$
+                                        open-output-channel-p1)))))
+
 (defun prin1-with-slashes (s slash-char channel state)
   (declare (xargs :guard (and (stringp s)
                               (characterp slash-char)
@@ -20226,7 +20703,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (t (princ$ ch channel state))))))
          (return-from prin1-with-slashes state)))
   (prin1-with-slashes1 (coerce s 'list) slash-char channel state))
-)
 
 (defmacro suspiciously-first-numeric-chars (print-base)
   `(if (eql ,print-base 16)
@@ -21612,25 +22088,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                (cons (+ (car timer1) (car timer2)) (cdr timer1))
                state)))
 
-; Here are lemmas for opening up nth on explicitly given conses.
-
-(defthm nth-0-cons
-  (equal (nth 0 (cons a l))
-         a)
-  :hints (("Goal" :in-theory (enable nth))))
-
-(local
- (defthm plus-minus-1-1
-   (implies (acl2-numberp x)
-            (equal (+ -1 1 x) x))))
-
-(defthm nth-add1
-  (implies (and (integerp n)
-                (>= n 0))
-           (equal (nth (+ 1 n) (cons a l))
-                  (nth n l)))
-  :hints (("Goal" :expand (nth (+ 1 n) (cons a l)))))
-
 (defthm ordered-symbol-alistp-add-pair-forward
   (implies (and (symbolp key)
                 (ordered-symbol-alistp l))
@@ -21692,12 +22149,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                   (cdr timer))
                        state))))
 
-(skip-proofs
 (defun print-rational-as-decimal (x channel state)
   (declare (xargs :guard (and (rationalp x)
                               (symbolp channel)
                               (equal (print-base) 10)
-                              (open-output-channel-p channel :character state))))
+                              (open-output-channel-p channel :character state))
+                  :guard-hints
+                  (("Goal" :in-theory (disable princ$
+                                               open-output-channel-p1)))))
   (let ((x00 (round (* 100 (abs x)) 1)))
     (pprogn
      (cond ((< x 0) (princ$ "-" channel state))
@@ -21711,7 +22170,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (pprogn (princ$ "0" channel state)
                       (princ$ r channel state)))
              (t (princ$ r channel state)))))))
-)
 
 (defun print-timer (name channel state)
   (declare (xargs :guard (and (symbolp name)
@@ -21723,7 +22181,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (print-rational-as-decimal (car (get-timer name state)) channel state))
 
 (defthm state-p1-update-print-base
-  (implies (state-p1 state)
+  (implies (and (state-p1 state)
+                (force (print-base-p val)))
            (state-p1 (update-nth 2
                                  (add-pair 'print-base val (nth 2 state))
                                  state)))
@@ -21754,7 +22213,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun set-print-base-radix (base state)
   (declare (xargs :guard (and (print-base-p base)
-                              (state-p state))))
+                              (state-p state))
+                  :guard-hints (("Goal" :in-theory (enable print-base-p)))))
   (prog2$ (check-print-base base 'set-print-base)
           (pprogn (f-put-global 'print-base base state)
                   (f-put-global 'print-radix
@@ -21795,7 +22255,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    (and foundp ; return nil when x is nil but is not in the current package
         (eq sym x))))
 
-(skip-proofs
 (defun prin1$ (x channel state)
 
 ;  prin1$ differs from prin1 in several ways.  The second arg is state, not
@@ -21803,7 +22262,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (and (atom x)
                               (symbolp channel)
-                              (open-output-channel-p channel :character state))))
+                              (open-output-channel-p channel :character state))
+                  :guard-hints
+                  (("Goal" :in-theory (disable princ$
+                                               open-output-channel-p1
+                                               all-boundp
+                                               needs-slashes)))))
   #-acl2-loop-only
   (cond ((live-state-p state)
          (cond ((and *wormholep*
@@ -21928,7 +22392,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                   (princ$ #\| channel state)))
                 (t (princ$ x channel state)))))
         (t (princ$ x channel state))))
-)
 
 
 ;                             UNTOUCHABLES
@@ -21987,6 +22450,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               all-boundp
               plist-worldp
               timer-alistp
+              print-base-p
               known-package-alistp
               file-clock-p
               readable-files-p
@@ -22552,6 +23016,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 #-acl2-loop-only
+(defvar *bad-lisp-object-ok* nil)
+
+#-acl2-loop-only
 (defun-one-output chk-bad-lisp-object (x)
 
 ; We avoid the check when including a book, for efficiency.  In one experiment
@@ -22559,6 +23026,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; simply to return nil.
 
   (when (not (or *inside-include-book-fn*
+                 *bad-lisp-object-ok*
 
 ; We avoid the bad-lisp-objectp check during the Convert procedure of
 ; provisional certification, in part because it is not necessary but, more
@@ -22593,15 +23061,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (let ((msg (bad-lisp-objectp x)))
       (cond (msg (interface-er "~@0" msg))
             (t nil)))))
-
-(defmacro assign (x y)
-  (declare (type symbol x))
-  `(pprogn (f-put-global ',x ,y state)
-           (mv nil (f-get-global ',x state) state)))
-
-(defmacro @ (x)
-  (declare (type symbol x))
-  `(f-get-global ',x state))
 
 ; We have found it useful, especially for proclaiming of FMT functions, to have
 ; a version `the2s' of the macro `the', for the multiple value case.  At one
@@ -22918,26 +23377,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (state-p state)))
   (default-defun-mode (w state)))
 
-#+acl2-loop-only
-(defmacro logic nil
-  '(state-global-let*
-    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
-    (er-progn (table acl2-defaults-table :defun-mode :logic)
-              (value :invisible))))
-
-#-acl2-loop-only
-(defmacro logic () nil)
-
-#+acl2-loop-only
-(defmacro program nil
-  '(state-global-let*
-    ((inhibit-output-lst (list* 'summary (@ inhibit-output-lst))))
-    (er-progn (table acl2-defaults-table :defun-mode :program)
-              (value :invisible))))
-
-#-acl2-loop-only
-(defmacro program () nil)
-
 (defun invisible-fns-table (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'invisible-fns-table wrld))
@@ -23151,8 +23590,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   nil)
 
 (set-table-guard inhibit-warnings-table
-                 (and (stringp key)
-                      (standard-string-p key))
+                 (stringp key)
                  :topic set-inhibit-warnings)
 
 #+acl2-loop-only
@@ -23168,8 +23606,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun remove1-assoc-string-equal (key alist)
   (declare (xargs :guard (and (stringp key)
-                              (standard-string-p key)
-                              (standard-string-alistp alist))))
+                              (string-alistp alist))))
   (cond ((endp alist) nil)
         ((string-equal key (caar alist)) (cdr alist))
         (t (cons (car alist)
@@ -24832,32 +25269,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (equal (imagpart (+ x y))
          (+ (imagpart x) (imagpart y)))
   :hints (("Goal" :use add-def-complex)))
-
-(defun chk-inhibit-output-lst-msg (lst)
-  (declare (xargs :guard t))
-  (cond ((not (true-listp lst))
-         (msg "The argument to set-inhibit-output-lst must evaluate to a ~
-               true-listp, unlike ~x0."
-              lst))
-        ((not (subsetp-eq lst *valid-output-names*))
-         (msg "The argument to set-inhibit-output-lst must evaluate to a ~
-               subset of the list ~X01, but ~x2 contains ~&3."
-              *valid-output-names*
-              nil
-              lst
-              (set-difference-eq lst *valid-output-names*)))
-        (t nil)))
-
-(defun set-inhibit-output-lst-state (lst state)
-  (declare (xargs :guard t))
-  (let ((msg (chk-inhibit-output-lst-msg lst)))
-    (cond (msg (prog2$ (er hard? 'set-inhibit-output-lst "~@0" msg)
-                       state))
-          (t (f-put-global 'inhibit-output-lst
-                           (if (member-eq 'warning! lst)
-                               (add-to-set-eq 'warning lst)
-                             lst)
-                           state)))))
 
 (encapsulate
   ()
@@ -26695,6 +27106,7 @@ Lisp definition."
  (verify-termination-boot-strap fgetprop)
  (verify-termination-boot-strap sgetprop)
  (verify-termination-boot-strap function-symbolp)
+ (verify-termination-boot-strap all-function-symbolps)
  (verify-termination-boot-strap strip-cars)
  (verify-termination-boot-strap assoc-eq-exec$guard-check)
  (verify-termination-boot-strap assoc-eq-exec)
@@ -26960,17 +27372,7 @@ Lisp definition."
                   'search 'equal 'char-equal test))
              ((and (stringp seq1)
                    (stringp seq2))
-              (or (eq test 'equal)
-                  (and (standard-char-listp (coerce seq1 'list))
-                       (standard-char-listp (coerce seq2 'list)))
-                  (er hard? 'search
-                      "When ~x0 is called on two strings, they must both ~
-                       consist of standard characters.  However, this is not ~
-                       the case for ~x1."
-                      'search
-                      (if (standard-char-listp (coerce seq1 'list))
-                          seq2
-                        seq1))))
+              t)
              ((eq test 'char-equal)
               (er hard? 'search
                   "For the macro ~x0, the :test ~x1 is only supported for ~
@@ -27978,6 +28380,7 @@ Lisp definition."
                           all-boundp
                           plist-worldp
                           timer-alistp
+                          print-base-p
                           known-package-alistp
                           file-clock-p
                           readable-files-p
@@ -28615,6 +29018,10 @@ Lisp definition."
   `(not (logicp ,fn ,wrld)))
 
 (defconst *stobjs-out-invalid*
+
+; Warning: If you add to the list below, then modify term-stobjs-out
+; accordingly.
+
   '(if return-last do$ read-user-stobj-alist))
 
 (defun stobjs-out (fn w)
@@ -29396,7 +29803,6 @@ Lisp definition."
   (logic)
   (verify-termination-boot-strap booleanp)
   (verify-termination-boot-strap all-nils)
-  (verify-termination-boot-strap member-eql-exec)
   (verify-termination-boot-strap member-eql-exec$guard-check)
   (verify-termination-boot-strap member-equal)
   (verify-termination-boot-strap subsetp-eql-exec)
@@ -30068,4 +30474,3 @@ Lisp definition."
   (if (integerp x)
       (<= x 0)
     t))
-

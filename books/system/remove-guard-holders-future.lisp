@@ -86,7 +86,7 @@
               (cond ((eq (ffn-symb x) 'cons-with-hint)
                      (max 2 (len (fargs x))))
                     ((eq (ffn-symb x) 'do$)
-                     (max 7 (len (fargs x))))
+                     (max 6 (len (fargs x)))) ;;; 6 used to be 7!
                     (t (len (fargs x))))))))
 
 (defthm nat-listp-make-list-ac
@@ -420,10 +420,13 @@
 (defun rgh-symbolp-exit (x args changedp0 changedp1)
   (cond ((and (eq (ffn-symb x) 'DO$)
               (quotep (fargn x 6))
-              (quotep (fargn x 7))
+;              (quotep (fargn x 7))
               (unquote (fargn x 6))
-              (unquote (fargn x 7)))
-         (mv t (mcons-term 'DO$ (append (take 5 args) (list *nil* *nil*)))))
+;              (unquote (fargn x 7))
+              )
+         (mv t (mcons-term 'DO$ (append (take 5 args) (list *nil*
+                                                            ; *nil*
+                                                            )))))
         ((null changedp1)
          (cond ((quote-listp args)
                 (let ((new-x (mcons-term (ffn-symb x)

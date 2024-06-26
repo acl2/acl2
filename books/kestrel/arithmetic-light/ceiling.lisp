@@ -170,7 +170,7 @@
                            (my-floor-lower-bound-alt
                             <-of-*-of-/-arg2-arg1
                             <-of-*-of-/-arg2-arg2
-                            <-*-/-left-with-addend)))))
+                            )))))
 
 ;; k is bigger than the ceiling if it at least the quotient plus 1
 (defthm <-of-ceiling-arg2
@@ -181,8 +181,7 @@
                 (< 0 j))
            (< (ceiling i j) k))
   :hints (("Goal" :use ceiling-upper-bound
-           :in-theory (disable ceiling-upper-bound
-                               <-*-/-left-with-addend-alt))))
+           :in-theory (disable ceiling-upper-bound))))
 
 (defthm ceiling-of-*-same
   (implies (and (posp x)

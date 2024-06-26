@@ -1,0 +1,1028 @@
+; C Library
+;
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Purpose
+
+; This file contains an ABNF grammar for C
+; that is based on the grammar in [C]
+; but is meant for use by tools that manipulate C code.
+; See :doc concrete-syntax-for-tools for more information.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Notation
+
+; The ABNF notation can capture well the notation described in [C:6.1].
+; We write ABNF rules that are similar to the syntax rules in [C],
+; to the extent possible, but the ABNF rules are tailored to our purpose.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Structure
+
+; This file is divided into sections, separated by lines of 80 semicolons.
+; Each section starts with a title.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Levels
+
+; [C] presents a lexical grammar [C:A.1] and a phrase structure grammar [C:A.2].
+; This is a typical two-level grammar structure for programming languages:
+; the first grammar describes how a sequence of characters
+; is organized into lexical units (identifiers, constants, etc.),
+; and the second grammar describes how the sequence of those lexical units
+; is organized into higher-level constructs (expressions, statements, etc.).
+
+; In C, the lexical organization is a bit more complicated than other languages,
+; because of preprocessing and other features.
+; In fact, the complete syntactic (and semantic) processing of code
+; is described as consisting of 8 translation phases [C:5.1.1.2].
+
+; Since our grammar formulation aims at capturing at the same time
+; the phrase structure of the code and some preprocessing constructs,
+; we regard our grammars as defining just two phases:
+; one for the lexical organization
+; (which therefore includes both tokens and some preprocessing tokens),
+; and one for a phrase structure that may also include preprocessing constructs
+; (which therefore is an extension of the phrase structure grammar in [C]).
+
+; Our ABNF grammar does not consider
+; the trigraph sequences handled in the first phase in [C:5.1.1.2]
+; and the splicing of lines in the second phase in [C:5.1.1.2].
+; These are simple transformations that can be performed
+; prior to the processing described by our ABNF grammar,
+; along with UTF-8 decoding if we start with Unicode files.
+
+; Our ABNF grammar does not capture the requirement that
+; a non-empty file ends with a new-line character (see phase 3 in [C:5.1.1.2]).
+; This can be easily enforced outside the grammar as well.
+
+; Another aspect that our grammar does not cover is
+; the concatenation of adjacent string literals (see phase 6 in [C:5.1.1.2]).
+; This does not affect the lexing of the code, since string literals are tokens,
+; but the parser would need to accept adjacent string literals.
+; In the (phrase structure) grammar, this could be accommodated
+; by extending the expression grammar rules to allow adjacent string literals,
+; but [C] has no such rule: only single literals can be expressions.
+; So we keep consistent with [C] and disallow adjacent string literals,
+; in the rules of our ABNF grammar.
+; Note that the concatenation of adjacent string literals
+; could be done on the fly just after lexing,
+; without necessarily including that in the grammar.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing
+
+; As mentioned above, our ABNF grammar aims at capturing code
+; in a form that includes the phrase structure
+; with at least some preprocessing constructs.
+; Actually, right now we do not capture any preprocessing construct,
+; but we plan to do that soon; this is just an initial version.
+
+; However, C preprocessing operates at a low lexical level,
+; so it may be difficult or impossible to capture
+; all possible C code in this hybrid way.
+; In that case, it is always possible to preprocess the code separately,
+; and then use this grammar, without preprocessing constructs.
+; This ABNF grammar covers at least all preprocessed code.
+
+; In that case, the preprocessing may be done via an external tool,
+; e.g. (a component of) some existing C compiler.
+; We may also build our own preprocessor in ACL2 at some point.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Characters [C:5.2.1]
+
+; [C:5.2.1] provides requirements on the source character set,
+; i.e. the character set used to write the C code,
+; but the details of this character set are implementation-dependent;
+; see [books]/kestrel/c/language/character-sets.lisp
+; for a formalization of the requirements in [C:5.2.1].
+; In particular, [C:5.2.1] does not prescribe ASCII or Unicode.
+; Our grammar assumes Unicode, which is a very general assumption these days.
+; In fact, initially we assume ASCII (which is a subset of Unicode),
+; which is a reasonable assumption, at least for an initial version.
+
+; We define the source character set as the union of
+; the basic character set (which has an obvious ASCII interpretation)
+; and an initial set of extended characters, which we will extend as needed.
+; As we define these basic and extended character sets,
+; we also define subsets of them used in other parts of the grammar.
+
+; The basic characters are defined based on [C:5.2.1].
+; The 'digit' rule name corresponds to
+; the 'digit' nonterminal in [C:A.1.3] [C:6.4.2.1];
+; all the other rule names do not directly correspond to nonterminals in [C].
+
+uppercase-letter = %x41-5a ; A-Z
+
+lowercase-letter = %x61-7a ; a-z
+
+letter = uppercase-letter / lowercase-letter
+
+digit = %x30-39 ; 0-9 [C:A.1.3] [C:6.4.2.1]
+
+double-quote = %x22 ; "
+
+graphic-character = %x21-23 ; ! " #
+                  / %x25-2f ; % & ' ( ) * + , - . /
+                  / %x3a-3f ; : ; < = > ?
+                  / %x5b-5f ; [ \ ] ^ _
+                  / %x7b-7e ; { | } ~
+
+space = %x20 ; SP
+
+horizontal-tab = %x09 ; HT
+
+vertical-tab = %x0B ; VT
+
+form-feed = %x0C ; FF
+
+control-character = horizontal-tab
+                  / vertical-tab
+                  / form-feed
+
+basic-character = letter
+                / digit
+                / graphic-character
+                / space
+                / control-character
+
+; Initially, we include just the following extended characters:
+; the printable ASCII characters that are not basic characters ($ @ `),
+; line feed, and carriage return.
+; The latter are needed to express what [C] regards as new-line characters,
+; which are, in general, new-line indications that could potentially be
+; different actual characters, or not even characters.
+; The following rule names do not directly correspond to nonterminals in [C].
+
+line-feed = %x0a ; LF
+
+carriage-return = %x0d ; CR
+
+extended-character = %x24 ; $
+                   / %x40 ; @
+                   / %x60 ; `
+                   / line-feed
+                   / carriage-return
+                   ; add more as needed
+
+; This is our initial (source) character set.
+; This rule name has no direct corresponding nonterminal in [C],
+; and is not used in the rest of our ABNF grammar,
+; but it serves to clarify the character set.
+
+character = basic-character
+          / extended-character
+
+; ASCII control characters like backspace (%x08) are potentially dangerous
+; because they may make code appear different from what it is,
+; depending on where it is displayed (editor, shell, etc.).
+; These dangers are similar to Trojan Source,
+; which is based on bidirectional Unicode characters.
+; [C] is silent on the matter; it does not even prescribe ASCII or Unicode.
+; For now we exclude all those characters, in the definition above;
+; note that none of the characters defined above exhibits these dangers.
+
+; [C] does not prescribe how lines should be terminated,
+; but assumes a new-line character [C:5.2.1].
+; Given that we commit to ASCII/Unicode,
+; it seems reasonable to define a new-line character as
+; line feed, or carriage return, or carriage return and line feed;
+; this is the same definition as in Java.
+; Note that this is not necessarily a single character,
+; but it follows the nomenclature of 'new-line character' in [C].
+
+new-line = line-feed
+         / carriage-return
+         / carriage-return line-feed
+
+; We introduce rules for the character set except certain characters.
+; These are used in other rules in the grammar given later,
+; but they are included here so they are close to
+; the structurally similar rules above,
+; all of which must be updated consistently if we add more extended characters.
+; These rules have no direct counterpart in [C].
+
+extended-character-not-new-line = %x24 ; $
+                                / %x40 ; @
+                                / %x60 ; `
+                                ; omits line-feed and carriage-return
+                                ; cf. extended-character
+
+graphic-character-not-star = %x21-23 ; ! " #
+                           / %x25-29 ; % & ' ( )
+                           ; omits *
+                           / %x2b-2f ; + , - . /
+                           / %x3a-3f ; : ; < = > ?
+                           / %x5b-5f ; [ \ ] ^ _
+                           / %x7b-7e ; { | } ~
+                           ; cf. graphic-character
+
+graphic-character-not-star-or-slash = %x21-23 ; ! " #
+                                    / %x25-29 ; % & ' ( )
+                                    ; omits *
+                                    / %x2b-2e ; + , - .
+                                    ; omits /
+                                    / %x3a-3f ; : ; < = > ?
+                                    / %x5b-5f ; [ \ ] ^ _
+                                    / %x7b-7e ; { | } ~
+                                    ; cf. graphic-character
+
+graphic-character-not-single-quote-or-backslash = %x21-23 ; ! " #
+                                                / %x25-26 ; % &
+                                                ; omits '
+                                                / %x28-2f ; ( ) * + , - . /
+                                                / %x3a-3f ; : ; < = > ?
+                                                / %x5b    ; [
+                                                ; omits \
+                                                / %x5d-5f ; ] ^ _
+                                                / %x7b-7e ; { | } ~
+
+graphic-character-not-double-quote-or-backslash =
+      %x21    ; !
+    ; omits "
+    / %x23    ; #
+    / %x25-2f ; % & ' ( ) * + , - . /
+    / %x3a-3f ; : ; < = > ?
+    / %x5b    ; [
+    ; omits \
+    / %x5d-5f ; ] ^ _
+    / %x7b-7e ; { | } ~
+
+basic-character-not-star = letter
+                         / digit
+                         / graphic-character-not-star
+                         / space
+                         / control-character
+
+basic-character-not-star-or-slash = letter
+                                  / digit
+                                  / graphic-character-not-star-or-slash
+                                  / space
+                                  / control-character
+
+basic-character-not-single-quote-or-backslash =
+      letter
+    / digit
+    / graphic-character-not-single-quote-or-backslash
+    / space
+    / control-character
+
+basic-character-not-double-quote-or-backslash =
+      letter
+    / digit
+    / graphic-character-not-double-quote-or-backslash
+    / space
+    / control-character
+
+character-not-new-line = basic-character
+                       / extended-character-not-new-line
+
+character-not-star = basic-character-not-star
+                   / extended-character
+
+character-not-star-or-slash = basic-character-not-star-or-slash
+                            / extended-character
+
+character-not-single-quote-or-backslash-or-new-line =
+      basic-character-not-single-quote-or-backslash
+    / extended-character-not-new-line
+
+character-not-double-quote-or-backslash-or-new-line =
+      basic-character-not-double-quote-or-backslash
+    / extended-character-not-new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; White Space [C:6.4/3]
+
+; [C] designates the following as white-space characters:
+; space, horizontal tab, vertical tab, form feed, and new line.
+; It designates white space as not only these characters, but also comments.
+; We introduce an ABNF rule (which has no counterpart grammar rule in [C])
+; for white-space characters (not comments, which are defined separately).
+
+white-space = space
+            / horizontal-tab
+            / vertical-tab
+            / form-feed
+            / new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Comments [C:6.4.9]
+
+; [C] does not provide grammar rules for comments;
+; it describes them informally in [C:6.4.9].
+; Here we provide ABNF grammar rules that capture the syntax of comments.
+
+comment = block-comment
+        / line-comment
+
+block-comment = "/*" rest-of-block-comment
+
+rest-of-block-comment =
+      "*" rest-of-block-comment-after-star
+    / character-not-star rest-of-block-comment
+
+rest-of-block-comment-after-star =
+      "/"
+    / "*" rest-of-block-comment-after-star
+    / character-not-star-or-slash rest-of-block-comment
+
+line-comment = "//" *character-not-new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexical elements [C:A.1.1] [C:6.4]
+
+; In the grammar in [C], tokens and preprocessing tokens overlap,
+; and are meant to describe the language in different translation phases.
+; However, in this grammar, as explained in 'Purpose' above,
+; we mix together preprocessing tokens and (non-preprocessing) tokens.
+; Currently they are all (non-preprocessing) tokens,
+; but will add some preprocessing tokens.
+
+token = keyword
+      / identifier
+      / constant
+      / string-literal
+      / punctuator
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Keywords [C:A.1.2] [C:6.4.1]
+
+keyword = %s"auto"
+        / %s"break"
+        / %s"case"
+        / %s"char"
+        / %s"const"
+        / %s"continue"
+        / %s"default"
+        / %s"do"
+        / %s"double"
+        / %s"else"
+        / %s"enum"
+        / %s"extern"
+        / %s"float"
+        / %s"for"
+        / %s"goto"
+        / %s"if"
+        / %s"inline"
+        / %s"int"
+        / %s"long"
+        / %s"register"
+        / %s"restrict"
+        / %s"return"
+        / %s"short"
+        / %s"signed"
+        / %s"sizeof"
+        / %s"static"
+        / %s"struct"
+        / %s"switch"
+        / %s"typedef"
+        / %s"union"
+        / %s"unsigned"
+        / %s"void"
+        / %s"volatile"
+        / %s"while"
+        / %s"_Alignas"
+        / %s"_Alignof"
+        / %s"_Atomic"
+        / %s"_Bool"
+        / %s"_Complex"
+        / %s"_Generic"
+        / %s"_Imaginary"
+        / %s"_Noreturn"
+        / %s"_Static_assert"
+        / %s"_Thread_local"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Identifiers [C:A.1.3] [C:6.4.2.1]
+
+; For now we omit universal character names in identifiers.
+; These have requirements specified in [C:D].
+; We could add them in the future if needed.
+
+; For now we omit other implementation-defined characters from identifiers.
+; We could add them in the future if needed.
+
+; Our ABNF rule for 'nondigit' is equivalent to the one in [C],
+; but we use our 'letter' (defined above) instead of listing the letters.
+
+identifier = identifier-nondigit
+           / identifier identifier-nondigit
+           / identifier digit
+
+identifier-nondigit = nondigit
+                    ; omit universal-character-name
+                    ; omit other implementation-defined character
+
+nondigit = "_"
+         / letter
+
+; During preprocessing, ideniifiers include keywords:
+; see rule for 'preprocessing-token' in [C:A.1.1] [C:6.4].
+; After preprocessing, identifiers exclude keywords:
+; see rule for 'token' in [C:A.1.1] [C:6.4],
+; and the extra-grammatical requirement in [C:6.4.2.1/4].
+; However, in the rule for 'identifier' in [C:A.1.3] [C:6.4.2.1],
+; grammatically identifiers include keywords, as does our ABNF grammar rule.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Universal Character Names [C:A.1.4] [C:6.4.3]
+
+universal-character-name = %s"\u" hex-quad
+                         / %s"\U" hex-quad hex-quad
+
+hex-quad =
+  hexadecimal-digit hexadecimal-digit hexadecimal-digit hexadecimal-digit
+
+; The rule name 'hexadecimal-digit' is defined below, as part of constants.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Constants [C:A.1.5] [C:6.4.4]
+
+constant = integer-constant
+         / floating-constant
+         / enumeration-constant
+         / character-constant
+
+integer-constant = decimal-constant [ integer-suffix ]
+                 / octal-constant [ integer-suffix ]
+                 / hexadecimal-constant [ integer-suffix ]
+
+decimal-constant = nonzero-digit
+                 / decimal-constant digit
+
+octal-constant = "0"
+               / octal-constant octal-digit
+
+hexadecimal-constant = hexadecimal-prefix hexadecimal-digit
+                     / hexadecimal-constant hexadecimal-digit
+
+hexadecimal-prefix = %i"0x"
+
+nonzero-digit = %x31-39 ; 1-9
+
+octal-digit = %x30-37 ; 0-7
+
+hexadecimal-digit = %x30-39 ; 0-9
+                  / %x61-66 ; a-f
+                  / %x41-46 ; A-F
+
+integer-suffix = unsigned-suffix [ long-suffix ]
+               / unsigned-suffix [ long-long-suffix ]
+               / long-suffix [ unsigned-suffix ]
+               / long-long-suffix [ unsigned-suffix ]
+
+unsigned-suffix = %i"u"
+
+long-suffix = %i"l"
+
+long-long-suffix = %s"ll" / %s"LL" ; note that %i"ll" would include lL and Ll
+
+floating-constant = decimal-floating-constant
+                  / hexadecimal-floating-constant
+
+decimal-floating-constant =
+      fractional-constant [ exponent-part ] [ floating-suffix ]
+    / digit-sequence exponent-part [ floating-suffix ]
+
+hexadecimal-floating-constant =
+      hexadecimal-prefix hexadecimal-fractional-constant
+                         binary-exponent-part [floating-suffix ]
+    / hexadecimal-prefix hexadecimal-digit-sequence
+                         binary-exponent-part [ floating-suffix ]
+
+fractional-constant = [ digit-sequence ] "." digit-sequence
+                    / digit-sequence "."
+
+exponent-part = %i"e" [ sign ] digit-sequence
+
+sign = "+" / "-"
+
+digit-sequence = digit
+               / digit-sequence digit
+
+hexadecimal-fractional-constant =
+      [ hexadecimal-digit-sequence ] "." hexadecimal-digit-sequence
+    / hexadecimal-digit-sequence "."
+
+binary-exponent-part = %i"p" [ sign ] digit-sequence
+
+hexadecimal-digit-sequence = hexadecimal-digit
+                           / hexadecimal-digit-sequence hexadecimal-digit
+
+floating-suffix = %i"f" / %i"l"
+
+enumeration-constant = identifier
+
+character-constant = "'" c-char-sequence "'"
+                   / %s"L'" c-char-sequence "'"
+                   / %i"u'" c-char-sequence "'"
+
+c-char-sequence = c-char
+                / c-char-sequence c-char
+
+c-char = character-not-single-quote-or-backslash-or-new-line
+       / escape-sequence
+
+escape-sequence = simple-escape-sequence
+                / octal-escape-sequence
+                / hexadecimal-escape-sequence
+                / universal-character-name
+
+simple-escape-sequence = "\'"
+                       / "\" double-quote
+                       / "\?"
+                       / "\\"
+                       / %s"\a"
+                       / %s"\b"
+                       / %s"\f"
+                       / %s"\n"
+                       / %s"\r"
+                       / %s"\t"
+                       / %s"\v"
+
+octal-escape-sequence = "\" octal-digit
+                      / "\" octal-digit octal-digit
+                      / "\" octal-digit octal-digit octal-digit
+
+hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
+                            / hexadecimal-escape-sequence hexadecimal-digit
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; String literals [C:A.1.6] [C:6.4.5]
+
+string-literal =
+    [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
+
+encoding-prefix = %s"u8"
+                / %i"u"
+                / %s"L"
+
+s-char-sequence = s-char
+                / s-char-sequence s-char
+
+s-char = character-not-double-quote-or-backslash-or-new-line
+       / escape-sequence
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Punctuators [C:A.1.7] [C:6.4.6]
+
+punctuator = "["
+           / "]"
+           / "("
+           / ")"
+           / "{"
+           / "}"
+           / "."
+           / "->"
+           / "++"
+           / "--"
+           / "&"
+           / "*"
+           / "+"
+           / "-"
+           / "~"
+           / "!"
+           / "/"
+           / "%"
+           / "<<"
+           / ">>"
+           / "<"
+           / ">"
+           / "<="
+           / ">="
+           / "=="
+           / "!="
+           / "^"
+           / "|"
+           / "&&"
+           / "||"
+           / "?"
+           / ":"
+           / ";"
+           / "..."
+           / "="
+           / "*="
+           / "/="
+           / "%="
+           / "+="
+           / "-="
+           / "<<="
+           / ">>="
+           / "&="
+           / "^="
+           / "|="
+           / ","
+           / "#"
+           / "##"
+           / "<:"
+           / ":>"
+           / "<%"
+           / "%>"
+           / "%:"
+           / "%:%:"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Header names [C:A.1.8] [C:6.4.7]
+
+; We omit these for now, but we will add them to represent #include directives.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing numbers [C:A.1.9] [C:6.4.8]
+
+; We omit these, because, as explained in 'Purpose' above,
+; the goal of this grammar is to represent C code in a form
+; that includes constructs both before and after preprocessing,
+; and in fact we assume that numbers (constants) are (non-preprocessing) tokens,
+; as we plan to capture only limited preprocessing constructs, as practical.
+; But should we find a need to include these, we will, of course
+; (e.g. in order to represent some more elaborate preprocessing constructs).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexemes
+
+; As explained earlier when talking about the two grammar levels,
+; the purpose of the lexical part of this ABNF grammar
+; is to describe a single lexing phase.
+; Thus, we provide an ABNF grammar rule for lexemes,
+; i.e. the lexical units that the code is organized into.
+; This rule has no grammar rule counterpart in [C].
+
+lexeme = token
+       / comment
+       / white-space
+
+; The intent of the lexical part of our ABNF grammar is that
+; a finite sequence of ASCII characters
+; is organized into a sequence of lexemes.
+; The ABNF grammar rules express most of the requirements for this,
+; but not all, such as the fact that an identifier cannot be a keyword.
+; An important and general extra-grammatical requirement is that
+; the longest match is always taken [C:6.4/4],
+; with the exception noted there.
+
+; The rest of the ABNF grammar rules in this file
+; describe how lexemes are organized into higher-level constructs,
+; corresponding to the phase structure grammar in [C:A.2].
+; Currently we only use tokens,
+; discarding comments and white-space characters,
+; but in the future we may retain some information from comments,
+; given the purpose of this ABNF grammar.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Expressions [C:A.2.1]
+
+primary-expression = identifier
+                   / constant
+                   / string-literal
+                   / "(" expression ")"
+                   / generic-selection
+
+generic-selection =
+    %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
+
+generic-assoc-list = generic-association
+                   / generic-assoc-list "," generic-association
+
+generic-association = type-name ":" assignment-expression
+                    / %s"default" ":" assignment-expression
+
+postfix-expression = primary-expression
+                   / postfix-expression "[" expression "]"
+                   / postfix-expression "(" [ argument-expression-list ] ")"
+                   / postfix-expression "." identifier
+                   / postfix-expression "->" identifier
+                   / postfix-expression "++"
+                   / postfix-expression "--"
+                   / "(" type-name ")" "{" initializer-list "}"
+                   / "(" type-name ")" "{" initializer-list "," "}"
+
+argument-expression-list = assignment-expression
+                         / argument-expression-list "," assignment-expression
+
+unary-expression = postfix-expression
+                 / "++" unary-expression
+                 / "--" unary-expression
+                 / unary-operator cast-expression
+                 / %s"sizeof" unary-expression
+                 / %s"sizeof" "(" type-name ")"
+                 / %s"_Alignof" "(" type-name ")"
+
+unary-operator = "&"
+               / "*"
+               / "+"
+               / "-"
+               / "~"
+               / "!"
+
+cast-expression = unary-expression
+                / "(" type-name ")" cast-expression
+
+multiplicative-expression = cast-expression
+                          / multiplicative-expression "*" cast-expression
+                          / multiplicative-expression "/" cast-expression
+                          / multiplicative-expression "%" cast-expression
+
+additive-expression = multiplicative-expression
+                    / additive-expression "+" multiplicative-expression
+                    / additive-expression "-" multiplicative-expression
+
+shift-expression = additive-expression
+                 / shift-expression "<<" additive-expression
+                 / shift-expression ">>" additive-expression
+
+relational-expression = shift-expression
+                      / relational-expression "<" shift-expression
+                      / relational-expression ">" shift-expression
+                      / relational-expression "<=" shift-expression
+                      / relational-expression ">=" shift-expression
+
+equality-expression = relational-expression
+                    / equality-expression "==" relational-expression
+                    / equality-expression "!=" relational-expression
+
+and-expression = equality-expression
+               / and-expression "&" equality-expression
+
+exclusive-or-expression = and-expression
+                        / exclusive-or-expression "^" and-expression
+
+inclusive-or-expression = exclusive-or-expression
+                        / inclusive-or-expression "|" exclusive-or-expression
+
+logical-and-expression = inclusive-or-expression
+                       / logical-and-expression "&&" inclusive-or-expression
+
+logical-or-expression = logical-and-expression
+                      / logical-or-expression "||" logical-and-expression
+
+conditional-expression =
+      logical-or-expression
+    / logical-or-expression "?" expression ":" conditional-expression
+
+assignment-expression =
+      conditional-expression
+    / unary-expression assignment-operator assignment-expression
+
+assignment-operator = "="
+                    / "*="
+                    / "/="
+                    / "%="
+                    / "+="
+                    / "-="
+                    / "<<="
+                    / ">>="
+                    / "&="
+                    / "^="
+                    / "|="
+
+expression = assignment-expression
+           / expression "," assignment-expression
+
+constant-expression = conditional-expression
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Declarations [C:A.2.2]
+
+declaration = declaration-specifiers [ init-declarator-list ] ";"
+            / static-assert-declaration
+
+declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
+                       / type-specifier [ declaration-specifiers ]
+                       / type-qualifier [ declaration-specifiers ]
+                       / function-specifier [ declaration-specifiers ]
+                       / alignment-specifier [ declaration-specifiers ]
+
+init-declarator-list = init-declarator
+                     / init-declarator-list "," init-declarator
+
+init-declarator = declarator
+                / declarator "=" initializer
+
+storage-class-specifier = %s"typedef"
+                        / %s"extern"
+                        / %s"static"
+                        / %s"_Thread_local"
+                        / %s"auto"
+                        / %s"register"
+
+type-specifier = %s"void"
+               / %s"char"
+               / %s"short"
+               / %s"int"
+               / %s"long"
+               / %s"float"
+               / %s"double"
+               / %s"signed"
+               / %s"unsigned"
+               / %s"_Bool"
+               / %s"_Complex"
+               / atomic-type-specifier
+               / struct-or-union-specifier
+               / enum-specifier
+               / typedef-name
+
+struct-or-union-specifier =
+      struct-or-union [ identifier ] "{" struct-declaration-list "}"
+    / struct-or-union identifier
+
+struct-or-union = %s"struct"
+                / %s"union"
+
+struct-declaration-list = struct-declaration
+                        / struct-declaration-list struct-declaration
+
+struct-declaration = specifier-qualifier-list [ struct-declarator-list ] ";"
+                   / static-assert-declaration
+
+specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
+                         / type-qualifier [ specifier-qualifier-list ]
+                         / alignment-specifier [ specifier-qualifier-list ]
+
+struct-declarator-list = struct-declarator
+                       / struct-declarator-list "," struct-declarator
+
+struct-declarator = declarator
+                  / [ declarator ] ":" constant-expression
+
+enum-specifier = %s"enum" [ identifier ] "{" enumerator-list "}"
+               / %s"enum" [ identifier ] "{" enumerator-list "," "}"
+               / %s"enum" identifier
+
+enumerator-list = enumerator
+                / enumerator-list "," enumerator
+
+enumerator = enumeration-constant
+           / enumeration-constant "=" constant-expression
+
+atomic-type-specifier = %s"_Atomic" "(" type-name ")"
+
+type-qualifier = %s"const"
+               / %s"restrict"
+               / %s"volatile"
+               / %s"_Atomic"
+
+function-specifier = %s"inline"
+                   / %s"_Noreturn"
+
+alignment-specifier = %s"_Alignas" "(" type-name ")"
+                    / %s"_Alignas" "(" constant-expression ")"
+
+declarator = [ pointer ] direct-declarator
+
+direct-declarator =
+      identifier
+    / "(" declarator ")"
+    / direct-declarator
+      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+    / direct-declarator
+      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+    / direct-declarator
+      "[" type-qualifier-list %s"static" assignment-expression "]"
+    / direct-declarator "[" [ type-qualifier-list ] "*" "]"
+    / direct-declarator "(" parameter-type-list ")"
+    / direct-declarator "(" [ identifier-list ] ")"
+
+pointer = "*" [ type-qualifier-list ]
+        / "*" [ type-qualifier-list ] pointer
+
+type-qualifier-list = type-qualifier
+                    / type-qualifier-list type-qualifier
+
+parameter-type-list = parameter-list
+                    / parameter-list "," "..."
+
+parameter-list = parameter-declaration
+               / parameter-list "," parameter-declaration
+
+parameter-declaration = declaration-specifiers declarator
+                      / declaration-specifiers [ abstract-declarator ]
+
+identifier-list = identifier
+                / identifier-list "," identifier
+
+type-name = specifier-qualifier-list [ abstract-declarator ]
+
+abstract-declarator = pointer
+                    / [ pointer ] direct-abstract-declarator
+
+direct-abstract-declarator =
+      "(" abstract-declarator ")"
+    / [ direct-abstract-declarator ]
+      "[" [ type-qualifier-list ] [ assignment-expression ] "]"
+    / [ direct-abstract-declarator ]
+      "[" %s"static" [ type-qualifier-list ] assignment-expression "]"
+    / [ direct-abstract-declarator ]
+      "[" type-qualifier-list %s"static" assignment-expression "]"
+    / [ direct-abstract-declarator ] "[" "*" "]"
+    / [ direct-abstract-declarator ] "(" [ parameter-type-list ] ")"
+
+typedef-name = identifier
+
+initializer = assignment-expression
+            / "{" initializer-list "}"
+            / "{" initializer-list "," "}"
+
+initializer-list = [ designation ] initializer
+                 / initializer-list "," [ designation ] initializer
+
+designation = designator-list "="
+
+designator-list = designator
+                / designator-list designator
+
+designator = "[" constant-expression "]"
+           / "." identifier
+
+static-assert-declaration =
+    %s"_Static_assert" "(" constant-expression "," string-literal ")" ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Statements [C:A.2.3]
+
+statement = labeled-statement
+          / compound-statement
+          / expression-statement
+          / selection-statement
+          / iteration-statement
+          / jump-statement
+
+labeled-statement = identifier ":" statement
+                  / %s"case" constant-expression ":" statement
+                  / %s"default" ":" statement
+
+compound-statement = "{" [ block-item-list ] "}"
+
+block-item-list = block-item
+                / block-item-list block-item
+
+block-item = declaration
+           / statement
+
+expression-statement = [ expression ] ";"
+
+selection-statement = %s"if" "(" expression ")" statement
+                    / %s"if" "(" expression ")" statement %s"else" statement
+                    / %s"switch" "(" expression ")" statement
+
+iteration-statement =
+      %s"while" "(" expression ")" statement
+    / %s"do" statement %s"while" "(" expression ")" ";"
+    / %s"for" "(" [ expression ] ";" [ expression ] ";" [ expression ] ")"
+      statement
+    / %s"for" "(" declaration [ expression ] ";" [ expression ] ")"
+      statement
+
+jump-statement = %s"goto" identifier ";"
+               / %s"continue" ";"
+               / %s"break" ";"
+               / %s"return" [ expression ] ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; External definitions [C:A.2.4]
+
+translation-unit = external-declaration
+                 / translation-unit external-declaration
+
+external-declaration = function-definition
+                     / declaration
+
+function-definition =
+    declaration-specifiers declarator [ declaration-list ] compound-statement
+
+declaration-list = declaration
+                 / declaration-list declaration
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing directives [C:A.3]
+
+; We will capture (some forms of) these in the future.

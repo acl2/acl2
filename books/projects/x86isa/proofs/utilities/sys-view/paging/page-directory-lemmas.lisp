@@ -405,7 +405,7 @@
 (defthm all-mem-except-paging-structures-equal-with-mv-nth-2-ia32e-la-to-pa-page-directory
   (implies
    (and
-    (member-p 
+    (member-p
      (page-directory-entry-addr
       (logext 48 lin-addr)
       (logand 18446744073709547520 (loghead 52 base-addr)))
