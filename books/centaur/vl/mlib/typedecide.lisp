@@ -430,6 +430,10 @@ expression signedness.</p>"
       ;; no matter the signedness of their operands.
       :vl-concat      (mv (ok) :vl-unsigned-int-class)
       :vl-multiconcat (mv (ok) :vl-unsigned-int-class)
+      :vl-bitselect-expr (mv (ok) :vl-unsigned-int-class)
+      :vl-partselect-expr (if (vl-partselect-case x.part :none)
+                              (vl-expr-typedecide x.subexp ss scopes)
+                            (mv (ok) :vl-unsigned-int-class))
 
       ;; See the comment about stream expressions in vl-expr-selfsize...
       :vl-stream      (mv (ok) :vl-other-class)

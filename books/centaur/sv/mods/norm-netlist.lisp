@@ -271,7 +271,7 @@ for that variable."
         (if (atom x)
             (svex-z)
           (b* (((segment-driver x1) (car x)))
-            x1.value)))
+            (svex-concat x1.width x1.value (svex-z)))))
        ((segment-driver x1) (car x))
        ((segment-driver x2) (cadr x))
        (msbs (disjoint-segment-drivers->svex (cdr x)))
@@ -520,13 +520,15 @@ segment-driverlist-deoverlap).</p>"
                (make-segment-driver :lsb 2 :width 5 :value 'x)))
         '(CONCAT 2 (0 . -1)
                  (CONCAT 2 X
-                         (CONCAT 3 (RES (RSH 2 X) Y) (RSH 3 Y))))))
+                         (CONCAT 3 (RES (RSH 2 X) Y)
+                                 (concat 2 (RSH 3 Y) (0 . -1)))))))
 
 (assert-event
  (equal (segment-driverlist-resolve
          (list (make-segment-driver :lsb 8 :width 5 :value 'y)
                (make-segment-driver :lsb 0 :width 5 :value 'x)))
-        '(CONCAT 5 X (CONCAT 3 (0 . -1) Y))))
+        '(CONCAT 5 X (CONCAT 3 (0 . -1)
+                             (concat 5 Y (0 . -1))))))
 
 ;; add more tests...
 

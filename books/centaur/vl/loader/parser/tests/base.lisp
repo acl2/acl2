@@ -296,6 +296,14 @@
                                (vl-pretty-atts atts)
                                (vl-pretty-expr x.reps)
                                (vl-pretty-exprlist x.parts))
+        :vl-bitselect-expr (list :bitselect
+                                  (vl-pretty-atts atts)
+                                  (vl-pretty-expr x.subexp)
+                                  (vl-pretty-expr x.index))
+        :vl-partselect-expr (list :partselect
+                                   (vl-pretty-atts atts)
+                                   (vl-pretty-expr x.subexp)
+                                   (vl-pretty-partselect x.part))
         :vl-stream (list* (if (eq x.dir :left)
                               :vl-stream-left
                             :vl-stream-right)
@@ -332,7 +340,7 @@
                            (vl-pretty-maybe-datatype x.pattype)
                            (vl-pretty-assignpat x.pat))
         :vl-eventexpr (list* :event
-                             (vl-pretty-atts x.atts)
+                             (vl-pretty-atts atts)
                              (vl-pretty-evatomlist x.atoms)))))
 
   (define vl-pretty-atts ((x vl-atts-p))
@@ -926,7 +934,8 @@
   `(trace! (,fn
             :entry (list ',fn :tokens (vl-debug-tokstream tokstream))
             :exit (list ',fn
-                        :errmsg (with-local-ps (vl-print-warning (first values)))
+                        :errmsg (and (first values)
+                                     (with-local-ps (vl-print-warning (first values))))
                         :val ,(if printer
                                   `(with-local-ps (,printer (second values)))
                                 `(second values))

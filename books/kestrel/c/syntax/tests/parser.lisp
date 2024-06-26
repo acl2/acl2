@@ -719,6 +719,100 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-abstract-declarator
+
+(test-parse
+ parse-abstract-declarator
+ "[a[3]]"
+ :cond (and (equal (absdeclor->pointers ast) nil)
+            (dirabsdeclor-case (absdeclor->decl? ast) :array)))
+
+(test-parse
+ parse-abstract-declarator
+ "(a)"
+ :cond (and (equal (absdeclor->pointers ast) nil)
+            (dirabsdeclor-case (absdeclor->decl? ast) :function)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declarator
+
+(test-parse
+ parse-declarator
+ "o")
+
+(test-parse
+ parse-declarator
+ "*o")
+
+(test-parse
+ parse-declarator
+ "*o[15]")
+
+(test-parse
+ parse-declarator
+ "(*o)[15]")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-parameter-declaration
+
+(test-parse
+ parse-parameter-declaration
+ "int x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :absdeclor))
+
+(test-parse
+ parse-parameter-declaration
+ "int (x)(y))"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declarator-or-abstract-declarator
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "zzz,"
+ :cond (amb?-declor/absdeclor-case ast :declor))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(*),"
+ :cond (amb?-declor/absdeclor-case ast :absdeclor))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*],"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*](uint32_t),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*](uint32_t)(T,T),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-expression-or-type-name
 
 (test-parse
