@@ -1,7 +1,7 @@
 ; BV Library: bitxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,7 +41,7 @@
 (defthmd bitxor-commutative
   (equal (bitxor x y)
          (bitxor y x))
-  :hints (("Goal" :in-theory (enable bitxor bvxor-commutative))))
+  :hints (("Goal" :in-theory (enable bitxor))))
 
 (defthmd bitxor-commutative-2
   (equal (bitxor x (bitxor y z))
@@ -313,3 +313,25 @@
                   (bitxor z (bitxor x y)))))
 
 ;need more bitxor cancel rules?
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bitxor-commutative-alt
+  (implies (syntaxp (smaller-bvxor-arg b a))
+           (equal (bitxor a b)
+                  (bitxor b a)))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable bitxor-commutative))))
+
+(in-theory (disable bitxor-commutative))
+(theory-invariant (incompatible (:rewrite bitxor-commutative) (:rewrite bitxor-commutative-alt)))
+
+(defthm bitxor-commutative-2-alt
+  (implies (syntaxp (smaller-bvxor-arg a b))
+           (equal (bitxor b (bitxor a c))
+                  (bitxor a (bitxor b c))))
+  :rule-classes ((:rewrite :loop-stopper nil))
+  :hints (("Goal" :in-theory (enable bitxor-commutative-2))))
+
+(in-theory (disable bitxor-commutative-2))
+(theory-invariant (incompatible (:rewrite bitxor-commutative-2) (:rewrite bitxor-commutative-2-alt)))
