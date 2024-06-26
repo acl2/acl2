@@ -10,6 +10,15 @@
 
 (in-package "ACL2")
 
+;; Books about built-in functions:
+(include-book "termp")
+(include-book "logic-fnsp")
+(include-book "logic-termp")
+(include-book "all-fnnames1")
+
+;; Utilities:
+(include-book "filter-formals-and-actuals")
+
 (include-book "all-quotep")
 (include-book "trivial-formals")
 (include-book "non-trivial-formals")
@@ -37,7 +46,6 @@
 (include-book "count-ifs-in-then-and-else-branches")
 (include-book "combine-ifs-in-then-and-else-branches")
 (include-book "restore-mv-in-branches")
-(include-book "logic-termp")
 (include-book "negate-term")
 (include-book "negate-term-proof")
 (include-book "negate-terms")
@@ -61,7 +69,6 @@
 (include-book "replace-term-with-term")
 (include-book "count-occurrences-in-term")
 (include-book "no-nils-in-termp")
-(include-book "all-fnnames1")
 (include-book "get-conjuncts")
 (include-book "get-hyps-and-conc")
 (include-book "replace-corresponding-arg")

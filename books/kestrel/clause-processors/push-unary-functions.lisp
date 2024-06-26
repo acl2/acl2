@@ -1,6 +1,6 @@
 ; A simple clause-processor to push calls of unary functions into IF branches
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
-(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
+;(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
 (local (in-theory (disable alistp disjoin disjoin2
                            symbol-listp
@@ -163,7 +163,8 @@
            (iff (if-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
                 (if-eval (disjoin clause) a)))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-literals
-                                     disjoin))))
+                                     ;; disjoin
+                                     ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

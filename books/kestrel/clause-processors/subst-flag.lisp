@@ -1,6 +1,6 @@
 ; A clause-processor for use by my-make-flag
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 ;(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 
 ;; TODO: Need to learn disequalities from IFs...
 
@@ -45,6 +46,37 @@
   (implies (pseudo-term-listp (strip-cdrs alist))
            (pseudo-termp (cdr (assoc-equal term alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;move?
+(local
+  (defthm termp-of-cdr-of-assoc-equal
+    (implies (and (assoc-equal term alist)
+                  (term-listp (strip-cdrs alist) w))
+             (termp (cdr (assoc-equal term alist)) w))
+    :hints (("Goal" :in-theory (enable assoc-equal)))))
+
+(local
+  (defthm logic-fnsp-of-cdr-of-assoc-equal
+    (implies (and ;; (assoc-equal term alist)
+               (logic-fns-listp (strip-cdrs alist) w))
+             (logic-fnsp (cdr (assoc-equal term alist)) w))
+    :hints (("Goal" :in-theory (enable assoc-equal)))))
+
+(local
+  (defthm logic-termp-of-cdr-of-assoc-equal
+    (implies (and (assoc-equal term alist)
+                  (logic-term-listp (strip-cdrs alist) w))
+             (logic-termp (cdr (assoc-equal term alist)) w))
+    :hints (("Goal" :in-theory (enable assoc-equal)))))
+
+;move
+(local
+  (defthm legal-variablep-forward-to-symbolp
+    (implies (legal-variablep x)
+             (symbolp x))
+    :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv var const) or (mv nil nil)
 (defund equated-var-and-const-from-term (term)
@@ -71,11 +103,27 @@
            (pseudo-termp (mv-nth 1 (equated-var-and-const-from-term term))))
   :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
 
+(local
+  (defthm termp-of-mv-nth-1-of-equated-var-and-const-from-term
+    (implies (and (pseudo-termp term)
+                  (mv-nth 0 (equated-var-and-const-from-term term)))
+             (termp (mv-nth 1 (equated-var-and-const-from-term term)) w))
+    :hints (("Goal" :in-theory (enable equated-var-and-const-from-term)))))
+
+(local
+  (defthm logic-termp-of-mv-nth-1-of-equated-var-and-const-from-term
+    (implies (and (logic-termp term w)
+                  (mv-nth 0 (equated-var-and-const-from-term term)))
+             (logic-termp (mv-nth 1 (equated-var-and-const-from-term term)) w))
+    :hints (("Goal" :in-theory (enable equated-var-and-const-from-term)))))
+
 (defthm equated-var-and-const-from-term-helper
   (implies (equality-eval term a)
            (equal (equality-eval (mv-nth 0 (equated-var-and-const-from-term term)) a)
                   (equality-eval (mv-nth 1 (equated-var-and-const-from-term term)) a)))
   :hints (("Goal" :in-theory (enable equated-var-and-const-from-term))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv var const) or (mv nil nil)
 (defund equated-var-and-const-from-negation-of-term (term)
@@ -99,6 +147,16 @@
            (equal (equality-eval (mv-nth 0 (equated-var-and-const-from-negation-of-term term)) a)
                   (equality-eval (mv-nth 1 (equated-var-and-const-from-negation-of-term term)) a)))
   :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term))))
+
+(local
+  (defthm logic-termp-of-mv-nth-1-of-equated-var-and-const-from-negation-of-term
+    (implies (and (logic-termp term w)
+                  (equal 1 (arity 'not w)) ; is this ok?
+                  (mv-nth 0 (equated-var-and-const-from-negation-of-term term)))
+             (logic-termp (mv-nth 1 (equated-var-and-const-from-negation-of-term term)) w))
+    :hints (("Goal" :in-theory (enable equated-var-and-const-from-negation-of-term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
 
@@ -175,6 +233,27 @@
   :hints (("Goal" :in-theory (enable add-true-and-false-implications-of-term
                                      add-true-and-false-implications-of-negation-of-term))))
 
+(local
+  (defthm-flag-add-true-and-false-implications-of-term
+    (defthm add-true-and-false-implications-of-term-logic-term-listp
+      (implies (and (logic-term-listp true-terms w)
+                    (logic-term-listp false-terms w)
+                    (logic-termp term w))
+               (and (logic-term-listp (mv-nth 0 (add-true-and-false-implications-of-term term true-terms false-terms)) w)
+                    (logic-term-listp (mv-nth 1 (add-true-and-false-implications-of-term term true-terms false-terms)) w)))
+      :flag add-true-and-false-implications-of-term)
+    (defthm add-true-and-false-implications-of-negation-of-term-logic-term-listp
+      (implies (and (logic-term-listp true-terms w)
+                    (logic-term-listp false-terms w)
+                    (logic-termp term w))
+               (and (logic-term-listp (mv-nth 0 (add-true-and-false-implications-of-negation-of-term term true-terms false-terms)) w)
+                    (logic-term-listp (mv-nth 1 (add-true-and-false-implications-of-negation-of-term term true-terms false-terms)) w)))
+      :flag add-true-and-false-implications-of-negation-of-term)
+    :hints (("Goal" :in-theory (enable add-true-and-false-implications-of-term
+                                       add-true-and-false-implications-of-negation-of-term)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Check whether (equal X Y) or (equal Y X) is among the TERMS.
 (defund equality-among-termsp (x y terms)
   (declare (xargs :guard (and (pseudo-termp x)
@@ -214,6 +293,8 @@
                   t))
   :hints (("Goal" :in-theory (enable equality-among-termsp all-eval-to-true-with-equality-eval))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns :true, :false, or :unknown
 (defund resolve-test (term true-terms false-terms)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -250,6 +331,8 @@
                 (equal :true (resolve-test term true-terms false-terms)))
            (equality-eval term a))
   :hints (("Goal" :in-theory (e/d (resolve-test) (equality-eval-of-variable)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
  ;; Subst variables according to ALIST and also simplify certain calls of equal, eql, eq, and if.
@@ -376,6 +459,69 @@
 
 (verify-guards sublis-var-and-simplify :hints (("Goal" :in-theory (enable SYMBOLP-WHEN-PSEUDO-TERMP))))
 
+(local
+  (defthm cdr-of-sublis-var-and-simplify-lst
+    (equal (cdr (sublis-var-and-simplify-lst alist terms true-terms false-terms))
+           (sublis-var-and-simplify-lst alist (cdr terms) true-terms false-terms))
+    :hints (("Goal" :induct (true-listp terms)
+             :in-theory (enable sublis-var-and-simplify-lst)))))
+
+(local
+  (defthm consp-of-sublis-var-and-simplify-lst
+    (equal (consp (sublis-var-and-simplify-lst alist terms true-terms false-terms))
+           (consp terms))
+    :hints (("Goal" :induct (true-listp terms)
+             :in-theory (enable sublis-var-and-simplify-lst)))))
+
+(local
+  (defthm car-of-sublis-var-and-simplify-lst
+    (implies (consp terms)
+             (equal (car (sublis-var-and-simplify-lst alist terms true-terms false-terms))
+                    (sublis-var-and-simplify alist (car terms) true-terms false-terms)))
+    :hints (("Goal" :expand (sublis-var-and-simplify-lst alist terms true-terms false-terms)
+             :in-theory (enable sublis-var-and-simplify-lst)))))
+
+(defthm-flag-sublis-var-and-simplify
+  (defthm logic-termp-of-sublis-var-and-simplify
+    (implies (and (alistp alist) ; usually a symbol-term-alistp
+                  (logic-term-listp (strip-cdrs alist) w)
+                  (logic-termp term w)
+                  ;(not (member-equal nil (free-vars-in-term term))) ;needed?
+                  (equal 1 (arity 'not w)) ; is this ok?
+                  )
+             (logic-termp (sublis-var-and-simplify alist term true-terms false-terms) w))
+    :flag sublis-var-and-simplify)
+  (defthm logic-term-listp-of-sublis-var-and-simplify-lst
+    (implies (and (alistp alist) ; usually a symbol-term-alistp
+                  ;(logic-term-listp (strip-cars alist) w)
+                  (logic-term-listp (strip-cdrs alist) w)
+                  (logic-term-listp terms w)
+                  ;(not (member-equal nil (free-vars-in-terms terms)))
+                  (equal 1 (arity 'not w))
+                  )
+             (logic-term-listp (sublis-var-and-simplify-lst alist terms true-terms false-terms) w))
+    :flag sublis-var-and-simplify-lst)
+  :hints (("Goal" :expand ((termp term w)
+                           ;(LOGIC-TERMP TERM)
+                           (FREE-VARS-IN-TERMS TERMS)
+                           ;;(SUBLIS-VAR-AND-SIMPLIFY-LST ALIST (CDDR TERM))
+                           (sublis-var-and-simplify alist term true-terms false-terms)
+                           )
+           :in-theory (e/d (sublis-var-and-simplify
+                            sublis-var-and-simplify-lst
+                            ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            ;wrap-terms-in-lambdas
+                            ;;wrap-term-in-lambda
+                            alistp ;why?
+                            )
+                           (pairlis$
+                            SET-DIFFERENCE-EQUAL
+                            legal-variablep
+                            member-equal
+                            logic-termp
+                            myquotep
+                            pseudo-termp)))))
+
 (defthm equality-eval-of-cdr-of-assoc-equal-when-alists-agree
   (implies (and (equal (equality-eval-list (strip-cars alist) a)
                        (equality-eval-list (strip-cdrs alist) a))
@@ -383,12 +529,6 @@
            (equal (equality-eval (cdr (assoc-equal key alist)) a)
                   (equality-eval key a)))
   :hints (("Goal" :in-theory (enable assoc-equal))))
-
-(defthm car-of-sublis-var-and-simplify-lst
-  (implies (consp terms)
-           (equal (car (sublis-var-and-simplify-lst alist terms true-terms false-terms))
-                  (sublis-var-and-simplify alist (car terms) true-terms false-terms)))
-  :hints (("Goal" :in-theory (enable sublis-var-and-simplify-lst))))
 
 ;; Applying sublis-var-and-simplify doesn't change the meaning of the term, of everything in the ALIST is correct.
 (defthm-flag-sublis-var-and-simplify
@@ -433,6 +573,8 @@
                             set-difference-equal
                             equality-eval-of-fncall-args-back)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;; now map the term processor over every literal of the clause
 
 (defthm equality-eval-of-disjoin-of-sublis-var-and-simplify-lst-special
@@ -457,11 +599,17 @@
            (pseudo-term-list-listp (sublis-var-and-simplify-clause-processor clause)))
   :hints (("Goal" :in-theory (enable sublis-var-and-simplify-clause-processor))))
 
-;todo: add :well-formedness proof
+(defthm logic-term-list-listp-of-sublis-var-and-simplify-clause-processor
+  (implies (and (logic-term-listp clause w)
+                (arities-okp '((not . 1)) w))
+           (logic-term-list-listp (sublis-var-and-simplify-clause-processor clause) w))
+  :hints (("Goal" :in-theory (enable sublis-var-and-simplify-clause-processor))))
+
 (defthm sublis-var-and-simplify-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
                 (equality-eval (conjoin-clauses (sublis-var-and-simplify-clause-processor clause)) a))
            (equality-eval (disjoin clause) a))
-  :rule-classes :clause-processor
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-of-sublis-var-and-simplify-clause-processor))
   :hints (("Goal" :in-theory (enable sublis-var-and-simplify-clause-processor))))
