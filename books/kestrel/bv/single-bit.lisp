@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,8 +33,7 @@
 ;drop if we commute
 (defthm bitxor-of-1-becomes-bitnot-arg2
   (equal (bitxor x 1)
-         (bitnot x))
-  :hints (("Goal" :in-theory (enable BITXOR-COMMUTATIVE))))
+         (bitnot x)))
 
 (defthmd bitnot-becomes-bitxor-with-1
   (equal (bitnot x)
