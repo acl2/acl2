@@ -849,6 +849,21 @@ for plain atoms like @('a') and @('b') in @('always @(a or b)').</p>")
      :long "<p>BOZO: Some day, investigate whether we can require the
             @('parts') to be non-empty.</p>")
 
+    (:vl-bitselect-expr
+     :base-name vl-bitselect-expr
+     :short "A bit select operator applied to an expression. Typically the subexpression is some sort of concatenation, since this is what the SystemVerilog grammar allows.  E.g. @('{sub}[idx]')."
+     ((subexp vl-expr-p "The expression to apply the bitselect to")
+      (index vl-expr-p "The index to select")
+      (atts  vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes."))
+     :count-incr t)
+
+    (:vl-partselect-expr
+     :base-name vl-partselect-expr
+     :short "A part select operator applied to an expression. Typically the subexpression is some sort of concatenation, since this is what the SystemVerilog grammar allows.  E.g. @('{sub}[idx]')."
+     ((subexp vl-expr-p "The expression to apply the bitselect to")
+      (part vl-partselect-p "The range to select")
+      (atts  vl-atts-p     "Any <tt>(* foo = bar, baz *)</tt> style attributes.")))
+
     (:vl-mintypmax
      :base-name vl-mintypmax
      :short "A minimum/typical/maximum delay operator, e.g., @('3 : 4 : 5')."
@@ -2428,6 +2443,7 @@ variety.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
+
 (define vl-expr->atts ((x vl-expr-p))
   :returns (atts vl-atts-p)
   :parents (vl-expr)
@@ -2442,6 +2458,8 @@ variety.</p>"
     :vl-mintypmax x.atts
     :vl-concat x.atts
     :vl-multiconcat x.atts
+    :vl-bitselect-expr x.atts
+    :vl-partselect-expr x.atts
     :vl-stream x.atts
     :vl-call x.atts
     :vl-cast x.atts
@@ -2557,6 +2575,28 @@ variety.</p>"
                            (equal (vl-multiconcat->atts x)
                                   (vl-expr->atts x))))))
 
+  (defthm vl-expr-atts-when-vl-bitselect-expr
+    (implies (vl-expr-case x :vl-bitselect-expr)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-bitselect-expr)))
+                           (equal (vl-expr->atts x)
+                                  (vl-bitselect-expr->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-bitselect-expr))))
+                           (equal (vl-bitselect-expr->atts x)
+                                  (vl-expr->atts x))))))
+
+  (defthm vl-expr-atts-when-vl-partselect-expr
+    (implies (vl-expr-case x :vl-partselect-expr)
+             (and (implies (syntaxp (and (consp x)
+                                         (eq (car x) 'vl-partselect-expr)))
+                           (equal (vl-expr->atts x)
+                                  (vl-partselect-expr->atts x)))
+                  (implies (syntaxp (not (and (consp x)
+                                              (eq (car x) 'vl-partselect-expr))))
+                           (equal (vl-partselect-expr->atts x)
+                                  (vl-expr->atts x))))))
+
   (defthm vl-expr-atts-when-vl-stream
     (implies (vl-expr-case x :vl-stream)
              (and (implies (syntaxp (and (consp x)
@@ -2660,6 +2700,8 @@ variety.</p>"
     :vl-mintypmax (change-vl-mintypmax x :atts atts)
     :vl-concat (change-vl-concat x :atts atts)
     :vl-multiconcat (change-vl-multiconcat x :atts atts)
+    :vl-bitselect-expr (change-vl-bitselect-expr x :atts atts)
+    :vl-partselect-expr (change-vl-partselect-expr x :atts atts)
     :vl-stream (change-vl-stream x :atts atts)
     :vl-call (change-vl-call x :atts atts)
     :vl-cast (change-vl-cast x :atts atts)
@@ -2675,6 +2717,8 @@ variety.</p>"
   (defret vl-expr-kind-of-vl-expr-update-atts
     (equal (vl-expr-kind new-x)
            (vl-expr-kind x))))
+
+
 
 
 ; -----------------------------------------------------------------------------

@@ -810,17 +810,9 @@ displays.  The module browser's web pages are responsible for defining the
   :returns (new-x vl-expr-p)
   :measure (vl-expr-count x)
   :verify-guards nil
+  :hints (("goal" :in-theory (enable vl-expr-update-atts)))
   (b* ((x (vl-expr-fix x)))
     (vl-expr-case x
-      :vl-special (if (assoc-equal "VL_LINESTART" x.atts)
-                      (change-vl-special x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                    x)
-      :vl-literal (if (assoc-equal "VL_LINESTART" x.atts)
-                      (change-vl-literal x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                    x)
-      :vl-index   (if (assoc-equal "VL_LINESTART" x.atts)
-                      (change-vl-index x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                    x)
 
       :vl-unary
       ;; Any linestart is an initial linestart, so remove it.
@@ -841,29 +833,14 @@ displays.  The module browser's web pages are responsible for defining the
       :vl-mintypmax
       (change-vl-mintypmax x :min (vl-maybe-strip-outer-linestart x.min))
 
-      :vl-concat      (if (assoc-equal "VL_LINESTART" x.atts)
-                          (change-vl-concat x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                        x)
-      :vl-multiconcat (if (assoc-equal "VL_LINESTART" x.atts)
-                          (change-vl-multiconcat x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                        x)
-      :vl-stream      (if (assoc-equal "VL_LINESTART" x.atts)
-                          (change-vl-stream x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                        x)
-      :vl-call        (if (assoc-equal "VL_LINESTART" x.atts)
-                          (change-vl-call x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                        x)
       :vl-cast    x ;; BOZO?
       :vl-inside  x ;; BOZO?
 
-      :vl-tagged    (if (assoc-equal "VL_LINESTART" x.atts)
-                        (change-vl-tagged x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                      x)
-
-      :vl-pattern   (if (assoc-equal "VL_LINESTART" x.atts)
-                        (change-vl-pattern x :atts (vl-remove-keys '("VL_LINESTART") x.atts))
-                      x)
       :vl-eventexpr x ;; BOZO?
+      :otherwise (b* ((x.atts (vl-expr->atts x)))
+                   (if (assoc-equal "VL_LINESTART" x.atts)
+                       (vl-expr-update-atts x (vl-remove-keys '("VL_LINESTART") x.atts))
+                     x))
       ))
   ///
   (verify-guards vl-maybe-strip-outer-linestart)
@@ -871,7 +848,8 @@ displays.  The module browser's web pages are responsible for defining the
     (<= (vl-expr-count (vl-maybe-strip-outer-linestart x))
         (vl-expr-count x))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :in-theory (enable vl-expr-count)))))
+    :hints(("Goal" :in-theory (enable vl-expr-count
+                                      vl-expr-update-atts)))))
 
 (defines vl-pp-expr
   :short "Main pretty-printer for an expression."
@@ -1196,6 +1174,16 @@ displays.  The module browser's web pages are responsible for defining the
                                    (vl-print "{")
                                    (vl-pp-exprlist x.parts)
                                    (vl-print "}}"))
+
+        :vl-bitselect-expr (vl-ps-seq (vl-mimic-linestart atts)
+                                      (vl-pp-expr x.subexp)
+                                      (vl-print "[")
+                                      (vl-pp-expr x.index)
+                                      (vl-print "]"))
+
+        :vl-partselect-expr (vl-ps-seq (vl-mimic-linestart atts)
+                                       (vl-pp-expr x.subexp)
+                                       (vl-pp-partselect x.part))
 
         :vl-stream (vl-ps-seq (vl-mimic-linestart atts)
                               (vl-print "{")

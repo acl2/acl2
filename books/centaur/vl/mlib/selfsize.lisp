@@ -194,6 +194,8 @@ only meant as a heuristic for generating more useful warnings.</p>"
       ;; strange to begin with.
       :vl-concat nil
       :vl-multiconcat nil
+      :vl-bitselect-expr nil
+      :vl-partselect-expr nil
       :vl-mintypmax nil
       :vl-call      nil
       :vl-stream    nil
@@ -1269,6 +1271,19 @@ reference to an array.  In these cases we generate fatal warnings.</p>"
                               (mv warnings nil)))
                           (mv (ok) (* (nfix reps) (sum-nats part-sizes))))
 
+        :vl-bitselect-expr (mv (ok) 1)
+
+        :vl-partselect-expr
+        (vl-partselect-case x.part
+          :none (vl-expr-selfsize x.subexp ss scopes)
+          :otherwise (b* (((mv errmsg width) (vl-partselect-width x.part))
+                          ((when errmsg)
+                           (mv (fatal :type :vl-unresolved-partselect
+                                      :msg "cannot size ~a0: ~@1~%"
+                                      :args (list x errmsg))
+                               nil)))
+                       (mv (ok) width)))
+        
         ;; Streaming concatenations need to be treated specially.  They sort of
         ;; have a self-size -- the number of bits available -- but can't be
         ;; used as an operand without casting or assignment context.  Then, if
@@ -1479,6 +1494,8 @@ sign-extend it and don't change any of its operands.</p>"
 
     :vl-concat :opaque
     :vl-multiconcat :opaque
+    :vl-bitselect-expr :opaque
+    :vl-partselect-expr :opaque
     :vl-inside :opaque
 
     ;; Arguably these two are only applicable if the type is packed, but it's
