@@ -408,7 +408,7 @@
   (equal (bvxor 1 y (bvnot 1 x))
          (bvnot 1 (bvxor 1 y x)))
   :hints (("Goal" :use bvnot-of-bvxor-1-back
-           :in-theory (e/d (BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2) (bvnot-of-bvxor-1-back)))))
+           :in-theory (e/d () (bvnot-of-bvxor-1-back)))))
 
 ;(local (in-theory (enable BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2))) ;hope these don't loop
 
@@ -420,13 +420,12 @@
 (defthm bvxor-of-x-and-bvnot-x-alt
   (equal (bvxor 1 x (bvnot 1 x))
          1)
-  :hints (("Goal" :in-theory (e/d (bitxor-commutative-2)
+  :hints (("Goal" :in-theory (e/d ()
                                   (equal-of-0-and-bitxor)))))
 
 (defthm bvxor-of-x-and-bvnot-x-alt-3terms
   (equal (bvxor 1 x (bvxor 1 (bvnot 1 x) y))
-         (bvnot 1 y))
-  :hints (("Goal" :in-theory (enable bitxor-commutative-2))))
+         (bvnot 1 y)))
 
 (defthm bvxor-of-x-and-bvnot-x-3terms
   (equal (bvxor 1 (bvnot 1 x) (bvxor 1 x y))
@@ -438,8 +437,7 @@
 
 (defthm bvxor-of-bvnot-2
   (equal (bvxor 1 y (bvnot 1 x))
-         (bvnot 1 (bvxor 1 y x)))
-  :hints (("Goal" :in-theory (enable bitxor-commutative-2))))
+         (bvnot 1 (bvxor 1 y x))))
 
 (defthm bvxor-of-bvxor-tighten
   (implies (and (< size1 size2)
