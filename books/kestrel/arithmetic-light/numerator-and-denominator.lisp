@@ -27,7 +27,7 @@
   (implies (integerp x)
            (equal (numerator x)
                   x))
-  :hints (("Goal" :use (:instance rational-implies2)
+  :hints (("Goal" :use rational-implies2
            :in-theory (disable rational-implies2))))
 
 (defthm equal-of-numerator-same
@@ -50,7 +50,7 @@
                   (if (equal x 0)
                       1
                     (/ (numerator x) x))))
-  :hints (("Goal" :use (:instance rational-implies2)
+  :hints (("Goal" :use rational-implies2
            :in-theory (disable rational-implies2))))
 
 (local
@@ -78,7 +78,7 @@
   (equal (< 0 (numerator x))
          (and (rationalp x)
               (< 0 x)))
-  :hints (("Goal" :use (:instance rational-implies2)
+  :hints (("Goal" :use rational-implies2
            :cases ((not (rationalp x))
                    (and (rationalp x) (< 0 x)))
            :in-theory (disable rational-implies2))))

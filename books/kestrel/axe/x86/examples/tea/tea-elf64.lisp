@@ -50,7 +50,7 @@
   :inputs ((v u32[2]) (k u32[4]))
   :output (:tuple (:mem32 (rdi x86)) ;extract v0
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
-  :assumptions '(;; Introduce byte vars for v:
+  :extra-assumptions '(;; Introduce byte vars for v:
                  (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
                  (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))
                  ;; Introduce byte vars for k:
