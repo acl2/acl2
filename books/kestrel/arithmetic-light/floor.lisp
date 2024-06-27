@@ -39,7 +39,7 @@
                   (if (<= x 0)
                       t
                     (< x 1))))
-  :hints (("Goal" :use (:instance rational-implies2)
+  :hints (("Goal" :use rational-implies2
            :in-theory (disable rational-implies2))))
 
 ;where should this go?
@@ -147,7 +147,7 @@
                 (rationalp j))
            (equal (equal (floor i j) n)
                   (integerp n)))
-  :hints (("Goal" :use (:instance floor-unique)
+  :hints (("Goal" :use floor-unique
            :in-theory (disable floor-unique))))
 
 ;enable?
@@ -485,7 +485,7 @@
                   (if (integerp (* i (/ j))) ;(equal (* y (floor (- x) y)) (- x)) ;i want to express the divisibility test in terms of floor, but putting in (floor x y) loops
                       (- (floor (- i) j))
                     (+ (- (floor (- i) j)) -1))))
-  :hints (("Goal" :use (:instance floor-of---arg1)
+  :hints (("Goal" :use floor-of---arg1
            :in-theory (disable floor-of---arg1))))
 
 ;what should we do with (FLOOR (+ -447 N) 512)?
@@ -792,7 +792,7 @@
                 )
            (equal (< k (floor i j))
                   (<= (* j (+ 1 k)) i)))
-  :hints (("Goal" :use (:instance <-of-floor-arg2))))
+  :hints (("Goal" :use <-of-floor-arg2)))
 
 (defthm <-of-0-and-floor
   (implies (and (integerp i)
@@ -871,7 +871,7 @@
                 (integerp j))
            (equal (< (floor i j) k)
                   (< i (* k j))))
-  :hints (("Goal" :use (:instance <-of-floor-arg1)
+  :hints (("Goal" :use <-of-floor-arg1
            :in-theory (disable <-of-floor-arg1))))
 
 ;disable?
@@ -881,7 +881,7 @@
                 (< 0 j))
            (equal (< (* j (floor i j)) i)
                   (not (integerp (/ i j)))))
-  :hints (("Goal" :use (:instance my-floor-upper-bound)
+  :hints (("Goal" :use my-floor-upper-bound
            :in-theory (disable my-floor-upper-bound))))
 
 ;enable?
@@ -1126,7 +1126,7 @@
 
 
 ;;   :hints (("Goal"
-;; ;           :use (:instance my-floor-lower-bound)
+;; ;           :use my-floor-lower-bound
 ;;            :in-theory (disable my-floor-lower-bound
 ;;                                my-floor-lower-bound-alt))))
 
@@ -1140,7 +1140,7 @@
 ;;                       (equal i 0)
 ;;                     (equal i -1))))
 ;;   :hints (("Goal"
-;;            :use (:instance floor-upper-bound-strict)
+;;            :use floor-upper-bound-strict
 ;;            :in-theory (disable floor-upper-bound-strict
 ;;                                <-of-times-of-floor-and-same
 ;;                                floor-mod-elim))))
@@ -1463,7 +1463,7 @@
                 (not (equal 0 j)))
            (equal (floor (* i j) j)
                   (floor i 1)))
-  :hints (("Goal" :use (:instance floor-of-*-same)
+  :hints (("Goal" :use floor-of-*-same
            :in-theory (disable floor-of-*-same))))
 
 ;gen and rename

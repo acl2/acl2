@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -181,7 +181,7 @@
                 (not (equal 0 y)))
            (equal (integerp (* (/ y) x)) ;should match things like (* 1/32 x)
                   (equal 0 (mod x y))))
-  :hints (("Goal" :use (:instance equal-of-0-and-mod)
+  :hints (("Goal" :use equal-of-0-and-mod
            :in-theory (disable equal-of-0-and-mod))))
 
 (theory-invariant (incompatible (:rewrite integerp-of-*-of-/-becomes-equal-of-0-and-mod)
@@ -508,7 +508,7 @@
                 (integerp p))
            (equal (mod (* x1 x) p)
                   (mod (* free x) p)))
-  :hints (("Goal" :use (:instance mod-of-*-subst-arg2)
+  :hints (("Goal" :use mod-of-*-subst-arg2
            :in-theory (disable mod-of-*-subst-arg2))))
 
 (defthm mod-of-+-of---same
@@ -571,7 +571,7 @@
                 (< 0 y))
            (<= (mod x y) (+ -1 y)))
   :rule-classes :linear
-  :hints (("Goal" :use (:instance mod-bound-linear-arg2))))
+  :hints (("Goal" :use mod-bound-linear-arg2)))
 
 
 ;gen?
@@ -704,7 +704,7 @@
                 (not (equal 0 y1)))
            (equal (mod (mod x y1) y2)
                   (mod x y2)))
-  :hints (("Goal" :use (:instance mod-of-mod-when-multiple))))
+  :hints (("Goal" :use mod-of-mod-when-multiple)))
 
 (defthm unsigned-byte-p-of-mod-when-<=-of-expt
   (implies (and (<= y (expt 2 size))
