@@ -155,11 +155,11 @@
      includes an @(tsee mv-let)s or a @(tsee let)
      that affects a formal of @('fn') of pointer or array type,
      or a formal of integer type that represents an external object,
-     that formal must be among the variables affected by ('fn').
+     that formal must be among the variables affected by @('fn').
      If the body of a recursive function @('fn')
      includes an @(tsee mv-let)s or a @(tsee let)
      that affects a formal of @('fn') of any type,
-     that formal must be among the variables affected by ('fn').
+     that formal must be among the variables affected by @('fn').
      In other words, no modification of formals must be ``lost''.
      The case of formals of pointer or array types is clear,
      because it means that objects in the heap are affected.
