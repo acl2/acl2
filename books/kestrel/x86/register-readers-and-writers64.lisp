@@ -203,23 +203,29 @@
 (defthm set-rsp-of-rsp-same (equal (set-rsp (rsp x86) x86) x86) :hints (("Goal" :in-theory (enable rsp set-rsp))))
 (defthm set-rbp-of-rbp-same (equal (set-rbp (rbp x86) x86) x86) :hints (("Goal" :in-theory (enable rbp set-rbp))))
 
-;; These match better
-(defthm set-rax-of-rax-same-gen (implies (equal (rax x86_2) (rax x86)) (equal (set-rax (rax x86_2) x86) x86)))
-(defthm set-rbx-of-rbx-same-gen (implies (equal (rbx x86_2) (rbx x86)) (equal (set-rbx (rbx x86_2) x86) x86)))
-(defthm set-rcx-of-rcx-same-gen (implies (equal (rcx x86_2) (rcx x86)) (equal (set-rcx (rcx x86_2) x86) x86)))
-(defthm set-rdx-of-rdx-same-gen (implies (equal (rdx x86_2) (rdx x86)) (equal (set-rdx (rdx x86_2) x86) x86)))
-(defthm set-rdi-of-rdi-same-gen (implies (equal (rdi x86_2) (rdi x86)) (equal (set-rdi (rdi x86_2) x86) x86)))
-(defthm set-rsi-of-rsi-same-gen (implies (equal (rsi x86_2) (rsi x86)) (equal (set-rsi (rsi x86_2) x86) x86)))
-(defthm set-r8-of-r8-same-gen (implies (equal (r8 x86_2) (r8 x86)) (equal (set-r8 (r8 x86_2) x86) x86)))
-(defthm set-r9-of-r9-same-gen (implies (equal (r9 x86_2) (r9 x86)) (equal (set-r9 (r9 x86_2) x86) x86)))
-(defthm set-r10-of-r10-same-gen (implies (equal (r10 x86_2) (r10 x86)) (equal (set-r10 (r10 x86_2) x86) x86)))
-(defthm set-r11-of-r11-same-gen (implies (equal (r11 x86_2) (r11 x86)) (equal (set-r11 (r11 x86_2) x86) x86)))
-(defthm set-r12-of-r12-same-gen (implies (equal (r12 x86_2) (r12 x86)) (equal (set-r12 (r12 x86_2) x86) x86)))
-(defthm set-r13-of-r13-same-gen (implies (equal (r13 x86_2) (r13 x86)) (equal (set-r13 (r13 x86_2) x86) x86)))
-(defthm set-r14-of-r14-same-gen (implies (equal (r14 x86_2) (r14 x86)) (equal (set-r14 (r14 x86_2) x86) x86)))
-(defthm set-r15-of-r15-same-gen (implies (equal (r15 x86_2) (r15 x86)) (equal (set-r15 (r15 x86_2) x86) x86)))
-(defthm set-rsp-of-rsp-same-gen (implies (equal (rsp x86_2) (rsp x86)) (equal (set-rsp (rsp x86_2) x86) x86)))
-(defthm set-rbp-of-rbp-same-gen (implies (equal (rbp x86_2) (rbp x86)) (equal (set-rbp (rbp x86_2) x86) x86)))
+;; These match better than the rules just above, like set-rax-of-rax-same.
+;; And they are probably cheaper than very generic rules about writing values that are already in the registers.
+;; Here, x86 may often be the variable X86, whereas x86_2 may often be some
+;; updated state (with the given register unchanged).
+;; The rule for RBP here is especially useful, since RBP is commonly saved and
+;; restored.  The rules for other callee-saved registers are also likely to be
+;; useful (I suppose we could wait to apply these until the very end of the symbolic execution).
+(defthm set-rax-of-rax-same-gen (implies (equal (rax x86) (rax x86_2)) (equal (set-rax (rax x86) x86_2) x86_2)))
+(defthm set-rbx-of-rbx-same-gen (implies (equal (rbx x86) (rbx x86_2)) (equal (set-rbx (rbx x86) x86_2) x86_2)))
+(defthm set-rcx-of-rcx-same-gen (implies (equal (rcx x86) (rcx x86_2)) (equal (set-rcx (rcx x86) x86_2) x86_2)))
+(defthm set-rdx-of-rdx-same-gen (implies (equal (rdx x86) (rdx x86_2)) (equal (set-rdx (rdx x86) x86_2) x86_2)))
+(defthm set-rdi-of-rdi-same-gen (implies (equal (rdi x86) (rdi x86_2)) (equal (set-rdi (rdi x86) x86_2) x86_2)))
+(defthm set-rsi-of-rsi-same-gen (implies (equal (rsi x86) (rsi x86_2)) (equal (set-rsi (rsi x86) x86_2) x86_2)))
+(defthm set-r8-of-r8-same-gen (implies (equal (r8 x86) (r8 x86_2)) (equal (set-r8 (r8 x86) x86_2) x86_2)))
+(defthm set-r9-of-r9-same-gen (implies (equal (r9 x86) (r9 x86_2)) (equal (set-r9 (r9 x86) x86_2) x86_2)))
+(defthm set-r10-of-r10-same-gen (implies (equal (r10 x86) (r10 x86_2)) (equal (set-r10 (r10 x86) x86_2) x86_2)))
+(defthm set-r11-of-r11-same-gen (implies (equal (r11 x86) (r11 x86_2)) (equal (set-r11 (r11 x86) x86_2) x86_2)))
+(defthm set-r12-of-r12-same-gen (implies (equal (r12 x86) (r12 x86_2)) (equal (set-r12 (r12 x86) x86_2) x86_2)))
+(defthm set-r13-of-r13-same-gen (implies (equal (r13 x86) (r13 x86_2)) (equal (set-r13 (r13 x86) x86_2) x86_2)))
+(defthm set-r14-of-r14-same-gen (implies (equal (r14 x86) (r14 x86_2)) (equal (set-r14 (r14 x86) x86_2) x86_2)))
+(defthm set-r15-of-r15-same-gen (implies (equal (r15 x86) (r15 x86_2)) (equal (set-r15 (r15 x86) x86_2) x86_2)))
+(defthm set-rsp-of-rsp-same-gen (implies (equal (rsp x86) (rsp x86_2)) (equal (set-rsp (rsp x86) x86_2) x86_2)))
+(defthm set-rbp-of-rbp-same-gen (implies (equal (rbp x86) (rbp x86_2)) (equal (set-rbp (rbp x86) x86_2) x86_2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

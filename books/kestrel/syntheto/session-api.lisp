@@ -31,7 +31,7 @@
      history function.")
    (xdoc::p
     "Some @(tsee history) functions that can change the top command number include
-     @(tsee u), @(tsee ubu!), and (tsee reset-prehistory), for example."))
+     @(tsee u), @(tsee ubu!), and @(tsee reset-prehistory), for example."))
   (let* ((wrld (w state))
          (base-info (global-val 'command-number-baseline-info wrld))
          (command-number-base (access command-number-baseline-info base-info :current))
