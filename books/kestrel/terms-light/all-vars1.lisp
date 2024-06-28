@@ -10,34 +10,38 @@
 
 (in-package "ACL2")
 
-;; See free-vars-in-term.lisp for a simpler function than all-vars1.
+;; See free-vars-in-term.lisp for a simpler function than all-vars1, including
+;; rules that connect it to all-vars1.
 
 (include-book "tools/flag" :dir :system)
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 (in-theory (disable all-vars1))
 
-(make-flag all-vars1)
+(local (make-flag all-vars1))
 
-(defthm-flag-all-vars1
-  (defthm subsetp-equal-of-all-vars1-same
-    (subsetp-equal ans (all-vars1 term ans))
-    :flag all-vars1)
-  (defthm subsetp-equal-of-all-vars1-lst-same
-    (subsetp-equal ans (all-vars1-lst lst ans))
-    :flag all-vars1-lst)
-  :hints (("Goal" :in-theory (enable all-vars1))))
+(local
+ (defthm-flag-all-vars1
+   (defthm subsetp-equal-of-all-vars1-same
+     (subsetp-equal ans (all-vars1 term ans))
+     :flag all-vars1)
+   (defthm subsetp-equal-of-all-vars1-lst-same
+     (subsetp-equal ans (all-vars1-lst lst ans))
+     :flag all-vars1-lst)
+   :hints (("Goal" :in-theory (enable all-vars1)))))
 
-;; (defthm-flag-all-vars1
-;;   (defthm theorem-for-all-vars1
-;;     (implies (subsetp-equal ans0 ans)
-;;              (subsetp-equal (all-vars1 term ans0)
-;;                             (all-vars1 term ans)))
-;;     :flag all-vars1)
-;;   (defthm theorem-for-all-vars1-lst
-;;     (implies (subsetp-equal ans0 ans)
-;;              (subsetp-equal (all-vars1-lst lst ans0)
-;;                             (all-vars1-lst lst ans)))
-;;     :flag all-vars1-lst)
-;; ;  :hints (("Goal" :in-theory (enable subsetp-equal)))
-;;   )
+;; redundant and non-local
+(defthm subsetp-equal-of-all-vars1-same
+  (subsetp-equal ans (all-vars1 term ans)))
+
+;; redundant and non-local
+(defthm subsetp-equal-of-all-vars1-lst-same
+  (subsetp-equal ans (all-vars1-lst lst ans)))
+
+(defthm subsetp-equal-of-all-vars1-when-subsetp-equal-arg2
+  (implies (subsetp-equal x ans)
+           (subsetp-equal x (all-vars1 term ans))))
+
+(defthm subsetp-equal-of-all-vars1-lst-when-subsetp-equal-arg2
+  (implies (subsetp-equal x ans)
+           (subsetp-equal x (all-vars1-lst terms ans))))
