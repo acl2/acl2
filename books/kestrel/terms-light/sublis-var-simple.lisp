@@ -16,6 +16,7 @@
 
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "tools/flag" :dir :system)
+(include-book "no-nils-in-termp")
 
 ;; See also the built-in function sublis-var.  It evaluates ground applications of certain functions:
 ;; (sublis-var (acons 'a ''3 nil) '(binary-+ a a)) = '6
@@ -143,3 +144,20 @@
     :flag sublis-var-simple-lst)
   :hints (("Goal" :in-theory (enable sublis-var-simple
                                      sublis-var-simple-lst))))
+
+(defthm-flag-sublis-var-simple
+  (defthm no-nils-in-termp-of-sublis-var-simple
+    (implies (and (no-nils-in-termsp (strip-cdrs alist))
+                  (no-nils-in-termp term))
+             (no-nils-in-termp (sublis-var-simple alist term)))
+    :flag sublis-var-simple)
+  (defthm no-nils-in-termsp-of-sublis-var-simple-lst
+    (implies (and (no-nils-in-termsp (strip-cdrs alist))
+                  (no-nils-in-termsp terms))
+             (no-nils-in-termsp (sublis-var-simple-lst alist terms)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :expand (no-nils-in-termp (cons (car term) (sublis-var-simple-lst alist (cdr term)))) ; todo
+           :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst
+                                     ;no-nils-in-termp ; todo
+                                     ))))
