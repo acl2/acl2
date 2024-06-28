@@ -159,4 +159,4 @@
                                    expand-lambdas-in-terms
                                    lambdas-closed-in-termp)
                                   (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-                                   strip-cdrs-of-pairlis$-gen)))))
+                                   strip-cdrs-of-pairlis$)))))
