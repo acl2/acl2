@@ -1,4 +1,4 @@
-; Proofs about simplify-lambdas
+; Proofs about substitute-constants-in-lambdas
 ;
 ; Copyright (C) 2024 Kestrel Institute
 ;
@@ -13,7 +13,7 @@
 ;; STATUS: Needs clean up.
 
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
-(include-book "simplify-lambdas")
+(include-book "substitute-constants-in-lambdas")
 (include-book "lambdas-closed-in-termp")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system) ; make local?
@@ -40,21 +40,21 @@
            (no-nils-in-termsp (filter-args-for-formals formals args target-formals)))
   :hints (("Goal" :in-theory (enable filter-args-for-formals))))
 
-(defthm-flag-simplify-lambdas
-  (defthm no-nils-in-termp-of-simplify-lambdas
+(defthm-flag-substitute-constants-in-lambdas
+  (defthm no-nils-in-termp-of-substitute-constants-in-lambdas
     (implies (and (no-nils-in-termp term)
                   (pseudo-termp term))
-             (no-nils-in-termp (simplify-lambdas term)))
-    :flag simplify-lambdas)
-  (defthm no-nils-in-termsp-of-simplify-lambdas-lst
+             (no-nils-in-termp (substitute-constants-in-lambdas term)))
+    :flag substitute-constants-in-lambdas)
+  (defthm no-nils-in-termsp-of-substitute-constants-in-lambdas-lst
     (implies (and (no-nils-in-termsp terms)
                   (pseudo-term-listp terms))
-             (no-nils-in-termsp (simplify-lambdas-lst terms)))
-    :flag simplify-lambdas-lst)
+             (no-nils-in-termsp (substitute-constants-in-lambdas-lst terms)))
+    :flag substitute-constants-in-lambdas-lst)
   :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (simplify-lambdas
-                            simplify-lambdas-lst
+           :in-theory (e/d (substitute-constants-in-lambdas
+                            substitute-constants-in-lambdas-lst
                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             ;; make-lambda-terms-simple
                             ;; ;;make-lambda-term-simple
@@ -164,8 +164,8 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 
 ;; might actually be equal (or perm) but we only need subset
-(defthm-flag-simplify-lambdas
-  (defthm free-vars-in-term-of-simplify-lambdas
+(defthm-flag-substitute-constants-in-lambdas
+  (defthm free-vars-in-term-of-substitute-constants-in-lambdas
     (implies (and ;(symbol-alistp alist) ; usually a symbol-term-alistp
                   ;(pseudo-term-listp (strip-cdrs alist))
               (pseudo-termp term)
@@ -174,10 +174,10 @@
                   ;(subsetp-equal (free-vars-in-term term) (strip-cars alist))
               )
              (equal ;subsetp-equal
-              (free-vars-in-term (simplify-lambdas term))
+              (free-vars-in-term (substitute-constants-in-lambdas term))
               (free-vars-in-term term)))
-    :flag simplify-lambdas)
-  (defthm free-vars-in-terms-of-simplify-lambdas-lst
+    :flag substitute-constants-in-lambdas)
+  (defthm free-vars-in-terms-of-substitute-constants-in-lambdas-lst
     (implies (and ;(symbol-alistp alist) ; usually a symbol-term-alistp
                   ;(pseudo-term-listp (strip-cdrs alist))
               (pseudo-term-listp terms)
@@ -187,14 +187,14 @@
                   ;(subsetp-equal (free-vars-in-terms terms) (strip-cars alist))
               )
              (equal ;subsetp-equal
-              (free-vars-in-terms (simplify-lambdas-lst terms))
+              (free-vars-in-terms (substitute-constants-in-lambdas-lst terms))
               (free-vars-in-terms terms)))
-    :flag simplify-lambdas-lst)
+    :flag substitute-constants-in-lambdas-lst)
   :hints (("Goal" ;:expand (PSEUDO-TERMP TERM)
            :expand (free-vars-in-term term)
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (simplify-lambdas
-                            simplify-lambdas-lst
+           :in-theory (e/d (substitute-constants-in-lambdas
+                            substitute-constants-in-lambdas-lst
                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             ;; make-lambda-terms-simple
                             ;; ;;make-lambda-term-simple
@@ -207,15 +207,15 @@
                             empty-eval-of-fncall-args-back
                             )))))
 
-;; (defthm subsetp-equal-of-free-vars-in-term-of-simplify-lambdas-gen
+;; (defthm subsetp-equal-of-free-vars-in-term-of-substitute-constants-in-lambdas-gen
 ;;   (implies (and (subsetp-equal (free-vars-in-term term) x)
 ;;                 (pseudo-termp term))
-;;            (subsetp-equal (free-vars-in-term (simplify-lambdas term))
+;;            (subsetp-equal (free-vars-in-term (substitute-constants-in-lambdas term))
 ;;                           x)))
 
 ;; The point here is to recur on a different alist
 (mutual-recursion
- (defund simplify-lambdas-induct (term alist)
+ (defund substitute-constants-in-lambdas-induct (term alist)
    (declare (irrelevant alist))
    ;; (declare (xargs :guard (pseudo-termp term)
    ;;                 :verify-guards nil ;done below
@@ -225,11 +225,11 @@
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
            term
-         (let ((args (simplify-lambdas-induct-lst (fargs term) alist)))
+         (let ((args (substitute-constants-in-lambdas-induct-lst (fargs term) alist)))
            (if (consp fn)
                ;; it's a lambda:
                (let* ((body (lambda-body fn))
-                      (body (simplify-lambdas-induct body (pairlis$ (lambda-formals fn) (empty-eval-list args alist))))
+                      (body (substitute-constants-in-lambdas-induct body (pairlis$ (lambda-formals fn) (empty-eval-list args alist))))
                       (formals (lambda-formals fn)))
                  (mv-let (formals-for-constant-args constant-args)
                    (formals-and-constant-args formals args)
@@ -240,31 +240,31 @@
                      `((lambda ,remaining-formals ,body) ,@remaining-args))))
              ;; not a lambda:
              (cons-with-hint fn args term)))))))
- (defund simplify-lambdas-induct-lst (terms alist)
+ (defund substitute-constants-in-lambdas-induct-lst (terms alist)
 ;   (declare (xargs :guard (pseudo-term-listp terms)))
    (declare (irrelevant alist))
    (if (endp terms)
        nil
-     (cons-with-hint (simplify-lambdas-induct (first terms) alist)
-                     (simplify-lambdas-induct-lst (rest terms) alist)
+     (cons-with-hint (substitute-constants-in-lambdas-induct (first terms) alist)
+                     (substitute-constants-in-lambdas-induct-lst (rest terms) alist)
                      terms))))
 
-(local (make-flag simplify-lambdas-induct))
+(local (make-flag substitute-constants-in-lambdas-induct))
 
 (local
- (defthm-flag-simplify-lambdas-induct
-   (defthm simplify-lambdas-induct-removal
-     (equal (simplify-lambdas-induct term alist)
-            (simplify-lambdas term))
-     :flag simplify-lambdas-induct)
-   (defthm simplify-lambdas-induct-lst-removal
-     (equal (simplify-lambdas-induct-lst terms alist)
-            (simplify-lambdas-lst terms))
-     :flag simplify-lambdas-induct-lst)
-   :hints (("Goal" :in-theory (enable simplify-lambdas
-                                      simplify-lambdas-lst
-                                      simplify-lambdas-induct
-                                      simplify-lambdas-induct-lst)))))
+ (defthm-flag-substitute-constants-in-lambdas-induct
+   (defthm substitute-constants-in-lambdas-induct-removal
+     (equal (substitute-constants-in-lambdas-induct term alist)
+            (substitute-constants-in-lambdas term))
+     :flag substitute-constants-in-lambdas-induct)
+   (defthm substitute-constants-in-lambdas-induct-lst-removal
+     (equal (substitute-constants-in-lambdas-induct-lst terms alist)
+            (substitute-constants-in-lambdas-lst terms))
+     :flag substitute-constants-in-lambdas-induct-lst)
+   :hints (("Goal" :in-theory (enable substitute-constants-in-lambdas
+                                      substitute-constants-in-lambdas-lst
+                                      substitute-constants-in-lambdas-induct
+                                      substitute-constants-in-lambdas-induct-lst)))))
 
 ;todo: reduce
 (local (include-book "make-lambda-application-simple-proof"))
@@ -390,26 +390,26 @@
                   (mv-nth 1 (formals-and-constant-args formals args))))
   :hints (("Goal" :in-theory (enable formals-and-constant-args map-lookup-equal pairlis$))))
 
-;; Proof that simplify-lambdas preserves the meaning of terms
-(defthm-flag-simplify-lambdas-induct
-  (defthm simplify-lambdas-correct
+;; Proof that substitute-constants-in-lambdas preserves the meaning of terms
+(defthm-flag-substitute-constants-in-lambdas-induct
+  (defthm substitute-constants-in-lambdas-correct
     (implies (and (pseudo-termp term)
                   (no-nils-in-termp term)
                   (no-duplicate-lambda-formals-in-termp term)
                   (lambdas-closed-in-termp term))
-             (equal (empty-eval (simplify-lambdas term) alist)
+             (equal (empty-eval (substitute-constants-in-lambdas term) alist)
                     (empty-eval term alist)))
-    :flag simplify-lambdas-induct)
-  (defthm simplify-lambdas-lst-correct
+    :flag substitute-constants-in-lambdas-induct)
+  (defthm substitute-constants-in-lambdas-lst-correct
     (implies (and (pseudo-term-listp terms)
                   (no-nils-in-termsp terms)
                   (no-duplicate-lambda-formals-in-termsp terms)
                   (lambdas-closed-in-termsp terms))
-             (equal (empty-eval-list (simplify-lambdas-lst terms) alist)
+             (equal (empty-eval-list (substitute-constants-in-lambdas-lst terms) alist)
                     (empty-eval-list terms alist)))
-    :flag simplify-lambdas-induct-lst)
-  :hints (("Goal" :in-theory (e/d (simplify-lambdas
-                                   simplify-lambdas-lst
+    :flag substitute-constants-in-lambdas-induct-lst)
+  :hints (("Goal" :in-theory (e/d (substitute-constants-in-lambdas
+                                   substitute-constants-in-lambdas-lst
                                    empty-eval-of-fncall-args
                                    true-listp-when-symbol-alistp
                                    make-lambda-term-simple

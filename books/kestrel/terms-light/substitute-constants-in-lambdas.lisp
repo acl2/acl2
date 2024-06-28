@@ -1,4 +1,4 @@
-; Tools to simplify lambda applications in terms
+; A tools to substitute lambda vars that are bound to constants
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute
@@ -15,9 +15,9 @@
 
 ;; This does the following to lambdas:
 ;; 1. Substitute for lambda vars bound to constants
-;; TODO: 2. Avoid trivial lambdas (all formals bound to themselves).  Or do this separately?
+;; TODO: 2. Avoid trivial lambdas (all formals bound to themselves).  Or consider calling another tool to do that separately?
 
-;; TODO: add more kinds of simplifications (see clean-up-lambdas, etc.).  Perhaps first freeze and rename this to something like substitute-constants-for-lambda-vars.lisp.
+;; TODO: add more kinds of simplifications, in other files (see clean-up-lambdas, etc.)
 
 (include-book "sublis-var-simple")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -115,7 +115,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
- (defund simplify-lambdas (term)
+ (defund substitute-constants-in-lambdas (term)
    (declare (xargs :guard (pseudo-termp term)
                    :verify-guards nil ;done below
                    ))
@@ -124,11 +124,11 @@
      (let ((fn (ffn-symb term)))
        (if (eq 'quote fn)
            term
-         (let ((args (simplify-lambdas-lst (fargs term))))
+         (let ((args (substitute-constants-in-lambdas-lst (fargs term))))
            (if (consp fn)
                ;; it's a lambda:
                (let* ((body (lambda-body fn))
-                      (body (simplify-lambdas body))
+                      (body (substitute-constants-in-lambdas body))
                       (formals (lambda-formals fn)))
                  ;; could make a single pass to compute both formal lists and both arg lists
                  (mv-let (formals-for-constant-args constant-args)
@@ -144,34 +144,34 @@
                    )))
              ;; not a lambda:
              (cons-with-hint fn args term)))))))
- (defund simplify-lambdas-lst (terms)
+ (defund substitute-constants-in-lambdas-lst (terms)
    (declare (xargs :guard (pseudo-term-listp terms)))
    (if (endp terms)
        nil
-     (cons-with-hint (simplify-lambdas (first terms))
-                     (simplify-lambdas-lst (rest terms))
+     (cons-with-hint (substitute-constants-in-lambdas (first terms))
+                     (substitute-constants-in-lambdas-lst (rest terms))
                      terms))))
 
-(make-flag simplify-lambdas)
+(make-flag substitute-constants-in-lambdas)
 
-(defthm len-of-simplify-lambdas-lst
-  (equal (len (simplify-lambdas-lst terms))
+(defthm len-of-substitute-constants-in-lambdas-lst
+  (equal (len (substitute-constants-in-lambdas-lst terms))
          (len terms))
   :hints (("Goal" :induct (len terms)
-           :in-theory (enable simplify-lambdas-lst))))
+           :in-theory (enable substitute-constants-in-lambdas-lst))))
 
-(defthm-flag-simplify-lambdas
-  (defthm pseudo-termp-of-simplify-lambdas
+(defthm-flag-substitute-constants-in-lambdas
+  (defthm pseudo-termp-of-substitute-constants-in-lambdas
     (implies (pseudo-termp term)
-             (pseudo-termp (simplify-lambdas term)))
-    :flag simplify-lambdas)
-  (defthm pseudo-termp-of-simplify-lambdas-lst
+             (pseudo-termp (substitute-constants-in-lambdas term)))
+    :flag substitute-constants-in-lambdas)
+  (defthm pseudo-termp-of-substitute-constants-in-lambdas-lst
     (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (simplify-lambdas-lst terms)))
-    :flag simplify-lambdas-lst)
+             (pseudo-term-listp (substitute-constants-in-lambdas-lst terms)))
+    :flag substitute-constants-in-lambdas-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable simplify-lambdas
-                              simplify-lambdas-lst
+           :in-theory (enable substitute-constants-in-lambdas
+                              substitute-constants-in-lambdas-lst
                               pseudo-term-listp-when-symbol-listp))))
 
-(verify-guards simplify-lambdas :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))
+(verify-guards substitute-constants-in-lambdas :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))
