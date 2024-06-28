@@ -131,3 +131,9 @@
     :flag no-nils-in-termsp)
   :hints (("Goal" :expand (free-vars-in-terms terms)
            :in-theory (enable free-vars-in-term no-nils-in-termsp))))
+
+(defthm no-nils-in-termp-of-cdr-of-assoc-equal
+  (implies (and (no-nils-in-termsp (strip-cdrs alist))
+                (assoc-equal term alist))
+           (no-nils-in-termp (cdr (assoc-equal term alist))))
+  :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))
