@@ -74,3 +74,4 @@
 (include-book "replace-corresponding-arg")
 (include-book "clean-up-lambdas")
 (include-book "clean-up-lambdas-proofs")
+(include-book "simplify-lambdas")
