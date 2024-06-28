@@ -334,13 +334,6 @@
            (no-nils-in-termsp (map-lookup-equal keys alist)))
   :hints (("Goal" :in-theory (enable map-lookup-equal))))
 
-     ;move
-(defthm no-nils-in-termsp-of-take
-  (implies (no-nils-in-termsp lst)
-           (equal (no-nils-in-termsp (take n lst))
-                  (<= (nfix n) (len lst))))
-  :hints (("Goal" :in-theory (enable take))))
-
 (defthm-flag-subst-var-alt
   (defthm no-nils-in-termp-of-subst-var-alt
     (implies (and (symbolp var)
