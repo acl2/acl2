@@ -1,6 +1,6 @@
 ; A simpler utility to find all the vars in a term
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -135,3 +135,18 @@
   :skip-others t
   :hints (("Goal" :in-theory (enable free-vars-in-term free-vars-in-terms
                                      remove-duplicates-equal))))
+
+(defthm free-vars-in-terms-when-not-consp-cheap
+  (implies (not (consp terms))
+           (not (free-vars-in-terms terms)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable free-vars-in-terms))))
+
+;; (defthm-flag-free-vars-in-term
+;;   (defthm subsetp-equal-of-free-vars-in-term-and-all-vars1
+;;     (subsetp-equal (free-vars-in-term term) (all-vars1 term ans))
+;;     :flag free-vars-in-term)
+;;   (defthm subsetp-equal-of-free-vars-in-terms-and-all-vars1-lst
+;;     (subsetp-equal (free-vars-in-terms terms) (all-vars1-lst terms ans))
+;;     :flag free-vars-in-terms)
+;;   :hints (("Goal" :in-theory (enable free-vars-in-term free-vars-in-terms))))
