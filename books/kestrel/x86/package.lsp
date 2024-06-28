@@ -38,7 +38,10 @@
     x86isa::wb
     x86isa::rb-1
     x86isa::wb-1
+
     x86isa::x86p
+    x86isa::x86$ap
+
     x86isa::rvm08 ;todo more like this
     x86isa::wvm08
     x86isa::flgi
@@ -520,6 +523,7 @@
     x86isa::*op-comi*
 
     x86isa::undef
+    x86isa::undef$a
 
     X86ISA::READ-*IP$INLINE
 

@@ -413,7 +413,7 @@
        the declaration of multiple value reuslts
        in @(tsee define) return specifiers).
        Another possible aggregation is a user-defined product type
-       (e.g. (tsee std::defaggregate) or @(tsee fty::defprod)),
+       (e.g. @(tsee std::defaggregate) or @(tsee fty::defprod)),
        but that requires such a type to be explicitly defined.
        Neither approach is as convenient as just returning multiple results,
        but that is not possible if the function

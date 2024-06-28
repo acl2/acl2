@@ -17,7 +17,9 @@
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline
+(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
 
 (local
@@ -903,6 +905,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund x86isa::add-af-spec32$inline-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::add-af-spec32$inline (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::add-af-spec32$inline-unguarded-correct
+  (equal (x86isa::add-af-spec32$inline-unguarded dst src)
+         (x86isa::add-af-spec32$inline dst src))
+  :hints (("Goal" :in-theory (enable x86isa::add-af-spec32$inline-unguarded
+                                     x86isa::add-af-spec32$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-af-spec32$inline-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-af-spec32$inline (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-af-spec32$inline-unguarded-correct
+  (equal (x86isa::sub-af-spec32$inline-unguarded dst src)
+         (x86isa::sub-af-spec32$inline dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-af-spec32$inline-unguarded
+                                     x86isa::sub-af-spec32$inline))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-cf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (bool->bit (<-unguarded dst src)))
+
+(defthm x86isa::sub-cf-spec32-unguarded-correct
+  (equal (x86isa::sub-cf-spec32-unguarded dst src)
+         (x86isa::sub-cf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-cf-spec32-unguarded
+                                     x86isa::sub-cf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-sf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-sf-spec32 (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-sf-spec32-unguarded-correct
+  (equal (x86isa::sub-sf-spec32-unguarded dst src)
+         (x86isa::sub-sf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec32-unguarded
+                                     x86isa::sub-sf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-of-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-of-spec32 (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-of-spec32-unguarded-correct
+  (equal (x86isa::sub-of-spec32-unguarded dst src)
+         (x86isa::sub-of-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-of-spec32-unguarded
+                                     x86isa::sub-of-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-pf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::sub-pf-spec32 (bvchop 32 (ifix dst)) (bvchop 32 (ifix src))))
+
+(defthm x86isa::sub-pf-spec32-unguarded-correct
+  (equal (x86isa::sub-pf-spec32-unguarded dst src)
+         (x86isa::sub-pf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-pf-spec32-unguarded
+                                     x86isa::sub-pf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund x86isa::sub-zf-spec32-unguarded (dst src)
+  (declare (xargs :guard t))
+  (bool->bit (equal src dst)))
+
+(defthm x86isa::sub-zf-spec32-unguarded-correct
+  (equal (x86isa::sub-zf-spec32-unguarded dst src)
+         (x86isa::sub-zf-spec32 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32-unguarded
+                                     x86isa::sub-zf-spec32))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *axe-evaluator-x86-fns-and-aliases*
   (append '((integer-range-p integer-range-p-unguarded)
             x86isa::canonical-address-p$inline ; unguarded
@@ -959,6 +1045,13 @@
             (x86isa::rflagsbits->of$inline x86isa::rflagsbits->of$inline-unguarded)
             (x86isa::rflagsbits->zf$inline x86isa::rflagsbits->zf$inline-unguarded)
             (x86isa::!rflagsbits->af$inline x86isa::!rflagsbits->af$inline-unguarded)
+            (x86isa::add-af-spec32$inline x86isa::add-af-spec32$inline-unguarded)
+            (x86isa::sub-af-spec32$inline x86isa::sub-af-spec32$inline-unguarded)
+            (x86isa::sub-cf-spec32 x86isa::sub-cf-spec32-unguarded)
+            (x86isa::sub-of-spec32 x86isa::sub-of-spec32-unguarded)
+            (x86isa::sub-pf-spec32 x86isa::sub-pf-spec32-unguarded)
+            (x86isa::sub-sf-spec32 x86isa::sub-sf-spec32-unguarded)
+            (x86isa::sub-zf-spec32 x86isa::sub-zf-spec32-unguarded)
             (x86isa::pf-spec8$inline x86isa::pf-spec8$inline-unguarded)
             (x86isa::sf-spec8$inline x86isa::sf-spec8$inline-unguarded)
             (x86isa::cf-spec32$inline x86isa::cf-spec32$inline-unguarded)

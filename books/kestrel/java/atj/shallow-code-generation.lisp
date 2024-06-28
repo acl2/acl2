@@ -672,7 +672,7 @@
      (which can be checked via @(tsee atj-type-<=),
      we leave the expression unchanged,
      unless @(':guards') is @('t') and
-     either (i) the source type is (':aboolean')
+     either (i) the source type is @(':aboolean')
      and the destination type is not @(':aboolean'),
      or (ii) the source type is @(':acharacter')
      and the destination type is not @(':acharacter'),
