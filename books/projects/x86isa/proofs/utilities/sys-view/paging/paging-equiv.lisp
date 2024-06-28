@@ -241,6 +241,14 @@
                       (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))))
           :hints (("Goal" :in-theory (enable ia32e-la-to-pa-without-tlb))))
 
+  (defthm ia32e-la-to-pa-invariant-under-ia32e-la-to-pa-without-tlb
+          (and (equal (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x
+                                                            (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr2 r-w-x-2 x86))))
+                      (mv-nth 0 (ia32e-la-to-pa lin-addr r-w-x x86)))
+               (equal (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x
+                                                            (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr2 r-w-x-2 x86))))
+                      (mv-nth 1 (ia32e-la-to-pa lin-addr r-w-x x86))))
+          :hints (("Goal" :in-theory (enable ia32e-la-to-pa))))
 
   (local (defthm logtail-logext-logext-logtail
                  (implies (and (natp n)
@@ -378,7 +386,14 @@
           (equal (paging-equiv-n n lin-addr r-w-x
                                  x86
                                  (mv-nth 2 (ia32e-la-to-pa lin-addr2 r-w-x2 x862)))
-                 (paging-equiv-n n lin-addr r-w-x x86 x862))))
+                 (paging-equiv-n n lin-addr r-w-x x86 x862)))
+
+  (defthm ia32e-la-to-pa-without-tlb-paging-equiv-n
+          (equal (paging-equiv-n n lin-addr r-w-x
+                                 x86
+                                 (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr2 r-w-x2 x862)))
+                 (paging-equiv-n n lin-addr r-w-x x86 x862))
+          :hints (("Goal" :do-not '(generalize)))))
 
 (defthm paging-equiv-n-app-view
         (implies (and (app-view x86-1)
@@ -451,7 +466,12 @@
   (defthm paging-equiv-app-view
           (implies (and (app-view x86-1)
                         (app-view x86-2))
-                   (paging-equiv x86-1 x86-2))))
+                   (paging-equiv x86-1 x86-2)))
+
+  (defthm mv-nth-2-ia32e-la-to-pa-without-tlb-paging-equiv
+        (paging-equiv (mv-nth 2 (ia32e-la-to-pa-without-tlb lin-addr r-w-x x86))
+                      x86)
+        :hints (("Goal" :in-theory (enable paging-equiv-n)))))
 
 (in-theory (disable paging-equiv))
 
@@ -476,6 +496,17 @@
 (defthm mv-nth-2-las-to-pas-paging-equiv
         (paging-equiv (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))
                       x86))
+
+;; This is an obvious corollary of the above. In some contexts,
+;; this rewrite rule is necessary to get ACL2 to make this simplification.
+;; I don't understand why.
+(defthm las-to-pas-mv-nth-2-las-to-pas
+        (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x
+                                          (mv-nth 2 (las-to-pas n2 lin-addr2 r-w-x2 x86))))
+                    (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+             (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x
+                                          (mv-nth 2 (las-to-pas n2 lin-addr2 r-w-x2 x86))))
+                    (mv-nth 1 (las-to-pas n lin-addr r-w-x x86)))))
 
 (include-book "gather-paging-structures" :ttags :all)
 

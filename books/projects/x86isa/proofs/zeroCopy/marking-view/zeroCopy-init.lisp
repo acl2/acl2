@@ -49,113 +49,141 @@
 
 ;; Introducing the system-level program:
 
-;;  1 mov %cr3,%rax
-;;  2 mov %rax,-0x18(%rsp)
-;;  3 mov -0x18(%rsp),%rdx
-;;  4 mov %rdi,%rax
-;;  5 shr $0x24,%rax
-;;  6 and $0xff8,%eax
-;;  7 and $0xfffffffffffff000,%rdx
-;;  8 or %rdx,%rax
-;;  9 mov (%rax),%rax
-;; 10 test $0x1,%al
-;; 11 je 400780 <rewire_dst_to_src+0x100>
-;; 12 shr $0xc,%rax
-;; 13 movabs $0xffffffffff,%r8
-;; 14 mov %rdi,%rcx
-;; 15 and %r8,%rax
-;; 16 shr $0x1b,%rcx
-;; 17 and $0xff8,%ecx
-;; 18 shl $0xc,%rax
-;; 19 or %rcx,%rax
-;; 20 mov (%rax),%rax
-;; 21 mov %rax,%rcx
-;; 22 and $0x81,%ecx
-;; 23 cmp $0x81,%rcx
-;; 24 jne 400780 <rewire_dst_to_src+0x100>
-;; 25 mov %rsi,%rcx
-;; 26 movabs $0xfffffc0000000,%r9
-;; 27 shr $0x24,%rcx
-;; 28 and %rax,%r9
-;; 29 and $0xff8,%ecx
-;; 30 or %rdx,%rcx
-;; 31 mov (%rcx),%rax
-;; 32 test $0x1,%al
-;; 33 je 400780 <rewire_dst_to_src+0x100>
-;; 34 shr $0xc,%rax
-;; 35 mov %rsi,%rdx
-;; 36 and %r8,%rax
-;; 37 shr $0x1b,%rdx
-;; 38 and $0xff8,%edx
-;; 39 shl $0xc,%rax
-;; 40 or %rdx,%rax
-;; 41 movabs $0xfff000003fffffff,%rdx
-;; 42 and (%rax),%rdx
-;; 43 or %r9,%rdx
-;; 44 mov %rdx,(%rax)
-;; 45 mov %rdx,%rax
-;; 46 and $0x81,%eax
-;; 47 cmp $0x81,%rax
-;; 48 jne 400780 <rewire_dst_to_src+0x100>
-;; 49 movabs $0xfffffc0000000,%rax
-;; 50 and $0x3fffffff,%esi
-;; 51 and $0x3fffffff,%edi
-;; 52 and %rax,%rdx
-;; 53 or %r9,%rdi
-;; 54 xor %eax,%eax
-;; 55 or %rsi,%rdx
-;; 56 cmp %rdx,%rdi
-;; 57 sete %al
-;; 58 retq
-;; 59 nopw %cs:0x0(%rax,%rax,1)
-;; 60 mov $0xffffffffffffffff,%rax
-;; 61 retq
-;; 62 nopl 0x0(%rax,%rax,1)
+;; Note this is not exactly tools/execution/examples/zeroCopy/modifyPagingEntry.c
+;; It has been patched to add an invlpg instruction, without which this program
+;; is incorrect. This program lacked that before and was proven correct on a
+;; previous version of the model that didn't model any TLB semantics. Rather than
+;; modifying and recompiling the C code, I patched the binary because I wanted to
+;; make sure that the binary changed as little as possible so that I could minimize the
+;; work necessary to fix the proofs. I don't know what compiler was used to compile
+;; this code initially, and a modern compiler would likely generate significantly
+;; different code.
+
+;; Some oddities: One would expect the stack to be grown at the start of
+;; the program. However, it appears the compiler decided to take advantage of the
+;; redzone (a region immediately past the stack pointer that the calling convention
+;; guarantees will be preserved by interrupt handlers, etc.). The compiler eliminated
+;; all use of the stack except where it was forced to use it due to the inline asm. One
+;; would expect it to use [rsp - 0x8] (and indeed modern gcc does), but it chose to use
+;; [rsp - 0x18]. Thus, the only parts of the stack we care about are the 8 byte regions
+;; at [rsp - 0x18] and [rsp] since the former is used to store cr3 briefly and the
+;; latter is used for the return pointer.
+
+;; ┌ 257: fcn.00000000 (int64_t arg1, int64_t arg2);
+;; │           ; arg int64_t arg1 @ rdi
+;; │           ; arg int64_t arg2 @ rsi
+;; │           0x00000000      0f20d8         mov rax, cr3
+;; │           0x00000003      48894424e8     mov qword [rsp - 0x18], rax
+;; │           0x00000008      488b5424e8     mov rdx, qword [rsp - 0x18]
+;; │           0x0000000d      4889f8         mov rax, rdi                ; arg1
+;; │           0x00000010      48c1e824       shr rax, 0x24
+;; │           0x00000014      25f80f0000     and eax, 0xff8              ; 4088
+;; │           0x00000019      4881e200f0..   and rdx, 0xfffffffffffff000
+;; │           0x00000020      4809d0         or rax, rdx
+;; │           0x00000023      488b00         mov rax, qword [rax]
+;; │           0x00000026      a801           test al, 1
+;; │       ┌─< 0x00000028      0f84d2000000   je 0x100
+;; │       │   0x0000002e      48c1e80c       shr rax, 0xc
+;; │       │   0x00000032      49b8ffffff..   movabs r8, 0xffffffffff     ; 1099511627775
+;; │       │   0x0000003c      4889f9         mov rcx, rdi                ; arg1
+;; │       │   0x0000003f      4c21c0         and rax, r8
+;; │       │   0x00000042      48c1e91b       shr rcx, 0x1b
+;; │       │   0x00000046      81e1f80f0000   and ecx, 0xff8              ; 4088
+;; │       │   0x0000004c      48c1e00c       shl rax, 0xc
+;; │       │   0x00000050      4809c8         or rax, rcx
+;; │       │   0x00000053      488b00         mov rax, qword [rax]
+;; │       │   0x00000056      4889c1         mov rcx, rax
+;; │       │   0x00000059      81e181000000   and ecx, 0x81
+;; │       │   0x0000005f      4881f98100..   cmp rcx, 0x81
+;; │      ┌──< 0x00000066      0f8594000000   jne 0x100
+;; │      ││   0x0000006c      4889f1         mov rcx, rsi                ; arg2
+;; │      ││   0x0000006f      49b9000000..   movabs r9, 0xfffffc0000000
+;; │      ││   0x00000079      48c1e924       shr rcx, 0x24
+;; │      ││   0x0000007d      4921c1         and r9, rax
+;; │      ││   0x00000080      81e1f80f0000   and ecx, 0xff8              ; 4088
+;; │      ││   0x00000086      4809d1         or rcx, rdx
+;; │      ││   0x00000089      488b01         mov rax, qword [rcx]
+;; │      ││   0x0000008c      a801           test al, 1
+;; │     ┌───< 0x0000008e      7470           je 0x100
+;; │     │││   0x00000090      48c1e80c       shr rax, 0xc
+;; │     │││   0x00000094      4889f2         mov rdx, rsi                ; arg2
+;; │     │││   0x00000097      4c21c0         and rax, r8
+;; │     │││   0x0000009a      48c1ea1b       shr rdx, 0x1b
+;; │     │││   0x0000009e      81e2f80f0000   and edx, 0xff8              ; 4088
+;; │     │││   0x000000a4      48c1e00c       shl rax, 0xc
+;; │     │││   0x000000a8      4809d0         or rax, rdx
+;; │     │││   0x000000ab      48baffffff..   movabs rdx, 0xfff000003fffffff
+;; │     │││   0x000000b5      482310         and rdx, qword [rax]
+;; │     │││   0x000000b8      4c09ca         or rdx, r9
+;; │     │││   0x000000bb      488910         mov qword [rax], rdx
+;; │     │││   0x000000be      0f013e         invlpg byte [rsi]
+;; │     │││   0x000000c1      4889d0         mov rax, rdx
+;; │     │││   0x000000c4      2581000000     and eax, 0x81
+;; │     │││   0x000000c9      483d81000000   cmp rax, 0x81
+;; │    ┌────< 0x000000cf      7532           jne 0x103
+;; │    ││││   0x000000d1      48b8000000..   movabs rax, 0xfffffc0000000
+;; │    ││││   0x000000db      81e6ffffff3f   and esi, 0x3fffffff
+;; │    ││││   0x000000e1      81e7ffffff3f   and edi, 0x3fffffff
+;; │    ││││   0x000000e7      4821c2         and rdx, rax
+;; │    ││││   0x000000ea      4c09cf         or rdi, r9
+;; │    ││││   0x000000ed      31c0           xor eax, eax
+;; │    ││││   0x000000ef      4809f2         or rdx, rsi
+;; │    ││││   0x000000f2      4839d7         cmp rdi, rdx
+;; │    ││││   0x000000f5      0f94c0         sete al
+;; │    ││││   0x000000f8      c3             ret
+;;      ││││   0x000000f9      0f1f800000..   nop dword [rax]
+;; │    ││││   ; CODE XREFS from fcn.00000000 @ 0x28(x), 0x66(x), 0x8e(x)
+;; │    │└└└─> 0x00000100      48c7c0ffff..   mov rax, 0xffffffffffffffff
+;; └           0x00000107      c3             ret
+;;             0x00000108      0f1f840000..   nop dword [rax + rax]
 
 (defconst *rewire_dst_to_src*
+          '(#xF #x20 #xD8 #x48 #x89 #x44 #x24
+            #xE8 #x48 #x8B #x54 #x24 #xE8 #x48
+            #x89 #xF8 #x48 #xC1 #xE8 #x24 #x25
+            #xF8 #xF #x0 #x0 #x48 #x81 #xE2 #x0
+            #xF0 #xFF #xFF #x48 #x9 #xD0 #x48
+            #x8B #x0 #xA8 #x1 #xF #x84 #xD2 #x0
+            #x0 #x0 #x48 #xC1 #xE8 #xC #x49 #xB8
+            #xFF #xFF #xFF #xFF #xFF #x0 #x0 #x0
+            #x48 #x89 #xF9 #x4C #x21 #xC0 #x48
+            #xC1 #xE9 #x1B #x81 #xE1 #xF8 #xF
+            #x0 #x0 #x48 #xC1 #xE0 #xC #x48 #x9
+            #xC8 #x48 #x8B #x0 #x48 #x89 #xC1
+            #x81 #xE1 #x81 #x0 #x0 #x0 #x48 #x81
+            #xF9 #x81 #x0 #x0 #x0 #xF #x85 #x94
+            #x0 #x0 #x0 #x48 #x89 #xF1 #x49 #xB9
+            #x0 #x0 #x0 #xC0 #xFF #xFF #xF #x0
+            #x48 #xC1 #xE9 #x24 #x49 #x21 #xC1
+            #x81 #xE1 #xF8 #xF #x0 #x0 #x48 #x9
+            #xD1 #x48 #x8B #x1 #xA8 #x1 #x74
+            #x70 #x48 #xC1 #xE8 #xC #x48 #x89
+            #xF2 #x4C #x21 #xC0 #x48 #xC1 #xEA
+            #x1B #x81 #xE2 #xF8 #xF #x0 #x0 #x48
+            #xC1 #xE0 #xC #x48 #x9 #xD0 #x48 #xBA
+            #xFF #xFF #xFF #x3F #x0 #x0 #xF0 #xFF
+            #x48 #x23 #x10 #x4C #x9 #xCA #x48
+            #x89 #x10 #xF #x1 #x3E #x48 #x89 #xD0
+            #x25 #x81 #x0 #x0 #x0 #x48 #x3D #x81
+            #x0 #x0 #x0 #x75 #x32 #x48 #xB8 #x0
+            #x0 #x0 #xC0 #xFF #xFF #xF #x0 #x81
+            #xE6 #xFF #xFF #xFF #x3F #x81 #xE7
+            #xFF #xFF #xFF #x3F #x48 #x21 #xC2
+            #x4C #x9 #xCF #x31 #xC0 #x48 #x9 #xF2
+            #x48 #x39 #xD7 #xF #x94 #xC0 #xC3
+            #xF #x1F #x80 #x0 #x0 #x0 #x0 #x48
+            #xC7 #xC0 #xFF #xFF #xFF #xFF #xC3
+            #xF #x1F #x84 #x0 #x0 #x0 #x0 #x0))
 
-  '(#xF #x20 #xD8 #x48 #x89 #x44 #x24 #xE8
-        #x48 #x8B #x54 #x24 #xE8 #x48 #x89 #xF8
-        #x48 #xC1 #xE8 #x24 #x25 #xF8 #xF #x0
-        #x0 #x48 #x81 #xE2 #x0 #xF0 #xFF #xFF
-        #x48 #x9 #xD0 #x48 #x8B #x0 #xA8 #x1
-        #xF #x84 #xD2 #x0 #x0 #x0 #x48 #xC1 #xE8
-        #xC #x49 #xB8 #xFF #xFF #xFF #xFF #xFF
-        #x0 #x0 #x0 #x48 #x89 #xF9 #x4C #x21
-        #xC0 #x48 #xC1 #xE9 #x1B #x81 #xE1 #xF8
-        #xF #x0 #x0 #x48 #xC1 #xE0 #xC #x48 #x9
-        #xC8 #x48 #x8B #x0 #x48 #x89 #xC1 #x81
-        #xE1 #x81 #x0 #x0 #x0 #x48 #x81 #xF9
-        #x81 #x0 #x0 #x0 #xF #x85 #x94 #x0 #x0
-        #x0 #x48 #x89 #xF1 #x49 #xB9 #x0 #x0 #x0
-        #xC0 #xFF #xFF #xF #x0 #x48 #xC1 #xE9
-        #x24 #x49 #x21 #xC1 #x81 #xE1 #xF8 #xF
-        #x0 #x0 #x48 #x9 #xD1 #x48 #x8B #x1 #xA8
-        #x1 #x74 #x70 #x48 #xC1 #xE8 #xC #x48
-        #x89 #xF2 #x4C #x21 #xC0 #x48 #xC1 #xEA
-        #x1B #x81 #xE2 #xF8 #xF #x0 #x0 #x48
-        #xC1 #xE0 #xC #x48 #x9 #xD0 #x48 #xBA
-        #xFF #xFF #xFF #x3F #x0 #x0 #xF0 #xFF
-        #x48 #x23 #x10 #x4C #x9 #xCA #x48 #x89
-        #x10 #x48 #x89 #xD0 #x25 #x81 #x0 #x0
-        #x0 #x48 #x3D #x81 #x0 #x0 #x0 #x75 #x32
-        #x48 #xB8 #x0 #x0 #x0 #xC0 #xFF #xFF
-        #xF #x0 #x81 #xE6 #xFF #xFF #xFF #x3F
-        #x81 #xE7 #xFF #xFF #xFF #x3F #x48 #x21
-        #xC2 #x4C #x9 #xCF #x31 #xC0 #x48 #x9
-        #xF2 #x48 #x39 #xD7 #xF #x94 #xC0 #xC3
-        #x66 #x2E #xF #x1F #x84 #x0 #x0 #x0 #x0
-        #x0 #x48 #xC7 #xC0 #xFF #xFF #xFF #xFF
-        #xC3 #xF #x1F #x84 #x0 #x0 #x0 #x0 #x0))
 
 (defconst *rewire_dst_to_src-len* (len *rewire_dst_to_src*))
 
 (defun rewire_dst_to_src-clk-1-to-45 () 45)
 
-(defun rewire_dst_to_src-clk-46-to-58 () 13)
+(defun rewire_dst_to_src-clk-46-to-59 () 14)
 
 (defun rewire_dst_to_src-clk ()
-  (clk+ (rewire_dst_to_src-clk-1-to-45) (rewire_dst_to_src-clk-46-to-58)))
+  (clk+ (rewire_dst_to_src-clk-1-to-45) (rewire_dst_to_src-clk-46-to-59)))
 
 ;; ======================================================================
 
@@ -637,12 +665,17 @@
 (defun-nx x86-state-okp (x86)
   (and
    (x86p x86)
+   ;; We will not set the interrupt flag after
+   ;; executing the next instruction
+   (not (set-interrupt-flag-next x86))
    (equal (xr :ms nil x86) nil)
    (equal (xr :fault nil x86) nil)
    (64-bit-modep x86)
    (not (alignment-checking-enabled-p x86))
    (not (app-view x86))
    (marking-view x86)
+   ;; The peripherals are disabled
+   (not (enable-peripherals x86))
    ;; Current Privilege Level == 0.
    (equal (cpl x86) 0)
    ;; CR3's reserved bits must be zero (MBZ).
@@ -654,6 +687,8 @@
    (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip nil x86)))
    ;; Program is located at linear address (rip x86) in the memory.
    (program-at (xr :rip nil x86) *rewire_dst_to_src* x86)
+   ;; We have a consistent tlb for the program memory
+   (tlb-consistent-n *rewire_dst_to_src-len* (rip x86) :x x86)
    ;; No errors encountered while translating the linear addresses
    ;; where the program is located.
    (not (mv-nth 0 (las-to-pas *rewire_dst_to_src-len* (xr :rip nil x86) :x x86)))
@@ -669,6 +704,8 @@
   (and
    ;; Program addresses are canonical.
    (canonical-address-p (+ *rewire_dst_to_src-len* (xr :rip nil x86)))
+   ;; We have a consistent tlb for the program memory
+   (tlb-consistent-n (len *rewire_dst_to_src*) (rip x86) :x x86)
    ;; Program is located at linear address (rip x86) in the memory.
    (program-at-alt (xr :rip nil x86) *rewire_dst_to_src* x86)
    ;; No errors encountered while translating the linear addresses
@@ -693,6 +730,9 @@
    ;; Stack addresses are canonical.
    (canonical-address-p (+ -24 (xr :rgf *rsp* x86)))
    (canonical-address-p (+ 8 (xr :rgf *rsp* x86)))
+   ;; We have a consistent tlb for the stack memory
+   (tlb-consistent-n 8 (+ -24 (xr :rgf *rsp* x86)) :r x86)
+   (tlb-consistent-n 8 (+ -24 (xr :rgf *rsp* x86)) :w x86)
    ;; Writing to stack: No errors encountered while translating the
    ;; linear addresses corresponding to the program stack.
    (not (mv-nth 0 (las-to-pas 8 (+ -24 (xr :rgf *rsp* x86)) :w x86)))
@@ -732,6 +772,8 @@
 
 (defun-nx source-addresses-ok-p (x86)
   (and
+   ;; TLB is consistent for source addresses
+   (tlb-consistent-n *2^30* (xr :rgf *rdi* x86) :r x86)
    ;; Source addresses are canonical.
    (canonical-address-p (xr :rgf *rdi* x86))
    (canonical-address-p (+ -1 *2^30* (xr :rgf *rdi* x86)))
@@ -743,6 +785,8 @@
 
 (defun-nx source-PML4TE-ok-p (x86)
   (and
+    ;; PML4TE addresses have consistent tlb
+   (tlb-consistent-n 8 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86)) :r x86)
    ;; PML4TE linear addresses are canonical.
    (canonical-address-p
     (+ 7 (pml4-table-entry-addr (xr :rgf *rdi* x86) (pml4-table-base-addr x86))))
@@ -776,6 +820,10 @@
 
 (defun-nx source-PDPTE-ok-p (x86)
   (and
+   ;; PDPTE addresses have consistent tlb
+   (tlb-consistent-n 8 (page-dir-ptr-table-entry-addr (xr :rgf *rdi* x86)
+                                                      (pdpt-base-addr (xr :rgf *rdi* x86) x86))
+                     :r x86)
    ;; PDPTE linear addresses are canonical.
    (canonical-address-p
     (page-dir-ptr-table-entry-addr
@@ -925,6 +973,8 @@
 
 (defun-nx destination-addresses-ok-p (x86)
   (and
+   ;; TLB is consistent for destination addresses
+   (tlb-consistent-n *2^30* (xr :rgf *rsi* x86) :2 x86)
    ;; Destination addresses are canonical.
    (canonical-address-p (xr :rgf *rsi* x86))
    (canonical-address-p (+ -1 *2^30* (xr :rgf *rsi* x86)))
@@ -936,6 +986,8 @@
 
 (defun-nx destination-PML4TE-ok-p (x86)
   (and
+   ;; PML4TE addresses have consistent tlb
+   (tlb-consistent-n 8 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86)) :r x86)
    ;; PML4TE linear addresses are canonical.
    (canonical-address-p
     (+ 7 (pml4-table-entry-addr (xr :rgf *rsi* x86) (pml4-table-base-addr x86))))
@@ -976,6 +1028,15 @@
 
 (defun-nx destination-PDPTE-ok-p (x86)
   (and
+   ;; PDPTE addresses have consistent tlb
+   (tlb-consistent-n 8 (page-dir-ptr-table-entry-addr (xr :rgf *rsi* x86)
+                                                      (pdpt-base-addr (xr :rgf *rsi* x86)
+                                                                      x86))
+                     :r x86)
+   (tlb-consistent-n 8 (page-dir-ptr-table-entry-addr (xr :rgf *rsi* x86)
+                                                      (pdpt-base-addr (xr :rgf *rsi* x86)
+                                                                      x86))
+                     :w x86)
    ;; PDPTE linear addresses are canonical.
    (canonical-address-p
     (page-dir-ptr-table-entry-addr
@@ -1231,6 +1292,9 @@
 
 (defun-nx stack-containing-return-address-ok-p (x86)
   (and
+   ;; The return address region has consistent tlb
+   (tlb-consistent-n 8 (xr :rgf *rsp* x86) :r x86)
+
    ;; Reading the return address from stack doesn't cause any errors.
    (not (mv-nth 0 (las-to-pas 8 (xr :rgf *rsp* x86) :r x86)))
 
@@ -1387,15 +1451,5 @@
                  x86))))
   :hints (("Goal"
            :in-theory (e/d (xlate-equiv-memory) ()))))
-
-(defthm get-prefixes-alt-and-mv-nth-2-las-to-pas
-  ;; Is this necessary?
-  (implies (64-bit-modep (double-rewrite x86))
-           (and
-            (equal
-             (mv-nth 1 (get-prefixes-alt rip prefixes rex-byte cnt
-                                         (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))))
-             (mv-nth 1 (get-prefixes-alt rip prefixes rex-byte cnt
-                                         (double-rewrite x86)))))))
 
 ;; ----------------------------------------------------------------------

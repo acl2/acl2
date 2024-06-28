@@ -47,7 +47,6 @@
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "centaur/gl/gl" :dir :system))
 
 (local (in-theory (e/d* () (signed-byte-p unsigned-byte-p))))
 

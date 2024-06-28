@@ -2785,3 +2785,17 @@
                  (:instance program-at-implies-canonical-addresses)))))
 
 ;; ======================================================================
+
+(defthm program-at-xw-tlb-atom
+        (implies (and (disjoint-p
+                        (mv-nth 1 (las-to-pas (len bytes) l-addr :x x86))
+                        (all-xlation-governing-entries-paddrs (len bytes) l-addr x86))
+                      (tlb-consistent-n (len bytes) l-addr :x x86)
+                      (atom atm)
+                      (not (app-view x86))
+                      (64-bit-modep x86))
+                 (equal (program-at l-addr bytes (xw :tlb nil atm x86))
+                        (program-at l-addr bytes x86)))
+        :hints (("Goal" :in-theory (e/d* (program-at
+                                           tlb-consistent-n
+                                           rb) ()))))

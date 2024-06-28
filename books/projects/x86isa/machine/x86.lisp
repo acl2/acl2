@@ -1335,12 +1335,14 @@
        (x86 (if (enable-peripherals x86)
               (x86-exec-peripherals x86)
               x86))
-       (x86 (if (handle-exceptions x86)
+       (x86 (if (and (fault x86)
+                     (handle-exceptions x86))
               (handle-faults x86)
               x86))
 
-       ((when set-interrupt?) (!rflags (logior (ash 1 9)
-                                               (rflags x86))
+       ((when set-interrupt?) (!rflags (!rflagsBits->intf
+                                         1
+                                         (rflags x86))
                                        x86)))
       x86)
 

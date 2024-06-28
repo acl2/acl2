@@ -150,7 +150,7 @@
 
 (defconst *rewire_dst_to_src-len* (len *rewire_dst_to_src*))
 
-(defun rewire_dst_to_src-clk () 58)
+(defun rewire_dst_to_src-clk () 59)
 
 ;; ======================================================================
 

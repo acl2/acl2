@@ -876,6 +876,45 @@
                                     member-p)
                                   (xlation-governing-entries-paddrs)))))
 
+(defthm las-to-pas-values-and-xw-tlb-atom
+        (implies (and (tlb-consistent-n n addr r-w-x x86)
+                      (atom atm))
+                 (and (equal (mv-nth 0 (las-to-pas n addr r-w-x
+                                                   (xw :tlb nil atm x86)))
+                             (mv-nth 0 (las-to-pas n addr r-w-x x86)))
+                      (equal (mv-nth 1 (las-to-pas n addr r-w-x
+                                                   (xw :tlb nil atm x86)))
+                             (mv-nth 1 (las-to-pas n addr r-w-x x86)))))
+        :hints (("Goal" :in-theory (enable tlb-consistent-n)
+                 :expand ((:free (x) (las-to-pas n addr r-w-x x))))))
+
+(defthm read-from-physical-memory-and-xw-tlb-atom
+        (implies (and (tlb-consistent-n n addr r-x x86)
+                      (atom atm))
+                 (equal (read-from-physical-memory (mv-nth 1 (las-to-pas n addr r-x x86))
+                                                   (xw :tlb nil atm x86))
+                        (read-from-physical-memory (mv-nth 1 (las-to-pas n addr r-x x86))
+                                                   x86)))
+        :hints (("Goal"
+                 :do-not-induct t
+                 :in-theory (e/d* (rb) (las-to-pas)))))
+
+(defthm rb-values-and-xw-tlb-atom
+        (implies (and (disjoint-p
+                        (mv-nth 1 (las-to-pas n addr r-x x86))
+                        (all-xlation-governing-entries-paddrs n addr x86))
+                      (tlb-consistent-n n addr r-x x86)
+                      (atom atm)
+                      (not (app-view x86))
+                      (64-bit-modep x86))
+                 (and (equal (mv-nth 0 (rb n addr r-x (xw :tlb nil atm x86)))
+                             (mv-nth 0 (rb n addr r-x x86)))
+                      (equal (mv-nth 1 (rb n addr r-x (xw :tlb nil atm x86)))
+                             (mv-nth 1 (rb n addr r-x x86)))))
+        :hints (("Goal"
+                 :do-not-induct t
+                 :in-theory (e/d* (rb) (las-to-pas)))))
+
 ;; (encapsulate
 ;;   ()
 ;;   (local
@@ -1089,34 +1128,29 @@
                                     all-xlation-governing-entries-paddrs)
                                    ()))))
 
-;; (defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
-;;   (implies (and
-;;             (or
-;;              (disjoint-p
-;;               x
-;;               (open-qword-paddr-list
-;;                (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
-;;              (disjoint-p$
-;;               x
-;;               (open-qword-paddr-list
-;;                (gather-all-paging-structure-qword-addresses (double-rewrite x86)))))
-;;             (canonical-address-p addr)
-;;             (canonical-address-p (+ -1 n addr)))
-;;            (disjoint-p
-;;             x
-;;             (all-xlation-governing-entries-paddrs n addr x86)))
-;;   :hints (("Goal"
-;;            :do-not-induct t
-;;            :use ((:instance all-xlation-governing-entries-paddrs-subset-of-paging-structures)
-;;                  (:instance disjoint-p-subset-p
-;;                             (x x)
-;;                             (y (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
-;;                             (a x)
-;;                             (b (all-xlation-governing-entries-paddrs n addr x86))))
-;;            :in-theory (e/d* (disjoint-p-commutative disjoint-p$)
-;;                             (all-xlation-governing-entries-paddrs-subset-of-paging-structures
-;;                              disjoint-p-subset-p))))
-;;   :rule-classes :rewrite)
+(defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses
+  (implies (and
+           (disjoint-p
+             x
+             (open-qword-paddr-list
+               (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+            (canonical-address-p addr)
+            (canonical-address-p (+ -1 n addr)))
+           (disjoint-p
+            x
+            (all-xlation-governing-entries-paddrs n addr x86)))
+  :hints (("Goal"
+           :do-not-induct t
+           :use ((:instance all-xlation-governing-entries-paddrs-subset-of-paging-structures)
+                 (:instance disjoint-p-subset-p
+                            (x x)
+                            (y (open-qword-paddr-list (gather-all-paging-structure-qword-addresses x86)))
+                            (a x)
+                            (b (all-xlation-governing-entries-paddrs n addr x86))))
+           :in-theory (e/d* (disjoint-p-commutative disjoint-p$)
+                            (all-xlation-governing-entries-paddrs-subset-of-paging-structures
+                             disjoint-p-subset-p))))
+  :rule-classes :rewrite)
 
 (defthm infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
   (implies (and

@@ -268,6 +268,12 @@
           (direct-map-p count addr r-x (double-rewrite x86))))
   :hints (("Goal" :in-theory (e/d* (wb wb-1 las-to-pas) (force (force))))))
 
+(defthmd direct-map-p-implies-canonical-address-p
+         (implies (and (direct-map-p n addr r-x x86)
+                       (not (zp n)))
+                  (canonical-address-p addr))
+         :hints (("Goal" :in-theory (enable las-to-pas))))
+
 (in-theory (e/d* () (direct-map-p)))
 
 ;; ======================================================================
@@ -349,6 +355,16 @@
                                       mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures
                                       force (force))))))
 
+  (defthm program-at-alt-and-mv-nth-2-las-to-pas
+          (implies (64-bit-modep x86)
+                   (equal (program-at-alt prog-addr bytes (mv-nth 2 (las-to-pas n addr r-w-x x86)))
+                          (program-at-alt prog-addr bytes x86)))
+          :hints (("Goal" :do-not-induct t
+                   :in-theory (disable program-at-alt-and-paging-equiv-memory)
+                   :use (:instance program-at-alt-and-paging-equiv-memory
+                                   (x86-1 (mv-nth 2 (las-to-pas n addr r-w-x x86)))
+                                   (x86-2 x86)))))
+
   (defthm program-at-alt-wb-disjoint-in-sys-view
     (implies
      (and
@@ -402,6 +418,14 @@
                     (program-at-alt l-addrs bytes (double-rewrite x86))))
     :hints (("Goal" :in-theory (e/d* (program-at-alt)
                                      (rewrite-program-at-to-program-at-alt)))))
+
+  (defthm program-at-alt-xw-tlb-atom
+          (implies (and (tlb-consistent-n (len bytes) l-addrs :x x86)
+                        (atom atm))
+                   (equal (program-at-alt l-addrs bytes (xw :tlb nil atm x86))
+                          (program-at-alt l-addrs bytes (double-rewrite x86))))
+          :hints (("Goal" :in-theory (e/d (program-at-alt)
+                                          (rewrite-program-at-to-program-at-alt)))))
 
   (defthm program-at-alt-after-mv-nth-2-rb
     (implies
@@ -513,6 +537,18 @@
     (acl2::formals 'rb-alt (w state))
     :output-index 1
     :double-rewrite? t))
+
+  (defthm mv-nth-0-rb-alt-xw-tlb-atom
+          (implies (and (tlb-consistent-n n addr r-x x86)
+                        (atom atm))
+            (equal (mv-nth 0 (rb-alt n addr r-x (xw :tlb nil atm x86)))
+                   (mv-nth 0 (rb-alt n addr r-x x86)))))
+
+  (defthm mv-nth-1-rb-alt-xw-tlb-atom
+          (implies (and (tlb-consistent-n n addr r-x x86)
+                        (atom atm))
+            (equal (mv-nth 1 (rb-alt n addr r-x (xw :tlb nil atm x86)))
+                   (mv-nth 1 (rb-alt n addr r-x x86)))))
 
   (defthm rb-alt-xw-rflags-not-ac-values-in-sys-view
     (implies (equal (rflagsBits->ac (double-rewrite value))
@@ -634,6 +670,36 @@
                    :use ((:instance mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures))
                    :in-theory (e/d* (rb-alt)
                                     (mv-nth-1-rb-and-paging-equiv-memory-disjoint-from-paging-structures
+                                      rewrite-rb-to-rb-alt
+                                      force (force))))))
+
+  (defthm mv-nth-1-rb-alt-and-ia32e-la-to-pa
+          (implies (64-bit-modep x86)
+                   (equal (mv-nth 1 (rb-alt n lin-addr r-x
+                                            (mv-nth 2 (ia32e-la-to-pa addr r-w-x x86))))
+                          (mv-nth 1 (rb-alt n lin-addr r-x x86))))
+          :hints (("Goal"
+                   :do-not-induct t
+                   :use ((:instance mv-nth-1-rb-alt-and-paging-equiv-memory
+                                    (r-w-x r-x) (x86-1 x86)
+                                    (x86-2 (mv-nth 2 (ia32e-la-to-pa addr r-w-x x86)))))
+                   :in-theory (e/d* (rb-alt)
+                                    (mv-nth-1-rb-alt-and-paging-equiv-memory
+                                      rewrite-rb-to-rb-alt
+                                      force (force))))))
+
+  (defthm mv-nth-1-rb-alt-and-las-to-pas
+          (implies (64-bit-modep x86)
+                   (equal (mv-nth 1 (rb-alt n-r lin-addr r-x
+                                            (mv-nth 2 (las-to-pas n addr r-w-x x86))))
+                          (mv-nth 1 (rb-alt n-r lin-addr r-x x86))))
+          :hints (("Goal"
+                   :do-not-induct t
+                   :use ((:instance mv-nth-1-rb-alt-and-paging-equiv-memory
+                                    (n n-r) (r-w-x r-x) (x86-1 x86)
+                                    (x86-2 (mv-nth 2 (las-to-pas n addr r-w-x x86)))))
+                   :in-theory (e/d* (rb-alt)
+                                    (mv-nth-1-rb-alt-and-paging-equiv-memory
                                       rewrite-rb-to-rb-alt
                                       force (force))))))
 
@@ -1929,6 +1995,20 @@
                                     (rewrite-get-prefixes-to-get-prefixes-alt
                                       paging-equiv-memory-and-two-get-prefixes-values)))))
 
+  (defthm get-prefixes-alt-and-mv-nth-2-las-to-pas
+    ;; Is this necessary?
+    (implies (64-bit-modep (double-rewrite x86))
+             (and
+              (equal
+               (mv-nth 1 (get-prefixes-alt rip prefixes rex-byte cnt
+                                           (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))))
+               (mv-nth 1 (get-prefixes-alt rip prefixes rex-byte cnt
+                                           (double-rewrite x86))))))
+    :hints (("Goal" :in-theory (disable paging-equiv-memory-and-two-mv-nth-1-get-prefixes-alt)
+             :use (:instance paging-equiv-memory-and-two-mv-nth-1-get-prefixes-alt
+                             (start-rip rip) (x86-2 x86)
+                             (x86-1 (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))))))
+
   (defthm paging-equiv-memory-and-two-mv-nth-2-get-prefixes-alt
           (implies
             (and (paging-equiv-memory x86-1 x86-2)
@@ -2828,7 +2908,6 @@
           (and
             ;; Start: binding hypotheses.
             (equal start-rip (rip x86))
-            (not (set-interrupt-flag-next x86))
             ;; get-prefixes-alt:
             (equal four-vals-of-get-prefixes (get-prefixes-alt start-rip 0 0 15 x86))
             (equal flg-get-prefixes (mv-nth 0 four-vals-of-get-prefixes))
@@ -2867,6 +2946,10 @@
             (equal x86-3 (mv-nth 2 three-vals-of-sib))
 
             (equal temp-rip2 (if sib? (1+ temp-rip1) temp-rip1))
+            (equal x86-executed
+                   (one-byte-opcode-execute
+                     #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
+                     opcode/vex/evex-byte modr/m sib x86-3))
             ;; End: binding hypotheses.
 
             (marking-view x86)
@@ -2893,16 +2976,13 @@
                 (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
             (not (mv-nth 0 (las-to-pas 15 (xr :rip nil x86) :x (double-rewrite x86))))
 
-            ;; Ideally I'd prove that these are preserved by one-byte-opcode-execute
-            ;; and then only check them on the original x86, but that's probably going
-            ;; to be hard because one-byte-opcode-execute has tons of branching, so I'd expect
-            ;; it to split into some ridiculous number of cases
-            (not (enable-peripherals (one-byte-opcode-execute
-                                       #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
-                                       opcode/vex/evex-byte modr/m sib x86-3)))
-            (not (handle-exceptions (one-byte-opcode-execute
-                                      #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
-                                      opcode/vex/evex-byte modr/m sib x86-3)))
+            ;; Ideally I'd prove that enable-peripherals and handle-exceptions are preserved by
+            ;; one-byte-opcode-execute and then only check them on the original x86, but
+            ;; that's probably going to be hard because one-byte-opcode-execute has tons
+            ;; of branching, so I'd expect it to split into some ridiculous number of cases
+            (not (enable-peripherals x86-executed))
+            (or (not (fault x86-executed))
+                (not (handle-exceptions x86-executed)))
 
             ;; Print the rip and the first opcode byte of the instruction
             ;; under consideration after all the non-trivial hyps (above) of
@@ -2911,9 +2991,12 @@
                           (not (cw "              op0: ~s0 ] ~%"
                                    (str::hexify (unquote opcode/vex/evex-byte)))))))
           (equal (x86-fetch-decode-execute x86)
-                 (one-byte-opcode-execute
-                   #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
-                   opcode/vex/evex-byte modr/m sib x86-3)))
+                 (if (set-interrupt-flag-next x86)
+                   (!rflags (!rflagsBits->intf
+                              1
+                              (rflags x86-executed))
+                            x86-executed)
+                   x86-executed)))
         :hints
         (("Goal"
           :do-not '(preprocess)

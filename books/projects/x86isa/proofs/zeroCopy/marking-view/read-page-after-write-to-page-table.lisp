@@ -36,6 +36,16 @@
 ; Original Author(s):
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 
+;; When modifying this to accomodate the TLB, I made some changes to how these
+;; lemmas are structured. Originally, most of these lemmas had page table
+;; accesses performed in terms of rb/wb (i.e. virtual memory) which required
+;; many disjoint-p($) hypotheses. This made these lemmas difficult to work
+;; with. When updating this file to accomodate the TLB, I changed the majority
+;; of this file to perform page table accesses in terms of rm-low-64/wm-low-64
+;; (i.e. physical memory) which simplified them greatly. At the end of this
+;; file, I used these lemmas to prove the same facts in terms of virtual
+;; memory.
+
 (in-package "X86ISA")
 
 (include-book "zeroCopy-init")
@@ -248,28 +258,7 @@
    (and
     (64-bit-modep x86) ; added
     (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                         r-w-x x86)))
-    ;; PDPTE is direct-mapped.
-    (direct-map-p 8
-                  (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                  r-w-x (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas 8
-                  (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                  r-w-x x86)))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (page-dir-ptr-table-entry-addr lin-addr base-addr)
-       r-w-x x86))
-     (all-xlation-governing-entries-paddrs
-      8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-      x86))
+           (rm-low-64 (page-dir-ptr-table-entry-addr lin-addr base-addr) x86))
     (not
      (mv-nth
       0
@@ -317,21 +306,11 @@
     (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-    (equal pdpt-base-addr (pdpt-base-addr lin-addr x86))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r x86)))
-    (direct-map-p 8 pml4-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 pml4-table-entry-addr :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r x86))
-     (all-xlation-governing-entries-paddrs 8 pml4-table-entry-addr x86))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r x86))
-     (all-xlation-governing-entries-paddrs 8 page-dir-ptr-table-entry-addr x86))
+           (rm-low-64 page-dir-ptr-table-entry-addr x86))
 
     (disjoint-p (addr-range 8 pml4-table-entry-addr)
                 (addr-range 8 page-dir-ptr-table-entry-addr))
@@ -370,65 +349,50 @@
                              not
                              bitops::logand-with-negated-bitmask)))))
 
-(defthmd ia32e-la-to-pa-values-for-same-1G-page
+(defthmd ia32e-la-to-pa-without-tlb-values-for-same-1G-page
   ;; This lemma returns the flg and phy-addr values output by
-  ;; ia32e-la-to-pa for the linear address (+ n lin-addr), where this
-  ;; address lies in the same 1G page as lin-addr.
+  ;; ia32e-la-to-pa-pml4-table for the linear address (+ n lin-addr),
+  ;; where this address lies in the same 1G page as lin-addr.
   (implies
    (and
     (64-bit-modep x86) ; added
-    (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-    (equal pdpt-base-addr (pdpt-base-addr lin-addr (double-rewrite x86)))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (direct-map-p 8 pml4-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 pml4-table-entry-addr (double-rewrite x86)))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86))))
+           (rm-low-64 page-dir-ptr-table-entry-addr x86))
+
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
     (equal (page-size page-dir-ptr-table-entry) 1)
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r (double-rewrite x86))))
+
+    (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr :r x86)))
+
     (canonical-address-p (+ 7 pml4-table-entry-addr))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
     (canonical-address-p (+ n lin-addr))
     (equal (loghead 30 lin-addr) 0)
     (unsigned-byte-p 30 n)
+    (physical-address-p pml4-table-base-addr)
+    (equal (loghead 12 pml4-table-base-addr) 0)
     (x86p x86))
    (and
-    (equal (mv-nth 0 (ia32e-la-to-pa (+ n lin-addr) :r x86)) nil)
-    (equal (mv-nth 1 (ia32e-la-to-pa (+ n lin-addr) :r x86))
+    (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb (+ n lin-addr) :r x86))
+           nil)
+    (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb (+ n lin-addr) :r x86))
            (+ n (ash (loghead 22 (logtail 30 (rm-low-64 page-dir-ptr-table-entry-addr x86)))
                      30)))))
   :hints (("Goal"
-           :in-theory (e/d* (ia32e-la-to-pa
-                             disjoint-p$
-                             direct-map-p
+           :in-theory (e/d* (ia32e-la-to-pa-without-tlb
                              pdpt-base-addr
                              pml4-table-base-addr
-                             ia32e-la-to-pa-pml4-table-values-for-same-1G-page)
+                             ia32e-la-to-pa-pml4-table-values-for-same-1G-page
+                             cr3bits->pdb)
                             (commutativity-of-+
-                             subset-p
-                             (:linear acl2::loghead-upper-bound)
-                             unsigned-byte-p-of-logtail
-                             member-p
-                             member-p-canonical-address-listp
-                             unsigned-byte-p-of-logtail
-                             mv-nth-0-las-to-pas-subset-p
                              not
-                             pml4-table-entry-addr-to-c-program-optimized-form
                              bitops::logand-with-negated-bitmask)))))
 
 ;; Now generalizing ia32e-la-to-pa-values-for-same-1G-page to
@@ -472,6 +436,316 @@
   (canonical-address-p (+ 1073741823 lin-addr))
   :g-bindings (gl::auto-bindings (:nat lin-addr 64)))
 
+;; ======================================================================
+
+(defthm unsigned-byte-p-52-of-pdpt-base-addr
+  (unsigned-byte-p 52 (pdpt-base-addr lin-addr x86))
+  :hints (("Goal" :in-theory (e/d* (pdpt-base-addr) ()))))
+
+(defthm same-pdpt-base-addr-for-n-+-lin-addrs
+  (implies (and (canonical-address-p lin-addr)
+                (unsigned-byte-p 30 iteration)
+                (equal (loghead 30 lin-addr) 0)
+                (x86p x86))
+           (equal (pdpt-base-addr (+ iteration lin-addr) x86)
+                  (pdpt-base-addr lin-addr x86)))
+  :hints (("Goal" :in-theory (e/d* (pdpt-base-addr) (not)))))
+
+;; We define las-to-pas-without-tlb because it makes it easier to apply the
+;; later theorems to our program
+(define las-to-pas-without-tlb
+    ((iteration natp)
+     (n        natp "Number of bytes to be read")
+     (lin-addr integerp "First linear address")
+     (r-w-x    :type (member :r :w :x) "Type of memory access: read, write, or execute")
+     x86)
+    :guard  (and (not (app-view x86))
+                 (<= iteration n)) ;; Not x86 "flat" mode or ``app(lication) mode''
+    :guard-hints (("Goal" :in-theory (enable canonical-address-p)))
+    :measure (nfix (- n iteration))
+    :verify-guards t
+    :returns (mv flg
+                 (p-addrs  true-listp :rule-classes (:rewrite :type-prescription))
+                 (x86      x86p :hyp (x86p x86) :hints (("Goal" :in-theory (e/d () (x86p))))))
+
+    (if (zp (- n iteration))
+        (mv nil nil x86)
+      (b* (((unless (canonical-address-p (+ iteration lin-addr)))
+            (mv t nil x86))
+           ((mv flg p-addr x86)
+            (ia32e-la-to-pa-without-tlb (+ iteration lin-addr) r-w-x x86))
+           ((when flg) (mv flg nil x86))
+           ((mv flgs p-addrs x86)
+            (las-to-pas-without-tlb (1+ iteration) n lin-addr r-w-x x86)))
+        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
+
+    ///
+    (defthm mv-nth-0-las-to-pas-without-tlb-xlate-equiv-memory-cong
+            (implies (xlate-equiv-memory x86-1 x86-2)
+                     (equal (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86-1))
+                            (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86-2))))
+            :rule-classes :congruence)
+
+    (defthm mv-nth-1-las-to-pas-without-tlb-xlate-equiv-memory-cong
+            (implies (xlate-equiv-memory x86-1 x86-2)
+                     (equal (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86-1))
+                            (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86-2))))
+            :rule-classes :congruence)
+
+    (defthm mv-nth-2-las-to-pas-without-tlb-xlate-equiv-memory-cong
+            (implies (xlate-equiv-memory x86-1 x86-2)
+                     (xlate-equiv-memory (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86-1))
+                                         (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86-2))))
+            :rule-classes :congruence)
+
+    (defthm mv-nth-2-las-to-pas-without-tlb-xlate-equiv-memory
+            (implies (64-bit-modep x86)
+                     (xlate-equiv-memory (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86))
+                                         x86)))
+
+    (make-event
+      (generate-xr-over-write-thms
+        (remove-elements-from-list
+          '(:mem :fault)
+          *x86-field-names-as-keywords*)
+        'las-to-pas-without-tlb
+        (acl2::formals 'las-to-pas-without-tlb (w state))
+        :output-index 2))
+
+    (local
+      (defun-nx las-to-pas-without-tlb-xw-rflags-not-ac-hint (iteration lin-addr n r-w-x value x86)
+                (declare (xargs :measure (nfix (- n iteration))))
+                (if (zp (- n iteration))
+                  x86
+                  (if (not (canonical-address-p lin-addr))
+                    x86
+                    (if (mv-nth 0 (ia32e-la-to-pa-without-tlb (+ iteration lin-addr) r-w-x x86))
+                      x86
+                      (las-to-pas-without-tlb-xw-rflags-not-ac-hint
+                        (1+ iteration) lin-addr n r-w-x value
+                        (mv-nth 2 (ia32e-la-to-pa-without-tlb (+ iteration lin-addr) r-w-x x86))))))))
+
+    (defthm xr-rflags-las-to-pas-without-tlb
+            (implies (not (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x (double-rewrite x86))))
+                     (equal (xr :rflags nil (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))
+                            (xr :rflags nil (double-rewrite x86))))
+            :hints (("Goal"
+                     :induct (las-to-pas-without-tlb-xw-rflags-not-ac-hint
+                               iteration lin-addr n r-w-x value x86)
+                     :in-theory (e/d* () (force (force))))))
+
+    (defthm xr-fault-las-to-pas-without-tlb
+            (implies (not (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x (double-rewrite x86))))
+                     (equal (xr :fault nil (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))
+                            (xr :fault nil (double-rewrite x86))))
+            :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (make-event
+      (generate-read-fn-over-xw-thms
+        (remove-elements-from-list
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
+          *x86-field-names-as-keywords*)
+        'las-to-pas-without-tlb
+        (acl2::formals 'las-to-pas-without-tlb (w state))
+        :output-index 0))
+
+    (make-event
+      (generate-read-fn-over-xw-thms
+        (remove-elements-from-list
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
+          *x86-field-names-as-keywords*)
+        'las-to-pas-without-tlb
+        (acl2::formals 'las-to-pas-without-tlb (w state))
+        :output-index 1))
+
+    (defrule 64-bit-modep-of-las-to-pas-without-tlb
+             (equal (64-bit-modep (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))
+                    (64-bit-modep x86))
+             :hints (("Goal" :in-theory (e/d* (64-bit-modep) (force (force))))))
+
+    (defrule x86-operation-mode-of-las-to-pas-without-tlb
+             (equal (x86-operation-mode (mv-nth 2 (las-to-pas-without-tlb iteratio n lin-addr r-w-x x86)))
+                    (x86-operation-mode x86))
+             :hints (("Goal" :in-theory (e/d* (x86-operation-mode) ()))))
+
+    (make-event
+      (generate-write-fn-over-xw-thms
+        (remove-elements-from-list
+          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible)
+          *x86-field-names-as-keywords*)
+        'las-to-pas-without-tlb
+        (acl2::formals 'las-to-pas-without-tlb (w state))
+        :output-index 2))
+
+    (defthm las-to-pas-without-tlb-xw-rflags-not-ac
+            (implies (and (equal (rflagsBits->ac value)
+                                 (rflagsBits->ac (rflags (double-rewrite x86))))
+                          ;; These are since I chose to use xlate-equiv-memory
+                          ;; instead of induction to prove this since induction
+                          ;; was hard and I can live with these hypotheses
+                          (64-bit-modep x86)
+                          (not (app-view x86)))
+                     (and
+                       (equal (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x (xw :rflags nil value x86)))
+                              (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x (double-rewrite x86))))
+                       (equal (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x (xw :rflags nil value x86)))
+                              (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x (double-rewrite x86))))))
+            :hints (("Goal" :in-theory (e/d () (las-to-pas-without-tlb force (force))))))
+
+    (defthm las-to-pas-without-tlb-xw-rflags-state-not-ac
+            (implies (equal (rflagsBits->ac value)
+                            (rflagsBits->ac (rflags x86)))
+                     (equal (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x (xw :rflags nil value x86)))
+                            (xw :rflags nil value (mv-nth 2 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))))
+            :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+    (defthmd las-to-pas-without-tlb-when-tlb-consistent
+             (implies (and (64-bit-modep x86)
+                           (tlb-consistent-n (- n iteration) (+ iteration lin-addr) r-w-x x86))
+                      (and (equal (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86))
+                                  (mv-nth 0 (las-to-pas (- n iteration) (+ iteration lin-addr) r-w-x x86)))
+                           (equal (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86))
+                                  (mv-nth 1 (las-to-pas (- n iteration) (+ iteration lin-addr) r-w-x x86)))))
+             :hints (("Goal"
+                      :in-theory (enable las-to-pas tlb-consistent-n)
+                      :expand ((las-to-pas (+ (- iteration) n) (+ iteration lin-addr) r-w-x x86)))))
+
+    (defthmd las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent
+             (implies (and (64-bit-modep x86)
+                           (natp n)
+                           (canonical-address-p (+ lin-addr n -1))
+                           (canonical-address-p lin-addr)
+                           (tlb-consistent-n n lin-addr r-w-x x86))
+                      (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x x86))
+                                  (mv-nth 0 (las-to-pas-without-tlb 0 n lin-addr r-w-x x86)))
+                           (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))
+                                  (mv-nth 1 (las-to-pas-without-tlb 0 n lin-addr r-w-x x86)))))
+             :hints (("Goal"
+                      :use (:instance las-to-pas-without-tlb-when-tlb-consistent
+                                      (iteration 0)))))
+
+    (defthm las-to-pas-without-tlb-values-wb-disjoint-p
+            (implies (and (disjoint-p (all-xlation-governing-entries-paddrs (- n iteration)
+                                                                            (+ iteration lin-addr) x86)
+                                      (mv-nth 1 (las-to-pas n-w lin-addr-w :w x86)))
+                          (integerp iteration)
+                          (canonical-address-p lin-addr)
+                          (64-bit-modep x86))
+                     (and (equal (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x
+                                                                   (mv-nth 1 (wb n-w lin-addr-w w wval x86))))
+                                 (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))
+                          (equal (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x
+                                                                   (mv-nth 1 (wb n-w lin-addr-w w wval x86))))
+                                 (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))))
+            :hints (("Goal"
+                     :do-not '(generalize)
+                     :induct (las-to-pas-without-tlb iteration n lin-addr r-w-x
+                                                     (mv-nth 1 (wb n-w lin-addr-w w wval x86))))
+                    (and (consp (car id))
+                         (< 1 (len (car id)))
+                         '(:in-theory (enable disjoint-p disjoint-p-commutative all-xlation-governing-entries-paddrs)
+                                      :expand ((all-xlation-governing-entries-paddrs (+ (- iteration) n)
+                                                                                     (+ iteration lin-addr)
+                                                                                     x86)
+                                               (las-to-pas-without-tlb iteration n lin-addr r-w-x x86))
+                                      :use (:instance disjointness-of-xlation-governing-entries-paddrs-from-all-xlation-governing-entries-paddrs
+                                                      (n (- n iteration))
+                                                      (addr (+ iteration lin-addr))
+                                                      (a (+ iteration lin-addr))
+                                                      (other-p-addrs (mv-nth 1 (las-to-pas n-w lin-addr-w :w x86))))))))
+
+    (defthm las-to-pas-without-tlb-values-las-to-pas
+            (implies (64-bit-modep x86)
+                     (and (equal (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x
+                                                                   (mv-nth 2 (las-to-pas n2 lin-addr2 r-w-x2 x86))))
+                                 (mv-nth 0 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))
+                          (equal (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x
+                                                                   (mv-nth 2 (las-to-pas n2 lin-addr2 r-w-x2 x86))))
+                                 (mv-nth 1 (las-to-pas-without-tlb iteration n lin-addr r-w-x x86)))))))
+
+(defthmd las-to-pas-without-tlb-values-for-same-1G-page
+  (implies
+   (and
+    (64-bit-modep x86) ; added
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
+    (equal page-dir-ptr-table-entry-addr
+           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
+
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+    (equal (page-size (rm-low-64 page-dir-ptr-table-entry-addr x86)) 1)
+
+    (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr :r x86)))
+
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    (canonical-address-p lin-addr)
+    (canonical-address-p (+ -1 lin-addr m))
+    (natp m)
+    (<= m *2^30*)
+    (natp iteration)
+    (equal (loghead 30 lin-addr) 0)
+    (not (app-view x86))
+    (x86p x86))
+   (and
+    (equal (mv-nth 0 (las-to-pas-without-tlb iteration m lin-addr :r x86)) nil)
+    (equal (mv-nth 1 (las-to-pas-without-tlb iteration m lin-addr :r x86))
+           (addr-range
+            (+ (- iteration) m)
+            (+ iteration
+               (ash (loghead 22 (logtail 30 (rm-low-64 page-dir-ptr-table-entry-addr x86)))
+                    30))))))
+  :hints (("Goal"
+           :use ((:instance xlate-equiv-entries-and-page-size
+                            (e-1 (rm-low-64
+                                   (page-dir-ptr-table-entry-addr
+                                     lin-addr
+                                     (ash
+                                       (loghead
+                                         40
+                                         (logtail
+                                           12
+                                           (rm-low-64
+                                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                                             x86)))
+                                       12))
+                                   (mv-nth 2
+                                           (ia32e-la-to-pa-without-tlb (+ iteration lin-addr)
+                                                                       :r x86))))
+                            (e-2 (rm-low-64
+                                   (page-dir-ptr-table-entry-addr
+                                     lin-addr
+                                     (ash
+                                       (loghead
+                                         40
+                                         (logtail
+                                           12
+                                           (rm-low-64
+           ;; :induct (las-to-pas-alt iteration m lin-addr :r x86)
+           ;; :expand ((:free (x) (addr-range (+ (- iteration) m) x)))
+                                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                                             x86)))
+                                       12))
+                                   x86))))
+           :in-theory (e/d* (las-to-pas-without-tlb
+                              ia32e-la-to-pa-without-tlb-values-for-same-1G-page
+                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
+                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
+                              open-mv-nth-1-las-to-pas-for-same-1G-page-general-1)
+                            (rewrite-rb-to-rb-alt
+                              not
+                              mv-nth-0-las-to-pas-subset-p
+                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                              mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+                              mv-nth-1-las-to-pas-returns-nil-when-error
+                              mv-nth-1-las-to-pas-when-error
+                              marking-view
+                              pml4-table-entry-addr
+                              page-dir-ptr-table-entry-addr
+                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form)))))
+
 (define las-to-pas-alt (iteration count lin-addr r-w-x x86)
   :enabled t
   :measure (nfix (- count iteration))
@@ -489,6 +763,8 @@
       (mv nil nil x86)
     (b* (((unless (canonical-address-p (+ iteration lin-addr)))
           (mv t nil x86))
+           ;; :induct (las-to-pas-alt iteration m lin-addr :r x86)
+           ;; :expand ((:free (x) (addr-range (+ (- iteration) m) x)))
          ((mv flg p-addr x86)
           (ia32e-la-to-pa (+ iteration lin-addr) r-w-x x86))
          ((when flg) (mv flg nil x86))
@@ -503,116 +779,69 @@
                     (las-to-pas (- count iteration) (+ iteration lin-addr) r-w-x x86)))
     :hints (("Goal" :in-theory (e/d* (las-to-pas) ()))))
 
-  (defthm xlate-equiv-memory-and-mv-nth-0-las-to-pas-alt-cong
-    (implies (xlate-equiv-memory x86-1 x86-2)
+  (defthm paging-equiv-memory-and-mv-nth-0-las-to-pas-alt-cong
+    (implies (paging-equiv-memory x86-1 x86-2)
              (equal (mv-nth 0 (las-to-pas-alt iteration count lin-addr r-w-x x86-1))
                     (mv-nth 0 (las-to-pas-alt iteration count lin-addr r-w-x x86-2))))
     :hints (("Goal" :in-theory (e/d* (las-to-pas-alt-is-las-to-pas) ())))
     :rule-classes :congruence)
 
-  (defthm xlate-equiv-memory-and-mv-nth-1-las-to-pas-alt-cong
-    (implies (xlate-equiv-memory x86-1 x86-2)
+  (defthm paging-equiv-memory-and-mv-nth-1-las-to-pas-alt-cong
+    (implies (paging-equiv-memory x86-1 x86-2)
              (equal (mv-nth 1 (las-to-pas-alt iteration count lin-addr r-w-x x86-1))
                     (mv-nth 1 (las-to-pas-alt iteration count lin-addr r-w-x x86-2))))
     :hints (("Goal" :in-theory (e/d* (las-to-pas-alt-is-las-to-pas) ())))
     :rule-classes :congruence)
 
-  (defthm xlate-equiv-memory-with-mv-nth-2-las-to-pas-alt
+  (defthm paging-equiv-memory-with-mv-nth-2-las-to-pas-alt
     (implies (64-bit-modep x86) ; added
-             (xlate-equiv-memory
+             (paging-equiv-memory
               (mv-nth 2 (las-to-pas-alt iteration count lin-addr r-w-x x86))
               (double-rewrite x86)))
     :hints (("Goal" :in-theory (e/d* (las-to-pas-alt-is-las-to-pas) ()))))
 
-  (defthm xlate-equiv-memory-with-two-mv-nth-2-las-to-pas-alt-cong
-    (implies (xlate-equiv-memory x86-1 x86-2)
-             (xlate-equiv-memory
+  (defthm paging-equiv-memory-with-two-mv-nth-2-las-to-pas-alt-cong
+    (implies (paging-equiv-memory x86-1 x86-2)
+             (paging-equiv-memory
               (mv-nth 2 (las-to-pas-alt iteration count lin-addr r-w-x x86-1))
               (mv-nth 2 (las-to-pas-alt iteration count lin-addr r-w-x x86-2))))
     :hints (("Goal" :in-theory (e/d* (las-to-pas-alt-is-las-to-pas) ())))
-    :rule-classes :congruence))
+    :rule-classes :congruence)
 
-;; ======================================================================
+  ;; Should follow from the above, but for some reason in some contexts
+  ;; ACL2 does not figure this out
+  (defthm las-to-pas-alt-and-mv-nth-2-ia32e-la-to-pa
+    (implies (64-bit-modep x86)
+             (equal (mv-nth 0 (las-to-pas-alt iteration count lin-addr r-w-x
+                                              (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
+                    (mv-nth 0 (las-to-pas-alt iteration count lin-addr r-w-x x86)))))
 
-;; (defthm mv-nth-1-rb-after-mv-nth-2-ia32e-la-to-pa
-;;   (implies
-;;    (and
-;;     (disjoint-p
-;;      (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
-;;      (xlation-governing-entries-paddrs lin-addr-2 (double-rewrite x86)))
-;;     (disjoint-p
-;;      (mv-nth 1 (las-to-pas n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))
-;;      (all-xlation-governing-entries-paddrs n-1 lin-addr-1 (double-rewrite x86))))
-;;    (equal (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1
-;;                         (mv-nth 2 (ia32e-la-to-pa lin-addr-2 r-w-x-2 x86))))
-;;           (mv-nth 1 (rb n-1 lin-addr-1 r-w-x-1 (double-rewrite x86)))))
-;;   :hints (("Goal"
-;;            :do-not-induct t
-;;            :in-theory (e/d* (rb) (force (force))))))
-
-(defthm unsigned-byte-p-52-of-pdpt-base-addr
-  (unsigned-byte-p 52 (pdpt-base-addr lin-addr x86))
-  :hints (("Goal" :in-theory (e/d* (pdpt-base-addr) ()))))
-
-(defthm same-pdpt-base-addr-for-n-+-lin-addrs
-  (implies (and (canonical-address-p lin-addr)
-                (unsigned-byte-p 30 iteration)
-                (equal (loghead 30 lin-addr) 0)
-                (x86p x86))
-           (equal (pdpt-base-addr (+ iteration lin-addr) x86)
-                  (pdpt-base-addr lin-addr x86)))
-  :hints (("Goal" :in-theory (e/d* (pdpt-base-addr) (not)))))
+  ;; Again, should follow from above
+  (defthm las-to-pas-alt-and-mv-nth-2-las-to-pas
+    (implies (64-bit-modep x86)
+             (equal (mv-nth 0 (las-to-pas-alt iteration count lin-addr r-w-x
+                                              (mv-nth 2 (las-to-pas n addr r-w-x-2 x86))))
+                    (mv-nth 0 (las-to-pas-alt iteration count lin-addr r-w-x x86))))))
 
 (defthmd las-to-pas-values-for-same-1G-page-general
   (implies
    (and
     (64-bit-modep x86) ; added
-    (direct-map-p
-     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-     :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas
-                    8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                    :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas
-                8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                :r x86))
-     (all-xlation-governing-entries-paddrs
-      8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-    (direct-map-p 8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                  :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas
-                    8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                    :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas
-                8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                :r x86))
-     (all-xlation-governing-entries-paddrs
-      8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86)) x86))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas
-                8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas
-                8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                :r (double-rewrite x86))))
-    (equal (page-size
-            (mv-nth 1 (rb
-                       8 (page-dir-ptr-table-entry-addr
-                          lin-addr (pdpt-base-addr lin-addr x86))
-                       :r x86)))
-           1)
-    ;; If there's no error when translating lin-addr (first address of
-    ;; a 1GB page boundary), then there's no error when translating
-    ;; the following (- count iteration) addresses (all within that
-    ;; page).
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r x86)))
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
+    (equal page-dir-ptr-table-entry-addr
+           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
 
-    (canonical-address-p (+ 7 (pml4-table-entry-addr
-                               lin-addr (pml4-table-base-addr x86))))
-    (canonical-address-p (+ 7 (page-dir-ptr-table-entry-addr
-                               lin-addr (pdpt-base-addr lin-addr x86))))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+    (equal (page-size (rm-low-64 page-dir-ptr-table-entry-addr x86)) 1)
+
+    (tlb-consistent-n m lin-addr :r x86)
+    (not (mv-nth 0 (las-to-pas m lin-addr :r x86)))
+
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
     (canonical-address-p (+ -1 lin-addr m))
     (natp m)
@@ -627,122 +856,77 @@
            (addr-range
             (+ (- iteration) m)
             (+ iteration
-               (ash (loghead 22
-                             (logtail 30
-                                      (rm-low-64
-                                       (page-dir-ptr-table-entry-addr
-                                        lin-addr (pdpt-base-addr lin-addr x86))
-                                       x86)))
+               (ash (loghead 22 (logtail 30 (rm-low-64 page-dir-ptr-table-entry-addr x86)))
                     30))))))
   :hints (("Goal"
-           :induct (las-to-pas-alt iteration m lin-addr :r x86)
+           ;; :induct (las-to-pas-alt iteration m lin-addr :r x86)
+           ;; :expand ((:free (x) (addr-range (+ (- iteration) m) x)))
+           :use ((:instance xlate-equiv-entries-and-page-size
+                            (e-1 (rm-low-64
+                                   (page-dir-ptr-table-entry-addr
+                                     lin-addr
+                                     (ash
+                                       (loghead
+                                         40
+                                         (logtail
+                                           12
+                                           (rm-low-64
+                                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                                             x86)))
+                                       12))
+                                   (mv-nth 2
+                                           (ia32e-la-to-pa (+ iteration lin-addr)
+                                                           :r x86))))
+                            (e-2 (rm-low-64
+                                   (page-dir-ptr-table-entry-addr
+                                     lin-addr
+                                     (ash
+                                       (loghead
+                                         40
+                                         (logtail
+                                           12
+                                           (rm-low-64
+                                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                                             x86)))
+                                       12))
+                                   x86))))
+           :expand ((las-to-pas m lin-addr :r x86))
            :in-theory (e/d* (las-to-pas-alt
-                             ia32e-la-to-pa-values-for-same-1G-page
-                             open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
-                             open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
-                             open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
-                             pdpt-base-addr
-                             pml4-table-base-addr)
-                            (las-to-pas
-                             rewrite-rb-to-rb-alt
-                             not
-                             mv-nth-0-las-to-pas-subset-p
-                             mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                             mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                             mv-nth-1-las-to-pas-returns-nil-when-error
-                             mv-nth-1-las-to-pas-when-error
-                             marking-view
-                             mv-nth-2-las-to-pas-system-level-non-marking-view
-                             ;; mv-nth-1-rb-after-mv-nth-2-ia32e-la-to-pa
-                             pml4-table-entry-addr
-                             page-dir-ptr-table-entry-addr
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form)))
-          (if (equal (car id) '(0 1))
-              '(:use ((:instance xlate-equiv-entries-and-page-size
-                                 (e-1 (rm-low-64
-                                       (page-dir-ptr-table-entry-addr
-                                        lin-addr
-                                        (ash
-                                         (loghead
-                                          40
-                                          (logtail
-                                           12
-                                           (rm-low-64
-                                            (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                                            x86)))
-                                         12))
-                                       (mv-nth 2
-                                               (ia32e-la-to-pa (+ iteration lin-addr)
-                                                               :r x86))))
-                                 (e-2 (rm-low-64
-                                       (page-dir-ptr-table-entry-addr
-                                        lin-addr
-                                        (ash
-                                         (loghead
-                                          40
-                                          (logtail
-                                           12
-                                           (rm-low-64
-                                            (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                                            x86)))
-                                         12))
-                                       x86))))
-                     :in-theory (e/d* (las-to-pas-alt
-                                       ia32e-la-to-pa-values-for-same-1G-page
-                                       open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
-                                       open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
-                                       open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
-                                       pdpt-base-addr
-                                       pml4-table-base-addr)
-                                      (las-to-pas
-                                       rewrite-rb-to-rb-alt
-                                       not
-                                       mv-nth-0-las-to-pas-subset-p
-                                       mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
-                                       mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                                       mv-nth-1-las-to-pas-returns-nil-when-error
-                                       mv-nth-1-las-to-pas-when-error
-                                       marking-view
-                                       mv-nth-2-las-to-pas-system-level-non-marking-view
-                                       ;; mv-nth-1-rb-after-mv-nth-2-ia32e-la-to-pa
-                                       pml4-table-entry-addr
-                                       page-dir-ptr-table-entry-addr
-                                       page-dir-ptr-table-entry-addr-to-c-program-optimized-form)))
-            nil)))
+                              ia32e-la-to-pa-without-tlb-values-for-same-1G-page
+                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
+                              open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
+                              open-mv-nth-1-las-to-pas-for-same-1G-page-general-1)
+                            (rewrite-rb-to-rb-alt
+                              not
+                              mv-nth-0-las-to-pas-subset-p
+                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                              mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+                              mv-nth-1-las-to-pas-returns-nil-when-error
+                              mv-nth-1-las-to-pas-when-error
+                              marking-view
+                              pml4-table-entry-addr
+                              page-dir-ptr-table-entry-addr
+                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form)))))
 
 (defthmd las-to-pas-values-for-same-1G-page
   (implies
    (and
     (64-bit-modep x86) ; added
-    (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-    (equal pdpt-base-addr (pdpt-base-addr lin-addr (double-rewrite x86)))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
-    (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (direct-map-p 8 pml4-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 pml4-table-entry-addr (double-rewrite x86)))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not
-     (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86))))
-    (equal (page-size page-dir-ptr-table-entry) 1)
 
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r (double-rewrite x86))))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+    (equal (page-size (rm-low-64 page-dir-ptr-table-entry-addr x86)) 1)
+
+    (tlb-consistent-n *2^30* lin-addr :r x86)
+    (not (mv-nth 0 (las-to-pas *2^30* lin-addr :r x86)))
 
     (canonical-address-p (+ 7 pml4-table-entry-addr))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
-
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
     (not (app-view x86))
@@ -752,14 +936,7 @@
     (equal (mv-nth 1 (las-to-pas *2^30* lin-addr :r x86))
            (addr-range
             *2^30*
-            (ash
-             (loghead
-              22
-              (logtail 30
-                       (rm-low-64
-                        (page-dir-ptr-table-entry-addr
-                         lin-addr (pdpt-base-addr lin-addr x86))
-                        x86)))
+            (ash (loghead 22 (logtail 30 (rm-low-64 page-dir-ptr-table-entry-addr x86)))
              30)))))
   :hints (("Goal"
            :use ((:instance las-to-pas-values-for-same-1G-page-general
@@ -775,7 +952,7 @@
 ;; ======================================================================
 
 ;; Begin proof of
-;; all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr:
+;; all-xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr:
 
 ;; First, we compute the translation-governing addresses corresponding
 ;; to (+ n lin-addr), given that (+ n lin-addr) lies in the same 1G
@@ -791,20 +968,10 @@
     (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
     (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-    (equal pdpt-base-addr (pdpt-base-addr lin-addr x86))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
            (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
-    (equal page-dir-ptr-table-entry (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r x86)))
-    (direct-map-p 8 pml4-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 pml4-table-entry-addr :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r x86))
-     (all-xlation-governing-entries-paddrs 8 pml4-table-entry-addr x86))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r x86))
-     (all-xlation-governing-entries-paddrs 8 page-dir-ptr-table-entry-addr x86))
+    (equal page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (canonical-address-p (+ 7 pml4-table-entry-addr))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
@@ -870,46 +1037,16 @@
    (implies
     (and
      (64-bit-modep x86) ; added
-     (direct-map-p
-      8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-      :r (double-rewrite x86))
-     (not (mv-nth 0 (las-to-pas
-                     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                     :r x86)))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas
-                 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                 :r x86))
-      (all-xlation-governing-entries-paddrs
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86)) x86))
-     (direct-map-p 8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                   :r (double-rewrite x86))
-     (not (mv-nth 0 (las-to-pas
-                     8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                     :r x86)))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas
-                 8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                 :r x86))
-      (all-xlation-governing-entries-paddrs
-       8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86)) x86))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas
-                 8 (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86))
-                 :r (double-rewrite x86)))
-      (mv-nth 1 (las-to-pas
-                 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                 :r (double-rewrite x86))))
      (equal (page-size
-             (mv-nth 1 (rb
-                        8 (page-dir-ptr-table-entry-addr
-                           lin-addr (pdpt-base-addr lin-addr x86))
-                        :r x86)))
+             (rm-low-64
+               (page-dir-ptr-table-entry-addr
+                 lin-addr (page-dir-ptr-table-base-addr lin-addr x86))
+               x86))
             1)
      (canonical-address-p (+ 7 (pml4-table-entry-addr
                                 lin-addr (pml4-table-base-addr x86))))
      (canonical-address-p (+ 7 (page-dir-ptr-table-entry-addr
-                                lin-addr (pdpt-base-addr lin-addr x86))))
+                                lin-addr (page-dir-ptr-table-base-addr lin-addr x86))))
      (canonical-address-p lin-addr)
      (canonical-address-p (+ -1 m lin-addr))
      (natp m)
@@ -924,50 +1061,11 @@
      (repeat (- m iteration) (xlation-governing-entries-paddrs lin-addr x86))))
    :hints (("Goal"
             :do-not '(preprocess)
-            :in-theory (e/d* (all-xlation-governing-entries-paddrs
-                              xlation-governing-entries-paddrs-for-same-1G-page)
+            :in-theory (e/d* (xlation-governing-entries-paddrs-for-same-1G-page)
                              (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
                               bitops::logand-with-negated-bitmask
                               force (force)
-                              not)))
-
-           (if (equal (car id) '(0 1))
-               '(:use ((:instance xlate-equiv-entries-and-page-size
-                                  (e-1 (rm-low-64
-                                        (page-dir-ptr-table-entry-addr
-                                         lin-addr
-                                         (ash
-                                          (loghead
-                                           40
-                                           (logtail
-                                            12
-                                            (rm-low-64
-                                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                                             x86)))
-                                          12))
-                                        (mv-nth 2
-                                                (ia32e-la-to-pa (+ iteration lin-addr)
-                                                                :r x86))))
-                                  (e-2 (rm-low-64
-                                        (page-dir-ptr-table-entry-addr
-                                         lin-addr
-                                         (ash
-                                          (loghead
-                                           40
-                                           (logtail
-                                            12
-                                            (rm-low-64
-                                             (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                                             x86)))
-                                          12))
-                                        x86))))
-                      :in-theory (e/d* (all-xlation-governing-entries-paddrs
-                                        xlation-governing-entries-paddrs-for-same-1G-page)
-                                       (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                                        bitops::logand-with-negated-bitmask
-                                        force (force)
-                                        not)))
-             nil))))
+                              not))))))
 
 (local
  (defthmd all-xlation-governing-entries-paddrs-1G-pages
@@ -976,28 +1074,13 @@
      (64-bit-modep x86) ; added
      (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
      (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
-     (equal pdpt-base-addr (pdpt-base-addr lin-addr (double-rewrite x86)))
+     (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr (double-rewrite x86)))
      (equal page-dir-ptr-table-entry-addr
             (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
      (equal page-dir-ptr-table-entry
-            (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-     (direct-map-p 8 pml4-table-entry-addr :r (double-rewrite x86))
-     (not (mv-nth 0 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86))))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86)))
-      (all-xlation-governing-entries-paddrs 8 pml4-table-entry-addr (double-rewrite x86)))
-     (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-     (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-      (all-xlation-governing-entries-paddrs
-       8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-      (mv-nth 1 (las-to-pas 8 pml4-table-entry-addr :r (double-rewrite x86))))
-     (equal (page-size page-dir-ptr-table-entry) 1)
+            (rm-low-64 page-dir-ptr-table-entry-addr (double-rewrite x86)))
 
-     (not (mv-nth 0 (las-to-pas *2^30* lin-addr :r (double-rewrite x86))))
+     (equal (page-size page-dir-ptr-table-entry) 1)
 
      (canonical-address-p (+ 7 pml4-table-entry-addr))
      (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
@@ -1028,7 +1111,6 @@
                               mv-nth-1-las-to-pas-returns-nil-when-error
                               mv-nth-1-las-to-pas-when-error
                               marking-view
-                              mv-nth-2-las-to-pas-system-level-non-marking-view
                               ;; mv-nth-1-rb-after-mv-nth-2-ia32e-la-to-pa
                               pml4-table-base-addr pml4-table-entry-addr
                               page-dir-ptr-table-entry-addr
@@ -1046,9 +1128,9 @@
                    (rm-low-64 p-addr-1 x86)))
    :hints (("Goal" :in-theory (e/d* (disjoint-p-commutative) ())))))
 
-(defthmd xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+(defthmd xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr
   ;; Similar to
-  ;; ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+  ;; ia32e-la-to-pa-values-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr
   ;; for
   ;; xlation-governing-entries-paddrs.
   (implies
@@ -1060,417 +1142,131 @@
                        (or (eq (car lin-addr) 'car)
                            (eq (car lin-addr) 'pml4-table-entry-addr$inline)
                            (eq (car lin-addr) 'page-dir-ptr-table-entry-addr$inline)))))
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
+           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (direct-map-p
-     8
-     (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                           :r (double-rewrite x86))))
-    (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-    (disjoint-p
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+           (rm-low-64 page-dir-ptr-table-entry-addr x86))
+
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
+
     (equal (page-size page-dir-ptr-table-entry)
            (page-size write-val))
     (equal (page-size page-dir-ptr-table-entry) 1)
     (canonical-address-p write-addr)
     (canonical-address-p (+ 7 write-addr))
     (unsigned-byte-p 64 write-val)
-    (canonical-address-p
-     (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (not (app-view x86))
     (x86p x86))
-   (equal (xlation-governing-entries-paddrs lin-addr
-                                            (mv-nth 1 (wb 8 write-addr w write-val x86)))
+   (equal (xlation-governing-entries-paddrs lin-addr (wm-low-64 page-dir-ptr-table-entry-addr write-val x86))
           (xlation-governing-entries-paddrs lin-addr x86)))
   :hints
   (("Goal"
     :do-not-induct t
-    :use ((:instance xlate-equiv-entries-and-page-size
-                     (e-1 (rm-low-64
-                           (pml4-table-entry-addr
-                            lin-addr
-                            (pml4-table-base-addr x86))
-                           (mv-nth
-                            2
-                            (las-to-pas
-                             8 write-addr :w
-                             (write-to-physical-memory
-                              (mv-nth 1 (las-to-pas 8 write-addr :w x86))
-                              write-val x86)))))
-                     (e-2 (rm-low-64 (pml4-table-entry-addr
-                                      lin-addr
-                                      (pml4-table-base-addr x86))
-                                     x86))))
-    :in-theory (e/d*
-                (disjoint-p$
-                 wb
-                 direct-map-p
-                 pml4-table-base-addr
-                 pdpt-base-addr
-                 xlation-governing-entries-paddrs
-                 xlation-governing-entries-paddrs-for-pml4-table
-                 xlation-governing-entries-paddrs-for-page-dir-ptr-table
-                 rm-low-64-and-write-to-physical-memory-disjoint-commuted
-                 cr3bits->pdb
-                 ia32e-pml4ebits->pdpt)
-
-                (rm-low-64-and-write-to-physical-memory-disjoint
-                 mv-nth-0-las-to-pas-subset-p
-                 rewrite-rb-to-rb-alt
-                 subset-p
-                 member-p
-                 mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                 member-p-canonical-address-listp
-                 mv-nth-0-las-to-pas-subset-p
-                 (:linear adding-7-to-pml4-table-entry-addr)
-                 pml4-table-entry-addr-to-c-program-optimized-form
-                 page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                 bitops::logand-with-negated-bitmask
-                 (:meta acl2::mv-nth-cons-meta)
-                 not force (force))))))
+    :in-theory (e/d (ia32e-pml4ebits->pdpt
+                     xlation-governing-entries-paddrs
+                     xlation-governing-entries-paddrs-for-pml4-table
+                     xlation-governing-entries-paddrs-for-page-dir-ptr-table) ()))))
 
 (local
- (defthmd xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper
-   (implies
-    (and
-     (64-bit-modep x86) ; added
-     (equal page-dir-ptr-table-entry-addr
-            (page-dir-ptr-table-entry-addr
-             lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
-     (equal page-dir-ptr-table-entry
-            (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-     (direct-map-p
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      :r (double-rewrite x86))
-     (not
-      (mv-nth
-       0
-       (las-to-pas
-        8
-        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-        :r (double-rewrite x86))))
-     (disjoint-p$
-      (mv-nth
-       1
-       (las-to-pas
-        8
-        (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-        :r (double-rewrite x86)))
-      (all-xlation-governing-entries-paddrs
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       (double-rewrite x86)))
-     (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-     (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-      (all-xlation-governing-entries-paddrs
-       8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-     (disjoint-p$
-      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-      (mv-nth 1 (las-to-pas 8
-                            (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                            :r (double-rewrite x86))))
-     (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-            (addr-range 8 page-dir-ptr-table-entry-addr))
-     (disjoint-p
-      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-      (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
-     (equal (page-size page-dir-ptr-table-entry)
-            (page-size write-val))
-     (canonical-address-p write-addr)
-     (canonical-address-p (+ 7 write-addr))
-     (unsigned-byte-p 64 write-val)
-     (canonical-address-p
-      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
-     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
-     (canonical-address-p lin-addr)
-     (canonical-address-p (+ n lin-addr))
-     (unsigned-byte-p 30 n)
-     (not (app-view x86))
-     (x86p x86))
-    (and
-     (equal
-      (page-size
-       (rm-low-64 (pml4-table-entry-addr
-                   lin-addr
-                   (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                  (mv-nth 1 (wb 8 write-addr w write-val x86))))
-      (page-size
-       (rm-low-64 (pml4-table-entry-addr
-                   lin-addr
-                   (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                  x86)))
+  (defthm-using-gl logtail-49-sum-unsigned-byte-p-30-ident
+                   :hyp (and (unsigned-byte-p 30 x)
+                             (canonical-address-p z)
+                             (equal (loghead 30 z) 0))
+                   :concl (equal (logtail 39 (+ z x))
+                                 (logtail 39 z))
+                   :g-bindings (gl::auto-bindings (:mix (:int z #.*max-linear-address-size*)
+                                                        (:int x #.*max-linear-address-size*)))))
 
-     (equal
-      (page-size
-       (rm-low-64
-        (page-dir-ptr-table-entry-addr
-         lin-addr
-         (ash
-          (loghead
-           40
-           (logtail
-            12
-            (rm-low-64 (pml4-table-entry-addr
-                        lin-addr
-                        (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86)))
-                             12))
-                       x86)))
-          12))
-        x86))
-      (page-size
-       (rm-low-64
-        (page-dir-ptr-table-entry-addr
-         lin-addr
-         (ash
-          (loghead
-           40
-           (logtail
-            12
-            (rm-low-64 (pml4-table-entry-addr
-                        lin-addr
-                        (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                       x86)))
-          12))
-        (mv-nth 1 (wb 8 write-addr w write-val x86)))))
+(defthmd xlation-governing-entries-paddrs-for-same-1g-page-and-wm-low-64-to-page-dir-ptr-table-entry-addr
+         (implies
+           (and
+             (64-bit-modep x86) ; added
+             ;; Restricting this rule so that it doesn't apply when lin-addr
+             ;; points to a paging entry.
+             (syntaxp (not (and (consp lin-addr)
+                                (or (eq (car lin-addr) 'car)
+                                    (eq (car lin-addr) 'pml4-table-entry-addr$inline)
+                                    (eq (car lin-addr) 'page-dir-ptr-table-entry-addr$inline)))))
+             (equal pml4-table-base-addr (pml4-table-base-addr x86))
+             (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+             (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
+             (equal page-dir-ptr-table-entry-addr
+                    (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
+             (equal page-dir-ptr-table-entry
+                    (rm-low-64 page-dir-ptr-table-entry-addr x86))
 
-     (equal
-      (logtail
-       12
-       (rm-low-64 (pml4-table-entry-addr
-                   lin-addr
-                   (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                  (mv-nth 1 (wb 8 write-addr w write-val x86))))
-      (logtail
-       12
-       (rm-low-64 (pml4-table-entry-addr
-                   lin-addr
-                   (ash (loghead 40 (logtail 12 (xr :ctr *cr3* x86))) 12))
-                  x86)))))
-   :hints (("Goal"
-            :do-not-induct t
-            :use ((:instance xlate-equiv-entries-and-page-size
-                             (e-1 (rm-low-64
-                                   (pml4-table-entry-addr
-                                    lin-addr (pml4-table-base-addr x86))
-                                   (mv-nth
-                                    2
-                                    (las-to-pas
-                                     8 write-addr :w
-                                     (write-to-physical-memory
-                                      (mv-nth 1 (las-to-pas 8 write-addr :w  x86))
-                                      write-val
-                                      x86)))))
-                             (e-2 (rm-low-64
-                                   (pml4-table-entry-addr
-                                    lin-addr (pml4-table-base-addr x86))
-                                   x86))))
-            :in-theory (e/d* (cr3bits->pdb
-                              ia32e-pml4ebits->pdpt
-                              wb
-                              direct-map-p
-                              rm-low-64-and-write-to-physical-memory-disjoint-commuted
-                              pml4-table-base-addr
-                              pdpt-base-addr)
-                             (disjoint-p-all-xlation-governing-entries-paddrs-subset-p
-                              rm-low-64-and-write-to-physical-memory-disjoint
-                              commutativity-of-+
-                              pml4-table-entry-addr-to-c-program-optimized-form
-                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                              bitops::logand-with-negated-bitmask
-                              force (force)
-                              not
-                              bitops::logand-with-negated-bitmask))))))
+             (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                         (addr-range 8 page-dir-ptr-table-entry-addr))
 
-(defthmd xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
+             (equal (page-size page-dir-ptr-table-entry)
+                    (page-size write-val))
+             (equal (page-size page-dir-ptr-table-entry) 1)
+             (canonical-address-p write-addr)
+             (canonical-address-p (+ 7 write-addr))
+             (unsigned-byte-p 64 write-val)
+             (canonical-address-p (+ 7 pml4-table-entry-addr))
+             (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+             (unsigned-byte-p 30 n)
+             (canonical-address-p lin-addr)
+             (equal (loghead 30 lin-addr) 0)
+             (not (app-view x86))
+             (x86p x86))
+           (equal (xlation-governing-entries-paddrs (+ n lin-addr)
+                                                    (wm-low-64 page-dir-ptr-table-entry-addr write-val x86))
+                  (xlation-governing-entries-paddrs lin-addr x86)))
+         :hints (("Goal"
+                  :do-not-induct t
+                  :use ((:instance logtail-49-sum-unsigned-byte-p-30-ident
+                                   (z lin-addr)
+                                   (x n)))
+                  :in-theory (e/d* (xlation-governing-entries-paddrs-for-same-1G-page
+                                     xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr
+                                     xlation-governing-entries-paddrs
+                                     xlation-governing-entries-paddrs-for-pml4-table
+                                     xlation-governing-entries-paddrs-for-page-dir-ptr-table
+                                     pml4-table-base-addr
+                                     pml4-table-entry-addr
+                                     cr3bits->pdb
+                                     ia32e-pml4ebits->pdpt)
+                                   (subset-p
+                                     member-p
+                                     mv-nth-0-las-to-pas-subset-p
+                                     mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+                                     r-w-x-is-irrelevant-for-mv-nth-1-las-to-pas-when-no-errors
+                                     member-p-canonical-address-listp
+                                     mv-nth-1-las-to-pas-subset-p
+                                     car-create-canonical-address-list
+                                     consp-of-create-canonical-address-list
+                                     commutativity-of-+
+                                     pml4-table-entry-addr-to-c-program-optimized-form
+                                     page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                                     bitops::logand-with-negated-bitmask
+                                     force (force)
+                                     not
+                                     bitops::logand-with-negated-bitmask)))))
+
+(defthmd all-xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr-general
   (implies
    (and
     (64-bit-modep x86) ; added
-    (syntaxp (not (and (consp lin-addr)
-                       (or (eq (car lin-addr) 'car)
-                           (eq (car lin-addr) 'pml4-table-entry-addr$inline)
-                           (eq (car lin-addr) 'page-dir-ptr-table-entry-addr$inline)))))
+    (equal pml4-table-base-addr (pml4-table-base-addr x86))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
+           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (direct-map-p
-     8
-     (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r  (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas
-                8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                :r (double-rewrite x86))))
-    (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-    (disjoint-p
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
-    (equal (page-size page-dir-ptr-table-entry)
-           (page-size write-val))
-    (equal (page-size page-dir-ptr-table-entry) 1)
-    (canonical-address-p write-addr)
-    (canonical-address-p (+ 7 write-addr))
-    (unsigned-byte-p 64 write-val)
-    (canonical-address-p
-     (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
-    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
-
-    (canonical-address-p lin-addr)
-    (canonical-address-p (+ n lin-addr))
-    (equal (loghead 30 lin-addr) 0)
-    (unsigned-byte-p 30 n)
-    (not (app-view x86))
-    (x86p x86))
-   (equal (xlation-governing-entries-paddrs (+ n lin-addr)
-                                            (mv-nth 1 (wb 8 write-addr w write-val x86)))
-          (xlation-governing-entries-paddrs lin-addr x86)))
-  :hints (("Goal"
-           :do-not-induct t
-           :use ((:instance xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr-helper))
-           :in-theory (e/d* (xlation-governing-entries-paddrs-for-same-1G-page
-                             xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-                             xlation-governing-entries-paddrs
-                             xlation-governing-entries-paddrs-for-pml4-table
-                             xlation-governing-entries-paddrs-for-page-dir-ptr-table
-                             pdpt-base-addr
-                             pml4-table-base-addr
-                             cr3bits->pdb
-                             ia32e-pml4ebits->pdpt)
-                            (subset-p
-                             member-p
-                             mv-nth-0-las-to-pas-subset-p
-                             mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                             r-w-x-is-irrelevant-for-mv-nth-1-las-to-pas-when-no-errors
-                             member-p-canonical-address-listp
-                             mv-nth-1-las-to-pas-subset-p
-                             car-create-canonical-address-list
-                             consp-of-create-canonical-address-list
-                             commutativity-of-+
-                             pml4-table-entry-addr-to-c-program-optimized-form
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             bitops::logand-with-negated-bitmask
-                             force (force)
-                             not
-                             bitops::logand-with-negated-bitmask)))))
-
-(defthmd all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
-  (implies
-   (and
-    (64-bit-modep x86) ; added
-    (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
-    (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-
-    ;; PML4TE is direct-mapped.
-    (direct-map-p
-     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
-
-    ;; PDPTE is direct-mapped.
-    (direct-map-p
-     8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
+           (rm-low-64 page-dir-ptr-table-entry-addr x86))
 
     ;; Physical addresses of PML4TE and PDPTE are disjoint.
     (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r  (double-rewrite x86)))
-     (mv-nth
-      1
-      (las-to-pas
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-       :r (double-rewrite x86))))
-    (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-    (disjoint-p
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+     (addr-range 8 pml4-table-entry-addr)
+     (addr-range 8 page-dir-ptr-table-entry-addr))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present write-val))
@@ -1486,12 +1282,10 @@
     (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
            (part-select write-val :low 13 :high 29))
 
-    (canonical-address-p write-addr)
-    (canonical-address-p (+ 7 write-addr))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (unsigned-byte-p 64 write-val)
-    (canonical-address-p (+ 7
-                            (pml4-table-entry-addr
-                             lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
     (canonical-address-p (+ -1 m lin-addr))
@@ -1503,7 +1297,7 @@
     (x86p x86))
    (equal
     (all-xlation-governing-entries-paddrs-alt
-     iteration m lin-addr (mv-nth 1 (wb 8 write-addr w write-val x86)))
+     iteration m lin-addr (wm-low-64 page-dir-ptr-table-entry-addr write-val x86))
     (all-xlation-governing-entries-paddrs-alt
      iteration m lin-addr x86)))
   :hints (("Goal"
@@ -1511,12 +1305,13 @@
                     (all-xlation-governing-entries-paddrs-alt
                      iteration m lin-addr x86)
                     (all-xlation-governing-entries-paddrs-alt
-                     iteration m lin-addr (mv-nth 1 (wb 8 write-addr w write-val x86))))
+                     iteration m lin-addr (wm-low-64 page-dir-ptr-table-entry-addr write-val x86)))
            :do-not '(preprocess)
-           :in-theory (e/d* (all-xlation-governing-entries-paddrs
+           :in-theory (e/d* (64-bit-modep
+                             all-xlation-governing-entries-paddrs
                              xlation-governing-entries-paddrs-for-same-1G-page
-                             xlation-governing-entries-paddrs-for-same-1G-page-and-wb-to-page-dir-ptr-table-entry-addr
-                             xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+                             xlation-governing-entries-paddrs-for-same-1G-page-and-wm-low-64-to-page-dir-ptr-table-entry-addr
+                             xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr
                              all-xlation-governing-entries-paddrs-1G-pages-general)
                             (mv-nth-0-las-to-pas-subset-p
                              member-p
@@ -1526,59 +1321,22 @@
                              force (force)
                              not)))))
 
-(defthm all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+(defthm all-xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr
   (implies
    (and
-    (64-bit-modep x86) ; added
-    ;; Restrict this rule so that it fires when lin-addr is either (XR
-    ;; :RGF *RSI* X86) or (XR :RGF *RDI* X86) or lin-addr.
-    (syntaxp (or
-              (eq lin-addr '(XR ':RGF '6 X86))
-              (eq lin-addr '(XR ':RGF '7 X86))
-              (eq lin-addr 'lin-addr)))
+    (64-bit-modep (double-rewrite x86)) ; added
+    (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal pdpt-base-addr (page-dir-ptr-table-base-addr lin-addr (double-rewrite x86)))
     (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
+           (page-dir-ptr-table-entry-addr lin-addr pdpt-base-addr))
     (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (direct-map-p
-     8
-     (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
+           (rm-low-64 page-dir-ptr-table-entry-addr (double-rewrite x86)))
+
+    ;; Physical addresses of PML4TE and PDPTE are disjoint.
     (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (equal
-     (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p
-     (mv-nth
-      1
-      (las-to-pas
-       8 page-dir-ptr-table-entry-addr
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+     (addr-range 8 pml4-table-entry-addr)
+     (addr-range 8 page-dir-ptr-table-entry-addr))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present write-val))
@@ -1594,32 +1352,29 @@
     (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
            (part-select write-val :low 13 :high 29))
 
-    (canonical-address-p write-addr)
-    (canonical-address-p (+ 7 write-addr))
-    (unsigned-byte-p 64 write-val)
-    (canonical-address-p (+ 7 (pml4-table-entry-addr
-                               lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
-    (equal (loghead 30 lin-addr) 0)
+    (unsigned-byte-p 64 write-val)
+    (canonical-address-p (+ 7 pml4-table-entry-addr))
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
-    (canonical-address-p (+ -1 lin-addr m))
+    (canonical-address-p (+ -1 m lin-addr))
     (natp m)
     (<= m *2^30*)
-    (not (app-view x86))
-    (x86p x86))
+    (equal (loghead 30 lin-addr) 0)
+    (not (app-view (double-rewrite x86)))
+    (x86p (double-rewrite x86)))
    (equal
     (all-xlation-governing-entries-paddrs
-     m lin-addr (mv-nth 1 (wb 8 write-addr w write-val x86)))
+     m lin-addr (wm-low-64 page-dir-ptr-table-entry-addr write-val x86))
     (all-xlation-governing-entries-paddrs
      m lin-addr (double-rewrite x86))))
   :hints (("Goal"
            :do-not-induct t
            :do-not '(preprocess)
-           :use ((:instance all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
+           :use ((:instance all-xlation-governing-entries-paddrs-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr-general
                             (iteration 0)))
-           :in-theory (e/d* (all-xlation-governing-entries-paddrs-alt-is-all-xlation-governing-entries-paddrs
-                             direct-map-p
-                             las-to-pas)
+           :in-theory (e/d* (all-xlation-governing-entries-paddrs-alt-is-all-xlation-governing-entries-paddrs)
                             (all-xlation-governing-entries-paddrs-alt
                              all-xlation-governing-entries-paddrs
                              mv-nth-0-las-to-pas-subset-p
@@ -1635,7 +1390,7 @@
 
 ;; ======================================================================
 
-;; Begin proof of las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr:
+;; Begin proof of las-to-pas-values-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr:
 ;; Reading the new mapping (i.e., phy-addr) of a lin-addr, given that
 ;; its PDPTE has been modified:
 
@@ -1646,29 +1401,10 @@
   ;; PDPTE is value.
   (implies (and
             (64-bit-modep x86) ; added
-            (equal p-addrs
-                   (addr-range 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)))
+            (equal pdpt-entry-addr
+                   (page-dir-ptr-table-entry-addr lin-addr base-addr))
             (equal page-dir-ptr-table-entry
-                   (mv-nth 1 (rb 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                                 r-w-x (double-rewrite x86))))
-
-            ;; PDPTE is direct mapped.
-            (direct-map-p
-             8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-             r-w-x (double-rewrite x86))
-            (not
-             (mv-nth
-              0
-              (las-to-pas 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                          r-w-x (double-rewrite x86))))
-            (disjoint-p$
-             (mv-nth
-              1
-              (las-to-pas 8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                          r-w-x (double-rewrite x86)))
-             (all-xlation-governing-entries-paddrs
-              8 (page-dir-ptr-table-entry-addr lin-addr base-addr)
-              (double-rewrite x86)))
+                   (rm-low-64 pdpt-entry-addr (double-rewrite x86)))
 
             (not
              (mv-nth
@@ -1701,84 +1437,39 @@
                  (mv-nth 0 (ia32e-la-to-pa-page-dir-ptr-table
                             lin-addr base-addr u/s-acc r/w-acc x/d-acc
                             wp smep smap ac nxe r-w-x cpl
-                            (write-to-physical-memory p-addrs value x86)))
+                            (wm-low-64 pdpt-entry-addr value x86)))
                  nil)
                 (equal (mv-nth 1 (ia32e-la-to-pa-page-dir-ptr-table
                                   lin-addr base-addr u/s-acc r/w-acc x/d-acc
                                   wp smep smap ac nxe r-w-x cpl
-                                  (write-to-physical-memory p-addrs value x86)))
+                                  (wm-low-64 pdpt-entry-addr value x86)))
                        (logior (loghead 30 lin-addr)
                                (ash (loghead 22 (logtail 30 value)) 30)))))
   :hints (("Goal"
            :do-not-induct t
-           :use ((:instance rewrite-wm-low-64-to-write-to-physical-memory
-                            (index (page-dir-ptr-table-entry-addr lin-addr base-addr)))
-                 (:instance mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
-                            (structure-type 2)
-                            (u/s-acc (logand u/s-acc (page-user-supervisor value)))
-                            (r/w-acc (logand r/w-acc (page-read-write value)))
-                            (x/d-acc (logand x/d-acc (page-execute-disable value)))
-                            (ignored 0)
-                            (entry-1
-                             (mv-nth 1
-                                     (rb 8
-                                         (page-dir-ptr-table-entry-addr lin-addr base-addr)
-                                         r-w-x x86)))
-                            (entry-2 value)))
-           :in-theory (e/d* (disjoint-p
-                             member-p
-                             ia32e-la-to-pa-page-dir-ptr-table
-                             cr3bits->pdb
-                             ia32e-pml4ebits->pdpt
-                             ia32e-pdpte-1gb-pagebits->page)
-                            (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             wb
-                             bitops::logand-with-negated-bitmask
-                             (:meta acl2::mv-nth-cons-meta)
-                             force (force))))))
+           :in-theory (enable ia32e-la-to-pa-page-dir-ptr-table
+                              ia32e-pdpte-1gb-pagebits->page))))
 
 (defthmd ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
   ;; Given a 1G page, ia32e-la-to-pa-pml4-table returns the physical
   ;; address corresponding to lin-addr after the PDPTE corresponding
   ;; to this lin-addr has been modified --- the new PDPTE is
   ;; value.
-
-  ;; Note: I've switched to using :r here instead of r-w-x since
-  ;; pdpt-base-addr is defined in terms of :r.  I should probably add
-  ;; r-w-x as an argument to this function.
   (implies
    (and
     (64-bit-modep x86) ; added
     (equal pml4-table-base-addr (pml4-table-base-addr x86))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal page-dir-ptr-table-addr-base-addr (page-dir-ptr-table-base-addr lin-addr x86))
     (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr lin-addr (pdpt-base-addr lin-addr x86)))
-    (equal p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
-    (equal page-dir-ptr-table-entry (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r x86)))
-    ;; PML4TE is direct-mapped.
-    (direct-map-p
-     8 (pml4-table-entry-addr lin-addr pml4-table-base-addr) :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas
-                    8 (pml4-table-entry-addr lin-addr pml4-table-base-addr) :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr) :r x86))
-     (all-xlation-governing-entries-paddrs
-      8 (pml4-table-entry-addr lin-addr pml4-table-base-addr) x86))
-    ;; PDPTE is direct-mapped.
-    (direct-map-p
-     8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r x86)))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r x86))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr x86))
-    ;; Physical addresses of PML4TE and PDPTE are disjoint. !!!
-    (disjoint-p
-     (addr-range 8 page-dir-ptr-table-entry-addr)
-     (addr-range 8 (pml4-table-entry-addr lin-addr pml4-table-base-addr)))
-    (not (mv-nth 0
-                 (ia32e-la-to-pa-pml4-table
-                  lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl x86)))
+           (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-addr-base-addr))
+    (equal page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr x86))
+
+    (disjoint-p (addr-range 8 page-dir-ptr-table-entry-addr)
+                (addr-range 8 pml4-table-entry-addr))
+
+    (not (mv-nth 0 (ia32e-la-to-pa-pml4-table
+                     lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl x86)))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present value))
@@ -1805,89 +1496,49 @@
      (mv-nth 0
              (ia32e-la-to-pa-pml4-table
               lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl
-              (write-to-physical-memory p-addrs value x86)))
+              (wm-low-64 page-dir-ptr-table-entry-addr value x86)))
      nil)
     (equal
      (mv-nth 1
              (ia32e-la-to-pa-pml4-table
               lin-addr pml4-table-base-addr wp smep smap ac nxe :r cpl
-              (write-to-physical-memory p-addrs value x86)))
+              (wm-low-64 page-dir-ptr-table-entry-addr value x86)))
      (logior (loghead 30 lin-addr)
              (ash (loghead 22 (logtail 30 value))
                   30)))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-                             ia32e-la-to-pa-pml4-table
-                             pdpt-base-addr
-                             cr3bits->pdb
-                             ia32e-pml4ebits->pdpt
-                             ia32e-pdpte-1gb-pagebits->page)
-                            (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             mv-nth-0-las-to-pas-subset-p
-                             bitops::logand-with-negated-bitmask
-                             (:meta acl2::mv-nth-cons-meta)
-                             force (force))))))
+           :in-theory (enable ia32e-la-to-pa-page-dir-ptr-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
+                              ia32e-pml4ebits->pdpt
+                              ia32e-la-to-pa-pml4-table
+                              pml4-table-entry-addr))))
 
-(defthmd ia32e-la-to-pa-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-  ;; Given a 1G page, ia32e-la-to-pa returns the physical address
+(defthmd ia32e-la-to-pa-without-tlb-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
+  ;; Given a 1G page, ia32e-la-to-pa-without-tlb returns the physical address
   ;; corresponding to lin-addr after the PDPTE corresponding to this
   ;; lin-addr has been modified --- the new PDPTE is write-val. The
-  ;; write is expressed in terms of write-to-physical-memory, i.e., at
-  ;; the level of physical memory.
+  ;; write is expressed in terms of wm-low-64, i.e., at the level of
+  ;; physical memory.
   (implies
    (and
     (64-bit-modep x86) ; added
+    (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal page-dir-ptr-table-addr-base-addr (page-dir-ptr-table-base-addr lin-addr (double-rewrite x86)))
     (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
-    (equal p-addrs (addr-range 8 page-dir-ptr-table-entry-addr))
-    (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+           (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-addr-base-addr))
+    (equal page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr (double-rewrite x86)))
 
-    ;; PML4TE is direct-mapped.
-    (direct-map-p
-     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
-    ;; PDPTE is direct-mapped.
-    (direct-map-p
-     8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
+    (disjoint-p (addr-range 8 page-dir-ptr-table-entry-addr)
+                (addr-range 8 pml4-table-entry-addr))
 
-    ;; Physical addresses of PML4TE and PDPTE are disjoint. !!!
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth
-      1
-      (las-to-pas
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r (double-rewrite x86))))
+    (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr :r (double-rewrite x86))))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present write-val))
     (equal (page-read-write page-dir-ptr-table-entry)
            (page-read-write write-val))
+
     (equal (page-user-supervisor page-dir-ptr-table-entry)
            (page-user-supervisor write-val))
     (equal (page-execute-disable page-dir-ptr-table-entry)
@@ -1900,211 +1551,41 @@
 
     (unsigned-byte-p 64 write-val)
     (canonical-address-p
-     (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
     (x86p x86))
    (and
-    (equal (mv-nth 0 (ia32e-la-to-pa lin-addr :r
-                                     (write-to-physical-memory p-addrs write-val x86)))
-           nil)
-    (equal (mv-nth 1 (ia32e-la-to-pa lin-addr :r
-                                     (write-to-physical-memory p-addrs write-val x86)))
-           (logior (loghead 30 lin-addr) (ash (loghead 22 (logtail 30 write-val)) 30)))))
+     (equal (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr :r
+                                                  (wm-low-64 page-dir-ptr-table-entry-addr write-val x86)))
+            nil)
+     (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr :r
+                                                  (wm-low-64 page-dir-ptr-table-entry-addr write-val x86)))
+            (logior (loghead 30 lin-addr) (ash (loghead 22 (logtail 30 write-val)) 30)))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-                             ia32e-la-to-pa
-                             pml4-table-base-addr
-                             direct-map-p)
-                            (page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             bitops::logand-with-negated-bitmask
-                             (:meta acl2::mv-nth-cons-meta)
-                             not
-                             force (force))))))
+           :in-theory (enable ia32e-la-to-pa-pml4-table-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
+                              ia32e-la-to-pa-without-tlb))))
 
-(defthmd ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-  ;; Given a 1G page, ia32e-la-to-pa returns the physical address
-  ;; corresponding to lin-addr after the PDPTE corresponding to this
-  ;; lin-addr has been modified --- the new PDPTE is write-val.  The
-  ;; write is expressed in terms of wb, i.e., at the level of linear
-  ;; memory.
+(defthmd las-to-pas-without-tlb-values-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr-general
+  ;; las-to-pas-without-tlb returns the physical addresses corresponding to
+  ;; linear addresses after the PDPTE corresponding to these linear addresses
+  ;; have been modified and the tlb has been cleared --- the new PDPTE is
+  ;; write-val.
   (implies
    (and
     (64-bit-modep x86) ; added
-    ;; Restricting this rule so that it doesn't apply when lin-addr
-    ;; points to a paging entry.
-    (syntaxp (not (and (consp lin-addr)
-                       (or (eq (car lin-addr) 'CAR)
-                           (eq (car lin-addr) 'PML4-TABLE-ENTRY-ADDR$INLINE)
-                           (eq (car lin-addr) 'PAGE-DIR-PTR-TABLE-ENTRY-ADDR$INLINE)))))
+    (equal pml4-table-base-addr (pml4-table-base-addr (double-rewrite x86)))
+    (equal pml4-table-entry-addr (pml4-table-entry-addr lin-addr pml4-table-base-addr))
+    (equal page-dir-ptr-table-addr-base-addr (page-dir-ptr-table-base-addr lin-addr (double-rewrite x86)))
     (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
-    (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+           (page-dir-ptr-table-entry-addr lin-addr page-dir-ptr-table-addr-base-addr))
+    (equal page-dir-ptr-table-entry (rm-low-64 page-dir-ptr-table-entry-addr (double-rewrite x86)))
 
-    ;; PML4TE is direct-mapped.
-    (direct-map-p
-     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
+    (disjoint-p (addr-range 8 pml4-table-entry-addr)
+                (addr-range 8 page-dir-ptr-table-entry-addr))
 
-    ;; PDPTE is direct-mapped.
-    (direct-map-p
-     8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-
-    ;; Physical addresses of PML4TE and PDPTE are disjoint. !!!
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth
-      1
-      (las-to-pas
-       8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    ;; write-addr maps to page-dir-ptr-table-entry-addr.
-    (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-
-    (disjoint-p
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r  (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
-
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r (double-rewrite x86))))
-
-    (equal (page-present page-dir-ptr-table-entry)
-           (page-present write-val))
-    (equal (page-read-write page-dir-ptr-table-entry)
-           (page-read-write write-val))
-    (equal (page-user-supervisor page-dir-ptr-table-entry)
-           (page-user-supervisor write-val))
-    (equal (page-execute-disable page-dir-ptr-table-entry)
-           (page-execute-disable write-val))
-    (equal (page-size page-dir-ptr-table-entry)
-           (page-size write-val))
-    (equal (page-size page-dir-ptr-table-entry) 1)
-    (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-           (part-select write-val :low 13 :high 29))
-
-    (unsigned-byte-p 64 write-val)
-    (canonical-address-p
-     (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
-    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
-    (canonical-address-p lin-addr)
-    (x86p x86))
-   (and
-    (equal (mv-nth 0 (ia32e-la-to-pa
-                      lin-addr :r (mv-nth 1 (wb 8 write-addr w write-val x86))))
-           nil)
-    (equal (mv-nth 1 (ia32e-la-to-pa
-                      lin-addr :r (mv-nth 1 (wb 8 write-addr w write-val x86))))
-           (logior
-            (loghead 30 lin-addr)
-            (ash (loghead 22 (logtail 30 write-val)) 30)))))
-  :hints
-  (("Goal"
-    :do-not-induct t
-    :in-theory (e/d*
-                (ia32e-la-to-pa-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
-                 wb
-                 pdpt-base-addr
-                 page-dir-ptr-table-entry-addr
-                 pml4-table-base-addr direct-map-p)
-                (member-p-canonical-address-listp
-                 subset-p
-                 mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                 unsigned-byte-p-of-combine-bytes
-                 acl2::loghead-identity
-                 mv-nth-0-las-to-pas-subset-p
-                 rewrite-rb-to-rb-alt
-                 page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                 bitops::logand-with-negated-bitmask
-                 (:meta acl2::mv-nth-cons-meta)
-                 not force (force))))))
-
-;; Now generalizing
-;; ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-;; to las-to-pas:
-
-(defthmd las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
-  ;; las-to-pas returns the physical addresses corresponding to linear
-  ;; addresses after the PDPTE corresponding to these linear addresses
-  ;; have been modified --- the new PDPTE is write-val.
-  (implies
-   (and
-    (64-bit-modep x86) ; added
-    (equal page-dir-ptr-table-entry-addr
-           (page-dir-ptr-table-entry-addr
-            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
-    (equal page-dir-ptr-table-entry
-           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    ;; PML4TE is direct-mapped.
-    (direct-map-p
-     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-     :r (double-rewrite x86))
-    (not
-     (mv-nth
-      0
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth
-      1
-      (las-to-pas
-       8
-       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-       :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8
-      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
-      (double-rewrite x86)))
-    ;; PDPTE is direct-mapped.
-    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
-
-    ;; Physical addresses of PML4TE and PDPTE are disjoint.
-    (disjoint-p$
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                           :r (double-rewrite x86))))
-
-    (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-           (addr-range 8 page-dir-ptr-table-entry-addr))
-
-    (disjoint-p
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
-
-    (not (mv-nth 0 (ia32e-la-to-pa lin-addr :r (double-rewrite x86))))
+    (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr :r (double-rewrite x86))))
 
     (equal (page-present page-dir-ptr-table-entry)
            (page-present write-val))
@@ -2130,59 +1611,52 @@
     (<= m *2^30*)
     (natp iteration)
     (equal (loghead 30 lin-addr) 0)
+    (not (app-view x86))
     (x86p x86))
    ;; las-to-pas returns the physical addresses corresponding to
    ;; linear addresses after the PDPTE corresponding to these linear
    ;; addresses have been modified --- the new PDPTE is write-val.
    (and
     (equal
-     (mv-nth 0 (las-to-pas-alt iteration m lin-addr :r
-                               (mv-nth 1 (wb 8 write-addr w write-val x86))))
+     (mv-nth 0 (las-to-pas-without-tlb iteration m lin-addr :r
+                                       (wm-low-64 page-dir-ptr-table-entry-addr write-val x86)))
      nil)
     (equal
-     (mv-nth 1 (las-to-pas-alt iteration m lin-addr :r
-                               (mv-nth 1 (wb 8 write-addr w write-val x86))))
+     (mv-nth 1 (las-to-pas-without-tlb iteration m lin-addr :r
+                                       (wm-low-64 page-dir-ptr-table-entry-addr write-val x86)))
      (addr-range
       (+ (- iteration) m)
       (+ iteration (ash (loghead 22 (logtail 30 write-val)) 30))))))
   :hints (("Goal"
-           :induct (las-to-pas-alt iteration m lin-addr :r
-                                   (mv-nth 1 (wb 8 write-addr w write-val x86)))
+           :expand ((:free (x) (las-to-pas-without-tlb iteration m lin-addr :r x)))
            :in-theory (e/d*
-                       (las-to-pas
-                        las-to-pas-alt
-                        ;; page-dir-ptr-table-entry-addr
+                       (las-to-pas-without-tlb
+                        disjoint-p-commutative
+                        64-bit-modep
+                        page-dir-ptr-table-entry-addr
                         pdpt-base-addr
                         open-mv-nth-1-las-to-pas-for-same-1G-page-general-1
                         open-mv-nth-0-las-to-pas-for-same-1G-page-general-1
                         open-mv-nth-0-las-to-pas-for-same-1G-page-general-2
-                        ia32e-la-to-pa-values-for-same-1G-page
-                        ia32e-la-to-pa-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-                        direct-map-p-and-wb-disjoint-from-xlation-governing-addrs)
-                       (acl2::loghead-identity
-                        acl2::zip-open
-                        member-p-addr-range
-                        not-member-p-addr-range
-                        mv-nth-0-las-to-pas-subset-p
-                        unsigned-byte-p-of-combine-bytes
-                        rewrite-rb-to-rb-alt
-                        mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
-                        member-p-canonical-address-listp
-                        pml4-table-entry-addr-to-c-program-optimized-form
-                        adding-7-to-pml4-table-entry-addr
-                        rb-wb-disjoint-in-sys-view
-                        ia32e-la-to-pa-values-and-mv-nth-1-wb-disjoint-from-xlation-gov-addrs
-                        car-mv-nth-1-las-to-pas
-                        mv-nth-1-las-to-pas-subset-p
-                        page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                        bitops::logand-with-negated-bitmask
-                        force (force)
-                        not)))))
+                        ia32e-la-to-pa-without-tlb-values-for-same-1G-page
+                        ia32e-la-to-pa-without-tlb-values-1G-pages-and-write-to-page-dir-ptr-table-entry-addr
+                        xlation-governing-entries-paddrs-for-same-1G-page)
+                       (page-dir-ptr-table-entry-addr-to-c-program-optimized-form)))))
 
-(defthm las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
-  ;; las-to-pas returns the physical addresses corresponding to linear
-  ;; addresses after the PDPTE corresponding to these linear addresses
-  ;; have been modified --- the new PDPTE is write-val.
+(defthmd read-from-physical-memory-unwrap
+         (implies (and (not (app-view x86))
+                       (physical-address-p addr)
+                       (x86p x86))
+                  (equal (read-from-physical-memory (addr-range 8 addr) x86)
+                         (rm-low-64 addr x86)))
+         :hints (("Goal"
+                  :use (:instance rewrite-read-from-physical-memory-to-rm-low-64
+                                  (p-addrs (addr-range 8 addr))
+                                  (index addr)))))
+
+(local (in-theory (enable read-from-physical-memory-unwrap)))
+
+(defthmd las-to-pas-values-for-same-1G-page-virt-mem-pt-accesses
   (implies
    (and
     (64-bit-modep x86) ; added
@@ -2192,7 +1666,6 @@
     (equal page-dir-ptr-table-entry
            (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
 
-    ;; PML4TE is direct-mapped.
     (direct-map-p
      8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
      :r (double-rewrite x86))
@@ -2215,75 +1688,73 @@
       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
       (double-rewrite x86)))
 
-    ;; PDPTE is direct-mapped.
     (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
-    (not (mv-nth 0 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
     (disjoint-p$
      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
      (all-xlation-governing-entries-paddrs
-      8 page-dir-ptr-table-entry-addr
-      (double-rewrite x86)))
-
-    ;; Physical addresses of PML4TE and PDPTE are disjoint.
+      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
     (disjoint-p$
      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
-                           :r (double-rewrite x86))))
-
-    (equal (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
-           (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
-
-    (disjoint-p
-     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
-     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas
+                8
+                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                :r (double-rewrite x86))))
 
     (not (mv-nth 0 (las-to-pas *2^30* lin-addr :r (double-rewrite x86))))
 
-    (equal (page-present page-dir-ptr-table-entry)
-           (page-present write-val))
-    (equal (page-read-write page-dir-ptr-table-entry)
-           (page-read-write write-val))
-    (equal (page-user-supervisor page-dir-ptr-table-entry)
-           (page-user-supervisor write-val))
-    (equal (page-execute-disable page-dir-ptr-table-entry)
-           (page-execute-disable write-val))
-    (equal (page-size page-dir-ptr-table-entry)
-           (page-size write-val))
     (equal (page-size page-dir-ptr-table-entry) 1)
-    (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
-           (part-select write-val :low 13 :high 29))
-
-    (unsigned-byte-p 64 write-val)
+    (tlb-consistent-n *2^30* lin-addr :r x86)
     (canonical-address-p
      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
     (not (app-view x86))
     (x86p x86))
    (and
-    (equal (mv-nth 0 (las-to-pas *2^30* lin-addr :r
-                                 (mv-nth 1 (wb 8 write-addr w write-val x86))))
-           nil)
-    (equal (mv-nth 1 (las-to-pas *2^30* lin-addr :r
-                                 (mv-nth 1 (wb 8 write-addr w write-val x86))))
-           (addr-range *2^30* (ash (loghead 22 (logtail 30 write-val)) 30)))))
+    (equal (mv-nth 0 (las-to-pas *2^30* lin-addr :r x86)) nil)
+    (equal (mv-nth 1 (las-to-pas *2^30* lin-addr :r x86))
+           (addr-range
+            *2^30*
+            (ash
+              (loghead 22
+                       (logtail 30
+                                (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr
+                                              :r (double-rewrite x86)))))
+              30)))))
   :hints (("Goal"
-           :do-not '(preprocess)
-           :do-not-induct t
-           :use ((:instance las-to-pas-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr-general
-                            (m *2^30*)
-                            (iteration 0))
-                 (:instance open-mv-nth-1-las-to-pas-for-same-1G-page-general-2))
-           :in-theory (e/d* (las-to-pas-alt-is-las-to-pas
-                             direct-map-p)
-                            (mv-nth-0-las-to-pas-subset-p
-                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form
-                             bitops::logand-with-negated-bitmask
-                             force (force)
-                             not)))))
+           :in-theory (e/d* (las-to-pas-values-for-same-1G-page rb direct-map-p pml4-table-entry-addr
+                             64-bit-modep disjoint-p-commutative disjoint-p$)
+                            (;; ACL2 tries to execute addr-range, which overflows the stack
+                             ;; since it attempts to recurse 2^30 times. I'm kind of surprised
+                             ;; that we don't run into this issue anywhere else given this
+                             ;; rune is enabled
+                             (:executable-counterpart addr-range)
+                             page-dir-ptr-table-entry-addr-to-c-program-optimized-form)))))
 
-(defthm rb-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+(local (defthm wb-unwrap
+               (implies (and (equal (mv-nth 1 (las-to-pas 8 vaddr :w x86))
+                                    (mv-nth 1 (las-to-pas 8 vaddr2 r-w-x x86)))
+                             (direct-map-p 8 vaddr2 r-w-x x86)
+                             (not (app-view x86)))
+                        (equal (mv-nth 1 (wb 8 vaddr w val x86))
+                               (wm-low-64 vaddr2
+                                          val
+                                          (mv-nth 2 (las-to-pas 8 vaddr :w x86)))))
+               :hints (("Goal"
+                        :in-theory (e/d (wb
+                                         direct-map-p
+                                         rewrite-wm-low-64-to-write-to-physical-memory)
+                                        (addr-range))))))
+
+(defthm read-from-physical-memory-wm-low-64-disjoint
+        (implies (disjoint-p paddrs
+                             (addr-range 8 x))
+                 (equal (read-from-physical-memory paddrs (wm-low-64 x val x86))
+                        (read-from-physical-memory paddrs x86))))
+
+(defthm all-xlation-governing-entries-paddrs-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
   (implies
    (and
     (64-bit-modep x86) ; added
@@ -2334,8 +1805,253 @@
     (disjoint-p
      (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
      (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+    (disjoint-p
+     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))) :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
 
-    (not (mv-nth 0 (las-to-pas *2^30* lin-addr :r (double-rewrite x86))))
+    (not (mv-nth 0 (las-to-pas-without-tlb 0 *2^30* lin-addr :r (double-rewrite x86))))
+
+    (disjoint-p$
+     (addr-range *2^30* (ash (loghead 22 (logtail 30 write-val)) 30))
+     (open-qword-paddr-list
+      (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+
+    (equal (page-present page-dir-ptr-table-entry)
+           (page-present write-val))
+    (equal (page-read-write page-dir-ptr-table-entry)
+           (page-read-write write-val))
+    (equal (page-user-supervisor page-dir-ptr-table-entry)
+           (page-user-supervisor write-val))
+    (equal (page-execute-disable page-dir-ptr-table-entry)
+           (page-execute-disable write-val))
+    (equal (page-size page-dir-ptr-table-entry)
+           (page-size write-val))
+    (equal (page-size page-dir-ptr-table-entry) 1)
+    (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+           (part-select write-val :low 13 :high 29))
+    (unsigned-byte-p 64 write-val)
+    (canonical-address-p write-addr)
+    (canonical-address-p (+ 7 write-addr))
+    (canonical-address-p
+      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    (canonical-address-p lin-addr)
+    (equal (loghead 30 lin-addr) 0)
+    (not (app-view x86))
+    (x86p x86))
+   (equal
+    (all-xlation-governing-entries-paddrs
+     *2^30* lin-addr (mv-nth 1 (wb 8 write-addr w write-val x86)))
+    (all-xlation-governing-entries-paddrs
+     *2^30* lin-addr (double-rewrite x86))))
+  :hints (("Goal"
+           :do-not-induct t
+           :do-not '(preprocess)
+           :in-theory (e/d* (rb direct-map-p pml4-table-entry-addr las-to-pas 64-bit-modep disjoint-p$ disjoint-p-commutative)
+                            (disjoint-p
+                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                              disjoint-p-all-xlation-governing-entries-paddrs-subset-p
+                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
+                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
+                              gl::conds-match-and-no-duplicate-conds
+                              rb-returns-no-error-app-view
+                              (:linear size-of-read-from-physical-memory)
+                              subset-p
+                              mv-nth-0-las-to-pas-subset-p
+                              member-p
+                              disjoint-p-subset-p
+                              mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+                              member-p-canonical-address-listp
+                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                              bitops::logand-with-negated-bitmask
+                              force (force)
+                              not)))))
+
+(defthm las-to-pas-without-tlb-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+  ;; las-to-pas-without-tlb returns the physical addresses corresponding to
+  ;; linear addresses after the PDPTE corresponding to these linear addresses
+  ;; have been modified and the tlb has been cleared --- the new PDPTE is
+  ;; write-val.
+  (implies
+   (and
+    (64-bit-modep x86) ; added
+    (equal page-dir-ptr-table-entry-addr
+           (page-dir-ptr-table-entry-addr
+            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
+    (equal page-dir-ptr-table-entry
+           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+
+    (direct-map-p
+     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+     :r (double-rewrite x86))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       8
+       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+       :r (double-rewrite x86))))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       8
+       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+       :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs
+      8
+      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+      (double-rewrite x86)))
+
+    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs
+      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas
+                8
+                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                :r (double-rewrite x86))))
+
+    (equal
+     (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+
+    (disjoint-p
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+    (disjoint-p
+     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))) :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+
+    (not (mv-nth 0 (las-to-pas-without-tlb 0 *2^30* lin-addr :r (double-rewrite x86))))
+
+    (disjoint-p$
+     (addr-range *2^30* (ash (loghead 22 (logtail 30 write-val)) 30))
+     (open-qword-paddr-list
+      (gather-all-paging-structure-qword-addresses (double-rewrite x86))))
+
+    (equal (page-present page-dir-ptr-table-entry)
+           (page-present write-val))
+    (equal (page-read-write page-dir-ptr-table-entry)
+           (page-read-write write-val))
+    (equal (page-user-supervisor page-dir-ptr-table-entry)
+           (page-user-supervisor write-val))
+    (equal (page-execute-disable page-dir-ptr-table-entry)
+           (page-execute-disable write-val))
+    (equal (page-size page-dir-ptr-table-entry)
+           (page-size write-val))
+    (equal (page-size page-dir-ptr-table-entry) 1)
+    (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
+           (part-select write-val :low 13 :high 29))
+    (unsigned-byte-p 64 write-val)
+    (canonical-address-p write-addr)
+    (canonical-address-p (+ 7 write-addr))
+    (canonical-address-p
+      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
+    (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
+    (canonical-address-p lin-addr)
+    (equal (loghead 30 lin-addr) 0)
+    (not (app-view x86))
+    (x86p x86))
+   ;; las-to-pas returns the physical addresses corresponding to
+   ;; linear addresses after the PDPTE corresponding to these linear
+   ;; addresses have been modified --- the new PDPTE is write-val.
+   (and
+     (equal
+       (mv-nth 0 (las-to-pas-without-tlb 0 *2^30* lin-addr :r
+                                         (mv-nth 1 (wb 8 write-addr w write-val x86))))
+       nil)
+     (equal
+       (mv-nth 1 (las-to-pas-without-tlb 0 *2^30* lin-addr :r
+                                         (mv-nth 1 (wb 8 write-addr w write-val x86))))
+       (addr-range
+         *2^30*
+         (ash (loghead 22 (logtail 30 write-val)) 30)))))
+  :hints (("Goal"
+           :do-not-induct t
+           :expand ((las-to-pas-without-tlb 0 *2^30* lin-addr :r x86))
+           :in-theory (e/d* (rb direct-map-p pml4-table-entry-addr las-to-pas 64-bit-modep disjoint-p$ disjoint-p-commutative
+                             las-to-pas-without-tlb-values-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr-general)
+                            (disjoint-p
+                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                              disjoint-p-all-xlation-governing-entries-paddrs-subset-p
+                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
+                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
+                              gl::conds-match-and-no-duplicate-conds
+                              rb-returns-no-error-app-view
+                              (:linear size-of-read-from-physical-memory)
+                              subset-p
+                              mv-nth-0-las-to-pas-subset-p
+                              member-p
+                              disjoint-p-subset-p
+                              mv-nth-0-ia32e-la-to-pa-member-of-mv-nth-1-las-to-pas-if-lin-addr-member-p
+                              member-p-canonical-address-listp
+                              page-dir-ptr-table-entry-addr-to-c-program-optimized-form
+                              bitops::logand-with-negated-bitmask
+                              force (force)
+                              not)))))
+
+(defthm rb-values-1G-pages-and-wb-to-page-dir-ptr-table-entry-addr
+  (implies
+   (and
+    (64-bit-modep x86) ; added
+    (equal page-dir-ptr-table-entry-addr
+           (page-dir-ptr-table-entry-addr
+            lin-addr (pdpt-base-addr lin-addr (double-rewrite x86))))
+    (equal page-dir-ptr-table-entry
+           (mv-nth 1 (rb 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+
+    (direct-map-p
+     8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+     :r (double-rewrite x86))
+    (not
+     (mv-nth
+      0
+      (las-to-pas
+       8
+       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+       :r (double-rewrite x86))))
+    (disjoint-p$
+     (mv-nth
+      1
+      (las-to-pas
+       8
+       (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+       :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs
+      8
+      (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))
+      (double-rewrite x86)))
+
+    (direct-map-p 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs
+      8 page-dir-ptr-table-entry-addr (double-rewrite x86)))
+    (disjoint-p$
+     (mv-nth 1 (las-to-pas
+                8
+                (pml4-table-entry-addr lin-addr (pml4-table-base-addr x86))
+                :r (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+
+    (equal
+     (mv-nth 1 (las-to-pas 8 write-addr :w (double-rewrite x86)))
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86))))
+
+    (disjoint-p
+     (mv-nth 1 (las-to-pas 8 page-dir-ptr-table-entry-addr :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+    (disjoint-p
+     (mv-nth 1 (las-to-pas 8 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86))) :r (double-rewrite x86)))
+     (all-xlation-governing-entries-paddrs 8 write-addr (double-rewrite x86)))
+
+    (not (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr :r (double-rewrite x86))))
 
     (disjoint-p$
      (addr-range *2^30* (ash (loghead 22 (logtail 30 write-val)) 30))
@@ -2359,11 +2075,13 @@
     (equal (page-size page-dir-ptr-table-entry) 1)
     (equal (part-select page-dir-ptr-table-entry :low 13 :high 29)
            (part-select write-val :low 13 :high 29))
+    (tlb-consistent-n *2^30* lin-addr :r (mv-nth 1 (wb 8 write-addr w write-val x86)))
     (unsigned-byte-p 64 write-val)
     (canonical-address-p write-addr)
     (canonical-address-p (+ 7 write-addr))
     (canonical-address-p
      (+ 7 (pml4-table-entry-addr lin-addr (pml4-table-base-addr (double-rewrite x86)))))
+    (canonical-address-p page-dir-ptr-table-entry-addr)
     (canonical-address-p (+ 7 page-dir-ptr-table-entry-addr))
     (canonical-address-p lin-addr)
     (equal (loghead 30 lin-addr) 0)
@@ -2378,12 +2096,14 @@
             (double-rewrite x86)))))
   :hints (("Goal"
            :do-not-induct t
-           :in-theory (e/d* (rb)
-                            (read-from-physical-memory
+           :in-theory (e/d* (las-to-pas-values-are-las-to-pas-without-tlb-when-tlb-consistent
+                             rb direct-map-p pml4-table-entry-addr las-to-pas 64-bit-modep
+                             las-to-pas-without-tlb-values-1G-pages-and-wm-low-64-to-page-dir-ptr-table-entry-addr-general)
+                            (disjoint-p
                              mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
                              disjoint-p-all-xlation-governing-entries-paddrs-subset-p
                              infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1
-                             ;; infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
+                             infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2
                              gl::conds-match-and-no-duplicate-conds
                              rb-returns-no-error-app-view
                              (:linear size-of-read-from-physical-memory)

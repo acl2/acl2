@@ -2167,6 +2167,16 @@
     :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
                                      ()))))
 
+  (defthm xlate-equiv-structures-and-xw-rflags
+    (implies (equal (rflagsBits->ac val)
+                    (rflagsBits->ac (xr :rflags nil x86)))
+             (xlate-equiv-structures (xw :rflags nil val x86)
+                                     (double-rewrite x86)))
+    :hints (("Goal" :in-theory (e/d* (rflagsBits->ac
+                                      rflagsBits-fix
+                                      gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                     ()))))
+
   (defthm xlate-equiv-structures-and-app-view-cong
     (implies (xlate-equiv-structures x86-1 x86-2)
              (equal (xr :app-view nil x86-1)
@@ -2199,7 +2209,17 @@
              (all-mem-except-paging-structures-equal x86-1 x86-2))
     :rule-classes :refinement)
 
-  (defcong xlate-equiv-memory equal (64-bit-modep x86) 1))
+  (defcong xlate-equiv-memory equal (64-bit-modep x86) 1)
+
+  (defthm xlate-equiv-memory-and-xw-rflags
+          (implies (and (equal (rflagsBits->ac val)
+                               (rflagsBits->ac (xr :rflags nil x86)))
+                        (64-bit-modep x86)
+                        (not (app-view x86)))
+                   (xlate-equiv-memory (xw :rflags nil val x86)
+                                       (double-rewrite x86)))
+          :hints (("Goal" :in-theory (e/d* (gather-all-paging-structure-qword-addresses-xw-fld!=mem-and-ctr)
+                                           ())))))
 
 ;; =====================================================================
 

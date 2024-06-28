@@ -167,6 +167,7 @@
 
 (define handle-faults (x86)
   :returns (x86 x86p :hyp (x86p x86))
+  :guard (fault x86)
   (b* ((flts (fault x86))
        ;; If there are no faults, we're done
        ((unless (consp flts)) x86)

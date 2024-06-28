@@ -728,6 +728,19 @@
                   (read-from-physical-memory p-addrs x86)))
   :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
+(defthm mv-nth-1-rb-and-mv-nth-2-ia32e-la-to-pa-in-non-marking-view
+  (implies (not (marking-view x86))
+           (equal (mv-nth 1 (rb n addr r-x
+                                (mv-nth 2 (ia32e-la-to-pa lin-addr r-w-x x86))))
+                  (mv-nth 1 (rb n addr r-x x86))))
+  :hints (("Goal" :in-theory (e/d* () (force (force))))))
+
+(defthm mv-nth-1-rb-and-mv-nth-2-las-to-pas-in-non-marking-view
+        (implies (not (marking-view x86))
+                 (equal (mv-nth 1 (rb n-r addr r-x
+                                      (mv-nth 2 (las-to-pas n lin-addr r-w-x x86))))
+                        (mv-nth 1 (rb n-r addr r-x x86))))
+        :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
 (defthmd rb-unwinding-thm-in-non-marking-view
   (implies (and (not (mv-nth 0 (rb n lin-addr r-w-x x86)))
@@ -966,6 +979,113 @@
            :in-theory (e/d* (all-xlation-governing-entries-paddrs)
                             (xlation-governing-entries-paddrs wb))
            :induct (all-xlation-governing-entries-paddrs n lin-addr x86))))
+
+(defthm x86-fetch-decode-execute-opener-in-non-marking-view
+        (implies
+          (and
+            ;; Start: binding hypotheses.
+            (equal start-rip (rip x86))
+            (equal four-vals-of-get-prefixes (get-prefixes #.*64-bit-mode* start-rip 0 0 15 x86))
+            (equal flg-get-prefixes (mv-nth 0 four-vals-of-get-prefixes))
+            (equal prefixes (mv-nth 1 four-vals-of-get-prefixes))
+            (equal rex-byte (mv-nth 2 four-vals-of-get-prefixes))
+            (equal x86-1 (mv-nth 3 four-vals-of-get-prefixes))
+
+            (equal opcode/vex/evex-byte (prefixes->nxt prefixes))
+            (equal prefix-length (prefixes->num prefixes))
+            (equal temp-rip0 (+ prefix-length start-rip 1))
+
+            ;; *** No VEX prefixes ***
+            (not (equal opcode/vex/evex-byte #.*vex3-byte0*))
+            (not (equal opcode/vex/evex-byte #.*vex2-byte0*))
+            ;; *** No EVEX prefixes ***
+            (not (equal opcode/vex/evex-byte #.*evex-byte0*))
+
+            (equal modr/m?
+                   (one-byte-opcode-ModR/M-p #.*64-bit-mode* opcode/vex/evex-byte))
+
+            ;; modr/m byte:
+            (equal three-vals-of-modr/m
+                   (if modr/m? (rml08 temp-rip0 :x x86-1) (mv nil 0 x86-1)))
+            (equal flg-modr/m (mv-nth 0 three-vals-of-modr/m))
+            (equal modr/m (mv-nth 1 three-vals-of-modr/m))
+            (equal x86-2 (mv-nth 2 three-vals-of-modr/m))
+
+            (equal temp-rip1 (if modr/m? (1+ temp-rip0) temp-rip0))
+            (equal sib? (and modr/m? (x86-decode-sib-p modr/m nil)))
+
+            ;; sib byte:
+            (equal three-vals-of-sib
+                   (if sib? (rml08 temp-rip1 :x x86-2) (mv nil 0 x86-2)))
+            (equal flg-sib (mv-nth 0 three-vals-of-sib))
+            (equal sib (mv-nth 1 three-vals-of-sib))
+            (equal x86-3 (mv-nth 2 three-vals-of-sib))
+
+            (equal temp-rip2 (if sib? (1+ temp-rip1) temp-rip1))
+            (equal x86-executed
+                   (one-byte-opcode-execute
+                     #.*64-bit-mode* start-rip temp-rip2 prefixes rex-byte
+                     opcode/vex/evex-byte modr/m sib x86-3))
+            ;; End: binding hypotheses.
+
+            (not (marking-view x86))
+            (64-bit-modep (double-rewrite x86))
+            (not (app-view x86))
+            (not (ms x86))
+            (not (fault x86))
+            (x86p x86)
+            (not (double-rewrite flg-get-prefixes))
+            (canonical-address-p temp-rip0)
+            (if modr/m?
+              (and (not (double-rewrite flg-modr/m))
+                   (canonical-address-p temp-rip1))
+              t)
+            (if sib?
+              (and (not (double-rewrite flg-sib))
+                   (canonical-address-p temp-rip2))
+              t)
+
+            ;; Ideally I'd prove that enable-peripherals and handle-exceptions are preserved by
+            ;; one-byte-opcode-execute and then only check them on the original x86, but
+            ;; that's probably going to be hard because one-byte-opcode-execute has tons
+            ;; of branching, so I'd expect it to split into some ridiculous number of cases
+            (not (enable-peripherals x86-executed))
+            (or (not (fault x86-executed))
+                (not (handle-exceptions x86-executed)))
+
+            ;; Print the rip and the first opcode byte of the instruction
+            ;; under consideration after all the non-trivial hyps (above) of
+            ;; this rule have been relieved:
+            (syntaxp (and (not (cw "~% [ x86instr @ rip: ~p0 ~%" start-rip))
+                          (not (cw "              op0: ~s0 ] ~%"
+                                   (str::hexify (unquote opcode/vex/evex-byte)))))))
+          (equal (x86-fetch-decode-execute x86)
+                 (if (set-interrupt-flag-next x86)
+                   (!rflags (!rflagsBits->intf
+                              1
+                              (rflags x86-executed))
+                            x86-executed)
+                   x86-executed)))
+        :hints
+        (("Goal"
+          :do-not '(preprocess)
+          :in-theory
+          (e/d (x86-fetch-decode-execute
+                 x86-operation-mode)
+               (one-byte-opcode-execute
+                 signed-byte-p
+                 not
+                 member-equal
+                 mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs
+                 remove-duplicates-equal
+                 combine-bytes
+                 byte-listp
+                 acl2::ash-0
+                 open-qword-paddr-list
+                 unsigned-byte-p-of-combine-bytes
+                 get-prefixes-opener-lemma-no-prefix-byte
+                 mv-nth-0-rb-and-mv-nth-0-las-to-pas-in-sys-view
+                 (force) force)))))
 
 ;; ======================================================================
 

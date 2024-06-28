@@ -67,7 +67,33 @@
                           (tlb-consistent lin-addr r-w-x x86)))
           :hints (("Goal" :in-theory (disable ia32e-la-to-pa-without-tlb-fixes-address))))
 
-  (local (in-theory (disable ia32e-la-to-pa tlb-consistent)))
+  (in-theory (disable ia32e-la-to-pa))
+
+  (defthm xw-maintains-tlb-consistent
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :tlb)))
+                   (equal (tlb-consistent lin-addr r-w-x
+                                          (xw fld idx val x86))
+                          (tlb-consistent lin-addr r-w-x x86))))
+
+  (defthm xw-rflags-not-ac-maintains-tlb-consistent
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags (double-rewrite x86))))
+                   (equal (tlb-consistent lin-addr r-w-x (xw :rflags nil value x86))
+                          (tlb-consistent lin-addr r-w-x x86))))
+
+  (defthm ia32e-la-to-pa-without-tlb-maintains-tlb-consistency
+          (implies (tlb-consistent lin-addr r-w-x x86)
+                   (tlb-consistent lin-addr r-w-x
+                                   (mv-nth 2 (ia32e-la-to-pa-without-tlb in-addr2 r-w-x2 x86)))))
+
+  (local (in-theory (disable tlb-consistent)))
 
   (defthm las-to-pas-maintains-tlb-consistency
           (implies (tlb-consistent lin-addr r-w-x x86)
@@ -170,8 +196,7 @@
                    (tlb-consistent-n n lin-addr r-w-x
                                    (mv-nth 2 (las-to-pas n2 lin-addr2 r-w-x2 x86))))
           :hints (("Goal" :in-theory (enable tlb-consistent-n)
-                          :induct (tlb-consistent-n n lin-addr r-w-x x86)
-                   )))
+                          :induct (tlb-consistent-n n lin-addr r-w-x x86))))
 
   (defthm write-to-physical-memory-maintains-tlb-consistent-n
           (implies (and (disjoint-p
@@ -182,6 +207,16 @@
                                    (write-to-physical-memory p-addrs value x86)))
           :hints (("Goal" :in-theory (enable disjoint-p write-to-physical-memory))))
 
+  (defthm wm-low-64-maintains-tlb-consistent-n
+          (implies (and (disjoint-p
+                          (addr-range 8 addr)
+                          (all-xlation-governing-entries-paddrs n (logext 48 lin-addr) (double-rewrite x86)))
+                        (not (app-view x86))
+                        (tlb-consistent-n n lin-addr r-w-x x86))
+                   (tlb-consistent-n n lin-addr r-w-x
+                                   (wm-low-64 addr value x86)))
+          :hints (("Goal" :in-theory (enable disjoint-p rewrite-wm-low-64-to-write-to-physical-memory))))
+
   (defthm wb-maintains-tlb-consistent-n
           (implies (and (not (app-view x86))
                         (disjoint-p
@@ -190,4 +225,28 @@
                         (tlb-consistent-n n lin-addr r-w-x x86))
                    (tlb-consistent-n n lin-addr r-w-x
                                    (mv-nth 1 (wb n-w write-addr w value x86))))
-          :hints (("Goal" :in-theory (enable wb)))))
+          :hints (("Goal" :in-theory (enable wb))))
+
+  (defthm ia32e-la-to-pa-without-tlb-maintains-tlb-consistent-n
+          (implies (tlb-consistent-n n lin-addr r-w-x x86)
+                   (tlb-consistent-n n lin-addr r-w-x
+                                     (mv-nth 2 (ia32e-la-to-pa-without-tlb in-addr2 r-w-x2 x86)))))
+
+  (defthm xw-maintains-tlb-consistent-n
+          (implies (and (not (equal fld :mem))
+                        (not (equal fld :rflags))
+                        (not (equal fld :fault))
+                        (not (equal fld :ctr))
+                        (not (equal fld :msr))
+                        (not (equal fld :seg-visible))
+                        (not (equal fld :app-view))
+                        (not (equal fld :tlb)))
+                   (equal (tlb-consistent-n n lin-addr r-w-x
+                                            (xw fld idx val x86))
+                          (tlb-consistent-n n lin-addr r-w-x x86))))
+
+  (defthm xw-rflags-not-ac-maintains-tlb-consistent-n
+          (implies (equal (rflagsBits->ac value)
+                          (rflagsBits->ac (rflags (double-rewrite x86))))
+                   (equal (tlb-consistent-n n lin-addr r-w-x (xw :rflags nil value x86))
+                          (tlb-consistent-n n lin-addr r-w-x x86)))))

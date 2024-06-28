@@ -59,11 +59,18 @@
   (and
    ;; The x86 state is well-formed.
    (x86p x86)
+   ;; We will not set the interrupt flag after
+   ;; executing the next instruction
+   (not (set-interrupt-flag-next x86))
    ;; The model is operating in 64-bit mode.
    (64-bit-modep x86)
    ;; The model is operating in the system-level marking view.
    (not (app-view x86))
    (marking-view x86)
+   ;; We have a consistent tlb for the program memory
+   (tlb-consistent-n (len *program*) (rip x86) :x x86)
+   ;; The peripherals are disabled
+   (not (enable-peripherals x86))
    ;; The program is located at linear addresses ranging from (rip
    ;; x86) to (+ -1 (len *program*) (rip x86)).
    (program-at (rip x86) *program* x86)
