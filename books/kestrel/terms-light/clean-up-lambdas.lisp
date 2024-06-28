@@ -33,6 +33,12 @@
 
 (local (in-theory (disable reverse all-vars)))
 
+;; also in books/std/typed-lists/pseudo-term-listp
+(local
+ (defthmd pseudo-term-listp-when-symbol-listp
+   (implies (symbol-listp syms)
+            (pseudo-term-listp syms))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Gets rid of lambda formals not used in the corresponding lambda bodies, and
@@ -71,12 +77,6 @@
            (drop-unused-lambda-bindings-lst (rest terms))))))
 
 (make-flag drop-unused-lambda-bindings)
-
-;; also in books/std/typed-lists/pseudo-term-listp
-(local
- (defthmd pseudo-term-listp-when-symbol-listp
-   (implies (symbol-listp syms)
-            (pseudo-term-listp syms))))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm pseudo-termp-of-drop-unused-lambda-bindings
