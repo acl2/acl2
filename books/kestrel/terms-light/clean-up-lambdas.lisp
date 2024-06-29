@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; TODO: rename this book
+
 ;; See also remove-guard-holders-and-clean-up-lambdas and remove-guard-holders-weak.
 
 ;; TODO: Also handle the case where the lambda body is just a var (one of the
@@ -73,8 +75,9 @@
    (declare (xargs :guard (pseudo-term-listp terms)))
    (if (endp terms)
        nil
-     (cons (drop-unused-lambda-bindings (first terms))
-           (drop-unused-lambda-bindings-lst (rest terms))))))
+     (cons-with-hint (drop-unused-lambda-bindings (first terms))
+                     (drop-unused-lambda-bindings-lst (rest terms))
+                     terms))))
 
 (make-flag drop-unused-lambda-bindings)
 
