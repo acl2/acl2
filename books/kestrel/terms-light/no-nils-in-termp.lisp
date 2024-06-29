@@ -72,6 +72,13 @@
   :hints (("Goal" :in-theory (enable no-nils-in-termsp
                                      remove-equal))))
 
+(defthm no-nils-in-termsp-of-take
+  (implies (no-nils-in-termsp terms)
+           (equal (no-nils-in-termsp (take n terms))
+                  (<= (nfix n) (len terms))))
+  :hints (("Goal" :in-theory (enable no-nils-in-termsp
+                                     take))))
+
 (defthm no-nils-in-termsp-of-union-equal
   (equal (no-nils-in-termsp (union-equal terms1 terms2))
          (and (no-nils-in-termsp terms1)
@@ -97,7 +104,7 @@
               (no-nils-in-termsp terms2)))
   :hints (("Goal" :in-theory (enable append))))
 
-(make-flag no-nils-in-termp)
+(local (make-flag no-nils-in-termp))
 
 ;; Just use no-nils-in-termsp-when-symbol-listp
 ;; (defthm-flag-no-nils-in-termp
@@ -111,3 +118,46 @@
 ;;     :flag no-nils-in-termsp)
 ;;   :hints (("Goal" :expand (free-vars-in-terms terms)
 ;;            :in-theory (enable free-vars-in-term no-nils-in-termsp))))
+
+(local
+ (defthm-flag-no-nils-in-termp
+   (defthm no-nils-in-termp-when-termp
+     (implies (termp term w)
+              (no-nils-in-termp term))
+     :flag no-nils-in-termp)
+   (defthm no-nils-in-termsp-when-term-listp
+     (implies (term-listp terms w)
+              (no-nils-in-termsp terms))
+     :flag no-nils-in-termsp)
+   :hints (("Goal" :expand (free-vars-in-terms terms)
+            :in-theory (enable free-vars-in-term no-nils-in-termsp)))))
+
+;; Sanity check: termp implies no-nils-in-termp
+;; redundant and non-local
+(defthm no-nils-in-termp-when-termp
+  (implies (termp term w)
+           (no-nils-in-termp term)))
+
+;; redundant and non-local
+(defthm no-nils-in-termsp-when-term-listp
+  (implies (term-listp terms w)
+           (no-nils-in-termsp terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Sanity check: logic-termp implies no-nils-in-termp
+(defthm no-nils-in-termp-when-logic-termp
+  (implies (logic-termp term w)
+           (no-nils-in-termp term)))
+
+(defthm no-nils-in-termsp-when-logic-term-listp
+  (implies (logic-term-listp terms w)
+           (no-nils-in-termsp terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm no-nils-in-termp-of-cdr-of-assoc-equal
+  (implies (and (no-nils-in-termsp (strip-cdrs alist))
+                (assoc-equal term alist))
+           (no-nils-in-termp (cdr (assoc-equal term alist))))
+  :hints (("Goal" :in-theory (enable assoc-equal strip-cdrs))))

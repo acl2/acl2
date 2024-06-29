@@ -13,6 +13,11 @@
 ;; See also make-lambda-term-simple.
 ;; See proof of correctness in make-lambda-application-simple-proof.lisp
 
+;; This does the following to the lambda:
+;; 1. Remove any bindings of variables not free in the body.
+;; 2. Add bindings of any additional free vars in the body, to ensure the lambda is closed.
+;; 3. Replace a trivial lambda (all vars bound to themselves) with its body.
+
 (include-book "free-vars-in-term")
 (include-book "filter-formals-and-actuals")
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -37,9 +42,9 @@
       (filter-formals-and-actuals formals actuals free-vars)
       (if (equal reduced-formals reduced-actuals) ; also handles the case where reduced-formals is empty
           body ; no need to make a lambda at all (it would be trivial)
-        ;; Binds the formals to their actuals and the any extra-vars to themselves:
-        (let* (;; These have to be added to ensure the lambda is closed:
-               (extra-vars (set-difference-eq free-vars formals))
+        ;; Binds the formals to their actuals and any extra-vars to themselves
+        ;; (extra vars ensure the lambda is closed):
+        (let* ((extra-vars (set-difference-eq free-vars formals))
                (new-formals (append reduced-formals extra-vars))
                (new-actuals (append reduced-actuals extra-vars)))
           `((lambda ,new-formals ,body) ,@new-actuals))))))

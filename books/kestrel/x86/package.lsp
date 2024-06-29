@@ -192,6 +192,23 @@
     x86isa::rol-spec-32
     x86isa::rol-spec-64
 
+    x86isa::mul-spec$inline
+    x86isa::mul-spec-8
+    x86isa::mul-spec-16
+    x86isa::mul-spec-32
+    x86isa::mul-spec-64
+
+    x86isa::imul-spec$inline
+    x86isa::imul-spec-8
+    x86isa::imul-spec-16
+    x86isa::imul-spec-32
+    x86isa::imul-spec-64
+
+    x86isa::idiv-spec-8
+    x86isa::idiv-spec-16
+    x86isa::idiv-spec-32
+    x86isa::idiv-spec-64
+
     ;; do we want to include stuff like this?
     x86isa::x86-one-byte-opcode-modr/m-p$inline
 
@@ -645,6 +662,9 @@
 
     ;; axe-syntaxp and axe-bind-free functions:
     bind-bv-size-axe
+
+    syntactic-call-of
+    term-should-be-trimmed-axe
     heavier-dag-term
 
     prove-equivalence

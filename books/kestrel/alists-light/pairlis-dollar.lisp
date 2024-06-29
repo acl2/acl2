@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function pairlis$
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,6 +25,12 @@
          (symbol-listp (true-list-fix x)))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
+;; Also in strip-cars.lisp.
+(defthm strip-cars-of-pairlis$
+  (equal (strip-cars (pairlis$ x y))
+         (true-list-fix x))
+  :hints (("Goal" :in-theory (enable pairlis$))))
+
 ;see also a version in books/std/alists/strip-cdrs.lisp
 (defthm strip-cdrs-of-pairlis$2
   (implies (and (true-listp y)
@@ -33,8 +39,9 @@
                   y))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
+;; Also in strip-cdrs.lisp.
 ;; this introduces take, which may not always be desirable
-(defthm strip-cdrs-of-pairlis$-gen
+(defthm strip-cdrs-of-pairlis$
   (equal (strip-cdrs (pairlis$ x y))
          (take (len x) y))
   :hints (("Goal" :in-theory (enable pairlis$ take))))

@@ -42,6 +42,7 @@
                           :verify-guards nil ;done below
                           ))
           (cond ((variablep term)
+                 ;; todo: can we do something faster when we know all the vars are bound?:
                  (maybe-replace-var term alist))
                 ((fquotep term) term)
                 (t (let ((fn (ffn-symb term)))

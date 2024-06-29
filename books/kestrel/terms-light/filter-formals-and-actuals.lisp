@@ -52,3 +52,13 @@
   (equal (len (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep)))
          (len (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+(defthm subsetp-equal-of-mv-nth-0-of-filter-formals-and-actuals
+  (subsetp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals vars)) formals)
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
+
+;; strong
+(defthm mv-nth-0-of-filter-formals-and-actuals
+  (equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))
+         (intersection-equal formals formals-to-keep))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
