@@ -265,7 +265,7 @@
                             new-lambda-body))
                   (vars-in-result (free-vars-in-term result)))
              (progn$
-              (and print
+              (and vars-to-drop print
                    (cw "Removing unnecessary lambda vars: ~x3.~%Lambda vars: ~x0~%Body: ~x1~%Args: ~x2~%Result: ~x4~%~%" vars lambda-body args vars-to-drop result))
               (and (or (not (subsetp-eq vars-in-term vars-in-result))
                        (not (subsetp-eq vars-in-result vars-in-term)))
