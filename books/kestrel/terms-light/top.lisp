@@ -76,3 +76,4 @@
 (include-book "clean-up-lambdas-proofs")
 (include-book "substitute-constants-in-lambdas")
 (include-book "substitute-constants-in-lambdas-proofs")
+(include-book "simplify-lambdas")
