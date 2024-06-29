@@ -1,6 +1,6 @@
 ; Proofs about sublis-var-simple
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -142,24 +142,24 @@
                             set-difference-equal
                             empty-eval-of-fncall-args-back)))))
 
+;; Requires the alist to cover all the free vars
 (defthm-flag-sublis-var-simple
   (defthm sublis-var-simple-correct2
-    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+    (implies (and (subsetp-equal (free-vars-in-term term) (strip-cars alist)) ; this case
+                  (symbol-alistp alist) ; usually a symbol-term-alistp
                   (pseudo-term-listp (strip-cdrs alist))
                   (pseudo-termp term)
-                  (not (member-equal nil (free-vars-in-term term)))
-                  (subsetp-equal (free-vars-in-term term) (strip-cars alist))
-                  )
+                  (not (member-equal nil (free-vars-in-term term))))
              (equal (empty-eval (sublis-var-simple alist term) a)
                     (empty-eval term (pairlis$ (strip-cars alist)
                                                 (empty-eval-list (strip-cdrs alist) a)))))
     :flag sublis-var-simple)
   (defthm sublis-var-simple-lst-correct2
-    (implies (and (symbol-alistp alist) ; usually a symbol-term-alistp
+    (implies (and (subsetp-equal (free-vars-in-terms terms) (strip-cars alist)) ; this case
+                  (symbol-alistp alist) ; usually a symbol-term-alistp
                   (pseudo-term-listp (strip-cdrs alist))
                   (pseudo-term-listp terms)
-                  (not (member-equal nil (free-vars-in-terms terms)))
-                  (subsetp-equal (free-vars-in-terms terms) (strip-cars alist)))
+                  (not (member-equal nil (free-vars-in-terms terms))))
              (equal (empty-eval-list (sublis-var-simple-lst alist terms) a)
                     (empty-eval-list terms
                                       (pairlis$ (strip-cars alist)

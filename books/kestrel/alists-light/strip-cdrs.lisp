@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function strip-cdrs.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -73,11 +73,11 @@
                   (true-list-fix y)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
+;; Also in pairlis-dollar.lisp
 ;compatible with std
 (defthm strip-cdrs-of-pairlis$
   (equal (strip-cdrs (pairlis$ x y))
-         (take (len x)
-               y))
+         (take (len x) y))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
 (defthm strip-cdrs-of-revappend

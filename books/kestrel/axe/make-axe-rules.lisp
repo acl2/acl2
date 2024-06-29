@@ -16,7 +16,8 @@
 (include-book "kestrel/utilities/world" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system)
 ;(include-book "../utilities/basic")
-(include-book "kestrel/terms-light/clean-up-lambdas" :dir :system) ; for drop-unused-lambda-bindings
+;(include-book "kestrel/terms-light/clean-up-lambdas" :dir :system) ; for drop-unused-lambda-bindings
+(include-book "kestrel/terms-light/simplify-lambdas" :dir :system)
 (include-book "kestrel/utilities/conjunctions" :dir :system)
 (include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
@@ -1423,7 +1424,7 @@
                 ;; faster to open functions defined using MBE:
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
-                (body (drop-unused-lambda-bindings body))
+                (body (simplify-lambdas body))
                 (clique (true-list-fix ; drop?
                           (recursivep rule-name nil wrld))) ; todo: consider :definition rules and the flg option here
                 (body-fns (all-fnnames body))
