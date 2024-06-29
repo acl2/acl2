@@ -541,6 +541,35 @@
 
     x86isa::zmmi
     x86isa::!zmmi
+
+    x86isa::x86-illegal-instruction
+    x86isa::x86-step-unimplemented
+    x86isa::feature-flags
+
+    x86isa::modr/m->reg$inline
+
+    x86isa::n64$inline
+    x86isa::n32$inline
+    x86isa::n16$inline
+    x86isa::n08$inline
+
+    ;; more like this:
+    x86isa::prefixes->lck$inline
+    x86isa::prefixes->adr$inline
+    x86isa::prefixes->opr$inline
+
+    ;; more like this:
+    x86isa::!prefixes->nxt$inline
+
+    x86isa::code-segment-descriptor-attributesbits->d$inline
+
+    x86isa::rime-size-opt-error
+
+    x86isa::rime-size$inline
+    x86isa::rr32$inline
+    x86isa::reg-index$inline
+
+    acl2::__function__
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -600,6 +629,10 @@
     rightrotate
     leftrotate32
     rightrotate32
+
+    acl2::binary-logand
+    acl2::binary-logxor
+    acl2::binary-logior
 
     unsigned-byte-p-forced
 
@@ -733,7 +766,10 @@
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
   '(bitops::part-install-width-low$inline
+    bitops::part-select-width-low$inline
     b-xor ; from ihs, via bitops
+    acl2::logbit$inline ; really from ihs
+    acl2::b-xor$inline
     ))
 
 ;; Ideally, these would all be rewritten away
@@ -797,10 +833,24 @@
     x86isa::rex-byte
     x86isa::prefixes
     x86isa::start-rip
+    x86isa::temp-rip
     x86isa::rex?
+    x86isa::lin-addr
+    x86isa::r-x
+    x86isa::7+lin-addr
+    x86isa::modr/m
+    x86isa::fault-var
+    x86isa::mandatory-prefix
+    x86isa::cs-attr
 
-    ;; more like this:
-    x86isa::!prefixes->nxt$inline))
+    x86isa::ignore-p3-64?
+    x86isa::p3?
+    x86isa::cs.d
+    x86isa::ignore-rex?
+    x86isa::imm?
+    x86isa::flg0
+    x86isa::dword
+))
 
 ;; TODO: Think about this...
 (defconst *common-acl2-formals*
