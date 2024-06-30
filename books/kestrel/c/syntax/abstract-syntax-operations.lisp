@@ -318,6 +318,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-amb?-decl/stmt
+  :short "An irrelevant possibly ambiguous declaration or statement."
+  :type amb?-decl/stmt-p
+  :body (amb?-decl/stmt-stmt (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp
