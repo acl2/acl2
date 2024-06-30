@@ -1860,7 +1860,7 @@
         (cond
          ((not char2) ; L EOF
           (retok (isuffix-l (lsuffix-upcase-l)) pos pstate))
-         ((= char2 (char-code #\l)) ; L L
+         ((= char2 (char-code #\L)) ; L L
           (b* (((erp char3 pos3 pstate) (read-char pstate)))
             (cond
              ((not char3) ; L L EOF
