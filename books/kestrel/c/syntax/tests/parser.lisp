@@ -435,23 +435,28 @@
 
 (test-lex
  lex-hexadecimal-digit
- "0")
+ "0"
+ :cond (equal ast #\0))
 
 (test-lex
  lex-hexadecimal-digit
- "1")
+ "1"
+ :cond (equal ast #\1))
 
 (test-lex
  lex-hexadecimal-digit
- "8")
+ "8"
+ :cond (equal ast #\8))
 
 (test-lex
  lex-hexadecimal-digit
- "A")
+ "A"
+ :cond (equal ast #\A))
 
 (test-lex
  lex-hexadecimal-digit
- "b")
+ "b"
+ :cond (equal ast #\b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
