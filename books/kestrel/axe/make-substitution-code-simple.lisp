@@ -75,6 +75,7 @@
                                     ;; (cw "sub: Failed to apply ~x0 to constant args (er:~x1,ifns:~x2).~%" fn erp (strip-cars interpreted-function-alist) ;(len interpreted-function-alist))
                                     (cons fn args))
                                  (enquote res)))
+                           ;; No special treatment for lambda (does not touch the lambda body):
                            (cons fn args))))))))
 
         ;; Returns (mv ground-termp args).

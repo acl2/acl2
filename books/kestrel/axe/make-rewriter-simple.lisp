@@ -797,7 +797,7 @@
                                                        (cw "))~%"))))
                                         (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array))))))))))))))
 
-        ;; Returns (mv erp instantiated-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array).
+        ;; Returns (mv erp instantiated-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array) where rhs-or-nil is (if not nil) an axe-tree representing the instantiated RHS.
         (defund ,try-to-apply-rules-name (stored-rules ;the list of rules for the fn in question
                                           args-to-match
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits

@@ -497,6 +497,58 @@
                   (read n base-addr x86)))
   :hints (("Goal" :in-theory (enable rb))))
 
+(defthm x86isa::las-to-pas-when-zp
+  (implies (zp n)
+           (equal (x86isa::las-to-pas n lin-addr x86isa::r-w-x x86)
+                  (mv nil nil x86)))
+  :hints (("Goal" :in-theory (enable x86isa::las-to-pas))))
+
+(defthm rb-when-zp
+  (implies (zp n)
+           (equal (rb n addr r-x x86)
+                  (mv nil 0 x86)))
+  :hints (("Goal" :in-theory (enable rb rb-1))))
+
+(local (include-book "kestrel/lists-light/cons" :dir :system))
+
+(local
+ (defthm len-of-rb
+   (equal (len (rb n addr r-x x86))
+          3)
+   :hints (("Goal" :in-theory (enable rb rb-1)))))
+
+;; could try enabled
+(defthmd rb-becomes-read
+  (implies (and (canonical-address-p addr)
+                (implies (posp n) (canonical-address-p (+ -1 n addr)))
+                (app-view x86)
+                (x86p x86))
+           (equal (rb n addr r-x x86)
+                  (list nil
+                        (read n addr x86)
+                        x86)))
+  :hints (("Goal" :use (len-of-rb
+                        (:instance mv-nth-1-of-rb-becomes-read (base-addr addr))
+                        (:instance x86isa::rb-returns-no-error-app-view (x86isa::addr addr))
+                        (:instance x86isa::rb-returns-x86-app-view (x86isa::addr addr)))
+           :expand ((mv-nth 1 (rb n addr r-x x86))
+                    (mv-nth 2 (rb n addr r-x x86))
+                    (mv-nth 1 (cdr (rb n addr r-x x86)))
+                    (len (rb n addr r-x x86)))
+           :in-theory (e/d (;rb ;rb-1
+                            mv-nth
+                            len
+                            )
+                           (;mv-nth
+                            app-view
+                            mv-nth-1-of-rb-becomes-read
+                            x86isa::rb-returns-no-error-app-view
+                            x86isa::mv-nth-2-of-rb-when-app-view ;todo: drop this
+                            x86isa::rb-returns-x86-app-view
+                            len-of-rb
+                            acl2::len-of-cdr)))))
+
+
 ;; ;; Just the reverse of the above
 ;; (defthmd read-becomes-mv-nth-1-of-rb
 ;;   (implies (and (app-view x86)
