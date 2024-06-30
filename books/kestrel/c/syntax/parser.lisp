@@ -1158,7 +1158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-hex-digit ((pstate parstatep))
+(define lex-hexadecimal-digit ((pstate parstatep))
   :returns (mv erp
                (hexdig hex-digit-char-p
                        :hints
@@ -1198,12 +1198,12 @@
 
   ///
 
-  (defret parsize-of-lex-hex-digit-uncond
+  (defret parsize-of-lex-hexadecimal-digit-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-hex-digit-cond
+  (defret parsize-of-lex-hexadecimal-digit-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
@@ -1360,13 +1360,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is called when we expect four hexadecimal digits,
-     so we call @(tsee lex-hex-digit) four times.
+     so we call @(tsee lex-hexadecimal-digit) four times.
      We return the position of the last one."))
   (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
-       ((erp hexdig1 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig2 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig3 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig4 pos pstate) (lex-hex-digit pstate)))
+       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
     (retok (make-hex-quad :1st hexdig1
                           :2nd hexdig2
                           :3rd hexdig3
