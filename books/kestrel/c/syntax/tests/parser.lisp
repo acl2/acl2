@@ -990,3 +990,22 @@ struct bar
  "void foo () {
  idx = (arr)[3];
 }")
+
+(test-parse
+ parse-external-declaration-list
+ "void test(int i)
+{
+    y[i] = (i ? inv : src)[i];
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "extern char *tmpnam (char[20]);")
+
+(test-parse
+ parse-external-declaration-list
+ "extern int __uflow (FILE *);")
+
+(test-parse
+ parse-external-declaration-list
+ "int c[1][2];")
