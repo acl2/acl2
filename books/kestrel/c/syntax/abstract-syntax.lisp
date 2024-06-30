@@ -2356,6 +2356,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod amb-decl/stmt
+  :short "Fixtype of ambiguous declarations or statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A block item may be a declaration or a statement,
+     but there is a complex syntactic overlap
+     between declarations and statements, specifically expression statements.
+     For instance, if @('I1'), ..., @('In') are identifiers,
+     @('I1(I2(...(In)...));') could be either a declaration or a statement.
+     It is a declaration if @('I1') is a type specifier (a @('typedef') name)
+     and @('(I2(...(In)...))') is a declarator of @('I2'),
+     which is a function with a parameter @('I3'),
+     which is a function with a parameter @('I4'),
+     and so on;
+     here @('I3'), @('I4'), etc. are type specifiers (@('typedef') names).
+     It is instead an expression statement if
+     @('I1') is a function, called with argument @('I2(...(In)...)'),
+     which is itself a function call, and so on.
+     There are also other, more complex patterns,
+     for example similar to the ones above
+     but with multiple function arguments.")
+   (xdoc::p
+    "So, similarly to
+     @(tsee amb-expr/tyname) and @(tsee amb-declor/absdeclor),
+     here we define a fixtype of ambiguous declarations or statements,
+     which contain both the declaration and the expression
+     (since the only ambiguity is with expression statements).
+     These two components should look the same in concrete syntax,
+     but we do not enforce that in this fixtype definition."))
+  ((decl decl)
+   (stmt expr))
+  :pred amb-decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum amb?-decl/stmt
+  :short "Fixtype of possibly ambiguous declarations or statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to
+     @(tsee amb?-expr/tyname) and @(tsee amb?-declor-absdeclor).
+     It captures the possibilities of
+     a declaration,
+     an (expression) statement,
+     or an ambiguous declaration or statements."))
+  (:decl ((unwrap decl)))
+  (:stmt ((unwrap expr)))
+  (:ambig ((unwrap amb-decl/stmt)))
+  :pred amb?-decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes stmts/blocks
   :short "Fixtypes of statements, blocks, and related entities
           [C:6.8] [C:A.2.3]."
@@ -2418,9 +2472,13 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>block-item</i> in the grammar in [C]."))
+      "This corresponds to <i>block-item</i> in the grammar in [C].")
+     (xdoc::p
+      "We also include a case for an ambiguous declaration or statement;
+       see @(tsee amb-decl/stmt)."))
     (:decl ((unwrap decl)))
     (:stmt ((unwrap stmt)))
+    (:ambig ((unwrap amb-decl/stmt)))
     :pred block-itemp)
 
   (fty::deflist block-item-list

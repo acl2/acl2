@@ -1200,7 +1200,11 @@
        :decl (b* (((erp objdeclon) (ldm-decl-obj item.unwrap)))
                (retok (c::block-item-declon objdeclon)))
        :stmt (b* (((erp stmt) (ldm-stmt item.unwrap)))
-               (retok (c::block-item-stmt stmt)))))
+               (retok (c::block-item-stmt stmt)))
+       :ambig (prog2$
+               (raise "Misusage error: ambiguous block item ~x0."
+                      (block-item-fix item))
+               (reterr t))))
     :measure (block-item-count item))
 
   (define ldm-block-item-list ((items block-item-listp))
