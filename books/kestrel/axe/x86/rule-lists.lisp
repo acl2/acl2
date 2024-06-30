@@ -192,8 +192,8 @@
     x86isa::rml16
     x86isa::rml32
     x86isa::rml64           ;shilpi leaves this enabled
-    x86isa::rml128
-    x86isa::rml256
+    x86isa::rml128-when-app-view
+    x86isa::rml256-when-app-view
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
 
     x86isa::riml08
@@ -206,8 +206,8 @@
     x86isa::wml16
     x86isa::wml32
     x86isa::wml64           ;shilpi leaves this enabled, but this is big!
-    x86isa::wml128
-    x86isa::wml256
+    x86isa::wml128-when-app-view
+    x86isa::wml256-when-app-view
     x86isa::wml-size$inline ;shilpi leaves this enabled
 
     x86isa::wiml08
@@ -219,7 +219,8 @@
 
 (defun read-introduction-rules ()
   (declare (xargs :guard t))
-  '(mv-nth-1-of-rb-becomes-read
+  '(rb-becomes-read
+    ;mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read))
 
 ;; When using these, also include (write-rules).
@@ -1682,9 +1683,9 @@
             x86isa::create-canonical-address-list-1
 
             x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
-            x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
-            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb
-            x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
+            ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+            x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; or do we just always go to read?
+            ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
             x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it

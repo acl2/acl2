@@ -16,10 +16,15 @@
 
 (include-book "substitute-constants-in-lambdas")
 (include-book "clean-up-lambdas")
+;; (include-book "substitute-unnecessary-lambda-vars")
 
 (defund simplify-lambdas-one-step (term)
   (declare (xargs :guard (pseudo-termp term)))
-  (drop-unused-lambda-bindings (substitute-constants-in-lambdas term)))
+  (let* ((term (substitute-constants-in-lambdas term))
+         (term (drop-unused-lambda-bindings term))
+         ;; (term (substitute-unnecessary-lambda-vars-in-term term nil)) ; todo: put back
+         )
+    term))
 
 (defthm pseudo-termp-of-simplify-lambdas-one-step
   (implies (pseudo-termp term)
@@ -46,14 +51,15 @@
            (pseudo-termp (simplify-lambdas-loop count term)))
   :hints (("Goal" :in-theory (enable simplify-lambdas-loop))))
 
-(defund simplify-lambdas (term)
-  (declare (xargs :guard (pseudo-termp term)))
+(defund simplify-lambdas (term print)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (booleanp print))))
   (let ((new-term (simplify-lambdas-loop 10000 term)))
     (progn$
-     ;; (and (not (equal term new-term)) (cw "Simplified ~X01 to ~X23.~%" term nil new-term nil))
+     (and print (not (equal term new-term)) (cw "Simplified:~%~X01~%to:~%~X23.~%" term nil new-term nil))
      new-term)))
 
 (defthm pseudo-termp-of-simplify-lambdas
   (implies (pseudo-termp term)
-           (pseudo-termp (simplify-lambdas term)))
+           (pseudo-termp (simplify-lambdas term print)))
   :hints (("Goal" :in-theory (enable simplify-lambdas))))

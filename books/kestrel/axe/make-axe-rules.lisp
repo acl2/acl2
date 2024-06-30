@@ -1406,6 +1406,7 @@
   (b* (((when (eq 'quote rule-name))
         (er hard? 'add-axe-rules-for-rule "QUOTE is an illegal name for an Axe rule.")
         (mv :bad-rule-name acc))
+       ;; (- (cw "Making axe-rule for ~x0.~%" rule-name))
        (theoremp (theorem-symbolp rule-name wrld))
        (functionp (function-symbolp rule-name wrld)))
     (cond ((and (not functionp)
@@ -1424,7 +1425,7 @@
                 ;; faster to open functions defined using MBE:
                 (body (remove-guard-holders-and-clean-up-lambdas body) ;(strip-return-last body)
                       )
-                (body (simplify-lambdas body))
+                (body (simplify-lambdas body nil))
                 (clique (true-list-fix ; drop?
                           (recursivep rule-name nil wrld))) ; todo: consider :definition rules and the flg option here
                 (body-fns (all-fnnames body))
