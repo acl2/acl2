@@ -267,3 +267,56 @@
                       nil
                     'rb-1)))
   :hints (("Goal" :in-theory (enable rb rb-1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These have much simpler RHSes than the definitions:
+;; TODO: try enabling these
+
+;; for some reason the 128 and 256 functions are not as nice as the others
+;; we assume app-view here to be able to get a nice, simple RHS
+;; also simplified the MBEs/MBTs and remove the THEs
+(defthmd rml128-when-app-view
+  (implies (app-view x86)
+           (equal (rml128 lin-addr r-x x86)
+                  (if (canonical-address-p lin-addr)
+                      (let* ((15+lin-addr (+ 15 lin-addr)))
+                        (if (canonical-address-p 15+lin-addr)
+                            (rb 16 lin-addr r-x x86)
+                          (mv 'rml128 0 x86)))
+
+                    (mv 'rml128 0 x86))))
+  :hints (("Goal" :in-theory (enable rml128))))
+
+(defthmd rml256-when-app-view
+  (implies (app-view x86)
+           (equal (rml256 lin-addr r-x x86)
+                  (if (canonical-address-p lin-addr)
+                      (let* ((31+lin-addr (+ 31 lin-addr)))
+                        (if (canonical-address-p 31+lin-addr)
+                            (rb 32 lin-addr r-x x86)
+                          (mv 'rml256 0 x86)))
+                    (mv 'rml256 0 x86))))
+  :hints (("Goal" :in-theory (enable rml256))))
+
+(defthmd wml128-when-app-view
+  (implies (app-view x86)
+           (equal (wml128 lin-addr val x86)
+                  (if (canonical-address-p lin-addr)
+                      (let* ((15+lin-addr (+ 15 lin-addr)))
+                        (if (canonical-address-p 15+lin-addr)
+                            (wb 16 lin-addr :w val x86)
+                          (mv 'wml128 x86)))
+                    (mv 'wml128 x86))))
+  :hints (("Goal" :in-theory (enable wml128))))
+
+(defthmd wml256-when-app-view
+  (implies (app-view x86)
+           (equal (wml256 lin-addr val x86)
+                  (if (canonical-address-p lin-addr)
+                      (let* ((31+lin-addr (+ 31 lin-addr)))
+                        (if (canonical-address-p 31+lin-addr)
+                            (wb 32 lin-addr :w val x86)
+                          (mv 'wml256 x86)))
+                    (mv 'wml256 x86))))
+  :hints (("Goal" :in-theory (enable wml256))))
