@@ -1009,3 +1009,16 @@ struct bar
 (test-parse
  parse-external-declaration-list
  "int c[1][2];")
+
+(test-parse
+ parse-external-declaration-list
+ "struct A
+{
+  int c1, c2;
+};")
+
+(test-parse
+ parse-external-declaration-list
+ "long long foo () {
+  return 1LL;
+}")
