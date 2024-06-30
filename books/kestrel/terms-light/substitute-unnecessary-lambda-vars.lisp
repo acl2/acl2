@@ -193,11 +193,10 @@
           (cons var (vars-expressible-without-clashes (rest vars) var-term-alist vars-to-avoid))
         (vars-expressible-without-clashes (rest vars) var-term-alist vars-to-avoid)))))
 
-;TODO: rename this and similar things to mention lambdas, not lets (later we may handle non-pseudo-terms that still include lets)
 (mutual-recursion
  (defun substitute-unnecessary-lambda-vars-in-term (term print)
-   (declare (xargs :measure (acl2-count term)
-                   :guard (pseudo-termp term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :measure (acl2-count term)
                    :verify-guards nil ; done below
                    ))
    (if (or (variablep term)
@@ -245,7 +244,7 @@
                   ;; be added too (unless they are already present).
                   ;; (formals-to-drop (vars-not-bound-to-themselves (vars-that-appear-only-once lambda-formals lambda-body)
                   ;;                                                args))
-                  (new-vars (set-difference-eq vars vars-to-drop))
+                  (new-vars (set-difference-eq vars vars-to-drop)) ; call these remaining-vars?
                   ;; We add to the formal list any variables that are mentioned in the actuals for the formals being dropped, since those vars now appear in the lambda body.  We also add corresponding actuals binding those variables to themselves.
                   (args-for-vars-to-drop (get-args-for-formals vars args vars-to-drop))
                   (new-vars-to-add (set-difference-eq (free-vars-in-terms args-for-vars-to-drop)
@@ -265,22 +264,23 @@
                             new-lambda-body))
                   (vars-in-result (free-vars-in-term result)))
              (progn$
-              (and print
+              (and vars-to-drop print
                    (cw "Removing unnecessary lambda vars: ~x3.~%Lambda vars: ~x0~%Body: ~x1~%Args: ~x2~%Result: ~x4~%~%" vars lambda-body args vars-to-drop result))
               (and (or (not (subsetp-eq vars-in-term vars-in-result))
                        (not (subsetp-eq vars-in-result vars-in-term)))
                    (cw "ERROR: Var mismatch!.  Old term: ~x0.  New term: ~x1.~%" term result))
               result))
          ;;not a lambda application, so just rebuild the function call:
-         `(,fn ,@args)))))
+         (cons-with-hint fn args term)))))
 
  (defun substitute-unnecessary-lambda-vars-in-terms (terms print)
    (declare (xargs :measure (acl2-count terms)
                    :guard (pseudo-term-listp terms)))
    (if (endp terms)
        nil
-     (cons (substitute-unnecessary-lambda-vars-in-term (first terms) print)
-           (substitute-unnecessary-lambda-vars-in-terms (rest terms) print)))))
+     (cons-with-hint (substitute-unnecessary-lambda-vars-in-term (first terms) print)
+                     (substitute-unnecessary-lambda-vars-in-terms (rest terms) print)
+                     terms))))
 
 (make-flag flag-substitute-unnecessary-lambda-vars-in-term substitute-unnecessary-lambda-vars-in-term)
 

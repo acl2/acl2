@@ -1,6 +1,6 @@
 ; Checking that NIL never appears as a variable in a term or list of terms
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -65,6 +65,10 @@
            (equal (no-nils-in-termsp terms)
                   (not (member-equal nil terms))))
   :hints (("Goal" :in-theory (enable no-nils-in-termsp))))
+
+(defthmd not-member-equal-of-nil-when-no-nils-in-termsp
+  (implies (no-nils-in-termsp terms)
+           (not (member-equal nil terms))))
 
 (defthm no-nils-in-termsp-of-remove-equal
   (implies (no-nils-in-termsp terms)
