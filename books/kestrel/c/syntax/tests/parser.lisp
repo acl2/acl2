@@ -394,6 +394,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro test-lex (fn input &key cond)
+  ;; optional COND may be over variables AST, POS/SPAN, PSTATE
+  `(assert-event
+    (b* (((mv erp ?ast ?pos/span ?pstate)
+          (,fn (init-parstate (acl2::string=>nats ,input)))))
+      (if erp
+          (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
+        ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; lex-identifier/keyword
 
 (assert-event
@@ -417,6 +428,30 @@
    (and (not erp)
         (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
         (equal span (span (position 8 3) (position 8 9))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-hexadecimal-digit
+
+(test-lex
+ lex-hexadecimal-digit
+ "0")
+
+(test-lex
+ lex-hexadecimal-digit
+ "1")
+
+(test-lex
+ lex-hexadecimal-digit
+ "8")
+
+(test-lex
+ lex-hexadecimal-digit
+ "A")
+
+(test-lex
+ lex-hexadecimal-digit
+ "b")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
