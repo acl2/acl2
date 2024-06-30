@@ -9593,8 +9593,7 @@
        ;; If token is a comma,
        ;; we must have at least another structure declarator.
        ((equal token (token-punctuator ",")) ; structdeclor ,
-        (b* ((pstate (unread-token pstate)) ; structdeclor
-             ((erp structdeclors last-span  pstate)
+        (b* (((erp structdeclors last-span  pstate)
               ;; structdeclor , structdeclors
               (parse-struct-declarator-list pstate)))
           (retok (cons structdeclor structdeclors)
