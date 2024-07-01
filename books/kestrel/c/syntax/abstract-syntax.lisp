@@ -15,7 +15,6 @@
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
-(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +60,7 @@
      Including empty lists in our fixtypes makes things a bit simpler,
      partly because currently @(tsee fty::deflist)
      generates conflicting theorems if used
-     both with @(':non-emptyp t') and with @(':non-emptyp nil')
+     both with @(':non-emptyp t') and with (default) @(':non-emptyp nil')
      (although this could be remedied).
      It is fine (and common) for the abstract syntax
      to be more general than the concrete syntax.
@@ -110,24 +109,7 @@
      so that parsing is purely syntactical,
      without the need for any semantic analysis during parsing.
      The exact characterization of these ambiguous constructs
-     is still work in progress; it is currently partial.")
-   (xdoc::p
-    "For instance, a kind of ambiguity has the form")
-   (xdoc::codeblock
-    "I ( I1 ( I2 ( ... ( In ) ... ) ) ) ;")
-   (xdoc::p
-    "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
-     If this occurs as a block item,
-     it may be either a declaration or an (expression) statement.
-     The declaration case is
-     when @('I') is a type specifier (@('typedef') name),
-     and the rest is a parenthesized declarator of @('I1'),
-     which is a function with a parameter @('I2'),
-     which is a function with a parameter @('I3'), and so on;
-     here @('I2'), @('I3'), etc. may be type specifiers (@('typedef') names).
-     Alternatively, @('I') could be a function name,
-     with argument a call of @('I1'), and so on until the variable @('In').
-     This is just an example; there are more complex patterns."))
+     is still work in progress; it is currently partial."))
   :order-subtopics t
   :default-parent t)
 
@@ -146,13 +128,13 @@
     "Allowing arbitrary values as identifiers provides flexibility.
      For instance, a transformation on C code could introduce
      multiple versions of certain identifiers, indexed by numbers,
-     in which case we could use pair consisting of
+     in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
     "We plan to define, separately,
      predicates that restrict identifiers to certain forms,
-     used for parsing, pretty-printing, transformations, etc.
-     Restrictions are needed to pretty-print this abstract syntax
+     used for parsing, printing, transformations, etc.
+     Restrictions are needed to print this abstract syntax
      into a form where identifiers respect the restrictions in [C];
      in addition, parsing code compliant to [C]
      will result in specific forms of identifiers."))
