@@ -781,7 +781,10 @@
     (block-item-case
      item
      :decl (block-item-decl (simpadd0-decl item.unwrap))
-     :stmt (block-item-stmt (simpadd0-stmt item.unwrap)))
+     :stmt (block-item-stmt (simpadd0-stmt item.unwrap))
+     :ambig (prog2$
+             (raise "Misusage error: ~x0." (block-item-fix item))
+             (block-item-fix item)))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

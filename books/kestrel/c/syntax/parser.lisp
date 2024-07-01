@@ -1158,7 +1158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-hex-digit ((pstate parstatep))
+(define lex-hexadecimal-digit ((pstate parstatep))
   :returns (mv erp
                (hexdig hex-digit-char-p
                        :hints
@@ -1198,12 +1198,12 @@
 
   ///
 
-  (defret parsize-of-lex-hex-digit-uncond
+  (defret parsize-of-lex-hexadecimal-digit-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-hex-digit-cond
+  (defret parsize-of-lex-hexadecimal-digit-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
@@ -1360,13 +1360,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is called when we expect four hexadecimal digits,
-     so we call @(tsee lex-hex-digit) four times.
+     so we call @(tsee lex-hexadecimal-digit) four times.
      We return the position of the last one."))
   (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
-       ((erp hexdig1 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig2 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig3 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig4 pos pstate) (lex-hex-digit pstate)))
+       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
     (retok (make-hex-quad :1st hexdig1
                           :2nd hexdig2
                           :3rd hexdig3
@@ -1860,7 +1860,7 @@
         (cond
          ((not char2) ; L EOF
           (retok (isuffix-l (lsuffix-upcase-l)) pos pstate))
-         ((= char2 (char-code #\l)) ; L L
+         ((= char2 (char-code #\L)) ; L L
           (b* (((erp char3 pos3 pstate) (read-char pstate)))
             (cond
              ((not char3) ; L L EOF
@@ -9593,8 +9593,7 @@
        ;; If token is a comma,
        ;; we must have at least another structure declarator.
        ((equal token (token-punctuator ",")) ; structdeclor ,
-        (b* ((pstate (unread-token pstate)) ; structdeclor
-             ((erp structdeclors last-span  pstate)
+        (b* (((erp structdeclors last-span  pstate)
               ;; structdeclor , structdeclors
               (parse-struct-declarator-list pstate)))
           (retok (cons structdeclor structdeclors)
@@ -11381,6 +11380,193 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-declaration-or-statement ((pstate parstatep))
+  :returns (mv erp
+               (decl/stmt amb?-decl/stmt-p)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse a declaration or a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when a block item
+     may be a declaration or an expression statement,
+     which have a complex syntactic overlap,
+     as explained in @(tsee amb-decl/stmt).
+     Thus, this parsing function returns
+     a possibly ambiguous declaration or statement.")
+   (xdoc::p
+    "We try to parse both a declaration
+     and an expression followed by a semicolon
+     (note that a declaration always ends in semicolon).
+     If only one succeeds, there is no ambiguity,
+     and we return either a declaration or a statement (wrapped);
+     since the statement is always an expression statement,
+     we actually return an expression in this case.
+     If both succeed, there is an ambiguity,
+     which we return as such.
+     If none succeeds, it is an error."))
+  (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) (irr-parstate))
+       (pstate (record-checkpoint pstate)) ; we will backtrack here
+       (psize (parsize pstate))
+       ((mv erp expr span-expr pstate) (parse-expression pstate)))
+    (if erp
+        ;; If the parsing of an expression fails,
+        ;; we must have a declaration.
+        (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+             ((unless (<= (parsize pstate) psize))
+              (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                     (parsize pstate) psize)
+              ;; Here we have (> (parsize pstate) psize),
+              ;; but we need to return a parser state
+              ;; no larger than the initial one,
+              ;; so we just return the empty parser state.
+              ;; This is just logical: execution stops at the RAISE above.
+              (b* ((pstate (init-parstate nil)))
+                (reterr t)))
+             ((erp decl span pstate) (parse-declaration pstate)))
+          (retok (amb?-decl/stmt-decl decl) span pstate))
+      ;; If the parsing of an expression succeeds,
+      ;; we also need to parse a semicolon.
+      ;; Note that an expression may be a prefix of a declaration,
+      ;; e.g. 'x y;', where 'x' and 'y' are identifiers,
+      ;; must be a declaration, even though x could be an expression.
+      (b* (((erp token span-semicolon pstate) (read-token pstate))
+           (span-stmt (span-join span-expr span-semicolon)))
+        (if (equal token (token-punctuator ";"))
+            ;; If a semicolon follows,
+            ;; the parsing of an expression statement has succeeded,
+            ;; but we must see whether we can also parse a declaration.
+            ;; So we backtrack and we attempt to parse a declaration.
+            (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                 ((unless (<= (parsize pstate) psize))
+                  (raise "Internal error: ~
+                            size ~x0 after backtracking exceeds ~
+                            size ~x1 before backtracking."
+                         (parsize pstate) psize)
+                  ;; Here we have (> (parsize pstate) psize),
+                  ;; but we need to return a parser state
+                  ;; no larger than the initial one,
+                  ;; so we just return the empty parser state.
+                  ;; This is just logical:
+                  ;; execution stops at the RAISE above.
+                  (b* ((pstate (init-parstate nil)))
+                    (reterr t)))
+                 (pstate (record-checkpoint pstate)) ; we may backtrack again
+                 ((mv erp decl span-decl pstate) (parse-declaration pstate)))
+              (if erp
+                  ;; If the parsing of a declaration fails,
+                  ;; we have an expression statement.
+                  ;; We need to backtrack and re-parse it right now,
+                  ;; but we will look into improving this inefficiency.
+                  (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                       ((unless (<= (parsize pstate) psize))
+                        (raise "Internal error: ~
+                              size ~x0 after backtracking exceeds ~
+                              size ~x1 before backtracking."
+                               (parsize pstate) psize)
+                        ;; Here we have (> (parsize pstate) psize),
+                        ;; but we need to return a parser state
+                        ;; no larger than the initial one,
+                        ;; so we just return the empty parser state.
+                        ;; This is just logical:
+                        ;; execution stops at the RAISE above.
+                        (b* ((pstate (init-parstate nil)))
+                          (reterr t)))
+                       ((mv erp expr1 span-expr1 pstate)
+                        (parse-expression pstate))
+                       ((when erp)
+                        (raise "Internal error: ~
+                              parsing the same expression ~x0 twice ~
+                              gives the error ~x1."
+                               expr erp)
+                        (reterr t))
+                       ((unless (equal expr1 expr))
+                        (raise "Internal error: ~
+                              parsing the same expression ~x0 twice ~
+                              gives a different expression ~x1."
+                               expr expr1)
+                        (reterr t))
+                       ((unless (equal span-expr1 span-expr))
+                        (raise "Internal error: ~
+                              parsing the same expression ~x0 twice ~
+                              gives a different span ~x1 from ~x2."
+                               expr span-expr1 span-expr)
+                        (reterr t))
+                       ((mv erp span-semicolon1 pstate)
+                        (read-punctuator ";" pstate))
+                       ((when erp)
+                        (raise "Internal error: ~
+                              parsing the semicolon twice ~
+                              after the same expression ~x0 ~
+                              gives the error ~x1."
+                               expr erp)
+                        (reterr t))
+                       ((unless (equal span-semicolon1 span-semicolon))
+                        (raise "Internal error: ~
+                              parsing the same semicolon twice ~
+                              after the same expression ~x0 ~
+                              gives a span ~x1 different from ~
+                              the span ~x2 from the previous time."
+                               expr span-semicolon1 span-semicolon)
+                        (reterr t)))
+                    (retok (amb?-decl/stmt-stmt expr)
+                           (span-join span-expr span-semicolon)
+                           pstate))
+                ;; If the parsing of a declaration succeeds,
+                ;; we return an ambiguous declaration or statement.
+                ;; We double-check that the spans are the same,
+                ;; which is always expected to succeed.
+                (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
+                     ((unless (equal span-stmt span-decl))
+                      (raise "Internal error:
+                              span ~x0 of expression statement ~x1 ~
+                              differs from ~
+                              span ~x2 of declaration ~x3."
+                             span-stmt expr span-decl decl)
+                      (reterr t)))
+                  (retok (amb?-decl/stmt-ambig
+                          (make-amb-decl/stmt :stmt expr
+                                              :decl decl))
+                         span-stmt ; = span-decl
+                         pstate))))
+          ;; If a semicolon does not follow the expression,
+          ;; we cannot have an expression statement.
+          ;; Thus, we backtrack and proceed to parse a declaration.
+          (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+               ((unless (<= (parsize pstate) psize))
+                (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                       (parsize pstate) psize)
+                ;; Here we have (> (parsize pstate) psize),
+                ;; but we need to return a parser state
+                ;; no larger than the initial one,
+                ;; so we just return the empty parser state.
+                ;; This is just logical:
+                ;; execution stops at the RAISE above.
+                (b* ((pstate (init-parstate nil)))
+                  (reterr t)))
+               ((erp decl span pstate) (parse-declaration pstate)))
+            (retok (amb?-decl/stmt-decl decl) span pstate))))))
+
+  ///
+
+  (defret parsize-of-parse-declaration-or-statement-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-declaration-or-statement-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines parse-stmts/blocks
   :short "Parse statements, blocks, and related entities."
   :long
@@ -11964,76 +12150,43 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "There is a syntactic overlap between statements and declarations,
+      "As explained in @(tsee amb-decl/stmt),
+       there is a complex syntactic overlap
+       between expression statements and declarations,
        which are the two kinds of block items;
        the overlap cannot be disambiguated purely syntactically.
-       For now we use an approximate strategy:
-       if the first token may start a declaration specifier,
-       except for an identifier,
-       we commit to attempting to parse a declaration;
-       otherwise, we attempt to parse a statement.
-       We will refine this approach soon."))
+       Thus, under the appropriate conditions,
+       we parse a possibly ambiguous declaration or statement."))
     (b* (((reterr) (irr-block-item) (irr-span) (irr-parstate))
          ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is an identifier,
        ;; we may have a declaration or an expression statement,
-       ;; so we read more tokens.
+       ;; so we read a possibly ambiguous declaration or statement.
        ((and token (token-case token :ident)) ; ident
-        (b* (((erp token2 & pstate) (read-token pstate)))
-          (cond
-           ;; If token2 may start a declaration specifier,
-           ;; we cannot have an expression (statement).
-           ;; Note that identifiers are
-           ;; possible starts of declaration specifiers,
-           ;; so this check also covers the case of
-           ;; a second identifier following the first identifier,
-           ;; where the second identifier cannot be a declaration specifier
-           ;; (because, as noted in PARSE-DECLARATION-SPECIFIERS,
-           ;; there may be at most one type specifier
-           ;; in a list of declaration specifiers),
-           ;; and thus the second identifier must be
-           ;; (the start of) a declarator.
-           ((token-declaration-specifier-start-p token2) ; ident declspec...
-            (b* ((pstate (unread-token pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp decl span pstate) (parse-declaration pstate))) ; decl
-              (retok (block-item-decl decl) span pstate)))
-           ;; If token2 is an open parenthesis,
-           ;; things are still ambiguous,
-           ;; because we could have a function call
-           ;; or a declaration with a parenthesized declarator.
-           ;; For now we commit to a function call,
-           ;; which should be much more common,
-           ;; but we should revisit this code and handle things properly.
-           ;; Note that some situations may be inherently ambiguous,
-           ;; which we plan to capture as such,
-           ;; deferring the disambiguation to post-parsing semantic analysis.
-           ((equal token2 (token-punctuator "(")) ; ident (
-            (b* ((pstate (unread-token pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
-              (retok (block-item-stmt stmt) span pstate)))
-           ;; If token2 is a star,
-           ;; things are still ambiguous,
-           ;; because we may have a declaration
-           ;; with a starred declarator,
-           ;; or a multiplication expression.
-           ;; The latter situation seems much less common,
-           ;; so for now we commit to a declaration,
-           ;; but we should revisit this code for more complete treatment.
-           ((equal token2 (token-punctuator "*")) ; ident *
-            (b* ((pstate (unread-token pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp decl span pstate) (parse-declaration pstate))) ; decl
-              (retok (block-item-decl decl) span pstate)))
-           ;; In all other cases,
-           ;; we commit to an expression statement.
-           (t ; ident other
-            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
-              (retok (block-item-stmt stmt) span pstate))))))
+        (b* ((pstate (unread-token pstate)) ;
+             ((erp decl/stmt span pstate) ; decl/stmt
+              (parse-declaration-or-statement pstate)))
+          (amb?-decl/stmt-case
+           decl/stmt
+           ;; If we parse an unambiguous declaration,
+           ;; we return a block item that is a declaration.
+           :decl
+           (retok (block-item-decl decl/stmt.unwrap)
+                  span
+                  pstate)
+           ;; If we parse an unambiguous statement,
+           ;; we return a block item that is a statement.
+           :stmt
+           (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
+                  span
+                  pstate)
+           ;; If we parse an ambiguous declaration or statement,
+           ;; we return an ambiguous block item.
+           :ambig
+           (retok (block-item-ambig decl/stmt.unwrap)
+                  span
+                  pstate))))
        ;; If token may start a declaration specifier,
        ;; since we have already considered the case of an identifier above,
        ;; we must have a declaration.

@@ -318,6 +318,7 @@
                  c$::stmt-return
 
                  c$::block-itemp
+                 c$::block-item-fix
                  c$::block-item-count
                  c$::block-item-case
                  c$::block-item-decl

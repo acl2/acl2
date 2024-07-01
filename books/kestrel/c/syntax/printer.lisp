@@ -2955,7 +2955,12 @@
     (block-item-case
      item
      :decl (print-decl item.unwrap pstate)
-     :stmt (print-stmt item.unwrap pstate))
+     :stmt (print-stmt item.unwrap pstate)
+     ;; We temporarily print an ambiguous block item
+     ;; as if it were a declaration.
+     ;; This must go away during static semantic elaboration,
+     ;; which should be normally done prior to printing.
+     :ambig (print-decl (amb-decl/stmt->decl item.unwrap) pstate))
     :measure (two-nats-measure (block-item-count item) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
