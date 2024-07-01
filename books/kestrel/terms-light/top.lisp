@@ -15,6 +15,7 @@
 (include-book "logic-fnsp")
 (include-book "logic-termp")
 (include-book "all-fnnames1")
+(include-book "arglistp1")
 
 ;; Utilities:
 (include-book "filter-formals-and-actuals")
