@@ -2398,7 +2398,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is similar to
-     @(tsee amb?-expr/tyname) and @(tsee amb?-declor-absdeclor).
+     @(tsee amb?-expr/tyname) and @(tsee amb?-declor/absdeclor).
      It captures the possibilities of
      a declaration,
      an (expression) statement,
