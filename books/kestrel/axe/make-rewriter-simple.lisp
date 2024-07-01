@@ -267,6 +267,9 @@
 ;;  TODO: Could this be handled using node-replacement-alist instead, letting us eliminate the :var case?
 ;; 2. To replace a (simplified) term that is a function call (calling replace-fun-call-using-equality-assumption-alist).
 
+(defconst *used-try-print-threshold* 100)
+(defconst *wasted-try-print-threshold* 50)
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -731,7 +734,7 @@
                                     (prog2$ (and old-try-count
                                                  print
                                                  (print-level-at-least-verbosep print)
-                                                 (< 100 (sub-tries tries old-try-count))
+                                                 (< *used-try-print-threshold* (sub-tries tries old-try-count))
                                                  (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                             ;;hyp rewrote to a non-nil constant and so counts as relieved:
                                             (,relieve-rule-hyps-name (rest hyps)
@@ -745,7 +748,7 @@
                                   (progn$ (and old-try-count
                                                print
                                                (print-level-at-least-verbosep print)
-                                               (< 100 (sub-tries tries old-try-count))
+                                               (< *wasted-try-print-threshold* (sub-tries tries old-try-count))
                                                (cw "(~x1 tries wasted ~x0:~x2 (rewrote to NIL))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                                ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
@@ -758,7 +761,7 @@
                                   (prog2$ (and old-try-count
                                                print
                                                (print-level-at-least-verbosep print)
-                                               (< 100 (sub-tries tries old-try-count))
+                                               (< *used-try-print-threshold* (sub-tries tries old-try-count))
                                                (cw " (~x1 tries used ~x0:~x2 (rewrote to true).)~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                           ;;hyp rewrote to a known assumption and so counts as relieved:
                                           (,relieve-rule-hyps-name (rest hyps)
@@ -772,7 +775,7 @@
                                 (progn$ (and old-try-count
                                              print
                                              (print-level-at-least-verbosep print)
-                                             (< 100 (sub-tries tries old-try-count))
+                                             (< *wasted-try-print-threshold* (sub-tries tries old-try-count))
                                              (cw "(~x1 tries wasted: ~x0:~x2 (non-constant result))~%" rule-symbol (sub-tries tries old-try-count) hyp-num))
                                         (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                              (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
