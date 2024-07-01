@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
