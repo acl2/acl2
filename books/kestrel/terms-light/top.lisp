@@ -25,6 +25,7 @@
 (include-book "copy-term")
 (include-book "copy-term-proofs")
 
+;; TODO: Organize these:
 (include-book "all-quotep")
 (include-book "trivial-formals")
 (include-book "non-trivial-formals")
@@ -84,3 +85,7 @@
 (include-book "substitute-constants-in-lambdas-proofs")
 (include-book "simplify-lambdas")
 (include-book "drop-trivial-lambdas")
+
+;; Transformations (and their proofs):
+(include-book "simplify-ors")
+(include-book "simplify-ors-proofs")
