@@ -21,6 +21,10 @@
 (include-book "filter-formals-and-actuals")
 (include-book "termp-simple")
 
+;; Template transformation:
+(include-book "copy-term")
+(include-book "copy-term-proofs")
+
 (include-book "all-quotep")
 (include-book "trivial-formals")
 (include-book "non-trivial-formals")
