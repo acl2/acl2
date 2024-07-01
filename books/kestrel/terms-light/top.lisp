@@ -19,6 +19,7 @@
 
 ;; Utilities:
 (include-book "filter-formals-and-actuals")
+(include-book "termp-simple")
 
 (include-book "all-quotep")
 (include-book "trivial-formals")
