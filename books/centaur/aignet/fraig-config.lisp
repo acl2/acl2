@@ -83,14 +83,7 @@ for @('0 <= j < i').  This is useful in cases where we know what nodes are likel
   (:initial-equiv-classes ;; ((count natp :rule-classes :type-prescription))
    nil))
 
-(fty::defprod fraig-output-map-entry
-  :short "Entry in a fraig-output-map, saying how to treat a certain set of outputs."
-  :long "<p>See @(see fraig-output-type).</p>"
-  ((type fraig-output-type-p
-         "Output type of this range of outputs.")
-   (count natp "How many outputs in this range.")))
-
-(fty::deflist fraig-output-map :elt-type fraig-output-map-entry :true-listp t)
+(fty::deflist fraig-output-types :elt-type fraig-output-type :true-listp t)
 
 
 (fty::defprod fraig-config
@@ -138,14 +131,14 @@ more than once.  Combinational equivalence is preserved for all outputs.  Not
 compatible with @(':miters-only') or @('output-map').")
    (initial-equiv-classes-last booleanp :default nil
                                "See the n-outputs-are-initial-equiv-classes option.")
-   (output-map fraig-output-map-p :default nil
+   (output-types fraig-output-types-p :default nil
                "If this is empty, then all outputs are treated as nodes to
-simplify.  Otherwise, it gives an ordered list of @(see fraig-output-map-entry)
-objects determining how to treat the various ranges of objects. See @(see
-fraig-output-type) for the possible types. Entries are applied in order, but if
-the total count of the output map is less than the number of primary outputs,
-then an implicit entry of type SIMPLIFY is added first with count equal to the
-difference."))
+simplify.  Otherwise, it gives an ordered list of @(see fraig-output-type)
+objects determining how to treat the various ranges of objects. The counts of
+outputs in each range need to be given by the @('output-range') argument to the
+transforms.  The output-types and output-ranges should have the same
+length. They are applied in order to the last outputs; any before the total
+count of output-ranges will have simplify type."))
 
   :parents (fraig comb-transform)
   :short "Configuration object for the @(see fraig) aignet transform."

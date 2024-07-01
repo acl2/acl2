@@ -2605,6 +2605,23 @@
   
 
 
+(fty::defprod fraig-output-map-entry
+  ((type fraig-output-type-p)
+   (count natp)))
+
+(fty::deflist fraig-output-map :elt-type fraig-output-map-entry :true-listp t)
+
+(define fraig-create-output-map ((types fraig-output-types-p)
+                                 (counts nat-listp))
+  :returns (output-map fraig-output-map-p)
+  (if (or (atom types)
+          (atom counts))
+      nil
+    (cons (make-fraig-output-map-entry :type (car types)
+                                       :count (car counts))
+          (fraig-create-output-map (cdr types) (cdr counts)))))
+
+
 (define fraig-output-map-has-initial-equivs ((x fraig-output-map-p))
   (b* (((when (atom x)) nil)
        ((fraig-output-map-entry x1) (car x)))
@@ -2825,13 +2842,13 @@
              (equal (fraig-create-aignet-node-mask aignet config mark)
                     (fraig-create-aignet-node-mask aignet config nil)))))
 
-(define fraig-config-normalized-output-map ((config fraig-config-p) aignet)
+(define fraig-config-normalized-output-map ((config fraig-config-p)
+                                            (output-ranges nat-listp)
+                                            aignet)
   :returns (map fraig-output-map-p)
   (b* (((fraig-config config))
-       ((when (and config.output-map config.n-outputs-are-initial-equiv-classes))
-        (cw "Warning: both config.output-map and config.n-outputs-are-initial-equiv-classes set -- ignoring the latter~%")
-        config.output-map)
-       ((when config.n-outputs-are-initial-equiv-classes)
+       ((when (and config.n-outputs-are-initial-equiv-classes
+                   (not config.output-types)))
         (if config.initial-equiv-classes-last
             (list (make-fraig-output-map-entry
                    :type (make-fraig-output-type-simplify)
@@ -2843,20 +2860,25 @@
           (list (make-fraig-output-map-entry
                  :type (make-fraig-output-type-initial-equiv-classes)
                  :count (* 2 config.n-outputs-are-initial-equiv-classes)))))
-       (count (fraig-output-map-total-count config.output-map))
+       (- (and config.output-types config.n-outputs-are-initial-equiv-classes
+               (cw "Warning: both config.output-map and config.n-outputs-are-initial-equiv-classes set -- ignoring the latter~%")))
+       (output-map
+        (fraig-create-output-map config.output-types output-ranges))
+       (count (fraig-output-map-total-count output-map))
        ((when (<= (num-outs aignet) count))
-        config.output-map))
+        output-map))
     (cons (make-fraig-output-map-entry
            :type (make-fraig-output-type-simplify)
            ;; If config.n-outputs-are-initial-equiv-classes is set too high, we'll complain in classes-init-n-outputs
            :count (- (num-outs aignet) count))
-          config.output-map)))
+          output-map)))
 
 
 
 (define fraig-core-aux ((aignet  "Input aignet")
                         (aignet2 "New aignet -- will be emptied")
                         (config fraig-config-p)
+                        (output-ranges nat-listp)
                         copy strash classes s32v mark
                         (state))
   :guard (non-exec (and (equal strash (create-strash))
@@ -2866,7 +2888,7 @@
   :guard-debug t
   :returns (mv new-aignet2 new-copy new-strash new-classes new-s32v new-mark new-state)
   (b* (((fraig-config config))
-       (outmap (fraig-config-normalized-output-map config aignet))
+       (outmap (fraig-config-normalized-output-map config output-ranges aignet))
        (- (and config.random-seed-name (acl2::seed-random$ config.random-seed-name)))
        (classes (mbe :logic (non-exec (create-classes))
                      :exec classes))
@@ -2931,13 +2953,14 @@
 (define fraig-core ((aignet  "Input aignet")
                     (aignet2 "New aignet -- will be emptied")
                     (config fraig-config-p)
+                    (output-ranges nat-listp)
                     (state))
 
   :guard-debug t
   :returns (mv new-aignet2 new-state)
   (b* (((acl2::local-stobjs copy strash classes s32v mark)
         (mv aignet2 copy strash classes s32v mark state)))
-    (fraig-core-aux aignet aignet2 config copy strash classes s32v mark state))
+    (fraig-core-aux aignet aignet2 config output-ranges copy strash classes s32v mark state))
   ///
   (defret num-ins-of-fraig-core
     (equal (stype-count :pi new-aignet2)
@@ -2967,6 +2990,7 @@
                (aignet2 "New aignet -- will be emptied")
                (config fraig-config-p
                        "Settings for the transform")
+               (output-ranges nat-listp)
                (state))
   :parents (aignet-comb-transforms)
   :short "Apply combinational SAT sweeping (fraiging) to remove redundancies in the input network."
@@ -2979,7 +3003,7 @@ is a @(see fraig-config) object.</p>"
   :returns (mv new-aignet2 new-state)
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet2 aignet-tmp state))
-       ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
+       ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config output-ranges state))
        (aignet2 (aignet-prune-comb aignet-tmp aignet2 (fraig-config->gatesimp config))))
     (mv aignet2 aignet-tmp state))
   ///
@@ -3008,15 +3032,16 @@ is a @(see fraig-config) object.</p>"
 
 
 (define fraig! ((aignet  "Input aignet -- will be replaced with transformation result")
-               (config fraig-config-p)
-               (state))
+                (config fraig-config-p)
+                (output-ranges nat-listp)
+                (state))
   :guard-debug t
   :returns (mv new-aignet new-state)
   :parents (fraig)
   :short "Like @(see fraig), but overwrites the original network instead of returning a new one."
   (b* (((acl2::local-stobjs aignet-tmp)
         (mv aignet aignet-tmp state))
-       ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config state))
+       ((mv aignet-tmp state) (fraig-core aignet aignet-tmp config output-ranges state))
        (aignet (aignet-prune-comb aignet-tmp aignet (fraig-config->gatesimp config))))
     (mv aignet aignet-tmp state))
   ///
