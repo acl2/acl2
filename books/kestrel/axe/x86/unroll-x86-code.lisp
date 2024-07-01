@@ -363,10 +363,8 @@
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         (limits nil) ; todo: don't recompute for each small run?
-         ;; todo: just use one of these 2:
-         ;; (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration limits))
-         (limits (acons 'x86isa::x86-fetch-decode-execute-base-new steps-for-this-iteration limits)) ; fixme: only add limits for the rule to use
+         (limits nil) ; todo: call this empty-rule-limits?
+         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
          ((mv erp dag-or-quote state)
           (if (eq :legacy rewriter)
               (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp

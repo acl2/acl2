@@ -4693,3 +4693,11 @@
           (acl2::bv-of-logext-rules)
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
+
+(defund step-opener-rules ()
+  (declare (xargs :guard t))
+  '(;; todo: just use one of these 2:
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new
+    ;; x86-fetch-decode-execute-opener-safe-64
+    ))
