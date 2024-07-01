@@ -128,13 +128,13 @@
     "Allowing arbitrary values as identifiers provides flexibility.
      For instance, a transformation on C code could introduce
      multiple versions of certain identifiers, indexed by numbers,
-     in which case we could use pair consisting of
+     in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
     "We plan to define, separately,
      predicates that restrict identifiers to certain forms,
-     used for parsing, pretty-printing, transformations, etc.
-     Restrictions are needed to pretty-print this abstract syntax
+     used for parsing, printing, transformations, etc.
+     Restrictions are needed to print this abstract syntax
      into a form where identifiers respect the restrictions in [C];
      in addition, parsing code compliant to [C]
      will result in specific forms of identifiers."))
