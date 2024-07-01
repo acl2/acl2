@@ -114,7 +114,6 @@
 
 ;(local (in-theory (enable not-member-equal-of-nil-when-no-nils-in-termsp)))
 
-;; Proof that drop-trivial-lambdas preserves the meaning of terms
 (defthm-flag-drop-trivial-lambdas-induct
   (defthm no-nils-in-termp-of-drop-trivial-lambdas
     (implies (and (pseudo-termp term)
