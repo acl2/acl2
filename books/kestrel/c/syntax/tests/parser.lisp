@@ -189,7 +189,8 @@
         (equal pstate pstate0))))
 
 (assert-event ; disallowed character 0
- (b* (((mv erp & & &) (read-char (init-parstate (list 0)))))
+ (b* (((mv erp & & &) (read-char (init-parstate (list 0))))
+      (- (cw "~@0" erp)))
    erp))
 
 (assert-event ; character 32
@@ -243,6 +244,83 @@
                 :bytes (list 1 2 3)
                 :position (position 2 0)
                 :chars-read (list (char+position 10 (position 1 0))))))))
+
+(assert-event ; disallowed byte 255
+ (b* ((pstate0 (init-parstate (list 255)))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; 2-byte UTF-8 encoding of Greek capital letter sigma
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "Σ")))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? #x03a3)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes nil
+                :position (position 1 1)
+                :chars-read (list (char+position #x03a3 (position 1 0))))))))
+
+(assert-event ; invalid 2-byte UTF-8 encoding of 0
+ (b* ((pstate0 (init-parstate (list #b11000000 #b10000000)))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; 3-byte UTF-8 encoding of anticlockwise top semicircle arrow
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "↺")))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? #x21ba)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes nil
+                :position (position 1 1)
+                :chars-read (list (char+position #x21ba (position 1 0))))))))
+
+(assert-event ; disallowed 3-byte UTF-8 encoding
+ (b* ((pstate0 (init-parstate (list #b11100010 #b10000000 #b10101010))) ; 202Ah
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; invalid 3-byte UTF-8 encoding of 0
+ (b* ((pstate0 (init-parstate (list #b11100000 #b10000000 #b10000000)))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; 4-byte UTF-8 encoding of musical symbol eighth note
+ (b* ((pstate0 (init-parstate (acl2::string=>nats "𝅘𝅥𝅮")))
+      ((mv erp char? pos pstate) (read-char pstate0)))
+   (and (not erp)
+        (equal char? #x1d160)
+        (equal pos (position 1 0))
+        (equal pstate
+               (change-parstate
+                pstate0
+                :bytes nil
+                :position (position 1 1)
+                :chars-read (list (char+position #x1d160 (position 1 0))))))))
+
+(assert-event ; invalid 4-byte UTF-8 encoding of 0
+ (b* ((pstate0 (init-parstate
+                (list #b11110000 #b10000000 #b10000000 #b10000000)))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
+
+(assert-event ; invalid 4-byte UTF-8 encoding of 1FFFFFh
+ (b* ((pstate0 (init-parstate
+                (list #b11110111 #b10111111 #b10111111 #b10111111)))
+      ((mv erp & & &) (read-char pstate0))
+      (- (cw "~@0" erp)))
+   erp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
