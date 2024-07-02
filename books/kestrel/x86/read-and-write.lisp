@@ -550,6 +550,29 @@
                             len-of-rb
                             acl2::len-of-cdr)))))
 
+;; todo: more like this for other sizes
+(defthm rml08-becomes-read
+  (implies (and (canonical-address-p lin-addr) ; only one address to check in this case
+                (app-view x86)
+                (x86p x86) ; why?
+                )
+           (equal (rml08 lin-addr r-x x86)
+                  (list nil
+                        (read 1 lin-addr x86)
+                        x86)))
+  :hints (("Goal" :in-theory (enable rml08 rb-becomes-read))))
+
+(defthm x86isa::rme08-of-0-when-not-fs/gs-becomes-read
+  (implies (and (not (equal seg-reg 4))
+                (not (equal seg-reg 5))
+                (canonical-address-p eff-addr)
+                (app-view x86)
+                (x86p x86) ; why?
+                )
+           (equal (x86isa::rme08 0 eff-addr seg-reg r-x x86) ; 0 means 64-bit-mode
+                  (list nil
+                        (read 1 eff-addr x86)
+                        x86))))
 
 ;; ;; Just the reverse of the above
 ;; (defthmd read-becomes-mv-nth-1-of-rb

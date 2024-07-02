@@ -58,7 +58,8 @@
             ;; x86isa::gpr-sub-spec-8$inline
             x86isa::gpr-sub-spec-1-alt-def
             x86isa::gpr-sub-spec-2-alt-def
-            x86isa::gpr-sub-spec-4-alt-def
+            x86isa::GPR-SUB-SPEC-4-alt-def-better
+            ;;x86isa::gpr-sub-spec-4-alt-def ;; todo: make better versions of all of these, and of more ops
             x86isa::gpr-sub-spec-8-alt-def
 
             x86isa::gpr-xor-spec-1$inline
@@ -110,7 +111,8 @@
 
             x86isa::gpr-add-spec-1$inline
             x86isa::gpr-add-spec-2$inline
-            x86isa::gpr-add-spec-4$inline
+            x86isa::GPR-ADD-SPEC-4-better ; todo: put back
+            ;;x86isa::gpr-add-spec-4$inline ; todo: make better rules for the rest
             x86isa::gpr-add-spec-8$inline
 
             x86isa::div-spec$inline ; just a dispatch on the size
@@ -188,7 +190,7 @@
   (declare (xargs :guard t))
   '(
     ;; Open these read operations to RB, which then gets turned into READ (TODO: Turn these into READ directly?)
-    x86isa::rml08
+    rml08-becomes-read ;; x86isa::rml08
     x86isa::rml16
     x86isa::rml32
     x86isa::rml64           ;shilpi leaves this enabled
@@ -222,6 +224,8 @@
   '(rb-becomes-read
     ;mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read))
+
+(set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
 ;; When using these, also include (write-rules).
 (defun write-introduction-rules ()
@@ -334,13 +338,13 @@
   '( ; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
-    app-view-of-set-ms
+    ;; app-view-of-set-ms
     app-view-of-set-mxcsr
     app-view-of-set-undef
 
     x86isa::x86p-xw ;big rule with forced hyps
     x86p-of-set-flag
-    x86p-of-set-ms
+    ;; x86p-of-set-ms
     x86p-of-set-mxcsr
     x86p-of-set-undef
 
@@ -349,7 +353,7 @@
     ;; Rules about fault:
 
     ;; fault x86isa::fault$a  ;expose the call to xr
-    fault-of-set-ms
+    ;; fault-of-set-ms
     fault-of-set-flag
     ;; fault-of-myif
     fault-of-!rflags ; why is !rflags not going away?
@@ -360,17 +364,18 @@
 
     xr-of-set-undef-irrel
     xr-of-set-mxcsr-irrel
-    xr-of-set-ms-irrel
+    ;; xr-of-set-ms-irrel
 
     get-flag-of-set-undef
     get-flag-of-set-mxcsr
-    get-flag-of-set-ms
+    ;; get-flag-of-set-ms
 
     ;; Rules about set-fault:
+    ;; we probably don't need read-over-write rules for set-fault, because a fault means the symbolic execution will stop (on that branch)
 
     ;; Rules about ms:
 
-    ms-of-set-ms
+    ;; ms-of-set-ms
     ms-of-set-flag
     ;; ms-of-myif
     ms-of-!rflags         ; why is !rflags not going away?
@@ -429,7 +434,7 @@
 
     rip-of-set-undef         ; also used in 32-bit mode?  or not?
     rip-of-set-mxcsr         ; also used in 32-bit mode?  or not?
-    rip-of-set-ms            ; also used in 32-bit mode?  or not?
+    ;; rip-of-set-ms            ; also used in 32-bit mode?  or not?
     ))
 
 (defund read-over-write-rules32 ()
@@ -1295,7 +1300,7 @@
     segment-base-and-bounds-of-set-flag
     segment-base-and-bounds-of-set-undef
     segment-base-and-bounds-of-set-mxcsr
-    segment-base-and-bounds-of-set-ms
+    ;; segment-base-and-bounds-of-set-ms
     segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
@@ -1594,8 +1599,13 @@
             x86isa::wr64$inline
             x86isa::rgfi-size$inline ;dispatches to rr08, etc.
             x86isa::!rgfi-size$inline ; dispatches to wr08, etc.
-            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
             x86isa::!rgfi x86isa::!rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+
+            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            ;; rgfi-becomes-rbp ; todo: uncomment these (and comment out the 2 rules above) but only for non-loop lifter
+            ;; rgfi-becomes-rsp
+            ;; rgfi-becomes-rax
+            ;; rgfi-becomes-rbx
 
             ;; Chopping operators (these are just bvchop):
             x86isa::n01$inline
@@ -1604,7 +1614,7 @@
             x86isa::n08$inline
             x86isa::n16$inline
             x86isa::n32$inline
-            x86isa::n64$inline
+            x86isa::n64-becomes-bvchop ;; x86isa::n64$inline
             x86isa::n128$inline
             x86isa::n256$inline
             x86isa::n512$inline
@@ -1730,7 +1740,7 @@
             x86isa::wb-returns-no-error-app-view ;targets mv-nth 0 of wb
 ;            addr-byte-alistp-create-addr-bytes-alist
 ;            byte-listp-byte-ify
-            x86isa::!rip x86isa::!rip$a          ;expose xw
+            x86isa::!rip x86isa::!rip$a          ;expose xw ; todo: 32-bit only
             x86isa::xr-of-xw-diff
             ;;x86isa::xr-xw-intra-simple-field
             ;;x86isa::xr-xw-intra-array-field
@@ -1739,7 +1749,7 @@
             acl2::<-of-+-cancel-1-2
             x86isa::program-at-xw-in-app-view
             x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
-            x86isa::program-at-wb-disjoint
+            x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
             x86isa::true-listp-create-canonical-address-list
             x86isa::len-of-create-canonical-address-list
@@ -2108,7 +2118,7 @@
             x86isa::wz512$inline
 
             x86isa::x86-operand-to-zmm/mem
-            64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
+            ;; 64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
 
             acl2::integerp-of-ash)))
 
@@ -3054,7 +3064,8 @@
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(x86isa::x86-fetch-decode-execute-base-new ; x86-fetch-decode-execute-opener-safe-64 ; todo: put this in?
-            x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
+            ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
+            x86isa::rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
             ;; protection value is read via the FS segment register):
@@ -3063,8 +3074,9 @@
             x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
             x86isa::read-*ip-when-64-bit-modep
-            x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep
-            x86isa::mv-nth-1-of-add-to-*ip-when-64-bit-modep
+            x86isa::add-to-*ip-of-0
+            ;; x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
+            ;; x86isa::mv-nth-1-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
             x86isa::write-*ip-when-64-bit-modep
             x86isa::read-*sp-when-64-bit-modep
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
@@ -4694,6 +4706,7 @@
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
 
+
 (defund step-opener-rules ()
   (declare (xargs :guard t))
   '(;; todo: just use one of these 2:
@@ -4701,3 +4714,100 @@
     x86isa::x86-fetch-decode-execute-base-new
     ;; x86-fetch-decode-execute-opener-safe-64
     ))
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority set-flag-of-write -3)
+(set-axe-rule-priority set-flag-of-set-flag-diff-axe -2)
+(set-axe-rule-priority set-flag-of-set-rbp -1)
+(set-axe-rule-priority set-flag-of-set-rip -1)
+(set-axe-rule-priority set-flag-of-set-rsi -1)
+(set-axe-rule-priority set-flag-of-set-rax -1)
+(set-axe-rule-priority set-flag-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority get-flag-of-set-flag -3)
+(set-axe-rule-priority get-flag-of-write -2)
+(set-axe-rule-priority get-flag-of-set-rbp -1)
+(set-axe-rule-priority get-flag-of-set-rip -1)
+(set-axe-rule-priority get-flag-of-set-rsi -1)
+(set-axe-rule-priority get-flag-of-set-rax -1)
+(set-axe-rule-priority get-flag-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority 64-bit-modep-of-write -4)
+(set-axe-rule-priority 64-bit-modep-of-set-flag -3)
+(set-axe-rule-priority 64-bit-modep-of-set-rip -2)
+(set-axe-rule-priority 64-bit-modep-of-set-rbp -1)
+(set-axe-rule-priority 64-bit-modep-of-set-rsi -1)
+(set-axe-rule-priority 64-bit-modep-of-set-rax -1)
+(set-axe-rule-priority 64-bit-modep-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority app-view-of-write -4)
+(set-axe-rule-priority app-view-of-set-flag -3)
+(set-axe-rule-priority app-view-of-set-rip -2)
+(set-axe-rule-priority app-view-of-set-rbp -1)
+(set-axe-rule-priority app-view-of-set-rsi -1)
+(set-axe-rule-priority app-view-of-set-rax -1)
+(set-axe-rule-priority app-view-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority alignment-checking-enabled-p-of-write -4)
+(set-axe-rule-priority alignment-checking-enabled-p-of-set-flag -3)
+(set-axe-rule-priority alignment-checking-enabled-p-of-set-rip -2)
+(set-axe-rule-priority alignment-checking-enabled-p-of-set-rbp -1)
+(set-axe-rule-priority alignment-checking-enabled-p-of-set-rsi -1)
+(set-axe-rule-priority alignment-checking-enabled-p-of-set-rax -1)
+(set-axe-rule-priority alignment-checking-enabled-p-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority x86p-of-write -4)
+(set-axe-rule-priority x86p-of-set-flag -3)
+(set-axe-rule-priority x86p-of-set-rip -2)
+(set-axe-rule-priority x86p-of-set-rbp -1)
+(set-axe-rule-priority x86p-of-set-rsi -1)
+(set-axe-rule-priority x86p-of-set-rax -1)
+(set-axe-rule-priority x86p-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority read-of-set-rip -2)
+(set-axe-rule-priority read-of-set-rbp -2)
+(set-axe-rule-priority read-of-set-rsi -2)
+(set-axe-rule-priority read-of-set-rax -2)
+(set-axe-rule-priority read-of-set-rsp -2)
+(set-axe-rule-priority read-of-write-same -1)
+(set-axe-rule-priority read-of-write-disjoint -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority ms-of-write -4)
+(set-axe-rule-priority ms-of-set-flag -3)
+(set-axe-rule-priority ms-of-set-rip -2)
+(set-axe-rule-priority ms-of-set-rbp -1)
+(set-axe-rule-priority ms-of-set-rsi -1)
+(set-axe-rule-priority ms-of-set-rax -1)
+(set-axe-rule-priority ms-of-set-rsp -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority fault-of-write -4)
+(set-axe-rule-priority fault-of-set-flag -3)
+(set-axe-rule-priority fault-of-set-rip -2)
+(set-axe-rule-priority fault-of-set-rbp -1)
+(set-axe-rule-priority fault-of-set-rsi -1)
+(set-axe-rule-priority fault-of-set-rax -1)
+(set-axe-rule-priority fault-of-set-rsp -1)
+
+;; todo: add the rest
+(set-axe-rule-priority rgfi-becomes-rbp -1)
+(set-axe-rule-priority rgfi-becomes-rsp -1)
+(set-axe-rule-priority rgfi-becomes-rax -1)
+(set-axe-rule-priority rgfi-becomes-rbx -1)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority program-at-of-write -4)
+(set-axe-rule-priority program-at-of-set-flag -3)
+
+;; Based on how commonly these rules were used in an example:
+(set-axe-rule-priority xw-becomes-set-rip -4)
+(set-axe-rule-priority xw-becomes-set-rax -4)
+
+(set-axe-rule-priority !rip-becomes-set-rip -1) ; drop once this is only rule for 64-bit mode

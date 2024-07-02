@@ -883,6 +883,10 @@
     x86isa::input-rflags
     x86isa::cf
     x86isa::of
+    x86isa::af
+    x86isa::sf
+    x86isa::zf
+    x86isa::pf
     x86isa::ad x86isa::low x86isa::high
     x86isa::proc-mode
     x86isa::eff-addr
