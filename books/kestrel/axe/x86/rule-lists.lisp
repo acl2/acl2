@@ -4523,7 +4523,7 @@
             equal-of-1-and-sub-zf-spec32
 
             logand-of-1-becomes-getbit-arg2 ;move
-            acl2::ifix-does-nothing
+            ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more

@@ -164,7 +164,7 @@
             not-<-same
             turn-equal-around-axe ; may be dangerous?
 
-            ifix-does-nothing
+            ifix-when-integerp
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
 
             ;; TODO: eventually phase out myif in favor of if
@@ -2641,7 +2641,7 @@
      if-of-t
      if-of-nil
      if-same-branches
-     ifix-does-nothing
+     ifix-when-integerp
      bvchop-of-bvchop-same
      bvuminus-of-bvuminus ;just use core-rules-bv?
      consp-of-nthcdr
