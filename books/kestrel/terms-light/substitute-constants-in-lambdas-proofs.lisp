@@ -272,11 +272,6 @@
   :hints (("Goal" :in-theory (enable pairlis$ lookup-equal map-lookup-equal))))
 
 ;;ttodo
-(defthm true-listp-of-empty-eval-list
-  (true-listp (empty-eval-list x1 x2))
-  :hints (("Goal" :induct (len x1) :in-theory (enable (:i len)))))
-
-;;ttodo
 (defthm empty-eval-list-when-symbol-listp
   (implies (and (symbol-listp vars)
                 (not (member-equal nil vars)))
