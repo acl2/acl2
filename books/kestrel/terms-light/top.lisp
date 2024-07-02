@@ -85,8 +85,8 @@
 (include-book "expand-lambdas-in-term")
 (include-book "expand-lambdas-in-term-proof")
 ;; Drop unused lambda bindings:
-(include-book "clean-up-lambdas") ; todo rename file
-(include-book "clean-up-lambdas-proofs") ; todo rename file
+(include-book "drop-unused-lambda-bindings") ; todo rename file
+(include-book "drop-unused-lambda-bindings-proofs") ; todo rename file
 ;; Handle lambda vars bound to constants:
 (include-book "substitute-constants-in-lambdas")
 (include-book "substitute-constants-in-lambdas-proofs")

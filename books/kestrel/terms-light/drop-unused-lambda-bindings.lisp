@@ -11,8 +11,6 @@
 
 (in-package "ACL2")
 
-;; TODO: rename this book
-
 ;; See also remove-guard-holders-and-clean-up-lambdas and remove-guard-holders-weak.
 
 ;; TODO: Also handle the case where the lambda body is just a var (one of the
