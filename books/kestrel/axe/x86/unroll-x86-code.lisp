@@ -363,10 +363,8 @@
          ;; (- (and print (progn$ (cw "(DAG before stepping:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
-         (limits nil) ; todo: don't recompute for each small run?
-         ;; todo: just use one of these 2:
-         ;; (limits (acons 'x86isa::x86-fetch-decode-execute-base steps-for-this-iteration limits))
-         (limits (acons 'x86isa::x86-fetch-decode-execute-base-new steps-for-this-iteration limits))
+         (limits nil) ; todo: call this empty-rule-limits?
+         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
          ((mv erp dag-or-quote state)
           (if (eq :legacy rewriter)
               (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -816,6 +814,7 @@
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
@@ -953,10 +952,15 @@
                                  defthm
                                `(skip-proofs ,defthm))))
                 (list defthm))))
-       (event `(progn ,defconst-form
-                      ,@defuns
-                      ,@defthms))
-       (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event))))
+       (events (cons defconst-form (append defuns defthms)))
+       (event-names (acl2::strip-cadrs events))
+       (event `(progn ,@events))
+       (event (acl2::extend-progn event `(table x86-lifter-table ',whole-form ',event)))
+       (event (acl2::extend-progn event `(value-triple '(,@event-names))))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw " (Unrolling ~x0 took " lifted-name)
+          (acl2::print-to-hundredths elapsed)
+          (cw "s, not including event submission.)~%")))
     (mv nil event state)))
 
 ;TODO: Add show- variant
@@ -993,7 +997,7 @@
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
                                   )
-  `(,(if print 'make-event 'acl2::make-event-quiet)
+  `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
       ',lifted-name
       ,target

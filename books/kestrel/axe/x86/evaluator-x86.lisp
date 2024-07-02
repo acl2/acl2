@@ -21,6 +21,7 @@
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
+(local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
 
 (local
   (in-theory (disable rational-listp
@@ -548,18 +549,6 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund x86isa::SF-SPEC8$inline-unguarded (result)
-  (declare (xargs :guard t))
-  (ACL2::PART-SELECT (ifix RESULT) :LOW 7 :WIDTH 1))
-
-(local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
-(defthm sf-spec8$inline-unguarded-correct
-  (equal (x86isa::sf-spec8$inline-unguarded x)
-         (x86isa::sf-spec8$inline x))
-  :hints (("Goal" :in-theory (enable x86isa::sf-spec8$inline-unguarded x86isa::sf-spec8$inline))))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund x86isa::cf-spec32$inline-unguarded (raw-result)
   (declare (xargs :guard t))
   (bool->bit (not (unsigned-byte-p 32 raw-result))))
@@ -568,6 +557,15 @@
   (equal (x86isa::cf-spec32$inline-unguarded x)
          (x86isa::cf-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::cf-spec32$inline-unguarded x86isa::cf-spec32$inline))))
+
+(defund x86isa::cf-spec64$inline-unguarded (raw-result)
+  (declare (xargs :guard t))
+  (bool->bit (not (unsigned-byte-p 64 raw-result))))
+
+(defthm cf-spec64$inline-unguarded-correct
+  (equal (x86isa::cf-spec64$inline-unguarded x)
+         (x86isa::cf-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::cf-spec64$inline-unguarded x86isa::cf-spec64$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -580,17 +578,52 @@
          (x86isa::pf-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::pf-spec32$inline-unguarded x86isa::pf-spec32$inline))))
 
+(defund x86isa::pf-spec64$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (bool->bit (not (logbitp 0 (logcount (acl2::loghead$inline-unguarded 8 result))))))
+
+(defthm pf-spec64$inline-unguarded-correct
+  (equal (x86isa::pf-spec64$inline-unguarded x)
+         (x86isa::pf-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::pf-spec64$inline-unguarded x86isa::pf-spec64$inline))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund x86isa::SF-SPEC32$inline-unguarded (result)
+(defund x86isa::sf-spec8$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (acl2::part-select (ifix result) :low 7 :width 1))
+
+(defthm sf-spec8$inline-unguarded-correct
+  (equal (x86isa::sf-spec8$inline-unguarded x)
+         (x86isa::sf-spec8$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sf-spec8$inline-unguarded x86isa::sf-spec8$inline))))
+
+(defund x86isa::sf-spec16$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (acl2::part-select (ifix result) :low 15 :width 1))
+
+(defthm sf-spec16$inline-unguarded-correct
+  (equal (x86isa::sf-spec16$inline-unguarded x)
+         (x86isa::sf-spec16$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sf-spec16$inline-unguarded x86isa::sf-spec16$inline))))
+
+(defund x86isa::sf-spec32$inline-unguarded (result)
   (declare (xargs :guard t))
   (acl2::part-select (acl2::loghead$inline-unguarded 32 result) :low 31 :width 1))
 
-;(local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
 (defthm sf-spec32$inline-unguarded-correct
   (equal (x86isa::sf-spec32$inline-unguarded x)
          (x86isa::sf-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::sf-spec32$inline-unguarded x86isa::sf-spec32$inline))))
+
+(defund x86isa::sf-spec64$inline-unguarded (result)
+  (declare (xargs :guard t))
+  (acl2::part-select (acl2::loghead$inline-unguarded 64 result) :low 63 :width 1))
+
+(defthm sf-spec64$inline-unguarded-correct
+  (equal (x86isa::sf-spec64$inline-unguarded x)
+         (x86isa::sf-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::sf-spec64$inline-unguarded x86isa::sf-spec64$inline))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,6 +635,15 @@
   (equal (x86isa::of-spec32$inline-unguarded x)
          (x86isa::of-spec32$inline x))
   :hints (("Goal" :in-theory (enable x86isa::of-spec32$inline-unguarded x86isa::of-spec32$inline))))
+
+(defund x86isa::of-spec64$inline-unguarded (signed-raw-result)
+  (declare (xargs :guard t))
+  (bool->bit (not (signed-byte-p 64 signed-raw-result))))
+
+(defthm of-spec64$inline-unguarded-correct
+  (equal (x86isa::of-spec64$inline-unguarded x)
+         (x86isa::of-spec64$inline x))
+  :hints (("Goal" :in-theory (enable x86isa::of-spec64$inline-unguarded x86isa::of-spec64$inline))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -915,6 +957,16 @@
   :hints (("Goal" :in-theory (enable x86isa::add-af-spec32$inline-unguarded
                                      x86isa::add-af-spec32$inline))))
 
+(defund x86isa::add-af-spec64$inline-unguarded (dst src)
+  (declare (xargs :guard t))
+  (x86isa::add-af-spec64$inline (bvchop 64 (ifix dst)) (bvchop 64 (ifix src))))
+
+(defthm x86isa::add-af-spec64$inline-unguarded-correct
+  (equal (x86isa::add-af-spec64$inline-unguarded dst src)
+         (x86isa::add-af-spec64$inline dst src))
+  :hints (("Goal" :in-theory (enable x86isa::add-af-spec64$inline-unguarded
+                                     x86isa::add-af-spec64$inline))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund x86isa::sub-af-spec32$inline-unguarded (dst src)
@@ -938,6 +990,16 @@
          (x86isa::sub-cf-spec32 dst src))
   :hints (("Goal" :in-theory (enable x86isa::sub-cf-spec32-unguarded
                                      x86isa::sub-cf-spec32))))
+
+(defund x86isa::sub-cf-spec64-unguarded (dst src)
+  (declare (xargs :guard t))
+  (bool->bit (<-unguarded dst src)))
+
+(defthm x86isa::sub-cf-spec64-unguarded-correct
+  (equal (x86isa::sub-cf-spec64-unguarded dst src)
+         (x86isa::sub-cf-spec64 dst src))
+  :hints (("Goal" :in-theory (enable x86isa::sub-cf-spec64-unguarded
+                                     x86isa::sub-cf-spec64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -990,7 +1052,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *axe-evaluator-x86-fns-and-aliases*
-  (append '((integer-range-p integer-range-p-unguarded)
+  (append '(implies ; push back to basic evaluator?
+            (integer-range-p integer-range-p-unguarded)
             x86isa::canonical-address-p$inline ; unguarded
             (bitops::part-select-width-low$inline bitops::part-select-width-low$inline-unguarded)
             (lookup lookup-equal-unguarded)
@@ -1046,18 +1109,27 @@
             (x86isa::rflagsbits->zf$inline x86isa::rflagsbits->zf$inline-unguarded)
             (x86isa::!rflagsbits->af$inline x86isa::!rflagsbits->af$inline-unguarded)
             (x86isa::add-af-spec32$inline x86isa::add-af-spec32$inline-unguarded)
+            (x86isa::add-af-spec64$inline x86isa::add-af-spec64$inline-unguarded)
             (x86isa::sub-af-spec32$inline x86isa::sub-af-spec32$inline-unguarded)
             (x86isa::sub-cf-spec32 x86isa::sub-cf-spec32-unguarded)
+            (x86isa::sub-cf-spec64 x86isa::sub-cf-spec64-unguarded)
             (x86isa::sub-of-spec32 x86isa::sub-of-spec32-unguarded)
             (x86isa::sub-pf-spec32 x86isa::sub-pf-spec32-unguarded)
             (x86isa::sub-sf-spec32 x86isa::sub-sf-spec32-unguarded)
             (x86isa::sub-zf-spec32 x86isa::sub-zf-spec32-unguarded)
             (x86isa::pf-spec8$inline x86isa::pf-spec8$inline-unguarded)
             (x86isa::sf-spec8$inline x86isa::sf-spec8$inline-unguarded)
-            (x86isa::cf-spec32$inline x86isa::cf-spec32$inline-unguarded)
-            (x86isa::of-spec32$inline x86isa::of-spec32$inline-unguarded)
-            (x86isa::pf-spec32$inline x86isa::pf-spec32$inline-unguarded)
+            (x86isa::sf-spec16$inline x86isa::sf-spec16$inline-unguarded)
             (x86isa::sf-spec32$inline x86isa::sf-spec32$inline-unguarded)
+            (x86isa::sf-spec64$inline x86isa::sf-spec64$inline-unguarded)
+            (x86isa::cf-spec32$inline x86isa::cf-spec32$inline-unguarded)
+            (x86isa::cf-spec64$inline x86isa::cf-spec64$inline-unguarded)
+            (x86isa::of-spec32$inline x86isa::of-spec32$inline-unguarded)
+            (x86isa::of-spec64$inline x86isa::of-spec64$inline-unguarded)
+            (x86isa::pf-spec32$inline x86isa::pf-spec32$inline-unguarded)
+            (x86isa::pf-spec64$inline x86isa::pf-spec64$inline-unguarded)
+            (x86isa::sf-spec32$inline x86isa::sf-spec32$inline-unguarded)
+            (x86isa::sf-spec64$inline x86isa::sf-spec64$inline-unguarded)
             (x86isa::zf-spec$inline x86isa::zf-spec$inline-unguarded)
             (x86isa::x86-decode-sib-p x86isa::x86-decode-sib-p-unguarded)
             (x86isa::sib-fix$inline x86isa::sib-fix$inline-unguarded)

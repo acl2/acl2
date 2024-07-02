@@ -387,6 +387,20 @@
     x86isa::cr0bits->nw
     x86isa::cr0bits->cd
     x86isa::cr0bits->pg
+    x86isa::cr0bits->pe$inline
+    x86isa::cr0bits->mp$inline
+    x86isa::cr0bits->em$inline
+    x86isa::cr0bits->ts$inline
+    x86isa::cr0bits->et$inline
+    x86isa::cr0bits->ne$inline
+    x86isa::cr0bits->res1$inline
+    x86isa::cr0bits->wp$inline
+    x86isa::cr0bits->res2$inline
+    x86isa::cr0bits->am$inline
+    x86isa::cr0bits->res3$inline
+    x86isa::cr0bits->nw$inline
+    x86isa::cr0bits->cd$inline
+    x86isa::cr0bits->pg$inline
 
     x86isa::cr3bits-p$inline
     x86isa::cr3bits->res1
@@ -409,7 +423,6 @@
     x86isa::cr4bits->osfxsr
     x86isa::cr4bits->osxmmexcpt
     x86isa::cr4bits->umip
-    x86isa::cr4bits->umip$inline
     x86isa::cr4bits->la57
     x86isa::cr4bits->vmxe
     x86isa::cr4bits->smxe
@@ -420,12 +433,35 @@
     x86isa::cr4bits->res2
     x86isa::cr4bits->smep
     x86isa::cr4bits->smap
+    x86isa::cr4bits->vme$inline
+    x86isa::cr4bits->pvi$inline
+    x86isa::cr4bits->tsd$inline
+    x86isa::cr4bits->de$inline
+    x86isa::cr4bits->pse$inline
+    x86isa::cr4bits->pae$inline
+    x86isa::cr4bits->mce$inline
+    x86isa::cr4bits->pge$inline
+    x86isa::cr4bits->pce$inline
+    x86isa::cr4bits->osfxsr$inline
+    x86isa::cr4bits->osxmmexcpt$inline
+    x86isa::cr4bits->umip$inline
+    x86isa::cr4bits->la57$inline
+    x86isa::cr4bits->vmxe$inline
+    x86isa::cr4bits->smxe$inline
+    x86isa::cr4bits->res1$inline
+    x86isa::cr4bits->fsgsbase$inline
+    x86isa::cr4bits->pcide$inline
+    x86isa::cr4bits->osxsave$inline
+    x86isa::cr4bits->res2$inline
+    x86isa::cr4bits->smep$inline
+    x86isa::cr4bits->smap$inline
 
     x86isa::cr8bits-p$inline
     x86isa::cr8bits->cr8-trpl
 
     x86isa::msri
 
+    x86isa::!mxcsr
     x86isa::mxcsrbits-fix
 
     x86isa::mxcsrbits->ie$inline
@@ -527,6 +563,7 @@
 
     x86isa::undef
     x86isa::undef$a
+    x86isa::!undef
 
     X86ISA::READ-*IP$INLINE
 
