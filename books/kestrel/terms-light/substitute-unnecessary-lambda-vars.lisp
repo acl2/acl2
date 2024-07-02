@@ -20,6 +20,7 @@
 (include-book "sublis-var-simple")
 (include-book "non-trivial-formals")
 (local (include-book "kestrel/utilities/terms" :dir :system))
+(local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -68,6 +69,8 @@
      (+ (count-free-occurences-in-term var (car terms))
         (count-free-occurences-in-terms var (cdr terms))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns the variables in VARS that appear at most once in TERM.
 (defund vars-that-appear-only-once (vars term)
    (declare (xargs :guard (and (symbol-listp vars)
@@ -84,6 +87,8 @@
            (symbol-listp (vars-that-appear-only-once vars term)))
   :hints (("Goal" :in-theory (enable vars-that-appear-only-once))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;walk down the formals and the args in sync
 (defun pair-given-formals-with-args (formals args formals-to-pair-with-args)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -96,13 +101,6 @@
           (acons formal (first args) (pair-given-formals-with-args (rest formals) (rest args) formals-to-pair-with-args))
         (pair-given-formals-with-args (rest formals) (rest args) formals-to-pair-with-args)))))
 
-(defthm symbol-term-alistp-of-acons
-  (equal (symbol-term-alistp (acons key val alist))
-         (and (symbolp key)
-              (pseudo-termp val)
-              (symbol-term-alistp alist)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp))))
-
 (defthm symbol-term-alistp-of-pair-given-formals-with-args
   (implies (and (symbol-listp formals)
                 (pseudo-term-listp args))
@@ -113,6 +111,8 @@
   (implies (symbol-listp formals)
            (symbol-alistp (pair-given-formals-with-args formals args formals-to-pair-with-args)))
   :hints (("Goal" :in-theory (enable symbol-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund keep-args-for-non-dropped-formals (formals args dropped-formals)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -135,6 +135,8 @@
          (len (set-difference-equal formals dropped-formals)))
   :hints (("Goal" :in-theory (enable keep-args-for-non-dropped-formals))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;todo: reorder args
 (defun get-args-for-formals (formals args target-formals)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -151,6 +153,8 @@
   (implies (pseudo-term-listp args)
            (pseudo-term-listp (get-args-for-formals formals args target-formals))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun vars-bound-to-themselves (formals actuals)
   (declare (xargs :guard (and (symbol-listp formals)
                               (true-listp actuals))))
@@ -163,6 +167,8 @@
                                                  (rest actuals)))
         (vars-bound-to-themselves (rest formals)
                                   (rest actuals))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun vars-bound-to-mv-nths (formals actuals)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -178,6 +184,8 @@
         (vars-bound-to-mv-nths (rest formals)
                                (rest actuals))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns the VARS whose corresponding terms in VAR-TERM-ALIST do not mention
 ;; any of the VARS-TO-AVOID.
 (defund vars-expressible-without-clashes (vars var-term-alist vars-to-avoid)
@@ -192,6 +200,8 @@
       (if (not (intersection-eq term-vars vars-to-avoid)) ; ensure no clash
           (cons var (vars-expressible-without-clashes (rest vars) var-term-alist vars-to-avoid))
         (vars-expressible-without-clashes (rest vars) var-term-alist vars-to-avoid)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
  (defun substitute-unnecessary-lambda-vars-in-term (term print)
