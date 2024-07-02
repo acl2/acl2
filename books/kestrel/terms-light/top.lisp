@@ -83,7 +83,7 @@
 (include-book "serialize-lambdas-in-term")
 (include-book "serialize-lambdas-in-term-proofs") ; incomplete
 (include-book "expand-lambdas-in-term")
-(include-book "expand-lambdas-in-term-proof")
+(include-book "expand-lambdas-in-term-proofs")
 ;; Drop unused lambda bindings:
 (include-book "drop-unused-lambda-bindings") ; todo rename file
 (include-book "drop-unused-lambda-bindings-proofs") ; todo rename file
