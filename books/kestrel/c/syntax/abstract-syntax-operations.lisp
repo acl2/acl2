@@ -618,7 +618,7 @@
        (const (expr-const->unwrap expr))
        ((unless (const-case const :int)) nil)
        ((iconst iconst) (const-int->unwrap const))
-       ((when iconst.suffix) nil)
+       ((when iconst.suffix?) nil)
        ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
        ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
        ((unless (= doh.leading-zeros 1)) nil)
