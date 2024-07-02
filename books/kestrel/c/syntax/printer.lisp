@@ -23,37 +23,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-amb-expr/tyname-ident ((amb amb-expr/tyname-p))
-  :returns (ident? ident-optionp)
-  :short "Check if an ambiguous expression of type name is just an identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The expression must be an identifier,
-     and the type name must have no declarator
-     and have a singleton specifier and qualifier list
-     consisting of the same identifier as a type specifier.
-     If the check is successful, we return the identifier;
-     otherwise, we return @('nil')."))
-  (b* (((amb-expr/tyname amb) amb)
-       ((unless (expr-case amb.expr :ident)) nil)
-       (ident (expr-ident->unwrap amb.expr))
-       ((when (tyname->decl? amb.tyname)) nil)
-       (specquals (tyname->specqual amb.tyname))
-       ((unless (and (consp specquals)
-                     (endp (cdr specquals))))
-        nil)
-       (specqual (car specquals))
-       ((unless (specqual-case specqual :tyspec)) nil)
-       (tyspec (specqual-tyspec->unwrap specqual))
-       ((unless (tyspec-case tyspec :tydef)) nil)
-       (ident1 (tyspec-tydef->name tyspec))
-       ((unless (equal ident1 ident)) nil))
-    ident)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ printer
   :parents (syntax-for-tools)
   :short "A printer of C from the abstract syntax."
