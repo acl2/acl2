@@ -200,7 +200,7 @@
                                 (complex-rationalp x2))
                            (and (not (acl2-numberp x1))
                                 (not (acl2-numberp x2))))
-            :use (:instance (:instance positive (x (- x1 x2))))
+            :use (:instance positive (x (- x1 x2)))
             :in-theory (enable <-when-rationalp-and-complex-rationalp
                                <-when-complex-rationalp-and-rationalp
                                <-when-complex-rationalp-and-complex-rationalp)))))

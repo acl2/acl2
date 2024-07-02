@@ -108,3 +108,24 @@
            (rule-limitsp (decrement-rule-limit stored-rule limits)))
   :hints (("Goal" :in-theory (enable decrement-rule-limit
                                      integerp-of-cdr-of-assoc-equal-when-rule-limitsp-type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund add-limit-for-rules (rule-names limit limits)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (natp limit)
+                              (rule-limitsp limits))
+                  :verify-guards nil ; done below
+                  ))
+  (if (endp rule-names)
+      limits
+    (add-limit-for-rules (rest rule-names) limit (acons-unique (first rule-names) limit limits))))
+
+(defthm rule-limitsp-of-add-limit-for-rules
+  (implies (and (symbol-listp rule-names)
+                (natp limit)
+                (rule-limitsp limits))
+           (rule-limitsp (add-limit-for-rules rule-names limit limits)))
+  :hints (("Goal" :in-theory (enable add-limit-for-rules rule-limitsp))))
+
+(verify-guards add-limit-for-rules)
