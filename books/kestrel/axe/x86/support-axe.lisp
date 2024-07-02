@@ -397,6 +397,173 @@
          (not (ms x86))
          (not (fault x86))))
 
+;; should be faster?
+;; todo: continue specializing to 64-bit mode
+(defthm x86-fetch-decode-execute-opener-safe-64
+  (implies (and (canonical-address-p (x86isa::read-*ip 0 x86)) ; could drop, but this clarifies failures
+                ;; ;; Requires us to be able to read the byte at the RIP:
+                ;; todo: simplify this:
+                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (x86isa::read-*ip 0 x86) 1 :x x86)))
+                ;; (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
+                ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
+                ;; (poor-mans-quotep (read 1 (rip x86) x86))
+                (64-bit-modep x86)
+                (not (ms x86))
+                (not (fault x86)))
+           (equal (x86-fetch-decode-execute x86)
+                  (let* ( ;(__function__ 'x86-fetch-decode-execute)
+                         (ctx 'x86-fetch-decode-execute))
+                    ;; (if (or (ms x86) (fault x86)) ; known false above
+                    ;;     x86
+                    (let* ((proc-mode 0 ;(x86-operation-mode x86)
+                                      ) ; todo: build these in!
+                           (64-bit-modep t ;
+                                         ;(equal proc-mode 0)
+                                         )
+                             (start-rip (x86isa::read-*ip proc-mode x86)))
+                        (mv-let (flg acl2::|(THE (UNSIGNED-BYTE 52) PREFIXES)|
+                                     acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|
+                                     x86)
+                          (get-prefixes proc-mode start-rip 0 0 15 x86)
+                          (let* ((prefixes acl2::|(THE (UNSIGNED-BYTE 52) PREFIXES)|)
+                                 (rex-byte acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|))
+                            (if flg (!ms (let ((x86isa::erp nil))
+                                           (cons (list ctx
+                                                       :rip (rip x86)
+                                                       :error-in-reading-prefixes flg)
+                                                 x86isa::erp))
+                                         x86)
+                              (let* ((x86isa::opcode/vex/evex-byte (x86isa::prefixes->nxt prefixes))
+                                     (x86isa::prefix-length (x86isa::prefixes->num prefixes)))
+                                (mv-let (flg temp-rip)
+                                  (x86isa::add-to-*ip proc-mode
+                                                      start-rip (+ 1 x86isa::prefix-length)
+                                                      x86)
+                                  (if flg (!ms (let ((x86isa::erp nil))
+                                                 (cons (list ctx
+                                                             :rip (rip x86)
+                                                             :increment-error flg)
+                                                       x86isa::erp))
+                                               x86)
+                                    (let ((x86isa::vex-byte0? (or (equal x86isa::opcode/vex/evex-byte 197)
+                                                                  (equal x86isa::opcode/vex/evex-byte 196))))
+                                      (mv-let (flg x86isa::les/lds-distinguishing-byte x86)
+                                        (if x86isa::vex-byte0? (x86isa::rme08 proc-mode temp-rip 1
+                                                                              :x x86)
+                                          (mv nil 0 x86))
+                                        (cond (flg (!ms (let ((x86isa::erp nil))
+                                                          (cons (list ctx
+                                                                      :rip (rip x86)
+                                                                      :les/lds-distinguishing-byte-read-error flg)
+                                                                x86isa::erp))
+                                                        x86))
+                                              ((and x86isa::vex-byte0?
+                                                    (or 64-bit-modep
+                                                        (equal (bitops::part-select-low-high x86isa::les/lds-distinguishing-byte 6 7)
+                                                               3)))
+                                               (mv-let (flg temp-rip)
+                                                 (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
+                                                 (if flg (!ms (let ((x86isa::erp nil))
+                                                                (cons (list ctx
+                                                                            :rip (rip x86)
+                                                                            :vex-byte1-increment-error flg)
+                                                                      x86isa::erp))
+                                                              x86)
+                                                   (let* ((x86isa::vex-prefixes (x86isa::!vex-prefixes->byte0 x86isa::opcode/vex/evex-byte 0))
+                                                          (x86isa::vex-prefixes (x86isa::!vex-prefixes->byte1 x86isa::les/lds-distinguishing-byte
+                                                                                                              x86isa::vex-prefixes)))
+                                                     (x86isa::vex-decode-and-execute proc-mode start-rip temp-rip prefixes
+                                                                                     rex-byte x86isa::vex-prefixes x86)))))
+                                              (t (let* ((x86isa::opcode/evex-byte x86isa::opcode/vex/evex-byte)
+                                                        (x86isa::evex-byte0? (equal x86isa::opcode/evex-byte 98)))
+                                                   (mv-let (flg x86isa::bound-distinguishing-byte x86)
+                                                     (if x86isa::evex-byte0? (x86isa::rme08 proc-mode temp-rip 1
+                                                                                            :x x86)
+                                                       (mv nil 0 x86))
+                                                     (cond (flg (!ms (let ((x86isa::erp nil))
+                                                                       (cons (list ctx
+                                                                                   :rip (rip x86)
+                                                                                   :bound-distinguishing-byte-read-error flg)
+                                                                             x86isa::erp))
+                                                                     x86))
+                                                           ((and x86isa::evex-byte0?
+                                                                 (or 64-bit-modep
+                                                                     (equal (bitops::part-select-low-high x86isa::bound-distinguishing-byte 6 7)
+                                                                            3)))
+                                                            (mv-let (flg temp-rip)
+                                                              (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
+                                                              (if flg (!ms (let ((x86isa::erp nil))
+                                                                             (cons (list ctx
+                                                                                         :rip (rip x86)
+                                                                                         :evex-byte1-increment-error flg)
+                                                                                   x86isa::erp))
+                                                                           x86)
+                                                                (let* ((x86isa::evex-prefixes (x86isa::!evex-prefixes->byte0 x86isa::opcode/evex-byte 0))
+                                                                       (x86isa::evex-prefixes (x86isa::!evex-prefixes->byte1 x86isa::bound-distinguishing-byte
+                                                                                                                             x86isa::evex-prefixes)))
+                                                                  (x86isa::evex-decode-and-execute proc-mode start-rip temp-rip prefixes
+                                                                                                   rex-byte x86isa::evex-prefixes x86)))))
+                                                           (t (let* ((x86isa::opcode-byte x86isa::opcode/evex-byte)
+                                                                     (x86isa::modr/m? (x86isa::one-byte-opcode-modr/m-p proc-mode x86isa::opcode-byte)))
+                                                                (mv-let (flg acl2::|(THE (UNSIGNED-BYTE 8) MODR/M)|
+                                                                             x86)
+                                                                  (if x86isa::modr/m? (if (or x86isa::vex-byte0? x86isa::evex-byte0?)
+                                                                                          (mv nil
+                                                                                              x86isa::les/lds-distinguishing-byte x86)
+                                                                                        (x86isa::rme08 proc-mode temp-rip 1
+                                                                                                       :x x86))
+                                                                    (mv nil 0 x86))
+                                                                  (let ((modr/m acl2::|(THE (UNSIGNED-BYTE 8) MODR/M)|))
+                                                                    (if flg (!ms (let ((x86isa::erp nil))
+                                                                                   (cons (list ctx
+                                                                                               :rip (rip x86)
+                                                                                               :modr/m-byte-read-error flg)
+                                                                                         x86isa::erp))
+                                                                                 x86)
+                                                                      (mv-let (flg temp-rip)
+                                                                        (if x86isa::modr/m? (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
+                                                                          (mv nil temp-rip))
+                                                                        (if flg (!ms (let ((x86isa::erp nil))
+                                                                                       (cons (list ctx
+                                                                                                   :rip (rip x86)
+                                                                                                   :increment-error flg)
+                                                                                             x86isa::erp))
+                                                                                     x86)
+                                                                          (let ((x86isa::sib? (and x86isa::modr/m?
+                                                                                                   (let* ((x86isa::p4? (eql 103 (x86isa::prefixes->adr prefixes)))
+                                                                                                          (x86isa::16-bit-addressp (eql 2
+                                                                                                                                        (x86isa::select-address-size proc-mode x86isa::p4? x86))))
+                                                                                                     (x86isa::x86-decode-sib-p modr/m x86isa::16-bit-addressp)))))
+                                                                            (mv-let (flg acl2::|(THE (UNSIGNED-BYTE 8) SIB)| x86)
+                                                                              (if x86isa::sib? (x86isa::rme08 proc-mode temp-rip 1
+                                                                                                              :x x86)
+                                                                                (mv nil 0 x86))
+                                                                              (let ((sib acl2::|(THE (UNSIGNED-BYTE 8) SIB)|))
+                                                                                (if flg (!ms (let ((x86isa::erp nil))
+                                                                                               (cons (list ctx
+                                                                                                           :rip (rip x86)
+                                                                                                           :sib-byte-read-error flg)
+                                                                                                     x86isa::erp))
+                                                                                             x86)
+                                                                                  (mv-let (flg temp-rip)
+                                                                                    (if x86isa::sib? (x86isa::add-to-*ip proc-mode temp-rip 1 x86)
+                                                                                      (mv nil temp-rip))
+                                                                                    (if flg (!ms (let ((x86isa::erp nil))
+                                                                                                   (cons (list ctx
+                                                                                                               :rip (rip x86)
+                                                                                                               :increment-error flg)
+                                                                                                         x86isa::erp))
+                                                                                                 x86)
+                                                                                      (one-byte-opcode-execute proc-mode start-rip temp-rip prefixes
+                                                                                                               rex-byte x86isa::opcode-byte modr/m
+                                                                                                               sib x86))))))))))))))))))))))))))))
+                    ;)
+                    )))
+  :hints (("Goal" :in-theory (enable x86-fetch-decode-execute
+                                     x86-operation-mode))))
+
+
+
 (def-constant-opener x86isa::mxcsrbits-fix)
 
 ;; these expose part-select

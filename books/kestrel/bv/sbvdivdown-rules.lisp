@@ -1,7 +1,7 @@
 ; Rules about sbvdivdown
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -113,7 +113,7 @@
                       0
                     (- (expt 2 size)
                        (bvchop size (* x (/ (+ (expt 2 size2) (- y)))))))))
-  :hints (("Goal" :use (:instance (:instance bvchop-of-minus (x (* x (/ (+ (expt 2 size2) (- y)))))))
+  :hints (("Goal" :use (:instance bvchop-of-minus (x (* x (/ (+ (expt 2 size2) (- y))))))
            :in-theory (e/d (--of-*-push-into-arg2 --of-/) (bvchop-of-minus *-of---arg2 /-of--)))))
 
 (defthmd sbvdivdown-rewrite-case-4

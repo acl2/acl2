@@ -1267,10 +1267,10 @@
 (defun get-prefixes-openers ()
   (declare (xargs :guard t))
   '(x86isa::get-prefixes-base-1
-    x86isa::get-prefixes-base-2
-    x86isa::get-prefixes-base-3
+    ;; x86isa::get-prefixes-base-2 ; error case
+    ;; x86isa::get-prefixes-base-3 ; error case
     x86isa::get-prefixes-base-4
-    x86isa::get-prefixes-base-5
+    ;; x86isa::get-prefixes-base-5 ; error case
     x86isa::get-prefixes-base-6
     x86isa::get-prefixes-base-7
     x86isa::get-prefixes-base-8
@@ -1284,6 +1284,8 @@
     ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple
     ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple
     ))
+
+(set-axe-rule-priority x86isa::get-prefixes-base-1 1) ; try late (unusual case)
 
 ;todo: separate out the 64-bit rules
 (defun segment-base-and-bounds-rules ()
@@ -1673,7 +1675,7 @@
             ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
             ;; x86isa::x86-fetch-decode-execute-base ; even this can introduce confusing cases when things can't be resolved
             ;; todo: support using this one only when debugging:
-            x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the pc
+            ;;x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the pc
             poor-mans-quotep-constant-opener
 
             booleanp-of-canonical-address-p
@@ -2256,7 +2258,8 @@
   (set-difference-equal
    (append (lifter-rules-common)
           (read-over-write-rules32)
-          '(x86isa::rip ; todo: think about this
+          '(x86isa::x86-fetch-decode-execute-base-new ; todo: make a faster version, like we do for 64 bit
+            x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
             ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple-32
@@ -3060,7 +3063,8 @@
           (read-byte-rules)
           (linear-memory-rules)
           (get-prefixes-rules64)
-          '(;!rip-becomes-set-rip ; todo: uncomment for non-loop case
+          '(x86isa::x86-fetch-decode-execute-base-new ; x86-fetch-decode-execute-opener-safe-64 ; todo: put this in?
+            ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
             x86isa::rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
             ;; this is sometimes needed in 64-bit mode (e.g., when a stack
@@ -4207,8 +4211,13 @@
 ;; Try this rule first
 (set-axe-rule-priority read-of-write-disjoint -1)
 
-;; Wait to try this rule until the read is cleaned up by removing irrelevant inner sets
-(set-axe-rule-priority read-when-program-at-gen 1)
+;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
+;;(set-axe-rule-priority read-when-program-at-gen 1)
+(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric 1)
+(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-2-bytes 2) ; try these after the 1-byte one just above
+(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-4-bytes 2)
+(set-axe-rule-priority read-in-terms-of-nth-and-pos-eric-8-bytes 2)
+
 
 
 ;; These rules expand operations on effective addresses, exposing the
@@ -4523,7 +4532,7 @@
             equal-of-1-and-sub-zf-spec32
 
             logand-of-1-becomes-getbit-arg2 ;move
-            acl2::ifix-does-nothing
+            ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
@@ -4696,6 +4705,15 @@
           (acl2::bv-of-logext-rules)
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
+
+
+(defund step-opener-rules ()
+  (declare (xargs :guard t))
+  '(;; todo: just use one of these 2:
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new
+    ;; x86-fetch-decode-execute-opener-safe-64
+    ))
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority set-flag-of-write -3)
