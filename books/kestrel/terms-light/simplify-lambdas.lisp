@@ -13,6 +13,7 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Add more kinds of simplifications
+;; TODO: Add proofs book
 
 (include-book "substitute-constants-in-lambdas")
 (include-book "clean-up-lambdas")

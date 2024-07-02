@@ -15,9 +15,7 @@
 
 ;; This does the following to lambdas:
 ;; 1. Substitute for lambda vars bound to constants
-;; TODO: 2. Avoid trivial lambdas (all formals bound to themselves).  Or consider calling another tool to do that separately?
-
-;; TODO: add more kinds of simplifications, in other files (see clean-up-lambdas, etc.)
+;; TODO: 2. Avoid trivial lambdas (all formals bound to themselves).  Maybe.  Or just call drop-trivial-lambdas.
 
 (include-book "sublis-var-simple")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))

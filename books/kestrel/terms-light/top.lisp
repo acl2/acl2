@@ -67,8 +67,6 @@
 (include-book "copy-term-proofs")
 
 ;; Transformations (and their proofs):
-(include-book "expand-lambdas-in-term")
-(include-book "expand-lambdas-in-term-proof")
 (include-book "combine-ifs-in-then-and-else-branches")
 (include-book "add-param-to-calls-in-term")
 (include-book "let-bind-formals-in-calls")
@@ -76,15 +74,24 @@
 (include-book "restore-mv-in-branches")
 (include-book "restore-mv-lets-in-term")
 (include-book "reconstruct-lets-in-term")
-(include-book "serialize-lambdas-in-term")
-(include-book "serialize-lambdas-in-term-proofs")
 (include-book "simplify-ors")
 (include-book "simplify-ors-proofs")
 (include-book "substitute-unnecessary-lambda-vars")
 (include-book "replace-term-with-term")
-(include-book "clean-up-lambdas")
-(include-book "clean-up-lambdas-proofs")
+
+;; Transformations about lambdas (and their proofs):
+(include-book "serialize-lambdas-in-term")
+(include-book "serialize-lambdas-in-term-proofs") ; incomplete
+(include-book "expand-lambdas-in-term")
+(include-book "expand-lambdas-in-term-proof")
+;; Drop unused lambda bindings:
+(include-book "clean-up-lambdas") ; todo rename file
+(include-book "clean-up-lambdas-proofs") ; todo rename file
+;; Handle lambda vars bound to constants:
 (include-book "substitute-constants-in-lambdas")
 (include-book "substitute-constants-in-lambdas-proofs")
+;; For lambda whose formals are the same as its args:
 (include-book "drop-trivial-lambdas")
+(include-book "drop-trivial-lambdas-proofs")
+;; Combines several transformations on lambdas:
 (include-book "simplify-lambdas")

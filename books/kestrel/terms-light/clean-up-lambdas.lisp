@@ -67,6 +67,7 @@
                    (if (equal formals args)
                        ;; If the remaining formals are the same as the args, we
                        ;; don't need a lambda at all:
+                       ;; TODO: Or rely on drop-trivial-lambdas for that?
                        body
                      `((lambda ,formals ,body) ,@args))))
              ;; not a lambda:
