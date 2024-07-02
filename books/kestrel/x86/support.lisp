@@ -1870,3 +1870,20 @@
                      (x::set-flag :of (rflagsbits->of user-flags-vector) x86))))
            x86))
   :hints (("Goal" :in-theory (enable x::set-flag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This could go into a support64 book:
+
+(defthm add-to-*ip-of-0 ; 0 means 64-bit mode?
+  (equal (x86isa::add-to-*ip 0 x86isa::*ip x86isa::delta x86)
+         (if (canonical-address-p (+ x86isa::*ip x86isa::delta))
+             (mv nil (+ x86isa::*ip x86isa::delta))
+           (mv (list :non-canonical-instruction-pointer (+ x86isa::*ip x86isa::delta))
+               0)))
+  :hints (("Goal" :in-theory (enable x86isa::add-to-*ip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more
+(defthmd n64-becomes-bvchop (equal (x86isa::n64 x) (acl2::bvchop 64 x)))
