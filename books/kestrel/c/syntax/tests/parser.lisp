@@ -403,6 +403,11 @@
           (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
         ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
 
+(defmacro test-lex-fail (fn input)
+  `(assert-event
+    (b* (((mv erp & & &) (,fn (init-parstate (acl2::string=>nats ,input)))))
+      erp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; lex-identifier/keyword
@@ -457,6 +462,32 @@
  lex-hexadecimal-digit
  "b"
  :cond (equal ast #\b))
+
+(test-lex
+ lex-hexadecimal-digit
+ "fy"
+ :cond (and (equal ast #\f)
+            (equal (parstate->bytes pstate) (list (char-code #\y)))))
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ " ")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ " c")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "g")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "@")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

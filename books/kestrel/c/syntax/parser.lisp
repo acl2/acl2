@@ -1211,6 +1211,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lex-hex-quad ((pstate parstatep))
+  :returns (mv erp
+               (quad hex-quad-p)
+               (last-pos positionp)
+               (new-pstate parstatep))
+  :short "Lex a quadruple of hexadecimal digits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect four hexadecimal digits,
+     so we call @(tsee lex-hexadecimal-digit) four times.
+     We return the position of the last one."))
+  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
+       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
+    (retok (make-hex-quad :1st hexdig1
+                          :2nd hexdig2
+                          :3rd hexdig3
+                          :4th hexdig4)
+           pos
+           pstate))
+
+  ///
+
+  (defret parsize-of-lex-hex-quad-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-lex-hex-quad-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lex-dec-digits ((pos-so-far positionp) (pstate parstatep))
   :returns (mv erp
                (decdigs dec-digit-char-listp
@@ -1347,45 +1386,6 @@
            (len hexdigs)))
     :rule-classes :linear
     :hints (("Goal" :induct t :in-theory (enable fix len)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lex-hex-quad ((pstate parstatep))
-  :returns (mv erp
-               (quad hex-quad-p)
-               (last-pos positionp)
-               (new-pstate parstatep))
-  :short "Lex a quadruple of hexadecimal digits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when we expect four hexadecimal digits,
-     so we call @(tsee lex-hexadecimal-digit) four times.
-     We return the position of the last one."))
-  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
-       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
-       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
-       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
-       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
-    (retok (make-hex-quad :1st hexdig1
-                          :2nd hexdig2
-                          :3rd hexdig3
-                          :4th hexdig4)
-           pos
-           pstate))
-
-  ///
-
-  (defret parsize-of-lex-hex-quad-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-hex-quad-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2512,7 +2512,7 @@
                    :dec/oct/hex (make-dec/oct/hex-const-hex
                                  :prefix hprefix
                                  :digits hexdigs)
-                   :suffix nil))
+                   :suffix? nil))
                  hexdigs-last-pos
                  pstate))
          ((= char (char-code #\.)) ; 0 x/X hexdigs .
@@ -2594,7 +2594,7 @@
                      :dec/oct/hex (make-dec/oct/hex-const-hex
                                    :prefix hprefix
                                    :digits hexdigs)
-                     :suffix isuffix?))
+                     :suffix? isuffix?))
                    (cond (isuffix? suffix-last/next-pos)
                          (t hexdigs-last-pos))
                    pstate))))))))
@@ -2678,7 +2678,7 @@
                :dec/oct/hex (make-dec/oct/hex-const-dec
                              :value (str::dec-digit-chars-value
                                      (cons first-digit decdigs)))
-               :suffix nil))
+               :suffix? nil))
              (cond (decdigs decdigs-last-pos)
                    (t (position-fix first-pos)))
              pstate))
@@ -2758,7 +2758,7 @@
                  :dec/oct/hex (make-dec/oct/hex-const-dec
                                :value (str::dec-digit-chars-value
                                        (cons first-digit decdigs)))
-                 :suffix isuffix?))
+                 :suffix? isuffix?))
                (cond (isuffix? suffix-last/next-pos)
                      (decdigs decdigs-last-pos)
                      (t (position-fix first-pos)))
@@ -2963,7 +2963,7 @@
                  (make-dec/oct/hex-const-oct
                   :leading-zeros (1+ (oct-iconst-leading-zeros digits))
                   :value (str::oct-digit-chars-value digits))
-                 :suffix nil))
+                 :suffix? nil))
                (cond (digits digits-last-pos)
                      (t (position-fix zero-pos)))
                pstate))
@@ -3053,7 +3053,7 @@
                    (make-dec/oct/hex-const-oct
                     :leading-zeros (1+ (oct-iconst-leading-zeros digits))
                     :value (str::oct-digit-chars-value digits))
-                   :suffix isuffix?))
+                   :suffix? isuffix?))
                  (cond (isuffix? suffix-last/next-pos)
                        (digits digits-last-pos)
                        (t (position-fix zero-pos)))
@@ -3121,7 +3121,7 @@
                    :dec/oct/hex (make-dec/oct/hex-const-oct
                                  :leading-zeros 1
                                  :value 0)
-                   :suffix nil))
+                   :suffix? nil))
                  (position-fix first-pos)
                  pstate))
          ((or (= char (char-code #\x)) ; 0 x

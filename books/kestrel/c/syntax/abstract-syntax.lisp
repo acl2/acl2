@@ -310,7 +310,7 @@
      An integer constant consists of a decimal, octal, or hexadecimal constant,
      and of an optional integer suffix."))
   ((dec/oct/hex dec/oct/hex-const)
-   (suffix isuffix-option))
+   (suffix? isuffix-option))
   :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
