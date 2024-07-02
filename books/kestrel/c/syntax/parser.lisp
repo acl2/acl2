@@ -53,6 +53,23 @@
   (implies (natp x)
            (acl2-numberp x)))
 
+(defruledl natp-of-plus
+  (implies (and (natp x)
+                (natp y))
+           (natp (+ x y))))
+
+(defruledl natp-of-logand
+  (implies (and (natp x)
+                (natp y))
+           (natp (logand x y)))
+  :enable natp
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+(defruledl natp-of-ash
+  (implies (natp x)
+           (natp (ash x y)))
+  :prep-books ((include-book "kestrel/arithmetic-light/ash" :dir :system)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ parser
@@ -484,9 +501,7 @@
      from the @('chars-unread') list to the reversed @('chars-read') list
      if @('chars-unread') is not empty,
      or from the @('bytes') list to the reversed @('chars-read') list
-     where one or more bytes are decoded into the character
-     (currently just one byte,
-     but that may change if we add support for non-ASCII UTF-8 Unicode).")
+     where one or more bytes are UTF-8-decoded into the character.")
    (xdoc::p
     "When a character is unread, it is moved from left to right,
      i.e. from the reversed @('chars-read') list to the @('chars-unread') list.
@@ -670,7 +685,7 @@
    (xdoc::p
     "As mentioned in @(tsee parstate),
      we represent characters as natural numbers,
-     meant to be Unicode code points,
+     meant to be Unicode code points (more precisely, Unicode scalar values),
      including ASCII codes as a subset.
      When an unexpected character is encountered during lexing,
      we return user-oriented error messages
@@ -708,7 +723,7 @@
          (msg "the ~s0 character (ASCII code ~x1)"
               (str::implode (list (code-char char))) char))
         ((= char 127) "the DEL (delete) character (ASCII code 127)")
-        (t (msg "the non-ASCII character starting with byte ~x0" char)))
+        (t (msg "the non-ASCII Unicode character with code ~x0" char)))
   :guard-hints (("Goal" :in-theory (enable character-listp
                                            nat-optionp)))
 
@@ -813,15 +828,14 @@
      and we leave the parser state unchanged.")
    (xdoc::p
     "Otherwise, we read the first byte, which is removed from the parser state.
-     Since currently we only support ASCII,
-     one byte is always enough for a character;
-     in the future, we may generalize this to perform UTF-8 decoding.")
+     Since we support Unicode, we perform UTF-8 decoding,
+     which may involve reading additional bytes.")
    (xdoc::p
     "Looking at the rules in the ABNF grammar for basic and extended characters,
-     we see that the ASCII codes of the three non-new-line extended characters
+     we see that the codes of the three ASCII non-new-line extended characters
      (namely dollar, at sign, and backquote)
      fill gaps in the ASCII codes of the basic characters,
-     so that the codes 9, 11, 12, and 32-126 are all valid characters,
+     so that the codes 9, 11, 12, and 32-126 are all valid ASCII characters,
      which are thus returned, incrementing the position by one column.
      If instead the byte is the ASCII code 10 for line feed,
      we increment the position by one line.
@@ -847,20 +861,68 @@
      or how many lines a vertical tab or form feed takes.
      So, at least for now, we just treat these as most other characters.")
    (xdoc::p
-    "If the next byte read has any other value, we deem it illegal,
-     and return an error message with the current file position.
-     We intentionally exclude most ASCII control characters,
+    "We exclude most ASCII control characters,
      except for the basic ones and for the new-line ones,
      since there should be little need to use those in C code.
      Furthermore, some are dangerous, particularly backspace,
      since it may make the code look different from what it is,
      similarly to "
     (xdoc::ahref "https://en.wikipedia.org/wiki/Trojan_Source" "Trojan Source")
-    " in Unicode.
-     However, if we encounter practical code
-     that uses some of these ASCII control characters,
-     we can easily add support for them,
-     in the ABNF grammar and in the parser."))
+    " in Unicode.")
+   (xdoc::p
+    "If the first byte is 128 or more,
+     it must start a non-ASCII Unicode character.
+     There are three cases to consider.
+     It is easy to find references to UTF-8 encoding/decoding, for instance "
+    (xdoc::ahref "https://en.wikipedia.org/wiki/UTF-8" "this Wikipedia page")
+    ".")
+   (xdoc::p
+    "<b>First case</b>:
+     If the first byte has the form @('110xxxyy'),
+     it must be followed by a second byte of the form @('10yyzzzz'),
+     which together encode @('xxxyyyyzzzz'),
+     which covers the range from 0 to 7FFh.
+     We return an error if there is no second byte.
+     We return an error if the encoded value is below 80h.
+     If all these checks pass,
+     the code covers the character range from @('U+80') to @('U+7FF').")
+   (xdoc::p
+    "<b>Second case</b>:
+     If the first byte has the form @('1110xxxx'),
+     it must be followed by a second byte of the form @('10yyyyzz')
+     and by a third byte of the form @('10zzwwww'),
+     which together encode @('xxxxyyyyzzzzwwww'),
+     which covers the range from 0 to FFFFh.
+     We return an error if there is no second or third byte.
+     We return an error if the encoded value is below 800h.
+     If all these checks pass,
+     the code covers the character range from @('U+800') to @('U+FFFF'),
+     but we return an error if the character
+     is between @('U+202A') and @('U+202E')
+     or between @('U+2066') and @('U+2069');
+     see the @('safe-nonascii') rule in our ABNF grammar.")
+   (xdoc::p
+    "<b>Third case</b>:
+     If the first byte has the form @('11110xyy'),
+     it must be followed by a second byte of the form @('10yyzzzz')
+     and by a third byte of the form @('10wwwwuu')
+     and by a fourth byte of the form @('10uuvvvv'),
+     which together encode @('xyyyyzzzzwwwwuuuuvvvv'),
+     which covers the range from 0 to 1FFFFFh.
+     We return an error if there is no second or third or fourth byte.
+     We return an error if the encoded value is below 10000h or above 10FFFFh.
+     If all these checks pass,
+     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+   (xdoc::p
+    "If the first byte read has any other value,
+     either it is an invalid UTF-8 encoding (e.g. @('111...'))
+     or it is an ASCII character that we do not accept (e.g. @('00000000')).
+     We return an error in this case.")
+   (xdoc::p
+    "Note that all the non-ASCII characters that we accept
+     just increment the column number by 1 and leave the line number unchanged.
+     This may not be appropriate for certain Unicode characters,
+     but for now we treat them in this simplified way."))
   (b* (((reterr) nil (irr-position) (irr-parstate))
        ((parstate pstate) pstate)
        ((when (consp pstate.chars-unread))
@@ -872,63 +934,290 @@
                   :chars-unread (cdr pstate.chars-unread)
                   :chars-read (cons char+pos pstate.chars-read)))))
        ((unless (consp pstate.bytes))
-        (retok nil pstate.position (irr-parstate)))
-       (byte (car pstate.bytes)))
-    (cond ((or (= byte 9)
-               (= byte 11)
-               (= byte 12)
-               (and (<= 32 byte) (<= byte 126)))
-           (retok byte
-                  pstate.position
-                  (change-parstate
-                   pstate
-                   :bytes (cdr pstate.bytes)
-                   :position (position-inc-column 1 pstate.position)
-                   :chars-read (cons (make-char+position
-                                      :char byte
-                                      :position pstate.position)
-                                     pstate.chars-read))))
-          ((= byte 10)
-           (retok 10
-                  pstate.position
-                  (change-parstate
-                   pstate
-                   :bytes (cdr pstate.bytes)
-                   :position (position-inc-line 1 pstate.position)
-                   :chars-read (cons (make-char+position
-                                      :char 10
-                                      :position pstate.position)
-                                     pstate.chars-read))))
-          ((= byte 13)
-           (if (and (consp (cdr pstate.bytes))
-                    (= (cadr pstate.bytes) 10))
-               (retok 10
-                      pstate.position
-                      (change-parstate
-                       pstate
-                       :bytes (cddr pstate.bytes)
-                       :position (position-inc-line 1 pstate.position)
-                       :chars-read (cons (make-char+position
-                                          :char 10
-                                          :position pstate.position)
-                                         pstate.chars-read)))
-             (retok 10
-                    pstate.position
-                    (change-parstate
-                     pstate
-                     :bytes (cdr pstate.bytes)
-                     :position (position-inc-line 1 pstate.position)
-                     :chars-read (cons (make-char+position
-                                        :char 10
-                                        :position pstate.position)
-                                       pstate.chars-read)))))
-          (t (reterr-msg :where (position-to-msg pstate.position)
-                         :expected "an ASCII character with code ~
-                                    in the range 9-13 or in the range 32-126"
-                         :found (char-to-msg byte)))))
+        (retok nil pstate.position (parstate-fix pstate)))
+       (byte (car pstate.bytes))
+       (bytes (cdr pstate.bytes))
+       ;; ASCII except line feed and carriage return:
+       ((when (or (= byte 9)
+                  (= byte 11)
+                  (= byte 12)
+                  (and (<= 32 byte) (<= byte 126))))
+        (retok byte
+               pstate.position
+               (change-parstate
+                pstate
+                :bytes bytes
+                :position (position-inc-column 1 pstate.position)
+                :chars-read (cons (make-char+position
+                                   :char byte
+                                   :position pstate.position)
+                                  pstate.chars-read))))
+       ;; line feed:
+       ((when (= byte 10))
+        (retok 10
+               pstate.position
+               (change-parstate
+                pstate
+                :bytes bytes
+                :position (position-inc-line 1 pstate.position)
+                :chars-read (cons (make-char+position
+                                   :char 10
+                                   :position pstate.position)
+                                  pstate.chars-read))))
+       ;; carriage return:
+       ((when (= byte 13))
+        (b* ((bytes (if (and (consp bytes)
+                             (= (car bytes) 10))
+                        (cdr bytes)
+                      bytes)))
+          (retok 10
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-line 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char 10
+                                     :position pstate.position)
+                                    pstate.chars-read)))))
+       ;; 2-byte UTF-8:
+       ((when (= (logand byte #b11100000) #b11000000)) ; 110xxxyy
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 110... ~
+                                          (i.e. between 192 and 223) ~
+                                          of a two-byte UTF-8 encoding"
+                                         byte)
+                          :found "end of file"))
+             (byte2 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 110... ~
+                                          (i.e. between 192 and 223) ~
+                                          of a two-byte UTF-8 encoding"
+                                         byte)
+                          :found (msg "the byte ~x0" byte2)))
+             (code (+ (ash (logand byte #b00011111) 6)
+                      (logand byte2 #b00111111)))
+             ((when (< code #x80))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a value between 80h and 7FFh ~
+                                          UTF-8-encoded in the two bytes ~
+                                          (~x0 ~x1)"
+                                         byte byte2)
+                          :found (msg "the value ~x0" code))))
+          (retok code
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-column 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char code
+                                     :position pstate.position)
+                                    pstate.chars-read)))))
+       ;; 3-byte UTF-8:
+       ((when (= (logand byte #b11110000) #b11100000)) ; 1110xxxx
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 to 239) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte)
+                          :found "end of file"))
+             (byte2 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyyyzz
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 and 239) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte)
+                          :found (msg "the byte ~x0" byte2)))
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 to 239) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found "end of file"))
+             (byte3 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10zzwwww
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 1110... ~
+                                          (i.e. between 224 and 239) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a three-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found (msg "the byte ~x0" byte3)))
+             (code (+ (ash (logand byte #b00001111) 12)
+                      (ash (logand byte2 #b00111111) 6)
+                      (logand byte3 #b00111111)))
+             ((when (< code #x800))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a value between 800h and FFFFh ~
+                                          UTF-8-encoded in the three bytes ~
+                                          (~x0 ~x1 ~x2)"
+                                         byte byte2 byte3)
+                          :found (msg "the value ~x0" code)))
+             ((when (or (and (<= #x202a code)
+                             (<= code #x202e))
+                        (and (<= #x2066 code)
+                             (<= code #x2069))))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected "a Unicode character with code ~
+                                     in the range 9-13 or 32-126 ~
+                                     or 128-8233 or 8239-8293 or ~
+                                     or 8298-55295 or 57344-1114111"
+                          :found (char-to-msg code))))
+          (retok code
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-column 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char code
+                                     :position pstate.position)
+                                    pstate.chars-read)))))
+       ;; 4-byte UTF-8:
+       ((when (= (logand #b11111000 byte) #b11110000)) ; 11110xyy
+        (b* (((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 to 247) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte)
+                          :found "end of file"))
+             (byte2 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte2 #b11000000) #b10000000)) ; 10yyzzzz
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 and 247) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte)
+                          :found (msg "the byte ~x0" byte2)))
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 to 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found "end of file"))
+             (byte3 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte3 #b11000000) #b10000000)) ; 10wwwwuu
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 and 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2)
+                          :found (msg "the byte ~x0" byte3)))
+             ((unless (consp bytes))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "another byte after ~
+                                          the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 to 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          and the third byte ~x2 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2 byte3)
+                          :found "end of file"))
+             (byte4 (car bytes))
+             (bytes (cdr bytes))
+             ((unless (= (logand byte4 #b11000000) #b10000000)) ; 10uuvvvv
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a byte of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          after the first byte ~x0 ~
+                                          of the form 11110... ~
+                                          (i.e. between 240 and 247) ~
+                                          and the second byte ~x1 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          and the third byte ~x2 ~
+                                          of the form 10... ~
+                                          (i.e. between 128 and 191) ~
+                                          of a four-byte UTF-8 encoding"
+                                         byte byte2 byte3)
+                          :found (msg "the byte ~x0" byte4)))
+             (code (+ (ash (logand byte #b00000111) 18)
+                      (ash (logand byte2 #b00111111) 12)
+                      (ash (logand byte3 #b00111111) 6)
+                      (logand byte4 #b00111111)))
+             ((when (or (< code #x10000)
+                        (> code #x10ffff)))
+              (reterr-msg :where (position-to-msg pstate.position)
+                          :expected (msg "a value between 10000h and 10FFFFh ~
+                                          UTF-8-encoded in the four bytes ~
+                                          (~x0 ~x1 ~x2 ~x3)"
+                                         byte byte2 byte3 byte4)
+                          :found (msg "the value ~x0" code))))
+          (retok code
+                 pstate.position
+                 (change-parstate
+                  pstate
+                  :bytes bytes
+                  :position (position-inc-column 1 pstate.position)
+                  :chars-read (cons (make-char+position
+                                     :char code
+                                     :position pstate.position)
+                                    pstate.chars-read))))))
+    (reterr-msg :where (position-to-msg pstate.position)
+                :expected "a byte in the range 9-13 or 32-126 or 192-223"
+                :found (msg "the byte ~x0" byte)))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :prepwork ((local (in-theory (enable acl2-numberp-when-bytep
                                        rationalp-when-bytep
-                                       natp-when-bytep))))
+                                       integerp-when-natp
+                                       natp-when-bytep
+                                       natp-of-plus
+                                       natp-of-logand
+                                       natp-of-ash))))
 
   ///
 
