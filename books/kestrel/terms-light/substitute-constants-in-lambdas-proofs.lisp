@@ -95,17 +95,6 @@
            (not (member-equal formal (mv-nth 0 (formals-and-constant-args formals args)))))
   :hints (("Goal" :in-theory (enable formals-and-constant-args))))
 
-(defthm remove-equal-when-not-member-equal-cheap
-  (implies (not (member-equal a x))
-           (equal (remove-equal a x)
-                  (true-list-fix x)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defthm remove-equal-when-not-member-equal
-  (implies (not (member-equal a x))
-           (equal (remove-equal a x)
-                  (true-list-fix x))))
-
 (defthm free-vars-in-term-when-quotep
   (implies (quotep term)
            (equal (free-vars-in-term term)
@@ -128,7 +117,8 @@
                             free-vars-in-terms
                             subsetp-equal-of-cons-arg2-irrel
                             subsetp-equal-of-remove-equal-arg1-irrel
-                            set-difference-equal)
+                            set-difference-equal
+                            remove-equal-when-not-member-equal)
                            (quotep
                             formals-and-constant-args)))))
 
