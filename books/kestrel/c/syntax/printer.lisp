@@ -1279,6 +1279,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-inc/dec-op ((op inc/dec-opp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an increment or decrement operator."
+  (inc/dec-op-case
+   op
+   :inc (print-astring "++" pstate)
+   :dec (print-astring "--" pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-inc/dec-op-list ((ops inc/dec-op-listp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print a list of zero or more increment or decrement operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We separate any two consecutive ones with a space."))
+  (b* (((when (endp ops)) (pristate-fix pstate))
+       (pstate (print-inc/dec-op (car ops) pstate))
+       ((when (endp (cdr ops))) pstate)
+       (pstate (print-astring " " pstate)))
+    (print-inc/dec-op-list (cdr ops) pstate))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines print-exprs/decls
   :short "Print expressions, declarations, and related entities."
   :long
@@ -1613,45 +1640,55 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-expr expr.next (expr-priority-asg) pstate)))
              pstate)
-           :cast/call-ambig
-           (prog2$ (raise "Misusage error: ~
-                           ambiguous cast or call ~x0."
-                          (expr-fix expr))
-                   (pristate-fix pstate))
            ;; We temporarily allow an ambiguous cast/mul expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
+           ;; This must go away during static semantic elaboration,
+           ;; which should be normally done prior to printing.
+           :cast/call-ambig
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/fun)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "(" pstate))
+                (pstate (print-expr expr.arg/rest (expr-priority-expr) pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
+           ;; We temporarily allow an ambiguous cast/mul expression
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/mul-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") * " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "* " pstate))
                 (pstate (print-expr expr.arg/arg2
                                     (expr-priority-cast)
                                     pstate)))
              pstate)
            ;; We temporarily allow an ambiguous cast/add expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/add-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") + " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "+ " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
                 ;; if it is an addition,
@@ -1661,20 +1698,19 @@
                                     pstate)))
              pstate)
            ;; We temporarily allow an ambiguous cast/sub expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/sub-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") - " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "- " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
                 ;; if it is a subtraction,
@@ -1684,20 +1720,19 @@
                                     pstate)))
              pstate)
            ;; We temporarily allow an ambiguous cast/and expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if it were a cast expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :cast/and-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.type/arg1))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.type/arg1)
-                 (pristate-fix pstate))
-                (pstate (print-astring "(" pstate))
-                (pstate (print-ident ident pstate))
-                (pstate (print-astring ") & " pstate))
+           (b* ((pstate (print-astring "(" pstate))
+                (pstate (print-tyname (amb-expr/tyname->tyname expr.type/arg1)
+                                      pstate))
+                (pstate (print-astring ") " pstate))
+                (pstate (print-inc/dec-op-list expr.inc/dec pstate))
+                (pstate (if expr.inc/dec
+                            (print-astring " " pstate)
+                          pstate))
+                (pstate (print-astring "& " pstate))
                 ;; We keep the expected priority to cast
                 ;; so that it is valid if it is a cast;
                 ;; if it is a conjunction,
@@ -1871,19 +1906,13 @@
            :alignas-type (print-tyname alignspec.type pstate)
            :alignas-expr (print-const-expr alignspec.arg pstate)
            ;; We temporarily allow an ambiguous alignment specifier
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases),
-           ;; which is common.
+           ;; as if its argument is an expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :alignas-ambig
-           (b* ((ident (check-amb-expr/tyname-ident alignspec.type/arg))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        alignspec.type/arg)
-                 pstate))
-             (print-ident ident pstate))))
+           (print-expr (amb-expr/tyname->expr alignspec.type/arg)
+                       (expr-priority-expr)
+                       pstate)))
          (pstate (print-astring ")" pstate)))
       pstate)
     :measure (alignspec-count alignspec))
