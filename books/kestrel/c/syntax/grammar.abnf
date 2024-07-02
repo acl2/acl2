@@ -193,7 +193,6 @@ extended-character = %x24 ; $
                    / line-feed
                    / carriage-return
                    / safe-nonascii
-                   ; add more if needed
 
 ; This is our initial (source) character set.
 ; This rule name has no direct corresponding nonterminal in [C],
@@ -237,6 +236,7 @@ extended-character-not-new-line = %x24 ; $
                                 / %x40 ; @
                                 / %x60 ; `
                                 ; omit line-feed and carriage-return
+                                / safe-nonascii
                                 ; cf. extended-character
 
 graphic-character-not-star = %x21-23 ; ! " #
