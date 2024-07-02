@@ -279,7 +279,7 @@
 
 (defxdoc builtin-defaxioms/defthms-about-random$
   :parents (builtin-defaxioms/defthms-by-types/functions)
-  :short "Built-in axioms and theorems about (tsee random$)."
+  :short "Built-in axioms and theorems about @(tsee random$)."
   :long (builtin-names-to-xdoc-defs
          *builtin-defaxiom/defthm-random$*))
 

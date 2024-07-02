@@ -580,7 +580,7 @@
   :short "Print an integer constant."
   (b* (((iconst iconst) iconst)
        (pstate (print-dec/oct/hex-const iconst.dec/oct/hex pstate))
-       (pstate (print-isuffix-option iconst.suffix pstate)))
+       (pstate (print-isuffix-option iconst.suffix? pstate)))
     pstate)
   :hooks (:fix))
 
@@ -1571,19 +1571,14 @@
                 (pstate (print-astring ")" pstate)))
              pstate)
            ;; We temporarily allow an ambiguous sizeof expression
-           ;; provided that the ambiguous expression or type name
-           ;; is just an identifier (the same in both cases), which is common.
+           ;; as if its argument is an expression.
            ;; This must go away during static semantic elaboration,
            ;; which should be normally done prior to printing.
            :sizeof-ambig
-           (b* ((ident (check-amb-expr/tyname-ident expr.expr/tyname))
-                ((unless ident)
-                 (raise "Misusage error: ~
-                         ambiguous expression or type name ~x0."
-                        expr.expr/tyname)
-                 (pristate-fix pstate))
-                (pstate (print-astring "sizeof(" pstate))
-                (pstate (print-ident ident pstate))
+           (b* ((pstate (print-astring "sizeof(" pstate))
+                (pstate (print-expr (amb-expr/tyname->expr expr.expr/tyname)
+                                    (expr-priority-expr)
+                                    pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :alignof
@@ -2955,7 +2950,12 @@
     (block-item-case
      item
      :decl (print-decl item.unwrap pstate)
-     :stmt (print-stmt item.unwrap pstate))
+     :stmt (print-stmt item.unwrap pstate)
+     ;; We temporarily print an ambiguous block item
+     ;; as if it were a declaration.
+     ;; This must go away during static semantic elaboration,
+     ;; which should be normally done prior to printing.
+     :ambig (print-decl (amb-decl/stmt->decl item.unwrap) pstate))
     :measure (two-nats-measure (block-item-count item) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

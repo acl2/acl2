@@ -35,6 +35,10 @@
            (maybe-dargp darg))
   :hints (("Goal" :in-theory (enable maybe-dargp))))
 
+; Matt K. mod 6/25/2024:
+; The following seemed necessary for a run based on Allegro CL.
+(set-compile-fns t)
+
 ;; The renumbering-stobj is a stobj that stores a "renumbering", that is, a map
 ;; from node numbers (up to some limit) to dargs (see dargp).  Entries beyond
 ;; the initial region of valid elements will be nil (since nil is not a darg,

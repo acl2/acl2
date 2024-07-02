@@ -120,7 +120,7 @@ e.g. ((\"Goal\" :foo)).</p>")
     (value new-term)))
 
 (defun easy-simplify-term-fn (term hyp-term hints equiv
-                              normalize rewrite repeat backchain-limit state)
+                              normalize rewrite repeat backchain-limit untrans-result state)
   (declare (xargs :mode :program :stobjs state))
   (b* ((world (w state))
        ((er trans-term)
@@ -135,7 +135,9 @@ e.g. ((\"Goal\" :foo)).</p>")
         (easy-simplify-term1-fn
          trans-term hyps hints equiv normalize rewrite repeat backchain-limit
          state)))
-    (value (untranslate new-term nil (w state)))))
+    (if untrans-result
+        (value (untranslate new-term nil (w state)))
+      (value new-term))))
 
 (defmacro easy-simplify-term (term &key
                                    (hyp 't)
@@ -144,10 +146,12 @@ e.g. ((\"Goal\" :foo)).</p>")
                                    (normalize 't)
                                    (rewrite 't)
                                    (repeat '1000)
-                                   (backchain-limit '1000))
+                                   (backchain-limit '1000)
+                                   (untrans-result 't))
   `(easy-simplify-term-fn
     ',term ',hyp ',hint ',equiv
     ',normalize ',rewrite ',repeat ',backchain-limit
+    ',untrans-result
     state))
 
 
@@ -175,7 +179,7 @@ several clauses produced from the original term.</p>
           (acl2::easy-simplify-term ,hyp :hint ,hint))
          ((er new-term)
           (acl2::easy-simplify-term-fn
-           ',term new-hyp-term ',hint 'equal t t 1000 1000 state)))
+           ',term new-hyp-term ',hint 'equal t t 1000 1000 t state)))
       (value `(defthm ,',name
                 ,(if (not (eq ',hyp t))
                      `(implies ,',hyp (equal ,',term ,new-term))

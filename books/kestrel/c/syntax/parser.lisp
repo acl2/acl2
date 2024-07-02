@@ -1158,7 +1158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-hex-digit ((pstate parstatep))
+(define lex-hexadecimal-digit ((pstate parstatep))
   :returns (mv erp
                (hexdig hex-digit-char-p
                        :hints
@@ -1198,12 +1198,51 @@
 
   ///
 
-  (defret parsize-of-lex-hex-digit-uncond
+  (defret parsize-of-lex-hexadecimal-digit-uncond
     (<= (parsize new-pstate)
         (parsize pstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-hex-digit-cond
+  (defret parsize-of-lex-hexadecimal-digit-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-hex-quad ((pstate parstatep))
+  :returns (mv erp
+               (quad hex-quad-p)
+               (last-pos positionp)
+               (new-pstate parstatep))
+  :short "Lex a quadruple of hexadecimal digits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect four hexadecimal digits,
+     so we call @(tsee lex-hexadecimal-digit) four times.
+     We return the position of the last one."))
+  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
+       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
+    (retok (make-hex-quad :1st hexdig1
+                          :2nd hexdig2
+                          :3rd hexdig3
+                          :4th hexdig4)
+           pos
+           pstate))
+
+  ///
+
+  (defret parsize-of-lex-hex-quad-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-lex-hex-quad-cond
     (implies (not erp)
              (<= (parsize new-pstate)
                  (1- (parsize pstate))))
@@ -1347,45 +1386,6 @@
            (len hexdigs)))
     :rule-classes :linear
     :hints (("Goal" :induct t :in-theory (enable fix len)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lex-hex-quad ((pstate parstatep))
-  :returns (mv erp
-               (quad hex-quad-p)
-               (last-pos positionp)
-               (new-pstate parstatep))
-  :short "Lex a quadruple of hexadecimal digits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when we expect four hexadecimal digits,
-     so we call @(tsee lex-hex-digit) four times.
-     We return the position of the last one."))
-  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
-       ((erp hexdig1 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig2 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig3 & pstate) (lex-hex-digit pstate))
-       ((erp hexdig4 pos pstate) (lex-hex-digit pstate)))
-    (retok (make-hex-quad :1st hexdig1
-                          :2nd hexdig2
-                          :3rd hexdig3
-                          :4th hexdig4)
-           pos
-           pstate))
-
-  ///
-
-  (defret parsize-of-lex-hex-quad-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-hex-quad-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1860,7 +1860,7 @@
         (cond
          ((not char2) ; L EOF
           (retok (isuffix-l (lsuffix-upcase-l)) pos pstate))
-         ((= char2 (char-code #\l)) ; L L
+         ((= char2 (char-code #\L)) ; L L
           (b* (((erp char3 pos3 pstate) (read-char pstate)))
             (cond
              ((not char3) ; L L EOF
@@ -2512,7 +2512,7 @@
                    :dec/oct/hex (make-dec/oct/hex-const-hex
                                  :prefix hprefix
                                  :digits hexdigs)
-                   :suffix nil))
+                   :suffix? nil))
                  hexdigs-last-pos
                  pstate))
          ((= char (char-code #\.)) ; 0 x/X hexdigs .
@@ -2594,7 +2594,7 @@
                      :dec/oct/hex (make-dec/oct/hex-const-hex
                                    :prefix hprefix
                                    :digits hexdigs)
-                     :suffix isuffix?))
+                     :suffix? isuffix?))
                    (cond (isuffix? suffix-last/next-pos)
                          (t hexdigs-last-pos))
                    pstate))))))))
@@ -2678,7 +2678,7 @@
                :dec/oct/hex (make-dec/oct/hex-const-dec
                              :value (str::dec-digit-chars-value
                                      (cons first-digit decdigs)))
-               :suffix nil))
+               :suffix? nil))
              (cond (decdigs decdigs-last-pos)
                    (t (position-fix first-pos)))
              pstate))
@@ -2758,7 +2758,7 @@
                  :dec/oct/hex (make-dec/oct/hex-const-dec
                                :value (str::dec-digit-chars-value
                                        (cons first-digit decdigs)))
-                 :suffix isuffix?))
+                 :suffix? isuffix?))
                (cond (isuffix? suffix-last/next-pos)
                      (decdigs decdigs-last-pos)
                      (t (position-fix first-pos)))
@@ -2963,7 +2963,7 @@
                  (make-dec/oct/hex-const-oct
                   :leading-zeros (1+ (oct-iconst-leading-zeros digits))
                   :value (str::oct-digit-chars-value digits))
-                 :suffix nil))
+                 :suffix? nil))
                (cond (digits digits-last-pos)
                      (t (position-fix zero-pos)))
                pstate))
@@ -3053,7 +3053,7 @@
                    (make-dec/oct/hex-const-oct
                     :leading-zeros (1+ (oct-iconst-leading-zeros digits))
                     :value (str::oct-digit-chars-value digits))
-                   :suffix isuffix?))
+                   :suffix? isuffix?))
                  (cond (isuffix? suffix-last/next-pos)
                        (digits digits-last-pos)
                        (t (position-fix zero-pos)))
@@ -3121,7 +3121,7 @@
                    :dec/oct/hex (make-dec/oct/hex-const-oct
                                  :leading-zeros 1
                                  :value 0)
-                   :suffix nil))
+                   :suffix? nil))
                  (position-fix first-pos)
                  pstate))
          ((or (= char (char-code #\x)) ; 0 x
@@ -9112,70 +9112,28 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-direct-declarator ((pstate parstatep))
+  (define parse-array/function-declarator ((prev-dirdeclor dirdeclorp)
+                                           (prev-span spanp)
+                                           (pstate parstatep))
     :returns (mv erp
                  (dirdeclor dirdeclorp)
                  (span spanp)
                  (new-pstate parstatep))
     :parents (parser parse-exprs/decls)
-    :short "Parse a direct declarator."
+    :short "Parse an array or function declarator."
     :long
     (xdoc::topstring
      (xdoc::p
-      "A direct declarator always starts with
-       either an identifier or a parenthesized declarator,
-       and continues with zero or more array or function constructs
-       that augment the declarator.
-       First we parse the initial identifier or parenthesized declarator,
-       then we call a separate function to parse
-       the zero or more array or function constructs."))
-    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
-         ((erp token span pstate) (read-token pstate)))
-      (cond
-       ;; If token is an identifier,
-       ;; that must be the start of the direct declarator.
-       ((and token (token-case token :ident)) ; ident
-        (parse-direct-declarator-rest (dirdeclor-ident
-                                       (token-ident->unwrap token))
-                                      span
-                                      pstate))
-       ;; If token is an open parenthesis,
-       ;; we must have a parenthesized declarator.
-       ((equal token (token-punctuator "(")) ; (
-        (b* ((psize (parsize pstate))
-             ((erp declor & pstate) (parse-declarator pstate)) ; ( declor
-             ((unless (mbt (<= (parsize pstate) (1- psize))))
-              (reterr :impossible))
-             ((erp last-span pstate) (read-punctuator ")" pstate))) ; ( declor )
-          (parse-direct-declarator-rest (dirdeclor-paren declor)
-                                        (span-join span last-span)
-                                        pstate)))
-       ;; If token is anything else, it is an error:
-       ;; we do not have a direct declarator.
-       (t
-        (reterr-msg :where (position-to-msg (span->start span))
-                    :expected "an identifier ~
-                               or an open parenthesis"
-                    :found (token-to-msg token)))))
-    :measure (two-nats-measure (parsize pstate) 0))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define parse-direct-declarator-rest ((prev-dirdeclor dirdeclorp)
-                                        (prev-span spanp)
-                                        (pstate parstatep))
-    :returns (mv erp (dirdeclor dirdeclorp) (span spanp) (new-pstate parstatep))
-    :parents (parser parse-exprs/decls)
-    :short "Parse the rest of a direct declarator."
-    :long
-    (xdoc::topstring
+      "These are the kinds of direct declarators
+       that can be chained, one after the other.
+       See @(tsee parse-direct-declarator).")
      (xdoc::p
-      "This is called after parsing
-       the identifier or parenthesized declarator
-       that starts the direct declarator,
-       and which is a direct declarator itself,
-       and is passed to this function as the @('prev-dirdeclor') input,
-       along with its span.")
+      "This function is called when we expect this kind of declarator.")
+     (xdoc::p
+      "The @('prev-dirdeclor') input to this function
+       is the direct declarator parsed so far,
+       which must be extended with the next array or function declarator.
+       The @('prev-span') input is the span of that direct declarator.")
      (xdoc::p
       "Although there are two possible variants for function declarators,
        since an identifier is a type specifier and thus a parameter declaration,
@@ -9400,14 +9358,115 @@
                                                      :ellipsis ellipsis)
                      (span-join prev-span last-span)
                      pstate))))))
-       ;; If token is anything else,
-       ;; we have reached the end of the direct declarator.
+       ;; If token is not an open parenthesis or an open square bracket,
+       ;; it is an internal implementation error:
+       ;; this function should be always called
+       ;; when the next token is an open parenthesis or open square bracket.
+       (t ;; other
+        (prog2$
+         (raise "Internal error: unexpected token ~x0." token)
+         (reterr t)))))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-direct-declarator ((pstate parstatep))
+    :returns (mv erp
+                 (dirdeclor dirdeclorp)
+                 (span spanp)
+                 (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse a direct declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A direct declarator always starts with
+       either an identifier or a parenthesized declarator,
+       and continues with zero or more array or function constructs
+       that augment the declarator.
+       First we parse the initial identifier or parenthesized declarator,
+       then we call a separate function to parse
+       the zero or more array or function constructs."))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+         ((erp token span pstate) (read-token pstate)))
+      (cond
+       ;; If token is an identifier,
+       ;; that must be the start of the direct declarator.
+       ((and token (token-case token :ident)) ; ident
+        (parse-direct-declarator-rest (dirdeclor-ident
+                                       (token-ident->unwrap token))
+                                      span
+                                      pstate))
+       ;; If token is an open parenthesis,
+       ;; we must have a parenthesized declarator.
+       ((equal token (token-punctuator "(")) ; (
+        (b* ((psize (parsize pstate))
+             ((erp declor & pstate) (parse-declarator pstate)) ; ( declor
+             ((unless (mbt (<= (parsize pstate) (1- psize))))
+              (reterr :impossible))
+             ((erp last-span pstate) (read-punctuator ")" pstate))) ; ( declor )
+          (parse-direct-declarator-rest (dirdeclor-paren declor)
+                                        (span-join span last-span)
+                                        pstate)))
+       ;; If token is anything else, it is an error:
+       ;; we do not have a direct declarator.
+       (t
+        (reterr-msg :where (position-to-msg (span->start span))
+                    :expected "an identifier ~
+                               or an open parenthesis"
+                    :found (token-to-msg token)))))
+    :measure (two-nats-measure (parsize pstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-direct-declarator-rest ((prev-dirdeclor dirdeclorp)
+                                        (prev-span spanp)
+                                        (pstate parstatep))
+    :returns (mv erp (dirdeclor dirdeclorp) (span spanp) (new-pstate parstatep))
+    :parents (parser parse-exprs/decls)
+    :short "Parse the rest of a direct declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called after parsing
+       the identifier or parenthesized declarator
+       that starts the direct declarator,
+       and which is a direct declarator itself,
+       and is passed to this function as the @('prev-dirdeclor') input,
+       along with its span."))
+    (b* (((reterr) (irr-dirdeclor) (irr-span) (irr-parstate))
+         ;; We read the next token, to determine whether
+         ;; there is another array or function declarator.
+         ((erp token & pstate) (read-token pstate)))
+      (cond
+       ;; If token is an open parenthesis or an open square bracket,
+       ;; we must have a function or array declarator.
+       ;; We put back the token
+       ;; and call the function to parse the next declarator,
+       ;; which combines that with the previous one passed to this function,
+       ;; obtaining an extended direct declarator
+       ;; which we recursively pass to this function
+       ;; for possibly further extension.
+       ((or (equal token (token-punctuator "(")) ; (
+            (equal token (token-punctuator "["))) ; [
+        (b* ((pstate (unread-token pstate)) ;
+             (psize (parsize pstate))
+             ((erp curr-dirdeclor curr-span pstate) ; dirdeclor
+              (parse-array/function-declarator prev-dirdeclor prev-span pstate))
+             ((unless (mbt (<= (parsize pstate) (1- psize))))
+              (reterr :impossible)))
+          (parse-direct-declarator-rest curr-dirdeclor
+                                        curr-span
+                                        pstate)))
+       ;; If token is not an open parenthesis or an open square bracket,
+       ;; we have reached the end of the sequence of zero or more
+       ;; array and function abstract declarators.
        (t ; other
-        (b* ((pstate (if token (unread-token pstate) pstate)))
+        (b* ((pstate (if token (unread-token pstate) pstate))) ;
           (retok (dirdeclor-fix prev-dirdeclor)
                  (span-fix prev-span)
                  pstate)))))
-    :measure (two-nats-measure (parsize pstate) 0))
+    :measure (two-nats-measure (parsize pstate) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -9534,8 +9593,7 @@
        ;; If token is a comma,
        ;; we must have at least another structure declarator.
        ((equal token (token-punctuator ",")) ; structdeclor ,
-        (b* ((pstate (unread-token pstate)) ; structdeclor
-             ((erp structdeclors last-span  pstate)
+        (b* (((erp structdeclors last-span  pstate)
               ;; structdeclor , structdeclors
               (parse-struct-declarator-list pstate)))
           (retok (cons structdeclor structdeclors)
@@ -9668,20 +9726,14 @@
        a list of one or more declaration specifiers, which we parse.
        Then we may have a declarator, an abstract declarator, or nothing.")
      (xdoc::p
-      "There is a non-trivial syntactic overlap
+      "As explained in @(tsee amb-declor/absdeclor),
+       there is a complex syntactic overlap
        between declarators and abstract declarators.
-       For instance, if @('I') is an identifier, @('(I)') could be
-       either a direct declarator for the parenthesized identifier
-       or a function abstract declarator
-       where @('I') is a type specifier for the (one) parameter.
-       But this is just a simple example:
-       there are infinite overlapping constructs,
-       e.g. obtained by adding array and function declarator parts to @('I'),
-       but not only those.
-       We plan to revisit this issue,
-       but for now here we just consider declarators,
-       and not abstract declarators.
-       This is very crude, so we should improve this soon."))
+       Thus, unless there is no (abstract or non-abstract) declarator,
+       which we recognize by the presence of a comma or closed parenthesis,
+       we parse a possibly ambiguous declarator or abstract declarator,
+       and generate a parameter declarator accordingly,
+       and then a parameter declaration with the declaration specifiers."))
     (b* (((reterr) (irr-paramdecl) (irr-span) (irr-parstate))
          (psize (parsize pstate))
          ((erp declspecs span pstate) ; declspecs
@@ -9690,24 +9742,50 @@
           (reterr :impossible))
          ((erp token & pstate) (read-token pstate)))
       (cond
-       ;; If token may start a declarator, we parse it.
-       ((token-declarator-start-p token) ; declspecs declor...
-        (b* ((pstate (unread-token pstate)) ; declspecs
-             ((erp declor last-span pstate) ; declspecs declor
-              (parse-declarator pstate))
-             (paramdeclor (paramdeclor-declor declor)))
+       ;; If token is a comma or a closed parenthesis,
+       ;; there is no parameter declarator.
+       ((or (equal token (token-punctuator ")")) ; declspecs )
+            (equal token (token-punctuator ","))) ; declspecs ,
+        (b* ((pstate (unread-token pstate))) ; declspecs
           (retok (make-paramdecl :spec declspecs
-                                 :decl paramdeclor)
-                 (span-join span last-span)
-                 pstate)))
-       ;; Otherwise, the parameter declarator has no declarator.
-       (t ; declspecs other
-        (b* ((pstate (if token (unread-token pstate) pstate))
-             (paramdeclor (paramdeclor-none)))
-          (retok (make-paramdecl :spec declspecs
-                                 :decl paramdeclor)
+                                 :decl (paramdeclor-none))
                  span
-                 pstate)))))
+                 pstate)))
+       ;; Otherwise, we parse
+       ;; a possibly ambiguous declarator or abstract declarator,
+       ;; and return a parameter declaration in accordance.
+       (t ; declspecs other
+        (b* ((pstate (if token (unread-token pstate) pstate)) ; declspecs
+             ((erp declor/absdeclor
+                   last-span
+                   pstate) ; declspecs declor/absdeclor
+              (parse-declarator-or-abstract-declarator pstate)))
+          (amb?-declor/absdeclor-case
+           declor/absdeclor
+           ;; If we parsed an unambiguous declarator,
+           ;; we return a parameter declaration with that.
+           :declor
+           (retok (make-paramdecl
+                   :spec declspecs
+                   :decl (paramdeclor-declor declor/absdeclor.unwrap))
+                  (span-join span last-span)
+                  pstate)
+           ;; If we parsed an unambiguous abstract declarator,
+           ;; we return a parameter declaration with that.
+           :absdeclor
+           (retok (make-paramdecl
+                   :spec declspecs
+                   :decl (paramdeclor-absdeclor declor/absdeclor.unwrap))
+                  (span-join span last-span)
+                  pstate)
+           ;; If we parsed an ambiguous declarator or abstract declarator,
+           ;; we return a parameter declaration with that.
+           :ambig
+           (retok (make-paramdecl
+                   :spec declspecs
+                   :decl (paramdeclor-ambig declor/absdeclor.unwrap))
+                  (span-join span last-span)
+                  pstate))))))
     :measure (two-nats-measure (parsize pstate) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10076,7 +10154,20 @@
        and we return either a declarator or an abstract declarator (wrapped).
        If both succeed, there is an ambiguity,
        which we return as such.
-       If none succeeds, it is an error."))
+       If none succeeds, it is an error.")
+     (xdoc::p
+      "A complication is that an abstract declarator
+       may be a prefix of a declarator,
+       e.g. @('int *') is a prefix of @('int *x').
+       In this case, we can disambiguate the situation
+       in favor or a declarator,
+       exploiting the fact that an ambiguous declarator or abstract declarator
+       only occurs in a parameter declaration,
+       which is always follows by a comma or closed parenthesis.
+       So, if we successfully parse an abstract declarator,
+       we also ensure that the next token is a comma or closed parenthesis,
+       otherwise we regard the parsing of the abstract declarator
+       to have failed."))
     (b* (((reterr) (irr-amb?-declor/absdeclor) (irr-span) (irr-parstate))
          (pstate (record-checkpoint pstate)) ; we will backtrack here
          (psize (parsize pstate))
@@ -10167,25 +10258,78 @@
                        span-declor
                        pstate))
             ;; If the parsing of an abstract declarator succeeds,
-            ;; we have an ambiguous declarator or abstract declarator.
-            ;; We double-check that the two spans are the same;
-            ;; we have not yet analyzed in detail
-            ;; whether this check should always succeed,
-            ;; but we will revisit the issue if we observe failures
-            ;; (in which case we can handle things similarly to
-            ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
-            (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
-                 ((unless (equal span-absdeclor span-declor))
-                  (raise "Internal error: ~
-                          span ~x0 of declarator ~x1 differs from ~
-                          span ~x2 of abstract declarator ~x3."
-                         span-declor declor span-absdeclor absdeclor)
-                  (reterr t)))
-              (retok (amb?-declor/absdeclor-ambig
-                      (make-amb-declor/absdeclor :declor declor
-                                                 :absdeclor absdeclor))
-                     span-declor ; = span-absdeclor
-                     pstate))))))
+            ;; we still need to check whether
+            ;; it is followed by a comma or closed parenthesis,
+            ;; as explained in the documentation of the function above.
+            ;; So we read a token.
+            (b* (((erp token & pstate) (read-token pstate)))
+              (if (or (equal token (token-punctuator ","))
+                      (equal token (token-punctuator ")")))
+                  ;; If a comma or closed parenthesis follows,
+                  ;; the parsing of the abstract declarator has succeeded,
+                  ;; we have an ambiguous declarator or abstract declarator.
+                  ;; We double-check that the two spans are the same;
+                  ;; we have not yet analyzed in detail
+                  ;; whether this check should always succeed,
+                  ;; but we will revisit the issue if we observe failures
+                  ;; (in which case we can handle things similarly to
+                  ;; our handling in PARSE-EXPRESSION-OR-TYPE-NAME).
+                  (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
+                       ((unless (equal span-absdeclor span-declor))
+                        (raise "Internal error: ~
+                                span ~x0 of declarator ~x1 differs from ~
+                                span ~x2 of abstract declarator ~x3."
+                               span-declor declor span-absdeclor absdeclor)
+                        (reterr t))
+                       (pstate (unread-token pstate))) ; put back , or )
+                    (retok (amb?-declor/absdeclor-ambig
+                            (make-amb-declor/absdeclor :declor declor
+                                                       :absdeclor absdeclor))
+                           span-declor ; = span-absdeclor
+                           pstate))
+                ;; If a comma or closed parenthesis does not follow,
+                ;; the abstract declarator must be a prefix of a declarator,
+                ;; so it means that we have an unambiguous declarator.
+                ;; We must backtrack and re-parse it;
+                ;; note that the backtracking
+                ;; also puts back the token just read.
+                (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                     ((unless (<= (parsize pstate) psize))
+                      (raise "Internal error: ~
+                              size ~x0 after backtracking exceeds ~
+                              size ~x1 before backtracking."
+                             (parsize pstate) psize)
+                      ;; Here we have (> (parsize pstate) psize),
+                      ;; but we need to return a parser state
+                      ;; no larger than the initial one,
+                      ;; so we just return the empty parser state.
+                      ;; This is just logical:
+                      ;; execution stops at the RAISE above.
+                      (b* ((pstate (init-parstate nil)))
+                        (reterr t)))
+                     ((mv erp declor1 span-declor1 pstate)
+                      (parse-declarator pstate))
+                     ((when erp)
+                      (raise "Internal error: ~
+                              parsing the same declarator ~x0 twice ~
+                              gives the error ~x1."
+                             declor erp)
+                      (reterr t))
+                     ((unless (equal declor1 declor))
+                      (raise "Internal error: ~
+                              parsing the same declarator ~x0 twice ~
+                              gives a different declarator ~x1."
+                             declor declor1)
+                      (reterr t))
+                     ((unless (equal span-declor1 span-declor))
+                      (raise "Internal error: ~
+                              parsing the same declarator ~x0 twice ~
+                              gives a different span ~x1 from ~x2."
+                             declor span-declor1 span-declor)
+                      (reterr t)))
+                  (retok (amb?-declor/absdeclor-declor declor)
+                         span-declor
+                         pstate))))))))
     :measure (two-nats-measure (parsize pstate) 3))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10477,6 +10621,11 @@
           (parsize pstate))
       :rule-classes :linear
       :fn parse-abstract-declarator)
+    (defret parsize-of-parse-array/function-declarator-uncond
+      (<= (parsize new-pstate)
+          (parsize pstate))
+      :rule-classes :linear
+      :fn parse-array/function-declarator)
     (defret parsize-of-parse-direct-declarator-uncond
       (<= (parsize new-pstate)
           (parsize pstate))
@@ -10857,6 +11006,12 @@
                    (1- (parsize pstate))))
       :rule-classes :linear
       :fn parse-abstract-declarator)
+    (defret parsize-of-parse-array/function-declarator-cond
+      (implies (not erp)
+               (<= (parsize new-pstate)
+                   (1- (parsize pstate))))
+      :rule-classes :linear
+      :fn parse-array/function-declarator)
     (defret parsize-of-parse-direct-declarator-cond
       (implies (not erp)
                (<= (parsize new-pstate)
@@ -11222,6 +11377,193 @@
                  (1- (parsize pstate))))
     :rule-classes :linear
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-declaration-or-statement ((pstate parstatep))
+  :returns (mv erp
+               (decl/stmt amb?-decl/stmt-p)
+               (span spanp)
+               (new-pstate parstatep))
+  :short "Parse a declaration or a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when a block item
+     may be a declaration or an expression statement,
+     which have a complex syntactic overlap,
+     as explained in @(tsee amb-decl/stmt).
+     Thus, this parsing function returns
+     a possibly ambiguous declaration or statement.")
+   (xdoc::p
+    "We try to parse both a declaration
+     and an expression followed by a semicolon
+     (note that a declaration always ends in semicolon).
+     If only one succeeds, there is no ambiguity,
+     and we return either a declaration or a statement (wrapped);
+     since the statement is always an expression statement,
+     we actually return an expression in this case.
+     If both succeed, there is an ambiguity,
+     which we return as such.
+     If none succeeds, it is an error."))
+  (b* (((reterr) (irr-amb?-decl/stmt) (irr-span) (irr-parstate))
+       (pstate (record-checkpoint pstate)) ; we will backtrack here
+       (psize (parsize pstate))
+       ((mv erp expr span-expr pstate) (parse-expression pstate)))
+    (if erp
+        ;; If the parsing of an expression fails,
+        ;; we must have a declaration.
+        (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+             ((unless (<= (parsize pstate) psize))
+              (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                     (parsize pstate) psize)
+              ;; Here we have (> (parsize pstate) psize),
+              ;; but we need to return a parser state
+              ;; no larger than the initial one,
+              ;; so we just return the empty parser state.
+              ;; This is just logical: execution stops at the RAISE above.
+              (b* ((pstate (init-parstate nil)))
+                (reterr t)))
+             ((erp decl span pstate) (parse-declaration pstate)))
+          (retok (amb?-decl/stmt-decl decl) span pstate))
+      ;; If the parsing of an expression succeeds,
+      ;; we also need to parse a semicolon.
+      ;; Note that an expression may be a prefix of a declaration,
+      ;; e.g. 'x y;', where 'x' and 'y' are identifiers,
+      ;; must be a declaration, even though x could be an expression.
+      (b* (((erp token span-semicolon pstate) (read-token pstate))
+           (span-stmt (span-join span-expr span-semicolon)))
+        (if (equal token (token-punctuator ";"))
+            ;; If a semicolon follows,
+            ;; the parsing of an expression statement has succeeded,
+            ;; but we must see whether we can also parse a declaration.
+            ;; So we backtrack and we attempt to parse a declaration.
+            (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                 ((unless (<= (parsize pstate) psize))
+                  (raise "Internal error: ~
+                            size ~x0 after backtracking exceeds ~
+                            size ~x1 before backtracking."
+                         (parsize pstate) psize)
+                  ;; Here we have (> (parsize pstate) psize),
+                  ;; but we need to return a parser state
+                  ;; no larger than the initial one,
+                  ;; so we just return the empty parser state.
+                  ;; This is just logical:
+                  ;; execution stops at the RAISE above.
+                  (b* ((pstate (init-parstate nil)))
+                    (reterr t)))
+                 (pstate (record-checkpoint pstate)) ; we may backtrack again
+                 ((mv erp decl span-decl pstate) (parse-declaration pstate)))
+              (if erp
+                  ;; If the parsing of a declaration fails,
+                  ;; we have an expression statement.
+                  ;; We need to backtrack and re-parse it right now,
+                  ;; but we will look into improving this inefficiency.
+                  (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+                       ((unless (<= (parsize pstate) psize))
+                        (raise "Internal error: ~
+                              size ~x0 after backtracking exceeds ~
+                              size ~x1 before backtracking."
+                               (parsize pstate) psize)
+                        ;; Here we have (> (parsize pstate) psize),
+                        ;; but we need to return a parser state
+                        ;; no larger than the initial one,
+                        ;; so we just return the empty parser state.
+                        ;; This is just logical:
+                        ;; execution stops at the RAISE above.
+                        (b* ((pstate (init-parstate nil)))
+                          (reterr t)))
+                       ((mv erp expr1 span-expr1 pstate)
+                        (parse-expression pstate))
+                       ((when erp)
+                        (raise "Internal error: ~
+                              parsing the same expression ~x0 twice ~
+                              gives the error ~x1."
+                               expr erp)
+                        (reterr t))
+                       ((unless (equal expr1 expr))
+                        (raise "Internal error: ~
+                              parsing the same expression ~x0 twice ~
+                              gives a different expression ~x1."
+                               expr expr1)
+                        (reterr t))
+                       ((unless (equal span-expr1 span-expr))
+                        (raise "Internal error: ~
+                              parsing the same expression ~x0 twice ~
+                              gives a different span ~x1 from ~x2."
+                               expr span-expr1 span-expr)
+                        (reterr t))
+                       ((mv erp span-semicolon1 pstate)
+                        (read-punctuator ";" pstate))
+                       ((when erp)
+                        (raise "Internal error: ~
+                              parsing the semicolon twice ~
+                              after the same expression ~x0 ~
+                              gives the error ~x1."
+                               expr erp)
+                        (reterr t))
+                       ((unless (equal span-semicolon1 span-semicolon))
+                        (raise "Internal error: ~
+                              parsing the same semicolon twice ~
+                              after the same expression ~x0 ~
+                              gives a span ~x1 different from ~
+                              the span ~x2 from the previous time."
+                               expr span-semicolon1 span-semicolon)
+                        (reterr t)))
+                    (retok (amb?-decl/stmt-stmt expr)
+                           (span-join span-expr span-semicolon)
+                           pstate))
+                ;; If the parsing of a declaration succeeds,
+                ;; we return an ambiguous declaration or statement.
+                ;; We double-check that the spans are the same,
+                ;; which is always expected to succeed.
+                (b* ((pstate (clear-checkpoint pstate)) ; no backtracking
+                     ((unless (equal span-stmt span-decl))
+                      (raise "Internal error:
+                              span ~x0 of expression statement ~x1 ~
+                              differs from ~
+                              span ~x2 of declaration ~x3."
+                             span-stmt expr span-decl decl)
+                      (reterr t)))
+                  (retok (amb?-decl/stmt-ambig
+                          (make-amb-decl/stmt :stmt expr
+                                              :decl decl))
+                         span-stmt ; = span-decl
+                         pstate))))
+          ;; If a semicolon does not follow the expression,
+          ;; we cannot have an expression statement.
+          ;; Thus, we backtrack and proceed to parse a declaration.
+          (b* ((pstate (backtrack-checkpoint pstate)) ; backtrack
+               ((unless (<= (parsize pstate) psize))
+                (raise "Internal error: ~
+                        size ~x0 after backtracking exceeds ~
+                        size ~x1 before backtracking."
+                       (parsize pstate) psize)
+                ;; Here we have (> (parsize pstate) psize),
+                ;; but we need to return a parser state
+                ;; no larger than the initial one,
+                ;; so we just return the empty parser state.
+                ;; This is just logical:
+                ;; execution stops at the RAISE above.
+                (b* ((pstate (init-parstate nil)))
+                  (reterr t)))
+               ((erp decl span pstate) (parse-declaration pstate)))
+            (retok (amb?-decl/stmt-decl decl) span pstate))))))
+
+  ///
+
+  (defret parsize-of-parse-declaration-or-statement-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-parse-declaration-or-statement-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11808,76 +12150,43 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "There is a syntactic overlap between statements and declarations,
+      "As explained in @(tsee amb-decl/stmt),
+       there is a complex syntactic overlap
+       between expression statements and declarations,
        which are the two kinds of block items;
        the overlap cannot be disambiguated purely syntactically.
-       For now we use an approximate strategy:
-       if the first token may start a declaration specifier,
-       except for an identifier,
-       we commit to attempting to parse a declaration;
-       otherwise, we attempt to parse a statement.
-       We will refine this approach soon."))
+       Thus, under the appropriate conditions,
+       we parse a possibly ambiguous declaration or statement."))
     (b* (((reterr) (irr-block-item) (irr-span) (irr-parstate))
          ((erp token & pstate) (read-token pstate)))
       (cond
        ;; If token is an identifier,
        ;; we may have a declaration or an expression statement,
-       ;; so we read more tokens.
+       ;; so we read a possibly ambiguous declaration or statement.
        ((and token (token-case token :ident)) ; ident
-        (b* (((erp token2 & pstate) (read-token pstate)))
-          (cond
-           ;; If token2 may start a declaration specifier,
-           ;; we cannot have an expression (statement).
-           ;; Note that identifiers are
-           ;; possible starts of declaration specifiers,
-           ;; so this check also covers the case of
-           ;; a second identifier following the first identifier,
-           ;; where the second identifier cannot be a declaration specifier
-           ;; (because, as noted in PARSE-DECLARATION-SPECIFIERS,
-           ;; there may be at most one type specifier
-           ;; in a list of declaration specifiers),
-           ;; and thus the second identifier must be
-           ;; (the start of) a declarator.
-           ((token-declaration-specifier-start-p token2) ; ident declspec...
-            (b* ((pstate (unread-token pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp decl span pstate) (parse-declaration pstate))) ; decl
-              (retok (block-item-decl decl) span pstate)))
-           ;; If token2 is an open parenthesis,
-           ;; things are still ambiguous,
-           ;; because we could have a function call
-           ;; or a declaration with a parenthesized declarator.
-           ;; For now we commit to a function call,
-           ;; which should be much more common,
-           ;; but we should revisit this code and handle things properly.
-           ;; Note that some situations may be inherently ambiguous,
-           ;; which we plan to capture as such,
-           ;; deferring the disambiguation to post-parsing semantic analysis.
-           ((equal token2 (token-punctuator "(")) ; ident (
-            (b* ((pstate (unread-token pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
-              (retok (block-item-stmt stmt) span pstate)))
-           ;; If token2 is a star,
-           ;; things are still ambiguous,
-           ;; because we may have a declaration
-           ;; with a starred declarator,
-           ;; or a multiplication expression.
-           ;; The latter situation seems much less common,
-           ;; so for now we commit to a declaration,
-           ;; but we should revisit this code for more complete treatment.
-           ((equal token2 (token-punctuator "*")) ; ident *
-            (b* ((pstate (unread-token pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp decl span pstate) (parse-declaration pstate))) ; decl
-              (retok (block-item-decl decl) span pstate)))
-           ;; In all other cases,
-           ;; we commit to an expression statement.
-           (t ; ident other
-            (b* ((pstate (if token2 (unread-token pstate) pstate)) ; ident
-                 (pstate (unread-token pstate)) ;
-                 ((erp stmt span pstate) (parse-statement pstate))) ; stmt
-              (retok (block-item-stmt stmt) span pstate))))))
+        (b* ((pstate (unread-token pstate)) ;
+             ((erp decl/stmt span pstate) ; decl/stmt
+              (parse-declaration-or-statement pstate)))
+          (amb?-decl/stmt-case
+           decl/stmt
+           ;; If we parse an unambiguous declaration,
+           ;; we return a block item that is a declaration.
+           :decl
+           (retok (block-item-decl decl/stmt.unwrap)
+                  span
+                  pstate)
+           ;; If we parse an unambiguous statement,
+           ;; we return a block item that is a statement.
+           :stmt
+           (retok (block-item-stmt (stmt-expr decl/stmt.unwrap))
+                  span
+                  pstate)
+           ;; If we parse an ambiguous declaration or statement,
+           ;; we return an ambiguous block item.
+           :ambig
+           (retok (block-item-ambig decl/stmt.unwrap)
+                  span
+                  pstate))))
        ;; If token may start a declaration specifier,
        ;; since we have already considered the case of an identifier above,
        ;; we must have a declaration.

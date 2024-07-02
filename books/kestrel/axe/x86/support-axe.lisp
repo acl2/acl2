@@ -74,6 +74,7 @@
 ;;            (not (member-p e (create-canonical-address-list n prog-addr)))))
 
 ;We'll use aref1-rewrite to handle the aref1s.
+;; Or can we evaluate the aref1s (without getting slow array warnings)?
 (defthmd aref1-rewrite ;for axe
   (implies (and (not (equal :header n))
                 (not (equal :default n))
@@ -340,20 +341,19 @@
            :in-theory (disable set-flag-of-set-flag-diff)))
   :rule-classes nil)
 
-;; todo: packages on x
+;; todo: package
 (defthm x86isa::idiv-spec-64-trim-arg1-axe-all
-  (implies (axe-syntaxp (acl2::term-should-be-trimmed-axe '128 acl2::x 'acl2::all acl2::dag-array))
-           (equal (x86isa::idiv-spec-64 x y)
-                  (x86isa::idiv-spec-64 (acl2::trim 128 acl2::x) y)))
-  :hints (("Goal" :in-theory (e/d (acl2::trim x86isa::idiv-spec-64)
-                                  nil))))
+  (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x 'acl2::all dag-array))
+           (equal (idiv-spec-64 x y)
+                  (idiv-spec-64 (trim 128 x) y)))
+  :hints (("Goal" :in-theory (enable trim idiv-spec-64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Only fires when x86 is not an IF/MYIF (to save time).
 (defthm run-until-stack-shorter-than-base-axe
-  (implies (and (axe-syntaxp (not (acl2::syntactic-call-of 'if x86 acl2::dag-array)))
-                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 acl2::dag-array))) ; may be needed someday
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (stack-shorter-thanp old-rsp x86))
            (equal (run-until-stack-shorter-than old-rsp x86)
                   x86))
@@ -361,8 +361,8 @@
 
 ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
 (defthm run-until-stack-shorter-than-opener-axe
-  (implies (and (axe-syntaxp (not (acl2::syntactic-call-of 'if x86 acl2::dag-array)))
-                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 acl2::dag-array))) ; may be needed someday
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (stack-shorter-thanp old-rsp x86)))
            (equal (run-until-stack-shorter-than old-rsp x86)
                   (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
@@ -370,7 +370,7 @@
 
 ;; probably only needed for axe
 (defthmd integerp-of-ctri
-  (integerp (ctri acl2::i x86)))
+  (integerp (ctri i x86)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

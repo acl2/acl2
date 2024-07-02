@@ -36,89 +36,20 @@
 
 (local (in-theory (disable alistp no-duplicatesp-equal)))
 
-(defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
-  (implies (and (pseudo-termp body)
-                (no-nils-in-termp body)
-                (symbol-listp formals)
-                (no-duplicatesp-equal formals)
-                (pseudo-term-listp actuals)
-                (equal (len formals)
-                       (len actuals))
-                 ;; the relevant actuals are all vars (unusual!):
-                (EQUAL
-                 (MV-NTH 0
-                         (FILTER-FORMALS-AND-ACTUALS FORMALS
-                                                     ACTUALS (FREE-VARS-IN-TERM BODY)))
-                 (MV-NTH 1
-                         (FILTER-FORMALS-AND-ACTUALS FORMALS
-                                                     ACTUALS (FREE-VARS-IN-TERM BODY)))))
+;move to library
+(defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
+  (implies (subsetp-equal vars2 formals)
+           (equal (intersection-equal (set-difference-equal vars formals)
+                                      vars2)
+                  nil))
+  :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
 
-            (EQUAL (EMPTY-EVAL BODY
-                               (APPEND (PAIRLIS$ FORMALS (EMPTY-EVAL-LIST ACTUALS A))
-                                       A))
-                   (EMPTY-EVAL BODY A)))
-  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS
-                                     PAIRLIS$
-                                     symbolp-when-member-equal-and-symbol-listp))))
-
-(defthm-flag-free-vars-in-term
-  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-alt ; todo: similar to one in the proof of expand-lambdas
-    (implies (and (alists-equiv-on keys alist1 alist2)
-                  (subsetp-equal (free-vars-in-term term) keys)
-                  (pseudo-termp term))
-             (equal (equal (empty-eval term alist1)
-                           (empty-eval term alist2))
-                    t))
-    :flag free-vars-in-term)
-  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on-alt
-    (implies (and (alists-equiv-on keys alist1 alist2)
-                  (subsetp-equal (free-vars-in-terms terms) keys)
-                  (pseudo-term-listp terms))
-             (equal (equal (empty-eval-list terms alist1)
-                           (empty-eval-list terms alist2))
-                    t))
-    :flag free-vars-in-terms)
-  :hints (("Goal" :expand (FREE-VARS-IN-TERMS TERM)
-           :in-theory (e/d (empty-eval-of-fncall-args)
-                           (empty-eval-of-fncall-args-back)))))
-
-(defthm empty-eval-when-alists-equiv-on-special
-  (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
-                (pseudo-termp term))
-           (equal (equal (empty-eval term alist1)
-                         (empty-eval term alist2))
-                  t)))
-
-;move
-(defthm alists-equiv-on-of-append-arg1
-  (implies (alistp x)
-           (equal (alists-equiv-on keys (binary-append x y) z)
-                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
-                                             x
-                                             z)
-                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
-                                             y
-                                             z))))
-  :hints (("Goal" :in-theory (enable (:d SET-DIFFERENCE-EQUAL)
-                                     intersection-equal
-                                     MEMBER-EQUAL-OF-STRIP-CARS-IFF
-                                     ))))
-
-;move
-(defthm alists-equiv-on-of-append-arg2
-  (implies (and (alistp x)
-                )
-           (equal (alists-equiv-on keys z (binary-append x y))
-                  (and (alists-equiv-on (intersection-equal keys (strip-cars x))
-                                             z
-                                             x)
-                       (alists-equiv-on (set-difference-equal keys (strip-cars x))
-                                             z
-                                             y))))
-  :hints (("Goal" :in-theory (enable (:d SET-DIFFERENCE-EQUAL)
-                                     intersection-equal
-                                     MEMBER-EQUAL-OF-STRIP-CARS-IFF))))
-
+;; todo: move, dup in letify
+(defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
+  (subsetp-equal x
+                 (append (intersection-equal y x)
+                         (set-difference-equal x y)))
+  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
 
 
 ;todo: nested induction
@@ -127,23 +58,6 @@
 ;;                             (MV-NTH 0 (FILTER-FORMALS-AND-ACTUALS FORMALS ACTUALS var)))
 ;;         nil)
 ;;  :hints (("Goal" :in-theory (enable FILTER-FORMALS-AND-ACTUALS))))
-
-(defthm subsetp-equal-of-mv-nth-0-of-filter-formals-and-actuals
-  (subsetp-equal (mv-nth 0 (filter-formals-and-actuals formals actuals vars)) formals)
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
-
-(defthmd intersection-equal-of-set-difference-equal-when-subsetp-equal
-  (implies (subsetp-equal vars2 formals)
-           (equal (intersection-equal (set-difference-equal vars formals)
-                                      vars2)
-                  nil))
-  :hints (("Goal" :in-theory (enable intersection-equal set-difference-equal))))
-
-;nice!  use more above
-(defthm mv-nth-0-of-filter-formals-and-actuals
-  (equal (mv-nth 0 (filter-formals-and-actuals formals actuals formals-to-keep))
-         (intersection-equal formals formals-to-keep))
-  :hints (("Goal" :in-theory (enable filter-formals-and-actuals) )))
 
 ;move or gen to a subsetp fact, or gen the second x to z
 (defthm intersection-equal-of-intersection-equal-and-intersection-equal-swapped
@@ -170,6 +84,55 @@
                                      map-lookup-equal
                                      LOOKUP-EQUAL ;todo
                                      ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm empty-eval-of-append-of-pairlis$-of-EMPTY-EVAL-LIST-when-relevant-actuals-are-formals
+  (implies (and ;; the relevant actuals are all vars (unusual!):
+            (equal (mv-nth 0 (filter-formals-and-actuals formals actuals (free-vars-in-term body)))
+                   (mv-nth 1 (filter-formals-and-actuals formals actuals (free-vars-in-term body))))
+            (pseudo-termp body)
+            (no-nils-in-termp body)
+            (symbol-listp formals)
+            (no-duplicatesp-equal formals)
+            (pseudo-term-listp actuals)
+            (equal (len formals)
+                   (len actuals)))
+           (equal (empty-eval body (append (pairlis$ formals (empty-eval-list actuals a)) a))
+                  (empty-eval body a)))
+  :hints (("Goal" :in-theory (enable filter-formals-and-actuals
+                                     pairlis$
+                                     symbolp-when-member-equal-and-symbol-listp))))
+
+(defthm-flag-free-vars-in-term
+  ;; If the alists agree on some set of keys that includes all the free vars in the term,
+  ;; the the evaluations give the same result.
+  (defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-alt ; todo: similar to one in the proof of expand-lambdas
+    (implies (and (alists-equiv-on keys alist1 alist2)
+                  (subsetp-equal (free-vars-in-term term) keys)
+                  (pseudo-termp term))
+             (equal (equal (empty-eval term alist1)
+                           (empty-eval term alist2))
+                    t))
+    :flag free-vars-in-term)
+  (defthm equal-of-empty-eval-list-and-empty-eval-list-when-alists-equiv-on-alt
+    (implies (and (alists-equiv-on keys alist1 alist2)
+                  (subsetp-equal (free-vars-in-terms terms) keys)
+                  (pseudo-term-listp terms))
+             (equal (equal (empty-eval-list terms alist1)
+                           (empty-eval-list terms alist2))
+                    t))
+    :flag free-vars-in-terms)
+  :hints (("Goal" :expand (free-vars-in-terms term)
+           :in-theory (e/d (empty-eval-of-fncall-args)
+                           (empty-eval-of-fncall-args-back)))))
+
+(defthm equal-of-empty-eval-and-empty-eval-when-alists-equiv-on-special
+  (implies (and (alists-equiv-on (free-vars-in-term term) alist1 alist2)
+                (pseudo-termp term))
+           (equal (equal (empty-eval term alist1)
+                         (empty-eval term alist2))
+                  t)))
 
 ;; (thm
 ;;  (implies (and (alistp a)
@@ -300,12 +263,7 @@
            (lambdas-closed-in-termsp (mv-nth 1 (filter-formals-and-actuals formals actuals formals-to-keep))))
   :hints (("Goal" :in-theory (enable filter-formals-and-actuals))))
 
-;; todo: move, dup in letify
-(defthm subsetp-equal-of-append-of-intersection-equal-and-set-difference-equal-swapped
-  (subsetp-equal x
-                 (append (intersection-equal y x)
-                         (set-difference-equal x y)))
-  :hints (("Goal" :in-theory (enable subsetp-equal intersection-equal set-difference-equal))))
+
 
 (defthm lambdas-closed-in-termp-of-make-lambda-application-simple
   (implies (and (pseudo-termp body)

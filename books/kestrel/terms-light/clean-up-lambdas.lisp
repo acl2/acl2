@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; TODO: rename this book
+
 ;; See also remove-guard-holders-and-clean-up-lambdas and remove-guard-holders-weak.
 
 ;; TODO: Also handle the case where the lambda body is just a var (one of the
@@ -22,6 +24,7 @@
 ;; once in the lambda body.
 
 (include-book "tools/flag" :dir :system)
+(include-book "filter-formals-and-actuals")
 (local (include-book "kestrel/std/system/all-vars" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
@@ -32,65 +35,11 @@
 
 (local (in-theory (disable reverse all-vars)))
 
-;; Walk down FORMALS and ACTUALS in sync, dropping any formal, and its
-;; corresponding actual, that is not in BODY-VARS.  Returns (mv formals
-;; actuals).
-(defun drop-unused-lambda-formals-and-actuals (formals actuals body-vars formals-acc actuals-acc)
-  (declare (xargs :guard (and (symbol-listp formals)
-                              (pseudo-term-listp actuals)
-                              (symbol-listp body-vars)
-                              (symbol-listp formals-acc)
-                              (pseudo-term-listp actuals-acc))
-                  :verify-guards nil ;done below
-                  ))
-  (if (endp formals)
-      (mv (reverse formals-acc)
-          (reverse actuals-acc))
-    (let* ((formal (first formals)))
-      (if (member-eq formal body-vars)
-          (drop-unused-lambda-formals-and-actuals (rest formals) (rest actuals) body-vars
-                                                  (cons formal formals-acc)
-                                                  (cons (first actuals) actuals-acc))
-        ;; drop the formal and the actual:
-        (drop-unused-lambda-formals-and-actuals (rest formals) (rest actuals) body-vars
-                                                formals-acc
-                                                actuals-acc)))))
-
+;; also in books/std/typed-lists/pseudo-term-listp
 (local
- (defthm symbol-listp-of-mv-nth-0-of-drop-unused-lambda-formals-and-actuals
-   (implies (and (symbol-listp formals-acc)
-                 (symbol-listp formals))
-            (symbol-listp (mv-nth 0 (drop-unused-lambda-formals-and-actuals
-                                     formals actuals body-vars formals-acc actuals-acc))))))
-
-(local
- (defthm pseudo-term-listp-of-mv-nth-1-of-drop-unused-lambda-formals-and-actuals
-   (implies (and (pseudo-term-listp actuals-acc)
-                 (pseudo-term-listp actuals))
-            (pseudo-term-listp (mv-nth 1 (drop-unused-lambda-formals-and-actuals
-                                          formals actuals body-vars formals-acc actuals-acc))))))
-
-(local
- (defthm true-listp-of-mv-nth-0-of-drop-unused-lambda-formals-and-actuals
-   (implies (true-listp formals-acc)
-            (true-listp (mv-nth 0 (drop-unused-lambda-formals-and-actuals
-                                   formals actuals body-vars formals-acc actuals-acc))))
-   :rule-classes (:rewrite :type-prescription)))
-
-(local
- (defthm true-listp-of-mv-nth-1-of-drop-unused-lambda-formals-and-actuals
-   (implies (true-listp actuals-acc)
-            (true-listp (mv-nth 1 (drop-unused-lambda-formals-and-actuals
-                                   formals actuals body-vars formals-acc actuals-acc))))
-   :rule-classes (:rewrite :type-prescription)))
-
-(verify-guards drop-unused-lambda-formals-and-actuals)
-
-(local
- (defthm len-of-mv-nth-1-of-drop-unused-lambda-formals-and-actuals
-   (implies (equal (len formals-acc) (len actuals-acc))
-            (equal (len (mv-nth 1 (drop-unused-lambda-formals-and-actuals formals actuals body-vars formals-acc actuals-acc)))
-                   (len (mv-nth 0 (drop-unused-lambda-formals-and-actuals formals actuals body-vars formals-acc actuals-acc)))))))
+ (defthmd pseudo-term-listp-when-symbol-listp
+   (implies (symbol-listp syms)
+            (pseudo-term-listp syms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +63,7 @@
                       (formals (lambda-formals fn))
                       (body-vars (all-vars body)))
                  (mv-let (formals args)
-                   (drop-unused-lambda-formals-and-actuals formals args body-vars nil nil)
+                   (filter-formals-and-actuals formals args body-vars)
                    (if (equal formals args)
                        ;; If the remaining formals are the same as the args, we
                        ;; don't need a lambda at all:
@@ -126,16 +75,11 @@
    (declare (xargs :guard (pseudo-term-listp terms)))
    (if (endp terms)
        nil
-     (cons (drop-unused-lambda-bindings (first terms))
-           (drop-unused-lambda-bindings-lst (rest terms))))))
+     (cons-with-hint (drop-unused-lambda-bindings (first terms))
+                     (drop-unused-lambda-bindings-lst (rest terms))
+                     terms))))
 
 (make-flag drop-unused-lambda-bindings)
-
-;; also in books/std/typed-lists/pseudo-term-listp
-(local
- (defthmd pseudo-term-listp-when-symbol-listp
-   (implies (symbol-listp syms)
-            (pseudo-term-listp syms))))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm pseudo-termp-of-drop-unused-lambda-bindings
@@ -147,5 +91,10 @@
              (pseudo-term-listp (drop-unused-lambda-bindings-lst terms)))
     :flag drop-unused-lambda-bindings-lst)
   :hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp))))
+
+(defthm len-of-drop-unused-lambda-bindings-lst
+  (equal (len (drop-unused-lambda-bindings-lst terms))
+         (len terms))
+  :hints (("Goal" :induct (len terms))))
 
 (verify-guards drop-unused-lambda-bindings :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))

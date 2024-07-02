@@ -524,7 +524,7 @@
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
                              parsed-executable
-                             assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
+                             extra-assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
                              stack-slots
                              position-independentp
@@ -546,7 +546,7 @@
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
-                              ;; assumptions ; untranslated terms
+                              ;; extra-assumptions ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (booleanp position-independentp)
@@ -606,9 +606,8 @@
                         nil ; todo
                       (if (eq :pe-32 executable-type)
                           nil ; todo
-                        ;;todo: add support for :elf-32
-                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                assumptions))))))))
+                        ;; todo: add support for :elf-32
+                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (code-length
          (and 64-bitp ; todo
               (if (eq :mach-o-64 executable-type)
@@ -622,8 +621,7 @@
                       (if (eq :pe-32 executable-type)
                           nil ; todo
                         ;;todo: add support for :elf-32
-                        (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                                assumptions))))))))
+                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (automatic-assumptions
         (if suppress-assumptions
             ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
@@ -652,8 +650,7 @@
                       ;; todo: try without expanding this:
                       (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                     ;;todo: add support for :elf-32
-                    (prog2$ (cw "NOTE: Unsupported executable type: ~x0.~%" executable-type)
-                            assumptions))))))))
+                    (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
        (input-assumptions (if (and 64-bitp ; todo
                                    (not (equal inputs :skip)) ; really means generate no assumptions
                                    )
@@ -666,7 +663,7 @@
                                                       text-offset
                                                       code-length)
                             nil))
-       (assumptions (append automatic-assumptions input-assumptions assumptions))
+       (assumptions (append automatic-assumptions input-assumptions extra-assumptions))
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
@@ -757,7 +754,7 @@
 (defun def-unrolled-fn (lifted-name
                         target
                         executable
-                        assumptions
+                        extra-assumptions
                         suppress-assumptions
                         stack-slots
                         position-independent
@@ -786,7 +783,7 @@
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
                               ;; executable
-                              ;; assumptions ; untranslated-terms
+                              ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
@@ -841,7 +838,7 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
-          assumptions suppress-assumptions stack-slots position-independentp
+          extra-assumptions suppress-assumptions stack-slots position-independentp
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base untranslatep rewriter state))
        ((when erp) (mv erp nil state))
@@ -971,7 +968,7 @@
                                   executable
                                   &key
                                   (target ':entry-point)
-                                  (assumptions 'nil) ; (todo: rename to :extra-assumptions)
+                                  (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (stack-slots '100)
                                   (position-independent ':auto)
@@ -1001,7 +998,7 @@
       ',lifted-name
       ,target
       ,executable ; gets evaluated
-      ,assumptions
+      ,extra-assumptions
       ',suppress-assumptions
       ',stack-slots
       ',position-independent
@@ -1032,7 +1029,7 @@
   :args ((lifted-name "The name to use for the generated function and constant (the latter surrounded by stars).")
          (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
-         (assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
+         (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
          (suppress-assumptions "Whether to suppress the standard assumptions.")
          (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")

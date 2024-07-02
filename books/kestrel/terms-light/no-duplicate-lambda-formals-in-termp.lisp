@@ -1,6 +1,6 @@
 ; A simple utility to check that lambdas never have duplicate formals
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -106,3 +106,42 @@
               (no-duplicate-lambda-formals-in-termsp terms2)))
   :hints (("Goal" :in-theory (enable no-duplicate-lambda-formals-in-termsp
                                      union-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Sanity check: termp implies no-duplicate-lambda-formals-in-termp:
+
+(local (make-flag no-duplicate-lambda-formals-in-termp))
+
+(local
+ (defthm-flag-no-duplicate-lambda-formals-in-termp
+   (defthm no-duplicate-lambda-formals-in-termp-when-termp
+     (implies (termp term w)
+              (no-duplicate-lambda-formals-in-termp term))
+     :flag no-duplicate-lambda-formals-in-termp)
+   (defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
+     (implies (term-listp terms w)
+              (no-duplicate-lambda-formals-in-termsp terms))
+     :flag no-duplicate-lambda-formals-in-termsp)
+   :hints (("Goal" :expand (free-vars-in-terms terms)
+            :in-theory (enable free-vars-in-term no-duplicate-lambda-formals-in-termp)))))
+
+;; redundant and non-local
+(defthm no-duplicate-lambda-formals-in-termp-when-termp
+  (implies (termp term w)
+           (no-duplicate-lambda-formals-in-termp term)))
+
+;; redundant and non-local
+(defthm no-duplicate-lambda-formals-in-termsp-when-term-listp
+  (implies (term-listp terms w)
+           (no-duplicate-lambda-formals-in-termsp terms)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm no-duplicate-lambda-formals-in-termp-when-logic-termp
+  (implies (logic-termp term w)
+           (no-duplicate-lambda-formals-in-termp term)))
+
+(defthm no-duplicate-lambda-formals-in-termsp-when-logic-term-listp
+  (implies (logic-term-listp terms w)
+           (no-duplicate-lambda-formals-in-termsp terms)))

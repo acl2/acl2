@@ -12,6 +12,8 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/std/util/defirrelevant" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -318,6 +320,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-amb?-decl/stmt
+  :short "An irrelevant possibly ambiguous declaration or statement."
+  :type amb?-decl/stmt-p
+  :body (amb?-decl/stmt-stmt (irr-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-block-item
   :short "An irrelevant block item."
   :type block-itemp
@@ -609,7 +618,7 @@
        (const (expr-const->unwrap expr))
        ((unless (const-case const :int)) nil)
        ((iconst iconst) (const-int->unwrap const))
-       ((when iconst.suffix) nil)
+       ((when iconst.suffix?) nil)
        ((unless (dec/oct/hex-const-case iconst.dec/oct/hex :oct)) nil)
        ((dec/oct/hex-const-oct doh) iconst.dec/oct/hex)
        ((unless (= doh.leading-zeros 1)) nil)

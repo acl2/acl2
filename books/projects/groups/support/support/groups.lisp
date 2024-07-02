@@ -167,7 +167,7 @@
            (member x (append-list m))))
 
 ;; Disjoint lists:
-		  
+
 (defun disjointp (l m)
   (if (consp l)
       (and (not (member-equal (car l) m))
@@ -299,7 +299,7 @@
 	   (xy-in x (remove1-equal (xy x1) y)))
   :hints (("Goal" :induct (dlistp x))
           ("Subgoal *1/1" :use ((:instance xy-inj (x2 (car x)))))))
-	   
+
 (local-defthm xy-in-remove
   (implies (and (dlistp x)
                 (dlistp y)
@@ -693,7 +693,7 @@
 		(in z g))
 	   (equal (op x (op y z g) g)
 	          (op (op x y g) z g)))
-  :hints (("Goal" :in-theory (enable groupp)))) 
+  :hints (("Goal" :in-theory (enable groupp))))
 
 ;; Converse of group-assoc:
 
@@ -767,7 +767,7 @@
   :hints (("Goal" :in-theory (enable inv)
                   :use ((:instance check-inverses-1 (l (elts g)))
                         (:instance inv-aux-2 (x (inv-cex g)) (l (elts g)))))))
-			
+
 (in-theory (disable inv-cex))
 
 ;; Abelian groups:
@@ -1155,7 +1155,7 @@
 (defthm glist-elts
   (equal (elts (g))
          (glist)))
-	 
+
 (defthm op-g-rewrite
   (implies (and (in x (g))
 		(in y (g)))
@@ -1691,6 +1691,10 @@
 
 (memoize 'op-guard)
 
+; Matt K. mod 6/25/2024:
+; The following seemed necessary for a run based on Allegro CL.
+(comp t)
+
 (defthm assocp-z*-500
   (assocp (z* 500)))
 
@@ -1795,7 +1799,7 @@
 
 ;; Informally, the left coset of a subgroup H of G determined by an element x of G is the set of
 ;; elements of G of the form xh, where h is in H.  In our formalization, we define a left coset
-;; to be the ordered list of these elements: 
+;; to be the ordered list of these elements:
 
 (defun insert (x l g)
   (if (consp l)
@@ -1841,7 +1845,7 @@
   (implies (and (subgroupp h g)
 		(in x g)
 		(member-equal y (lcoset x h g)))
-	   (in y g))	   
+	   (in y g))
   :hints (("Goal" :use (sublistp-lcoset-g))))
 
 ;; A coset is an ordered list of group elements:
@@ -1976,7 +1980,7 @@
   :hints (("Goal" :use (group-left-inverse member-lcoset-iff
                         (:instance group-left-inverse (x (op (inv x g) y g)) (g h))
                         (:instance member-lcoset-iff (x y) (y x))
-			(:instance prod-inv (x (inv x g)))))))                        
+			(:instance prod-inv (x (inv x g)))))))
 
 (local-defthm lcosets-intersect-1
   (implies (and (subgroupp h g)
@@ -2029,7 +2033,7 @@
 	   (member-equal b (lcoset y h g)))
   :hints (("Goal" :use (lcosets-intersect-1 lcosets-intersect-3
                         (:instance member-lcoset-iff (x y) (y b))))))
-			
+
 (local-defthm sublistp-lcoset-1
   (implies (and (subgroupp h g)
 		(in x g)
@@ -2046,7 +2050,7 @@
 		(member-equal y (lcoset x h g)))
 	   (sublistp (lcoset y h g) (lcoset x h g)))
   :hints (("Goal" :use ((:instance sublistp-lcoset-1 (l (lcoset y h g)))))))
-	   
+
 (defthmd equal-lcoset
   (implies (and (subgroupp h g)
 		(in x g)
@@ -2067,7 +2071,7 @@
 	   (equal (lcoset x1 h g) (lcoset x2 h g)))
   :hints (("Goal" :use ((:instance equal-lcoset (x x1))
                         (:instance equal-lcoset (x x2))))))
-	   
+
 
 ;;---------------------------------------------------------------------------------------------------
 ;; Lagrange's Theorem
@@ -2164,7 +2168,7 @@
 		(in x g))
 	   (and (in (car (lcoset x h g)) g)
 	        (equal (lcoset (car (lcoset x h g)) h g)
-	               (lcoset x h g))))	  
+	               (lcoset x h g))))
   :hints (("Goal" :in-theory (disable member-self-lcoset)
                   :use (ordp-lcoset member-self-lcoset
                         (:instance member-lcoset-g (y (car (lcoset x h g))))
@@ -2187,7 +2191,7 @@
 		       c)))
   :hints (("Goal" :use ((:instance lcosets-aux-cars (l (elts g))))
                   :in-theory (enable lcosets))))
-	          
+
 (defthm lcosets-aux-disjointp-list
   (implies (and (subgroupp h g)
 		(sublistp l (elts g))
@@ -2264,7 +2268,7 @@
   (implies (subgroupp h g)
            (equal (* (order h) (subgroup-index h g))
                   (order g)))
-  :hints (("Goal" :use (len-append-list-lcosets))))                        
+  :hints (("Goal" :use (len-append-list-lcosets))))
 
 (defthmd subgroup-index-pos
   (implies (subgroupp h g)
@@ -2492,7 +2496,7 @@
 (defthm member-lcoset-qlist
   (implies (and (normalp h g) (member x (lcosets h g)))
            (member x (qlist h g))))
-                
+
 
 (defthmd member-lcoset-qlist-iff
   (implies (normalp h g)
@@ -2582,9 +2586,9 @@
   (implies (and (normalp h g)
                 (member-equal x (qlist h g)) (member-equal y (qlist h g))
 		(member-equal a x) (member-equal b y))
-	   (in (op (inv (op (car x) (car y) g) g) (op a b g) g) h))	   
+	   (in (op (inv (op (car x) (car y) g) g) (op a b g) g) h))
   :hints (("Goal" :in-theory (enable normalp)
-                  :use (op-qop-4 subgroup-e		  
+                  :use (op-qop-4 subgroup-e
                         (:instance group-closure (x (op (inv (car y) g) b g)) (y (conj (op (inv (car x) g) a g) (inv b g) g)) (g h))))))
 
 (defthm op-qop
@@ -2666,13 +2670,13 @@
   (implies (and (normalp h g)
                 (member-equal x (qlist h g)))
 	   (and (member-equal (qinv x h g) (qlist h g))
-	        (equal (qop (qinv x h g) x h g) (qe h g))))		
+	        (equal (qop (qinv x h g) x h g) (qe h g))))
   :hints (("Goal" :use (q-inverse-1 q-inverse-2
                         (:instance car-member-qlist (x (qop (qinv x h g) x h g)))
                         (:instance equal-lcoset (x (car (qop (qinv x h g) x h g))) (y (e g)))))))
 
 (in-theory (disable qe qlist qop qinv))
-  
+
 ;; Quotient group:
 
 (defgroup quotient (g h)
@@ -2682,7 +2686,7 @@
   (qinv x h g))
 
 (in-theory (disable quotient))
- 
+
 (defthm order-quotient
   (implies (normalp h g)
            (equal (order (quotient g h))
@@ -2879,7 +2883,7 @@
 (defthmd centralizer-iff
   (implies (and (groupp g) (in a g))
            (iff (in x (centralizer a g))
-	        (and (in x g) (equal (op a x g) (op x a g)))))		
+	        (and (in x g) (equal (op a x g) (op x a g)))))
   :hints (("Goal" :in-theory (enable centizer-elts-iff))))
 
 (in-theory (disable centizer-elts))
@@ -2927,7 +2931,7 @@
       (if (cent-cex (car l) g)
           (cent-elts-aux (cdr l) g)
 	(cons (car l) (cent-elts-aux (cdr l) g)))
-	
+
     ()))
 
 (defun cent-elts (g) (cent-elts-aux (elts g) g))
@@ -3050,7 +3054,7 @@
                 (abelianp g))
 	   (equal (cent-elts g) (elts g)))
   :hints (("Goal" :in-theory (enable cent-elts))))
-	   
+
 (defthm cent-elts-identity
   (implies (groupp g)
            (equal (car (cent-elts g)) (e g)))
@@ -3058,7 +3062,7 @@
                   :use ((:instance cent-elts-1 (a (e g)))
 		        (:instance cent-cex-1 (a (e g)))
 		        (:instance group-left-identity (x (cent-cex (e g) g)))
-		        (:instance group-right-identity (x (cent-cex (e g) g))))			
+		        (:instance group-right-identity (x (cent-cex (e g) g))))
                   :expand ((cent-elts-aux (car g) g)))))
 
 (defthm consp-cent-elts
@@ -3231,7 +3235,7 @@
 		(not (ord a g))
 		(natp k)
 		(<= k (1+ (order g))))
-	   (dlistp (powers-aux a k g)))	   
+	   (dlistp (powers-aux a k g)))
   :hints (("Subgoal *1/2" :use ((:instance dlistp-append (l (powers-aux a (1- k) k)) (m (list (power a (1- k) g))))
                                 (:instance ord-4 (k (1- k)) (j (1- k)))))))
 
@@ -3267,7 +3271,7 @@
 		(implies (and (posp k) (<= n k) (< k (ord-aux a n g)))
 		         (not (equal (power a k g) (e g))))
 	        (<= (ord-aux a n g) (order g)))))
-		
+
 (defthm ord<=order
   (implies (and (groupp g) (in a g))
            (and (posp (ord a g)) (<= (ord a g) (order g))))
@@ -3370,7 +3374,7 @@
                 (in a g)
 		(natp k)
 		(<= k (ord a g)))
-	   (dlistp (powers-aux a k g)))	   
+	   (dlistp (powers-aux a k g)))
   :hints (("Subgoal *1/2" :use ((:instance dlistp-append (l (powers-aux a (1- k) k)) (m (list (power a (1- k) g))))
                                 (:instance dlistp-powers-2 (k (1- k)) (j (1- k)))))))
 
@@ -3419,7 +3423,7 @@
 	               x)))
   :hints (("Goal" :use ((:instance ind<len (l (powers a g)))
                         (:instance member-powers (n (index x (powers a g))))))))
-            
+
 (local-defthm car-powers-aux-1
   (equal (car (powers-aux a 1 g))
          (e g))
@@ -3713,7 +3717,7 @@
 		(divides p (order g)))
 	   (and (in (elt-of-ord p g) g)
 	        (equal (ord (elt-of-ord p g) g) p)))
-  :hints (("Goal" :use (cauchy-abelian-lemma)))) 
+  :hints (("Goal" :use (cauchy-abelian-lemma))))
 
 
 ;;----------------------------------------------------------------------------------------------------------
@@ -3867,7 +3871,7 @@
 		(member-equal y (conjs x g)))
 	   (sublistp (conjs y g) (conjs x g)))
   :hints (("Goal" :use ((:instance sublistp-conjs-1 (l (conjs y g)))))))
-	   
+
 (defthmd equal-conjs
   (implies (and (groupp g)
 		(in x g)
@@ -4061,7 +4065,7 @@
 		(in x g))
 	   (and (in (car (conjs x g)) g)
 	        (equal (conjs (car (conjs x g)) g)
-	               (conjs x g))))	  
+	               (conjs x g))))
   :hints (("Goal" :in-theory (disable conj-reflexive)
                   :use (ordp-conjs conj-reflexive
 		        (:instance conj-in-g (a (conjer (car (conjs x g)) x g)))
@@ -4085,7 +4089,7 @@
 		       c)))
   :hints (("Goal" :use ((:instance conjs-list-aux-cars (l (elts g))))
                   :in-theory (enable conjs-list))))
-	          
+
 (local-defthm conjs-list-aux-disjointp-list
   (implies (and (groupp g)
 		(sublistp l (elts g))
@@ -4358,5 +4362,5 @@
 		(divides p (order g)))
 	   (and (in (elt-of-ord p g) g)
 	        (equal (ord (elt-of-ord p g) g) p)))
-  :hints (("Goal" :use (cauchy-lemma)))) 
+  :hints (("Goal" :use (cauchy-lemma))))
 

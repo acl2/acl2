@@ -1,7 +1,7 @@
 ; Utilities that perform substitution
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "tools/flag" :dir :system)
+(include-book "no-nils-in-termp")
 
 ;; See also the built-in function sublis-var.  It evaluates ground applications of certain functions:
 ;; (sublis-var (acons 'a ''3 nil) '(binary-+ a a)) = '6
@@ -25,22 +26,23 @@
 ;; See also Axe functions like sublis-var-and-eval-basic, which can evaluate
 ;; certain ground function applications and simplify IFs with constant tests.
 
-;; Apply ALIST to replace free variables in FORM.  Free variables not bound in ALIST are left alone.
+;; Apply ALIST to replace free variables in TERM.  Free variables not bound in ALIST are left alone.
 ;; This function is simpler than sublis-var and, unlike sublis-var, doesn't evaluate functions applied to constant arguments.
 ;; TODO: Consider simplifying IFs whose tests are constants (i.e., don't build both branches of such an IF).
 (mutual-recursion
  (defund sublis-var-simple (alist term)
-   (declare (xargs :measure (acl2-count term)
-                   :guard (and (symbol-alistp alist) ; usually a symbol-term-alistp
-                               (pseudo-termp term))))
+   (declare (xargs :guard (and (symbol-alistp alist) ; usually a symbol-term-alistp
+                               (pseudo-termp term))
+                   :measure (acl2-count term)))
    (cond ((variablep term)
           (let ((res (assoc-eq term alist)))
             (if res (cdr res) term)))
          ((fquotep term) term)
-         (t (cons ;try fcons-term
+         (t (cons-with-hint
              ;; Since lambdas are closed, we don't have to do anything to the lambda body:
              (ffn-symb term)
-             (sublis-var-simple-lst alist (fargs term))))))
+             (sublis-var-simple-lst alist (fargs term))
+             term))))
 
  (defund sublis-var-simple-lst (alist terms)
    (declare (xargs :measure (acl2-count terms)
@@ -48,8 +50,9 @@
                                (pseudo-term-listp terms))))
    (if (endp terms)
        nil
-     (cons (sublis-var-simple alist (car terms))
-           (sublis-var-simple-lst alist (cdr terms))))))
+     (cons-with-hint (sublis-var-simple alist (car terms))
+                     (sublis-var-simple-lst alist (cdr terms))
+                     terms))))
 
 (make-flag sublis-var-simple)
 
@@ -143,3 +146,20 @@
     :flag sublis-var-simple-lst)
   :hints (("Goal" :in-theory (enable sublis-var-simple
                                      sublis-var-simple-lst))))
+
+(defthm-flag-sublis-var-simple
+  (defthm no-nils-in-termp-of-sublis-var-simple
+    (implies (and (no-nils-in-termsp (strip-cdrs alist))
+                  (no-nils-in-termp term))
+             (no-nils-in-termp (sublis-var-simple alist term)))
+    :flag sublis-var-simple)
+  (defthm no-nils-in-termsp-of-sublis-var-simple-lst
+    (implies (and (no-nils-in-termsp (strip-cdrs alist))
+                  (no-nils-in-termsp terms))
+             (no-nils-in-termsp (sublis-var-simple-lst alist terms)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :expand (no-nils-in-termp (cons (car term) (sublis-var-simple-lst alist (cdr term)))) ; todo
+           :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst
+                                     ;no-nils-in-termp ; todo
+                                     ))))

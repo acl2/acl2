@@ -54,7 +54,7 @@
            (:mem32 (binary-+ '4 (rdi x86)))) ;extract v1
   ;; TODO: How much of this can we automate?
   ;; TODO: Can we just make stronger assumptions about things being loaded at concrete addresses?
-  :assumptions '(;; Introduce byte vars for v:
+  :extra-assumptions '(;; Introduce byte vars for v:
                  ;; Each of v0, etc is a u32, so we split it into 8 bytes:
                  (equal v0 (bvcat2 8 in0 8 in1 8 in2 8 in3))
                  (equal v1 (bvcat2 8 in4 8 in5 8 in6 8 in7))

@@ -15,7 +15,6 @@
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
-(include-book "kestrel/std/util/defirrelevant" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +60,7 @@
      Including empty lists in our fixtypes makes things a bit simpler,
      partly because currently @(tsee fty::deflist)
      generates conflicting theorems if used
-     both with @(':non-emptyp t') and with @(':non-emptyp nil')
+     both with @(':non-emptyp t') and with (default) @(':non-emptyp nil')
      (although this could be remedied).
      It is fine (and common) for the abstract syntax
      to be more general than the concrete syntax.
@@ -110,24 +109,7 @@
      so that parsing is purely syntactical,
      without the need for any semantic analysis during parsing.
      The exact characterization of these ambiguous constructs
-     is still work in progress; it is currently partial.")
-   (xdoc::p
-    "For instance, a kind of ambiguity has the form")
-   (xdoc::codeblock
-    "I ( I1 ( I2 ( ... ( In ) ... ) ) ) ;")
-   (xdoc::p
-    "where @('I') and @('I1'),...@('In') are identifiers with @('n >= 1').
-     If this occurs as a block item,
-     it may be either a declaration or an (expression) statement.
-     The declaration case is
-     when @('I') is a type specifier (@('typedef') name),
-     and the rest is a parenthesized declarator of @('I1'),
-     which is a function with a parameter @('I2'),
-     which is a function with a parameter @('I3'), and so on;
-     here @('I2'), @('I3'), etc. may be type specifiers (@('typedef') names).
-     Alternatively, @('I') could be a function name,
-     with argument a call of @('I1'), and so on until the variable @('In').
-     This is just an example; there are more complex patterns."))
+     is still work in progress; it is currently partial."))
   :order-subtopics t
   :default-parent t)
 
@@ -146,13 +128,13 @@
     "Allowing arbitrary values as identifiers provides flexibility.
      For instance, a transformation on C code could introduce
      multiple versions of certain identifiers, indexed by numbers,
-     in which case we could use pair consisting of
+     in which case we could use pairs consisting of
      the original identifiers and the indices.")
    (xdoc::p
     "We plan to define, separately,
      predicates that restrict identifiers to certain forms,
-     used for parsing, pretty-printing, transformations, etc.
-     Restrictions are needed to pretty-print this abstract syntax
+     used for parsing, printing, transformations, etc.
+     Restrictions are needed to print this abstract syntax
      into a form where identifiers respect the restrictions in [C];
      in addition, parsing code compliant to [C]
      will result in specific forms of identifiers."))
@@ -328,7 +310,7 @@
      An integer constant consists of a decimal, octal, or hexadecimal constant,
      and of an optional integer suffix."))
   ((dec/oct/hex dec/oct/hex-const)
-   (suffix isuffix-option))
+   (suffix? isuffix-option))
   :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2356,6 +2338,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod amb-decl/stmt
+  :short "Fixtype of ambiguous declarations or statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A block item may be a declaration or a statement,
+     but there is a complex syntactic overlap
+     between declarations and statements, specifically expression statements.
+     For instance, if @('I1'), ..., @('In') are identifiers,
+     @('I1(I2(...(In)...));') could be either a declaration or a statement.
+     It is a declaration if @('I1') is a type specifier (a @('typedef') name)
+     and @('(I2(...(In)...))') is a declarator of @('I2'),
+     which is a function with a parameter @('I3'),
+     which is a function with a parameter @('I4'),
+     and so on;
+     here @('I3'), @('I4'), etc. are type specifiers (@('typedef') names).
+     It is instead an expression statement if
+     @('I1') is a function, called with argument @('I2(...(In)...)'),
+     which is itself a function call, and so on.
+     There are also other, more complex patterns,
+     for example similar to the ones above
+     but with multiple function arguments.")
+   (xdoc::p
+    "So, similarly to
+     @(tsee amb-expr/tyname) and @(tsee amb-declor/absdeclor),
+     here we define a fixtype of ambiguous declarations or statements,
+     which contain both the declaration and the expression
+     (since the only ambiguity is with expression statements).
+     These two components should look the same in concrete syntax,
+     but we do not enforce that in this fixtype definition."))
+  ((decl decl)
+   (stmt expr))
+  :pred amb-decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum amb?-decl/stmt
+  :short "Fixtype of possibly ambiguous declarations or statements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to
+     @(tsee amb?-expr/tyname) and @(tsee amb?-declor/absdeclor).
+     It captures the possibilities of
+     a declaration,
+     an (expression) statement,
+     or an ambiguous declaration or statements."))
+  (:decl ((unwrap decl)))
+  (:stmt ((unwrap expr)))
+  (:ambig ((unwrap amb-decl/stmt)))
+  :pred amb?-decl/stmt-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes stmts/blocks
   :short "Fixtypes of statements, blocks, and related entities
           [C:6.8] [C:A.2.3]."
@@ -2418,9 +2454,13 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>block-item</i> in the grammar in [C]."))
+      "This corresponds to <i>block-item</i> in the grammar in [C].")
+     (xdoc::p
+      "We also include a case for an ambiguous declaration or statement;
+       see @(tsee amb-decl/stmt)."))
     (:decl ((unwrap decl)))
     (:stmt ((unwrap stmt)))
+    (:ambig ((unwrap amb-decl/stmt)))
     :pred block-itemp)
 
   (fty::deflist block-item-list

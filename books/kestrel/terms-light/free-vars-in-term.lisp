@@ -1,6 +1,6 @@
 ; A simpler utility to find all the vars in a term
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "tools/flag" :dir :system)
+(local (include-book "all-vars1"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
@@ -135,3 +136,77 @@
   :skip-others t
   :hints (("Goal" :in-theory (enable free-vars-in-term free-vars-in-terms
                                      remove-duplicates-equal))))
+
+(defthm free-vars-in-terms-when-not-consp-cheap
+  (implies (not (consp terms))
+           (not (free-vars-in-terms terms)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable free-vars-in-terms))))
+
+;; (defthm-flag-free-vars-in-term
+;;   (defthm subsetp-equal-of-free-vars-in-term-and-all-vars1
+;;     (subsetp-equal (free-vars-in-term term) (all-vars1 term ans))
+;;     :flag free-vars-in-term)
+;;   (defthm subsetp-equal-of-free-vars-in-terms-and-all-vars1-lst
+;;     (subsetp-equal (free-vars-in-terms terms) (all-vars1-lst terms ans))
+;;     :flag free-vars-in-terms)
+;;   :hints (("Goal" :in-theory (enable free-vars-in-term free-vars-in-terms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Theorems connecting free-vars-in-term and all-vars.
+;; There's no simple relationship.  Consider (foo x y) and (foo x y x).
+
+(local (make-flag all-vars1))
+
+(local
+ ;rename these!
+ (defthm-flag-all-vars1
+   (defthm theorem-for-all-vars1
+     (subsetp-equal (all-vars1 term ans)
+                    (union-equal (free-vars-in-term term) ans))
+     :flag all-vars1)
+   (defthm theorem-for-all-vars1-lst
+     (subsetp-equal (all-vars1-lst lst ans)
+                    (union-equal (free-vars-in-terms lst) ans))
+     :flag all-vars1-lst)
+   :hints (("Goal" :expand ((all-vars1 term ans)
+                            (all-vars1-lst terms ans))
+            :in-theory (e/d (all-vars1 all-vars1-lst free-vars-in-term free-vars-in-terms) (reverse))))))
+
+(defthm subsetp-equal-of-all-vars1-of-nil-and-free-vars-in-term
+  (subsetp-equal (all-vars1 term nil)
+                 (free-vars-in-term term))
+  :hints (("Goal" :use (:instance theorem-for-all-vars1 (ans nil))
+           :in-theory (disable theorem-for-all-vars1))))
+
+(defthm subsetp-equal-of-all-vars-and-free-vars-in-term
+  (subsetp-equal (all-vars term)
+                 (free-vars-in-term term))
+  :hints (("Goal" :use (:instance all-vars))))
+
+(local
+ ;rename these!
+ (defthm-flag-all-vars1
+   (defthm subsetp-equal-of-free-vars-in-term-and-all-vars1-helper
+     (subsetp-equal (union-equal (free-vars-in-term term) ans)
+                    (all-vars1 term ans))
+     :flag all-vars1)
+   (defthm subsetp-equal-of-free-vars-in-terms-and-all-vars1-lst-helper
+     (subsetp-equal (union-equal (free-vars-in-terms lst) ans)
+                    (all-vars1-lst lst ans))
+     :flag all-vars1-lst)
+   :hints (("Goal" :expand ((all-vars1 term ans)
+                            (all-vars1-lst terms ans))
+            :in-theory (e/d (all-vars1 all-vars1-lst free-vars-in-term free-vars-in-terms) (reverse))))))
+
+(defthm subsetp-equal-of-free-vars-in-term-and-all-vars1
+  (subsetp-equal (free-vars-in-term term)
+                 (all-vars1 term nil))
+  :hints (("Goal" :use (:instance subsetp-equal-of-free-vars-in-term-and-all-vars1-helper (ans nil))
+           :in-theory (disable subsetp-equal-of-free-vars-in-term-and-all-vars1-helper))))
+
+(defthm subsetp-equal-of-free-vars-in-term-and-all-vars
+  (subsetp-equal (free-vars-in-term term)
+                 (all-vars term))
+  :hints (("Goal" :use (:instance all-vars))))

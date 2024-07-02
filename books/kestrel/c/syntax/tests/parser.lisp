@@ -394,6 +394,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro test-lex (fn input &key cond)
+  ;; optional COND may be over variables AST, POS/SPAN, PSTATE
+  `(assert-event
+    (b* (((mv erp ?ast ?pos/span ?pstate)
+          (,fn (init-parstate (acl2::string=>nats ,input)))))
+      (if erp
+          (cw "~@0" erp) ; CW returns NIL, so ASSERT-EVENT fails
+        ,(or cond t))))) ; ASSERT-EVENT passes if COND is absent or else holds
+
+(defmacro test-lex-fail (fn input)
+  `(assert-event
+    (b* (((mv erp & & &) (,fn (init-parstate (acl2::string=>nats ,input)))))
+      erp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; lex-identifier/keyword
 
 (assert-event
@@ -417,6 +433,61 @@
    (and (not erp)
         (equal lexeme (lexeme-token (token-ident (ident "uabc456"))))
         (equal span (span (position 8 3) (position 8 9))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-hexadecimal-digit
+
+(test-lex
+ lex-hexadecimal-digit
+ "0"
+ :cond (equal ast #\0))
+
+(test-lex
+ lex-hexadecimal-digit
+ "1"
+ :cond (equal ast #\1))
+
+(test-lex
+ lex-hexadecimal-digit
+ "8"
+ :cond (equal ast #\8))
+
+(test-lex
+ lex-hexadecimal-digit
+ "A"
+ :cond (equal ast #\A))
+
+(test-lex
+ lex-hexadecimal-digit
+ "b"
+ :cond (equal ast #\b))
+
+(test-lex
+ lex-hexadecimal-digit
+ "fy"
+ :cond (and (equal ast #\f)
+            (equal (parstate->bytes pstate) (list (char-code #\y)))))
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ " ")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ " c")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "g")
+
+(test-lex-fail
+ lex-hexadecimal-digit
+ "@")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -719,6 +790,100 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-abstract-declarator
+
+(test-parse
+ parse-abstract-declarator
+ "[a[3]]"
+ :cond (and (equal (absdeclor->pointers ast) nil)
+            (dirabsdeclor-case (absdeclor->decl? ast) :array)))
+
+(test-parse
+ parse-abstract-declarator
+ "(a)"
+ :cond (and (equal (absdeclor->pointers ast) nil)
+            (dirabsdeclor-case (absdeclor->decl? ast) :function)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declarator
+
+(test-parse
+ parse-declarator
+ "o")
+
+(test-parse
+ parse-declarator
+ "*o")
+
+(test-parse
+ parse-declarator
+ "*o[15]")
+
+(test-parse
+ parse-declarator
+ "(*o)[15]")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-parameter-declaration
+
+(test-parse
+ parse-parameter-declaration
+ "int x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *x,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :declor))
+
+(test-parse
+ parse-parameter-declaration
+ "int *,"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :absdeclor))
+
+(test-parse
+ parse-parameter-declaration
+ "int (x)(y))"
+ :cond (amb?-declor/absdeclor-case (paramdecl->decl ast) :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-declarator-or-abstract-declarator
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "zzz,"
+ :cond (amb?-declor/absdeclor-case ast :declor))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(*),"
+ :cond (amb?-declor/absdeclor-case ast :absdeclor))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*],"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*](uint32_t),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+(test-parse
+ parse-declarator-or-abstract-declarator
+ "(h)[*](uint32_t)(T,T),"
+ :cond (amb?-declor/absdeclor-case ast :ambig))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-expression-or-type-name
 
 (test-parse
@@ -895,4 +1060,36 @@ struct bar
  parse-external-declaration-list
  "void foo () {
  idx = (arr)[3];
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "void test(int i)
+{
+    y[i] = (i ? inv : src)[i];
+}")
+
+(test-parse
+ parse-external-declaration-list
+ "extern char *tmpnam (char[20]);")
+
+(test-parse
+ parse-external-declaration-list
+ "extern int __uflow (FILE *);")
+
+(test-parse
+ parse-external-declaration-list
+ "int c[1][2];")
+
+(test-parse
+ parse-external-declaration-list
+ "struct A
+{
+  int c1, c2;
+};")
+
+(test-parse
+ parse-external-declaration-list
+ "long long foo () {
+  return 1LL;
 }")

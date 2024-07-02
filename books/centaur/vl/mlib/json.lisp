@@ -33,7 +33,7 @@
 (include-book "find")
 (include-book "centaur/bridge/to-json" :dir :system)
 (local (include-book "../util/arithmetic"))
-
+(local (in-theory (disable (tau-system))))
 
 (defsection json-printing
   :parents (printer)
@@ -861,6 +861,20 @@ which could not hold such large values.</p>"
                :parts (vl-jp-exprlist y.parts)
                :atts  (vl-jp-atts y.atts))))
 
+(defabbrev vl-jp-bitselect-expr (x y.kind)
+  (b* (((vl-bitselect-expr y) x))
+    (jp-object :tag (jp-sym y.kind)
+               :subexp  (vl-jp-expr y.subexp)
+               :index (vl-jp-expr y.index)
+               :atts  (vl-jp-atts y.atts))))
+
+(defabbrev vl-jp-partselect-expr (x y.kind)
+  (b* (((vl-partselect-expr y) x))
+    (jp-object :tag (jp-sym y.kind)
+               :subexp  (vl-jp-expr y.subexp)
+               :part (vl-jp-partselect y.part)
+               :atts  (vl-jp-atts y.atts))))
+
 (defabbrev vl-jp-mintypmax (x y.kind)
   (b* (((vl-mintypmax y) x))
     (jp-object :tag (jp-sym y.kind)
@@ -995,6 +1009,8 @@ which could not hold such large values.</p>"
       :vl-qmark       (vl-jp-qmark x x.kind)
       :vl-concat      (vl-jp-concat x x.kind)
       :vl-multiconcat (vl-jp-multiconcat x x.kind)
+      :vl-bitselect-expr (vl-jp-bitselect-expr x x.kind)
+      :vl-partselect-expr (vl-jp-partselect-expr x x.kind)
       :vl-mintypmax   (vl-jp-mintypmax x x.kind)
       :vl-call        (vl-jp-call x x.kind)
       :vl-stream      (vl-jp-stream x x.kind)
