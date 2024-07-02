@@ -1211,6 +1211,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lex-hex-quad ((pstate parstatep))
+  :returns (mv erp
+               (quad hex-quad-p)
+               (last-pos positionp)
+               (new-pstate parstatep))
+  :short "Lex a quadruple of hexadecimal digits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called when we expect four hexadecimal digits,
+     so we call @(tsee lex-hexadecimal-digit) four times.
+     We return the position of the last one."))
+  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
+       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
+       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
+    (retok (make-hex-quad :1st hexdig1
+                          :2nd hexdig2
+                          :3rd hexdig3
+                          :4th hexdig4)
+           pos
+           pstate))
+
+  ///
+
+  (defret parsize-of-lex-hex-quad-uncond
+    (<= (parsize new-pstate)
+        (parsize pstate))
+    :rule-classes :linear)
+
+  (defret parsize-of-lex-hex-quad-cond
+    (implies (not erp)
+             (<= (parsize new-pstate)
+                 (1- (parsize pstate))))
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lex-dec-digits ((pos-so-far positionp) (pstate parstatep))
   :returns (mv erp
                (decdigs dec-digit-char-listp
@@ -1347,45 +1386,6 @@
            (len hexdigs)))
     :rule-classes :linear
     :hints (("Goal" :induct t :in-theory (enable fix len)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lex-hex-quad ((pstate parstatep))
-  :returns (mv erp
-               (quad hex-quad-p)
-               (last-pos positionp)
-               (new-pstate parstatep))
-  :short "Lex a quadruple of hexadecimal digits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is called when we expect four hexadecimal digits,
-     so we call @(tsee lex-hexadecimal-digit) four times.
-     We return the position of the last one."))
-  (b* (((reterr) (irr-hex-quad) (irr-position) (irr-parstate))
-       ((erp hexdig1 & pstate) (lex-hexadecimal-digit pstate))
-       ((erp hexdig2 & pstate) (lex-hexadecimal-digit pstate))
-       ((erp hexdig3 & pstate) (lex-hexadecimal-digit pstate))
-       ((erp hexdig4 pos pstate) (lex-hexadecimal-digit pstate)))
-    (retok (make-hex-quad :1st hexdig1
-                          :2nd hexdig2
-                          :3rd hexdig3
-                          :4th hexdig4)
-           pos
-           pstate))
-
-  ///
-
-  (defret parsize-of-lex-hex-quad-uncond
-    (<= (parsize new-pstate)
-        (parsize pstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-hex-quad-cond
-    (implies (not erp)
-             (<= (parsize new-pstate)
-                 (1- (parsize pstate))))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
