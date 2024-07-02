@@ -809,11 +809,11 @@
   (fconst-case
    fconst
    :dec (b* ((pstate (print-dec-core-fconst fconst.core pstate))
-             (pstate (print-fsuffix-option fconst.suffix pstate)))
+             (pstate (print-fsuffix-option fconst.suffix? pstate)))
           pstate)
    :hex (b* ((pstate (print-hprefix fconst.prefix pstate))
              (pstate (print-hex-core-fconst fconst.core pstate))
-             (pstate (print-fsuffix-option fconst.suffix pstate)))
+             (pstate (print-fsuffix-option fconst.suffix? pstate)))
           pstate))
   :hooks (:fix))
 

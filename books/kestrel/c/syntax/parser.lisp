@@ -2784,7 +2784,7 @@
                                                 :before nil
                                                 :after hexdigs2)
                                   :expo expo)
-                           :suffix fsuffix?))
+                           :suffix? fsuffix?))
                          (cond (fsuffix? suffix-last/next-pos)
                                (t expo-last-pos))
                          pstate)))))))
@@ -2825,7 +2825,7 @@
                                               :before hexdigs
                                               :after nil)
                                 :expo expo)
-                         :suffix fsuffix?))
+                         :suffix? fsuffix?))
                        (cond (fsuffix? suffix-last/next-pos)
                              (t expo-last-pos))
                        pstate)))
@@ -2845,7 +2845,7 @@
                                               :before hexdigs
                                               :after hexdigs2)
                                 :expo expo)
-                         :suffix fsuffix?))
+                         :suffix? fsuffix?))
                        (cond (fsuffix? suffix-last/next-pos)
                              (t expo-last-pos))
                        pstate))))))
@@ -2864,7 +2864,7 @@
                      :core (make-hex-core-fconst-int
                             :significand hexdigs
                             :expo expo)
-                     :suffix fsuffix?))
+                     :suffix? fsuffix?))
                    (cond (fsuffix? suffix-last/next-pos)
                          (t expo-last-pos))
                    pstate)))
@@ -3011,7 +3011,7 @@
                       :expo? nil)))))
         (retok (const-float
                 (make-fconst-dec :core core
-                                 :suffix fsuffix?))
+                                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (expo? expo-last/next-pos)
                      (decdigs2 decdigs2-last-pos)
@@ -3032,7 +3032,7 @@
                         :significand (cons first-digit
                                            decdigs)
                         :expo expo)
-                 :suffix fsuffix?))
+                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (t expo-last-pos))
                pstate)))
@@ -3114,7 +3114,7 @@
                 :expo? nil))))
     (retok (const-float
             (make-fconst-dec :core core
-                             :suffix fsuffix?))
+                             :suffix? fsuffix?))
            (cond (fsuffix? suffix-last/next-pos)
                  (expo? expo-last/next-pos)
                  (decdigs decdigs-last-pos)
@@ -3304,7 +3304,7 @@
                       :expo? nil)))))))
         (retok (const-float
                 (make-fconst-dec :core core
-                                 :suffix fsuffix?))
+                                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (expo? expo-last/next-pos)
                      (digits2 digits2-last-pos)
@@ -3324,7 +3324,7 @@
                  :core (make-dec-core-fconst-int
                         :significand (cons #\0 digits)
                         :expo expo)
-                 :suffix fsuffix?))
+                 :suffix? fsuffix?))
                (cond (fsuffix? suffix-last/next-pos)
                      (t expo-last-pos))
                pstate)))
