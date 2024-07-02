@@ -84,12 +84,15 @@
   :body
 
   (b* (;; At first glance, this special case seems unnecessary as #x90 is
-       ;; XCHG (r/e)ax, (r/e)ax. However, this should be a nop
-       ;; if opcode = #x90 regardless of the prefix. Consider the following:
-       ;; #x90 is XCHG eax, eax when the prefix = 0 in 64-bit mode. Note the
-       ;; 32-bit eax and not 64-bit rax. If we didn't include a special case
-       ;; here, this would zero out the upper 32-bits of rax.
-       ((when (equal opcode #x90)) (write-*ip proc-mode temp-rip x86))
+       ;; XCHG (r/e)ax, (r/e)ax. However, this should be a nop regardless of
+       ;; address size. See XCHG in Volume 2 Chapter 6.1 of the Intel SDM.
+       ;; Consider the following: #x90 is XCHG eax, eax when the prefix = 0 in
+       ;; 64-bit mode. Note the 32-bit eax and not 64-bit rax. If we didn't
+       ;; include a special case here, this would zero out the upper 32-bits of
+       ;; rax. While we're supposed to ignore instruction size prefixes, we
+       ;; need to consider REX.B, which may turn 0x90 into xchg r8w, ax.
+       ((when (and (equal opcode #x90) (not (logbitp *b* rex-byte))))
+        (write-*ip proc-mode temp-rip x86))
 
        (p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override*
