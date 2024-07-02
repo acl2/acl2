@@ -13,6 +13,9 @@
 (include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
 
+(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+(local (include-book "kestrel/bv/logand" :dir :system))
+(local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -161,21 +164,43 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently all the characters allowed by our grammar are ASCII,
-     so they fit into a byte, which we add to the printer state.
-     That is, no UTF-8 encoding is needed for now.")
-   (xdoc::p
-    "Recall that we represent characters as codes, i.e. natural numbers,
-     not as ACL2 characters.
-     This is so that we can easily generalize from ASCII to Unicode.")
+    "We UTF-8-encode the character code into one, two, three, or four bytes.")
    (xdoc::p
     "This is the most basic printing function in our printer.
      All other printing functions call this one, directly or indirectly."))
   (b* ((bytes-rev (pristate->bytes-rev pstate))
-       (new-bytes-rev (cons char bytes-rev))
+       (encoding (cond
+                  ((< char #x80) (list char))
+                  ((< char #x800) (list (logior (ash char -6)
+                                                #b11000000)
+                                        (logior (logand char
+                                                        #b00111111)
+                                                #b10000000)))
+                  ((< char #x10000) (list (logior (ash char -12)
+                                                  #b1110000)
+                                          (logior (logand (ash char -6)
+                                                          #b00111111)
+                                                  #b10000000)
+                                          (logior (logand char
+                                                          #b00111111)
+                                                  #b10000000)))
+                  (t (list (logior (ash char -18)
+                                   #b11110000)
+                           (logior (logand (ash char -12)
+                                           #b00111111)
+                                   #b10000000)
+                           (logior (logand (ash char -6)
+                                           #b00111111)
+                                   #b10000000)
+                           (logior (logand char
+                                           #b00111111)
+                                   #b10000000)))))
+       (new-bytes-rev (append (rev encoding) bytes-rev))
        (new-pstate (change-pristate pstate :bytes-rev new-bytes-rev)))
     new-pstate)
-  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p)))
+  :guard-hints (("Goal" :in-theory (enable bytep grammar-character-p
+                                           unsigned-byte-p
+                                           integer-range-p)))
   ///
   (fty::deffixequiv print-char
     :args ((pstate pristatep))))
@@ -250,12 +275,8 @@
     "This provides the convenience to use use ACL2 strings,
      instead of using character codes.")
    (xdoc::p
-    "Since for now our concrete syntax only supports ASCII,
-     this suffices to print anything.
-     Even if we extend our concrete syntax to support (some) Unicode,
-     most of the ACL2 syntax is still ASCII,
-     and therefore this printing function is, and will always be,
-     to print a lot of the code.")
+    "Since most of the C syntax is ASCII,
+     this printing function is used to print most of the code.")
    (xdoc::p
     "Note that an ACL2 string can contain characters that,
      when converted to natural numbers, are larger than 127,
