@@ -1915,11 +1915,6 @@
                   (bvmult (+ 1 size) 2 (bvplus size x y))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm ifix-does-nothing
-  (implies (integerp x)
-           (equal (ifix x)
-                  x)))
-
 ;should be cheap since n is a free var
 (defthm integerp-when-signed-byte-p
   (implies (equal (signed-byte-p n x) ;the "equal xxx t" formulation is used in axe hyps
